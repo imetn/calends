@@ -25,6 +25,7 @@ import { api, deleteSub, getState, mergeEdits, run, savePerson, saveSub } from '
 import { linkPerson, PersonPicker } from './People.tsx';
 import { CurrencySelect, Picker, RegionSelect } from '../components/Picker.tsx';
 import { searchCatalog, type CatalogItem } from '../catalog.ts';
+import type { AppStorePlan } from '../../../shared/appstore-plans.ts';
 
 const CYCLES: Array<[string, Cycle]> = [...RENEW_CYCLES, ['lt', { unit: 'lifetime', every: 1 }]];
 
@@ -325,6 +326,22 @@ function Form({
   // 分类表的顺序；表单里的分类万一不在表里（刚被删掉），也留着它
   const catOptions = [...new Set([...categories().map((c) => c.name), f.category].filter(Boolean))];
   const [newCat, setNewCat] = useState(false);
+  // 选中 App Store 结果后读它的内购套餐；读不到就不显示，金额照常手填
+  const [plans, setPlans] = useState<{ currency: string; list: AppStorePlan[]; picked?: number }>();
+  const plansSeq = useRef(0);
+  const loadPlans = (h?: AppHit) => {
+    const n = ++plansSeq.current;
+    setPlans(undefined);
+    if (!h?.id) return;
+    api<{ currency?: string; plans: AppStorePlan[] }>(`/api/appstore/plans?id=${h.id}&country=${h.country ?? 'us'}`)
+      .then((r) => {
+        const list = r.plans.filter((p) => p.price);
+        if (n === plansSeq.current && r.currency && list.length) setPlans({ currency: r.currency, list });
+      })
+      .catch(() => {
+        /* 读不到套餐不影响手填 */
+      });
+  };
 
   return (
     <div className="ed">
@@ -342,8 +359,12 @@ function Form({
           <NameField
             value={f.name}
             region={(f.region || method?.region || 'us').toLowerCase()}
-            onChange={(name) => up({ name })}
-            onPick={(h) =>
+            onChange={(name) => {
+              up({ name });
+              if (plans) loadPlans();
+            }}
+            onPick={(h) => {
+              loadPlans(h);
               up({
                 // 「Spotify: Music and Podcasts」只取冒号、破折号前的产品名
                 name: h.name.split(/\s*[:：|]\s*|\s[-–—]\s/)[0].trim(),
@@ -354,23 +375,42 @@ function Form({
                 ...(h.fromLink && !f.region && h.country !== 'cn' ? { region: h.country!.toUpperCase() } : {}),
                 // 分类按 App Store 的类别给个默认值，已经选过的不动
                 ...(!f.name.trim() || f.category === presetCat('tools') ? { category: GENRE_CAT[h.genre] ? presetCat(GENRE_CAT[h.genre]) : f.category } : {}),
-              })
-            }
-            onPickCatalog={(c) =>
+              });
+            }}
+            onPickCatalog={(c) => {
+              loadPlans();
               up({
                 name: c.name,
                 icon: c.icon,
                 url: f.url || c.url,
                 category: c.category,
                 ...(isNew ? { chargeLeadDays: f.chargeLeadDays ?? c.chargeLeadDays, cancelLeadDays: f.cancelLeadDays ?? c.cancelLeadDays } : {}),
-              })
-            }
+              });
+            }}
           />
         </div>
       </div>
 
       {/* 二、怎么付钱 */}
       <Group title={t('editor.group.billing')}>
+        {/* 选套餐只是代填金额、币种和认得出的周期，之后照常可改 */}
+        {plans && (
+          <Cell label={t('editor.field.plan')}>
+            <Picker
+              value={plans.picked ?? -1}
+              onChange={(i) => {
+                const p = plans.list[i];
+                if (!p?.price) return;
+                setPlans({ ...plans, picked: i });
+                if (p.cycle) setCustom(!CYCLES.some(([, c]) => c.unit === p.cycle!.unit && c.every === p.cycle!.every));
+                up({ price: p.price, currency: plans.currency, ...(p.cycle ? { cycle: p.cycle } : {}) });
+              }}
+              options={plans.list.map((p, i) => ({ value: i, label: p.name, hint: p.priceText }))}
+              display={plans.picked == null ? <span className="muted">{t('editor.plan.choose', { count: plans.list.length })}</span> : undefined}
+              ariaLabel={t('editor.field.plan')}
+            />
+          </Cell>
+        )}
         <Cell label={t('editor.field.amount')}>
           <span className="ed-amount">
             <NumInput ccy={f.currency} className="num" value={f.price || undefined} placeholder="0.00" onValue={(n) => up({ price: n ?? 0 })} />
@@ -819,6 +859,8 @@ function Form({
 }
 
 interface AppHit {
+  /** App Store 数字 ID，用来读内购套餐 */
+  id?: string;
   name: string;
   icon: string;
   url: string;

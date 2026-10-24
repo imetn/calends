@@ -87,7 +87,8 @@
     "showDomainOff": "公開頁遮蔽顯示",
     "tagsPlaceholder": "以空格分隔",
     "notesPlaceholder": "備註（可選）",
-    "pausedAt": "暫停日"
+    "pausedAt": "暫停日",
+    "plan": "方案"
   },
   "share": {
     "none": "自用",
@@ -224,5 +225,10 @@
     "title": "用 AI 識別",
     "hint": "貼上收據、截圖或一段文字，自動整理好",
     "go": "貼上辨識"
+  },
+  "plan": {
+    "choose": {
+      "other": "App Store 有 {count} 個方案"
+    }
   }
 }

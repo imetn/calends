@@ -100,7 +100,8 @@
     "showDomainOff": "Masqué sur la page publique",
     "tagsPlaceholder": "Séparés par des espaces",
     "notesPlaceholder": "Notes (facultatif)",
-    "pausedAt": "Date de pause"
+    "pausedAt": "Date de pause",
+    "plan": "Formule"
   },
   "share": {
     "none": "Moi seul",
@@ -252,5 +253,11 @@
     "title": "Remplir avec l’IA",
     "hint": "Collez un reçu, une capture ou du texte, le reste se fait tout seul",
     "go": "Coller"
+  },
+  "plan": {
+    "choose": {
+      "one": "{count} formule App Store",
+      "other": "{count} formules App Store"
+    }
   }
 }

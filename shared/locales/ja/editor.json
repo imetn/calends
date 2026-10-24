@@ -95,7 +95,8 @@
     "showDomainOff": "公開ページでは伏せて表示されます",
     "tagsPlaceholder": "スペースで区切る",
     "notesPlaceholder": "メモ（任意）",
-    "pausedAt": "一時停止日"
+    "pausedAt": "一時停止日",
+    "plan": "プラン"
   },
   "share": {
     "none": "自分だけ",
@@ -242,5 +243,10 @@
     "title": "AI で読み取る",
     "hint": "レシートやスクリーンショット、テキストを貼り付けると自動で整理します",
     "go": "貼り付け"
+  },
+  "plan": {
+    "choose": {
+      "other": "App Store のプラン {count} 件"
+    }
   }
 }

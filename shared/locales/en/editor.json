@@ -100,7 +100,8 @@
     "showDomainOff": "Masked on the public page",
     "tagsPlaceholder": "Separate with spaces",
     "notesPlaceholder": "Notes (optional)",
-    "pausedAt": "Paused on"
+    "pausedAt": "Paused on",
+    "plan": "Plan"
   },
   "share": {
     "none": "Just me",
@@ -252,5 +253,11 @@
     "title": "Fill in with AI",
     "hint": "Paste a receipt, screenshot or any text and let it sort things out",
     "go": "Paste"
+  },
+  "plan": {
+    "choose": {
+      "one": "{count} App Store plan",
+      "other": "{count} App Store plans"
+    }
   }
 }

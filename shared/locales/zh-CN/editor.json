@@ -87,7 +87,8 @@
     "showDomainOff": "公开页打码显示",
     "tagsPlaceholder": "空格分隔",
     "notesPlaceholder": "备注，可选",
-    "pausedAt": "暂停日"
+    "pausedAt": "暂停日",
+    "plan": "套餐"
   },
   "share": {
     "none": "自用",
@@ -224,5 +225,10 @@
     "title": "用 AI 识别",
     "hint": "粘贴收据、截图或一段文字，自动整理好",
     "go": "粘贴识别"
+  },
+  "plan": {
+    "choose": {
+      "other": "App Store 有 {count} 个套餐"
+    }
   }
 }

@@ -60,7 +60,7 @@ import type { Revision } from './store.ts';
 import { mergePrefs, type Prefs } from '../shared/prefs.ts';
 import { cleanCategories, renameInSubs } from '../shared/categories.ts';
 import { createToken, listTokens, mcp, revokeToken } from './ai/mcp.ts';
-import { searchAppStore, TOOLS, toolTitle } from './ai/mcp-tools.ts';
+import { appStorePlans, searchAppStore, TOOLS, toolTitle } from './ai/mcp-tools.ts';
 import { exportAll, parseBackup, restoreAll } from './backup.ts';
 import { apply, chat, clearChats, listChats, saveChat, saveConfig, testConfig, viewConfig } from './ai/assistant.ts';
 import { requestLocale, settingsLocale, applyLocale } from './i18n.ts';
@@ -401,6 +401,10 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   if (path === '/api/appstore/search' && method === 'GET') {
     const url = new URL(req.url);
     return json({ results: await searchAppStore(url.searchParams.get('q') ?? '', url.searchParams.get('country') ?? 'us') });
+  }
+  if (path === '/api/appstore/plans' && method === 'GET') {
+    const url = new URL(req.url);
+    return json(await appStorePlans(url.searchParams.get('id') ?? '', url.searchParams.get('country') ?? 'us'));
   }
   if (path === '/api/notify/preview' && method === 'GET') {
     const state = await loadState(env);

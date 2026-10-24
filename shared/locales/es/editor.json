@@ -100,7 +100,8 @@
     "showDomainOff": "Oculto en la página pública",
     "tagsPlaceholder": "Separadas por espacios",
     "notesPlaceholder": "Notas (opcional)",
-    "pausedAt": "Fecha de pausa"
+    "pausedAt": "Fecha de pausa",
+    "plan": "Plan"
   },
   "share": {
     "none": "Solo yo",
@@ -252,5 +253,11 @@
     "title": "Rellenar con IA",
     "hint": "Pega un recibo, una captura o texto y se organiza solo",
     "go": "Pegar"
+  },
+  "plan": {
+    "choose": {
+      "one": "{count} plan de App Store",
+      "other": "{count} planes de App Store"
+    }
   }
 }

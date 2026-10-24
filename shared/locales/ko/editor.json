@@ -95,7 +95,8 @@
     "showDomainOff": "공개 페이지에서 가려서 표시됩니다",
     "tagsPlaceholder": "공백으로 구분",
     "notesPlaceholder": "메모(선택 사항)",
-    "pausedAt": "일시 중지일"
+    "pausedAt": "일시 중지일",
+    "plan": "요금제"
   },
   "share": {
     "none": "나만 사용",
@@ -242,5 +243,10 @@
     "title": "AI로 인식하기",
     "hint": "영수증, 스크린샷, 텍스트를 붙여 넣으면 자동으로 정리해요",
     "go": "붙여넣기"
+  },
+  "plan": {
+    "choose": {
+      "other": "App Store 요금제 {count}개"
+    }
   }
 }

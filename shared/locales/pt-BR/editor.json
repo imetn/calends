@@ -100,7 +100,8 @@
     "showDomainOff": "Oculto na página pública",
     "tagsPlaceholder": "Separe com espaços",
     "notesPlaceholder": "Notas (opcional)",
-    "pausedAt": "Data de pausa"
+    "pausedAt": "Data de pausa",
+    "plan": "Plano"
   },
   "share": {
     "none": "Só eu",
@@ -252,5 +253,11 @@
     "title": "Preencher com IA",
     "hint": "Cole um recibo, uma captura ou texto e o resto é automático",
     "go": "Colar"
+  },
+  "plan": {
+    "choose": {
+      "one": "{count} plano da App Store",
+      "other": "{count} planos da App Store"
+    }
   }
 }

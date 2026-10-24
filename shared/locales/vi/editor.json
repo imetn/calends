@@ -95,7 +95,8 @@
     "showDomainOff": "Được che trên trang công khai",
     "tagsPlaceholder": "Phân tách bằng dấu cách",
     "notesPlaceholder": "Ghi chú (tùy chọn)",
-    "pausedAt": "Ngày tạm dừng"
+    "pausedAt": "Ngày tạm dừng",
+    "plan": "Gói"
   },
   "share": {
     "none": "Chỉ mình tôi",
@@ -242,5 +243,10 @@
     "title": "Điền bằng AI",
     "hint": "Dán hóa đơn, ảnh chụp màn hình hoặc văn bản, phần còn lại tự động",
     "go": "Dán"
+  },
+  "plan": {
+    "choose": {
+      "other": "{count} gói trên App Store"
+    }
   }
 }

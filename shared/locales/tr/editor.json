@@ -100,7 +100,8 @@
     "showDomainOff": "Herkese açık sayfada gizlenir",
     "tagsPlaceholder": "Boşlukla ayırın",
     "notesPlaceholder": "Notlar (isteğe bağlı)",
-    "pausedAt": "Duraklatma tarihi"
+    "pausedAt": "Duraklatma tarihi",
+    "plan": "Paket"
   },
   "share": {
     "none": "Yalnızca ben",
@@ -252,5 +253,10 @@
     "title": "Yapay zekâ ile doldur",
     "hint": "Fiş, ekran görüntüsü ya da metin yapıştırın; gerisi otomatik",
     "go": "Yapıştır"
+  },
+  "plan": {
+    "choose": {
+      "other": "{count} App Store paketi"
+    }
   }
 }

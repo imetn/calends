@@ -100,7 +100,8 @@
     "showDomainOff": "Auf der öffentlichen Seite verborgen",
     "tagsPlaceholder": "Mit Leerzeichen trennen",
     "notesPlaceholder": "Notizen (optional)",
-    "pausedAt": "Pausiert ab"
+    "pausedAt": "Pausiert ab",
+    "plan": "Tarif"
   },
   "share": {
     "none": "Nur ich",
@@ -252,5 +253,11 @@
     "title": "Mit KI ausfüllen",
     "hint": "Beleg, Screenshot oder Text einfügen – der Rest geht automatisch",
     "go": "Einfügen"
+  },
+  "plan": {
+    "choose": {
+      "one": "{count} App-Store-Tarif",
+      "other": "{count} App-Store-Tarife"
+    }
   }
 }

@@ -110,7 +110,8 @@
     "showDomainOff": "Скрыт на публичной странице",
     "tagsPlaceholder": "Через пробел",
     "notesPlaceholder": "Заметки (необязательно)",
-    "pausedAt": "Дата паузы"
+    "pausedAt": "Дата паузы",
+    "plan": "Тариф"
   },
   "share": {
     "none": "Только я",
@@ -272,5 +273,13 @@
     "title": "Заполнить с ИИ",
     "hint": "Вставьте чек, скриншот или текст — остальное произойдёт само",
     "go": "Вставить"
+  },
+  "plan": {
+    "choose": {
+      "one": "{count} тариф App Store",
+      "few": "{count} тарифа App Store",
+      "many": "{count} тарифов App Store",
+      "other": "{count} тарифа App Store"
+    }
   }
 }

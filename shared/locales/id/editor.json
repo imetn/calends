@@ -95,7 +95,8 @@
     "showDomainOff": "Disamarkan di halaman publik",
     "tagsPlaceholder": "Pisahkan dengan spasi",
     "notesPlaceholder": "Catatan (opsional)",
-    "pausedAt": "Tanggal jeda"
+    "pausedAt": "Tanggal jeda",
+    "plan": "Paket"
   },
   "share": {
     "none": "Hanya saya",
@@ -242,5 +243,10 @@
     "title": "Isi dengan AI",
     "hint": "Tempel struk, tangkapan layar, atau teks, sisanya otomatis",
     "go": "Tempel"
+  },
+  "plan": {
+    "choose": {
+      "other": "{count} paket App Store"
+    }
   }
 }

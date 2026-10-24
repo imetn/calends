@@ -1,4 +1,5 @@
 import { personSummary } from '../../shared/avatar.ts';
+import { parseAppStorePlans } from '../../shared/appstore-plans.ts';
 import { reconcileRenewalRules, preserveRenewalHistory, renewalDates } from '../../shared/billing.ts';
 // MCP 工具：查询订阅、扣款、统计，以及新增 / 维护订阅。全部复用 shared/ 里的计费与统计逻辑，和后台界面算出来的数一致。
 import {
@@ -82,13 +83,15 @@ import { categoryCounts, categoryList, presetCategory, PRESETS, type Category } 
 import { CATEGORY_ALIASES } from '../../shared/locales/categories.gen.ts';
 
 /** App Store 搜索（也接受 App Store 链接，按 id 精确查找）；后台的名称联想和 AI 共用 */
+const storeCountry = (country: string) =>
+  country
+    .toLowerCase()
+    .replace(/[^a-z]/g, '')
+    .slice(0, 2) || 'us';
+
 export async function searchAppStore(query: string, country = 'us') {
   const term = query.trim().slice(0, 80);
-  const cc =
-    country
-      .toLowerCase()
-      .replace(/[^a-z]/g, '')
-      .slice(0, 2) || 'us';
+  const cc = storeCountry(country);
   if (!term) return [];
   const id = term.match(/id(\d{6,})/)?.[1];
   const api = id
@@ -97,12 +100,34 @@ export async function searchAppStore(query: string, country = 'us') {
   const res = await fetch(api, { cf: { cacheTtl: 86400 } });
   const body = (await res.json().catch(() => ({}))) as { results?: Array<Record<string, unknown>> };
   return (body.results ?? []).map((r) => ({
+    id: String(r.trackId),
     name: r.trackName as string,
     icon: r.artworkUrl100 as string,
     url: r.trackViewUrl as string,
     seller: r.sellerName as string,
     genre: r.primaryGenreName as string,
   }));
+}
+
+/**
+ * App 的内购套餐：iTunes 接口不给内购，只能读商店详情页；币种取同一地区 lookup 的结果。
+ * 页面改版、地区没有这个 App 或读不到币种时返回空列表，前端照常手填。
+ */
+export async function appStorePlans(id: string, country = 'us') {
+  const appId = /^\d{6,12}$/.test(id) ? id : '';
+  const cc = storeCountry(country);
+  if (!appId) return { currency: undefined, plans: [] };
+  const [page, lookup] = await Promise.all([
+    fetch(`https://apps.apple.com/${cc}/app/id${appId}`, { cf: { cacheTtl: 86400 }, headers: { 'user-agent': 'Mozilla/5.0 (Macintosh)' } })
+      .then((r) => (r.ok ? r.text() : ''))
+      .catch(() => ''),
+    fetch(`https://itunes.apple.com/lookup?id=${appId}&country=${cc}`, { cf: { cacheTtl: 86400 } })
+      .then((r) => r.json() as Promise<{ results?: Array<{ currency?: string }> }>)
+      .catch(() => ({ results: [] as Array<{ currency?: string }> })),
+  ]);
+  const currency = lookup.results?.[0]?.currency;
+  if (!currency || !/^[A-Z]{3}$/.test(currency)) return { currency: undefined, plans: [] };
+  return { currency, plans: parseAppStorePlans(page).slice(0, 20) };
 }
 
 export interface ToolCtx {
