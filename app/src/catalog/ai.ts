@@ -15,6 +15,14 @@ const ai = (name: string, file: string, url: string, aka: string[] = [], cat: Ca
 });
 
 const entries: CatalogEntry[] = [
+  {
+    name: 'OpenCode',
+    file: 'opencode',
+    aka: ['opencode zen', 'opencode go', 'sst'],
+    cat: 'tools',
+    url: 'https://opencode.ai/',
+    icon: '/brands/opencode.svg',
+  },
   ai('ChatGPT', 'openai', 'https://chatgpt.com', ['openai', 'gpt', 'chatgpt plus', 'chatgpt pro']),
   ai('Claude', 'claude', 'https://claude.ai', ['anthropic', 'claude pro', 'claude max']),
   ai('Gemini', 'gemini', 'https://gemini.google.com', ['google ai pro', 'google one ai', 'bard']),

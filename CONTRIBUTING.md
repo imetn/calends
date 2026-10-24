@@ -52,6 +52,12 @@ Describe the trigger and observable before/after behavior. Name affected archite
 
 Record the commands and runtime checks used, what they establish and anything not run. For a logic fix, include a regression case that fails against the old behavior and passes with the fix. UI, Worker and container behavior need the corresponding runtime checks; a production build alone is not that evidence. See the [verification matrix](docs/code-standards.md#verification).
 
+## Service catalogue
+
+The editor's name suggestions come from pack files in `app/src/catalog/`; each pack is optional and deleting one just removes its entries. Only add services the App Store search (shown below the catalogue) does not cover well, such as web-only subscriptions, AI products, domains and developer accounts, or that need preset renewal rules. Check `https://itunes.apple.com/search?term=<name>&entity=software&country=cn` (and `us`) first; if the app is in the top results, leave it out.
+
+Icons must be local files under `app/public/` (`public/brands/` for new ones, with the source and license in its `SOURCE.txt`); never hotlink a third-party favicon.
+
 ## Translations
 
 `shared/locales/<locale>/<namespace>.json`, nested JSON, `{placeholders}` must be kept. Plurals use CLDR categories: `{ "one": "...", "other": "..." }` (Russian also `few`/`many`; Chinese/Japanese/Korean/Indonesian/Vietnamese only `other`).

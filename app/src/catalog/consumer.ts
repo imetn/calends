@@ -131,6 +131,22 @@ const entries: CatalogEntry[] = [
     icon: '/brands/taobao.webp',
   },
   {
+    name: '1号会员店',
+    file: 'yhd',
+    aka: ['一号会员店', '1号店', 'yhd'],
+    cat: 'shopping',
+    url: 'https://www.yhd.com/',
+    icon: '/brands/yhd.webp',
+  },
+  {
+    name: '云闪付会员',
+    file: 'unionpay',
+    aka: ['云闪付', 'unionpay', 'quickpass', '银联'],
+    cat: 'shopping',
+    url: 'https://cn.unionpay.com/upowhtml/cn/templates/quickPass/quickPass.html',
+    icon: '/brands/unionpay.webp',
+  },
+  {
     name: 'WPS 会员',
     file: 'wps',
     aka: ['wps', '金山办公'],

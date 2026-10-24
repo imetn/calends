@@ -216,8 +216,8 @@ export function SubIcon({ sub, size = 40, proxied }: { sub: Pick<Subscription, '
       force((n) => n + 1);
     };
     return (
-      // 目录里的 AI 标是透明底的矢量图，按站点图标那样放在白底上
-      <span className={`ico ${raw === icon && !icon.startsWith('/ai/') ? 'app' : 'fav'}`} style={style}>
+      // 目录里的矢量标志（public/ai、public/brands/*.svg）是透明底，按站点图标那样放在白底上
+      <span className={`ico ${raw === icon && !/^\/(ai\/|brands\/.*\.svg$)/.test(icon) ? 'app' : 'fav'}`} style={style}>
         <img
           decoding="async"
           src={base(src)}

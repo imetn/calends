@@ -8,7 +8,7 @@ const entries: CatalogEntry[] = [
     aka: ['cloudflare', 'domain', '域名'],
     cat: 'domains',
     url: 'https://www.cloudflare.com/products/registrar/',
-    icon: 'https://www.cloudflare.com/favicon.ico',
+    icon: '/brands/cloudflare.svg',
     chargeLeadDays: 30,
   },
   {
@@ -17,7 +17,7 @@ const entries: CatalogEntry[] = [
     aka: ['apple', 'app store', '苹果订阅'],
     cat: 'tools',
     url: 'https://apps.apple.com',
-    icon: 'https://www.apple.com/favicon.ico',
+    icon: '/brands/appstore.svg',
     cancelLeadDays: 1,
   },
 ];
