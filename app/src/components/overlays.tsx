@@ -216,7 +216,7 @@ export function TipLayer() {
       window.removeEventListener('scroll', hide, true);
       window.removeEventListener('resize', hide);
       window.removeEventListener('keydown', key);
-      tipSet = undefined;
+      if (tipSet === setTip) tipSet = undefined;
     };
   }, []);
   return (

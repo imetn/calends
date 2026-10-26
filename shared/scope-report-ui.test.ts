@@ -4014,3 +4014,33 @@ test('calendar day icons keep unique keys when one subscription charges and reba
   const keys = nodes.filter((n) => n.children.some((c: { type?: string }) => c?.type === 'SubIcon') && 'key' in n.props).map((n) => n.props.key);
   assert.equal(new Set(keys).size, 2);
 });
+
+test('TipLayer 语言重挂载时，旧实例清理不能注销新实例的提示绑定', () => {
+  const cleanups: Array<() => void> = [];
+  const changes: unknown[][] = [];
+  const r = harness(
+    '../app/src/components/ui.tsx',
+    'TipLayer, tipProps',
+    {},
+    {
+      useLayoutEffect: () => {},
+      useEffect: (fn: () => () => void) => cleanups.push(fn()),
+      useState: (initial: unknown) => {
+        const updates: unknown[] = [];
+        changes.push(updates);
+        return [initial, (value: unknown) => updates.push(value)];
+      },
+      window: { addEventListener() {}, removeEventListener() {} },
+    },
+  );
+  r.call('TipLayer');
+  r.call('TipLayer');
+  cleanups[0]();
+  const props = r.call('tipProps', () => 'Fictional period');
+  props.onFocus({ currentTarget: { getBoundingClientRect: () => ({ left: 10, width: 20, top: 30, bottom: 40 }) } });
+  assert.equal(changes[0].length, 0);
+  assert.equal(changes[2].length, 1, 'new tooltip still receives focus after old app cleanup');
+  cleanups[1]();
+  props.onFocus({ currentTarget: { getBoundingClientRect: () => ({ left: 10, width: 20, top: 30, bottom: 40 }) } });
+  assert.equal(changes[2].length, 1, 'the active instance unregisters itself on final unmount');
+});
