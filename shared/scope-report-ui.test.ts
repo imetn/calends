@@ -2859,6 +2859,87 @@ test('欠了好几期：默认勾最早一期，再勾两期就补前三期，�
   assert.deepEqual(kinds.slice(0, 4), ['waived', 'waived', 'waived', 'paid']);
 });
 
+test('记收款时点某期右边的应收单独改：勾选不变，金额跟着改，随这笔一起存成单独定价；Esc 放弃，留空恢复', async () => {
+  const member = { id: 'm', name: 'Member', share: 7, fee: 44, feeCurrency: 'CNY', billEvery: 6, joined: '2025-01-17' };
+  const sub: Subscription = {
+    id: 's',
+    name: 'Plan',
+    category: 'Tools',
+    tags: [],
+    price: 15,
+    currency: 'USD',
+    start: '2025-01-17',
+    cycle: { unit: 'month', every: 1 },
+    status: 'active',
+    share: { role: 'owner', seats: 6, collectFrom: '2025-01-17', members: [member] },
+  };
+  let saved: Subscription | undefined;
+  const make = (m: ShareMember) => {
+    const s = { ...sub, share: { ...sub.share!, members: [m] } };
+    const r = harness(
+      '../app/src/views/Members.tsx',
+      'ReceiptForm',
+      {},
+      {
+        ...carpool,
+        statusOf: carpool.memberStatus,
+        Sheet: 'Sheet',
+        DatePicker: 'DatePicker',
+        CurrencySelect: 'CurrencySelect',
+        NumInput: 'NumInput',
+        todayIn: () => today,
+        getState: () => ({ ...st, subscriptions: [s] }),
+        run: (fn: () => Promise<unknown>) => fn(),
+        saveSub: async (next: Subscription) => {
+          saved = next;
+        },
+      },
+    );
+    return () => r.render('ReceiptForm', { state: st, s, member: m, onDone() {} });
+  };
+  const rowDue = (nodes: Node[], i: number) => nodes.filter((n) => typeof n.props.className === 'string' && n.props.className.includes('rv-period-r'))[i]!;
+  const amount = (nodes: Node[]) => all(nodes.find((n) => n.type === 'Cell' && n.props.label === 'receivable.amount')!).find((n) => n.type === 'NumInput')!;
+  const record = (nodes: Node[]) =>
+    all(nodes.find((n) => n.type === 'Sheet')!.props.foot)
+      .find((n) => n.type === 'button' && n.children.includes('receivable.record'))!
+      .props.onClick();
+
+  let render = make(member);
+  assert.equal(rowDue(render(), 0).type, 'button');
+  assert.equal(amount(render()).props.value, 44);
+  // 点金额：不勾选，换成输入框；Esc 放弃
+  rowDue(render(), 1).props.onClick({ preventDefault() {} });
+  let input = rowDue(render(), 1);
+  assert.equal(input.type, 'NumInput');
+  input.props.onValue(10);
+  input = rowDue(render(), 1);
+  input.props.onKeyDown({ key: 'Escape', stopPropagation() {}, currentTarget: { blur: () => input.props.onBlur() } });
+  assert.equal(rowDue(render(), 1).type, 'button');
+  assert.equal(rowDue(render(), 1).children.join(''), format.money(44, 'CNY'));
+  // 改第一期为 30：合计跟着变，保存后成为这一期的单独定价
+  rowDue(render(), 0).props.onClick({ preventDefault() {} });
+  rowDue(render(), 0).props.onValue(30);
+  rowDue(render(), 0).props.onBlur();
+  assert.equal(render().filter((n) => n.type === 'input' && n.props.type === 'checkbox' && n.props.checked).length, 1);
+  assert.equal(amount(render()).props.value, 30);
+  await record(render());
+  let m = saved!.share!.members[0];
+  assert.deepEqual(m.periodDues, [{ from: '2025-01-17', amount: 30 }]);
+  assert.equal(m.receipts![0].amount, 30);
+
+  // 已单独定价的期留空：恢复按收费标准算
+  saved = undefined;
+  render = make({ ...member, periodDues: [{ from: '2025-01-17', amount: 30 }] });
+  assert.equal(amount(render()).props.value, 30);
+  rowDue(render(), 0).props.onClick({ preventDefault() {} });
+  rowDue(render(), 0).props.onValue(undefined);
+  rowDue(render(), 0).props.onBlur();
+  assert.equal(amount(render()).props.value, 44);
+  await record(render());
+  m = saved!.share!.members[0];
+  assert.equal(m.periodDues, undefined);
+});
+
 test('phase2 rendered ledger sections and assistant summaries retain their frozen normal, zero and missing-FX output', () => {
   const baseSub: Subscription = {
     id: 'frozen',

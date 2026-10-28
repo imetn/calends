@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 import { addDays, addMonths, diffDays, uid } from '../../../shared/billing.ts';
-import { periodsTotal } from '../../../shared/carpool.ts';
+import { periodsTotal, type PeriodDueChanges } from '../../../shared/carpool.ts';
 import { convertOn } from '../../../shared/fx.ts';
 import { cnDate, cnDateFull, currencyDecimals, flow, money } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
@@ -41,7 +41,8 @@ export const isReceipt = (r: Receipt | Waiver | undefined): r is Receipt => !!r 
 
 /**
  * 按期记收款、免收（合租成员与代付共用）：勾选抵扣哪几期——可以跳过前面欠着的期，也可以勾还没到期的期（提前收）；
- * 金额默认是勾选各期应收的合计，按各期应收的比例分摊。传 edit 时修改那一笔，可删除
+ * 金额默认是勾选各期应收的合计，按各期应收的比例分摊。传 edit 时修改那一笔，可删除。
+ * dueEditable 时点某期右边的应收可以改这一期（成员的单独定价），随这一笔一起保存，取消则不留
  */
 export function ReceivableSheet({
   state,
@@ -55,27 +56,48 @@ export function ReceivableSheet({
   save,
   onDone,
   defaultCurrency,
+  dueEditable,
 }: {
   state: AppState;
   /** 向谁收：表单最上面单独一块 */
   person: Pick<Person, 'name' | 'color' | 'id' | 'avatar'>;
   /** 人下面：哪辆车、收费标准 */
   head?: ReactNode;
-  /** 这笔账的各期，至少算到 through；往后要提前收时传更晚的日子再算 */
-  ledger: (through: string) => LedgerPeriod[];
+  /** 这笔账的各期，至少算到 through；往后要提前收时传更晚的日子再算。dues 是这次改过、还没保存的单期应收 */
+  ledger: (through: string, dues?: PeriodDueChanges) => LedgerPeriod[];
   record: Receivable;
   edit?: Receipt | Waiver;
   /** 新记一笔时默认勾选的期；缺省为最早没结清的一期 */
   preset?: string[];
   today: string;
-  save: (next: Receivable) => Promise<void>;
+  save: (next: Receivable, dues?: PeriodDueChanges) => Promise<void>;
   onDone: () => void;
   /** 收款默认币种；缺省同应收 */
   defaultCurrency?: string;
+  /** 各期应收可以单独改（合租成员；代付的应收是卡上实扣，不在这里改） */
+  dueEditable?: boolean;
 }) {
   // 往后算到哪天：先算两年，点「更多」时按需往后延，没有尽头
   const [horizon, setHorizon] = useState(() => addMonths(today, 24));
-  const periods = ledger(horizon);
+  // 改过的单期应收先留在表单里，各期、合计都按改后的算，保存这一笔时才写入
+  const [dues, setDues] = useState<PeriodDueChanges>({});
+  const changedDues = Object.keys(dues).length ? dues : undefined;
+  const periods = ledger(horizon, changedDues);
+  // 正在改哪一期的应收；Esc 放弃时跳过随之而来的失焦提交
+  const [dueAt, setDueAt] = useState<string | null>(null);
+  const [dueDraft, setDueDraft] = useState<number | undefined>();
+  const dropDue = useRef(false);
+  const startDue = (p: LedgerPeriod) => {
+    dropDue.current = false;
+    setDueDraft(p.due);
+    setDueAt(p.key);
+  };
+  // 留空恢复按收费标准算；没变或填了负数就当没改
+  const commitDue = (p: LedgerPeriod) => {
+    setDueAt(null);
+    if (dropDue.current || (dueDraft != null && (dueDraft < 0 || dueDraft === p.due))) return;
+    setDues((d) => ({ ...d, [p.from]: dueDraft ?? null }));
+  };
   // 改一笔时沿用它的类型；新记一笔默认是收款，底部「免收」把勾的期记成免收
   const mode = edit && !isReceipt(edit) ? 'waiver' : 'receipt';
   // 修改旧记录时，期按现在的切法对上；对不上的单独列出
@@ -131,10 +153,10 @@ export function ReceivableSheet({
   };
 
   // 失败时 run 提示错误，表单保留，可直接重试
-  const write = (next: () => Receivable, msg: string) =>
+  const write = (next: () => Receivable, msg: string, withDues = false) =>
     guard(() =>
       run(async () => {
-        await save(next());
+        await save(next(), withDues ? changedDues : undefined);
         onDone();
       }, msg),
     );
@@ -145,6 +167,7 @@ export function ReceivableSheet({
     return write(
       () => (kind === 'receipt' ? putRecord(record, 'receipt', { ...base, amount, currency }, periods) : putRecord(record, 'waiver', base, periods)),
       kind === 'receipt' ? t('receivable.toastReceived', { amount: flow(amount, currency) }) : t('receivable.toastWaived', { count: keys.length }),
+      true,
     );
   };
 
@@ -209,7 +232,12 @@ export function ReceivableSheet({
             <input value={note} placeholder={t('receivable.notePh')} onChange={(e) => setNote(e.target.value)} />
           </Cell>
         </Group>
-        <Group title={t('receivable.periods')} foot={mode === 'waiver' ? t('receivable.waiverFoot') : keys.length > 1 ? t('receivable.splitFoot') : undefined}>
+        <Group
+          title={t('receivable.periods')}
+          foot={
+            dueAt ? t('receivable.dueOverrideFoot') : mode === 'waiver' ? t('receivable.waiverFoot') : keys.length > 1 ? t('receivable.splitFoot') : undefined
+          }
+        >
           {open.length === 0 && !lost.length && <div className="cell muted">{t('receivable.allSettled')}</div>}
           {lost.map((k) => (
             <label key={k} className="cell rv-period lost">
@@ -229,7 +257,42 @@ export function ReceivableSheet({
                   {t(own.has(p.key) && isSettled(p) ? 'receivable.status.this' : `receivable.status.${p.status}`)}
                 </small>
               </span>
-              <span className="num rv-period-r">{money(p.due, p.currency)}</span>
+              {dueAt === p.key ? (
+                <NumInput
+                  autoFocus
+                  className="num rv-period-r"
+                  ccy={p.currency}
+                  value={dueDraft}
+                  onValue={setDueDraft}
+                  aria-label={t('receivable.grid.due')}
+                  // 回车只收起输入框（失焦即改好），不替表单点「记收款」
+                  data-submit=""
+                  onBlur={() => commitDue(p)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur();
+                    if (e.key !== 'Escape') return;
+                    // 只收起输入框，不关掉整个表单
+                    e.stopPropagation();
+                    dropDue.current = true;
+                    e.currentTarget.blur();
+                  }}
+                />
+              ) : dueEditable ? (
+                <button
+                  type="button"
+                  className="btn plain num rv-period-r"
+                  aria-label={`${t('receivable.grid.due')} ${money(p.due, p.currency)}`}
+                  onClick={(e) => {
+                    // 点金额只改应收，不勾选这一期
+                    e.preventDefault();
+                    startDue(p);
+                  }}
+                >
+                  {money(p.due, p.currency)}
+                </button>
+              ) : (
+                <span className="num rv-period-r">{money(p.due, p.currency)}</span>
+              )}
             </label>
           ))}
           {more && (

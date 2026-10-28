@@ -9942,7 +9942,7 @@ img.mm-flag {
   gap: 10px;
   cursor: pointer;
 }
-.rv-period input {
+.rv-period > input {
   width: 16px;
   height: 16px;
   flex: none;
@@ -9965,6 +9965,27 @@ img.mm-flag {
 .rv-period-r {
   font-size: var(--fs-2);
   color: var(--label-2);
+}
+/* 成员的应收点金额就地改：平时只是一段字，改时换成同样右对齐的输入框 */
+.rv-period .btn.plain.rv-period-r {
+  height: auto;
+  padding: 0;
+}
+.rv-period .btn.plain.rv-period-r:hover {
+  color: var(--label);
+}
+.rv-period input.rv-period-r {
+  width: 7em;
+  flex: none;
+  height: var(--ctl-h-md);
+  padding: 0 11px;
+  border: 0;
+  outline: 0;
+  border-radius: var(--radius-md);
+  background: var(--fill-2);
+  color: var(--label);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 .rv-period.lost .rv-period-l > span {
   color: var(--orange);

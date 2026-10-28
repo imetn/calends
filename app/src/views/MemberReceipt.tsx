@@ -7,15 +7,17 @@ import { ReceivableSheet } from './Receivable.tsx';
 import { Cell, Group } from '../components/ui.tsx';
 import { SubIcon } from '../components/marks.tsx';
 import { getState, saveSub } from '../store.ts';
-import { memberFee } from '../../../shared/carpool.ts';
+import { memberFee, putPeriodDues, type PeriodDueChanges } from '../../../shared/carpool.ts';
 import { t } from '../../../shared/i18n.ts';
 import { perBill } from './member-fields.tsx';
 
-/** 把一个成员的收款、免收写回账本：以账本里最新的成员为底，只换这两项 */
-export async function saveReceivable(s: Subscription, memberId: string, r: Receivable) {
+/** 把一个成员的收款、免收写回账本：以账本里最新的成员为底，只换这两项；记收款时改了单期应收的一并写入 */
+export async function saveReceivable(s: Subscription, memberId: string, r: Receivable, dues?: PeriodDueChanges) {
   const current = getState().subscriptions.find((x) => x.id === s.id) ?? s;
   const sh = current.share!;
-  const members = sh.members.map((x) => (x.id === memberId ? { ...x, receipts: r.receipts, waivers: r.waivers } : x));
+  const members = sh.members.map((x) =>
+    x.id === memberId ? { ...x, receipts: r.receipts, waivers: r.waivers, ...(dues ? { periodDues: putPeriodDues(x.periodDues, dues) } : {}) } : x,
+  );
   await saveSub({ ...current, share: { ...sh, collectFrom: collectionAnchor(current), members } });
 }
 
@@ -80,11 +82,12 @@ export function ReceiptForm({
           )}
         </>
       }
-      ledger={(through) => memberLedger(s, m, today, collectCcy, through).periods}
+      ledger={(through, dues) => memberLedger(s, dues ? { ...m, periodDues: putPeriodDues(m.periodDues, dues) } : m, today, collectCcy, through).periods}
+      dueEditable={!m.exempt}
       record={m}
       edit={edit}
       preset={preset}
-      save={(r) => saveReceivable(s, m.id, r)}
+      save={(r, dues) => saveReceivable(s, m.id, r, dues)}
       onDone={onDone}
     />
   );

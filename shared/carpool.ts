@@ -346,6 +346,17 @@ export function followsCar(state: AppState, s: Subscription, m: ShareMember, tod
   return sameRule({ billEvery: r.billEvery, fee: r.amount, currency: r.currency }, carRule(state, s, today));
 }
 
+/** 改单期应收：期起始日 → 新应收，null 表示恢复按收费标准算 */
+export type PeriodDueChanges = Record<string, number | null>;
+
+/** 把单期应收的改动并进成员的 periodDues：按期起始日排序，改完一条不剩时为 undefined */
+export function putPeriodDues(list: ShareMember['periodDues'], changes: PeriodDueChanges): ShareMember['periodDues'] {
+  const kept = (list ?? []).filter((d) => !(d.from in changes));
+  const set = Object.entries(changes).flatMap(([from, amount]) => (amount == null ? [] : [{ from, amount }]));
+  const out = [...kept, ...set].sort((a, b) => a.from.localeCompare(b.from));
+  return out.length ? out : undefined;
+}
+
 /**
  * 取消「不分摊」：不分摊那段时间的期本来不该收。「不分摊」没有生效日，取消时把 from 之前还没结清的期记一笔免收，
  * 免得一取消就把不分摊期间全算成欠款；已经收过、免过的期不动

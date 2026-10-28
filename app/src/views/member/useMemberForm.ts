@@ -23,6 +23,7 @@ import {
   nextCollectionDay,
   dropReshaped,
   moveMemberJoin,
+  putPeriodDues,
 } from '../../../../shared/carpool.ts';
 
 import { t } from '../../../../shared/i18n.ts';
@@ -209,11 +210,7 @@ export function useMemberForm({
   // 每期弹窗里改应收：只改这一期，存成这一期的单独定价（与过渡期同一字段）；留空恢复按收费标准算。
   // 与收款一样即时保存，表单里的副本同步更新，之后保存成员表单不会把它改回去
   const setPeriodDue = (period: LedgerPeriod, amount: number | undefined) => {
-    const dues = (list: ShareMember['periodDues']) => {
-      const rest = (list ?? []).filter((d) => d.from !== period.from);
-      const out = amount == null ? rest : [...rest, { from: period.from, amount }].sort((a, b) => a.from.localeCompare(b.from));
-      return out.length ? out : undefined;
-    };
+    const dues = (list: ShareMember['periodDues']) => putPeriodDues(list, { [period.from]: amount ?? null });
     setF((c) => ({ ...c, periodDues: dues(c.periodDues) }));
     if (period.from === bridgeAt?.from) setBridgeDue(amount);
     return run(async () => {
