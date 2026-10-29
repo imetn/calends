@@ -424,6 +424,17 @@
     border-left: 0;
   }
 }
+  /* 两行两列用井字线：行间也画一条横线，与竖线相交 */
+  .metric-cards.inline[data-count='4'] .metric-grid {
+    row-gap: 0;
+  }
+  .metric-cards.inline[data-count='4'] .metric-grid > div:nth-child(-n + 2) {
+    padding-bottom: 12px;
+  }
+  .metric-cards.inline[data-count='4'] .metric-grid > div:nth-child(n + 3) {
+    padding-top: 12px;
+    border-top: var(--hairline) solid var(--sep);
+  }
 
 .sheet-actions,
 .cell.sheet-actions {
