@@ -2045,27 +2045,21 @@ select.btn {
 }
 .stop-list {
   margin-top: 12px;
-  display: grid;
-  grid-template-columns: minmax(120px, 1.2fr) auto auto minmax(0, 1.6fr) auto auto auto;
-  column-gap: 16px;
 }
-/* 每行共用列表的列，各列上下对齐 */
+/* 名称和金额一行，日期、方式、退款、天数排在下一行，原因再下一行 */
 .stop-row {
-  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: subgrid;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: start;
   width: 100%;
   border: 0;
-  border-bottom: var(--hairline) solid var(--sep);
   background: none;
   padding: 10px 0;
   text-align: left;
   font-size: var(--fs-1);
   color: var(--label-2);
-}
-.stop-row:last-child {
-  border-bottom: 0;
 }
 .stop-row:hover {
   background: var(--fill-2);
@@ -2084,15 +2078,26 @@ select.btn {
   font-size: var(--fs-2);
 }
 .stop-meta {
-  display: contents;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
+  grid-row: 2;
+  min-width: 0;
+  padding-left: 32px;
 }
 .stop-meta > span {
   white-space: nowrap;
 }
 .stop-meta > .stop-reason {
+  order: 1;
+  flex-basis: 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.stop-meta > .stop-reason:empty {
+  display: none;
 }
 .stop-days {
   display: flex;
@@ -2102,7 +2107,7 @@ select.btn {
 }
 .stop-bar {
   position: relative;
-  width: 56px;
+  width: 48px;
   height: 4px;
   border-radius: 2px;
   background: var(--fill-2);
@@ -2115,6 +2120,8 @@ select.btn {
   background: var(--red);
 }
 .stop-amount {
+  grid-column: 2;
+  grid-row: 1 / span 2;
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -2127,37 +2134,33 @@ select.btn {
   color: var(--label-2);
   font-size: var(--fs-1);
 }
-/* 窄卡片：名称和金额一行，日期、方式、退款、天数排在下一行，原因再下一行 */
-@container (max-width: 640px) {
+/* 宽卡片两列，中间一条竖线 */
+@container (min-width: 641px) {
   .stop-list {
-    display: block;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: column;
+    column-gap: 48px;
   }
+  .stop-list::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 50%;
+    border-left: var(--hairline) solid var(--sep);
+  }
+}
+@container (max-width: 640px) {
   .stop-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 12px;
-    row-gap: 2px;
+    border-bottom: var(--hairline) solid var(--sep);
   }
-  .stop-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 8px;
-    grid-row: 2;
-    padding-left: 32px;
-  }
-  .stop-meta > .stop-reason {
-    order: 1;
-    flex-basis: 100%;
-  }
-  .stop-meta > .stop-reason:empty {
-    display: none;
+  .stop-row:last-child {
+    border-bottom: 0;
   }
   .stop-bar {
     display: none;
-  }
-  .stop-amount {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: start;
   }
 }
 .stop-report {

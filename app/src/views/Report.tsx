@@ -514,14 +514,19 @@ function StopsCard({ state, today, onOpen }: { state: AppState; today: string; o
       {/* 没有未退款损失时，上面的指标已写 ¥0，不再放一个空的明细区块 */}
       {losses.items.length > 0 && (
         <>
-          <div className="stop-list" data-snapshot-list data-snapshot-total={losses.items.length}>
+          {/* 宽卡片分两列，先排满左列再排右列 */}
+          <div
+            className="stop-list"
+            style={{ gridTemplateRows: `repeat(${Math.ceil(shown.length / 2)}, auto)` }}
+            data-snapshot-list
+            data-snapshot-total={losses.items.length}
+          >
             {shown.map((i) => (
               <button key={`${i.sub.id}-${i.phaseIndex}`} className="stop-row" data-snapshot-keep onClick={() => onOpen(i.sub)}>
                 <span className="stop-name">
                   <SubIcon sub={i.sub} size={24} />
                   <b>{i.sub.name}</b>
                 </span>
-                {/* 宽屏时这几项各占一列、上下对齐；窄屏时排在名称下面一行 */}
                 <span className="stop-meta">
                   <span>{cnDate(i.date)}</span> <span>{i.kind === 'terminate' ? t('core.stop.terminate') : t('report.stops.cancel')}</span>{' '}
                   <span className="stop-reason">{i.reason}</span>{' '}
