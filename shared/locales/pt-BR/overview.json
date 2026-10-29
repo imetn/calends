@@ -37,7 +37,7 @@
     "empty": "Nenhuma cobrança neste período"
   },
   "due": {
-    "title": "Próximos 30 dias",
+    "title": "Próximas cobranças",
     "empty": "Nada a vencer nos próximos 30 dias",
     "thisWeek": "Esta semana",
     "later": "Depois",

@@ -139,6 +139,7 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     useMemo: (fn: () => unknown) => fn(),
     useRef: () => ({ current: null }),
     useEffect: (fn: () => unknown) => fn(),
+    useLayoutEffect: (fn: () => unknown) => fn(),
     useState(initial: unknown) {
       const i = cursor++;
       if (!(i in values)) values[i] = typeof initial === 'function' ? initial() : initial;

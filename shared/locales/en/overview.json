@@ -37,7 +37,7 @@
     "empty": "No charges in this period"
   },
   "due": {
-    "title": "Next 30 days",
+    "title": "Upcoming charges",
     "empty": "Nothing due in the next 30 days",
     "thisWeek": "This week",
     "later": "Later",

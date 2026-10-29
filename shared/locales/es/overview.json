@@ -37,7 +37,7 @@
     "empty": "No hay cobros en este periodo"
   },
   "due": {
-    "title": "Próximos 30 días",
+    "title": "Próximos cargos",
     "empty": "No hay cobros en los próximos 30 días",
     "thisWeek": "Esta semana",
     "later": "Más adelante",

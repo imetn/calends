@@ -37,7 +37,7 @@
     "empty": "Bu dönemde ödeme yok"
   },
   "due": {
-    "title": "Önümüzdeki 30 gün",
+    "title": "Yaklaşan ödemeler",
     "empty": "Önümüzdeki 30 günde ödeme yok",
     "thisWeek": "Bu hafta",
     "later": "Daha sonra",

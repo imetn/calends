@@ -34,7 +34,7 @@
     "empty": "Không có khoản phí trong kỳ này"
   },
   "due": {
-    "title": "30 ngày tới",
+    "title": "Khoản trừ sắp tới",
     "empty": "Không có gì đến hạn trong 30 ngày tới",
     "thisWeek": "Tuần này",
     "later": "Sau đó",

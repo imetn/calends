@@ -5,7 +5,7 @@ import { DAYS_PER_MONTH } from '../../../shared/billing.ts';
 import { CopyImageButton } from '../components/CopyImageButton.tsx';
 import { copyParts } from '../components/copy.tsx';
 import { base as appPath } from '../base.ts';
-import { type CSSProperties, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { addDays, addMonths, cycleLabel, diffDays, perLabel, runwayFor, totals, type Charge, chargeMethodId } from '../../../shared/billing.ts';
 import { moneyTick, flow, cnDate, money, monthLabel, relDays } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
@@ -307,7 +307,7 @@ function allRanges(state: AppState, ranges: Array<{ from: string; to: string }>,
   return [{ cs: allCharges(state, ranges[0].from, ranges[ranges.length - 1].to, today) }];
 }
 
-/** 接下来 30 天 */
+/** 即将扣款：接下来 30 天 */
 function DueSoon({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
   // 大字 / 小字金额跟随显示货币设置
   const pair = useMoneyPair(state);
@@ -315,11 +315,54 @@ function DueSoon({ state, today, onOpen }: { state: AppState; today: string; onO
   const cs = allCharges(state, addDays(today, 1), addDays(today, 30), today).filter((c) => c.amount > 0 && c.kind !== 'refund' && c.kind !== 'failed');
   const total = chargesTotal(state, cs);
   const groups: Array<['thisWeek' | 'later', Charge[]]> = [
-    ['thisWeek', cs.filter((c) => diffDays(today, c.date) <= 6)],
-    ['later', cs.filter((c) => diffDays(today, c.date) > 6)],
+    ['thisWeek', cs.filter((c) => diffDays(today, c.date) <= 6).slice(0, 10)],
+    ['later', cs.filter((c) => diffDays(today, c.date) > 6).slice(0, 6)],
+  ];
+  const sizes = groups.map(([, l]) => l.length).filter((n) => n > 0);
+  const [fit, setFit] = useState<number | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  // 桌面上不撑高网格，高度跟钱包走；按剩下的空间显示完整条目，分组标题也算进去。
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const desktop = matchMedia('(min-width: 681px)');
+    const measure = () => {
+      if (!desktop.matches) return setFit(null);
+      const row = el.querySelector<HTMLElement>('.due-row');
+      const head = el.querySelector<HTMLElement>('.due-g');
+      if (!row || !head) return;
+      const rowHeight = row.getBoundingClientRect().height;
+      const headHeight = head.getBoundingClientRect().height;
+      const available = el.getBoundingClientRect().height;
+      let height = 0;
+      let count = 0;
+      for (let gi = 0; gi < sizes.length; gi++) {
+        // 第二组标题多出上边距
+        height += headHeight + (gi > 0 ? 12 : 0);
+        for (let i = 0; i < sizes[gi] && height + rowHeight <= available; i++) {
+          height += rowHeight;
+          count++;
+        }
+        if (height + headHeight + rowHeight > available) break;
+      }
+      setFit(Math.max(1, count));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    desktop.addEventListener('change', measure);
+    return () => {
+      observer.disconnect();
+      desktop.removeEventListener('change', measure);
+    };
+  }, [sizes.join()]);
+  const week = Math.min(groups[0][1].length, fit ?? Infinity);
+  const shown: Array<['thisWeek' | 'later', Charge[]]> = [
+    ['thisWeek', groups[0][1].slice(0, week)],
+    ['later', groups[1][1].slice(0, Math.max(0, (fit ?? Infinity) - week))],
   ];
   return (
-    <div className="card">
+    <div className="card due-card">
       <div className="card-h">
         <CardTitle>{t('overview.due.title')}</CardTitle>
         <span className="meta">
@@ -328,13 +371,13 @@ function DueSoon({ state, today, onOpen }: { state: AppState; today: string; onO
         </span>
       </div>
       {cs.length === 0 && <div className="empty">{t('overview.due.empty')}</div>}
-      <div className="due-list">
-        {groups
+      <div className="due-list" ref={box}>
+        {shown
           .filter(([, l]) => l.length)
           .map(([g, list]) => (
             <Fragment key={g}>
               <div className="due-g">{t(`overview.due.${g}`)}</div>
-              {list.slice(0, g === 'thisWeek' ? 10 : 6).map((c, i) => {
+              {list.map((c, i) => {
                 const d = diffDays(today, c.date);
                 const m = state.methods.find((x) => x.id === chargeMethodId(c));
                 const amt = pair(-c.amount, c.currency, { value: -chargeBaseOrNaN(state, c) });

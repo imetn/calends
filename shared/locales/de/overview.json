@@ -37,7 +37,7 @@
     "empty": "Keine Abbuchungen in diesem Zeitraum"
   },
   "due": {
-    "title": "Nächste 30 Tage",
+    "title": "Anstehende Abbuchungen",
     "empty": "In den nächsten 30 Tagen ist nichts fällig",
     "thisWeek": "Diese Woche",
     "later": "Später",

@@ -37,7 +37,7 @@
     "empty": "Aucun prélèvement sur cette période"
   },
   "due": {
-    "title": "30 prochains jours",
+    "title": "Prélèvements à venir",
     "empty": "Rien à payer dans les 30 prochains jours",
     "thisWeek": "Cette semaine",
     "later": "Plus tard",

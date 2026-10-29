@@ -34,7 +34,7 @@
     "empty": "Tidak ada tagihan dalam periode ini"
   },
   "due": {
-    "title": "30 hari ke depan",
+    "title": "Tagihan mendatang",
     "empty": "Tidak ada tagihan dalam 30 hari ke depan",
     "thisWeek": "Minggu ini",
     "later": "Nanti",

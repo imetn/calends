@@ -3272,6 +3272,24 @@ select.btn {
   display: flex;
   flex-direction: column;
 }
+.due-card {
+  display: flex;
+  flex-direction: column;
+}
+.due-card .card-h {
+  flex-shrink: 0;
+}
+@media (min-width: 681px) {
+  .due-card {
+    contain: size;
+    min-height: 300px;
+  }
+  .due-card .due-list {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
 .due-g {
   font-size: var(--fs-1);
   font-weight: 500;
