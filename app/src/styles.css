@@ -2061,9 +2061,6 @@ select.btn {
   font-size: var(--fs-1);
   color: var(--label-2);
 }
-.stop-row:hover {
-  background: var(--fill-2);
-}
 .stop-name {
   display: flex;
   align-items: center;
@@ -3312,12 +3309,6 @@ select.btn {
   text-align: left;
   width: 100%;
   border-radius: var(--radius-md);
-}
-.due-row:hover {
-  background: var(--fill-2);
-  margin: 0 -8px;
-  padding: 8px;
-  width: calc(100% + 16px);
 }
 .due-row .nm {
   flex: 1;
@@ -6072,9 +6063,6 @@ a.car-toggle {
   background: none;
   text-align: left;
   font-size: var(--fs-2);
-}
-.cal-charge-row:hover {
-  background: var(--fill-2);
 }
 .cal-charge-amount {
   text-align: right;
