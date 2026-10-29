@@ -340,6 +340,13 @@
     font-size: var(--fs-metric);
   }
 }
+/* 合租、代付卡片里的数字只是明细，不放大不加粗 */
+:is(.car-book, .proxy-card)
+  .metric-cards
+  :is(.metric-value, .metric-value .amt, .metric-value .amt .cur, .metric-value .amt .dec, .metric-value > b, .metric-grid > div > b) {
+  font-size: var(--fs-3);
+  font-weight: 500;
+}
 .metric-note,
 .metric-grid > div > span {
   color: var(--label-3);
