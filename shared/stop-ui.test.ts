@@ -353,6 +353,47 @@ test('概览年度指标：今年预计与已付取报告年卡同一结果，�
   assert.equal(text(withClass(tree, 'stmt-cap')[0]).trim(), '');
 });
 
+test('概览每月花了多少：默认全部，点分类先单选再多选，全选或取消到空时回到全部', () => {
+  const charge = (id: string, category: string, amount: number) =>
+    ({ sub: { ...sub, id, category, currency: 'CNY' }, date: today, amount, currency: 'CNY', projected: false }) as unknown as billing.Charge;
+  const charges = [charge('a', 'AI', 30), charge('b', 'Tools', 20), charge('c', 'Music', 10)];
+  const r = runtime(
+    '../app/src/views/Overview.tsx',
+    {
+      React: renderedReact,
+      allCharges: () => charges,
+      firstStart: () => today,
+      Activity: 'Activity',
+      TipTable: 'TipTable',
+      CatIcon: 'CatIcon',
+      Layers: 'Layers',
+      catColor: () => '',
+    },
+    'Spending',
+  );
+  const state = { subscriptions: [], methods: [], settings: { ...DEFAULT_SETTINGS, baseCurrency: 'CNY' }, fx: billing.FALLBACK_FX };
+  const chips = () => withClass(r.render('Spending', { state, today, onOpen() {} }), 'lc');
+  const off = () => chips().map((c) => String(c.props.className).includes('off'));
+  const click = (label: string) =>
+    chips()
+      .find((c) => text(c).includes(label))!
+      .props.onClick();
+  assert.ok(text(chips()[0]).includes(t('list.all')));
+  assert.deepEqual(off(), [false, false, false, false]);
+  click('Tools');
+  assert.deepEqual(off(), [true, true, false, true]);
+  click('Music');
+  assert.deepEqual(off(), [true, true, false, false]);
+  click('AI');
+  assert.deepEqual(off(), [false, false, false, false]);
+  click('Tools');
+  click('Tools');
+  assert.deepEqual(off(), [false, false, false, false]);
+  click('Music');
+  click(t('list.all'));
+  assert.deepEqual(off(), [false, false, false, false]);
+});
+
 test('时间轴金额：宽段显示紧凑负金额，窄段仅保留悬停说明，停用半圆避让且公开隐藏', () => {
   let width = 600;
   const stop = runtime('../app/src/components/StopPanel.tsx', { toast() {} }).exports;

@@ -22,6 +22,7 @@ import { Icon } from '../components/icons.tsx';
 import { allCharges, catColor, sortValue, sumBaseOrNaN, firstStart } from '../derive.ts';
 import { yearOutlook } from '../../../shared/scope-report.ts';
 import { useMoneyPair } from '../components/MoneyPair.tsx';
+import { Layers } from 'lucide-react';
 
 type Scale = 'month' | 'year';
 const PROJ = '__proj';
@@ -102,7 +103,8 @@ function ChargeTimeline({ state, today, onOpen }: { state: AppState; today: stri
 function Spending({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
   const base = state.settings.baseCurrency;
   const [scale, setScale] = useState<Scale>('month');
-  const [hidden, setHidden] = useState<string[]>([]);
+  // 图例筛选：空 = 全部；点分类先单选，再点其他分类多选，全选或全取消回到全部
+  const [picked, setPicked] = useState<string[]>([]);
   const [selKey, setSelKey] = useState<string | undefined>();
   const first = firstStart(state, today);
 
@@ -131,10 +133,10 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
   const data = useMemo(
     () =>
       ranges.map((r) => {
-        const cs = allCharges(state, r.from, r.to, today).filter((c) => !hidden.includes(c.sub.category));
+        const cs = allCharges(state, r.from, r.to, today).filter((c) => !picked.length || picked.includes(c.sub.category));
         return { r, cs };
       }),
-    [state, ranges, hidden, today],
+    [state, ranges, picked, today],
   );
 
   const curKey = scale === 'month' ? today.slice(0, 7) : today.slice(0, 4);
@@ -174,6 +176,11 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
   for (const { cs } of allRanges(state, ranges, today))
     for (const c of cs) catTotals.set(c.sub.category, (catTotals.get(c.sub.category) ?? 0) + chargeBaseOrNaN(state, c));
   const cats = [...catTotals.entries()].sort((a, b) => sortValue(b[1]) - sortValue(a[1]));
+  const allCs = allRanges(state, ranges, today).flatMap((r) => r.cs);
+  const pick = (k: string) => {
+    const next = picked.includes(k) ? picked.filter((x) => x !== k) : [...picked, k];
+    setPicked(next.length >= cats.length ? [] : next);
+  };
   const selLabel = scale === 'month' ? monthLabel(sel) : t('overview.spending.year', { year: sel });
   const isFuture = sel > curKey;
 
@@ -232,12 +239,18 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
       />
 
       <div className="legend-chips">
+        <button data-snapshot-keep className={`lc ${picked.length ? 'off' : ''}`} aria-pressed={!picked.length} onClick={() => setPicked([])}>
+          <Layers size={13} />
+          {t('list.all')}
+          <b>{formatTotal(chargesTotal(state, allCs), base, { direction: -1, compact: true })}</b>
+        </button>
         {cats.map(([k]) => (
           <button
             key={k}
             data-snapshot-keep
-            className={`lc ${hidden.includes(k) ? 'off' : ''}`}
-            onClick={() => setHidden(hidden.includes(k) ? hidden.filter((x) => x !== k) : [...hidden, k])}
+            className={`lc ${picked.length && !picked.includes(k) ? 'off' : ''}`}
+            aria-pressed={picked.includes(k)}
+            onClick={() => pick(k)}
           >
             <CatIcon cat={k} size={13} />
             {k}
@@ -245,9 +258,7 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
               {formatTotal(
                 chargesTotal(
                   state,
-                  allRanges(state, ranges, today)
-                    .flatMap((r) => r.cs)
-                    .filter((c) => c.sub.category === k),
+                  allCs.filter((c) => c.sub.category === k),
                 ),
                 base,
                 { direction: -1, compact: true },
