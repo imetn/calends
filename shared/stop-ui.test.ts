@@ -334,18 +334,23 @@ test('详情历史阶段：各停止阶段使用自己的退款、币种、停�
   assert.ok(!text(tree).includes(format.cnDateFull('2026-12-05')));
 });
 
-test('概览今年已付：只显示报告年卡的已付金额，不带附注、不再列损失', () => {
+test('概览年度指标：今年预计与已付取报告年卡同一结果，每天按今年已过天数平均已付，星图无常驻说明', () => {
   const r = runtime('../app/src/views/Overview.tsx', { React: renderedReact, yearOutlook, packCircles: () => [], Amount: 'Amount' }, 'Statement');
   const current = phases.stopSubscription({ ...sub, id: 'current' }, today, 'terminate', today, 'Provider closure', { amount: 6 });
   const state = { subscriptions: [current], methods: [], settings: DEFAULT_SETTINGS, fx: billing.FALLBACK_FX };
   const tree = r.render('Statement', { state, today, onOpen() {} });
+  const outlook = yearOutlook(state, today).current.partial;
   const cells = withClass(withClass(tree, 'metric-cards')[0], 'metric');
   assert.equal(cells.length, 4);
-  const paid = cells[1];
+  const [forecast, paid, perDay] = cells;
+  assert.ok(text(forecast).includes(t('report.year.total')));
+  assert.ok(text(forecast).includes(format.money(outlook.total.value, DEFAULT_SETTINGS.baseCurrency, { compact: true })));
   assert.ok(text(paid).includes(t('scope.yearPaid')));
-  assert.ok(text(paid).includes(format.money(yearOutlook(state, today).current.partial.paid.value, DEFAULT_SETTINGS.baseCurrency, { compact: true })));
+  assert.ok(text(paid).includes(format.money(outlook.paid.value, DEFAULT_SETTINGS.baseCurrency, { compact: true })));
   assert.equal(withClass(paid, 'metric-note').length, 0);
-  assert.ok(!text(tree).includes(t('overview.stmt.loss')));
+  const days = billing.diffDays(`${today.slice(0, 4)}-01-01`, today) + 1;
+  assert.ok(text(perDay).includes(format.money(outlook.paid.value / days, DEFAULT_SETTINGS.baseCurrency)));
+  assert.equal(text(withClass(tree, 'stmt-cap')[0]).trim(), '');
 });
 
 test('时间轴金额：宽段显示紧凑负金额，窄段仅保留悬停说明，停用半圆避让且公开隐藏', () => {

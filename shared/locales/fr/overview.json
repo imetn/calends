@@ -64,11 +64,9 @@
   "stmt": {
     "kicker": "Dépenses mensuelles en abonnements",
     "vsLastMonth": "par rapport à fin du mois dernier",
-    "annual": "Par an",
     "perDay": "Par jour",
     "active": "Actifs",
     "share": "{amount}/mois\n{pct} %",
-    "caption": "Constellation d’abonnements\nla taille des bulles indique le coût mensuel",
     "aria": "{name}, {amount} par mois"
   }
 }

@@ -64,11 +64,9 @@
   "stmt": {
     "kicker": "Monthly subscription spend",
     "vsLastMonth": "vs. end of last month",
-    "annual": "Per year",
     "perDay": "Per day",
     "active": "Active",
     "share": "{amount}/mo\n{pct}%",
-    "caption": "Subscription stars\nbubble size shows monthly cost",
     "aria": "{name}, {amount} per month"
   }
 }

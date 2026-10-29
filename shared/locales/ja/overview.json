@@ -60,11 +60,9 @@
   "stmt": {
     "kicker": "毎月のサブスク支出",
     "vsLastMonth": "先月末比",
-    "annual": "年額",
     "perDay": "1日あたり",
     "active": "利用中",
     "share": "{amount}/月\n{pct}%",
-    "caption": "サブスクの星\n泡の大きさは月額を表します",
     "aria": "{name}、月額{amount}"
   }
 }

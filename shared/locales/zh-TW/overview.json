@@ -52,11 +52,9 @@
   "stmt": {
     "kicker": "每月訂閱支出",
     "vsLastMonth": "較上月末",
-    "annual": "年化",
     "perDay": "每天",
     "active": "計費中",
     "share": "{amount}/月\n佔 {pct}%",
-    "caption": "訂閱星圖\n圓的大小依每月金額比例",
     "aria": "{name} 每月 {amount}"
   }
 }

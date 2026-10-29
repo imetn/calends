@@ -64,11 +64,9 @@
   "stmt": {
     "kicker": "Aylık abonelik harcaması",
     "vsLastMonth": "geçen ay sonuna göre",
-    "annual": "Yıllık",
     "perDay": "Günlük",
     "active": "Etkin",
     "share": "{amount}/ay\n%{pct}",
-    "caption": "Abonelik yıldızları\nbalon boyutu aylık maliyeti gösterir",
     "aria": "{name}, ayda {amount}"
   }
 }

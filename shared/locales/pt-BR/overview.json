@@ -64,11 +64,9 @@
   "stmt": {
     "kicker": "Gasto mensal com assinaturas",
     "vsLastMonth": "vs. fim do mês passado",
-    "annual": "Por ano",
     "perDay": "Por dia",
     "active": "Ativas",
     "share": "{amount}/mês\n{pct}%",
-    "caption": "Constelação de assinaturas\no tamanho da bolha mostra o custo mensal",
     "aria": "{name}, {amount} por mês"
   }
 }

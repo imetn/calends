@@ -64,11 +64,9 @@
   "stmt": {
     "kicker": "Monatliche Abo-Ausgaben",
     "vsLastMonth": "ggü. Ende letzten Monats",
-    "annual": "Pro Jahr",
     "perDay": "Pro Tag",
     "active": "Aktiv",
     "share": "{amount}/Mon.\n{pct} %",
-    "caption": "Abo-Sternenhimmel\nBlasengröße zeigt monatliche Kosten",
     "aria": "{name}, {amount} pro Monat"
   }
 }

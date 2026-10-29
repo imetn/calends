@@ -60,11 +60,9 @@
   "stmt": {
     "kicker": "월 구독 지출",
     "vsLastMonth": "지난달 말 대비",
-    "annual": "연간",
     "perDay": "하루",
     "active": "이용 중",
     "share": "{amount}/월\n{pct}%",
-    "caption": "구독 별자리\n거품 크기는 월 비용을 나타냅니다",
     "aria": "{name}, 월 {amount}"
   }
 }

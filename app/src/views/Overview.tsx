@@ -1,7 +1,6 @@
 import { useSnapshotRender } from '../snapshot-render.tsx';
 import { chargeTotal, chargesTotal, formatTotal, scaleTotal, totalNote } from '../../../shared/fx-total.ts';
 import { FxAmount } from '../components/FxAmount.tsx';
-import { DAYS_PER_MONTH } from '../../../shared/billing.ts';
 import { CopyImageButton } from '../components/CopyImageButton.tsx';
 import { copyParts } from '../components/copy.tsx';
 import { base as appPath } from '../base.ts';
@@ -509,8 +508,11 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
   const tot = totals(state, today);
   const series = useMemo(() => mrrSeries(state, today, 24, true), [state, today]);
   const delta = mrrChangeSinceLastMonth(state, today);
-  // 今年已付与报告页年卡同一份结果；全年预计只在报告页
-  const paid = useMemo(() => yearOutlook(state, today).current.partial.paid, [state, today]);
+  // 今年预计（已付 + 到年底的扣款，停用后的月份不再计）与已付，和报告页年卡同一份结果
+  const year = useMemo(() => yearOutlook(state, today).current.partial, [state, today]);
+  const paid = year.paid;
+  // 每天 = 今年已付按今年已过天数（含今天）平均
+  const daysThisYear = diffDays(`${today.slice(0, 4)}-01-01`, today) + 1;
   const live = useMemo(
     () =>
       state.subscriptions
@@ -567,16 +569,19 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
           </defs>
         </svg>
         <MetricCards plain>
-          <Metric label={t('overview.stmt.annual')} value={formatTotal(scaleTotal(tot.partial.mrr, 12), base, { direction: -1, compact: true, main: true })} />
+          <Metric label={t('report.year.total')} value={formatTotal(year.total, base, { direction: -1, compact: true, main: true })} />
           <Metric label={t('scope.yearPaid')} value={formatTotal(paid, base, { direction: -1, compact: true, main: true })} />
           <Metric
             label={t('overview.stmt.perDay')}
-            value={formatTotal(scaleTotal(tot.partial.mrr, 1 / DAYS_PER_MONTH), base, { direction: -1, main: true, average: true })}
+            value={formatTotal(scaleTotal(paid, 1 / daysThisYear), base, { direction: -1, main: true, average: true })}
           />
           <Metric
             label={t('overview.stmt.active')}
             value={tot.activeCount}
-            note={[totalNote(tot.partial.mrr), paid.incomplete ? `${t('scope.yearPaid')}: ${totalNote(paid)}` : ''].filter(Boolean).join('\n') || undefined}
+            note={
+              [totalNote(tot.partial.mrr), year.total.incomplete ? `${t('report.year.total')}: ${totalNote(year.total)}` : ''].filter(Boolean).join('\n') ||
+              undefined
+            }
           />
         </MetricCards>
       </div>
@@ -591,9 +596,7 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
                   : t('overview.stmt.share', { amount: flow(-hv.v, base, { compact: true }), pct: Math.round((hv.v / tot.mrr) * 100) }),
               )}
             </>
-          ) : (
-            <>{copyParts(t('overview.stmt.caption'))}</>
-          )}
+          ) : null}
         </div>
         <div className="stars" ref={box} style={{ aspectRatio: `${1 / h}` }}>
           {w > 0 &&

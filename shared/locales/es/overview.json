@@ -64,11 +64,9 @@
   "stmt": {
     "kicker": "Gasto mensual en suscripciones",
     "vsLastMonth": "vs. final del mes pasado",
-    "annual": "Al año",
     "perDay": "Al día",
     "active": "Activas",
     "share": "{amount}/mes\n{pct}%",
-    "caption": "Constelación de suscripciones\nel tamaño indica el coste mensual",
     "aria": "{name}, {amount} al mes"
   }
 }
