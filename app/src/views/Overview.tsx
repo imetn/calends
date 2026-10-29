@@ -609,9 +609,22 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
             </>
           ) : null}
         </div>
-        <div className="stars" ref={box} style={{ aspectRatio: `${1 / h}` }}>
+        {/* 悬停按原始几何命中，不看按钮自身：推开、放大后的位置不会反过来改变悬停，避免来回抖动 */}
+        <div
+          className="stars"
+          ref={box}
+          style={{ aspectRatio: `${1 / h}` }}
+          onMouseMove={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - r.left;
+            const y = e.clientY - r.top;
+            const hit = bubbles.find((b) => Math.hypot(x - b.x * r.width, y - (b.y / h) * r.height) <= b.r * w);
+            setHover(hit ? hit.i : null);
+          }}
+          onMouseLeave={() => setHover(null)}
+        >
           {w > 0 &&
-            bubbles.map((b, k) => {
+            bubbles.map((b) => {
               const { s, v } = live[b.i];
               const d = b.r * 2 * w;
               // 悬停时近旁的泡泡沿连线方向被推开几像素，越近推得越多
@@ -638,12 +651,10 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
                       height: d,
                       '--tint': catColor(s.category),
                       '--push': push,
-                      // 浮动错开相位，不要整齐划一
-                      animationDelay: `${-((k * 0.61) % 2.6).toFixed(2)}s`,
                     } as Record<string, string | number>
                   }
-                  onMouseEnter={() => setHover(b.i)}
-                  onMouseLeave={() => setHover(null)}
+                  onFocus={() => setHover(b.i)}
+                  onBlur={() => setHover(null)}
                   onClick={() => onOpen(s)}
                   aria-label={t('overview.stmt.aria', { name: s.name, amount: flow(-v, base) })}
                 >

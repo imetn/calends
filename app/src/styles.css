@@ -4208,7 +4208,6 @@ button.h-price-row:focus-visible {
   transition: background var(--duration) var(--ease);
   animation: none;
 }
-.star:hover,
 .star.on {
   z-index: 2;
   background: var(--card);
@@ -4217,7 +4216,7 @@ button.h-price-row:focus-visible {
 .star .ico {
   box-shadow: none;
 }
-/* 悬停星图：泡泡各自轻轻浮动（错开起点）；指着的那个弹大一点、图标晃一下，近旁的被轻轻推开 */
+/* 指着的泡泡放大一点、图标晃一下，近旁的被轻轻推开；悬停由星图按几何命中判定（见 Overview） */
 .star {
   translate: var(--push, 0 0);
   transition:
@@ -4225,23 +4224,11 @@ button.h-price-row:focus-visible {
     translate var(--duration) var(--ease),
     scale var(--duration) var(--ease);
 }
-.stars:hover .star {
-  animation: star-float 2.6s ease-in-out infinite;
-}
 .star.on {
   scale: 1.07;
 }
 .star.on .ico {
   animation: star-wiggle 520ms var(--ease);
-}
-@keyframes star-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
-  }
 }
 @keyframes star-wiggle {
   0%,
@@ -4257,7 +4244,6 @@ button.h-price-row:focus-visible {
 }
 @media (prefers-reduced-motion: reduce) {
   .star,
-  .stars:hover .star,
   .star.on .ico {
     animation: none;
     translate: none;
