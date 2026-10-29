@@ -5,6 +5,8 @@
   "annual": "Aufs Jahr hochgerechnet",
   "active": "Abgerechnete Abos",
   "yearPaid": "Dieses Jahr bezahlt",
+  "yearTotal": "Dieses Jahr",
+  "paidAmount": "Bezahlt {amount}",
   "includedLoss": "Davon nicht erstattete Verluste",
   "monthTotal": "Abbuchungen im Monat",
   "previousMonth": "Zum Vormonat",

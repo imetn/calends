@@ -5,6 +5,8 @@
   "annual": "Gasto anualizado",
   "active": "Assinaturas em cobrança",
   "yearPaid": "Pago neste ano",
+  "yearTotal": "Este ano",
+  "paidAmount": "Pago {amount}",
   "includedLoss": "Inclui perdas sem reembolso",
   "monthTotal": "Cobranças do mês",
   "previousMonth": "Em relação ao mês anterior",

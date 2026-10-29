@@ -5,6 +5,8 @@
   "annual": "年額換算",
   "active": "課金中の契約",
   "yearPaid": "今年の支払額",
+  "yearTotal": "今年",
+  "paidAmount": "支払済み {amount}",
   "includedLoss": "うち未返金の損失",
   "monthTotal": "今月の請求合計",
   "previousMonth": "前月比",

@@ -127,5 +127,20 @@
     "lossHint": "服務提前終止、沒有退回的費用",
     "basis": "全部歷史\n我的份額；未退款損失按停止日匯率。",
     "cancel": "主動提前退訂"
+  },
+  "year": {
+    "title": "{year} 年",
+    "basis": "按我的份額統計淨現金，含退款與轉讓；今天以後按目前訂閱預估。同期指 1 月 1 日至今天，對比去年 1 月 1 日至同一天。",
+    "total": "今年",
+    "vsLast": "較去年同期",
+    "lastAmount": "去年截至 {date}：{amount}",
+    "nextMonth": "{month}預估",
+    "nextYear": "{year} 年預估",
+    "changes": "與去年同期比",
+    "added": "新增",
+    "stopped": "停用",
+    "up": "多付",
+    "down": "少付",
+    "empty": "與去年同期持平。"
   }
 }

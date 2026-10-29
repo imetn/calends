@@ -5,6 +5,8 @@
   "annual": "Yıllık karşılığı",
   "active": "Faturalandırılan abonelikler",
   "yearPaid": "Bu yıl ödenen",
+  "yearTotal": "Bu yıl",
+  "paidAmount": "Ödenen {amount}",
   "includedLoss": "İade edilmeyen kayıp dahil",
   "monthTotal": "Ayın toplam tahsilatları",
   "previousMonth": "Önceki aya göre",

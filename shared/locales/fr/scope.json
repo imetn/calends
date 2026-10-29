@@ -5,6 +5,8 @@
   "annual": "Dépenses annualisées",
   "active": "Abonnements facturés",
   "yearPaid": "Payé cette année",
+  "yearTotal": "Cette année",
+  "paidAmount": "Payé {amount}",
   "includedLoss": "Dont pertes non remboursées",
   "monthTotal": "Prélèvements du mois",
   "previousMonth": "Par rapport au mois précédent",

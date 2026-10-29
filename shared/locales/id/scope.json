@@ -5,6 +5,8 @@
   "annual": "Setara per tahun",
   "active": "Langganan yang ditagih",
   "yearPaid": "Dibayar tahun ini",
+  "yearTotal": "Tahun ini",
+  "paidAmount": "Dibayar {amount}",
   "includedLoss": "Termasuk kerugian belum dikembalikan",
   "monthTotal": "Total tagihan bulan ini",
   "previousMonth": "Dibanding bulan lalu",

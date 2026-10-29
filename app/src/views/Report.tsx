@@ -34,6 +34,7 @@ import { Icon } from '../components/icons.tsx';
 import { tipProps } from '../components/overlays.tsx';
 import { allCharges, toBase, firstStart } from '../derive.ts';
 import { SpendingDelta } from '../components/ScopeReport.tsx';
+import { yearOutlook, type YearDriver } from '../../../shared/scope-report.ts';
 
 const mLabel = (m: string) => (m.endsWith('-01') ? t('report.axis.year', { yy: m.slice(2, 4), year: m.slice(0, 4) }) : monthLabel(m, { year: false }));
 const perMonth = (amount: string) => t('report.perMonth', { amount });
@@ -55,6 +56,7 @@ export function Report({ state, today, onOpen, onReview }: { state: AppState; to
       </Toolbar>
       <div className="page fade-in stack" ref={pageRef}>
         <Hero state={state} today={today} />
+        <YearCard state={state} today={today} onOpen={onOpen} />
         {/* 先看钱的全貌（现金与真实成本、钱花在哪），再看本月变动与体检 */}
         <CashCard state={state} today={today} />
         <Composition state={state} today={today} onOpen={onOpen} />
@@ -313,6 +315,76 @@ function Checkup({ state, today, onOpen }: { state: AppState; today: string; onO
 }
 
 /** 现金 vs 权责 + 预付余值 */
+/** 本年净现金：已付加预计，同期比较与变化来源，下月与明年预计 */
+function YearCard({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
+  const base = state.settings.baseCurrency;
+  const r = useMemo(() => yearOutlook(state, today), [state, today]);
+  const same = r.samePeriod;
+  const change = same.change;
+  const ok = !!change && Number.isFinite(change.amount);
+  const amount = (total: Parameters<typeof formatTotal>[0]) => formatTotal(total, base, { direction: -1, compact: true });
+  const kindLabel = (k: YearDriver['kind']) => t(`report.year.${k}`);
+  return (
+    <div className="card copy-card" data-copy-card>
+      <div className="card-h">
+        <CardTitle as="h3" hint={t('report.year.basis')}>
+          {t('report.year.title', { year: r.year })}
+        </CardTitle>
+        <div className="copy-tools">
+          <CopyImageButton hover />
+        </div>
+      </div>
+      <MetricCards inline>
+        <Metric
+          label={t('scope.yearTotal')}
+          value={<FxAmount total={r.current.partial.total} ccy={base} direction={-1} compact />}
+          note={<small>{totalNote(r.current.partial.total) || t('scope.paidAmount', { amount: amount(r.current.partial.paid) })}</small>}
+        />
+        {change && (
+          <Metric
+            label={t('report.year.vsLast')}
+            value={<SpendingDelta value={change} base={base} />}
+            valueClassName={!ok || Math.abs(change.amount) < 0.5 ? '' : change.amount > 0 ? 'loss' : 'gain'}
+            note={<small>{t('report.year.lastAmount', { date: cnDate(same.previousThrough), amount: amount(same.partial.previous) })}</small>}
+          />
+        )}
+        <Metric
+          label={t('report.year.nextMonth', { month: monthLabel(r.nextMonth.month, { year: false }) })}
+          value={<FxAmount total={r.nextMonth.partial.total} ccy={base} direction={-1} compact />}
+          note={totalNote(r.nextMonth.partial.total) || undefined}
+        />
+        <Metric
+          label={t('report.year.nextYear', { year: r.nextYear.year })}
+          value={<FxAmount total={r.nextYear.partial.total} ccy={base} direction={-1} compact />}
+          note={totalNote(r.nextYear.partial.total) || undefined}
+        />
+      </MetricCards>
+      {ok && (
+        <div className="wf-items">
+          <h4 className="stop-list-title" style={{ marginTop: 6 }}>
+            {t('report.year.changes')}
+          </h4>
+          {r.drivers.length === 0 && (
+            <div className="muted" style={{ fontSize: 'var(--fs-2)', padding: '8px 0' }}>
+              {t('report.year.empty')}
+            </div>
+          )}
+          {r.drivers.slice(0, 4).map((d) => (
+            <button key={d.sub.id} className="wf-item" data-snapshot-keep onClick={() => onOpen(d.sub)}>
+              <SubIcon sub={d.sub} size={24} />
+              <span className="wf-name">{d.sub.name}</span>
+              <em>{kindLabel(d.kind)}</em>
+              <b className="num">
+                {d.delta > 0 ? '↑' : '↓'} {money(Math.abs(d.delta), base, { compact: true })}
+              </b>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CashCard({ state, today }: { state: AppState; today: string }) {
   const base = state.settings.baseCurrency;
   // 往回最多 2 年，但不早于账本第一笔数据所在月

@@ -189,7 +189,10 @@ export function ScopeReport({ report, state, today, onOpen, title, animate, open
         t(block.mode === 'scope' ? 'scope.monthly' : block.mode === 'month' ? 'scope.monthTotal' : 'scope.totalSpent'),
         block.partial?.mrr ?? block.partial?.total,
       ],
-      [t('scope.yearPaid'), block.mode === 'scope' ? block.partial?.paid : block.mode === 'total' ? block.partial?.yearPaid : undefined],
+      [
+        t(block.mode === 'scope' ? 'scope.yearTotal' : 'scope.yearPaid'),
+        block.mode === 'scope' ? block.partial?.year : block.mode === 'total' ? block.partial?.yearPaid : undefined,
+      ],
       [t('scope.includedLoss'), block.partial?.loss],
     ]);
   const render = (block: Block, wide = false): ReactNode => {
@@ -225,7 +228,11 @@ export function ScopeReport({ report, state, today, onOpen, title, animate, open
             <MetricCards inline>
               {fact(t('scope.annual'), expense(block.annual), block.partial?.annual)}
               {fact(t('scope.active'), block.activeCount)}
-              {fact(t('scope.yearPaid'), expense(block.paid), block.partial?.paid)}
+              <Metric
+                label={t('scope.yearTotal')}
+                value={block.partial?.year ? formatTotal(block.partial.year, base, { direction: -1, main: true }) : expense(block.year)}
+                note={<small>{t('scope.paidAmount', { amount: expense(block.paid, block.partial?.paid) })}</small>}
+              />
               {(block.loss > 0 || !Number.isFinite(block.loss)) &&
                 block.loss !== losses?.loss &&
                 fact(t('scope.includedLoss'), expense(block.loss), block.partial?.loss)}

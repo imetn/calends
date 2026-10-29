@@ -61,7 +61,6 @@
     "kicker": "Pengeluaran langganan bulanan",
     "vsLastMonth": "dibanding akhir bulan lalu",
     "annual": "Per tahun",
-    "ytd": "Dibayar pada {year}",
     "perDay": "Per hari",
     "active": "Aktif",
     "share": "{amount}/bln\n{pct}%",

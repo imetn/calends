@@ -65,7 +65,6 @@
     "kicker": "Dépenses mensuelles en abonnements",
     "vsLastMonth": "par rapport à fin du mois dernier",
     "annual": "Par an",
-    "ytd": "Payé en {year}",
     "perDay": "Par jour",
     "active": "Actifs",
     "share": "{amount}/mois\n{pct} %",

@@ -136,5 +136,20 @@
     "lossHint": "Importe pagado por un servicio que terminó antes de tiempo y no se reembolsó",
     "basis": "Todo el historial\nMi parte; pérdida no reembolsada al cambio del día del cese.",
     "cancel": "Cancelación anticipada voluntaria"
+  },
+  "year": {
+    "title": "{year}",
+    "basis": "Gasto neto de mi parte, con reembolsos y transferencias; a partir de hoy, previsión según las suscripciones actuales. Mismo periodo: del 1 de enero a hoy frente al 1 de enero hasta el mismo día del año pasado.",
+    "total": "Este año",
+    "vsLast": "vs mismo periodo del año pasado",
+    "lastAmount": "Año pasado hasta el {date}: {amount}",
+    "nextMonth": "Previsión {month}",
+    "nextYear": "Previsión {year}",
+    "changes": "Frente al año pasado",
+    "added": "Nueva",
+    "stopped": "Detenida",
+    "up": "Más",
+    "down": "Menos",
+    "empty": "Igual que el mismo periodo del año pasado."
   }
 }

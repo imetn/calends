@@ -53,7 +53,6 @@
     "kicker": "每月订阅支出",
     "vsLastMonth": "较上月末",
     "annual": "年化",
-    "ytd": "{year} 已付",
     "perDay": "每天",
     "active": "计费中",
     "share": "{amount}/月\n占 {pct}%",

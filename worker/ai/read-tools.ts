@@ -24,6 +24,7 @@ import {
 import { chargeBaseOrNaN, toBaseOrNaN } from '../../shared/fx.ts';
 import { cancelSavings, cashVsAccrual, events, insights, movement, mrrSeries, prepaidValue, stopLosses, topUpPlan, yearReview } from '../../shared/metrics.ts';
 import { proxyLedger } from '../../shared/proxy.ts';
+import { yearOutlook } from '../../shared/scope-report.ts';
 import { paidThrough } from '../../shared/receivables.ts';
 import { normName, peopleLedger, personAmounts } from '../../shared/people.ts';
 import { t } from '../../shared/i18n.ts';
@@ -639,11 +640,11 @@ export const get_receivables: Tool = {
 export const get_insights: Tool = {
   name: 'get_insights',
   description:
-    'Health check and reports: insights (renewals, price hikes, low balances, duplicates), year_review (spending and losses from stops in that year), prepaid (remaining prepaid value), cancel_savings (money saved by cancelling), stop_losses (unrefunded unused service after cancellation or provider termination, by phase and type), month_report (the calendar month report for month=YYYY-MM: net cash total/paid/pending incl. second-hand transfers, vs previous month and last year, MRR movement, composition, top, upcoming, events, losses, sharing, six-month cash series), scope_report (the web list selection report for filter: MRR, annual, paid this year, 12+3 month cash vs accrual, composition, top, upcoming, events, losses, sharing). Use month_report for "how much did I spend in <month>" so answers match the calendar, scope_report for questions about a subset (category, status, payment method, tag, region, search or named subscriptions). Report amounts are base currency at my share; charge rows also carry the original bill. Stop losses cover all history through today, exclude proxy payments and count only my share, using stop-date FX; prorated full refunds have no loss. Missing FX keeps original amounts but returns null base amounts/totals with an incomplete flag.',
+    'Health check and reports: insights (renewals, price hikes, low balances, duplicates), year_review (spending and losses from stops in that year), year_outlook (this year paid + forecast, Jan 1–today vs the same period last year with per-subscription drivers, next month and next year forecasts; same figures as the web report year card), prepaid (remaining prepaid value), cancel_savings (money saved by cancelling), stop_losses (unrefunded unused service after cancellation or provider termination, by phase and type), month_report (the calendar month report for month=YYYY-MM: net cash total/paid/pending incl. second-hand transfers, vs previous month and last year, MRR movement, composition, top, upcoming, events, losses, sharing, six-month cash series), scope_report (the web list selection report for filter: MRR, annual, paid this year, 12+3 month cash vs accrual, composition, top, upcoming, events, losses, sharing). Use month_report for "how much did I spend in <month>" so answers match the calendar, scope_report for questions about a subset (category, status, payment method, tag, region, search or named subscriptions). Report amounts are base currency at my share; charge rows also carry the original bill. Stop losses cover all history through today, exclude proxy payments and count only my share, using stop-date FX; prorated full refunds have no loss. Missing FX keeps original amounts but returns null base amounts/totals with an incomplete flag.',
   inputSchema: obj({
     section: {
       type: 'string',
-      enum: ['insights', 'year_review', 'prepaid', 'cancel_savings', 'stop_losses', 'month_report', 'scope_report'],
+      enum: ['insights', 'year_review', 'year_outlook', 'prepaid', 'cancel_savings', 'stop_losses', 'month_report', 'scope_report'],
       default: 'insights',
     },
     year: { type: 'string', description: 'year_review only, e.g. 2025.' },
@@ -658,6 +659,39 @@ export const get_insights: Tool = {
     if (sec === 'scope_report') return scopeReportOut(st, today, a.filter as Record<string, unknown> | undefined);
     if (sec === 'insights')
       return { items: insights(st, today).map((i) => ({ tone: i.tone, title: i.title, body: i.body, subscriptions: i.subs?.map((s) => s.name) ?? [] })) };
+    if (sec === 'year_outlook') {
+      const r = yearOutlook(st, today);
+      const span = (x: { total: number; paid: number; pending: number; partial: { total: FxTotal } }) =>
+        x.partial.total.incomplete
+          ? { total: null, paid: null, pending: null, ...partialOut(x.partial.total) }
+          : { total: fin(x.total), paid: fin(x.paid), pending: fin(x.pending), ...partialOut(x.partial.total) };
+      const same = r.samePeriod;
+      const ok = !!same.change && Number.isFinite(same.change.amount);
+      return {
+        currency: base,
+        basis:
+          'Net cash at my share: charges (refunds negative) plus second-hand transfers up to today; after today, forecast from current plans. Proxy payments excluded.',
+        year: r.year,
+        this_year: span(r.current),
+        same_period: {
+          from: `${r.year}-01-01`,
+          through: same.through,
+          previous_from: `${Number(r.year) - 1}-01-01`,
+          previous_through: same.previousThrough,
+          amount: same.partial.amount.incomplete ? null : fin(same.amount),
+          previous: same.partial.previous.incomplete ? null : fin(same.previous),
+          change: ok ? fin(same.change!.amount) : null,
+          change_percent: ok && same.change!.percent != null ? round(same.change!.percent * 100) : null,
+          no_previous: !same.change,
+          incomplete: !!same.change && !ok,
+        },
+        drivers: ok
+          ? r.drivers.slice(0, 10).map((d) => ({ name: d.sub.name, kind: d.kind, this_year: fin(d.current), last_year: fin(d.previous), change: fin(d.delta) }))
+          : [],
+        next_month: { month: r.nextMonth.month, ...span(r.nextMonth) },
+        next_year: { year: r.nextYear.year, ...span(r.nextYear) },
+      };
+    }
     if (sec === 'year_review') {
       const r = yearReview(st, today, str(a.year) ?? today.slice(0, 4));
       return {

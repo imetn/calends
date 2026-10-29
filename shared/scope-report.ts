@@ -56,7 +56,18 @@ export type MovementRow = Movement['items'][number] & {
 export type ReportEvent = Pick<LedgerEvent, 'date' | 'sub' | 'delta' | 'partial'> & { kind: LedgerEvent['kind'] | 'trial' | 'cancel' };
 
 export type Block = (
-  | { type: 'headline'; mode: 'scope'; mrr: number; annual: number; activeCount: number; paid: number; loss: number; change: Comparison }
+  | {
+      type: 'headline';
+      mode: 'scope';
+      mrr: number;
+      annual: number;
+      activeCount: number;
+      paid: number;
+      /** 1/1–12/31: paid through today plus the remaining forecast, same charge basis as paid. */
+      year: number;
+      loss: number;
+      change: Comparison;
+    }
   | { type: 'headline'; mode: 'total'; total: number; count: number; average: number; yearPaid: number; since: string }
   | { type: 'headline'; mode: 'month'; month: string; total: number; paid: number; pending: number; count: number; previous: Comparison; yearly?: Comparison }
   | { type: 'trend'; mode: 'scope'; rows: CashAccrual[] }
@@ -98,12 +109,15 @@ export interface ScopeReport {
   lifecycle?: ScopeLifecycle;
 }
 
-export interface MonthCash {
-  month: string;
+export interface CashSpan {
   total: number;
   paid: number;
   pending: number;
-  partial?: Record<string, FxTotal>;
+  partial: { total: FxTotal; paid: FxTotal; pending: FxTotal };
+}
+
+export interface MonthCash extends CashSpan {
+  month: string;
 }
 
 const sum = (rows: Array<{ amount: number }>) => rows.reduce((a, r) => a + r.amount, 0);
@@ -118,8 +132,10 @@ function rowTotal(rows: Array<{ amount: number; partial?: FxTotal }>): FxTotal {
   return sumTotals(rows.map((r) => r.partial ?? amountTotal(r.amount, '', r.amount)));
 }
 function cashMonth(rows: Array<{ date: string; amount: number; partial?: FxTotal }>, month: string, today: string): MonthCash {
+  return { month, ...cashSpan(rows, today) };
+}
+function cashSpan(rows: Array<{ date: string; amount: number; partial?: FxTotal }>, today: string): CashSpan {
   return {
-    month,
     total: sum(rows),
     paid: sum(rows.filter((r) => r.date <= today)),
     pending: sum(rows.filter((r) => r.date > today)),
@@ -129,6 +145,18 @@ function cashMonth(rows: Array<{ date: string; amount: number; partial?: FxTotal
       pending: rowTotal(rows.filter((r) => r.date > today)),
     },
   };
+}
+
+type CashRow = { sub: Subscription; date: string; amount: number; partial?: FxTotal };
+/** 净现金：扣款（我的份额、含退款）加转让收付；today 之后按当前计划预计。 */
+function cashRows(state: AppState, from: string, to: string, today: string, list = charges(state, from, to, today)): CashRow[] {
+  return [
+    ...list,
+    ...transferRows(state, from, to, today).map((r) => ({
+      ...r,
+      partial: amountTotal(r.transfer.amount * (r.transfer.kind === 'buy' ? 1 : -1), r.transfer.currency, r.amount),
+    })),
+  ];
 }
 
 function charges(state: AppState, from: string, to: string, today: string): ChargeRow[] {
@@ -351,6 +379,7 @@ export function scopeReport(state: AppState, subs: readonly Subscription[], toda
 function legacyScopeReport(state: AppState, subs: readonly Subscription[], today: string): ScopeReport {
   const scoped = { ...state, subscriptions: subs.filter((s) => !s.proxy) };
   const yearStart = `${today.slice(0, 4)}-01-01`;
+  const yearEnd = `${today.slice(0, 4)}-12-31`;
   const mrr = mrrOn(scoped, today);
   // 没有任何持续计费（全是买断，或都已停止）时，月成本恒为 0，改看累计花了多少
   if (mrr === 0 && scoped.subscriptions.length) return totalReport(scoped, today, yearStart);
@@ -363,11 +392,13 @@ function legacyScopeReport(state: AppState, subs: readonly Subscription[], today
         mrr: mrrTotal(scoped, today),
         annual: scaleTotal(mrrTotal(scoped, today), 12),
         paid: rowTotal(charges(scoped, yearStart, today, today)),
+        year: rowTotal(charges(scoped, yearStart, yearEnd, today)),
         loss: stopLosses(scoped, today, { from: yearStart, to: today }).partial,
       },
       annual: mrr * 12,
       activeCount: totals(scoped, today).activeCount,
       paid: sum(charges(scoped, yearStart, today, today)),
+      year: sum(charges(scoped, yearStart, yearEnd, today)),
       loss: stopLosses(scoped, today, { from: yearStart, to: today }).total,
       change: { amount: mrrChangeSinceLastMonth(scoped, today) },
     },
@@ -463,19 +494,13 @@ function totalReport(scoped: AppState, today: string, yearStart: string): ScopeR
 }
 
 /** Monthly cash uses the same net, my-share cash basis as cashVsAccrual, including refunds. */
-export function monthReport(state: AppState, month: string, today: string): ScopeReport & { months: MonthCash[] } {
+export function monthReport(state: AppState, month: string, today: string): ScopeReport & { months: MonthCash[]; next: MonthCash } {
   const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
   const from = `${month}-01`;
   const to = monthEnd(month);
   const rows = charges(scoped, from, to, today);
   // 转让收付只进现金合计与月度走势，不进笔数、构成、排行和即将扣款
-  const cashOf = (m: string, list = charges(scoped, `${m}-01`, monthEnd(m), today)) => [
-    ...list,
-    ...transferRows(scoped, `${m}-01`, monthEnd(m), today).map((r) => ({
-      ...r,
-      partial: amountTotal(r.transfer.amount * (r.transfer.kind === 'buy' ? 1 : -1), r.transfer.currency, r.amount),
-    })),
-  ];
+  const cashOf = (m: string, list?: ChargeRow[]) => cashRows(scoped, `${m}-01`, monthEnd(m), today, list);
   const cash = cashOf(month, rows);
   const previousMonth = addMonths(from, -1).slice(0, 7);
   const previous = cashOf(previousMonth);
@@ -538,5 +563,90 @@ export function monthReport(state: AppState, month: string, today: string): Scop
     const m = addMonths(from, i - 5).slice(0, 7);
     return cashMonth(m === month ? cash : cashOf(m), m, today);
   });
-  return { blocks, months };
+  const nextMonth = addMonths(from, 1).slice(0, 7);
+  return { blocks, months, next: cashMonth(cashOf(nextMonth), nextMonth, today) };
+}
+
+export interface YearDriver {
+  sub: Subscription;
+  /** added: started after last year's comparison date; stopped: no cash this year and no longer billing. */
+  kind: 'added' | 'stopped' | 'up' | 'down';
+  current: number;
+  previous: number;
+  delta: number;
+}
+
+export interface YearOutlook {
+  year: string;
+  /** Jan 1 – Dec 31: paid through today, the rest forecast from current plans. */
+  current: CashSpan;
+  /** Same period: Jan 1 – today against Jan 1 – the same day last year (Feb 29 maps to Feb 28). */
+  samePeriod: {
+    through: string;
+    previousThrough: string;
+    amount: number;
+    previous: number;
+    /** Undefined when last year's period has no cash, like the calendar's same-month comparison. */
+    change?: Comparison;
+    partial: { amount: FxTotal; previous: FxTotal };
+  };
+  /** Per-subscription cash differences behind the same-period change, largest first; empty without a comparison. */
+  drivers: YearDriver[];
+  nextMonth: CashSpan & { month: string };
+  nextYear: CashSpan & { year: string };
+}
+
+/** Year-level net cash on the monthReport basis: my share, refunds and transfer cash, proxies excluded. */
+export function yearOutlook(state: AppState, today: string): YearOutlook {
+  const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
+  const y = Number(today.slice(0, 4));
+  const lastFrom = `${y - 1}-01-01`;
+  const md = today.slice(5) === '02-29' ? '02-28' : today.slice(5);
+  const lastThrough = `${y - 1}-${md}`;
+  const ytd = cashRows(scoped, `${y}-01-01`, today, today);
+  const last = cashRows(scoped, lastFrom, lastThrough, today);
+  const amount = rowTotal(ytd);
+  const previous = rowTotal(last);
+  const bySub = new Map<string, { sub: Subscription; current: number; previous: number }>();
+  for (const [list, key] of [
+    [ytd, 'current'],
+    [last, 'previous'],
+  ] as const) {
+    for (const r of list) {
+      const e = bySub.get(r.sub.id) ?? { sub: r.sub, current: 0, previous: 0 };
+      e[key] += r.amount;
+      bySub.set(r.sub.id, e);
+    }
+  }
+  const drivers = [...bySub.values()]
+    .map((e): YearDriver => {
+      const delta = e.current - e.previous;
+      const kind =
+        Math.abs(e.previous) < 0.005 && e.sub.start > lastThrough
+          ? 'added'
+          : Math.abs(e.current) < 0.005 && isStopped(effectiveStatus(e.sub, today))
+            ? 'stopped'
+            : delta > 0
+              ? 'up'
+              : 'down';
+      return { ...e, kind, delta };
+    })
+    .filter((d) => Number.isFinite(d.delta) && Math.abs(d.delta) >= 0.005)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.sub.id.localeCompare(b.sub.id));
+  const nextMonth = addMonths(today.slice(0, 8) + '01', 1).slice(0, 7);
+  return {
+    year: String(y),
+    current: cashSpan(cashRows(scoped, `${y}-01-01`, `${y}-12-31`, today), today),
+    samePeriod: {
+      through: today,
+      previousThrough: lastThrough,
+      amount: sum(ytd),
+      previous: sum(last),
+      change: !last.length ? undefined : amount.incomplete || previous.incomplete ? { amount: NaN, percent: NaN } : compare(sum(ytd), sum(last)),
+      partial: { amount, previous },
+    },
+    drivers: last.length ? drivers : [],
+    nextMonth: { month: nextMonth, ...cashSpan(cashRows(scoped, `${nextMonth}-01`, monthEnd(nextMonth), today), today) },
+    nextYear: { year: String(y + 1), ...cashSpan(cashRows(scoped, `${y + 1}-01-01`, `${y + 1}-12-31`, today), today) },
+  };
 }

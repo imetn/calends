@@ -15,6 +15,7 @@ import * as gantt from './gantt.ts';
 import * as metrics from './metrics.ts';
 import * as fx from './fx.ts';
 import * as carpool from './carpool.ts';
+import { yearOutlook } from './scope-report.ts';
 import { flatten, intlLocale, setLocale, t } from './i18n.ts';
 import { DEFAULT_SETTINGS, type Subscription } from './types.ts';
 
@@ -333,16 +334,17 @@ test('详情历史阶段：各停止阶段使用自己的退款、币种、停�
   assert.ok(!text(tree).includes(format.cnDateFull('2026-12-05')));
 });
 
-test('概览今年已付附注：只计今年停止的损失；零、全退和只读隐藏，预留位置且可点按跳报告', () => {
+test('概览今年（已付加预计）附注：只计今年停止的损失；零、全退和只读隐藏，预留位置且可点按跳报告', () => {
   const navigations: string[] = [];
   let scrolls = 0;
   const r = runtime(
     '../app/src/views/Overview.tsx',
     {
       React: renderedReact,
-      // 这两项只影响已付总额，损失筛选仍使用真实 stopLosses。
+      // 这几项只影响已付总额，损失筛选仍使用真实 stopLosses。
       allCharges: () => [],
       sumBase: () => 0,
+      yearOutlook: (st: Parameters<typeof yearOutlook>[0], day: string) => yearOutlook({ ...st, subscriptions: [] }, day),
       packCircles: () => [],
       Amount: 'Amount',
       go: (route: string) => navigations.push(route),
@@ -383,7 +385,8 @@ test('概览今年已付附注：只计今年停止的损失；零、全退和�
   const cells = withClass(facts, 'metric');
   assert.equal(cells.length, 4);
   const paid = cells[1];
-  assert.ok(text(paid).includes(t('overview.stmt.ytd', { year: '2026' })));
+  assert.ok(text(paid).includes(t('scope.yearTotal')));
+  assert.ok(text(withClass(paid, 'stmt-paid-note')[0]).includes(t('scope.paidAmount', { amount: '' }).trim()));
   assert.equal(withClass(paid, 'stmt-loss-note').length, 1);
   assert.equal(note.type, 'button');
   assert.equal(note.props.type, 'button');

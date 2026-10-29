@@ -5,6 +5,8 @@
   "annual": "年化支出",
   "active": "计费中订阅",
   "yearPaid": "今年已付",
+  "yearTotal": "今年",
+  "paidAmount": "已付 {amount}",
   "includedLoss": "其中未退款损失",
   "monthTotal": "本月扣款合计",
   "previousMonth": "较上月",

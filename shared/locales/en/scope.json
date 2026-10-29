@@ -5,6 +5,8 @@
   "annual": "Annualized",
   "active": "Billing subscriptions",
   "yearPaid": "Paid this year",
+  "yearTotal": "This year",
+  "paidAmount": "Paid {amount}",
   "includedLoss": "Including unrefunded loss",
   "monthTotal": "Monthly charges",
   "previousMonth": "Vs. previous month",

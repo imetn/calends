@@ -497,22 +497,31 @@ function MiniReport({ report, base, today, onExpand }: { report: ReturnType<type
       <div className="cal-stat-big">
         <b className={headline.total < 0 ? 'green' : undefined}>{formatTotal(headline.partial!.total, base, { direction: -1 })}</b>
       </div>
+      {/* 既有已扣又有待扣时才写待扣多少；全过去或全未来时与合计相同 */}
+      {headline.pending !== 0 && headline.paid !== 0 && (
+        <small>
+          {t('scope.pending')} {formatTotal(headline.partial!.pending, base, { direction: -1 })}
+        </small>
+      )}
+      {/* 上月、下月与本月并排；涉及今天以后的月份标「预计」 */}
       <MetricCards inline>
-        <Metric label={t('scope.paid')} value={formatTotal(headline.partial!.paid, base, { direction: -1 })} />
-        <Metric label={t('scope.pending')} value={formatTotal(headline.partial!.pending, base, { direction: -1 })} />
+        {[report.months.at(-2)!, report.next].map((r) => (
+          <Metric
+            key={r.month}
+            label={monthLabel(r.month, { year: false })}
+            value={formatTotal(r.partial.total, base, { direction: -1 })}
+            note={r.pending !== 0 ? t('scope.forecast') : undefined}
+          />
+        ))}
       </MetricCards>
-      <div className="cal-comparisons">
-        <div>
-          <span>{t('scope.previousMonth')}</span>
-          <SpendingDelta value={headline.previous} base={base} />
-        </div>
-        {headline.yearly && (
+      {headline.yearly && (
+        <div className="cal-comparisons">
           <div>
             <span>{t('scope.previousYear')}</span>
             <SpendingDelta value={headline.yearly} base={base} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
       <div className="cal-mini-chart">
         {report.months.map((r) => (
           <div

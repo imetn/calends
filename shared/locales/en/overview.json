@@ -65,7 +65,6 @@
     "kicker": "Monthly subscription spend",
     "vsLastMonth": "vs. end of last month",
     "annual": "Per year",
-    "ytd": "Paid in {year}",
     "perDay": "Per day",
     "active": "Active",
     "share": "{amount}/mo\n{pct}%",

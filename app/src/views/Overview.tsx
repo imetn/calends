@@ -21,6 +21,7 @@ import { CatIcon, MethodMark, SubIcon } from '../components/marks.tsx';
 import { TipTable } from '../components/overlays.tsx';
 import { Icon } from '../components/icons.tsx';
 import { allCharges, catColor, sortValue, sumBaseOrNaN, firstStart } from '../derive.ts';
+import { yearOutlook } from '../../../shared/scope-report.ts';
 import { go } from '../router.ts';
 import { useMoneyPair } from '../components/MoneyPair.tsx';
 
@@ -478,7 +479,8 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
   const tot = totals(state, today);
   const series = useMemo(() => mrrSeries(state, today, 24, true), [state, today]);
   const delta = mrrChangeSinceLastMonth(state, today);
-  const ytd = useMemo(() => chargesTotal(state, allCharges(state, `${today.slice(0, 4)}-01-01`, today, today)), [state, today]);
+  // 今年 = 已付 + 剩余预计，与报告页「本年」同一份结果
+  const year = useMemo(() => yearOutlook(state, today).current.partial, [state, today]);
   const loss = useMemo(
     () => (state.readonly ? emptyTotal() : stopLosses(state, today, { from: `${today.slice(0, 4)}-01-01`, to: today }).partial),
     [state, today],
@@ -541,10 +543,11 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
         <MetricCards plain>
           <Metric label={t('overview.stmt.annual')} value={formatTotal(scaleTotal(tot.partial.mrr, 12), base, { direction: -1, compact: true, main: true })} />
           <Metric
-            label={t('overview.stmt.ytd', { year: today.slice(0, 4) })}
-            value={formatTotal(ytd, base, { direction: -1, compact: true, main: true })}
+            label={t('scope.yearTotal')}
+            value={formatTotal(year.total, base, { direction: -1, compact: true, main: true })}
             note={
               <div className="stmt-paid-note">
+                <small>{t('scope.paidAmount', { amount: formatTotal(year.paid, base, { direction: -1, compact: true }) })}</small>
                 {!state.readonly && (loss.value !== 0 || loss.incomplete) && (
                   <button
                     type="button"
@@ -567,9 +570,8 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
             label={t('overview.stmt.active')}
             value={tot.activeCount}
             note={
-              [totalNote(tot.partial.mrr), ytd.incomplete ? `${t('overview.stmt.ytd', { year: today.slice(0, 4) })}: ${totalNote(ytd)}` : '']
-                .filter(Boolean)
-                .join('\n') || undefined
+              [totalNote(tot.partial.mrr), year.total.incomplete ? `${t('scope.yearTotal')}: ${totalNote(year.total)}` : ''].filter(Boolean).join('\n') ||
+              undefined
             }
           />
         </MetricCards>

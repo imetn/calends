@@ -136,5 +136,20 @@
     "lossHint": "Frais payés pour un service arrêté avant terme et non remboursés",
     "basis": "Tout l’historique\nMa part ; perte non remboursée au taux du jour de l’arrêt.",
     "cancel": "Résiliation anticipée volontaire"
+  },
+  "year": {
+    "title": "{year}",
+    "basis": "Dépenses nettes pour ma part, remboursements et transferts inclus ; après aujourd’hui, prévision d’après les abonnements actuels. Même période : du 1er janvier à aujourd’hui, comparé au 1er janvier jusqu’au même jour l’an dernier.",
+    "total": "Cette année",
+    "vsLast": "vs même période l’an dernier",
+    "lastAmount": "L’an dernier au {date} : {amount}",
+    "nextMonth": "Prévision {month}",
+    "nextYear": "Prévision {year}",
+    "changes": "Par rapport à l’an dernier",
+    "added": "Nouveau",
+    "stopped": "Arrêté",
+    "up": "Plus",
+    "down": "Moins",
+    "empty": "Identique à la même période l’an dernier."
   }
 }

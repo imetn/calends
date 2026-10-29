@@ -5,6 +5,8 @@
   "annual": "Quy đổi theo năm",
   "active": "Đăng ký đang tính phí",
   "yearPaid": "Đã trả trong năm",
+  "yearTotal": "Năm nay",
+  "paidAmount": "Đã trả {amount}",
   "includedLoss": "Gồm tổn thất chưa hoàn tiền",
   "monthTotal": "Tổng khoản trừ trong tháng",
   "previousMonth": "So với tháng trước",

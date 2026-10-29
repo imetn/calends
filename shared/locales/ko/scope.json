@@ -5,6 +5,8 @@
   "annual": "연간 환산",
   "active": "결제 중인 구독",
   "yearPaid": "올해 결제액",
+  "yearTotal": "올해",
+  "paidAmount": "결제 완료 {amount}",
   "includedLoss": "미환불 손실 포함",
   "monthTotal": "이번 달 결제 합계",
   "previousMonth": "지난달 대비",

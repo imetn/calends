@@ -136,5 +136,20 @@
     "lossHint": "Bezahlte Gebühren für vorzeitig beendete Leistungen, die nicht erstattet wurden",
     "basis": "Gesamter Verlauf\nMein Anteil; nicht erstatteter Verlust zum Kurs am Beendigungstag.",
     "cancel": "Freiwillig vorzeitig gekündigt"
+  },
+  "year": {
+    "title": "{year}",
+    "basis": "Nettoausgaben mit meinem Anteil, inklusive Erstattungen und Übertragungen; ab heute Prognose aus den aktuellen Abos. Gleicher Zeitraum: 1. Januar bis heute gegenüber 1. Januar bis zum selben Tag im Vorjahr.",
+    "total": "Dieses Jahr",
+    "vsLast": "ggü. Vorjahreszeitraum",
+    "lastAmount": "Vorjahr bis {date}: {amount}",
+    "nextMonth": "Prognose {month}",
+    "nextYear": "Prognose {year}",
+    "changes": "Gegenüber Vorjahr",
+    "added": "Neu",
+    "stopped": "Beendet",
+    "up": "Mehr",
+    "down": "Weniger",
+    "empty": "Gleich wie im Vorjahreszeitraum."
   }
 }

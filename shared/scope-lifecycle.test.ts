@@ -158,5 +158,6 @@ test('MCP preserves legacy headline fields and adds lifetime, duration and all s
 
 test('calendar month output stays frozen across historical, current, future and missing-FX fixtures', () => {
   const output = Object.values(data).flatMap((s) => ['2025-02', '2026-10', '2026-12'].map((m) => monthReport(s, m, today)));
-  assert.equal(createHash('sha256').update(JSON.stringify(output)).digest('hex'), 'beeec7cadbc99c5314ae3edb7e761002a91f5639e515b3789016e4e02ae33204');
+  // 只新增 next（下一个月），其余字段与原冻结值一致
+  assert.equal(createHash('sha256').update(JSON.stringify(output)).digest('hex'), 'b8f84d662440ff61291303a3eb35d40bf32fd8c73de65b236eba9058dbe3ec0f');
 });

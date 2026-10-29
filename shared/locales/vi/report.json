@@ -133,5 +133,20 @@
     "lossHint": "Khoản đã trả cho dịch vụ kết thúc sớm nhưng không được hoàn lại",
     "basis": "Toàn bộ lịch sử\nPhần của tôi; tổn thất chưa hoàn tiền theo tỷ giá ngày dừng.",
     "cancel": "Chủ động hủy sớm"
+  },
+  "year": {
+    "title": "Năm {year}",
+    "basis": "Chi tiêu ròng theo phần của tôi, gồm hoàn tiền và chuyển nhượng; sau hôm nay là dự kiến theo các gói hiện tại. Cùng kỳ: từ 1/1 đến hôm nay so với 1/1 đến cùng ngày năm ngoái.",
+    "total": "Năm nay",
+    "vsLast": "so với cùng kỳ năm ngoái",
+    "lastAmount": "Năm ngoái đến {date}: {amount}",
+    "nextMonth": "Dự kiến {month}",
+    "nextYear": "Dự kiến năm {year}",
+    "changes": "So với năm ngoái",
+    "added": "Mới",
+    "stopped": "Đã dừng",
+    "up": "Nhiều hơn",
+    "down": "Ít hơn",
+    "empty": "Bằng cùng kỳ năm ngoái."
   }
 }

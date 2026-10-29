@@ -133,5 +133,20 @@
     "lossHint": "Biaya yang dibayar untuk layanan yang berakhir lebih awal dan tidak dikembalikan",
     "basis": "Seluruh riwayat\nBagian saya; kerugian tanpa pengembalian dana memakai kurs tanggal penghentian.",
     "cancel": "Pembatalan dini sukarela"
+  },
+  "year": {
+    "title": "{year}",
+    "basis": "Pengeluaran bersih bagian saya, termasuk pengembalian dana dan pengalihan; setelah hari ini, perkiraan dari langganan saat ini. Periode sama: 1 Januari hingga hari ini dibanding 1 Januari hingga hari yang sama tahun lalu.",
+    "total": "Tahun ini",
+    "vsLast": "vs periode sama tahun lalu",
+    "lastAmount": "Tahun lalu hingga {date}: {amount}",
+    "nextMonth": "Perkiraan {month}",
+    "nextYear": "Perkiraan {year}",
+    "changes": "Dibanding tahun lalu",
+    "added": "Baru",
+    "stopped": "Dihentikan",
+    "up": "Lebih banyak",
+    "down": "Lebih sedikit",
+    "empty": "Sama dengan periode yang sama tahun lalu."
   }
 }

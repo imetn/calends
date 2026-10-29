@@ -136,5 +136,20 @@
     "lossHint": "Erken sona eren hizmet için ödenen ve iade edilmeyen tutar",
     "basis": "Tüm geçmiş\nBenim payım; iade edilmeyen kayıp sonlandırma tarihindeki kurla hesaplanır.",
     "cancel": "İsteğe bağlı erken iptal"
+  },
+  "year": {
+    "title": "{year}",
+    "basis": "Payıma düşen net harcama, iadeler ve devirler dahil; bugünden sonrası mevcut aboneliklere göre tahmin. Aynı dönem: 1 Ocak’tan bugüne, geçen yıl 1 Ocak’tan aynı güne kadarla karşılaştırılır.",
+    "total": "Bu yıl",
+    "vsLast": "geçen yılın aynı dönemine göre",
+    "lastAmount": "Geçen yıl {date} itibarıyla: {amount}",
+    "nextMonth": "{month} tahmini",
+    "nextYear": "{year} tahmini",
+    "changes": "Geçen yıla göre",
+    "added": "Yeni",
+    "stopped": "Durduruldu",
+    "up": "Daha fazla",
+    "down": "Daha az",
+    "empty": "Geçen yılın aynı dönemiyle aynı."
   }
 }

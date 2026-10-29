@@ -5,6 +5,8 @@
   "annual": "Gasto anualizado",
   "active": "Suscripciones con cobro activo",
   "yearPaid": "Pagado este año",
+  "yearTotal": "Este año",
+  "paidAmount": "Pagado {amount}",
   "includedLoss": "Incluye pérdidas sin reembolso",
   "monthTotal": "Cargos del mes",
   "previousMonth": "Respecto al mes anterior",

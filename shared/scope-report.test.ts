@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { FALLBACK_FX, memberDues } from './billing.ts';
 import { chargeValue } from './fx.ts';
 import { cashVsAccrual, contributionOn, movement, mrrOn, stopLosses } from './metrics.ts';
-import { compactComposition, monthReport, scopeReport, type Block, type ScopeReport } from './scope-report.ts';
+import { compactComposition, monthReport, scopeReport, yearOutlook, type Block, type ScopeReport } from './scope-report.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 
 const today = '2026-10-22';
@@ -490,4 +490,50 @@ test('没有持续计费的范围（如只看买断）改为累计花费头部�
   );
   const mixed = [...subs, sub('M')];
   assert.equal(get(scopeReport(state(mixed), mixed, today), 'headline')!.mode, 'scope');
+});
+
+test('year outlook: this year is paid plus forecast, same period compares Jan 1 through the same day', () => {
+  const st = state([
+    sub('Base'),
+    sub('New', { price: 120, cycle: { unit: 'year', every: 1 }, start: '2026-03-15' }),
+    sub('Gone', { price: 5, status: 'cancelled', end: '2025-12-31' }),
+  ]);
+  const r = yearOutlook(st, today);
+  assert.equal(r.year, '2026');
+  assert.deepEqual([r.current.total, r.current.paid, r.current.pending], [240, 220, 20]);
+  assert.equal(r.samePeriod.previousThrough, '2025-10-22');
+  assert.deepEqual([r.samePeriod.amount, r.samePeriod.previous], [220, 150]);
+  assert.equal(r.samePeriod.change?.amount, 70);
+  assert.ok(Math.abs(r.samePeriod.change!.percent! - 70 / 150) < 1e-9);
+  assert.deepEqual(
+    r.drivers.map((d) => [d.sub.id, d.kind, d.delta]),
+    [
+      ['New', 'added', 120],
+      ['Gone', 'stopped', -50],
+    ],
+  );
+  assert.deepEqual([r.nextMonth.month, r.nextMonth.total, r.nextMonth.paid], ['2026-11', 10, 0]);
+  assert.deepEqual([r.nextYear.year, r.nextYear.total], ['2027', 240]);
+  // 同一份年数，订阅列表的迷你报告也按「已付 + 预计」给出
+  const head = get(scopeReport(st, st.subscriptions, today), 'headline');
+  assert.ok(head?.mode === 'scope');
+  assert.deepEqual([head.paid, head.year], [220, 240]);
+});
+
+test('year outlook maps Feb 29 to Feb 28 and keeps missing FX incomplete instead of zero', () => {
+  assert.equal(yearOutlook(state([sub('A')]), '2028-02-29').samePeriod.previousThrough, '2027-02-28');
+  const r = yearOutlook(state([sub('A', { currency: 'XXX' })]), today);
+  assert.ok(r.current.partial.total.incomplete);
+  assert.ok(Number.isNaN(r.samePeriod.change!.amount));
+  // 去年同期没有支出时不做对比，也不列变化来源
+  const fresh = yearOutlook(state([sub('A', { start: '2026-02-01' })]), today);
+  assert.deepEqual([fresh.samePeriod.change, fresh.drivers], [undefined, []]);
+});
+
+test('month report carries the following month for the calendar three-month view', () => {
+  const st = state([sub('Base')]);
+  const r = monthReport(st, '2026-09', today);
+  assert.deepEqual([r.months.at(-1)!.month, r.next.month], ['2026-09', '2026-10']);
+  assert.deepEqual([r.next.total, r.next.paid, r.next.pending], [10, 10, 0]);
+  assert.deepEqual([monthReport(st, '2026-10', today).next.pending], [10]);
 });

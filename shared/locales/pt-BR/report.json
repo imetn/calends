@@ -136,5 +136,20 @@
     "lossHint": "Valor pago por um serviço encerrado antes do prazo e não reembolsado",
     "basis": "Todo o histórico\nMinha parte; perda não reembolsada pelo câmbio do dia do encerramento.",
     "cancel": "Cancelamento antecipado voluntário"
+  },
+  "year": {
+    "title": "{year}",
+    "basis": "Gasto líquido da minha parte, com reembolsos e transferências; depois de hoje, previsão pelas assinaturas atuais. Mesmo período: de 1º de janeiro até hoje, comparado a 1º de janeiro até o mesmo dia do ano passado.",
+    "total": "Este ano",
+    "vsLast": "vs mesmo período do ano passado",
+    "lastAmount": "Ano passado até {date}: {amount}",
+    "nextMonth": "Previsão de {month}",
+    "nextYear": "Previsão de {year}",
+    "changes": "Em relação ao ano passado",
+    "added": "Nova",
+    "stopped": "Encerrada",
+    "up": "Mais",
+    "down": "Menos",
+    "empty": "Igual ao mesmo período do ano passado."
   }
 }

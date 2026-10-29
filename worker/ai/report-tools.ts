@@ -5,7 +5,7 @@ import { chargeFxMissing, convertOn } from '../../shared/fx.ts';
 import { t } from '../../shared/i18n.ts';
 import { LIST_STATUSES, listScope, listWords, type ListScope, type ListStatus } from '../../shared/list-scope.ts';
 import { monthEnd } from '../../shared/metrics.ts';
-import { monthReport, scopeReport, type Block, type ChargeRow, type Comparison, type CompositionRow } from '../../shared/scope-report.ts';
+import { monthReport, scopeReport, type Block, type MonthCash, type ChargeRow, type Comparison, type CompositionRow } from '../../shared/scope-report.ts';
 import { transferRows, transfersOf, transferValue } from '../../shared/transfers.ts';
 import type { AppState, Subscription } from '../../shared/types.ts';
 import { categoryRef, findSub, methodRef } from './tool-kit.ts';
@@ -162,6 +162,7 @@ function blockValues(st: AppState, b: Block, m: Missing): Record<string, unknown
           annual: h(b.annual),
           active_count: b.activeCount,
           paid_this_year: h(b.paid),
+          this_year_with_forecast: h(b.year),
           stop_loss_this_year: m.headline ? null : num(b.loss),
           mrr_change_since_last_month: m.headline ? null : num(b.change.amount),
         };
@@ -280,6 +281,16 @@ export function monthReportOut(st: AppState, month: string, today: string) {
     subs: g.subs,
   };
   const transfers = transferRows(scoped, from, to, today);
+  const monthOut = (x: MonthCash) => {
+    const gap = bad(`${x.month}-01`) || x.partial.total.incomplete;
+    return {
+      month: x.month,
+      ...partialOut(x.partial.total),
+      total: gap ? null : num(x.total),
+      paid: gap ? null : num(x.paid),
+      pending: gap ? null : num(x.pending),
+    };
+  };
   return {
     month,
     known_total: partialOut(r.blocks.find((b) => b.type === 'headline')?.partial?.total ?? emptyTotal()).known_total,
@@ -290,13 +301,8 @@ export function monthReportOut(st: AppState, month: string, today: string) {
       'Net cash at my share, each past charge at its own day’s FX; refunds negative. total/paid/pending and months include second-hand transfers (buy outflow, sell inflow) up to today; count, composition, top and upcoming exclude transfers. Proxy payments excluded.',
     ...gapsOut(g, from, to),
     blocks: r.blocks.map((b) => blockOut(st, b, missing)),
-    months: r.months.map((x) => ({
-      month: x.month,
-      ...partialOut(x.partial?.total ?? emptyTotal()),
-      total: bad(`${x.month}-01`) ? null : num(x.total),
-      paid: bad(`${x.month}-01`) ? null : num(x.paid),
-      pending: bad(`${x.month}-01`) ? null : num(x.pending),
-    })),
+    months: r.months.map(monthOut),
+    next_month: monthOut(r.next),
     transfers: transfers.map((x) => ({
       date: x.date,
       ...ref(x.sub),
