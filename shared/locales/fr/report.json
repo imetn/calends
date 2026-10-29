@@ -28,9 +28,7 @@
     "annual": "Par an",
     "perDay": "Par jour",
     "active": "Actifs",
-    "recover": "Récupéré via les partages/mois",
-    "fxHist": "Taux d’époque",
-    "fxNow": "Taux actuels"
+    "recover": "Récupéré via les partages/mois"
   },
   "wf": {
     "vsFrom": "vs {amount} fin du mois dernier",

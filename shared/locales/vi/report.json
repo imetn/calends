@@ -28,9 +28,7 @@
     "annual": "Mỗi năm",
     "perDay": "Mỗi ngày",
     "active": "Đang hoạt động",
-    "recover": "Thu lại từ gói chia sẻ/tháng",
-    "fxHist": "Tỷ giá lúc đó",
-    "fxNow": "Tỷ giá hôm nay"
+    "recover": "Thu lại từ gói chia sẻ/tháng"
   },
   "wf": {
     "vsFrom": "so với {amount} cuối tháng trước",

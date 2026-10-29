@@ -28,9 +28,7 @@
     "annual": "Por ano",
     "perDay": "Por dia",
     "active": "Ativas",
-    "recover": "Recuperado com compartilhamento/mês",
-    "fxHist": "Câmbio da época",
-    "fxNow": "Câmbio de hoje"
+    "recover": "Recuperado com compartilhamento/mês"
   },
   "wf": {
     "vsFrom": "vs. {amount} no fim do mês passado",

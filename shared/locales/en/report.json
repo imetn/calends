@@ -28,9 +28,7 @@
     "annual": "Per year",
     "perDay": "Per day",
     "active": "Active",
-    "recover": "Recovered from sharing/mo",
-    "fxHist": "Rates then",
-    "fxNow": "Today's rates"
+    "recover": "Recovered from sharing/mo"
   },
   "wf": {
     "vsFrom": "vs. {amount} at last month-end",

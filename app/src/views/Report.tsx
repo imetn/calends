@@ -77,10 +77,10 @@ export function Report({ state, today, onOpen, onReview }: { state: AppState; to
 /** 头部：负 MRR + 历史走势 */
 function Hero({ state, today }: { state: AppState; today: string }) {
   const base = state.settings.baseCurrency;
-  const [hist, setHist] = useState(true);
   // 固定看最近 12 个月，多取一个点让起点正好是「一年前」；账本更短时从第一笔数据开始
   const months = chartMonths(firstStart(state, today), today, 13);
-  const series = useMemo(() => mrrSeries(state, today, months, hist), [state, today, months, hist]);
+  // 走势是过去已经扣的钱，各月按当时汇率折算，不再提供按今天汇率重算的切换
+  const series = useMemo(() => mrrSeries(state, today, months, true), [state, today, months]);
   const tot = totals(state, today);
   const current = series[series.length - 1].partial;
   const yearAgo = series.length > 12 ? series[series.length - 13].mrr : undefined;
@@ -123,15 +123,6 @@ function Hero({ state, today }: { state: AppState; today: string }) {
       <div className="hero-r">
         <div className="row copy-controls" style={{ justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
           <CopyImageButton hover />
-          <Seg
-            small
-            value={hist ? 'h' : 'c'}
-            onChange={(v) => setHist(v === 'h')}
-            options={[
-              ['h', t('report.hero.fxHist')],
-              ['c', t('report.hero.fxNow')],
-            ]}
-          />
         </div>
         <AreaChart
           values={series.map((p) => p.partial.value)}

@@ -28,9 +28,7 @@
     "annual": "Per tahun",
     "perDay": "Per hari",
     "active": "Aktif",
-    "recover": "Kembali dari paket bersama/bln",
-    "fxHist": "Kurs saat itu",
-    "fxNow": "Kurs hari ini"
+    "recover": "Kembali dari paket bersama/bln"
   },
   "wf": {
     "vsFrom": "vs. {amount} akhir bulan lalu",

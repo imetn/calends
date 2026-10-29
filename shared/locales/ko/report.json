@@ -28,9 +28,7 @@
     "annual": "연간",
     "perDay": "하루",
     "active": "이용 중",
-    "recover": "공유로 회수/월",
-    "fxHist": "당시 환율",
-    "fxNow": "오늘 환율"
+    "recover": "공유로 회수/월"
   },
   "wf": {
     "vsFrom": "지난달 말 {amount} 대비",

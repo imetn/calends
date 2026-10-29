@@ -28,9 +28,7 @@
     "annual": "年化",
     "perDay": "每天",
     "active": "计费中",
-    "recover": "合租回血/月",
-    "fxHist": "当时汇率",
-    "fxNow": "今天汇率"
+    "recover": "合租回血/月"
   },
   "wf": {
     "vsFrom": "比上月末 {amount}",

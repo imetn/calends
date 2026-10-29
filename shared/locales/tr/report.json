@@ -28,9 +28,7 @@
     "annual": "Yıllık",
     "perDay": "Günlük",
     "active": "Etkin",
-    "recover": "Ortak planlardan geri gelen/ay",
-    "fxHist": "O günkü kurlar",
-    "fxNow": "Bugünkü kurlar"
+    "recover": "Ortak planlardan geri gelen/ay"
   },
   "wf": {
     "vsFrom": "geçen ay sonu {amount} karşısında",

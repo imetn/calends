@@ -28,9 +28,7 @@
     "annual": "Pro Jahr",
     "perDay": "Pro Tag",
     "active": "Aktiv",
-    "recover": "Durch Teilen zurück/Mon.",
-    "fxHist": "Damalige Kurse",
-    "fxNow": "Heutige Kurse"
+    "recover": "Durch Teilen zurück/Mon."
   },
   "wf": {
     "vsFrom": "ggü. {amount} Ende Vormonat",
