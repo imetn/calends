@@ -41,7 +41,7 @@
   flex: none;
   overflow: visible;
 }
-:root[data-snapshot='card'] :is(.scope-name, .stop-info > b),
+:root[data-snapshot='card'] :is(.scope-name, .stop-name > b),
 :root[data-snapshot='card'] .scope-share .scope-sub > span:last-child {
   display: block;
   overflow: hidden;

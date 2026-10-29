@@ -517,27 +517,27 @@ function StopsCard({ state, today, onOpen }: { state: AppState; today: string; o
           <div className="stop-list" data-snapshot-list data-snapshot-total={losses.items.length}>
             {shown.map((i) => (
               <button key={`${i.sub.id}-${i.phaseIndex}`} className="stop-row" data-snapshot-keep onClick={() => onOpen(i.sub)}>
-                <SubIcon sub={i.sub} size={32} />
-                <span className="stop-info">
+                <span className="stop-name">
+                  <SubIcon sub={i.sub} size={24} />
                   <b>{i.sub.name}</b>
-                  {/* 日期、方式与退款同一行，各段不断开；原因另起一行 */}
-                  <small>
-                    <span className="nowrap">{cnDate(i.date)}</span> <span className="copy-gap" aria-hidden="true" />{' '}
-                    <span className="nowrap">{i.kind === 'terminate' ? t('core.stop.terminate') : t('report.stops.cancel')}</span>{' '}
-                    <span className="copy-gap" aria-hidden="true" />{' '}
-                    <span className="nowrap" style={i.refunded > 0 ? { color: 'var(--green)' } : undefined}>
-                      {i.refundStatus === 'none' ? t('core.stop.refundNo') : t('core.stop.partial', { money: flow(i.refunded, i.currency) })}
-                    </span>
-                  </small>
-                  {i.reason && <small className="stop-reason">{i.reason}</small>}
+                </span>
+                {/* 宽屏时这几项各占一列、上下对齐；窄屏时排在名称下面一行 */}
+                <span className="stop-meta">
+                  <span>{cnDate(i.date)}</span> <span>{i.kind === 'terminate' ? t('core.stop.terminate') : t('report.stops.cancel')}</span>{' '}
+                  <span className="stop-reason">{i.reason}</span>{' '}
+                  <span style={i.refunded > 0 ? { color: 'var(--green)' } : undefined}>
+                    {i.refundStatus === 'none' ? t('core.stop.refundNo') : t('core.stop.partial', { money: flow(i.refunded, i.currency) })}
+                  </span>{' '}
+                  <span className="stop-days">
+                    {/* 条长是这笔付款里没用上又没退回的比例 */}
+                    <i className="stop-bar" aria-hidden="true">
+                      <i style={{ width: `${Math.round(Math.min(1, Math.max(0, i.paidBase > 0 ? i.lossBase / i.paidBase : 0)) * 100)}%` }} />
+                    </i>
+                    {t('core.stop.lossDays', { count: i.wastedDays })}
+                  </span>
                 </span>
                 <span className="stop-amount">
-                  <b className="red">
-                    <span className="stop-days">
-                      {t('core.stop.lossDays', { count: i.wastedDays })} <span className="copy-gap" aria-hidden="true" />{' '}
-                    </span>
-                    <span>{flow(-i.lossBase, base)}</span>
-                  </b>
+                  <b className="red">{flow(-i.lossBase, base)}</b>
                   {i.currency !== base && <small>{flow(-i.loss, i.currency)}</small>}
                 </span>
               </button>

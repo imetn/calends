@@ -2043,27 +2043,26 @@ select.btn {
   font-size: var(--fs-1);
   line-height: 1.5;
 }
-.stop-info small,
-.stop-amount small {
-  display: block;
-  color: var(--label-2);
-  font-size: var(--fs-1);
-  line-height: 1.5;
-}
 .stop-list {
   margin-top: 12px;
-}
-.stop-row {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(120px, 1.2fr) auto auto minmax(0, 1.6fr) auto auto auto;
+  column-gap: 16px;
+}
+/* 每行共用列表的列，各列上下对齐 */
+.stop-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
   align-items: center;
-  gap: 12px;
   width: 100%;
   border: 0;
   border-bottom: var(--hairline) solid var(--sep);
   background: none;
-  padding: 12px 0;
+  padding: 10px 0;
   text-align: left;
+  font-size: var(--fs-1);
+  color: var(--label-2);
 }
 .stop-row:last-child {
   border-bottom: 0;
@@ -2071,56 +2070,104 @@ select.btn {
 .stop-row:hover {
   background: var(--fill-2);
 }
-.stop-info {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.stop-info > b {
-  font-size: var(--fs-2);
-}
-.stop-amount {
-  min-width: 0;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.stop-amount > b {
+.stop-name {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0 4px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
-.stop-amount > b > span {
-  white-space: nowrap;
-}
-.stop-amount .stop-days {
-  color: var(--label-2);
-  font-size: var(--fs-1);
-  font-weight: 400;
-  align-self: center;
-}
-.stop-amount > b {
-  font-size: var(--fs-2);
-}
-.stop-reason {
+.stop-name > b {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--label);
+  font-size: var(--fs-2);
+}
+.stop-meta {
+  display: contents;
+}
+.stop-meta > span {
+  white-space: nowrap;
+}
+.stop-meta > .stop-reason {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stop-days {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.stop-bar {
+  position: relative;
+  width: 56px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fill-2);
+  overflow: hidden;
+}
+.stop-bar > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+  background: var(--red);
+}
+.stop-amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.stop-amount > b {
+  font-size: var(--fs-2);
+}
+.stop-amount small {
+  display: block;
+  color: var(--label-2);
+  font-size: var(--fs-1);
+}
+/* 窄卡片：名称和金额一行，日期、方式、退款、天数排在下一行，原因再下一行 */
+@container (max-width: 640px) {
+  .stop-list {
+    display: block;
+  }
+  .stop-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    row-gap: 2px;
+  }
+  .stop-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 8px;
+    grid-row: 2;
+    padding-left: 32px;
+  }
+  .stop-meta > .stop-reason {
+    order: 1;
+    flex-basis: 100%;
+  }
+  .stop-meta > .stop-reason:empty {
+    display: none;
+  }
+  .stop-bar {
+    display: none;
+  }
+  .stop-amount {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: start;
+  }
+}
+.stop-report {
+  container-type: inline-size;
 }
 .review-loss {
   font-size: var(--fs-1);
   line-height: 1.5;
   margin-top: 8px;
   overflow-wrap: anywhere;
-}
-@media (max-width: 680px) {
-  .stop-row {
-    gap: 8px;
-    grid-template-columns: 32px minmax(0, 1fr) minmax(0, auto);
-  }
-  .stop-amount > b {
-    font-size: var(--fs-2);
-  }
 }
 .barline {
   position: relative;
