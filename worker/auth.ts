@@ -313,11 +313,20 @@ export function sameOrigin(req: Request): boolean {
 // ---------- Passkey ----------
 
 const RP_NAME = 'Calends';
-/** RP 是站点自己的域名；本地开发时 wrangler 会把 URL 改写成线上域名，只好以浏览器的 Origin 为准 */
-const rp = (req: Request, env: Env) => {
+/**
+ * RP 是站点自己的域名，优先取 SITE_URL：Docker 里 wrangler 只走 http，HTTPS 反代后 req.url 的协议对不上浏览器。
+ * 本地开发时 wrangler 会把 URL 改写成线上域名，只好以浏览器的 Origin 为准。
+ */
+export const rp = (req: Request, env: Env) => {
   const o = env.DEV_BYPASS_AUTH === '1' ? req.headers.get('origin') : null;
-  const u = new URL(o ?? req.url);
+  const u = new URL(o || env.SITE_URL || req.url);
   return { rpID: u.hostname, origin: u.origin };
+};
+
+/** 校验失败的具体原因只记服务端日志（如 origin、rpID 不符），返回给浏览器的仍是通用提示 */
+const logPasskeyError = (step: string) => (e: unknown) => {
+  console.warn(`[passkey] ${step} verification failed:`, e instanceof Error ? e.message : e);
+  return undefined;
 };
 
 async function saveChallenge(env: Env, kind: string, challenge: string): Promise<string> {
@@ -394,7 +403,7 @@ export async function passkeyRegisterVerify(req: Request, env: Env): Promise<Res
     expectedOrigin: origin,
     expectedRPID: rpID,
     requireUserVerification: false,
-  }).catch(() => undefined);
+  }).catch(logPasskeyError('register'));
   if (!v?.verified || !v.registrationInfo) return err(t('server.auth.passkeyFailed'));
   const c = v.registrationInfo.credential;
   await env.DB.prepare('INSERT INTO passkeys (id, public_key, counter, transports, name) VALUES (?1, ?2, ?3, ?4, ?5)')
@@ -435,7 +444,7 @@ export async function passkeyLoginVerify(req: Request, env: Env): Promise<Respon
     expectedRPID: rpID,
     requireUserVerification: false,
     credential: { id: row.id, publicKey: unb64url(row.public_key), counter: row.counter, transports: row.transports ? JSON.parse(row.transports) : undefined },
-  }).catch(() => undefined);
+  }).catch(logPasskeyError('login'));
   // 签名不对、计数器回退（疑似克隆）等都会在这里被拒绝
   if (!v?.verified) {
     await th.fail();
