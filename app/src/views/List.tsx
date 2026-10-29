@@ -239,24 +239,22 @@ export function List({
             </IconButton>
           )}
         </label>
-        {/* 列表视图在表头排序，右上角的排序只给卡片与时间轴用 */}
-        {view !== 'list' && (
-          <SortControl
-            value={sort}
-            dir={dir}
-            onSort={chooseSort}
-            onDir={setDir}
-            options={[
-              { value: 'next', label: t('list.sort.next') },
-              { value: 'cost', label: t('list.sort.cost') },
-              { value: 'amount', label: t('list.sort.amount') },
-              { value: 'name', label: t('list.sort.name') },
-              { value: 'category', label: t('list.sort.category') },
-              { value: 'method', label: t('list.sort.method') },
-              { value: 'start', label: t('list.sort.start') },
-            ]}
-          />
-        )}
+        {/* 三种视图顶部一致；列表视图另可点表头排序，两处共用同一排序状态 */}
+        <SortControl
+          value={sort}
+          dir={dir}
+          onSort={chooseSort}
+          onDir={setDir}
+          options={[
+            { value: 'next', label: t('list.sort.next') },
+            { value: 'cost', label: t('list.sort.cost') },
+            { value: 'amount', label: t('list.sort.amount') },
+            { value: 'name', label: t('list.sort.name') },
+            { value: 'category', label: t('list.sort.category') },
+            { value: 'method', label: t('list.sort.method') },
+            { value: 'start', label: t('list.sort.start') },
+          ]}
+        />
         {!state.readonly && (
           <IconButton className="accent d-only page-add" onClick={onAdd} aria-label={t('list.add')}>
             <Icon name="plus" />
