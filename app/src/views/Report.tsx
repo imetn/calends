@@ -35,6 +35,7 @@ import { tipProps } from '../components/overlays.tsx';
 import { allCharges, toBase, firstStart } from '../derive.ts';
 import { SpendingDelta } from '../components/ScopeReport.tsx';
 import { yearOutlook, type Comparison, type YearDriver } from '../../../shared/scope-report.ts';
+import { LtHead } from '../components/LtHead.tsx';
 import './year-card.css';
 
 const mLabel = (m: string) => (m.endsWith('-01') ? t('report.axis.year', { yy: m.slice(2, 4), year: m.slice(0, 4) }) : monthLabel(m, { year: false }));
@@ -316,8 +317,10 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
   const short = (v: number) => money(v, base, { compact: true });
   const arrow = (v: number) => (!Number.isFinite(v) ? '—' : `${v > 0.005 ? '↑' : v < -0.005 ? '↓' : ''} ${short(Math.abs(v))}`.trim());
   const versus = (key: 'vsMonth' | 'vsYear', c?: Comparison) => c && <small>{t(`report.year.${key}`, { delta: arrow(c.amount) })}</small>;
+  const spend = (v: number) => (Math.abs(v) < 0.005 ? '—' : flow(-v, base, { compact: true }));
   const shown = r.drivers.slice(0, 6);
-  const peak = Math.max(1, ...shown.map((d) => Math.abs(d.delta)));
+  // 只有一项且就是全部差额时，差额列与上方「较去年同期」重复，不再列出
+  const solo = shown.length === 1 && !!change && Math.abs(shown[0].delta - change.amount) < 0.5;
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
@@ -363,37 +366,34 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
               {t('report.year.empty')}
             </div>
           ) : (
-            <div className="yr-drivers" data-snapshot-list>
-              {shown.map((d) => (
-                <button type="button" className="scope-row scope-tap yr-driver" data-snapshot-keep key={d.sub.id} onClick={() => onOpen(d.sub)}>
-                  <span className="scope-sub">
-                    <SubIcon sub={d.sub} size={24} />
-                    <span>
-                      <span className="scope-name">{d.sub.name}</span>
-                      <small>
-                        {kindLabel(d.kind)}
-                        {/* 新增、停用的一端是 0，右侧差额已说明，不再写前后金额 */}
-                        {(d.kind === 'up' || d.kind === 'down') && (
-                          <>
-                            {' '}
-                            <span className="copy-gap" aria-hidden="true" />{' '}
-                            <span className="num">{t('report.year.fromTo', { from: short(d.previous), to: short(d.current) })}</span>
-                          </>
-                        )}
-                      </small>
+            <div className="ltable-wrap">
+              <div className="ltable lt-x yr-lt" role="table" data-snapshot-list>
+                <LtHead
+                  cols={[
+                    { label: t('list.col.name') },
+                    { label: t('report.year.colLast'), num: true },
+                    { label: t('report.year.colThis'), num: true },
+                    ...(solo ? [] : [{ label: t('report.year.colDelta'), num: true }]),
+                  ]}
+                />
+                {shown.map((d) => (
+                  <button type="button" className="lt-row" role="row" data-snapshot-keep key={d.sub.id} onClick={() => onOpen(d.sub)}>
+                    <span className="lt-name">
+                      <SubIcon sub={d.sub} size={28} />
+                      <span className="lt-title">
+                        <span className="nm">
+                          <b>{d.sub.name}</b>
+                        </span>
+                        <small className="lt-sub">{kindLabel(d.kind)}</small>
+                      </span>
                     </span>
-                  </span>
-                  {/* 只有一项时比例条恒满、差额与上方同期差额重复，都不画 */}
-                  {shown.length > 1 ? (
-                    <span className="mv-bar" aria-hidden="true">
-                      <i style={{ width: `${(Math.abs(d.delta) / peak) * 100}%` }} />
-                    </span>
-                  ) : (
-                    <span />
-                  )}
-                  <b className="num">{shown.length > 1 ? arrow(d.delta) : ''}</b>
-                </button>
-              ))}
+                    {/* 新增的去年、停用的今年都是 0，写成破折号 */}
+                    <span className="lt-num yr-was">{spend(d.previous)}</span>
+                    <span className="lt-num yr-was">{spend(d.current)}</span>
+                    {!solo && <b className="lt-num">{arrow(d.delta)}</b>}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

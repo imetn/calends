@@ -1,25 +1,31 @@
-/* 报告 · 本年卡的变化来源：单列「订阅 | 比例条 | 差额」，各行共用列宽，比例条左缘对齐 */
-.yr-drivers {
-  display: grid;
-  grid-template-columns: fit-content(300px) minmax(48px, 1fr) auto;
-  column-gap: 20px;
+/* 报告 · 本年卡的变化来源：沿用列表视图的整宽表格，订阅列吸收余宽，金额列按内容定宽 */
+.ltable.yr-lt {
+  --cols: minmax(160px, 1fr) repeat(var(--n), minmax(96px, max-content));
+  --n: 3;
+  margin-top: 4px;
 }
-.yr-drivers .yr-driver {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  align-items: center;
+.ltable.yr-lt:has(.lt-head > :nth-child(3):last-child) {
+  --n: 2;
 }
-.yr-driver .mv-bar {
-  height: 6px;
+.yr-lt .lt-row {
+  min-height: 48px;
 }
-.yr-driver > b {
-  min-width: 64px;
-  font-weight: 600;
+.yr-lt .lt-head {
+  min-height: 34px;
+  height: 34px;
 }
-@media (max-width: 560px) {
-  .yr-drivers {
-    grid-template-columns: minmax(0, 1fr) 48px auto;
-    column-gap: 12px;
+.yr-lt .yr-was {
+  color: var(--label-2);
+}
+/* 窄卡片只留订阅与差额，去年、今年两列收起 */
+@container (max-width: 480px) {
+  .ltable.yr-lt {
+    --cols: minmax(0, 1fr) auto;
+    --n: 1;
+  }
+  .yr-lt .lt-head > :nth-child(2),
+  .yr-lt .lt-head > :nth-child(3),
+  .yr-lt .yr-was {
+    display: none;
   }
 }
