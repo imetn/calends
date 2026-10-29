@@ -4162,9 +4162,11 @@ button.h-price-row:focus-visible {
   background: var(--green-3);
   color: var(--green);
 }
+/* 折线吃掉左栏剩余高度：星图撑高时，下方指标与星图底部对齐，不在左下角留空 */
 .stmt-spark {
   width: 100%;
-  height: 56px;
+  flex: 1 1 56px;
+  min-height: 56px;
   margin: 22px 0 6px;
   color: var(--label);
   overflow: visible;
