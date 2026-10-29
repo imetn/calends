@@ -2798,10 +2798,10 @@ select.btn {
   box-shadow: none;
 }
 
-/* 头部大数字卡：去掉渐变，留白取胜 */
+/* 头部大数字卡：只留与下方卡片相同的细边框，不铺底色；内边距同卡片，内容与下方卡片对齐 */
 .hero-card {
-  box-shadow: none;
-  padding: 8px 0 4px;
+  box-shadow: 0 0 0 var(--hairline) var(--line);
+  padding: 18px 20px;
   background: none;
 }
 .hero-num {
