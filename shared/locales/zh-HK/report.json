@@ -25,7 +25,6 @@
     "label": "每月訂閱支出",
     "vsLastMonth": "較上月末",
     "yearAgo": "一年前 {amount}",
-    "annual": "年化",
     "perDay": "每天",
     "active": "計費中",
     "recover": "共享回收/月"

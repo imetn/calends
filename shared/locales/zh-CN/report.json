@@ -25,7 +25,6 @@
     "label": "每月订阅支出",
     "vsLastMonth": "较上月末",
     "yearAgo": "一年前 {amount}",
-    "annual": "年化",
     "perDay": "每天",
     "active": "计费中",
     "recover": "合租回血/月"

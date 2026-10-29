@@ -25,7 +25,6 @@
     "label": "Monthly subscription spend",
     "vsLastMonth": "vs. end of last month",
     "yearAgo": "{amount} a year ago",
-    "annual": "Per year",
     "perDay": "Per day",
     "active": "Active",
     "recover": "Recovered from sharing/mo"

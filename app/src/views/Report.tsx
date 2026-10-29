@@ -105,7 +105,6 @@ function Hero({ state, today }: { state: AppState; today: string }) {
           {yearAgo != null && yearAgo > 0 && <span className="muted">{copyParts(t('report.hero.yearAgo', { amount: signed(-yearAgo) }))}</span>}
         </div>
         <MetricCards plain>
-          <Metric label={t('report.hero.annual')} value={formatTotal(scaleTotal(current, 12), base, { direction: -1, compact: true, main: true })} />
           <Metric
             label={t('report.hero.perDay')}
             value={formatTotal(scaleTotal(current, 1 / DAYS_PER_MONTH), base, { direction: -1, main: true, average: true })}
