@@ -16,7 +16,7 @@
   font-size: var(--fs-1);
   font-weight: 600;
   color: var(--label-3);
-  box-shadow: 0 0 0 var(--hairline) var(--card);
+  box-shadow: 0 0 0 1.5px var(--card);
   background: color-mix(in srgb, var(--label) 6%, var(--card));
   transition: none;
 }
@@ -33,7 +33,7 @@
 }
 .share-avatars .seat.free {
   box-shadow:
-    0 0 0 var(--hairline) var(--card),
+    0 0 0 1.5px var(--card),
     inset 0 0 0 var(--hairline) var(--line);
 }
 .share-avatars .seat.me {
@@ -52,8 +52,8 @@
 }
 .share-avatars button.seat:hover {
   box-shadow:
-    0 0 0 var(--hairline) var(--card),
-    0 0 0 var(--hairline) var(--label-3);
+    0 0 0 1.5px var(--card),
+    0 0 0 calc(1.5px + var(--hairline)) var(--label-3);
   z-index: 1;
 }
 .seats-row > .share-avatars {

@@ -8249,7 +8249,8 @@ a.car-toggle {
   border-radius: var(--radius-pill);
   font-weight: 650;
   line-height: 1;
-  background: color-mix(in srgb, var(--pc) 15%, transparent);
+  /* 与卡片底色混合成实色：头像叠放时不透出后一个 */
+  background: color-mix(in srgb, var(--pc) 15%, var(--card));
   color: var(--pc);
   user-select: none;
 }
