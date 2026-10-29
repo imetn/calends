@@ -2282,7 +2282,8 @@ select.btn {
   padding: 12px 0;
   border-top: var(--hairline) solid var(--sep);
 }
-.topup:first-of-type {
+/* 只在两条计划之间画线；第一条上方不画，免得像表头分隔线（:first-of-type 会被前面的标题栏 div 抢走） */
+:not(.topup) + .topup {
   border-top: 0;
   padding-top: 0;
 }
