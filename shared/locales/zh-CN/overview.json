@@ -50,8 +50,8 @@
     "good": "一个事实"
   },
   "stmt": {
-    "kicker": "每月订阅支出",
-    "vsLastMonth": "较上月末",
+    "kicker": "当月订阅支出",
+    "hint": "本月 1 日到月底的扣款合计，含已扣和待扣；与上月整月比较。",
     "perDay": "每天",
     "active": "计费中",
     "share": "{amount}/月\n占 {pct}%",

@@ -62,8 +62,8 @@
     "good": "Le saviez-vous"
   },
   "stmt": {
-    "kicker": "Dépenses mensuelles en abonnements",
-    "vsLastMonth": "par rapport à fin du mois dernier",
+    "kicker": "Dépenses en abonnements ce mois-ci",
+    "hint": "Prélèvements du 1er à la fin du mois, effectués et à venir ; comparés à tout le mois dernier.",
     "perDay": "Par jour",
     "active": "Actifs",
     "share": "{amount}/mois\n{pct} %",

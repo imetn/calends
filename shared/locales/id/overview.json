@@ -58,8 +58,8 @@
     "good": "Fakta menarik"
   },
   "stmt": {
-    "kicker": "Pengeluaran langganan bulanan",
-    "vsLastMonth": "dibanding akhir bulan lalu",
+    "kicker": "Pengeluaran langganan bulan ini",
+    "hint": "Tagihan dari tanggal 1 hingga akhir bulan ini, yang sudah dan akan ditagih; dibandingkan dengan seluruh bulan lalu.",
     "perDay": "Per hari",
     "active": "Aktif",
     "share": "{amount}/bln\n{pct}%",

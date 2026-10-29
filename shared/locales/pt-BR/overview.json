@@ -62,8 +62,8 @@
     "good": "Curiosidade"
   },
   "stmt": {
-    "kicker": "Gasto mensal com assinaturas",
-    "vsLastMonth": "vs. fim do mês passado",
+    "kicker": "Gasto com assinaturas este mês",
+    "hint": "Cobranças do dia 1 ao fim deste mês, já cobradas e futuras; comparado com todo o mês passado.",
     "perDay": "Por dia",
     "active": "Ativas",
     "share": "{amount}/mês\n{pct}%",

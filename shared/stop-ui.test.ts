@@ -15,7 +15,6 @@ import * as gantt from './gantt.ts';
 import * as metrics from './metrics.ts';
 import * as fx from './fx.ts';
 import * as carpool from './carpool.ts';
-import { yearOutlook } from './scope-report.ts';
 import { flatten, intlLocale, setLocale, t } from './i18n.ts';
 import { DEFAULT_SETTINGS, type Subscription } from './types.ts';
 
@@ -334,22 +333,33 @@ test('详情历史阶段：各停止阶段使用自己的退款、币种、停�
   assert.ok(!text(tree).includes(format.cnDateFull('2026-12-05')));
 });
 
-test('概览年度指标：今年预计与已付取报告年卡同一结果，每天按今年已过天数平均已付，星图无常驻说明', () => {
-  const r = runtime('../app/src/views/Overview.tsx', { React: renderedReact, yearOutlook, packCircles: () => [], Amount: 'Amount' }, 'Statement');
-  const current = phases.stopSubscription({ ...sub, id: 'current' }, today, 'terminate', today, 'Provider closure', { amount: 6 });
-  const state = { subscriptions: [current], methods: [], settings: DEFAULT_SETTINGS, fx: billing.FALLBACK_FX };
+test('概览首卡当月实扣：1 号到月底已扣加待扣，较上月整月，今天后的累计画虚线，星图无常驻说明', () => {
+  const charge = (date: string, amount: number, projected: boolean) =>
+    ({ sub: { ...sub, currency: 'CNY' }, date, amount, currency: 'CNY', projected }) as unknown as billing.Charge;
+  const charges = [charge('2026-09-05', 20, false), charge('2026-10-03', 30, false), charge('2026-10-25', 12, true)];
+  const r = runtime(
+    '../app/src/views/Overview.tsx',
+    {
+      React: renderedReact,
+      allCharges: (_: unknown, from: string, to: string) => charges.filter((c) => c.date >= from && c.date <= to),
+      packCircles: () => [],
+      TipTable: 'TipTable',
+      Amount: 'Amount',
+    },
+    'Statement',
+  );
+  const state = { subscriptions: [], methods: [], settings: { ...DEFAULT_SETTINGS, baseCurrency: 'CNY' }, fx: billing.FALLBACK_FX };
   const tree = r.render('Statement', { state, today, onOpen() {} });
-  const outlook = yearOutlook(state, today).current.partial;
+  assert.equal(text(tree).includes(t('overview.stmt.kicker')), true);
+  assert.ok(JSON.stringify(withClass(tree, 'stmt-num')[0]).includes('"value":-42'));
+  // 较上月：42 − 20
+  assert.ok(text(withClass(tree, 'stmt-delta')[0]).includes(format.money(22, 'CNY', { compact: true })));
   const cells = withClass(withClass(tree, 'metric-cards')[0], 'metric');
   assert.equal(cells.length, 4);
-  const [forecast, paid, perDay] = cells;
-  assert.ok(text(forecast).includes(t('report.year.total')));
-  assert.ok(text(forecast).includes(format.money(outlook.total.value, DEFAULT_SETTINGS.baseCurrency, { compact: true })));
-  assert.ok(text(paid).includes(t('scope.yearPaid')));
-  assert.ok(text(paid).includes(format.money(outlook.paid.value, DEFAULT_SETTINGS.baseCurrency, { compact: true })));
-  assert.equal(withClass(paid, 'metric-note').length, 0);
-  const days = billing.diffDays(`${today.slice(0, 4)}-01-01`, today) + 1;
-  assert.ok(text(perDay).includes(format.money(outlook.paid.value / days, DEFAULT_SETTINGS.baseCurrency)));
+  const [due, count, perDay] = cells;
+  assert.ok(text(due).includes(t('calendar.pending')) && text(due).includes(format.money(12, 'CNY', { compact: true })));
+  assert.ok(text(count).includes(t('scope.count')) && text(count).includes('2'));
+  assert.ok(text(perDay).includes(format.money(42 / 31, 'CNY')));
   assert.equal(text(withClass(tree, 'stmt-cap')[0]).trim(), '');
 });
 

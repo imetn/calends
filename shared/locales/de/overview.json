@@ -62,8 +62,8 @@
     "good": "Wusstest du?"
   },
   "stmt": {
-    "kicker": "Monatliche Abo-Ausgaben",
-    "vsLastMonth": "ggü. Ende letzten Monats",
+    "kicker": "Abo-Ausgaben diesen Monat",
+    "hint": "Abbuchungen vom 1. bis zum Monatsende, bereits abgebucht und anstehend; verglichen mit dem gesamten Vormonat.",
     "perDay": "Pro Tag",
     "active": "Aktiv",
     "share": "{amount}/Mon.\n{pct} %",

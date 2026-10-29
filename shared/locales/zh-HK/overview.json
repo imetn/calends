@@ -50,8 +50,8 @@
     "good": "一個事實"
   },
   "stmt": {
-    "kicker": "每月訂閱支出",
-    "vsLastMonth": "較上月末",
+    "kicker": "當月訂閱支出",
+    "hint": "本月 1 日到月底的扣款合計，含已扣和待扣；與上月整月比較。",
     "perDay": "每天",
     "active": "計費中",
     "share": "{amount}/月\n佔 {pct}%",

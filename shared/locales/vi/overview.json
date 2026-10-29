@@ -58,8 +58,8 @@
     "good": "Thú vị"
   },
   "stmt": {
-    "kicker": "Chi tiêu gói đăng ký hằng tháng",
-    "vsLastMonth": "so với cuối tháng trước",
+    "kicker": "Chi tiêu gói đăng ký tháng này",
+    "hint": "Các khoản trừ tiền từ ngày 1 đến cuối tháng này, gồm đã trừ và sắp trừ; so với cả tháng trước.",
     "perDay": "Mỗi ngày",
     "active": "Đang hoạt động",
     "share": "{amount}/tháng\n{pct}%",

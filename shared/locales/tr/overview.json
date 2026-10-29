@@ -62,8 +62,8 @@
     "good": "İlginç bilgi"
   },
   "stmt": {
-    "kicker": "Aylık abonelik harcaması",
-    "vsLastMonth": "geçen ay sonuna göre",
+    "kicker": "Bu ayki abonelik harcaması",
+    "hint": "Bu ayın 1'inden ay sonuna kadar olan ödemeler, alınan ve yaklaşanlar dahil; geçen ayın tamamıyla karşılaştırılır.",
     "perDay": "Günlük",
     "active": "Etkin",
     "share": "{amount}/ay\n%{pct}",

@@ -62,8 +62,8 @@
     "good": "Fun fact"
   },
   "stmt": {
-    "kicker": "Monthly subscription spend",
-    "vsLastMonth": "vs. end of last month",
+    "kicker": "This month's subscription spend",
+    "hint": "Charges from the 1st to the end of this month, both charged and upcoming; compared with all of last month.",
     "perDay": "Per day",
     "active": "Active",
     "share": "{amount}/mo\n{pct}%",

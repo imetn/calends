@@ -1,5 +1,5 @@
 import { useSnapshotRender } from '../snapshot-render.tsx';
-import { chargeTotal, chargesTotal, formatTotal, scaleTotal, totalNote } from '../../../shared/fx-total.ts';
+import { chargeTotal, chargesTotal, formatTotal, scaleTotal, totalDifference, totalNote } from '../../../shared/fx-total.ts';
 import { FxAmount } from '../components/FxAmount.tsx';
 import { CopyImageButton } from '../components/CopyImageButton.tsx';
 import { copyParts } from '../components/copy.tsx';
@@ -9,7 +9,7 @@ import { addDays, addMonths, cycleLabel, diffDays, perLabel, runwayFor, totals, 
 import { moneyTick, flow, cnDate, money, monthLabel, relDays } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue } from '../../../shared/fx.ts';
-import { contributionOn, insights, mrrChangeSinceLastMonth, mrrSeries } from '../../../shared/metrics.ts';
+import { contributionOn, insights } from '../../../shared/metrics.ts';
 import { BALANCE_KINDS, type AppState, type Subscription } from '../../../shared/types.ts';
 import { Activity, packCircles, type Bucket } from '../components/charts.tsx';
 import { Timeline, type TimelineGroup } from '../components/Timeline.tsx';
@@ -20,7 +20,6 @@ import { CatIcon, MethodMark, SubIcon } from '../components/marks.tsx';
 import { TipTable } from '../components/overlays.tsx';
 import { Icon } from '../components/icons.tsx';
 import { allCharges, catColor, sortValue, sumBaseOrNaN, firstStart } from '../derive.ts';
-import { yearOutlook } from '../../../shared/scope-report.ts';
 import { useMoneyPair } from '../components/MoneyPair.tsx';
 import { Layers } from 'lucide-react';
 
@@ -517,13 +516,29 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
   useSnapshotRender(captureRef, () => <Statement state={state} today={today} onOpen={onOpen} />);
   const base = state.settings.baseCurrency;
   const tot = totals(state, today);
-  const series = useMemo(() => mrrSeries(state, today, 24, true), [state, today]);
-  const delta = mrrChangeSinceLastMonth(state, today);
-  // 今年预计（已付 + 到年底的扣款，停用后的月份不再计）与已付，和报告页年卡同一份结果
-  const year = useMemo(() => yearOutlook(state, today).current.partial, [state, today]);
-  const paid = year.paid;
-  // 每天 = 今年已付按今年已过天数（含今天）平均
-  const daysThisYear = diffDays(`${today.slice(0, 4)}-01-01`, today) + 1;
+  // 当月实扣：1 号到月底，已扣 + 待扣；较上月按上月整月实扣比较
+  const month = useMemo(() => {
+    const from = today.slice(0, 8) + '01';
+    const to = addDays(addMonths(from, 1), -1);
+    const cs = allCharges(state, from, to, today);
+    const last = chargesTotal(state, allCharges(state, addMonths(from, -1), addDays(from, -1), today));
+    const days = Array.from({ length: diffDays(from, to) + 1 }, (_, i) => {
+      const d = addDays(from, i);
+      return { d, v: cs.filter((c) => c.date === d).reduce((a, c) => a + chargeValue(state, c), 0) };
+    });
+    const total = chargesTotal(state, cs);
+    return {
+      days,
+      total,
+      count: cs.length,
+      due: chargesTotal(
+        state,
+        cs.filter((c) => c.projected),
+      ),
+      delta: totalDifference(total, last),
+    };
+  }, [state, today]);
+  const delta = month.delta;
   const live = useMemo(
     () =>
       state.subscriptions
@@ -544,9 +559,21 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
     return () => ro.disconnect();
   }, []);
   const h = bubbles[0]?.h ?? 1;
-  const max = Math.max(1, ...series.map((p) => p.partial.value));
-  const path = series
-    .map((p, i) => `${i ? 'L' : 'M'}${((i / (series.length - 1)) * 100).toFixed(2)},${(30 - (p.partial.value / max) * 28).toFixed(2)}`)
+  // 当月累计：每天加上当天的扣款，终点即当月合计；今天以后是待扣，画虚线
+  const cum = month.days.reduce<number[]>((acc, x) => [...acc, (acc[acc.length - 1] ?? 0) + x.v], []);
+  const cumMax = Math.max(1, cum[cum.length - 1] ?? 0);
+  const pt = (i: number) => `${((i / (cum.length - 1)) * 100).toFixed(2)},${(30 - (cum[i] / cumMax) * 28).toFixed(2)}`;
+  const ti = Math.max(
+    0,
+    month.days.findIndex((x) => x.d === today),
+  );
+  const past = cum
+    .slice(0, ti + 1)
+    .map((_, i) => `${i ? 'L' : 'M'}${pt(i)}`)
+    .join('');
+  const ahead = cum
+    .slice(ti)
+    .map((_, i) => `${i ? 'L' : 'M'}${pt(ti + i)}`)
     .join('');
   const [hover, setHover] = useState<number | null>(null);
   const hv = hover != null ? live[hover] : undefined;
@@ -557,21 +584,28 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
         <CopyImageButton hover />
       </div>
       <div className="stmt-l">
-        <CardTitle as="div" className="stmt-kicker" hint={t('scope.mrrBasis')}>
+        <CardTitle as="div" className="stmt-kicker" hint={t('overview.stmt.hint')}>
           {t('overview.stmt.kicker')}
         </CardTitle>
         <div className="stmt-num">
-          <FxAmount total={tot.partial.mrr} direction={-1} ccy={base} />
+          <FxAmount total={month.total} direction={-1} ccy={base} />
         </div>
         <div className="stmt-delta">
-          <span className={delta > 0.5 ? 'up' : delta < -0.5 ? 'down' : ''}>
-            {copyParts(delta > 0.5 ? '↑' : delta < -0.5 ? '↓' : '')} {money(Math.abs(delta), base, { compact: true })}
-          </span>
-          {t('overview.stmt.vsLastMonth')}
+          {Number.isFinite(delta) && (
+            <>
+              <span className={delta > 0.5 ? 'up' : delta < -0.5 ? 'down' : ''}>
+                {copyParts(delta > 0.5 ? '↑' : delta < -0.5 ? '↓' : '')} {money(Math.abs(delta), base, { compact: true })}
+              </span>
+              {t('scope.previousMonth')}
+            </>
+          )}
         </div>
         <svg className="stmt-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
-          <path d={`${path}L100,32L0,32Z`} fill="url(#stmt-g)" />
-          <path d={path} fill="none" stroke="currentColor" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+          <path d={`${past}L${((ti / (cum.length - 1)) * 100).toFixed(2)},32L0,32Z`} fill="url(#stmt-g)" />
+          <path d={past} fill="none" stroke="currentColor" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+          {ti < cum.length - 1 && (
+            <path d={ahead} className="ahead" fill="none" stroke="currentColor" strokeWidth="1.4" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+          )}
           <defs>
             <linearGradient id="stmt-g" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0" stopColor="currentColor" stopOpacity="0.25" />
@@ -579,21 +613,18 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
             </linearGradient>
           </defs>
         </svg>
+        <div className="stmt-axis">
+          <span>{cnDate(month.days[0].d)}</span>
+          <span>{cnDate(month.days[month.days.length - 1].d)}</span>
+        </div>
         <MetricCards plain>
-          <Metric label={t('report.year.total')} value={formatTotal(year.total, base, { direction: -1, compact: true, main: true })} />
-          <Metric label={t('scope.yearPaid')} value={formatTotal(paid, base, { direction: -1, compact: true, main: true })} />
+          <Metric label={t('calendar.pending')} value={formatTotal(month.due, base, { direction: -1, compact: true, main: true })} />
+          <Metric label={t('scope.count')} value={month.count} />
           <Metric
             label={t('overview.stmt.perDay')}
-            value={formatTotal(scaleTotal(paid, 1 / daysThisYear), base, { direction: -1, main: true, average: true })}
+            value={formatTotal(scaleTotal(month.total, 1 / month.days.length), base, { direction: -1, main: true, average: true })}
           />
-          <Metric
-            label={t('overview.stmt.active')}
-            value={tot.activeCount}
-            note={
-              [totalNote(tot.partial.mrr), year.total.incomplete ? `${t('report.year.total')}: ${totalNote(year.total)}` : ''].filter(Boolean).join('\n') ||
-              undefined
-            }
-          />
+          <Metric label={t('overview.stmt.active')} value={tot.activeCount} note={totalNote(month.total) || undefined} />
         </MetricCards>
       </div>
       <div className="stmt-r">

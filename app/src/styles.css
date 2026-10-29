@@ -4167,12 +4167,22 @@ button.h-price-row:focus-visible {
   width: 100%;
   flex: 1 1 56px;
   min-height: 56px;
-  margin: 22px 0 6px;
+  margin: 22px 0 0;
   color: var(--label);
   overflow: visible;
 }
 .stmt-spark path:first-child {
   opacity: 0.5;
+}
+.stmt-spark .ahead {
+  color: var(--label-3);
+}
+.stmt-axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0 6px;
+  font-size: var(--fs-1);
+  color: var(--label-3);
 }
 .stmt-r {
   display: flex;

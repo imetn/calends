@@ -62,8 +62,8 @@
     "good": "Dato curioso"
   },
   "stmt": {
-    "kicker": "Gasto mensual en suscripciones",
-    "vsLastMonth": "vs. final del mes pasado",
+    "kicker": "Gasto en suscripciones este mes",
+    "hint": "Cargos del día 1 al final de este mes, cobrados y próximos; comparado con todo el mes pasado.",
     "perDay": "Al día",
     "active": "Activas",
     "share": "{amount}/mes\n{pct}%",
