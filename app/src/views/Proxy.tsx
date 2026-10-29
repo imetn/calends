@@ -9,7 +9,7 @@ import { flow, cnDate, cnDateFull, money, relDays } from '../../../shared/format
 import { toBaseAt } from '../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { MetricCards, Metric, Group, Toolbar } from '../components/ui.tsx';
-import { Seg } from '../components/inputs.tsx';
+import { Seg, useWidth } from '../components/inputs.tsx';
 import { NameLink, PayBadge, StatusPill, SubIcon } from '../components/marks.tsx';
 import { contactText } from '../components/Contact.tsx';
 import { LtHead, nextSort, PlanPrice, usePhone } from '../components/LtHead.tsx';
@@ -314,6 +314,9 @@ export function ProxyPage({ state, today, onOpen }: { state: AppState; today: st
   const order = useProxySort(state, today, shown);
   const [savedView, setView] = usePref<ProxyView>('proxy-view', 'grid', (v): v is ProxyView => v === 'grid' || v === 'list');
   const phone = usePhone();
+  // 列数与合租卡片同一规则（每列至少约 340px，最多 4 列）
+  const [colsRef, colsWidth] = useWidth();
+  const colCount = Math.max(1, Math.min(4, Math.floor((colsWidth + 16) / 356)));
   const view = phone ? 'grid' : savedView;
   return (
     <>
@@ -390,7 +393,7 @@ export function ProxyPage({ state, today, onOpen }: { state: AppState; today: st
             {view === 'list' ? (
               shown.length > 0 && <ProxyTable state={state} {...order} onOpen={onOpen} />
             ) : (
-              <div className="grid g-2">
+              <div className="car-cols proxy-cols" ref={colsRef} style={{ '--car-columns': colCount } as React.CSSProperties}>
                 {/* 卡片与列表同一个排序（在列表表头切换） */}
                 {order.sorted.map(({ s }) => (
                   <ProxyCard key={s.id} state={state} s={s} onOpen={onOpen} />

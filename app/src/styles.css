@@ -5325,6 +5325,11 @@ a.car-toggle {
   text-decoration: none;
 }
 
+/* 代付卡片与合租同一套列数，但不分列流动：同一行卡片等高 */
+.car-cols.proxy-cols {
+  align-items: stretch;
+}
+
 /* 合租卡片：两列各自流动，展开互不影响；窄屏变一列并按原顺序排列 */
 .car-cols {
   display: grid;
