@@ -151,9 +151,12 @@
     "nextYear": "Прогноз на {year}",
     "vsYear": "к этому году {delta}",
     "changes": "По сравнению с прошлым годом",
-    "colLast": "Прошлый год",
-    "colThis": "Этот год",
-    "colDelta": "Разница",
+    "count": {
+      "one": "{count} позиция",
+      "few": "{count} позиции",
+      "many": "{count} позиций",
+      "other": "{count} позиции"
+    },
     "added": "Новая",
     "stopped": "Остановлена",
     "up": "Больше",

@@ -35,8 +35,6 @@ import { tipProps } from '../components/overlays.tsx';
 import { allCharges, toBase, firstStart } from '../derive.ts';
 import { SpendingDelta } from '../components/ScopeReport.tsx';
 import { yearOutlook, type Comparison, type YearDriver } from '../../../shared/scope-report.ts';
-import { LtHead } from '../components/LtHead.tsx';
-import './year-card.css';
 
 const mLabel = (m: string) => (m.endsWith('-01') ? t('report.axis.year', { yy: m.slice(2, 4), year: m.slice(0, 4) }) : monthLabel(m, { year: false }));
 const perMonth = (amount: string) => t('report.perMonth', { amount });
@@ -317,10 +315,14 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
   const short = (v: number) => money(v, base, { compact: true });
   const arrow = (v: number) => (!Number.isFinite(v) ? '—' : `${v > 0.005 ? '↑' : v < -0.005 ? '↓' : ''} ${short(Math.abs(v))}`.trim());
   const versus = (key: 'vsMonth' | 'vsYear', c?: Comparison) => c && <small>{t(`report.year.${key}`, { delta: arrow(c.amount) })}</small>;
-  const spend = (v: number) => (Math.abs(v) < 0.005 ? '—' : flow(-v, base, { compact: true }));
-  const shown = r.drivers.slice(0, 6);
-  // 只有一项且就是全部差额时，差额列与上方「较去年同期」重复，不再列出
-  const solo = shown.length === 1 && !!change && Math.abs(shown[0].delta - change.amount) < 0.5;
+  // 变化来源按类型汇总成指标卡：新增、停用、多付、少付，各写差额合计与项数；类内按差额大小排
+  const groups = (['added', 'stopped', 'up', 'down'] as const)
+    .map((kind) => {
+      const items = r.drivers.filter((d) => d.kind === kind);
+      return { kind, items, delta: items.reduce((n, d) => n + d.delta, 0) };
+    })
+    .filter((g) => g.items.length > 0);
+  const solo = groups.length === 1 && !!change && Math.abs(groups[0].delta - change.amount) < 0.5;
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
@@ -361,40 +363,32 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
           <h4 className="stop-list-title" style={{ marginTop: 6 }}>
             {t('report.year.changes')}
           </h4>
-          {r.drivers.length === 0 ? (
+          {groups.length === 0 ? (
             <div className="muted" style={{ fontSize: 'var(--fs-2)', padding: '8px 0' }}>
               {t('report.year.empty')}
             </div>
           ) : (
-            <div className="ltable-wrap">
-              <div className="ltable lt-x yr-lt" role="table" data-snapshot-list>
-                <LtHead
-                  cols={[
-                    { label: t('list.col.name') },
-                    { label: t('report.year.colLast'), num: true },
-                    { label: t('report.year.colThis'), num: true },
-                    ...(solo ? [] : [{ label: t('report.year.colDelta'), num: true }]),
-                  ]}
+            <MetricCards inline>
+              {groups.map((g) => (
+                <Metric
+                  key={g.kind}
+                  label={kindLabel(g.kind)}
+                  // 只有一类且就是全部差额时，金额与上方「较去年同期」重复，改写项数
+                  value={solo ? t('report.year.count', { count: g.items.length }) : arrow(g.delta)}
+                  note={
+                    // 项数在前，后面跟最多 3 个订阅图标，点开详情；一行放不下时截掉图标，不换行
+                    <div className="ins-subs" style={{ flexWrap: 'nowrap', alignItems: 'center', overflow: 'hidden' }} data-snapshot-list>
+                      {!solo && <small style={{ marginRight: 2, whiteSpace: 'nowrap' }}>{t('report.year.count', { count: g.items.length })}</small>}
+                      {g.items.slice(0, 3).map((d) => (
+                        <button type="button" data-snapshot-keep key={d.sub.id} onClick={() => onOpen(d.sub)} title={d.sub.name} aria-label={d.sub.name}>
+                          <SubIcon sub={d.sub} size={18} />
+                        </button>
+                      ))}
+                    </div>
+                  }
                 />
-                {shown.map((d) => (
-                  <button type="button" className="lt-row" role="row" data-snapshot-keep key={d.sub.id} onClick={() => onOpen(d.sub)}>
-                    <span className="lt-name">
-                      <SubIcon sub={d.sub} size={28} />
-                      <span className="lt-title">
-                        <span className="nm">
-                          <b>{d.sub.name}</b>
-                        </span>
-                        <small className="lt-sub">{kindLabel(d.kind)}</small>
-                      </span>
-                    </span>
-                    {/* 新增的去年、停用的今年都是 0，写成破折号 */}
-                    <span className="lt-num yr-was">{spend(d.previous)}</span>
-                    <span className="lt-num yr-was">{spend(d.current)}</span>
-                    {!solo && <b className="lt-num">{arrow(d.delta)}</b>}
-                  </button>
-                ))}
-              </div>
-            </div>
+              ))}
+            </MetricCards>
           )}
         </div>
       )}

@@ -145,9 +145,10 @@
     "nextYear": "Previsão de {year}",
     "vsYear": "vs. este ano {delta}",
     "changes": "Em relação ao ano passado",
-    "colLast": "Ano passado",
-    "colThis": "Este ano",
-    "colDelta": "Diferença",
+    "count": {
+      "one": "{count} item",
+      "other": "{count} itens"
+    },
     "added": "Nova",
     "stopped": "Encerrada",
     "up": "Mais",
