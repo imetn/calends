@@ -7,7 +7,10 @@ test('Passkey 的 RP 优先取 SITE_URL，不受容器内 http 地址影响', ()
   const req = new Request('http://bill.example.com/api/auth/passkey/register/verify', { headers: { origin: 'https://bill.example.com' } });
   assert.deepEqual(rp(req, { SITE_URL: 'https://bill.example.com' }), { rpID: 'bill.example.com', origin: 'https://bill.example.com' });
   // 带安装前缀的 SITE_URL 只取 origin
-  assert.deepEqual(rp(new Request('http://127.0.0.1:8788/x'), { SITE_URL: 'https://example.com/calends' }), { rpID: 'example.com', origin: 'https://example.com' });
+  assert.deepEqual(rp(new Request('http://127.0.0.1:8788/x'), { SITE_URL: 'https://example.com/calends' }), {
+    rpID: 'example.com',
+    origin: 'https://example.com',
+  });
 });
 
 test('没有 SITE_URL 时按请求地址；本地免登录开发以浏览器 Origin 为准', () => {
