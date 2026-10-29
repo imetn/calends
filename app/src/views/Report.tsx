@@ -35,6 +35,8 @@ import { tipProps } from '../components/overlays.tsx';
 import { allCharges, toBase, firstStart } from '../derive.ts';
 import { SpendingDelta } from '../components/ScopeReport.tsx';
 import { yearOutlook, type Comparison, type YearDriver } from '../../../shared/scope-report.ts';
+import { carpoolYear } from '../../../shared/carpool.ts';
+import { proxyYear } from '../../../shared/proxy.ts';
 
 const mLabel = (m: string) => (m.endsWith('-01') ? t('report.axis.year', { yy: m.slice(2, 4), year: m.slice(0, 4) }) : monthLabel(m, { year: false }));
 const perMonth = (amount: string) => t('report.perMonth', { amount });
@@ -313,6 +315,40 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
   });
   const used = groups.filter((g) => g.items.length > 0);
   const solo = used.length === 1 && !!change && Math.abs(used[0].delta - change.amount) < 0.5;
+  // 第二排后两格是动态的：有合租时倒数第二格换成今年的合租盈亏，有代付时最后一格换成今年的代付盈亏；没有就仍是多付、少付
+  const car = useMemo(() => carpoolYear(state, today), [state, today]);
+  const px = useMemo(() => proxyYear(state, today), [state, today]);
+  const extras = [
+    car.subs.length > 0 && {
+      key: 'carpool' as const,
+      total: car.partial.net,
+      net: car.net,
+      subs: car.subs,
+      lead: t('report.year.count', { count: car.subs.length }),
+    },
+    px.subs.length > 0 && {
+      key: 'proxy' as const,
+      total: px.partial.diff,
+      net: px.diff,
+      subs: px.subs,
+      lead: px.open.length
+        ? t('family.pool.owedAmount', { amount: formatTotal(px.partial.owed, base, { compact: true }) })
+        : t('report.year.count', { count: px.subs.length }),
+    },
+  ];
+  // 第二排始终四格（与上排对齐成井字）：比不出差额时变化来源各格写「—」，合租、代付照常显示
+  const slots = (ok && used.length > 0) || extras.some(Boolean) ? [groups[0], groups[1], extras[0] || groups[2], extras[1] || groups[3]] : [];
+  const subsNote = (lead: string | false, subs: Subscription[]) => (
+    // 项数在前，后面跟最多 3 个订阅图标，点开详情；一行放不下时截掉图标，不换行
+    <div className="ins-subs" style={{ flexWrap: 'nowrap', alignItems: 'center', overflow: 'hidden' }} data-snapshot-list>
+      {lead && <small style={{ marginRight: 2, whiteSpace: 'nowrap' }}>{lead}</small>}
+      {subs.slice(0, 3).map((s) => (
+        <button type="button" data-snapshot-keep key={s.id} onClick={() => onOpen(s)} title={s.name} aria-label={s.name}>
+          <SubIcon sub={s} size={18} />
+        </button>
+      ))}
+    </div>
+  );
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
@@ -357,29 +393,33 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
           value={<FxAmount total={r.nextYear.partial.total} ccy={base} direction={-1} compact />}
           note={totalNote(r.nextYear.partial.total) || versus('vsYear', r.nextYear.change)}
         />
-        {ok &&
-          used.length > 0 &&
-          groups.map((g) => (
+        {slots.map((g) =>
+          'kind' in g ? (
             <Metric
               key={g.kind}
               label={kindLabel(g.kind)}
               // 只有一类且就是全部差额时，金额与上方「较去年同期」重复，改写项数
-              value={!g.items.length ? '—' : solo ? t('report.year.count', { count: g.items.length }) : arrow(g.delta)}
+              value={!ok || !g.items.length ? '—' : solo ? t('report.year.count', { count: g.items.length }) : arrow(g.delta)}
               note={
-                g.items.length > 0 && (
-                  // 项数在前，后面跟最多 3 个订阅图标，点开详情；一行放不下时截掉图标，不换行
-                  <div className="ins-subs" style={{ flexWrap: 'nowrap', alignItems: 'center', overflow: 'hidden' }} data-snapshot-list>
-                    {!solo && <small style={{ marginRight: 2, whiteSpace: 'nowrap' }}>{t('report.year.count', { count: g.items.length })}</small>}
-                    {g.items.slice(0, 3).map((d) => (
-                      <button type="button" data-snapshot-keep key={d.sub.id} onClick={() => onOpen(d.sub)} title={d.sub.name} aria-label={d.sub.name}>
-                        <SubIcon sub={d.sub} size={18} />
-                      </button>
-                    ))}
-                  </div>
+                ok &&
+                g.items.length > 0 &&
+                subsNote(
+                  !solo && t('report.year.count', { count: g.items.length }),
+                  g.items.map((d) => d.sub),
                 )
               }
             />
-          ))}
+          ) : (
+            // 赚了写盈利、亏了写亏损，金额带正负号；缺汇率时只写盈亏
+            <Metric
+              key={g.key}
+              label={t(`report.year.${g.key}${g.total.incomplete ? 'Net' : Math.abs(g.net) < 0.5 ? 'Even' : g.net > 0 ? 'Gain' : 'Loss'}`)}
+              value={formatTotal(g.total, base, { direction: 1, compact: true })}
+              valueClassName={g.total.incomplete || Math.abs(g.net) < 0.5 ? '' : g.net > 0 ? 'gain' : 'loss'}
+              note={totalNote(g.total) || subsNote(g.lead, g.subs)}
+            />
+          ),
+        )}
       </MetricCards>
       {ok && used.length === 0 && (
         <div className="muted" style={{ fontSize: 'var(--fs-2)', paddingTop: 12 }}>

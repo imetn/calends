@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FALLBACK_FX } from './billing.ts';
-import { proxyAhead, proxyLedger, proxyRows, proxyTotals } from './proxy.ts';
+import { proxyAhead, proxyLedger, proxyRows, proxyTotals, proxyYear } from './proxy.ts';
 import { deleteRecord, openPeriods, receivableOf, recordProxyCharge, recordReceipt, recordWaiver } from './receivable-edit.ts';
 import { migrateReceivables } from './receivables-legacy.ts';
 import { DEFAULT_SETTINGS, type AppState, type Proxy, type Subscription } from './types.ts';
@@ -123,4 +123,18 @@ test('旧代付记录转成按期：相近日期对上、多期收款合成一�
     periods.map((p) => p.status),
     ['paid', 'due', 'paid', 'paid'],
   );
+});
+
+test('今年代付合计：只算今年扣款的期，盈亏只看已收回的期，没收的计入待收', () => {
+  const s = sub({ receipts: [{ id: 'r0', date: '2026-01-06', amount: 12, currency: 'USD', periods: ['2026-01-05'] }] }, { start: '2025-12-05' });
+  const y = proxyYear(state(s), today);
+  assert.deepEqual(
+    y.subs.map((x) => x.id),
+    ['p1'],
+  );
+  // 今年三期（1、2、3 月），去年 12 月那期不计
+  assert.equal(y.done.length + y.open.length, 3);
+  assert.equal(y.diff, 2);
+  assert.equal(y.partial.owed.value, 20);
+  assert.deepEqual(proxyYear({ ...state(s), subscriptions: [] }, today).subs, []);
 });

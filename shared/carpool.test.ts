@@ -11,6 +11,7 @@ import {
   suggestedLeaveRefund,
   carLedger,
   carYear,
+  carpoolYear,
   periodsTotal,
   nextCollectionDay,
   collectionPeriod,
@@ -329,6 +330,16 @@ test('当年盈亏：今年成本含预计扣款，收入含已收与今年还�
   assert.equal(y.cost, 360);
   assert.equal(y.income, 120);
   assert.equal(y.net, -240);
+  // 合计：只算我发起的车；早已停止、今年没有账的车不计入
+  const old = sub({ id: 'old', start: '2020-01-01', end: '2021-01-01', status: 'ended' });
+  const joined = sub({ id: 'j', share: { role: 'member', seats: 3, members: [] } });
+  const all = carpoolYear({ ...state, subscriptions: [s, old, joined] }, '2026-10-25');
+  assert.deepEqual(
+    all.subs.map((x) => x.id),
+    [s.id],
+  );
+  assert.equal(all.net, -240);
+  assert.equal(all.partial.net.value, -240);
 });
 
 test('几期应收的合计：一笔覆盖几期就加几期应收；退出日之后不再有期', () => {

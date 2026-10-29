@@ -143,6 +143,14 @@
     "stopped": "Dihentikan",
     "up": "Lebih banyak",
     "down": "Lebih sedikit",
+    "carpoolGain": "Paket bersama: untung",
+    "carpoolLoss": "Paket bersama: rugi",
+    "carpoolEven": "Paket bersama: impas",
+    "carpoolNet": "Paket bersama: neto",
+    "proxyGain": "Talangan: untung",
+    "proxyLoss": "Talangan: rugi",
+    "proxyEven": "Talangan: impas",
+    "proxyNet": "Talangan: neto",
     "empty": "Sama dengan periode yang sama tahun lalu."
   }
 }

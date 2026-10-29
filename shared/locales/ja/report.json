@@ -143,6 +143,14 @@
     "stopped": "停止",
     "up": "増加",
     "down": "減少",
+    "carpoolGain": "共有プランの利益",
+    "carpoolLoss": "共有プランの損失",
+    "carpoolEven": "共有プランは収支ゼロ",
+    "carpoolNet": "共有プランの損益",
+    "proxyGain": "立て替えの利益",
+    "proxyLoss": "立て替えの損失",
+    "proxyEven": "立て替えは収支ゼロ",
+    "proxyNet": "立て替えの損益",
     "empty": "前年同期と同水準です。"
   }
 }

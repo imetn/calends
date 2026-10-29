@@ -149,6 +149,14 @@
     "stopped": "Arrêté",
     "up": "Plus",
     "down": "Moins",
+    "carpoolGain": "Partagés : gain",
+    "carpoolLoss": "Partagés : perte",
+    "carpoolEven": "Partagés : équilibre",
+    "carpoolNet": "Partagés : solde",
+    "proxyGain": "Pour d’autres : gain",
+    "proxyLoss": "Pour d’autres : perte",
+    "proxyEven": "Pour d’autres : équilibre",
+    "proxyNet": "Pour d’autres : solde",
     "empty": "Identique à la même période l’an dernier."
   }
 }

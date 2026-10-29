@@ -204,6 +204,22 @@ export function carYear(state: AppState, s: Subscription, today: string) {
   return { cost, income, net: income - cost, partial: { cost: costTotal, income: incomeTotal, net: sumTotals([incomeTotal, scaleTotal(costTotal, -1)]) } };
 }
 
+/**
+ * 我发起的合租今年（自然年）合计盈亏：各车 carYear 相加。进行中的车都算；已停止的车只算今年还有成本或收入的。
+ * 报告年卡与 MCP 共用这一处口径
+ */
+export function carpoolYear(state: AppState, today: string) {
+  const cars = state.subscriptions
+    .filter((s) => s.share?.role === 'owner')
+    .map((s) => ({ s, y: carYear(state, s, today) }))
+    .filter(({ s, y }) => !isStopped(effectiveStatus(s, today)) || y.partial.cost.value !== 0 || y.partial.income.value !== 0 || y.partial.net.incomplete);
+  return {
+    subs: cars.map((c) => c.s),
+    net: cars.reduce((a, c) => a + c.y.net, 0),
+    partial: { net: sumTotals(cars.map((c) => c.y.partial.net)) },
+  };
+}
+
 /** 订阅一期大约几个月，用来把「每期份额」换算成按月 / 季 / 年收的金额 */
 export function cycleMonths(s: Subscription): number {
   // 买断没有周期：按收一次（与成员的买断收费周期一致）算，份额就是一次性的那份

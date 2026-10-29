@@ -137,6 +137,14 @@
     "stopped": "停用",
     "up": "多付",
     "down": "少付",
+    "carpoolGain": "合租盈利",
+    "carpoolLoss": "合租亏损",
+    "carpoolEven": "合租持平",
+    "carpoolNet": "合租盈亏",
+    "proxyGain": "代付盈利",
+    "proxyLoss": "代付亏损",
+    "proxyEven": "代付持平",
+    "proxyNet": "代付盈亏",
     "empty": "与去年同期持平。"
   }
 }

@@ -149,6 +149,14 @@
     "stopped": "Beendet",
     "up": "Mehr",
     "down": "Weniger",
+    "carpoolGain": "Geteilte Abos: Gewinn",
+    "carpoolLoss": "Geteilte Abos: Verlust",
+    "carpoolEven": "Geteilte Abos: ausgeglichen",
+    "carpoolNet": "Geteilte Abos: Saldo",
+    "proxyGain": "Für andere: Gewinn",
+    "proxyLoss": "Für andere: Verlust",
+    "proxyEven": "Für andere: ausgeglichen",
+    "proxyNet": "Für andere: Saldo",
     "empty": "Gleich wie im Vorjahreszeitraum."
   }
 }

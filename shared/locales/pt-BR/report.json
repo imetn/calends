@@ -149,6 +149,14 @@
     "stopped": "Encerrada",
     "up": "Mais",
     "down": "Menos",
+    "carpoolGain": "Compartilhados: lucro",
+    "carpoolLoss": "Compartilhados: prejuízo",
+    "carpoolEven": "Compartilhados: empate",
+    "carpoolNet": "Compartilhados: saldo",
+    "proxyGain": "Para outros: lucro",
+    "proxyLoss": "Para outros: prejuízo",
+    "proxyEven": "Para outros: empate",
+    "proxyNet": "Para outros: saldo",
     "empty": "Igual ao mesmo período do ano passado."
   }
 }

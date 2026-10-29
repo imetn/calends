@@ -149,6 +149,14 @@
     "stopped": "Stopped",
     "up": "More",
     "down": "Less",
+    "carpoolGain": "Shared plans profit",
+    "carpoolLoss": "Shared plans loss",
+    "carpoolEven": "Shared plans even",
+    "carpoolNet": "Shared plans net",
+    "proxyGain": "Paid for others profit",
+    "proxyLoss": "Paid for others loss",
+    "proxyEven": "Paid for others even",
+    "proxyNet": "Paid for others net",
     "empty": "Level with the same period last year."
   }
 }

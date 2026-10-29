@@ -143,6 +143,14 @@
     "stopped": "Đã dừng",
     "up": "Nhiều hơn",
     "down": "Ít hơn",
+    "carpoolGain": "Gói chia sẻ: lãi",
+    "carpoolLoss": "Gói chia sẻ: lỗ",
+    "carpoolEven": "Gói chia sẻ: hòa vốn",
+    "carpoolNet": "Gói chia sẻ: lãi/lỗ",
+    "proxyGain": "Trả hộ: lãi",
+    "proxyLoss": "Trả hộ: lỗ",
+    "proxyEven": "Trả hộ: hòa vốn",
+    "proxyNet": "Trả hộ: lãi/lỗ",
     "empty": "Bằng cùng kỳ năm ngoái."
   }
 }

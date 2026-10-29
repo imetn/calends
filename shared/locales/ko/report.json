@@ -143,6 +143,14 @@
     "stopped": "중단",
     "up": "증가",
     "down": "감소",
+    "carpoolGain": "공유 플랜 수익",
+    "carpoolLoss": "공유 플랜 손실",
+    "carpoolEven": "공유 플랜 손익 없음",
+    "carpoolNet": "공유 플랜 손익",
+    "proxyGain": "대신 결제 수익",
+    "proxyLoss": "대신 결제 손실",
+    "proxyEven": "대신 결제 손익 없음",
+    "proxyNet": "대신 결제 손익",
     "empty": "작년 같은 기간과 같습니다."
   }
 }
