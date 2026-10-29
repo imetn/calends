@@ -614,6 +614,17 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
             bubbles.map((b, k) => {
               const { s, v } = live[b.i];
               const d = b.r * 2 * w;
+              // 悬停时近旁的泡泡沿连线方向被推开几像素，越近推得越多
+              const o = hover != null && hover !== b.i ? bubbles.find((x) => x.i === hover) : undefined;
+              let push: string | undefined;
+              if (o) {
+                const dx = b.x - o.x;
+                const dy = b.y - o.y;
+                const gap = Math.hypot(dx, dy) - o.r - b.r;
+                const px = gap < 0.12 ? 6 * (1 - Math.max(0, gap) / 0.12) : 0;
+                const len = Math.hypot(dx, dy) || 1;
+                if (px > 0.5) push = `${((dx / len) * px).toFixed(1)}px ${((dy / len) * px).toFixed(1)}px`;
+              }
               return (
                 <button
                   key={s.id}
@@ -626,7 +637,9 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
                       width: d,
                       height: d,
                       '--tint': catColor(s.category),
-                      animationDelay: `${k * 35}ms`,
+                      '--push': push,
+                      // 浮动错开相位，不要整齐划一
+                      animationDelay: `${-((k * 0.61) % 2.6).toFixed(2)}s`,
                     } as Record<string, string | number>
                   }
                   onMouseEnter={() => setHover(b.i)}

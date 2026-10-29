@@ -4217,6 +4217,53 @@ button.h-price-row:focus-visible {
 .star .ico {
   box-shadow: none;
 }
+/* 悬停星图：泡泡各自轻轻浮动（错开起点）；指着的那个弹大一点、图标晃一下，近旁的被轻轻推开 */
+.star {
+  translate: var(--push, 0 0);
+  transition:
+    background var(--duration) var(--ease),
+    translate var(--duration) var(--ease),
+    scale var(--duration) var(--ease);
+}
+.stars:hover .star {
+  animation: star-float 2.6s ease-in-out infinite;
+}
+.star.on {
+  scale: 1.07;
+}
+.star.on .ico {
+  animation: star-wiggle 520ms var(--ease);
+}
+@keyframes star-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+@keyframes star-wiggle {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  30% {
+    rotate: -10deg;
+  }
+  65% {
+    rotate: 6deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .star,
+  .stars:hover .star,
+  .star.on .ico {
+    animation: none;
+    translate: none;
+    scale: none;
+  }
+}
 .star-amt {
   font-size: var(--fs-1);
   font-weight: 600;
