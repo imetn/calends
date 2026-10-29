@@ -672,8 +672,14 @@ async function browserRun(input) {
         }
         // Extra expanded capture proves counts and exposes long histories without altering initial-state images.
         await openCase(c, 'zh-CN', 1440, 1800);
-        const moreHistory = await page.evaluate(() => !!document.querySelector('.dt-charges .dt-tfoot button'));
-        if (moreHistory) {
+        // 多年记录按年折叠：先点表头「全部展开」
+        const collapsedYears = await page.evaluate(() => !!document.querySelector('.dt-charges .ld-toggle[aria-expanded="false"]'));
+        if (collapsedYears) {
+          await page.click('.dt-charges .ld-toggle[aria-expanded="false"]');
+          await settle();
+        }
+        const moreHistory = collapsedYears || (await page.evaluate(() => !!document.querySelector('.dt-charges .dt-tfoot button')));
+        if (await page.evaluate(() => !!document.querySelector('.dt-charges .dt-tfoot button'))) {
           await page.click('.dt-charges .dt-tfoot button');
           await settle();
         }
