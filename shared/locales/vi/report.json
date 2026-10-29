@@ -1,6 +1,12 @@
 {
   "title": "Báo cáo",
   "shareReview": "Chia sẻ tổng kết năm {year}",
+  "shareAll": "Chia sẻ tổng kết toàn thời gian",
+  "pick": {
+    "label": "Chọn năm",
+    "all": "Tất cả",
+    "year": "Năm {year}"
+  },
   "perMonth": "{amount}/tháng",
   "per": {
     "day": "ngày",
@@ -22,12 +28,31 @@
     "year": "{year}"
   },
   "hero": {
-    "label": "Chi tiêu gói đăng ký hằng tháng",
-    "vsLastMonth": "so với cuối tháng trước",
-    "yearAgo": "{amount} một năm trước",
-    "perDay": "Mỗi ngày",
-    "active": "Đang hoạt động",
-    "recover": "Thu lại từ gói chia sẻ/tháng"
+    "label": "Chi tiêu đăng ký cả năm",
+    "tip": "Tháng {month}\nLũy kế {total}",
+    "paid": "Đã trả",
+    "avg": "Trung bình tháng",
+    "peak": "Tháng cao nhất"
+  },
+  "all": {
+    "label": "Tổng chi tiêu đăng ký",
+    "basis": "Từ khoản trừ đầu tiên đến hôm nay: tiền mặt ròng phần của tôi, gồm hoàn tiền và chuyển nhượng, không gồm mua hộ.",
+    "since": "Từ {date}",
+    "last12": "12 tháng qua",
+    "avg": "Trung bình năm",
+    "peak": "Năm cao nhất",
+    "subs": "Số đăng ký",
+    "detail": "Chi tiết lũy kế"
+  },
+  "tenure": {
+    "title": "Gói đăng ký kéo dài bao lâu",
+    "basis": "Số ngày thực sự đăng ký, không tính thời gian gián đoạn và trả hộ.\nDừng ngay: dừng trong vòng 31 ngày.\nĐang dùng: số gói vào ngày cuối mỗi tháng.",
+    "active": "Đang dùng, trung bình",
+    "stopped": "Đã dừng, trung bình",
+    "quick": "Dừng ngay",
+    "peak": "Nhiều nhất cùng lúc",
+    "longest": "Dùng lâu nhất",
+    "count": "Gói đang dùng"
   },
   "wf": {
     "vsFrom": "so với {amount} cuối tháng trước",
@@ -65,7 +90,6 @@
     "prepaid": "Giá trị trả trước",
     "prepaidSub": "{count} đã trả, chưa dùng hết",
     "next90": "Đến hạn trong 90 ngày tới",
-    "peak": "Cao nhất vào {month}\n{amount}",
     "fullPaidHint": "Toàn bộ số tiền đã trả, gồm khoản ứng trước cho thành viên"
   },
   "comp": {
@@ -81,7 +105,12 @@
     "monthly": "Hằng tháng",
     "groupTip": {
       "other": "{name}\n{count} mục\n{amount}/tháng"
-    }
+    },
+    "groupTipAll": {
+      "other": "{name}\n{count} mục\n{amount}"
+    },
+    "basisYear": "Từ 1/1 đến 31/12 của năm đã chọn: phần chi tiêu ròng của tôi, gồm hoàn tiền và chuyển nhượng, không gồm trả hộ; sau hôm nay là dự kiến.\nPhương thức thanh toán và tiền tệ theo từng lần trừ tiền.",
+    "basisAll": "Từ lần trừ tiền đầu tiên đến hôm nay: phần chi tiêu ròng của tôi, gồm hoàn tiền và chuyển nhượng, không gồm trả hộ.\nPhương thức thanh toán và tiền tệ theo từng lần trừ tiền."
   },
   "topup": {
     "title": "Kế hoạch nạp tiền",
@@ -123,20 +152,15 @@
   "stops": {
     "title": "Hủy và ngừng dịch vụ",
     "loss": "Tổn thất chưa hoàn tiền",
-    "basis": "Toàn bộ lịch sử\nPhần của tôi; tổn thất chưa hoàn tiền theo tỷ giá ngày dừng.",
+    "basis": "Đã dừng trong năm đã chọn\nPhần của tôi; tổn thất chưa hoàn tiền theo tỷ giá ngày dừng.",
+    "basisAll": "Tất cả đăng ký đã dừng\nPhần của tôi; tổn thất chưa hoàn tiền theo tỷ giá ngày dừng.",
     "cancel": "Chủ động hủy sớm"
   },
   "year": {
-    "title": "Năm {year}",
-    "basis": "Chi tiêu ròng theo phần của tôi, gồm hoàn tiền và chuyển nhượng; sau hôm nay là dự kiến theo các gói hiện tại. Cùng kỳ: từ 1/1 đến hôm nay so với 1/1 đến cùng ngày năm ngoái.",
-    "total": "Dự kiến năm nay",
-    "pendingAmount": "Còn {amount}",
+    "title": "Chi tiết năm",
+    "basis": "Chi tiêu ròng theo phần của tôi, gồm hoàn tiền và chuyển nhượng; sau hôm nay là dự kiến theo các gói hiện tại. Năm nay so từ 1/1 đến hôm nay với cùng kỳ năm ngoái; các năm khác so cả năm.",
     "vsLast": "so với cùng kỳ năm ngoái",
-    "lastAmount": "Năm ngoái: {amount}",
-    "nextMonth": "Dự kiến {month}",
-    "vsMonth": "so với cùng tháng năm ngoái {delta}",
-    "nextYear": "Dự kiến năm {year}",
-    "vsYear": "so với năm nay {delta}",
+    "vsPrev": "so với năm trước",
     "count": "{count} mục",
     "added": "Mới",
     "stopped": "Đã dừng",

@@ -1,6 +1,12 @@
 {
   "title": "報告",
   "shareReview": "分享 {year} 年度回顧",
+  "shareAll": "分享累計回顧",
+  "pick": {
+    "label": "選擇年份",
+    "all": "全部",
+    "year": "{year} 年"
+  },
   "perMonth": "{amount}/月",
   "per": {
     "day": "天",
@@ -22,12 +28,31 @@
     "year": "{yy}年"
   },
   "hero": {
-    "label": "每月訂閱支出",
-    "vsLastMonth": "較上月末",
-    "yearAgo": "一年前 {amount}",
-    "perDay": "每天",
-    "active": "計費中",
-    "recover": "共享回收/月"
+    "label": "全年訂閱支出",
+    "tip": "當月 {month}\n累計 {total}",
+    "paid": "已付",
+    "avg": "月均",
+    "peak": "最高月"
+  },
+  "all": {
+    "label": "累計訂閱支出",
+    "basis": "從第一筆扣款到今天，按我的份額統計淨現金，含退款與轉讓，不含代付。",
+    "since": "自 {date} 起",
+    "last12": "近 12 個月",
+    "avg": "年均",
+    "peak": "最高年",
+    "subs": "訂閱數",
+    "detail": "累計明細"
+  },
+  "tenure": {
+    "title": "訂閱壽命",
+    "basis": "按實際在訂天數計，中斷不算，不含代付。\n試了就停：在訂不超過 31 天就停掉。\n在用訂閱數：每月最後一天仍在訂的個數。",
+    "active": "在用平均已訂",
+    "stopped": "停掉的平均訂了",
+    "quick": "試了就停",
+    "peak": "同時在訂最多",
+    "longest": "訂得最久",
+    "count": "在用訂閱數"
   },
   "wf": {
     "vsFrom": "比上月底 {amount}",
@@ -63,7 +88,6 @@
     "prepaid": "預付餘值",
     "prepaidSub": "{count} 項已付未用完",
     "next90": "未來 90 天要付",
-    "peak": "高峰在 {n} 月\n{amount}",
     "fullPaidHint": "全額實付，含替成員墊付"
   },
   "comp": {
@@ -77,7 +101,10 @@
     "yearly": "年付",
     "quarterly": "季付 / 半年付",
     "monthly": "月付",
-    "groupTip": "{name}\n{count} 項\n{amount}/月"
+    "groupTip": "{name}\n{count} 項\n{amount}/月",
+    "groupTipAll": "{name}\n{count} 項\n{amount}",
+    "basisYear": "所選年份 1 月 1 日至 12 月 31 日，按我的份額統計淨現金，含退款與轉讓，不含代付；今天以後按目前訂閱預估。\n付款方式、幣別按每筆扣款實際歸屬。",
+    "basisAll": "從第一筆扣款到今天，按我的份額統計淨現金，含退款與轉讓，不含代付。\n付款方式、幣別按每筆扣款實際歸屬。"
   },
   "topup": {
     "title": "儲值計畫",
@@ -117,20 +144,15 @@
   "stops": {
     "title": "退訂與停用",
     "loss": "未退款損失",
-    "basis": "全部歷史\n我的份額；未退款損失按停止日匯率。",
+    "basis": "所選年份內停止的訂閱\n我的份額；未退款損失按停止日匯率。",
+    "basisAll": "全部停止過的訂閱\n我的份額；未退款損失按停止日匯率。",
     "cancel": "主動提前退訂"
   },
   "year": {
-    "title": "{year} 年",
-    "basis": "按我的份額統計淨現金，含退款與轉讓；今天以後按目前訂閱預估。同期指 1 月 1 日至今天，對比去年 1 月 1 日至同一天。",
-    "total": "今年預估",
-    "pendingAmount": "待付 {amount}",
+    "title": "年度明細",
+    "basis": "按我的份額統計淨現金，含退款與轉讓；今天以後按目前訂閱預估。今年與去年比較 1 月 1 日至今天的同期，其他年份比較全年。",
     "vsLast": "較去年同期",
-    "lastAmount": "去年同期 {amount}",
-    "nextMonth": "{month}預估",
-    "vsMonth": "較去年同月 {delta}",
-    "nextYear": "{year} 年預估",
-    "vsYear": "較今年 {delta}",
+    "vsPrev": "較上一年",
     "count": "{count} 項",
     "added": "新增",
     "stopped": "停用",

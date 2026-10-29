@@ -1,6 +1,8 @@
 {
   "title": "Jahresrückblick teilen",
+  "titleAll": "Gesamtrückblick teilen",
   "fileName": "abos-rueckblick-{year}-{style}.png",
+  "fileNameAll": "abos-gesamt-{style}.png",
   "style": {
     "poster": "Poster",
     "receipt": "Kassenbon",
@@ -13,6 +15,7 @@
   "whoseSelf": "Meine",
   "topSpend": "Höchste Ausgaben",
   "ofYear": "{pct} der Jahresausgaben",
+  "ofAll": "{pct} der Gesamtausgaben",
   "n": {
     "subs": {
       "one": "{count} Abo",
@@ -31,6 +34,7 @@
     "shop": "{whose} Abonnements",
     "asOf": "Jahresübersicht\nStand {date}",
     "fullYear": "Jahresübersicht {year}",
+    "all": "Gesamtübersicht\nStand {date}",
     "no": "Nr. {no}",
     "item": "Artikel",
     "share": "Anteil",
@@ -41,6 +45,7 @@
   },
   "poster": {
     "kicker": "{whose} Abonnements im Jahresrückblick",
+    "kickerAll": "{whose} Abonnements im Gesamtrückblick",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -54,7 +59,9 @@
       "ongoing": "Bisherige Jahresausgaben",
       "ongoingHidden": "Bisherige Abos",
       "year": "Jahresausgaben",
-      "yearHidden": "Abos im Jahr"
+      "yearHidden": "Abos im Jahr",
+      "all": "Bisherige Ausgaben",
+      "allHidden": "Bisherige Abos"
     },
     "perDay": "Im Schnitt {amount}/Tag",
     "longest": "Längstes Abo",
@@ -73,5 +80,6 @@
     "foot": "Kreisgröße entspricht den Ausgaben"
   },
   "spendBasis": "Nettozahlungen für meinen Anteil, einschließlich Erstattungen",
-  "stopLoss": "Nicht erstatteter Verlust dieses Jahr: {amount}"
+  "stopLoss": "Nicht erstatteter Verlust dieses Jahr: {amount}",
+  "stopLossAll": "Bisher nicht erstatteter Verlust: {amount}"
 }

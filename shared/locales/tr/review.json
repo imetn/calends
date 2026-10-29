@@ -1,6 +1,8 @@
 {
   "title": "Yıllık özeti paylaş",
+  "titleAll": "Tüm zamanlar özetini paylaş",
   "fileName": "subscriptions-{year}-in-review-{style}.png",
+  "fileNameAll": "abonelikler-tum-zamanlar-{style}.png",
   "style": {
     "poster": "Poster",
     "receipt": "Fiş",
@@ -13,6 +15,7 @@
   "whoseSelf": "Ben",
   "topSpend": "En yüksek harcama",
   "ofYear": "Yıllık harcamanın {pct} kadarı",
+  "ofAll": "Toplam harcamanın {pct}",
   "n": {
     "subs": {
       "one": "{count} abonelik",
@@ -31,6 +34,7 @@
     "shop": "Abonelik defteri: {whose}",
     "asOf": "Yıllık özet\n{date} itibarıyla",
     "fullYear": "{year} yıllık özeti",
+    "all": "Toplam döküm\n{date} itibarıyla",
     "no": "No. {no}",
     "item": "Ürün",
     "share": "Pay",
@@ -41,6 +45,7 @@
   },
   "poster": {
     "kicker": "Yıllık abonelik özeti: {whose}",
+    "kickerAll": "{whose} tüm zamanlar abonelik özeti",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -54,7 +59,9 @@
       "ongoing": "Yıl başından beri harcama",
       "ongoingHidden": "Yıl başından beri abonelikler",
       "year": "Yıllık harcama",
-      "yearHidden": "Yıl içindeki abonelikler"
+      "yearHidden": "Yıl içindeki abonelikler",
+      "all": "Bugüne kadarki harcama",
+      "allHidden": "Bugüne kadarki abonelikler"
     },
     "perDay": "Günde ortalama {amount}",
     "longest": "En uzun süren abonelik",
@@ -73,5 +80,6 @@
     "foot": "Daire büyüklüğü harcamayı gösterir"
   },
   "spendBasis": "İadeler dahil payıma düşen net nakit",
-  "stopLoss": "Bu yıl iade edilmeyen kayıp: {amount}"
+  "stopLoss": "Bu yıl iade edilmeyen kayıp: {amount}",
+  "stopLossAll": "Bugüne kadar iade edilmeyen kayıp: {amount}"
 }

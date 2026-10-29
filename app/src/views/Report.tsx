@@ -1,24 +1,21 @@
 import { Composition } from '../components/Composition.tsx';
-import { chargesTotal, formatTotal, scaleTotal, totalNote } from '../../../shared/fx-total.ts';
+import { chargesTotal, emptyTotal, formatTotal, scaleTotal, sumTotals, totalNote } from '../../../shared/fx-total.ts';
 import { FxAmount } from '../components/FxAmount.tsx';
-import { DAYS_PER_MONTH } from '../../../shared/billing.ts';
 import { CopyImageButton } from '../components/CopyImageButton.tsx';
 import { snapshotCard } from '../snapshot.ts';
 import { copyParts } from '../components/copy.tsx';
 import { base as appPath } from '../base.ts';
 import { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { addDays, addMonths, diffDays, totals } from '../../../shared/billing.ts';
+import { addDays, addMonths, DAYS_PER_MONTH, diffDays, effectiveStatus, isStopped } from '../../../shared/billing.ts';
 import { flow, cnDate, money, monthLabel } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { tx } from '../i18n.ts';
 import {
   cashVsAccrual,
-  chartMonths,
   events,
   insights,
   monthEnd,
   monthMovement,
-  mrrSeries,
   prepaidValue,
   stopHistory,
   stopLosses,
@@ -34,16 +31,43 @@ import { Icon } from '../components/icons.tsx';
 import { tipProps } from '../components/overlays.tsx';
 import { allCharges, toBase, firstStart } from '../derive.ts';
 import { SpendingDelta } from '../components/ScopeReport.tsx';
-import { yearOutlook, type Comparison, type YearDriver } from '../../../shared/scope-report.ts';
+import { allOutlook, spendPiecesBetween, subscriptionTenure, yearOutlook, type YearDriver } from '../../../shared/scope-report.ts';
+import { Picker } from '../components/Picker.tsx';
 import { carpoolYear } from '../../../shared/carpool.ts';
 import { proxyYear } from '../../../shared/proxy.ts';
 
 const mLabel = (m: string) => (m.endsWith('-01') ? t('report.axis.year', { yy: m.slice(2, 4), year: m.slice(0, 4) }) : monthLabel(m, { year: false }));
 const perMonth = (amount: string) => t('report.perMonth', { amount });
 
-export function Report({ state, today, onOpen, onReview }: { state: AppState; today: string; onOpen: (s: Subscription) => void; onReview: () => void }) {
+export function Report({
+  state,
+  today,
+  onOpen,
+  onReview,
+}: {
+  state: AppState;
+  today: string;
+  onOpen: (s: Subscription) => void;
+  onReview: (year: string) => void;
+}) {
   const base = state.settings.baseCurrency;
-  const y = Number(today.slice(0, 4));
+  const cur = Number(today.slice(0, 4));
+  // 可选：全部，或账本第一年到明年（新的在前）
+  // 代付不算自己的支出，起始年与累计口径一致地排除
+  const first = Math.min(cur, Number(firstStart(ownState(state), today).slice(0, 4)));
+  const [pick, setPick] = useState(String(cur));
+  const all = pick === 'all';
+  const pieces = useMemo(
+    () => (all ? allOutlook(state, today).pieces : spendPiecesBetween(state, `${pick}-01-01`, `${pick}-12-31`, today)),
+    [all, pick, state, today],
+  );
+  const year = all ? cur : Number(pick);
+  const now = !all && year === cur;
+  const future = !all && year > cur;
+  const options = [
+    { value: 'all', label: t('report.pick.all') },
+    ...Array.from({ length: cur + 2 - first }, (_, i) => String(cur + 1 - i)).map((y) => ({ value: y, label: t('report.pick.year', { year: y }) })),
+  ];
   const pageRef = useRef<HTMLDivElement>(null);
   return (
     <>
@@ -51,74 +75,105 @@ export function Report({ state, today, onOpen, onReview }: { state: AppState; to
         {/* 鼠标移到分享上才出现：复制整份报告为一张图（卡片上的复制只取那一张）；「分享年度回顾」是另做的个性化回顾 */}
         <span className="report-share">
           <CopyImageButton render={() => snapshotCard(pageRef.current!)} />
-          <button className="btn" onClick={onReview}>
-            <Icon name="share" /> {t('report.shareReview', { year: y })}
+          <Picker variant="btn" value={pick} options={options} onChange={setPick} ariaLabel={t('report.pick.label')} search={false} />
+          {/* 回顾只回看今年及以前；全部是从第一笔到今天的累计回顾 */}
+          <button className="btn" disabled={future} onClick={() => onReview(pick)}>
+            <Icon name="share" /> {all ? t('report.shareAll') : t('report.shareReview', { year })}
           </button>
         </span>
       </Toolbar>
+      {/* 整页跟随所选年份；构成按所选年份实付；体检、充值描述的是现在，只在今年出现。
+          全部：累计花了多少、累计构成（分类／支付方式／币种／周期）、订阅能留多久、逐年现金、停用损失；按月、按年的变化明细不再出现 */}
       <div className="page fade-in stack" ref={pageRef}>
-        <Hero state={state} today={today} />
-        <YearCard state={state} today={today} onOpen={onOpen} />
-        {/* 先看钱的全貌（现金与真实成本、钱花在哪），再看本月变动与体检 */}
-        <CashCard state={state} today={today} />
-        <Composition state={state} today={today} onOpen={onOpen} />
-        <div className="grid g-2">
-          <Waterfall state={state} today={today} onOpen={onOpen} />
-          <Checkup state={state} today={today} onOpen={onOpen} />
-        </div>
-        <StopsCard state={state} today={today} onOpen={onOpen} />
-        <div className="grid g-2 report-bottom">
-          <TopUps state={state} today={today} />
-          <Changelog state={state} today={today} onOpen={onOpen} base={base} />
-        </div>
+        {all ? (
+          <>
+            <AllHero state={state} today={today} />
+            <AllCard state={state} today={today} first={first} onOpen={onOpen} />
+            <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} hint={t('report.comp.basisAll')} />
+            <TenureCard state={state} today={today} onOpen={onOpen} />
+            <CashCard state={state} today={today} year={null} />
+            <StopsCard state={state} today={today} year={null} onOpen={onOpen} />
+          </>
+        ) : (
+          <>
+            <Hero state={state} today={today} year={year} />
+            <YearCard state={state} today={today} year={year} onOpen={onOpen} />
+            <CashCard state={state} today={today} year={year} />
+            <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} hint={t('report.comp.basisYear')} />
+            {now ? (
+              <div className="grid g-2">
+                <Waterfall key={year} state={state} today={today} year={year} onOpen={onOpen} />
+                <Checkup state={state} today={today} onOpen={onOpen} />
+              </div>
+            ) : (
+              !future && (
+                <div className="grid g-2 report-bottom">
+                  <Waterfall key={year} state={state} today={today} year={year} onOpen={onOpen} />
+                  <Changelog state={state} today={today} year={year} onOpen={onOpen} base={base} />
+                </div>
+              )
+            )}
+            {!future && <StopsCard state={state} today={today} year={year} onOpen={onOpen} />}
+            {now && (
+              <div className="grid g-2 report-bottom">
+                <TopUps state={state} today={today} />
+                <Changelog state={state} today={today} year={year} onOpen={onOpen} base={base} />
+              </div>
+            )}
+          </>
+        )}
       </div>
     </>
   );
 }
 
-/** 头部：负 MRR + 历史走势 */
-function Hero({ state, today }: { state: AppState; today: string }) {
+/** 头部：所选年份全年已付加预计，与上一年比较（今年比同期）；走势为逐月累计，今天所在月起是预计 */
+function Hero({ state, today, year }: { state: AppState; today: string; year: number }) {
   const base = state.settings.baseCurrency;
-  // 固定看最近 12 个月，多取一个点让起点正好是「一年前」；账本更短时从第一笔数据开始
-  const months = chartMonths(firstStart(state, today), today, 13);
-  // 走势是过去已经扣的钱，各月按当时汇率折算，不再提供按今天汇率重算的切换
-  const series = useMemo(() => mrrSeries(state, today, months, true), [state, today, months]);
-  const tot = totals(state, today);
-  const current = series[series.length - 1].partial;
-  const yearAgo = series.length > 12 ? series[series.length - 13].mrr : undefined;
-  const evDates = new Set(
-    events(state, today)
-      .filter((e) => e.kind !== 'buy')
-      .map((e) => e.date.slice(0, 7)),
-  );
-  const markers = series.map((p, i) => (evDates.has(p.month) ? i : -1)).filter((i) => i >= 0);
-  /** 带正负号的金额：支出为负、收入为正 */
-  const signed = (v: number, compact = true) => flow(v, base, { compact });
+  const r = useMemo(() => yearOutlook(state, today, year), [state, today, year]);
+  const cur = Number(today.slice(0, 4));
+  const change = r.samePeriod.change;
+  const delta = change?.amount ?? NaN;
+  const cum = r.months.reduce<number[]>((acc, m) => [...acc, (acc[acc.length - 1] ?? 0) + (Number.isFinite(m.total) ? m.total : 0)], []);
+  // 往年全实线，明年全虚线
+  const ahead = year < cur ? r.months.length - 1 : year > cur ? -1 : r.months.findIndex((m) => m.month === today.slice(0, 7)) - 1;
+  const peak = r.months.reduce((a, m) => (m.total > a.total ? m : a), r.months[0]);
+  const amount = (total: Parameters<typeof formatTotal>[0]) => formatTotal(total, base, { direction: -1, compact: true });
+  const arrow = (v: number) => (!Number.isFinite(v) ? '—' : `${v > 0.005 ? '↑' : v < -0.005 ? '↓' : ''} ${money(Math.abs(v), base, { compact: true })}`.trim());
   return (
     <div className="card hero-card copy-card" data-copy-card>
       <div className="hero-l">
-        <CardTitle as="div" className="stat-label" hint={t('scope.mrrBasis')}>
+        <CardTitle as="div" className="stat-label" hint={t('report.year.basis')}>
           {t('report.hero.label')}
         </CardTitle>
         <div className="hero-num">
-          <FxAmount total={current} ccy={base} direction={-1} />
+          <FxAmount total={r.current.partial.total} ccy={base} direction={-1} />
         </div>
-        <div className="hero-delta">
-          {yearAgo != null && yearAgo > 0 && <span className="muted">{copyParts(t('report.hero.yearAgo', { amount: signed(-yearAgo) }))}</span>}
+        <div className="hero-delta stmt-delta">
+          {change && Number.isFinite(delta) && (
+            <>
+              <span className={delta > 0.5 ? 'up' : delta < -0.5 ? 'down' : ''}>{copyParts(arrow(delta))}</span>
+              {t(year === cur ? 'report.year.vsLast' : 'report.year.vsPrev')}
+            </>
+          )}
         </div>
         <MetricCards plain>
-          <Metric
-            label={t('report.hero.perDay')}
-            value={formatTotal(scaleTotal(current, 1 / DAYS_PER_MONTH), base, { direction: -1, main: true, average: true })}
-          />
-          <Metric label={t('report.hero.active')} value={tot.activeCount} note={totalNote(current) || undefined} />
-          {(tot.recoverMrr > 1 || tot.partial.recover.incomplete) && (
-            <Metric
-              label={t('report.hero.recover')}
-              value={formatTotal(tot.partial.recover, base, { direction: 1, compact: true, main: true })}
-              valueClassName="gain"
-            />
+          {/* 往年全已付、明年全待扣，这两格会与大数字重复，只在今年出现 */}
+          {year === cur && (
+            <>
+              <Metric label={t('report.hero.paid')} value={formatTotal(r.current.partial.paid, base, { direction: -1, compact: true, main: true })} />
+              <Metric label={t('scope.pending')} value={formatTotal(r.current.partial.pending, base, { direction: -1, compact: true, main: true })} />
+            </>
           )}
+          <Metric
+            label={t('report.hero.avg')}
+            value={formatTotal(scaleTotal(r.current.partial.total, 1 / 12), base, { direction: -1, compact: true, main: true })}
+          />
+          <Metric
+            label={t('report.hero.peak')}
+            value={peak.total > 0.005 ? formatTotal(peak.partial.total, base, { direction: -1, compact: true, main: true }) : '—'}
+            note={peak.total > 0.005 && <small>{monthLabel(peak.month, { year: false })}</small>}
+          />
         </MetricCards>
       </div>
       <div className="hero-r">
@@ -126,14 +181,19 @@ function Hero({ state, today }: { state: AppState; today: string }) {
           <CopyImageButton hover />
         </div>
         <AreaChart
-          values={series.map((p) => p.partial.value)}
-          labels={series.map((p) => mLabel(p.month))}
-          months={series.map((p) => p.month)}
-          markers={markers}
+          values={cum}
+          labels={r.months.map((m) => mLabel(m.month))}
+          months={r.months.map((m) => m.month)}
+          ahead={ahead}
           tip={(i) => (
             <>
-              <b>{series[i].month}</b> <span className="copy-gap" aria-hidden="true" />{' '}
-              {perMonth(formatTotal(series[i].partial, base, { direction: -1, compact: true }))}
+              <b>{monthLabel(r.months[i].month, { year: false })}</b> <span className="copy-gap" aria-hidden="true" />{' '}
+              {copyParts(
+                t('report.hero.tip', {
+                  month: amount(r.months[i].partial.total),
+                  total: amount(sumTotals(r.months.slice(0, i + 1).map((m) => m.partial.total))),
+                }),
+              )}
             </>
           )}
         />
@@ -142,10 +202,214 @@ function Hero({ state, today }: { state: AppState; today: string }) {
   );
 }
 
-/** 月度变动瀑布：上月末 → 新增 → 涨价 → 降价 → 退订 → 本月 */
-function Waterfall({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
+/** 全部：从第一笔扣款到今天的累计支出；走势为逐月累计，全是已发生 */
+function AllHero({ state, today }: { state: AppState; today: string }) {
   const base = state.settings.baseCurrency;
-  const [offset, setOffset] = useState(0);
+  const r = useMemo(() => allOutlook(state, today), [state, today]);
+  const cum = r.months.reduce<number[]>((acc, m) => [...acc, (acc[acc.length - 1] ?? 0) + (Number.isFinite(m.total) ? m.total : 0)], []);
+  // 年均按实际经过的天数折算；不足一年时就是累计本身
+  const years = Math.max(1, (diffDays(r.since, today) + 1) / 365);
+  const peak = r.years.reduce((a, y) => (y.paid > a.paid ? y : a), r.years[0]);
+  const peakMonth = r.months.reduce((a, m) => (m.total > a.total ? m : a), r.months[0]);
+  const amount = (total: Parameters<typeof formatTotal>[0]) => formatTotal(total, base, { direction: -1, compact: true });
+  return (
+    <div className="card hero-card copy-card" data-copy-card>
+      <div className="hero-l">
+        <CardTitle as="div" className="stat-label" hint={t('report.all.basis')}>
+          {t('report.all.label')}
+        </CardTitle>
+        <div className="hero-num">
+          <FxAmount total={r.total} ccy={base} direction={-1} />
+        </div>
+        <div className="hero-delta">{t('report.all.since', { date: monthLabel(r.since.slice(0, 7)) })}</div>
+        <MetricCards plain>
+          <Metric
+            label={t('report.all.last12')}
+            value={formatTotal(sumTotals(r.months.slice(-12).map((m) => m.partial.total)), base, { direction: -1, compact: true, main: true })}
+          />
+          <Metric label={t('report.all.avg')} value={formatTotal(scaleTotal(r.total, 1 / years), base, { direction: -1, compact: true, main: true })} />
+          <Metric
+            label={t('report.all.peak')}
+            value={peak && peak.paid > 0.005 ? formatTotal(peak.partial.paid, base, { direction: -1, compact: true, main: true }) : '—'}
+            note={peak && peak.paid > 0.005 && <small>{t('report.pick.year', { year: peak.year })}</small>}
+          />
+          <Metric
+            label={t('report.hero.peak')}
+            value={peakMonth && peakMonth.total > 0.005 ? formatTotal(peakMonth.partial.total, base, { direction: -1, compact: true, main: true }) : '—'}
+            note={peakMonth && peakMonth.total > 0.005 && <small>{monthLabel(peakMonth.month)}</small>}
+          />
+        </MetricCards>
+      </div>
+      <div className="hero-r">
+        <div className="row copy-controls" style={{ justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
+          <CopyImageButton hover />
+        </div>
+        <AreaChart
+          values={cum}
+          labels={r.months.map((m) => mLabel(m.month))}
+          months={r.months.map((m) => m.month)}
+          tip={(i) => (
+            <>
+              <b>{monthLabel(r.months[i].month)}</b> <span className="copy-gap" aria-hidden="true" />{' '}
+              {copyParts(
+                t('report.hero.tip', {
+                  month: amount(r.months[i].partial.total),
+                  total: amount(sumTotals(r.months.slice(0, i + 1).map((m) => m.partial.total))),
+                }),
+              )}
+            </>
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** 全部：用过多少订阅、停了多少，以及合租、代付历年盈亏之和（今年含预计）；没有合租、代付就只有前两格 */
+function AllCard({ state, today, first, onOpen }: { state: AppState; today: string; first: number; onOpen: (s: Subscription) => void }) {
+  const base = state.settings.baseCurrency;
+  const subs = useMemo(() => allOutlook(state, today).bySub.map((x) => x.sub), [state, today]);
+  const stopped = state.subscriptions.filter((s) => !s.proxy && isStopped(effectiveStatus(s, today)));
+  const extras = useMemo(() => {
+    const years = Array.from({ length: Number(today.slice(0, 4)) - first + 1 }, (_, i) => String(first + i));
+    const cars = years.map((y) => carpoolYear(state, today, y));
+    const pxs = years.map((y) => proxyYear(state, today, y));
+    const uniq = (list: Subscription[]) => [...new Map(list.map((s) => [s.id, s])).values()];
+    const car = { subs: uniq(cars.flatMap((c) => c.subs)), net: cars.reduce((a, c) => a + c.net, 0), total: sumTotals(cars.map((c) => c.partial.net)) };
+    const px = { subs: uniq(pxs.flatMap((p) => p.subs)), net: pxs.reduce((a, p) => a + p.diff, 0), total: sumTotals(pxs.map((p) => p.partial.diff)) };
+    return [car.subs.length > 0 && { key: 'carpool' as const, ...car }, px.subs.length > 0 && { key: 'proxy' as const, ...px }].filter((x) => !!x);
+  }, [state, today, first]);
+  const icons = (lead: string, list: Subscription[]) => (
+    <div className="ins-subs" style={{ flexWrap: 'nowrap', alignItems: 'center', overflow: 'hidden' }} data-snapshot-list>
+      <small style={{ marginRight: 2, whiteSpace: 'nowrap' }}>{lead}</small>
+      {list.slice(0, 3).map((s) => (
+        <button type="button" data-snapshot-keep key={s.id} onClick={() => onOpen(s)} title={s.name} aria-label={s.name}>
+          <SubIcon sub={s} size={18} />
+        </button>
+      ))}
+    </div>
+  );
+  return (
+    <div className="card copy-card" data-copy-card>
+      <div className="card-h">
+        <CardTitle as="h3" hint={t('report.all.basis')}>
+          {t('report.all.detail')}
+        </CardTitle>
+        <div className="copy-tools">
+          <CopyImageButton hover />
+        </div>
+      </div>
+      <MetricCards inline>
+        <Metric label={t('report.all.subs')} value={subs.length} note={icons(t('report.year.count', { count: subs.length }), subs)} />
+        <Metric
+          label={t('report.year.stopped')}
+          value={stopped.length}
+          note={stopped.length > 0 && icons(t('report.year.count', { count: stopped.length }), stopped)}
+        />
+        {extras.map((g) => (
+          // 赚了写盈利、亏了写亏损，金额带正负号；缺汇率时只写盈亏
+          <Metric
+            key={g.key}
+            label={t(`report.year.${g.key}${g.total.incomplete ? 'Net' : Math.abs(g.net) < 0.5 ? 'Even' : g.net > 0 ? 'Gain' : 'Loss'}`)}
+            value={formatTotal(g.total, base, { direction: 1, compact: true })}
+            valueClassName={g.total.incomplete || Math.abs(g.net) < 0.5 ? '' : g.net > 0 ? 'gain' : 'loss'}
+            note={totalNote(g.total) || icons(t('report.year.count', { count: g.subs.length }), g.subs)}
+          />
+        ))}
+      </MetricCards>
+    </div>
+  );
+}
+
+/** 全部：订阅能留多久——平均使用时长、试了就停、在用订阅数走势和用得最久的几个 */
+function TenureCard({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
+  const r = useMemo(() => subscriptionTenure(state, today), [state, today]);
+  const peak = r.byMonth.reduce((a, m) => (m.count > a.count ? m : a), r.byMonth[0]);
+  const top = r.longest.slice(0, 6);
+  if (!peak || !top.length) return null;
+  return (
+    <div className="card copy-card" data-copy-card>
+      <div className="card-h">
+        <CardTitle as="h3" hint={t('report.tenure.basis')}>
+          {t('report.tenure.title')}
+        </CardTitle>
+        <div className="copy-tools">
+          <CopyImageButton hover />
+        </div>
+      </div>
+      <MetricCards inline>
+        <Metric label={t('report.tenure.active')} value={span(r.active.avgDays)} />
+        <Metric label={t('report.tenure.stopped')} value={r.stopped.count ? span(r.stopped.avgDays) : '—'} />
+        <Metric
+          label={t('report.tenure.quick')}
+          value={r.quick.length}
+          note={
+            r.quick.length > 0 && (
+              <div className="ins-subs" style={{ flexWrap: 'nowrap', overflow: 'hidden' }} data-snapshot-list>
+                {r.quick.slice(0, 4).map((s) => (
+                  <button type="button" data-snapshot-keep key={s.id} onClick={() => onOpen(s)} title={s.name} aria-label={s.name}>
+                    <SubIcon sub={s} size={18} />
+                  </button>
+                ))}
+              </div>
+            )
+          }
+        />
+        <Metric label={t('report.tenure.peak')} value={peak.count} note={<small>{monthLabel(peak.month)}</small>} />
+      </MetricCards>
+      <div className="stat-label" style={{ margin: '18px 0 6px' }}>
+        {t('report.tenure.longest')}
+      </div>
+      {/* 与退订与停用同一行样式：宽卡片分两列，先排满左列再排右列 */}
+      <div className="stop-list" style={{ gridTemplateRows: `repeat(${Math.ceil(top.length / 2)}, auto)` }} data-snapshot-list>
+        {top.map((x) => (
+          <button type="button" className="stop-row" data-snapshot-keep key={x.sub.id} onClick={() => onOpen(x.sub)}>
+            <span className="stop-name">
+              <SubIcon sub={x.sub} size={24} />
+              <b>{x.sub.name}</b>
+            </span>
+            <span className="stop-meta">
+              <span>{t('report.all.since', { date: monthLabel(x.since.slice(0, 7)) })}</span>
+            </span>
+            <span className="stop-amount">
+              <b className="num">{span(x.days)}</b>
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="stat-label" style={{ margin: '18px 0 6px' }}>
+        {t('report.tenure.count')}
+      </div>
+      <AreaChart
+        values={r.byMonth.map((m) => m.count)}
+        labels={r.byMonth.map((m) => mLabel(m.month))}
+        months={r.byMonth.map((m) => m.month)}
+        tip={(i) => (
+          <>
+            <b>{monthLabel(r.byMonth[i].month)}</b> <span className="copy-gap" aria-hidden="true" /> {t('report.year.count', { count: r.byMonth[i].count })}
+          </>
+        )}
+      />
+    </div>
+  );
+}
+
+/** 时长：满一年写几年几个月，不足一个月写天数；与详情页同一写法 */
+function span(days: number) {
+  const n = days < 30 ? 0 : Math.round(days / DAYS_PER_MONTH);
+  const years = Math.floor(n / 12);
+  const months = n % 12;
+  if (years) return months ? t('detail.stats.yearsMonths', { years, months }) : t('detail.stats.years', { count: years });
+  return months ? t('detail.stats.months', { count: months }) : t('detail.stats.days', { count: Math.round(days) });
+}
+
+/** 月度变动瀑布：上月末 → 新增 → 涨价 → 降价 → 退订 → 本月 */
+function Waterfall({ state, today, year, onOpen }: { state: AppState; today: string; year: number; onOpen: (s: Subscription) => void }) {
+  const base = state.settings.baseCurrency;
+  // 只在所选年份内翻月：今年从本月起，往年从 12 月起
+  const min = (year - Number(today.slice(0, 4))) * 12 - (Number(today.slice(5, 7)) - 1);
+  const max = Math.min(0, min + 11);
+  const [offset, setOffset] = useState(max);
   const month = addMonths(today.slice(0, 8) + '01', offset).slice(0, 7);
   const end = offset === 0 ? today : monthEnd(month);
   const mv = useMemo(() => monthMovement(state, end, offset !== 0), [state, month, end, offset]);
@@ -173,12 +437,12 @@ function Waterfall({ state, today, onOpen }: { state: AppState; today: string; o
         <CardTitle>{t('report.wf.title', { n: Number(month.slice(5)), month: monthLabel(month, { year: false, long: true }) })}</CardTitle>
         <div className="row copy-controls" style={{ gap: 4 }}>
           <CopyImageButton hover />
-          <IconButton aria-label={t('report.wf.prev')} onClick={() => setOffset(offset - 1)}>
+          <IconButton aria-label={t('report.wf.prev')} disabled={offset <= min} onClick={() => setOffset(offset - 1)}>
             <Icon name="left" />
           </IconButton>
           <IconButton
             aria-label={t('report.wf.next')}
-            disabled={offset >= 0}
+            disabled={offset >= max}
 
             onClick={() => setOffset(offset + 1)}
           >
@@ -294,20 +558,17 @@ function Checkup({ state, today, onOpen }: { state: AppState; today: string; onO
   );
 }
 
-/** 现金 vs 权责 + 预付余值 */
-/** 本年净现金：已付加预计，同期比较与变化来源，下月与明年预计 */
-function YearCard({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
+/** 所选年份较上一年的变化来源，以及当年合租、代付盈亏 */
+function YearCard({ state, today, year, onOpen }: { state: AppState; today: string; year: number; onOpen: (s: Subscription) => void }) {
   const base = state.settings.baseCurrency;
-  const r = useMemo(() => yearOutlook(state, today), [state, today]);
+  const r = useMemo(() => yearOutlook(state, today, year), [state, today, year]);
   const same = r.samePeriod;
   const change = same.change;
   const ok = !!change && Number.isFinite(change.amount);
-  const amount = (total: Parameters<typeof formatTotal>[0]) => formatTotal(total, base, { direction: -1, compact: true });
   const kindLabel = (k: YearDriver['kind']) => t(`report.year.${k}`);
   const short = (v: number) => money(v, base, { compact: true });
   const arrow = (v: number) => (!Number.isFinite(v) ? '—' : `${v > 0.005 ? '↑' : v < -0.005 ? '↓' : ''} ${short(Math.abs(v))}`.trim());
-  const versus = (key: 'vsMonth' | 'vsYear', c?: Comparison) => c && <small>{t(`report.year.${key}`, { delta: arrow(c.amount) })}</small>;
-  // 变化来源按类型汇总成第二排指标卡：新增、停用、多付、少付，各写差额合计与项数，与上排同为四列，竖线上下贯通
+  // 较去年同期的变化来源按类型汇总：新增、停用、多付、少付，各写差额合计与项数；今年合计与同期差额在顶部大数字区
   const groups = (['added', 'stopped', 'up', 'down'] as const).map((kind) => {
     const items = r.drivers.filter((d) => d.kind === kind);
     return { kind, items, delta: items.reduce((n, d) => n + d.delta, 0) };
@@ -315,8 +576,8 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
   const used = groups.filter((g) => g.items.length > 0);
   const solo = used.length === 1 && !!change && Math.abs(used[0].delta - change.amount) < 0.5;
   // 第二排后两格是动态的：有合租时倒数第二格换成今年的合租盈亏，有代付时最后一格换成今年的代付盈亏；没有就仍是多付、少付
-  const car = useMemo(() => carpoolYear(state, today), [state, today]);
-  const px = useMemo(() => proxyYear(state, today), [state, today]);
+  const car = useMemo(() => carpoolYear(state, today, String(year)), [state, today, year]);
+  const px = useMemo(() => proxyYear(state, today, String(year)), [state, today, year]);
   const extras = [
     car.subs.length > 0 && {
       key: 'carpool' as const,
@@ -335,7 +596,7 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
         : t('report.year.count', { count: px.subs.length }),
     },
   ];
-  // 第二排始终四格（与上排对齐成井字）：比不出差额时变化来源各格写「—」，合租、代付照常显示
+  // 始终四格：比不出差额时变化来源各格写「—」，合租、代付照常显示；都没有就整张卡不出
   const slots = (ok && used.length > 0) || extras.some(Boolean) ? [groups[0], groups[1], extras[0] || groups[2], extras[1] || groups[3]] : [];
   const subsNote = (lead: string | false, subs: Subscription[]) => (
     // 项数在前，后面跟最多 3 个订阅图标，点开详情；一行放不下时截掉图标，不换行
@@ -348,50 +609,18 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
       ))}
     </div>
   );
+  if (!slots.length) return null;
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
         <CardTitle as="h3" hint={t('report.year.basis')}>
-          {t('report.year.title', { year: r.year })}
+          {t('report.year.title')}
         </CardTitle>
         <div className="copy-tools">
           <CopyImageButton hover />
         </div>
       </div>
       <MetricCards inline>
-        <Metric
-          label={t('report.year.total')}
-          value={<FxAmount total={r.current.partial.total} ccy={base} direction={-1} compact />}
-          // 已付加待付即今年预计，待付是今年还要花出去的钱；两段各不断行，窄屏时整段换行
-          note={
-            <small>
-              {totalNote(r.current.partial.total) || (
-                <>
-                  <span style={{ whiteSpace: 'nowrap' }}>{t('scope.paidAmount', { amount: amount(r.current.partial.paid) })}</span>{' '}
-                  <span style={{ whiteSpace: 'nowrap' }}>{t('report.year.pendingAmount', { amount: amount(r.current.partial.pending) })}</span>
-                </>
-              )}
-            </small>
-          }
-        />
-        {change && (
-          <Metric
-            label={t('report.year.vsLast')}
-            value={arrow(change.amount)}
-            valueClassName={!ok || Math.abs(change.amount) < 0.5 ? '' : change.amount > 0 ? 'loss' : 'gain'}
-            note={<small>{t('report.year.lastAmount', { amount: amount(same.partial.previous) })}</small>}
-          />
-        )}
-        <Metric
-          label={t('report.year.nextMonth', { month: monthLabel(r.nextMonth.month, { year: false }) })}
-          value={<FxAmount total={r.nextMonth.partial.total} ccy={base} direction={-1} compact />}
-          note={totalNote(r.nextMonth.partial.total) || versus('vsMonth', r.nextMonth.change)}
-        />
-        <Metric
-          label={t('report.year.nextYear', { year: r.nextYear.year })}
-          value={<FxAmount total={r.nextYear.partial.total} ccy={base} direction={-1} compact />}
-          note={totalNote(r.nextYear.partial.total) || versus('vsYear', r.nextYear.change)}
-        />
         {slots.map((g) =>
           'kind' in g ? (
             <Metric
@@ -429,16 +658,38 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
   );
 }
 
-function CashCard({ state, today }: { state: AppState; today: string }) {
+const ownState = (state: AppState): AppState => ({ ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) });
+
+/** 现金 vs 权责：所选年份 1–12 月；全部（year 为 null）按年合并，从第一年到本月。预付余值与未来 90 天只在今年出现 */
+function CashCard({ state, today, year }: { state: AppState; today: string; year: number | null }) {
   const base = state.settings.baseCurrency;
-  // 往回最多 2 年，但不早于账本第一笔数据所在月
-  // 预测月数不超过已有的月数，账本短时不让未来的空柱占满整张图
-  const back = chartMonths(firstStart(state, today), today, 24) - 1;
-  const ahead = Math.min(12, Math.max(3, back + 1));
-  const rows = useMemo(() => cashVsAccrual(state, today, back, ahead), [state, today, back, ahead]);
+  const cur = Number(today.slice(0, 4));
+  const now = year === cur;
+  const from = year ?? Math.min(cur, Number(firstStart(ownState(state), today).slice(0, 4)));
+  // 相对今天所在月：往回到起始年 1 月，往后到所选年（全部为今年）12 月；往年 fwd 为负
+  const back = (cur - from) * 12 + Number(today.slice(5, 7)) - 1;
+  // 全部只到本月，与头部「到今天为止」同一口径
+  const fwd = year === null ? 0 : (year - from) * 12 + 11 - back;
+  const rows = useMemo(() => {
+    const list = cashVsAccrual(state, today, back, fwd);
+    if (year !== null) return list;
+    // 按年合并；现金取累计口径（到今天为止、含转让），与头部最高年等数字一致
+    const paid = new Map(allOutlook(state, today).years.map((y) => [y.year, y]));
+    const years = [...new Set(list.map((r) => r.month.slice(0, 4)))];
+    return years.map((y) => {
+      const xs = list.filter((r) => r.month.startsWith(y));
+      const p = paid.get(y);
+      return {
+        month: y,
+        cash: p?.total ?? 0,
+        accrual: xs.reduce((a, r) => a + r.accrual, 0),
+        partial: { cash: p?.partial.total ?? emptyTotal(), accrual: sumTotals(xs.map((r) => r.partial.accrual)) },
+        projected: xs.some((r) => r.projected),
+      };
+    });
+  }, [state, today, back, fwd, year]);
   const pv = useMemo(() => prepaidValue(state, today), [state, today]);
   const next90 = chargesTotal(state, allCharges(state, addDays(today, 1), addDays(today, 90), today));
-  const peak = rows.filter((r) => r.projected).sort((a, b) => b.cash - a.cash)[0];
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
@@ -464,11 +715,11 @@ function CashCard({ state, today }: { state: AppState; today: string }) {
           bars={rows.map((r) => r.partial.cash.value)}
           line={rows.map((r) => r.partial.accrual.value)}
           future={rows.map((r) => r.projected)}
-          labels={rows.map((r) => mLabel(r.month))}
-          months={rows.map((r) => r.month)}
+          labels={rows.map((r) => (year === null ? r.month : mLabel(r.month)))}
+          months={year === null ? undefined : rows.map((r) => r.month)}
           tip={(i) => (
             <>
-              <b>{rows[i].month}</b>
+              <b>{year === null ? t('report.pick.year', { year: rows[i].month }) : rows[i].month}</b>
               {copyParts(rows[i].projected ? t('report.cash.forecast') : '')}
               <br />
               {copyParts(
@@ -480,52 +731,41 @@ function CashCard({ state, today }: { state: AppState; today: string }) {
             </>
           )}
         />
-        <MetricCards inline>
-          <Metric
-            {...tipProps(() =>
-              pv.items
-                .slice(0, 6)
-                .map((x) => (
-                  <div key={x.sub.id}>
-                    {copyParts(t('report.cash.prepaidItem', { name: x.sub.name, amount: formatTotal(x.partial, base, { compact: true }), until: x.until }))}
-                  </div>
-                )),
-            )}
-            label={t('report.cash.prepaid')}
-            value={<FxAmount plain total={pv.partial} ccy={base} compact />}
-            note={<small>{totalNote(pv.partial) || t('report.cash.prepaidSub', { count: pv.items.length })}</small>}
-          />
-          <Metric
-            label={t('report.cash.next90')}
-            value={<FxAmount total={next90} direction={-1} ccy={base} compact />}
-            note={
-              <>
-                <small>{totalNote(next90) || t('report.cash.fullPaidHint')}</small>
-                <small>
-                  {copyParts(
-                    peak
-                      ? t('report.cash.peak', {
-                          n: Number(peak.month.slice(5)),
-                          month: monthLabel(peak.month.slice(0, 7), { year: false }),
-                          amount: formatTotal(peak.partial.cash, base, { direction: -1, compact: true }),
-                        })
-                      : '',
-                  )}
-                </small>
-              </>
-            }
-          />
-        </MetricCards>
+        {now && (
+          <MetricCards inline>
+            <Metric
+              {...tipProps(() =>
+                pv.items
+                  .slice(0, 6)
+                  .map((x) => (
+                    <div key={x.sub.id}>
+                      {copyParts(t('report.cash.prepaidItem', { name: x.sub.name, amount: formatTotal(x.partial, base, { compact: true }), until: x.until }))}
+                    </div>
+                  )),
+              )}
+              label={t('report.cash.prepaid')}
+              value={<FxAmount plain total={pv.partial} ccy={base} compact />}
+              note={<small>{totalNote(pv.partial) || t('report.cash.prepaidSub', { count: pv.items.length })}</small>}
+            />
+            <Metric
+              label={t('report.cash.next90')}
+              value={<FxAmount total={next90} direction={-1} ccy={base} compact />}
+              note={<small>{totalNote(next90) || t('report.cash.fullPaidHint')}</small>}
+            />
+          </MetricCards>
+        )}
       </div>
     </div>
   );
 }
 
-/** 未退款损失，截至今天、全部历史。明细先放 5 条，其余折叠 */
-function StopsCard({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
+/** 所选年份内（或全部）停止的订阅与未退款损失。明细先放 5 条，其余折叠 */
+function StopsCard({ state, today, year, onOpen }: { state: AppState; today: string; year: number | null; onOpen: (s: Subscription) => void }) {
   const base = state.settings.baseCurrency;
-  const losses = useMemo(() => stopLosses(state, today), [state, today]);
-  const stops = useMemo(() => stopHistory(state, today), [state, today]);
+  // 全部（null）：不限时间
+  const range = useMemo(() => (year === null ? undefined : { from: `${year}-01-01`, to: `${year}-12-31` }), [year]);
+  const losses = useMemo(() => stopLosses(state, today, range), [state, today, range]);
+  const stops = useMemo(() => stopHistory(state, today, range), [state, today, range]);
   const count = (kind: 'cancel' | 'terminate') => stops.filter((i) => i.kind === kind).length;
   const [all, setAll] = useState(false);
   const shown = all ? losses.items : losses.items.slice(0, 5);
@@ -536,7 +776,7 @@ function StopsCard({ state, today, onOpen }: { state: AppState; today: string; o
       </div>
       <div className="card-h">
         {/* 口径说明收进 ⓘ，卡片里只留数字和明细 */}
-        <CardTitle hint={t('report.stops.basis')}>{t('report.stops.title')}</CardTitle>
+        <CardTitle hint={t(year === null ? 'report.stops.basisAll' : 'report.stops.basis')}>{t('report.stops.title')}</CardTitle>
       </div>
       <MetricCards inline>
         <Metric
@@ -720,8 +960,8 @@ const EV: Record<EventKind, [string, string]> = {
 };
 
 /** 变更日志 */
-function Changelog({ state, today, onOpen, base }: { state: AppState; today: string; onOpen: (s: Subscription) => void; base: string }) {
-  const list = useMemo(() => events(state, today), [state, today]);
+function Changelog({ state, today, year, onOpen, base }: { state: AppState; today: string; year: number; onOpen: (s: Subscription) => void; base: string }) {
+  const list = useMemo(() => events(state, today).filter((e) => e.date.startsWith(`${year}-`)), [state, today, year]);
   const [fit, setFit] = useState<number | null>(null);
   const [extra, setExtra] = useState(0);
   const log = useRef<HTMLDivElement>(null);

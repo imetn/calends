@@ -1,6 +1,12 @@
 {
   "title": "Rapor",
   "shareReview": "{year} yıl özetini paylaş",
+  "shareAll": "Tüm zamanlar özetini paylaş",
+  "pick": {
+    "label": "Yıl seç",
+    "all": "Tümü",
+    "year": "{year}"
+  },
   "perMonth": "{amount}/ay",
   "per": {
     "day": "gün",
@@ -22,12 +28,31 @@
     "year": "{year}"
   },
   "hero": {
-    "label": "Aylık abonelik harcaması",
-    "vsLastMonth": "geçen ay sonuna göre",
-    "yearAgo": "bir yıl önce {amount}",
-    "perDay": "Günlük",
-    "active": "Etkin",
-    "recover": "Ortak planlardan geri gelen/ay"
+    "label": "Yıllık abonelik harcaması",
+    "tip": "Ay {month}\nToplam {total}",
+    "paid": "Ödenen",
+    "avg": "Aylık ortalama",
+    "peak": "En yüksek ay"
+  },
+  "all": {
+    "label": "Toplam abonelik harcaması",
+    "basis": "İlk ödemeden bugüne: payımın net nakdi; iadeler ve devirler dahil, vekâleten alımlar hariç.",
+    "since": "{date} itibarıyla",
+    "last12": "Son 12 ay",
+    "avg": "Yıllık ortalama",
+    "peak": "En yüksek yıl",
+    "subs": "Abonelikler",
+    "detail": "Tüm zamanlar dökümü"
+  },
+  "tenure": {
+    "title": "Abonelikler ne kadar sürüyor",
+    "basis": "Gerçekten abone olunan günler; aralar ve başkası adına ödemeler hariç.\nHemen bırakılan: 31 gün içinde durdurulan.\nAktif abonelik: her ayın son günündeki sayı.",
+    "active": "Aktif, ortalama süre",
+    "stopped": "Durdurulan, ortalama",
+    "quick": "Hemen bırakılan",
+    "peak": "Aynı anda en fazla",
+    "longest": "En uzun süren",
+    "count": "Aktif abonelik"
   },
   "wf": {
     "vsFrom": "geçen ay sonu {amount} karşısında",
@@ -66,7 +91,6 @@
     "prepaid": "Ön ödemeli değer",
     "prepaidSub": "{count} ödendi, henüz tüketilmedi",
     "next90": "Önümüzdeki 90 günde ödenecek",
-    "peak": "Zirve: {month}\n{amount}",
     "fullPaidHint": "Üyeler adına yapılan avanslar dahil ödenen toplam tutar"
   },
   "comp": {
@@ -83,7 +107,13 @@
     "groupTip": {
       "one": "{name}\n{count} öğe\n{amount}/ay",
       "other": "{name}\n{count} öğe\n{amount}/ay"
-    }
+    },
+    "groupTipAll": {
+      "one": "{name}\n{count} öğe\n{amount}",
+      "other": "{name}\n{count} öğe\n{amount}"
+    },
+    "basisYear": "Seçilen yılın 1 Ocak–31 Aralık dönemi: net harcamadaki payım; iadeler ve devirler dahil, başkası adına ödemeler hariç; bugünden sonrası tahmin.\nÖdeme yöntemleri ve para birimleri her tahsilata göre.",
+    "basisAll": "İlk tahsilattan bugüne: net harcamadaki payım; iadeler ve devirler dahil, başkası adına ödemeler hariç.\nÖdeme yöntemleri ve para birimleri her tahsilata göre."
   },
   "topup": {
     "title": "Yükleme planı",
@@ -126,20 +156,15 @@
   "stops": {
     "title": "İptaller ve sonlandırmalar",
     "loss": "İade edilmeyen kayıp",
-    "basis": "Tüm geçmiş\nBenim payım; iade edilmeyen kayıp sonlandırma tarihindeki kurla hesaplanır.",
+    "basis": "Seçilen yılda sonlandırılanlar\nBenim payım; iade edilmeyen kayıp sonlandırma tarihindeki kurla hesaplanır.",
+    "basisAll": "Durdurulan tüm abonelikler\nBenim payım; iade edilmeyen kayıp sonlandırma tarihindeki kurla hesaplanır.",
     "cancel": "İsteğe bağlı erken iptal"
   },
   "year": {
-    "title": "{year}",
-    "basis": "Payıma düşen net harcama, iadeler ve devirler dahil; bugünden sonrası mevcut aboneliklere göre tahmin. Aynı dönem: 1 Ocak’tan bugüne, geçen yıl 1 Ocak’tan aynı güne kadarla karşılaştırılır.",
-    "total": "Bu yıl tahmini",
-    "pendingAmount": "Kalan {amount}",
+    "title": "Yıl dökümü",
+    "basis": "Payıma düşen net harcama, iadeler ve devirler dahil; bugünden sonrası mevcut aboneliklere göre tahmin. Bu yıl 1 Ocak’tan bugüne geçen yılın aynı dönemiyle, diğer yıllar tüm yılla karşılaştırılır.",
     "vsLast": "geçen yılın aynı dönemine göre",
-    "lastAmount": "Geçen yıl: {amount}",
-    "nextMonth": "{month} tahmini",
-    "vsMonth": "geçen yılın aynı ayına göre {delta}",
-    "nextYear": "{year} tahmini",
-    "vsYear": "bu yıla göre {delta}",
+    "vsPrev": "önceki yıla göre",
     "count": "{count} öğe",
     "added": "Yeni",
     "stopped": "Durduruldu",

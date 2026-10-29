@@ -2,7 +2,7 @@ import { amountTotal, chargeTotal, convertedTotal, dueTotal, emptyTotal, scaleTo
 import { contributionTotal, mrrTotal } from './metrics.ts';
 import { memberCashFlows, memberFlowValue } from './carpool.ts';
 import { addDays, addMonths, chargesBetween, collectCurrencyOf, memberDues, myShareFactor, phaseSubs, totals, type Charge, chargeSources } from './billing.ts';
-import { diffDays, effectiveStatus, isStopped } from './billing.ts';
+import { diffDays, effectiveStatus, isStopped, lastCharge, servedTime } from './billing.ts';
 import { chargeValue, toBaseOrNaN } from './fx.ts';
 import {
   stopHistory,
@@ -580,6 +580,8 @@ export interface YearOutlook {
   year: string;
   /** Jan 1 – Dec 31: paid through today, the rest forecast from current plans. */
   current: CashSpan;
+  /** `current` split into January – December on the same basis; the months add up to it. */
+  months: MonthCash[];
   /** Same period: Jan 1 – today against Jan 1 – the same day last year (Feb 29 maps to Feb 28). */
   samePeriod: {
     through: string;
@@ -598,14 +600,18 @@ export interface YearOutlook {
   nextYear: CashSpan & { year: string; change?: Comparison };
 }
 
-/** Year-level net cash on the monthReport basis: my share, refunds and transfer cash, proxies excluded. */
-export function yearOutlook(state: AppState, today: string): YearOutlook {
+/**
+ * Year-level net cash on the monthReport basis: my share, refunds and transfer cash, proxies excluded.
+ * `year` defaults to today's year; for another year the same period is the whole year against the whole year before.
+ */
+export function yearOutlook(state: AppState, today: string, year = Number(today.slice(0, 4))): YearOutlook {
   const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
-  const y = Number(today.slice(0, 4));
+  const y = year;
+  const through = y === Number(today.slice(0, 4)) ? today : `${y}-12-31`;
   const lastFrom = `${y - 1}-01-01`;
-  const md = today.slice(5) === '02-29' ? '02-28' : today.slice(5);
+  const md = through.slice(5) === '02-29' ? '02-28' : through.slice(5);
   const lastThrough = `${y - 1}-${md}`;
-  const ytd = cashRows(scoped, `${y}-01-01`, today, today);
+  const ytd = cashRows(scoped, `${y}-01-01`, through, today);
   const last = cashRows(scoped, lastFrom, lastThrough, today);
   const amount = rowTotal(ytd);
   const previous = rowTotal(last);
@@ -645,8 +651,16 @@ export function yearOutlook(state: AppState, today: string): YearOutlook {
   return {
     year: String(y),
     current: cashSpan(yearRows, today),
+    months: Array.from({ length: 12 }, (_, i) => {
+      const m = `${y}-${String(i + 1).padStart(2, '0')}`;
+      return cashMonth(
+        yearRows.filter((r) => r.date.startsWith(m)),
+        m,
+        today,
+      );
+    }),
     samePeriod: {
-      through: today,
+      through,
       previousThrough: lastThrough,
       amount: sum(ytd),
       previous: sum(last),
@@ -660,5 +674,168 @@ export function yearOutlook(state: AppState, today: string): YearOutlook {
       change: versus(nextMonthRows, cashRows(scoped, `${monthAgo}-01`, monthEnd(monthAgo), today)),
     },
     nextYear: { year: String(y + 1), ...cashSpan(nextYearRows, today), change: versus(nextYearRows, yearRows) },
+  };
+}
+
+export interface AllOutlook {
+  /** First day with cash; today when the ledger has none. */
+  since: string;
+  /** Everything paid from `since` through today. */
+  total: FxTotal;
+  /** `since`'s month through today's month; the months add up to `total`. */
+  months: MonthCash[];
+  /** `months` grouped by calendar year: paid through today, no forecast. */
+  years: Array<CashSpan & { year: string }>;
+  /** Net cash per subscription, largest first; zero and net-refund rows dropped unless FX is missing. */
+  bySub: SpendRank[];
+  /** Net cash per subscription, payment method (split charges by source share) and charge currency; refunds on another method or currency folded into the main piece; sums to `total`. */
+  pieces: SpendPiece[];
+}
+
+export interface SpendPiece {
+  sub: Subscription;
+  /** '' when unassigned or a transfer. */
+  methodId: string;
+  currency: string;
+  amount: number;
+  partial: FxTotal;
+}
+
+export interface SpendRank {
+  sub: Subscription;
+  amount: number;
+  partial: FxTotal;
+}
+
+/** All-time net cash on the yearOutlook basis (my share, refunds and transfers, proxies excluded), through today. */
+export function allOutlook(state: AppState, today: string): AllOutlook {
+  const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
+  const first = scoped.subscriptions.reduce((m, s) => (s.start < m ? s.start : m), today);
+  const rows = cashRows(scoped, first, today, today);
+  const since = rows.reduce((m, r) => (r.date < m ? r.date : m), today);
+  const months: MonthCash[] = [];
+  for (let m = since.slice(0, 7); m <= today.slice(0, 7); m = addMonths(`${m}-01`, 1).slice(0, 7)) {
+    months.push(
+      cashMonth(
+        rows.filter((r) => r.date.startsWith(m)),
+        m,
+        today,
+      ),
+    );
+  }
+  const years = [...new Set(months.map((m) => m.month.slice(0, 4)))].map((year) => ({
+    year,
+    ...cashSpan(
+      rows.filter((r) => r.date.startsWith(`${year}-`)),
+      today,
+    ),
+  }));
+  return {
+    since,
+    total: rowTotal(rows),
+    months,
+    years,
+    bySub: rankBySub(rows),
+    pieces: spendPieces(rows),
+  };
+}
+
+/** Composition pieces for a date range on the yearOutlook basis (proxies excluded; dates after today are forecast). */
+export function spendPiecesBetween(state: AppState, from: string, to: string, today: string): SpendPiece[] {
+  return spendPieces(cashRows({ ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) }, from, to, today));
+}
+
+function spendPieces(rows: CashRow[]): SpendPiece[] {
+  const out = new Map<string, SpendPiece>();
+  const add = (r: CashRow, methodId: string, currency: string, share: number) => {
+    const k = `${r.sub.id}|${methodId}|${currency}`;
+    const e = out.get(k) ?? { sub: r.sub, methodId, currency, amount: 0, partial: emptyTotal() };
+    e.amount += r.amount * share;
+    e.partial = sumTotals([e.partial, scaleTotal(rowTotal([r]), share)]);
+    out.set(k, e);
+  };
+  const charged = rows.filter((r): r is ChargeRow => 'original' in r);
+  for (const r of charged) for (const src of chargeSources(r.original)) add(r, src.methodId ?? '', r.original.currency, src.share);
+  // 转让不经过卡，记到该订阅扣款最多的那一块，与扣款相抵；从没扣过款就按订阅自己的支付方式与币种
+  for (const r of rows.filter((r) => !('original' in r))) {
+    const main = [...out.values()].filter((p) => p.sub.id === r.sub.id).sort((a, b) => b.amount - a.amount)[0];
+    add(r, main?.methodId ?? r.sub.methodId ?? '', main?.currency ?? r.sub.currency, 1);
+  }
+  // 退款记到别的卡或币种时会单独成负数块，构成图按分组丢掉负数后各视角合计就对不上；并入该订阅最大的正数块
+  for (const neg of [...out.values()].filter((p) => p.amount < 0)) {
+    const main = [...out.values()].filter((p) => p.sub.id === neg.sub.id && p.amount > 0).sort((a, b) => b.amount - a.amount)[0];
+    if (!main) continue;
+    main.amount += neg.amount;
+    main.partial = sumTotals([main.partial, neg.partial]);
+    out.delete(`${neg.sub.id}|${neg.methodId}|${neg.currency}`);
+  }
+  return [...out.values()];
+}
+
+/** Net cash per subscription, largest first; zero and net-refund rows dropped unless FX is missing. */
+function rankBySub(rows: CashRow[]): SpendRank[] {
+  const bySub = new Map<string, SpendRank>();
+  for (const r of rows) {
+    const e = bySub.get(r.sub.id) ?? { sub: r.sub, amount: 0, partial: emptyTotal() };
+    e.amount += r.amount;
+    e.partial = sumTotals([e.partial, rowTotal([r])]);
+    bySub.set(r.sub.id, e);
+  }
+  return [...bySub.values()]
+    .filter((r) => r.amount > 0.005 || r.partial.incomplete)
+    .sort((a, b) => b.partial.value - a.partial.value || a.sub.id.localeCompare(b.sub.id));
+}
+
+export interface Tenure {
+  /** Served days (gaps excluded, same as the detail page) averaged over current and stopped subscriptions. */
+  active: { count: number; avgDays: number };
+  stopped: { count: number; avgDays: number };
+  /** Stopped after at most 31 served days. */
+  quick: Subscription[];
+  /** Current subscriptions by served days, longest first. */
+  longest: Array<{ sub: Subscription; since: string; days: number }>;
+  /** Current subscriptions on each month's last day (today for this month), from the first start month. */
+  byMonth: Array<{ month: string; count: number }>;
+}
+
+const firstDay = (s: Subscription) => phaseSubs(s).reduce((m, v) => (v.start < m ? v.start : m), s.start);
+const current = (s: Subscription, day: string) => !['upcoming', 'paused', 'ended', 'terminated'].includes(effectiveStatus(s, day));
+/**
+ * 暂停与「已退订但没写结束日」的状态没有日期，按今天的状态回推会让过去每一天都不在订。
+ * 换成有结束日的订阅：暂停到暂停日前一天，退订到最后一次扣款（与成员应收同一约定）。
+ */
+function asDated(s: Subscription, today: string): Subscription {
+  const until =
+    s.status === 'paused' ? addDays(s.pausedAt ?? today, -1) : s.status === 'cancelled' && !s.end && !s.stop ? (lastCharge(s, today) ?? s.start) : undefined;
+  if (!until) return s;
+  return { ...s, status: 'active', pausedAt: undefined, end: s.end && s.end < until ? s.end : until };
+}
+
+/** How long subscriptions last: averages, quick stops, longest held and the count of current subscriptions over time. Proxies excluded. */
+export function subscriptionTenure(state: AppState, today: string): Tenure {
+  const subs = state.subscriptions.filter((s) => !s.proxy && firstDay(s) <= today);
+  const dated = new Map(subs.map((s) => [s.id, asDated(s, today)]));
+  const rows = subs.map((sub) => ({
+    sub,
+    since: firstDay(sub),
+    days: servedTime(dated.get(sub.id)!, today).days,
+    stopped: isStopped(effectiveStatus(sub, today)),
+  }));
+  const avg = (xs: typeof rows) => (xs.length ? xs.reduce((a, x) => a + x.days, 0) / xs.length : 0);
+  const live = rows.filter((x) => !x.stopped && current(dated.get(x.sub.id)!, today));
+  const stopped = rows.filter((x) => x.stopped);
+  const byMonth: Tenure['byMonth'] = [];
+  const start = rows.reduce((m, x) => (x.since < m ? x.since : m), today);
+  for (let m = start.slice(0, 7); m <= today.slice(0, 7); m = addMonths(`${m}-01`, 1).slice(0, 7)) {
+    const end = addDays(addMonths(`${m}-01`, 1), -1);
+    const day = end < today ? end : today;
+    byMonth.push({ month: m, count: subs.filter((s) => current(dated.get(s.id)!, day)).length });
+  }
+  return {
+    active: { count: live.length, avgDays: avg(live) },
+    stopped: { count: stopped.length, avgDays: avg(stopped) },
+    quick: stopped.filter((x) => x.days <= 31).map((x) => x.sub),
+    longest: live.sort((a, b) => b.days - a.days || a.sub.id.localeCompare(b.sub.id)).map(({ sub, since, days }) => ({ sub, since, days })),
+    byMonth,
   };
 }

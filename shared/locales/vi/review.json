@@ -1,6 +1,8 @@
 {
   "title": "Chia sẻ tổng kết năm",
+  "titleAll": "Chia sẻ tổng kết toàn thời gian",
   "fileName": "goi-dang-ky-{year}-tong-ket-{style}.png",
+  "fileNameAll": "dang-ky-toan-thoi-gian-{style}.png",
   "style": {
     "poster": "Áp phích",
     "receipt": "Hóa đơn",
@@ -13,6 +15,7 @@
   "whoseSelf": "tôi",
   "topSpend": "Chi tiêu cao nhất",
   "ofYear": "{pct} chi tiêu cả năm",
+  "ofAll": "{pct} tổng chi tiêu",
   "n": {
     "subs": {
       "other": "{count} gói đăng ký"
@@ -28,6 +31,7 @@
     "shop": "Sổ theo dõi gói đăng ký của {whose}",
     "asOf": "Tổng kết năm\nĐến {date}",
     "fullYear": "Tổng kết năm {year}",
+    "all": "Sao kê lũy kế\nĐến {date}",
     "no": "Số {no}",
     "item": "Mục",
     "share": "Phần",
@@ -38,6 +42,7 @@
   },
   "poster": {
     "kicker": "Tổng kết gói đăng ký của {whose}",
+    "kickerAll": "Tổng kết đăng ký toàn thời gian của {whose}",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -51,7 +56,9 @@
       "ongoing": "Chi tiêu từ đầu năm",
       "ongoingHidden": "Số gói đăng ký từ đầu năm",
       "year": "Chi tiêu cả năm",
-      "yearHidden": "Số gói đăng ký trong năm"
+      "yearHidden": "Số gói đăng ký trong năm",
+      "all": "Chi tiêu đến nay",
+      "allHidden": "Số đăng ký đến nay"
     },
     "perDay": "Trung bình {amount}/ngày",
     "longest": "Gói đăng ký lâu nhất",
@@ -70,5 +77,6 @@
     "foot": "Kích thước vòng tròn thể hiện chi tiêu"
   },
   "spendBasis": "Dòng tiền ròng phần của tôi, gồm hoàn tiền",
-  "stopLoss": "Tổn thất chưa hoàn tiền năm nay: {amount}"
+  "stopLoss": "Tổn thất chưa hoàn tiền năm nay: {amount}",
+  "stopLossAll": "Tổn thất chưa hoàn lũy kế: {amount}"
 }

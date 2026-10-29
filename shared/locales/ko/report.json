@@ -1,6 +1,12 @@
 {
   "title": "리포트",
   "shareReview": "{year}년 결산 공유",
+  "shareAll": "누적 리포트 공유",
+  "pick": {
+    "label": "연도 선택",
+    "all": "전체",
+    "year": "{year}년"
+  },
   "perMonth": "{amount}/월",
   "per": {
     "day": "일",
@@ -22,12 +28,31 @@
     "year": "{year}년"
   },
   "hero": {
-    "label": "월 구독 지출",
-    "vsLastMonth": "지난달 말 대비",
-    "yearAgo": "1년 전 {amount}",
-    "perDay": "하루",
-    "active": "이용 중",
-    "recover": "공유로 회수/월"
+    "label": "연간 구독 지출",
+    "tip": "이번 달 {month}\n누적 {total}",
+    "paid": "결제됨",
+    "avg": "월평균",
+    "peak": "최고 월"
+  },
+  "all": {
+    "label": "누적 구독 지출",
+    "basis": "첫 결제부터 오늘까지, 내 부담분 순현금 기준이며 환불과 양도는 포함하고 대리 결제는 제외합니다.",
+    "since": "{date}부터",
+    "last12": "최근 12개월",
+    "avg": "연평균",
+    "peak": "최고 연도",
+    "subs": "구독 수",
+    "detail": "누적 내역"
+  },
+  "tenure": {
+    "title": "구독 유지 기간",
+    "basis": "실제 구독한 일수(공백, 대리 결제 제외).\n바로 해지: 31일 이내 중단.\n이용 중 구독 수: 매월 말일 기준.",
+    "active": "이용 중 평균 기간",
+    "stopped": "해지한 구독 평균 기간",
+    "quick": "바로 해지",
+    "peak": "동시 구독 최다",
+    "longest": "가장 오래 구독",
+    "count": "이용 중 구독 수"
   },
   "wf": {
     "vsFrom": "지난달 말 {amount} 대비",
@@ -65,7 +90,6 @@
     "prepaid": "선결제 잔여 가치",
     "prepaidSub": "{count}개 결제 완료, 아직 사용 중",
     "next90": "다음 90일 결제 예정",
-    "peak": "최고점 {month}\n{amount}",
     "fullPaidHint": "멤버 대신 낸 금액을 포함한 전체 결제액"
   },
   "comp": {
@@ -81,7 +105,12 @@
     "monthly": "월간",
     "groupTip": {
       "other": "{name}\n{count}개\n{amount}/월"
-    }
+    },
+    "groupTipAll": {
+      "other": "{name}\n{count}개\n{amount}"
+    },
+    "basisYear": "선택한 연도 1월 1일~12월 31일. 내 부담분 순현금(환불, 양도 포함, 대리 결제 제외). 오늘 이후는 현재 구독으로 예측.\n결제 수단과 통화는 결제 건별로 집계.",
+    "basisAll": "첫 결제부터 오늘까지. 내 부담분 순현금(환불, 양도 포함, 대리 결제 제외).\n결제 수단과 통화는 결제 건별로 집계."
   },
   "topup": {
     "title": "충전 계획",
@@ -123,20 +152,15 @@
   "stops": {
     "title": "해지 및 서비스 중단",
     "loss": "미환불 손실",
-    "basis": "전체 내역\n내 부담분. 미환불 손실은 종료일 환율 기준.",
+    "basis": "선택한 연도에 종료한 구독\n내 부담분. 미환불 손실은 종료일 환율 기준.",
+    "basisAll": "종료한 모든 구독\n내 부담분. 미환불 손실은 종료일 환율 기준.",
     "cancel": "자발적 조기 해지"
   },
   "year": {
-    "title": "{year}년",
-    "basis": "내 분담분 기준 순지출(환불과 양도 포함). 오늘 이후는 현재 구독으로 예측합니다. 같은 기간은 1월 1일~오늘을 작년 1월 1일~같은 날과 비교합니다.",
-    "total": "올해 예상",
-    "pendingAmount": "남은 금액 {amount}",
+    "title": "연간 내역",
+    "basis": "내 분담분 기준 순지출(환불과 양도 포함). 오늘 이후는 현재 구독으로 예측합니다. 올해는 1월 1일~오늘을 작년 같은 기간과, 다른 연도는 연간 전체를 비교합니다.",
     "vsLast": "작년 같은 기간 대비",
-    "lastAmount": "작년 동기 {amount}",
-    "nextMonth": "{month} 예상",
-    "vsMonth": "전년 동월 대비 {delta}",
-    "nextYear": "{year}년 예상",
-    "vsYear": "올해 대비 {delta}",
+    "vsPrev": "전년 대비",
     "count": "{count}개",
     "added": "신규",
     "stopped": "중단",

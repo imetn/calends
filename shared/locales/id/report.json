@@ -1,6 +1,12 @@
 {
   "title": "Laporan",
   "shareReview": "Bagikan kilas balik {year}",
+  "shareAll": "Bagikan ringkasan sepanjang waktu",
+  "pick": {
+    "label": "Pilih tahun",
+    "all": "Semua",
+    "year": "{year}"
+  },
   "perMonth": "{amount}/bln",
   "per": {
     "day": "hari",
@@ -22,12 +28,31 @@
     "year": "{year}"
   },
   "hero": {
-    "label": "Pengeluaran langganan bulanan",
-    "vsLastMonth": "dibanding akhir bulan lalu",
-    "yearAgo": "{amount} setahun lalu",
-    "perDay": "Per hari",
-    "active": "Aktif",
-    "recover": "Kembali dari paket bersama/bln"
+    "label": "Pengeluaran langganan setahun",
+    "tip": "Bulan {month}\nKumulatif {total}",
+    "paid": "Dibayar",
+    "avg": "Rata-rata bulanan",
+    "peak": "Bulan tertinggi"
+  },
+  "all": {
+    "label": "Total pengeluaran langganan",
+    "basis": "Dari tagihan pertama hingga hari ini: kas bersih bagian saya, termasuk refund dan transfer, tanpa pembelian titipan.",
+    "since": "Sejak {date}",
+    "last12": "12 bulan terakhir",
+    "avg": "Rata-rata tahunan",
+    "peak": "Tahun tertinggi",
+    "subs": "Langganan",
+    "detail": "Rincian kumulatif"
+  },
+  "tenure": {
+    "title": "Berapa lama langganan bertahan",
+    "basis": "Hari berlangganan sebenarnya, tanpa jeda dan pembayaran untuk orang lain.\nBerhenti cepat: dihentikan dalam 31 hari.\nLangganan aktif: jumlah pada hari terakhir tiap bulan.",
+    "active": "Aktif, rata-rata",
+    "stopped": "Dihentikan, rata-rata",
+    "quick": "Berhenti cepat",
+    "peak": "Terbanyak sekaligus",
+    "longest": "Paling lama",
+    "count": "Langganan aktif"
   },
   "wf": {
     "vsFrom": "vs. {amount} akhir bulan lalu",
@@ -65,7 +90,6 @@
     "prepaid": "Nilai prabayar",
     "prepaidSub": "{count} sudah dibayar, belum habis",
     "next90": "Jatuh tempo dalam 90 hari ke depan",
-    "peak": "Puncak pada {month}\n{amount}",
     "fullPaidHint": "Total pembayaran, termasuk talangan untuk anggota"
   },
   "comp": {
@@ -81,7 +105,12 @@
     "monthly": "Bulanan",
     "groupTip": {
       "other": "{name}\n{count} item\n{amount}/bln"
-    }
+    },
+    "groupTipAll": {
+      "other": "{name}\n{count} item\n{amount}"
+    },
+    "basisYear": "1 Januari sampai 31 Desember tahun terpilih: bagian saya dari pengeluaran bersih, termasuk refund dan pengalihan, tanpa pembayaran untuk orang lain; setelah hari ini berupa perkiraan.\nMetode pembayaran dan mata uang mengikuti tiap tagihan.",
+    "basisAll": "Dari tagihan pertama sampai hari ini: bagian saya dari pengeluaran bersih, termasuk refund dan pengalihan, tanpa pembayaran untuk orang lain.\nMetode pembayaran dan mata uang mengikuti tiap tagihan."
   },
   "topup": {
     "title": "Rencana top up",
@@ -123,20 +152,15 @@
   "stops": {
     "title": "Pembatalan & penghentian",
     "loss": "Kerugian tanpa pengembalian dana",
-    "basis": "Seluruh riwayat\nBagian saya; kerugian tanpa pengembalian dana memakai kurs tanggal penghentian.",
+    "basis": "Dihentikan pada tahun terpilih\nBagian saya; kerugian tanpa pengembalian dana memakai kurs tanggal penghentian.",
+    "basisAll": "Semua langganan yang dihentikan\nBagian saya; kerugian tanpa pengembalian dana memakai kurs tanggal penghentian.",
     "cancel": "Pembatalan dini sukarela"
   },
   "year": {
-    "title": "{year}",
-    "basis": "Pengeluaran bersih bagian saya, termasuk pengembalian dana dan pengalihan; setelah hari ini, perkiraan dari langganan saat ini. Periode sama: 1 Januari hingga hari ini dibanding 1 Januari hingga hari yang sama tahun lalu.",
-    "total": "Perkiraan tahun ini",
-    "pendingAmount": "Sisa {amount}",
+    "title": "Rincian tahun",
+    "basis": "Pengeluaran bersih bagian saya, termasuk pengembalian dana dan pengalihan; setelah hari ini, perkiraan dari langganan saat ini. Tahun ini membandingkan 1 Januari hingga hari ini dengan periode sama tahun lalu; tahun lain dibandingkan setahun penuh.",
     "vsLast": "vs periode sama tahun lalu",
-    "lastAmount": "Tahun lalu: {amount}",
-    "nextMonth": "Perkiraan {month}",
-    "vsMonth": "vs bulan yang sama tahun lalu {delta}",
-    "nextYear": "Perkiraan {year}",
-    "vsYear": "vs tahun ini {delta}",
+    "vsPrev": "vs. tahun sebelumnya",
     "count": "{count} item",
     "added": "Baru",
     "stopped": "Dihentikan",

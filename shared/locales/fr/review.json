@@ -1,6 +1,8 @@
 {
   "title": "Partager le bilan annuel",
+  "titleAll": "Partager le bilan global",
   "fileName": "abonnements-bilan-{year}-{style}.png",
+  "fileNameAll": "abonnements-global-{style}.png",
   "style": {
     "poster": "Affiche",
     "receipt": "Ticket",
@@ -13,6 +15,7 @@
   "whoseSelf": "personnels",
   "topSpend": "Dépense la plus élevée",
   "ofYear": "{pct} des dépenses annuelles",
+  "ofAll": "{pct} des dépenses cumulées",
   "n": {
     "subs": {
       "one": "{count} abonnement",
@@ -31,6 +34,7 @@
     "shop": "Abonnements {whose}",
     "asOf": "Bilan annuel\nAu {date}",
     "fullYear": "Bilan annuel {year}",
+    "all": "Relevé cumulé\nAu {date}",
     "no": "N° {no}",
     "item": "Article",
     "share": "Part",
@@ -41,6 +45,7 @@
   },
   "poster": {
     "kicker": "Abonnements {whose}",
+    "kickerAll": "Bilan global des abonnements de {whose}",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -54,7 +59,9 @@
       "ongoing": "Dépenses depuis janvier",
       "ongoingHidden": "Abonnements depuis janvier",
       "year": "Dépenses annuelles",
-      "yearHidden": "Abonnements de l’année"
+      "yearHidden": "Abonnements de l’année",
+      "all": "Dépenses cumulées",
+      "allHidden": "Abonnements cumulés"
     },
     "perDay": "{amount}/jour en moyenne",
     "longest": "Abonnement le plus ancien",
@@ -73,5 +80,6 @@
     "foot": "La taille des cercles représente les dépenses"
   },
   "spendBasis": "Flux net pour ma part, remboursements inclus",
-  "stopLoss": "Perte non remboursée cette année : {amount}"
+  "stopLoss": "Perte non remboursée cette année : {amount}",
+  "stopLossAll": "Perte non remboursée cumulée : {amount}"
 }

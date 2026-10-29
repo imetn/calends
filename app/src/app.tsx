@@ -482,7 +482,7 @@ function App() {
   const [viewId, setViewId] = useState<string | null>(null);
   // 从详情点「编辑」时记下来源，编辑关闭后回到这条订阅的详情，直接看到改动效果（删除后该订阅不存在，就不再打开）
   const [backTo, setBackTo] = useState<string | null>(null);
-  const [review, setReview] = useState(false);
+  const [review, setReview] = useState<string | null>(null);
   const [ics, setIcs] = useState(false);
   const [palette, setPalette] = useState(false);
   const [keyboardHelp, setKeyboardHelp] = useState(false);
@@ -632,7 +632,7 @@ function App() {
         view = ro ? null : <Assistant state={state} today={d} onOpen={open} />;
         break;
       case 'report':
-        view = <Report state={state} today={d} onOpen={open} onReview={() => setReview(true)} />;
+        view = <Report state={state} today={d} onOpen={open} onReview={(y) => setReview(String(y))} />;
         break;
       case 'settings':
         view = ro ? null : <Settings state={state} today={d} />;
@@ -714,7 +714,7 @@ function App() {
       )}
       {review && (
         <Suspense fallback={null}>
-          <Review state={state} today={d} onClose={() => setReview(false)} />
+          <Review state={state} today={d} year={review} onClose={() => setReview(null)} />
         </Suspense>
       )}
       {ics && <IcsSheet state={state} onClose={() => setIcs(false)} />}

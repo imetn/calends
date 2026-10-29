@@ -1,6 +1,12 @@
 {
   "title": "Relatório",
   "shareReview": "Compartilhar retrospectiva de {year}",
+  "shareAll": "Compartilhar resumo total",
+  "pick": {
+    "label": "Escolher ano",
+    "all": "Tudo",
+    "year": "{year}"
+  },
   "perMonth": "{amount}/mês",
   "per": {
     "day": "dia",
@@ -22,12 +28,31 @@
     "year": "{year}"
   },
   "hero": {
-    "label": "Gasto mensal com assinaturas",
-    "vsLastMonth": "vs. fim do mês passado",
-    "yearAgo": "{amount} há um ano",
-    "perDay": "Por dia",
-    "active": "Ativas",
-    "recover": "Recuperado com compartilhamento/mês"
+    "label": "Gasto anual com assinaturas",
+    "tip": "Mês {month}\nAcumulado {total}",
+    "paid": "Pago",
+    "avg": "Média mensal",
+    "peak": "Mês de pico"
+  },
+  "all": {
+    "label": "Gasto total com assinaturas",
+    "basis": "Do primeiro débito até hoje: caixa líquido da minha parte, com reembolsos e transferências, sem compras para terceiros.",
+    "since": "Desde {date}",
+    "last12": "Últimos 12 meses",
+    "avg": "Média anual",
+    "peak": "Ano de pico",
+    "subs": "Assinaturas",
+    "detail": "Detalhes totais"
+  },
+  "tenure": {
+    "title": "Quanto duram as assinaturas",
+    "basis": "Dias realmente assinados, sem pausas e sem pagamentos por terceiros.\nCanceladas logo: encerradas em até 31 dias.\nAssinaturas ativas: quantidade no último dia de cada mês.",
+    "active": "Ativas, média até agora",
+    "stopped": "Encerradas, média",
+    "quick": "Canceladas logo",
+    "peak": "Máximo ao mesmo tempo",
+    "longest": "As mais antigas",
+    "count": "Assinaturas ativas"
   },
   "wf": {
     "vsFrom": "vs. {amount} no fim do mês passado",
@@ -66,7 +91,6 @@
     "prepaid": "Valor pré-pago",
     "prepaidSub": "{count} pagas, ainda não consumidas",
     "next90": "A vencer nos próximos 90 dias",
-    "peak": "Pico em {month}\n{amount}",
     "fullPaidHint": "Valor total pago, incluindo adiantamentos para membros"
   },
   "comp": {
@@ -83,7 +107,13 @@
     "groupTip": {
       "one": "{name}\n{count} item\n{amount}/mês",
       "other": "{name}\n{count} itens\n{amount}/mês"
-    }
+    },
+    "groupTipAll": {
+      "one": "{name}\n{count} item\n{amount}",
+      "other": "{name}\n{count} itens\n{amount}"
+    },
+    "basisYear": "De 1º de janeiro a 31 de dezembro do ano escolhido: minha parte do gasto líquido, com reembolsos e transferências, sem pagamentos por terceiros; após hoje, previsto.\nMeios de pagamento e moedas conforme cada cobrança.",
+    "basisAll": "Da primeira cobrança até hoje: minha parte do gasto líquido, com reembolsos e transferências, sem pagamentos por terceiros.\nMeios de pagamento e moedas conforme cada cobrança."
   },
   "topup": {
     "title": "Plano de recarga",
@@ -126,20 +156,15 @@
   "stops": {
     "title": "Cancelamentos e desativações",
     "loss": "Perda não reembolsada",
-    "basis": "Todo o histórico\nMinha parte; perda não reembolsada pelo câmbio do dia do encerramento.",
+    "basis": "Encerradas no ano escolhido\nMinha parte; perda não reembolsada pelo câmbio do dia do encerramento.",
+    "basisAll": "Todas as assinaturas encerradas\nMinha parte; perda não reembolsada pelo câmbio do dia do encerramento.",
     "cancel": "Cancelamento antecipado voluntário"
   },
   "year": {
-    "title": "{year}",
-    "basis": "Gasto líquido da minha parte, com reembolsos e transferências; depois de hoje, previsão pelas assinaturas atuais. Mesmo período: de 1º de janeiro até hoje, comparado a 1º de janeiro até o mesmo dia do ano passado.",
-    "total": "Previsão deste ano",
-    "pendingAmount": "A pagar {amount}",
+    "title": "Detalhes do ano",
+    "basis": "Gasto líquido da minha parte, com reembolsos e transferências; depois de hoje, previsão pelas assinaturas atuais. Este ano compara de 1º de janeiro até hoje com o mesmo período do ano passado; os demais anos, o ano inteiro.",
     "vsLast": "vs mesmo período do ano passado",
-    "lastAmount": "Ano passado: {amount}",
-    "nextMonth": "Previsão de {month}",
-    "vsMonth": "vs. mesmo mês do ano passado {delta}",
-    "nextYear": "Previsão de {year}",
-    "vsYear": "vs. este ano {delta}",
+    "vsPrev": "vs. ano anterior",
     "count": {
       "one": "{count} item",
       "other": "{count} itens"

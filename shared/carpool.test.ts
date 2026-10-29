@@ -340,6 +340,8 @@ test('当年盈亏：今年成本含预计扣款，收入含已收与今年还�
   );
   assert.equal(all.net, -240);
   assert.equal(all.partial.net.value, -240);
+  // 选去年：这辆车今年才开，去年没有账，不计入
+  assert.deepEqual(carpoolYear({ ...state, subscriptions: [s, old, joined] }, '2026-10-25', '2025').subs, []);
 });
 
 test('几期应收的合计：一笔覆盖几期就加几期应收；退出日之后不再有期', () => {

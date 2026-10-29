@@ -349,7 +349,7 @@ test('报告损失明细可打开原订阅；四种年度分享在非零且未�
     setLocale(lang as 'en' | 'zh-CN', [messages]);
     const opened: string[] = [];
     const onOpen = (sub: { id: string }) => opened.push(sub.id);
-    const tree = StopsCard({ state: st, today, onOpen });
+    const tree = StopsCard({ state: st, today, year: Number(today.slice(0, 4)), onOpen });
     // 汇总之外列损失明细，点一行打开原订阅
     const rows = all(tree).filter((e) => e.props.className === 'stop-row');
     assert.equal(rows.length, stopLosses(st, today).items.length);
@@ -357,23 +357,23 @@ test('报告损失明细可打开原订阅；四种年度分享在非零且未�
     assert.equal(opened.length, 1);
     // 明细最多先放 5 条，其余折叠成「再看 N 项」
     const many = { ...st, subscriptions: Array.from({ length: 7 }, (_, n) => stopSubscription({ ...original, id: `many-${n}` }, today, 'terminate')) };
-    const manyTree = StopsCard({ state: many, today, onOpen });
+    const manyTree = StopsCard({ state: many, today, year: Number(today.slice(0, 4)), onOpen });
     assert.equal(all(manyTree).filter((e) => e.props.className === 'stop-row').length, 5);
     assert.ok(text(manyTree).includes(t('report.checkup.more', { count: 2 })));
     assert.ok(text(tree).includes(t('report.stops.loss')));
     assert.ok(text(tree).includes(t('report.stops.cancel')));
     assert.ok(text(tree).includes(t('core.stop.terminate')));
-    const empty = StopsCard({ state: { ...st, subscriptions: [] }, today, onOpen });
+    const empty = StopsCard({ state: { ...st, subscriptions: [] }, today, year: Number(today.slice(0, 4)), onOpen });
     assert.ok(text(empty).includes(t('report.stops.loss')));
     assert.ok(!text(empty).includes(t('report.stops.cancel')));
     // 次数算全部停用，不只是有未退款损失的：只有一次无损失的我取消也要显示
     // 9 月 5 日开始的月付在 10 月 4 日（当期最后一天）取消，没有损失
     const noLoss = { ...st, subscriptions: [stopSubscription({ ...original, id: 'no-loss', start: '2026-09-05' }, '2026-10-04', 'cancel')] };
-    const onlyCancel = StopsCard({ state: noLoss, today, onOpen });
+    const onlyCancel = StopsCard({ state: noLoss, today, year: Number(today.slice(0, 4)), onOpen });
     assert.equal(stopLosses(noLoss, today).items.length, 0);
     assert.ok(text(onlyCancel).includes(t('report.stops.cancel')));
     const unknown = stopSubscription({ ...original, currency: 'XYZ' }, today, 'terminate');
-    const unknownTree = StopsCard({ state: { ...st, subscriptions: [unknown] }, today, onOpen });
+    const unknownTree = StopsCard({ state: { ...st, subscriptions: [unknown] }, today, year: Number(today.slice(0, 4)), onOpen });
     assert.ok(text(unknownTree).includes(fxTotals.totalNote(stopLosses({ ...st, subscriptions: [unknown] }, today).partial)));
     const r = yearReview(st, today);
     const ctx = {

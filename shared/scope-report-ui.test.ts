@@ -402,7 +402,7 @@ test('report changes use unsigned spending direction and omit the current total 
       }),
     },
   );
-  const nodes = r.render('Waterfall', { state: st, today, onOpen() {} });
+  const nodes = r.render('Waterfall', { state: st, today, year: Number(today.slice(0, 4)), onOpen() {} });
   const delta = nodes.find((n) => n.type === 'SpendingDelta')!;
   assert.deepEqual(delta.props.value, { amount: -20, percent: -0.2 });
   assert.equal(
@@ -432,7 +432,7 @@ test('report changes use unsigned spending direction and omit the current total 
       }),
     },
   );
-  const mixedNodes = mixed.render('Waterfall', { state: st, today, onOpen() {} });
+  const mixedNodes = mixed.render('Waterfall', { state: st, today, year: Number(today.slice(0, 4)), onOpen() {} });
   // 分解行不分涨跌颜色，只靠方向符号
   assert.ok(!mixedNodes.some((n) => /mv-row (up|down)/.test(n.props.className ?? '')));
   const driver = mixedNodes.find((n) => n.props.className === 'mv-row' && all(n).some((c) => c.children.includes('report.wf.churned')))!;
@@ -911,7 +911,7 @@ test('退订与停用：每笔未退款损失一行，损失合计只出现一�
   const r = harness('../app/src/views/Report.tsx', 'StopsCard', {}, { tipProps: () => ({}) });
   for (const count of [0, 1, 2]) {
     const state = { ...st, subscriptions: Array.from({ length: count }, (_, i) => ({ ...sub, id: String(i) })) };
-    const nodes = r.render('StopsCard', { state, today, onOpen: () => {} });
+    const nodes = r.render('StopsCard', { state, today, year: Number(today.slice(0, 4)), onOpen: () => {} });
     assert.equal(nodes.filter((n) => n.props.className === 'stop-row').length, count);
     assert.equal(nodes.filter((n) => n.children.includes('report.stops.loss')).length, 1);
   }

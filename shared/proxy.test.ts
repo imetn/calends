@@ -137,4 +137,7 @@ test('今年代付合计：只算今年扣款的期，盈亏只看已收回的�
   assert.equal(y.diff, 2);
   assert.equal(y.partial.owed.value, 20);
   assert.deepEqual(proxyYear({ ...state(s), subscriptions: [] }, today).subs, []);
+  // 选去年：只剩 12 月那一期
+  const last = proxyYear(state(s), today, '2025');
+  assert.equal(last.done.length + last.open.length, 1);
 });

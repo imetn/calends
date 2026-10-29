@@ -1,6 +1,12 @@
 {
   "title": "Report",
   "shareReview": "Share {year} in review",
+  "shareAll": "Share all-time review",
+  "pick": {
+    "label": "Choose year",
+    "all": "All",
+    "year": "{year}"
+  },
   "perMonth": "{amount}/mo",
   "per": {
     "day": "day",
@@ -22,12 +28,31 @@
     "year": "{year}"
   },
   "hero": {
-    "label": "Monthly subscription spend",
-    "vsLastMonth": "vs. end of last month",
-    "yearAgo": "{amount} a year ago",
-    "perDay": "Per day",
-    "active": "Active",
-    "recover": "Recovered from sharing/mo"
+    "label": "Full-year subscription spend",
+    "tip": "Month {month}\nRunning total {total}",
+    "paid": "Paid",
+    "avg": "Monthly avg",
+    "peak": "Peak month"
+  },
+  "all": {
+    "label": "All-time subscription spend",
+    "basis": "From the first charge to today: net cash at my share, refunds and transfers included, proxy purchases excluded.",
+    "since": "Since {date}",
+    "last12": "Last 12 months",
+    "avg": "Yearly avg",
+    "peak": "Peak year",
+    "subs": "Subscriptions",
+    "detail": "All-time breakdown"
+  },
+  "tenure": {
+    "title": "How long subscriptions last",
+    "basis": "Days actually subscribed, gaps excluded, proxies excluded.\nQuick stops: stopped within 31 days.\nActive subscriptions: count on the last day of each month.",
+    "active": "Active, avg so far",
+    "stopped": "Stopped, avg kept",
+    "quick": "Quick stops",
+    "peak": "Most at once",
+    "longest": "Longest held",
+    "count": "Active subscriptions"
   },
   "wf": {
     "vsFrom": "vs. {amount} at last month-end",
@@ -66,7 +91,6 @@
     "prepaid": "Prepaid value",
     "prepaidSub": "{count} paid, not used up",
     "next90": "Due in the next 90 days",
-    "peak": "Peak in {month}\n{amount}",
     "fullPaidHint": "Full amount paid, including advances for members"
   },
   "comp": {
@@ -83,7 +107,13 @@
     "groupTip": {
       "one": "{name}\n{count} item\n{amount}/mo",
       "other": "{name}\n{count} items\n{amount}/mo"
-    }
+    },
+    "groupTipAll": {
+      "one": "{name}\n{count} item\n{amount}",
+      "other": "{name}\n{count} items\n{amount}"
+    },
+    "basisYear": "1 January to 31 December of the selected year: my share of net cash, refunds and transfers included, proxies excluded; dates after today are forecast.\nPayment methods and currencies follow each charge.",
+    "basisAll": "From the first charge to today: my share of net cash, refunds and transfers included, proxies excluded.\nPayment methods and currencies follow each charge."
   },
   "topup": {
     "title": "Top-up plan",
@@ -126,20 +156,15 @@
   "stops": {
     "title": "Cancellations & terminations",
     "loss": "Unrefunded loss",
-    "basis": "All history\nMy share; unrefunded loss at stop-date FX.",
+    "basis": "Stopped in the selected year\nMy share; unrefunded loss at stop-date FX.",
+    "basisAll": "All stopped subscriptions\nMy share; unrefunded loss at stop-date FX.",
     "cancel": "Voluntary early cancellation"
   },
   "year": {
-    "title": "{year}",
-    "basis": "Net cash at my share, including refunds and transfers; after today, forecast from current subscriptions. Same period means Jan 1 to today, against Jan 1 to the same day last year.",
-    "total": "This year forecast",
-    "pendingAmount": "Remaining {amount}",
+    "title": "Year breakdown",
+    "basis": "Net cash at my share, including refunds and transfers; after today, forecast from current subscriptions. This year compares Jan 1 to today with the same period last year; other years compare full years.",
     "vsLast": "vs same period last year",
-    "lastAmount": "Last year: {amount}",
-    "nextMonth": "{month} forecast",
-    "vsMonth": "vs same month last year {delta}",
-    "nextYear": "{year} forecast",
-    "vsYear": "vs this year {delta}",
+    "vsPrev": "vs. previous year",
     "count": {
       "one": "{count} item",
       "other": "{count} items"

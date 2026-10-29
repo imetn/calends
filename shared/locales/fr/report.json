@@ -1,6 +1,12 @@
 {
   "title": "Rapport",
   "shareReview": "Partager le bilan {year}",
+  "shareAll": "Partager le bilan global",
+  "pick": {
+    "label": "Choisir l’année",
+    "all": "Tout",
+    "year": "{year}"
+  },
   "perMonth": "{amount}/mois",
   "per": {
     "day": "jour",
@@ -22,12 +28,31 @@
     "year": "{year}"
   },
   "hero": {
-    "label": "Dépenses mensuelles en abonnements",
-    "vsLastMonth": "par rapport à fin du mois dernier",
-    "yearAgo": "{amount} il y a un an",
-    "perDay": "Par jour",
-    "active": "Actifs",
-    "recover": "Récupéré via les partages/mois"
+    "label": "Dépenses d’abonnement de l’année",
+    "tip": "Mois {month}\nCumul {total}",
+    "paid": "Payé",
+    "avg": "Moyenne mensuelle",
+    "peak": "Mois le plus élevé"
+  },
+  "all": {
+    "label": "Dépenses d’abonnement cumulées",
+    "basis": "Du premier prélèvement à aujourd’hui : trésorerie nette de ma part, remboursements et transferts inclus, achats pour autrui exclus.",
+    "since": "Depuis {date}",
+    "last12": "12 derniers mois",
+    "avg": "Moyenne annuelle",
+    "peak": "Année la plus élevée",
+    "subs": "Abonnements",
+    "detail": "Détail cumulé"
+  },
+  "tenure": {
+    "title": "Durée des abonnements",
+    "basis": "Jours réellement abonnés, interruptions et paiements pour autrui exclus.\nArrêts rapides : arrêtés en 31 jours ou moins.\nAbonnements actifs : nombre au dernier jour de chaque mois.",
+    "active": "Actifs, moyenne à ce jour",
+    "stopped": "Arrêtés, durée moyenne",
+    "quick": "Arrêts rapides",
+    "peak": "Maximum simultané",
+    "longest": "Les plus anciens",
+    "count": "Abonnements actifs"
   },
   "wf": {
     "vsFrom": "vs {amount} fin du mois dernier",
@@ -66,7 +91,6 @@
     "prepaid": "Valeur prépayée",
     "prepaidSub": "{count} payés, pas encore consommés",
     "next90": "À payer dans les 90 prochains jours",
-    "peak": "Pic en {month}\n{amount}",
     "fullPaidHint": "Montant total payé, avances pour les membres comprises"
   },
   "comp": {
@@ -83,7 +107,13 @@
     "groupTip": {
       "one": "{name}\n{count} élément\n{amount}/mois",
       "other": "{name}\n{count} éléments\n{amount}/mois"
-    }
+    },
+    "groupTipAll": {
+      "one": "{name}\n{count} élément\n{amount}",
+      "other": "{name}\n{count} éléments\n{amount}"
+    },
+    "basisYear": "Du 1er janvier au 31 décembre de l'année choisie : ma part des dépenses nettes, remboursements et cessions inclus, paiements pour autrui exclus ; après aujourd'hui, prévision.\nMoyens de paiement et devises selon chaque prélèvement.",
+    "basisAll": "Du premier prélèvement à aujourd'hui : ma part des dépenses nettes, remboursements et cessions inclus, paiements pour autrui exclus.\nMoyens de paiement et devises selon chaque prélèvement."
   },
   "topup": {
     "title": "Plan de recharge",
@@ -126,20 +156,15 @@
   "stops": {
     "title": "Résiliations et suspensions",
     "loss": "Perte non remboursée",
-    "basis": "Tout l’historique\nMa part ; perte non remboursée au taux du jour de l’arrêt.",
+    "basis": "Arrêtés dans l’année choisie\nMa part ; perte non remboursée au taux du jour de l’arrêt.",
+    "basisAll": "Tous les abonnements arrêtés\nMa part ; perte non remboursée au taux du jour de l’arrêt.",
     "cancel": "Résiliation anticipée volontaire"
   },
   "year": {
-    "title": "{year}",
-    "basis": "Dépenses nettes pour ma part, remboursements et transferts inclus ; après aujourd’hui, prévision d’après les abonnements actuels. Même période : du 1er janvier à aujourd’hui, comparé au 1er janvier jusqu’au même jour l’an dernier.",
-    "total": "Prévision de cette année",
-    "pendingAmount": "À venir {amount}",
+    "title": "Détail de l’année",
+    "basis": "Dépenses nettes pour ma part, remboursements et transferts inclus ; après aujourd’hui, prévision d’après les abonnements actuels. Cette année compare le 1er janvier à aujourd’hui à la même période l’an dernier ; les autres années, l’année entière.",
     "vsLast": "vs même période l’an dernier",
-    "lastAmount": "L’an dernier : {amount}",
-    "nextMonth": "Prévision {month}",
-    "vsMonth": "vs même mois l’an dernier {delta}",
-    "nextYear": "Prévision {year}",
-    "vsYear": "vs cette année {delta}",
+    "vsPrev": "vs année précédente",
     "count": {
       "one": "{count} élément",
       "other": "{count} éléments"

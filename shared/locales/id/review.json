@@ -1,6 +1,8 @@
 {
   "title": "Bagikan ringkasan tahunan",
+  "titleAll": "Bagikan ringkasan sepanjang waktu",
   "fileName": "langganan-{year}-kilas-balik-{style}.png",
+  "fileNameAll": "langganan-sepanjang-waktu-{style}.png",
   "style": {
     "poster": "Poster",
     "receipt": "Struk",
@@ -13,6 +15,7 @@
   "whoseSelf": "saya",
   "topSpend": "Pengeluaran terbesar",
   "ofYear": "{pct} dari pengeluaran tahunan",
+  "ofAll": "{pct} dari total pengeluaran",
   "n": {
     "subs": {
       "other": "{count} langganan"
@@ -28,6 +31,7 @@
     "shop": "Catatan langganan {whose}",
     "asOf": "Ringkasan tahunan\nHingga {date}",
     "fullYear": "Ringkasan tahun {year}",
+    "all": "Laporan kumulatif\nPer {date}",
     "no": "No. {no}",
     "item": "Item",
     "share": "Bagian",
@@ -38,6 +42,7 @@
   },
   "poster": {
     "kicker": "Ringkasan langganan tahunan {whose}",
+    "kickerAll": "Ringkasan langganan {whose} sepanjang waktu",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -51,7 +56,9 @@
       "ongoing": "Pengeluaran tahun berjalan",
       "ongoingHidden": "Langganan tahun berjalan",
       "year": "Pengeluaran tahunan",
-      "yearHidden": "Langganan tahun ini"
+      "yearHidden": "Langganan tahun ini",
+      "all": "Pengeluaran hingga kini",
+      "allHidden": "Langganan hingga kini"
     },
     "perDay": "Rata-rata {amount}/hari",
     "longest": "Langganan terlama",
@@ -70,5 +77,6 @@
     "foot": "Ukuran lingkaran menunjukkan pengeluaran"
   },
   "spendBasis": "Kas bersih bagian saya, termasuk pengembalian dana",
-  "stopLoss": "Kerugian tanpa pengembalian dana tahun ini: {amount}"
+  "stopLoss": "Kerugian tanpa pengembalian dana tahun ini: {amount}",
+  "stopLossAll": "Kerugian belum direfund hingga kini: {amount}"
 }

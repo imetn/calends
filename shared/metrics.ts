@@ -772,6 +772,7 @@ export function insights(state: AppState, today: string): Insight[] {
 
 export interface YearReview {
   partial: { total: FxTotal; perDay: FxTotal; stopLoss: FxTotal; bySub: Record<string, FxTotal>; byMonth: Record<string, FxTotal> };
+  /** 'YYYY'，或 'all'：从最早的订阅到今天 */
   year: string;
   /** 当年停止的阶段截至 today 仍未退回的损失（我的份额、本位币） */
   stopLoss: number;
@@ -792,8 +793,10 @@ export interface YearReview {
 }
 
 export function yearReview(state: AppState, today: string, year = today.slice(0, 4)): YearReview {
-  const from = `${year}-01-01`;
-  const to = `${year}-12-31` < today ? `${year}-12-31` : today;
+  // 'all'：从最早的订阅开始到今天
+  const all = year === 'all';
+  const from = all ? state.subscriptions.filter((s) => !s.proxy).reduce((m, s) => (s.start < m ? s.start : m), today) : `${year}-01-01`;
+  const to = all || `${year}-12-31` >= today ? today : `${year}-12-31`;
   const cs = state.subscriptions
     .filter((s) => !s.proxy)
     .flatMap((s) => chargesBetween(s, from, to, today))
@@ -847,8 +850,8 @@ export function yearReview(state: AppState, today: string, year = today.slice(0,
     top: [...bySub.values()].sort((a, b) => b.sum - a.sum).slice(0, 5),
     items: [...bySub.values()].sort((a, b) => b.sum - a.sum),
     longest,
-    newSubs: state.subscriptions.filter((s) => !s.proxy && s.start.startsWith(year)),
-    ended: state.subscriptions.filter((s) => !s.proxy && s.end?.startsWith(year) && s.end < today),
+    newSubs: state.subscriptions.filter((s) => !s.proxy && (all || s.start.startsWith(year))),
+    ended: state.subscriptions.filter((s) => !s.proxy && s.end && (all || s.end.startsWith(year)) && s.end < today),
     currencies: ccys.size,
     busiestMonth: busiest && { month: busiest[0], sum: busiest[1] },
     perDay: total / Math.max(1, diffDays(from, to) + 1),
@@ -859,8 +862,7 @@ export function yearReview(state: AppState, today: string, year = today.slice(0,
  * 一个订阅今年（自然年）的总成本，折成本位币：今年已扣的按实扣，剩下的按预计，算到 12 月 31 日；失败的扣款不算。
  * 合租、代付列表的套餐价格小字与合租的当年盈亏共用这一个数
  */
-export function yearCost(state: AppState, s: Subscription, today: string): number {
-  const y = today.slice(0, 4);
+export function yearCost(state: AppState, s: Subscription, today: string, y = today.slice(0, 4)): number {
   // 缺汇率的扣款让合计为 NaN（显示为不可用），不当成 0
   return chargesBetween(s, `${y}-01-01`, `${y}-12-31`, today)
     .filter((c) => c.kind !== 'failed')

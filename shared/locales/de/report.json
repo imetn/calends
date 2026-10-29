@@ -1,6 +1,12 @@
 {
   "title": "Bericht",
   "shareReview": "Rückblick {year} teilen",
+  "shareAll": "Gesamtrückblick teilen",
+  "pick": {
+    "label": "Jahr wählen",
+    "all": "Alle",
+    "year": "{year}"
+  },
   "perMonth": "{amount}/Mon.",
   "per": {
     "day": "Tag",
@@ -22,12 +28,31 @@
     "year": "{year}"
   },
   "hero": {
-    "label": "Monatliche Abo-Ausgaben",
-    "vsLastMonth": "ggü. Ende letzten Monats",
-    "yearAgo": "vor einem Jahr {amount}",
-    "perDay": "Pro Tag",
-    "active": "Aktiv",
-    "recover": "Durch Teilen zurück/Mon."
+    "label": "Abo-Ausgaben im Jahr",
+    "tip": "Monat {month}\nKumuliert {total}",
+    "paid": "Bezahlt",
+    "avg": "Monatsschnitt",
+    "peak": "Spitzenmonat"
+  },
+  "all": {
+    "label": "Abo-Ausgaben insgesamt",
+    "basis": "Von der ersten Abbuchung bis heute: Nettozahlungen mit meinem Anteil, inklusive Erstattungen und Übertragungen, ohne Stellvertreterkäufe.",
+    "since": "Seit {date}",
+    "last12": "Letzte 12 Monate",
+    "avg": "Jahresschnitt",
+    "peak": "Spitzenjahr",
+    "subs": "Abos",
+    "detail": "Gesamtübersicht"
+  },
+  "tenure": {
+    "title": "Wie lange Abos laufen",
+    "basis": "Tatsächlich abonnierte Tage, ohne Pausen und Stellvertreterzahlungen.\nSchnell gekündigt: innerhalb von 31 Tagen beendet.\nAktive Abos: Anzahl am Monatsletzten.",
+    "active": "Aktiv, Ø bisher",
+    "stopped": "Beendet, Ø Laufzeit",
+    "quick": "Schnell gekündigt",
+    "peak": "Höchstens gleichzeitig",
+    "longest": "Am längsten",
+    "count": "Aktive Abos"
   },
   "wf": {
     "vsFrom": "ggü. {amount} Ende Vormonat",
@@ -66,7 +91,6 @@
     "prepaid": "Vorausbezahlter Wert",
     "prepaidSub": "{count} bezahlt, nicht aufgebraucht",
     "next90": "Fällig in den nächsten 90 Tagen",
-    "peak": "Höchststand im {month}\n{amount}",
     "fullPaidHint": "Vollständig gezahlter Betrag, einschließlich Auslagen für Mitglieder"
   },
   "comp": {
@@ -83,7 +107,13 @@
     "groupTip": {
       "one": "{name}\n{count} Eintrag\n{amount}/Mon.",
       "other": "{name}\n{count} Einträge\n{amount}/Mon."
-    }
+    },
+    "groupTipAll": {
+      "one": "{name}\n{count} Eintrag\n{amount}",
+      "other": "{name}\n{count} Einträge\n{amount}"
+    },
+    "basisYear": "1. Januar bis 31. Dezember des gewählten Jahres: mein Anteil am Nettobetrag, inkl. Erstattungen und Übertragungen, ohne Stellvertreterzahlungen; nach heute geschätzt.\nZahlungsmittel und Währungen je Abbuchung.",
+    "basisAll": "Von der ersten Abbuchung bis heute: mein Anteil am Nettobetrag, inkl. Erstattungen und Übertragungen, ohne Stellvertreterzahlungen.\nZahlungsmittel und Währungen je Abbuchung."
   },
   "topup": {
     "title": "Aufladeplan",
@@ -126,20 +156,15 @@
   "stops": {
     "title": "Kündigungen & Abschaltungen",
     "loss": "Nicht erstatteter Verlust",
-    "basis": "Gesamter Verlauf\nMein Anteil; nicht erstatteter Verlust zum Kurs am Beendigungstag.",
+    "basis": "Im gewählten Jahr beendet\nMein Anteil; nicht erstatteter Verlust zum Kurs am Beendigungstag.",
+    "basisAll": "Alle beendeten Abos\nMein Anteil; nicht erstatteter Verlust zum Kurs am Beendigungstag.",
     "cancel": "Freiwillig vorzeitig gekündigt"
   },
   "year": {
-    "title": "{year}",
-    "basis": "Nettoausgaben mit meinem Anteil, inklusive Erstattungen und Übertragungen; ab heute Prognose aus den aktuellen Abos. Gleicher Zeitraum: 1. Januar bis heute gegenüber 1. Januar bis zum selben Tag im Vorjahr.",
-    "total": "Prognose dieses Jahr",
-    "pendingAmount": "Offen {amount}",
+    "title": "Jahresübersicht",
+    "basis": "Nettoausgaben mit meinem Anteil, inklusive Erstattungen und Übertragungen; ab heute Prognose aus den aktuellen Abos. Dieses Jahr: 1. Januar bis heute gegenüber demselben Zeitraum im Vorjahr; andere Jahre: ganze Jahre.",
     "vsLast": "ggü. Vorjahreszeitraum",
-    "lastAmount": "Vorjahr: {amount}",
-    "nextMonth": "Prognose {month}",
-    "vsMonth": "ggü. Vorjahresmonat {delta}",
-    "nextYear": "Prognose {year}",
-    "vsYear": "ggü. diesem Jahr {delta}",
+    "vsPrev": "ggü. Vorjahr",
     "count": {
       "one": "{count} Eintrag",
       "other": "{count} Einträge"

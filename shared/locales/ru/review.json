@@ -1,6 +1,8 @@
 {
   "title": "Поделиться итогами года",
+  "titleAll": "Поделиться общим обзором",
   "fileName": "subscriptions-{year}-in-review-{style}.png",
+  "fileNameAll": "subscriptions-all-time-{style}.png",
   "style": {
     "poster": "Постер",
     "receipt": "Чек",
@@ -13,6 +15,7 @@
   "whoseSelf": "Мои подписки",
   "topSpend": "Наибольшие расходы",
   "ofYear": "{pct} годовых расходов",
+  "ofAll": "{pct} всех расходов",
   "n": {
     "subs": {
       "one": "{count} подписка",
@@ -37,6 +40,7 @@
     "shop": "{whose}",
     "asOf": "Итоги года\nНа {date}",
     "fullYear": "Итоги {year} года",
+    "all": "Выписка за всё время\nНа {date}",
     "no": "№ {no}",
     "item": "Позиция",
     "share": "Доля",
@@ -47,6 +51,7 @@
   },
   "poster": {
     "kicker": "{whose}",
+    "kickerAll": "Подписки {whose} за всё время",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -60,7 +65,9 @@
       "ongoing": "Расходы с начала года",
       "ongoingHidden": "Подписки с начала года",
       "year": "Годовые расходы",
-      "yearHidden": "Подписки за год"
+      "yearHidden": "Подписки за год",
+      "all": "Расходы на сегодня",
+      "allHidden": "Подписок на сегодня"
     },
     "perDay": "В среднем {amount} в день",
     "longest": "Самая длительная подписка",
@@ -79,5 +86,6 @@
     "foot": "Размер круга соответствует расходам"
   },
   "spendBasis": "Чистые платежи по моей доле, включая возвраты",
-  "stopLoss": "Невозмещённый убыток за год: {amount}"
+  "stopLoss": "Невозмещённый убыток за год: {amount}",
+  "stopLossAll": "Невозвращённые потери за всё время: {amount}"
 }

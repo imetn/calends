@@ -1,6 +1,8 @@
 {
   "title": "分享年度回顧",
+  "titleAll": "分享累計回顧",
   "fileName": "訂閱年度回顧-{year}-{style}.png",
+  "fileNameAll": "訂閱累計回顧-{style}.png",
   "style": {
     "poster": "海報",
     "receipt": "收據",
@@ -13,6 +15,7 @@
   "whoseSelf": "我",
   "topSpend": "支出最多",
   "ofYear": "佔年度支出 {pct}",
+  "ofAll": "佔累計支出 {pct}",
   "n": {
     "subs": "{count} 個訂閱",
     "charges": "{count} 次扣款",
@@ -22,6 +25,7 @@
     "shop": "{whose}的訂閱帳本",
     "asOf": "年度帳單\n截至 {date}",
     "fullYear": "{year} 年度帳單",
+    "all": "累計賬單\n截至 {date}",
     "no": "單號 {no}",
     "item": "品名",
     "share": "佔比",
@@ -32,6 +36,7 @@
   },
   "poster": {
     "kicker": "{whose}的訂閱年度回顧",
+    "kickerAll": "{whose}的訂閱累計回顧",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -45,7 +50,9 @@
       "ongoing": "本年累計支出",
       "ongoingHidden": "本年訂閱數量",
       "year": "全年訂閱支出",
-      "yearHidden": "全年訂閱數量"
+      "yearHidden": "全年訂閱數量",
+      "all": "累計訂閱支出",
+      "allHidden": "累計訂閱數量"
     },
     "perDay": "平均每天 {amount}",
     "longest": "訂閱時間最長",
@@ -64,5 +71,6 @@
     "foot": "圓形大小表示支出金額"
   },
   "spendBasis": "按我的份額統計淨現金，包含退款",
-  "stopLoss": "這一年未退款損失 {amount}"
+  "stopLoss": "這一年未退款損失 {amount}",
+  "stopLossAll": "累計未退款損失 {amount}"
 }

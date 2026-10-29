@@ -1,6 +1,8 @@
 {
   "title": "Share annual review",
+  "titleAll": "Share all-time review",
   "fileName": "subscriptions-{year}-in-review-{style}.png",
+  "fileNameAll": "subscriptions-all-time-{style}.png",
   "style": {
     "poster": "Poster",
     "receipt": "Receipt",
@@ -13,6 +15,7 @@
   "whoseSelf": "My",
   "topSpend": "Highest spending",
   "ofYear": "{pct} of annual spending",
+  "ofAll": "{pct} of all-time spending",
   "n": {
     "subs": {
       "one": "{count} subscription",
@@ -31,6 +34,7 @@
     "shop": "{whose} subscription ledger",
     "asOf": "Annual statement\nAs of {date}",
     "fullYear": "{year} annual statement",
+    "all": "All-time statement\nAs of {date}",
     "no": "No. {no}",
     "item": "Item",
     "share": "Share",
@@ -41,6 +45,7 @@
   },
   "poster": {
     "kicker": "{whose} subscription review",
+    "kickerAll": "{whose} all-time subscription review",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -54,7 +59,9 @@
       "ongoing": "Spending to date",
       "ongoingHidden": "Subscriptions to date",
       "year": "Annual spending",
-      "yearHidden": "Subscriptions this year"
+      "yearHidden": "Subscriptions this year",
+      "all": "Spending to date",
+      "allHidden": "Subscriptions to date"
     },
     "perDay": "{amount}/day on average",
     "longest": "Longest subscription",
@@ -73,5 +80,6 @@
     "foot": "Circle size represents spending"
   },
   "spendBasis": "Net cash at my share, including refunds",
-  "stopLoss": "Unrefunded loss this year: {amount}"
+  "stopLoss": "Unrefunded loss this year: {amount}",
+  "stopLossAll": "Unrefunded loss to date: {amount}"
 }

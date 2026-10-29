@@ -169,10 +169,9 @@ export function carLedger(state: AppState, s: Subscription, today: string) {
  * 一辆车今年（自然年）的盈亏：成本是今年已扣加剩下预计要扣的；收入是成员今年已经交的，
  * 加上今年里还该收的各期（含已逾期没收的）。都折成本币，买断与停止的车同样适用
  */
-export function carYear(state: AppState, s: Subscription, today: string) {
-  const y = today.slice(0, 4);
+export function carYear(state: AppState, s: Subscription, today: string, y = today.slice(0, 4)) {
   const ccy = collectCurrencyOf(state.settings);
-  const cost = yearCost(state, s, today);
+  const cost = yearCost(state, s, today, y);
   const members = s.share?.members ?? [];
   const received = members
     .flatMap(memberCashFlows)
@@ -208,11 +207,18 @@ export function carYear(state: AppState, s: Subscription, today: string) {
  * 我发起的合租今年（自然年）合计盈亏：各车 carYear 相加。进行中的车都算；已停止的车只算今年还有成本或收入的。
  * 报告年卡与 MCP 共用这一处口径
  */
-export function carpoolYear(state: AppState, today: string) {
+export function carpoolYear(state: AppState, today: string, year = today.slice(0, 4)) {
   const cars = state.subscriptions
     .filter((s) => s.share?.role === 'owner')
-    .map((s) => ({ s, y: carYear(state, s, today) }))
-    .filter(({ s, y }) => !isStopped(effectiveStatus(s, today)) || y.partial.cost.value !== 0 || y.partial.income.value !== 0 || y.partial.net.incomplete);
+    .map((s) => ({ s, y: carYear(state, s, today, year) }))
+    // 进行中的车只在今年及以后的年份算；往年只看那年有没有成本或收入
+    .filter(
+      ({ s, y }) =>
+        (year >= today.slice(0, 4) && !isStopped(effectiveStatus(s, today))) ||
+        y.partial.cost.value !== 0 ||
+        y.partial.income.value !== 0 ||
+        y.partial.net.incomplete,
+    );
   return {
     subs: cars.map((c) => c.s),
     net: cars.reduce((a, c) => a + c.y.net, 0),

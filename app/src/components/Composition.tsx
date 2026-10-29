@@ -1,11 +1,12 @@
 import { useSnapshotRender } from '../snapshot-render.tsx';
 import { useRef, useState } from 'react';
-import { totalNote } from '../../../shared/fx-total.ts';
+import { sumTotals, totalNote } from '../../../shared/fx-total.ts';
 import { currentPhase, cycleDays } from '../../../shared/billing.ts';
 import { paymentMethodGroups } from '../../../shared/payment-groups.ts';
 import { mrrTotal, contributionOn } from '../../../shared/metrics.ts';
 import { flow } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
+import type { SpendPiece } from '../../../shared/scope-report.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { CardTitle } from './ui.tsx';
 import { CopyImageButton } from './CopyImageButton.tsx';
@@ -18,16 +19,23 @@ import { catColor, paletteColor, KIND_BG } from '../derive.ts';
 const perMonth = (amount: string) => t('report.perMonth', { amount });
 type Dim = 'cat' | 'pay' | 'ccy' | 'cycle';
 
-/** 构成：树状图，面积 = 每月成本 */
+type Item = { s: Subscription; v: number; method: string; ccy: string };
+
+/** 构成：树状图，面积 = 每月成本；传入 pieces 时面积 = 累计实付，支付方式、币种按每笔扣款归属 */
 export function Composition({
   state,
   today,
   onOpen,
+  pieces,
+  hint,
   snapshotSelection,
 }: {
   state: AppState;
   today: string;
   onOpen: (s: Subscription) => void;
+  pieces?: SpendPiece[];
+  /** 口径说明；缺汇率时后面再接一行提示 */
+  hint?: string;
   snapshotSelection?: { dim: Dim; focus: string | null };
 }) {
   const base = state.settings.baseCurrency;
@@ -35,34 +43,54 @@ export function Composition({
   const [focus, setFocus] = useState<string | null>(snapshotSelection?.focus ?? null);
   const [box, W] = useWidth();
   const captureRef = useRef<HTMLDivElement>(null);
-  useSnapshotRender(captureRef, () => <Composition state={state} today={today} onOpen={onOpen} snapshotSelection={{ dim, focus }} />);
+  useSnapshotRender(captureRef, () => (
+    <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} hint={hint} snapshotSelection={{ dim, focus }} />
+  ));
   const H = W < 560 ? 320 : 400;
-  const live = state.subscriptions.map((s) => ({ s, v: contributionOn(state, s, today) })).filter((x) => x.v > 0);
-  const total = live.reduce((a, x) => a + x.v, 0);
-  const partial = mrrTotal(state, today);
-  const keyOf = (s: Subscription) => {
-    if (dim === 'cat') return s.category;
-    if (dim === 'pay') return currentPhase(s, today).methodId ?? '';
-    if (dim === 'ccy') return s.currency;
-    const days = cycleDays(s.cycle);
+  const fmt = pieces ? (amount: string) => amount : perMonth;
+  const items: Item[] = pieces
+    ? pieces.map((p) => ({ s: p.sub, v: p.amount, method: p.methodId, ccy: p.currency }))
+    : state.subscriptions
+        .map((s) => ({ s, v: contributionOn(state, s, today), method: currentPhase(s, today).methodId ?? '', ccy: s.currency }))
+        .filter((x) => x.v > 0);
+  const partial = pieces ? sumTotals(pieces.map((p) => p.partial)) : mrrTotal(state, today);
+  const keyOf = (x: Item) => {
+    if (dim === 'cat') return x.s.category;
+    if (dim === 'pay') return x.method;
+    if (dim === 'ccy') return x.ccy;
+    const days = cycleDays(x.s.cycle);
     return days >= 300 ? t('report.comp.yearly') : days >= 80 ? t('report.comp.quarterly') : t('report.comp.monthly');
   };
-  const groups = new Map<string, typeof live>();
-  for (const x of live) {
-    const k = keyOf(x.s);
+  // 同一组里同一订阅（累计时可能分几笔、几种币）合成一块；净额不为正的不画
+  const merge = (xs: Item[]) => {
+    const m = new Map<string, Item>();
+    for (const x of xs) {
+      const e = m.get(x.s.id);
+      m.set(x.s.id, e ? { ...e, v: e.v + x.v } : x);
+    }
+    return [...m.values()].filter((x) => x.v > 0.005).sort((a, b) => b.v - a.v);
+  };
+  const groups = new Map<string, Item[]>();
+  for (const x of items) {
+    const k = keyOf(x);
     groups.set(k, [...(groups.get(k) ?? []), x]);
   }
   const entries = (
     dim === 'pay'
       ? paymentMethodGroups(
           state.methods,
-          live.map((x) => ({ methodId: currentPhase(x.s, today).methodId, value: x.v, item: x })),
+          items.map((x) => ({ methodId: x.method || undefined, value: x.v, item: x })),
           t('report.comp.unassigned'),
-        ).map((g) => ({ k: g.id, name: g.name, xs: g.items, v: g.sum }))
-      : [...groups.entries()].map(([k, xs]) => ({ k, name: k, xs, v: xs.reduce((a, x) => a + x.v, 0) }))
+        ).map((g) => ({ k: g.id, name: g.name, xs: g.items }))
+      : [...groups.entries()].map(([k, xs]) => ({ k, name: k, xs }))
   )
-    .map((e) => ({ ...e, xs: e.xs.sort((a, b) => b.v - a.v) }))
+    .map((e) => {
+      const xs = merge(e.xs);
+      return { ...e, xs, v: xs.reduce((a, x) => a + x.v, 0) };
+    })
+    .filter((e) => e.xs.length)
     .sort((a, b) => b.v - a.v);
+  const total = entries.reduce((a, e) => a + e.v, 0);
   const color = (k: string, i: number) => {
     if (dim === 'cat') return catColor(k);
     if (dim === 'pay') {
@@ -74,7 +102,7 @@ export function Composition({
   const sel = focus ? entries.find((e) => e.k === focus) : undefined;
   const rects = squarify(entries.map((e) => e.v));
   /** 每个订阅一块，图标按块的大小放大，空间够再写名称和金额 */
-  const tiles = (xs: typeof live, b: { x: number; y: number; w: number; h: number }, bg: (cat: string) => string, onPick?: () => void) =>
+  const tiles = (xs: Item[], b: { x: number; y: number; w: number; h: number }, bg: (cat: string) => string, onPick?: () => void) =>
     squarify(
       xs.map((x) => x.v),
       b.x,
@@ -93,7 +121,7 @@ export function Composition({
           className={`tm-cell ${side > 200 ? 'lg' : ''}`}
           style={{ left: r.x, top: r.y, width: r.w, height: r.h, background: bg(x.s.category) }}
           onClick={() => (onPick ? onPick() : onOpen(x.s))}
-          {...tipProps(() => `${x.s.name}\n${perMonth(flow(-x.v, base))}`)}
+          {...tipProps(() => `${x.s.name}\n${fmt(flow(-x.v, base))}`)}
         >
           {ico >= 12 && <SubIcon sub={x.s} size={ico} />}
           {label && <b>{x.s.name}</b>}
@@ -104,8 +132,8 @@ export function Composition({
   return (
     <div className="card copy-card" data-copy-card ref={captureRef}>
       <div className="card-h">
-        <CardTitle hint={totalNote(partial) || undefined}>
-          {copyParts(sel ? `${sel.name}\n${perMonth(flow(-sel.v, base, { compact: true }))}` : t('report.comp.title'))}
+        <CardTitle hint={[hint, totalNote(partial)].filter(Boolean).join('\n') || undefined}>
+          {copyParts(sel ? `${sel.name}\n${fmt(flow(-sel.v, base, { compact: true }))}` : t('report.comp.title'))}
         </CardTitle>
         <div className="copy-controls">
           <CopyImageButton hover />
@@ -148,7 +176,9 @@ export function Composition({
                         className="tm-head"
                         data-snapshot-keep
                         onClick={() => setFocus(e.k)}
-                        {...tipProps(() => t('report.comp.groupTip', { name: e.name, count: e.xs.length, amount: flow(-e.v, base) }))}
+                        {...tipProps(() =>
+                          t(pieces ? 'report.comp.groupTipAll' : 'report.comp.groupTip', { name: e.name, count: e.xs.length, amount: flow(-e.v, base) }),
+                        )}
                       >
                         <b className="icon-text">
                           {dim === 'cat' && <CatIcon cat={e.k} size={11} />}

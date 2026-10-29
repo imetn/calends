@@ -1,6 +1,8 @@
 {
   "title": "연간 결산 공유",
+  "titleAll": "누적 리포트 공유",
   "fileName": "subscriptions-{year}-in-review-{style}.png",
+  "fileNameAll": "subscriptions-all-time-{style}.png",
   "style": {
     "poster": "포스터",
     "receipt": "영수증",
@@ -13,6 +15,7 @@
   "whoseSelf": "나의",
   "topSpend": "가장 큰 지출",
   "ofYear": "연간 지출의 {pct}",
+  "ofAll": "누적 지출의 {pct}",
   "n": {
     "subs": {
       "other": "구독 {count}개"
@@ -28,6 +31,7 @@
     "shop": "{whose} 구독 장부",
     "asOf": "연간 명세\n{date} 기준",
     "fullYear": "{year}년 명세",
+    "all": "누적 명세서\n{date} 기준",
     "no": "No. {no}",
     "item": "항목",
     "share": "비중",
@@ -38,6 +42,7 @@
   },
   "poster": {
     "kicker": "{whose} 연간 구독 결산",
+    "kickerAll": "{whose} 누적 구독 리포트",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -51,7 +56,9 @@
       "ongoing": "올해 누적 지출",
       "ongoingHidden": "올해 구독 수",
       "year": "연간 지출",
-      "yearHidden": "연간 구독 수"
+      "yearHidden": "연간 구독 수",
+      "all": "누적 지출",
+      "allHidden": "누적 구독 수"
     },
     "perDay": "하루 평균 {amount}",
     "longest": "가장 오래된 구독",
@@ -70,5 +77,6 @@
     "foot": "원의 크기는 지출액을 나타냅니다"
   },
   "spendBasis": "환불을 포함한 내 부담분의 순현금 지출",
-  "stopLoss": "올해 미환불 손실: {amount}"
+  "stopLoss": "올해 미환불 손실: {amount}",
+  "stopLossAll": "누적 미환불 손실: {amount}"
 }

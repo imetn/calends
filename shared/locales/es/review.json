@@ -1,6 +1,8 @@
 {
   "title": "Compartir resumen anual",
+  "titleAll": "Compartir resumen total",
   "fileName": "suscripciones-resumen-{year}-{style}.png",
+  "fileNameAll": "suscripciones-total-{style}.png",
   "style": {
     "poster": "Póster",
     "receipt": "Recibo",
@@ -13,6 +15,7 @@
   "whoseSelf": "personal",
   "topSpend": "Mayor gasto",
   "ofYear": "{pct} del gasto anual",
+  "ofAll": "{pct} del gasto total",
   "n": {
     "subs": {
       "one": "{count} suscripción",
@@ -31,6 +34,7 @@
     "shop": "Registro de suscripciones {whose}",
     "asOf": "Resumen anual\nHasta el {date}",
     "fullYear": "Resumen anual de {year}",
+    "all": "Estado acumulado\nAl {date}",
     "no": "N.º {no}",
     "item": "Artículo",
     "share": "Parte",
@@ -41,6 +45,7 @@
   },
   "poster": {
     "kicker": "Resumen anual {whose}",
+    "kickerAll": "Resumen total de suscripciones de {whose}",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -54,7 +59,9 @@
       "ongoing": "Gasto acumulado del año",
       "ongoingHidden": "Suscripciones en lo que va de año",
       "year": "Gasto anual",
-      "yearHidden": "Suscripciones del año"
+      "yearHidden": "Suscripciones del año",
+      "all": "Gasto acumulado",
+      "allHidden": "Suscripciones acumuladas"
     },
     "perDay": "{amount}/día de media",
     "longest": "Suscripción más antigua",
@@ -73,5 +80,6 @@
     "foot": "El tamaño del círculo representa el gasto"
   },
   "spendBasis": "Efectivo neto de mi parte, incluidos los reembolsos",
-  "stopLoss": "Pérdida no reembolsada este año: {amount}"
+  "stopLoss": "Pérdida no reembolsada este año: {amount}",
+  "stopLossAll": "Pérdida no reembolsada acumulada: {amount}"
 }

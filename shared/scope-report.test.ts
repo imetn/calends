@@ -2,8 +2,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FALLBACK_FX, memberDues } from './billing.ts';
 import { chargeValue } from './fx.ts';
-import { cashVsAccrual, contributionOn, movement, mrrOn, stopLosses } from './metrics.ts';
-import { compactComposition, monthReport, scopeReport, yearOutlook, type Block, type ScopeReport } from './scope-report.ts';
+import { cashVsAccrual, contributionOn, movement, mrrOn, stopLosses, yearReview } from './metrics.ts';
+import {
+  allOutlook,
+  compactComposition,
+  spendPiecesBetween,
+  subscriptionTenure,
+  monthReport,
+  scopeReport,
+  yearOutlook,
+  type Block,
+  type ScopeReport,
+} from './scope-report.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 
 const today = '2026-10-22';
@@ -501,6 +511,24 @@ test('year outlook: this year is paid plus forecast, same period compares Jan 1 
   const r = yearOutlook(st, today);
   assert.equal(r.year, '2026');
   assert.deepEqual([r.current.total, r.current.paid, r.current.pending], [240, 220, 20]);
+  // 逐月拆分与全年同一口径，十二个月加起来就是今年预计
+  assert.deepEqual(
+    r.months.map((m) => m.month),
+    Array.from({ length: 12 }, (_, i) => `2026-${String(i + 1).padStart(2, '0')}`),
+  );
+  assert.equal(
+    r.months.reduce((a, m) => a + m.total, 0),
+    240,
+  );
+  // 往年：全年都已发生，与上一年全年比较
+  const past = yearOutlook(st, today, 2025);
+  assert.equal(past.year, '2025');
+  assert.deepEqual([past.current.total, past.current.paid, past.current.pending], [180, 180, 0]);
+  assert.equal(past.samePeriod.through, '2025-12-31');
+  assert.equal(
+    past.months.reduce((a, m) => a + m.total, 0),
+    past.current.total,
+  );
   assert.equal(r.samePeriod.previousThrough, '2025-10-22');
   assert.deepEqual([r.samePeriod.amount, r.samePeriod.previous], [220, 150]);
   assert.equal(r.samePeriod.change?.amount, 70);
@@ -533,10 +561,153 @@ test('year outlook maps Feb 29 to Feb 28 and keeps missing FX incomplete instead
   assert.deepEqual([fresh.samePeriod.change, fresh.drivers], [undefined, []]);
 });
 
+test('all-time outlook sums paid cash from the first charge through today, by month, year and subscription', () => {
+  const st = state([
+    sub('Base'),
+    sub('New', { price: 120, cycle: { unit: 'year', every: 1 }, start: '2026-03-15' }),
+    sub('Gone', { price: 5, status: 'cancelled', end: '2025-12-31' }),
+    sub('Proxy', { price: 99, proxy: { forName: 'Mom' } as Subscription['proxy'] }),
+  ]);
+  const r = allOutlook(st, today);
+  assert.equal(r.since, '2025-01-01');
+  // 累计只算到今天、不含预计与代付；逐年与选单一年时的已付一致
+  assert.equal(r.total.value, 400);
+  assert.equal(r.months.length, 22);
+  assert.equal(
+    r.months.reduce((a, m) => a + m.total, 0),
+    400,
+  );
+  assert.deepEqual(
+    r.years.map((y) => [y.year, y.paid, y.pending]),
+    [
+      ['2025', yearOutlook(st, today, 2025).current.paid, 0],
+      ['2026', yearOutlook(st, today).current.paid, 0],
+    ],
+  );
+  assert.deepEqual(
+    r.bySub.map((x) => [x.sub.id, x.amount]),
+    [
+      ['Base', 220],
+      ['New', 120],
+      ['Gone', 60],
+    ],
+  );
+  // 构成按支付方式、币种拆块，拆完合计不变
+  assert.equal(
+    r.pieces.reduce((a, p) => a + p.amount, 0),
+    400,
+  );
+  // 转让卖出（哪怕换了币种）并入该订阅的主块，各维度下都与扣款相抵
+  const sold = allOutlook(
+    state([sub('S', { methodId: 'visa', transfers: [{ kind: 'sell', date: '2026-01-15', amount: 30, currency: 'EUR' }] } as Partial<Subscription>)]),
+    today,
+  );
+  assert.deepEqual(
+    sold.pieces.map((p) => [p.methodId, p.currency, p.amount]),
+    [['visa', 'USD', sold.total.value]],
+  );
+  const card = allOutlook(state([sub('A', { methodId: 'visa' }), sub('B')]), today).pieces;
+  assert.deepEqual(
+    card.map((p) => [p.sub.id, p.methodId, p.currency]),
+    [
+      ['A', 'visa', 'USD'],
+      ['B', '', 'USD'],
+    ],
+  );
+  // 单年构成与所选年份的全年（已付 + 预计）同一口径
+  assert.deepEqual(
+    spendPiecesBetween(st, '2026-01-01', '2026-12-31', today).map((x) => [x.sub.id, x.amount]),
+    [
+      ['Base', 120],
+      ['New', 120],
+    ],
+  );
+  // 分享「全部」回顾与报告页累计同一个数
+  const review = yearReview(st, today, 'all');
+  assert.deepEqual([review.total, review.items.length, review.ended.length], [400, 3, 1]);
+  // 缺汇率不当成 0：合计标不完整，订阅仍在排行里
+  const fx = allOutlook(state([sub('A', { currency: 'XXX' })]), today);
+  assert.ok(fx.total.incomplete);
+  assert.deepEqual(
+    fx.bySub.map((x) => x.sub.id),
+    ['A'],
+  );
+});
+
 test('month report carries the following month for the calendar three-month view', () => {
   const st = state([sub('Base')]);
   const r = monthReport(st, '2026-09', today);
   assert.deepEqual([r.months.at(-1)!.month, r.next.month], ['2026-09', '2026-10']);
   assert.deepEqual([r.next.total, r.next.paid, r.next.pending], [10, 10, 0]);
   assert.deepEqual([monthReport(st, '2026-10', today).next.pending], [10]);
+});
+
+test('subscription tenure averages served days, flags quick stops and counts current subscriptions per month', () => {
+  const st = state([
+    sub('Old', { start: '2024-10-22' }),
+    sub('New', { start: '2026-09-22' }),
+    sub('Gone', { start: '2025-01-01', status: 'cancelled', end: '2025-06-30' }),
+    sub('Quick', { start: '2026-03-01', status: 'cancelled', end: '2026-03-20' }),
+    sub('Later', { start: '2026-12-01' }),
+    sub('Proxy', { start: '2020-01-01', proxy: { forName: 'Mom' } as Subscription['proxy'] }),
+  ]);
+  const r = subscriptionTenure(st, today);
+  // 未开始与代付不计；在用按今天、已停按服务到的那天
+  assert.deepEqual(
+    r.longest.map((x) => [x.sub.id, x.days]),
+    [
+      ['Old', 730],
+      ['New', 30],
+    ],
+  );
+  assert.deepEqual([r.active.count, r.active.avgDays], [2, 380]);
+  assert.deepEqual([r.stopped.count, r.stopped.avgDays], [2, (181 + 20) / 2]);
+  assert.deepEqual(
+    r.quick.map((s) => s.id),
+    ['Quick'],
+  );
+  assert.equal(r.byMonth[0].month, '2024-10');
+  assert.deepEqual(
+    r.byMonth.filter((m) => ['2025-03', '2025-07', '2026-03', '2026-10'].includes(m.month)).map((m) => m.count),
+    [2, 1, 1, 2],
+  );
+  // 单年构成与报告头部的全年合计同一个数
+  assert.equal(
+    spendPiecesBetween(st, '2026-01-01', '2026-12-31', today).reduce((a, p) => a + p.amount, 0),
+    yearOutlook(st, today).current.total,
+  );
+});
+
+test('refunds to another card fold into the main piece so every composition view nets the same', () => {
+  const st = state([
+    sub('A', {
+      methodId: 'visa',
+      start: '2026-01-01',
+      cycle: { unit: 'year', every: 1 },
+      price: 80,
+      payments: [
+        { date: '2026-01-01', amount: 80 },
+        { date: '2026-02-01', amount: -10, kind: 'refund', methodId: 'amex' },
+      ],
+    }),
+  ]);
+  const pieces = spendPiecesBetween(st, '2026-01-01', '2026-12-31', today);
+  assert.deepEqual(
+    pieces.map((p) => [p.methodId, p.amount]),
+    [['visa', 70]],
+  );
+});
+
+test('tenure counts paused and undated cancellations as current before they stopped', () => {
+  const st = state([
+    sub('Paused', { start: '2025-01-01', status: 'paused', pausedAt: '2026-06-01' }),
+    sub('Dropped', { start: '2025-01-01', status: 'cancelled', payments: [{ date: '2025-06-01', amount: 10 }] }),
+  ]);
+  const r = subscriptionTenure(st, today);
+  const at = (m: string) => r.byMonth.find((x) => x.month === m)?.count;
+  assert.deepEqual([at('2025-03'), at('2026-03'), at('2026-07')], [2, 1, 0]);
+  assert.equal(r.active.count, 0);
+  // 退订没写结束日：服务天数到最后一次扣款为止，不一直累计到今天
+  const dropped = r.stopped.count ? r.stopped.avgDays : NaN;
+  assert.ok(dropped < 365, `dropped served ${dropped} days`);
 });

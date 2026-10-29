@@ -39,6 +39,7 @@ export function AreaChart({
   tip,
   markers,
   months,
+  ahead,
 }: {
   values: number[];
   labels: string[];
@@ -47,17 +48,26 @@ export function AreaChart({
   markers?: number[];
   /** 每个点的月份（YYYY-MM）：给了就按日历边界取刻度 */
   months?: string[];
+  /** 最后一个已发生的点；之后是预计，画虚线、不铺底 */
+  ahead?: number;
 }) {
   const W = 1000;
   const max = Math.max(1, ...values) * 1.12;
   const n = values.length;
   const x = (i: number) => (n === 1 ? W / 2 : (i / (n - 1)) * W);
   const y = (v: number) => height - (v / max) * height;
-  const line = values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
-  const area = `${line}L${W},${height}L0,${height}Z`;
+  const last = ahead == null ? n - 1 : Math.min(ahead, n - 1);
+  const pts = (from: number, to: number) =>
+    values
+      .slice(from, to + 1)
+      .map((v, i) => `${i ? 'L' : 'M'}${x(from + i).toFixed(1)},${y(v).toFixed(1)}`)
+      .join('');
+  const line = last >= 0 ? pts(0, last) : '';
+  const rest = last < n - 1 ? pts(Math.max(0, last), n - 1) : '';
+  const area = last > 0 ? `${line}L${x(last).toFixed(1)},${height}L0,${height}Z` : '';
   const step = Math.max(1, Math.ceil(n / 8));
   const [box, w] = useWidth();
-  useSnapshotRender(box, () => <AreaChart values={values} labels={labels} height={height} tip={tip} markers={markers} months={months} />);
+  useSnapshotRender(box, () => <AreaChart values={values} labels={labels} height={height} tip={tip} markers={markers} months={months} ahead={ahead} />);
   return (
     <div className="area" ref={box} style={{ height: height + 22 }}>
       <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="none" style={{ height }}>
@@ -80,13 +90,16 @@ export function AreaChart({
             strokeDasharray="3 4"
           />
         ))}
-        <path d={area} fill="url(#area-fill)" />
-        <path d={line} fill="none" stroke="var(--chart-ink)" strokeWidth="2.2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+        {area && <path d={area} fill="url(#area-fill)" />}
+        {line && <path d={line} fill="none" stroke="var(--chart-ink)" strokeWidth="2.2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />}
+        {rest && (
+          <path d={rest} fill="none" stroke="var(--label-3)" strokeWidth="2.2" strokeDasharray="4 5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+        )}
       </svg>
       {markers?.map((i) => (
         <i key={i} className="area-mark" style={{ left: `${(x(i) / W) * 100}%`, top: y(values[i]) }} />
       ))}
-      <i className="area-end" style={{ left: '100%', top: y(values[n - 1]) }} />
+      {last >= 0 && <i className="area-end" style={{ left: `${(x(last) / W) * 100}%`, top: y(values[last]) }} />}
       <div className="area-hit">
         {values.map((_, i) => (
           <span key={i} {...tipProps(() => tip(i))} />

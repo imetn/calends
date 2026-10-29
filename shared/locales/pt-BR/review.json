@@ -1,6 +1,8 @@
 {
   "title": "Compartilhar resumo anual",
+  "titleAll": "Compartilhar resumo total",
   "fileName": "assinaturas-retrospectiva-{year}-{style}.png",
+  "fileNameAll": "assinaturas-total-{style}.png",
   "style": {
     "poster": "Pôster",
     "receipt": "Recibo",
@@ -13,6 +15,7 @@
   "whoseSelf": "pessoais",
   "topSpend": "Maior gasto",
   "ofYear": "{pct} dos gastos anuais",
+  "ofAll": "{pct} do gasto total",
   "n": {
     "subs": {
       "one": "{count} assinatura",
@@ -31,6 +34,7 @@
     "shop": "Assinaturas {whose}",
     "asOf": "Resumo anual\nAté {date}",
     "fullYear": "Resumo anual de {year}",
+    "all": "Extrato acumulado\nAté {date}",
     "no": "Nº {no}",
     "item": "Item",
     "share": "Parte",
@@ -41,6 +45,7 @@
   },
   "poster": {
     "kicker": "Resumo de assinaturas {whose}",
+    "kickerAll": "Resumo total de assinaturas de {whose}",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -54,7 +59,9 @@
       "ongoing": "Gastos no ano até agora",
       "ongoingHidden": "Assinaturas no ano até agora",
       "year": "Gastos anuais",
-      "yearHidden": "Assinaturas do ano"
+      "yearHidden": "Assinaturas do ano",
+      "all": "Gasto acumulado",
+      "allHidden": "Assinaturas acumuladas"
     },
     "perDay": "{amount}/dia em média",
     "longest": "Assinatura mais antiga",
@@ -73,5 +80,6 @@
     "foot": "O tamanho dos círculos representa os gastos"
   },
   "spendBasis": "Caixa líquido da minha parte, incluindo reembolsos",
-  "stopLoss": "Perda não reembolsada neste ano: {amount}"
+  "stopLoss": "Perda não reembolsada neste ano: {amount}",
+  "stopLossAll": "Perda não reembolsada acumulada: {amount}"
 }

@@ -1,6 +1,8 @@
 {
   "title": "年間レポートを共有",
+  "titleAll": "累計レポートを共有",
   "fileName": "subscriptions-{year}-in-review-{style}.png",
+  "fileNameAll": "subscriptions-all-time-{style}.png",
   "style": {
     "poster": "ポスター",
     "receipt": "レシート",
@@ -13,6 +15,7 @@
   "whoseSelf": "私の",
   "topSpend": "支出額が最大",
   "ofYear": "年間支出の{pct}",
+  "ofAll": "累計支出の{pct}",
   "n": {
     "subs": {
       "other": "{count}件のサブスク"
@@ -28,6 +31,7 @@
     "shop": "{whose}サブスクリプション台帳",
     "asOf": "年間明細\n{date}時点",
     "fullYear": "{year}年の明細",
+    "all": "累計明細\n{date}時点",
     "no": "No. {no}",
     "item": "品目",
     "share": "割合",
@@ -38,6 +42,7 @@
   },
   "poster": {
     "kicker": "{whose}年間サブスクリプションレポート",
+    "kickerAll": "{whose}累計サブスクリプションレポート",
     "ongoing": "{subs}\n{charges}",
     "ongoingHidden": "{charges}\n{currencies}",
     "year": "{subs}\n{charges}",
@@ -51,7 +56,9 @@
       "ongoing": "年初からの支出",
       "ongoingHidden": "年初からの契約数",
       "year": "年間支出",
-      "yearHidden": "年間の契約数"
+      "yearHidden": "年間の契約数",
+      "all": "累計支出",
+      "allHidden": "累計の契約数"
     },
     "perDay": "1日平均 {amount}",
     "longest": "契約期間が最長",
@@ -70,5 +77,6 @@
     "foot": "円の大きさは支出額を示します"
   },
   "spendBasis": "自分の負担分の純支出（返金を含む）",
-  "stopLoss": "今年の未返金損失：{amount}"
+  "stopLoss": "今年の未返金損失：{amount}",
+  "stopLossAll": "累計の未返金損失：{amount}"
 }
