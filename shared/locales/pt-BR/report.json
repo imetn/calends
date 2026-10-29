@@ -30,10 +30,7 @@
     "active": "Ativas",
     "recover": "Recuperado com compartilhamento/mês",
     "fxHist": "Câmbio da época",
-    "fxNow": "Câmbio de hoje",
-    "range1": "1A",
-    "range3": "3A",
-    "rangeAll": "Tudo"
+    "fxNow": "Câmbio de hoje"
   },
   "wf": {
     "vsFrom": "vs. {amount} no fim do mês passado",

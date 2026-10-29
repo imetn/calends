@@ -30,10 +30,7 @@
     "active": "Actifs",
     "recover": "Récupéré via les partages/mois",
     "fxHist": "Taux d’époque",
-    "fxNow": "Taux actuels",
-    "range1": "1 an",
-    "range3": "3 ans",
-    "rangeAll": "Tout"
+    "fxNow": "Taux actuels"
   },
   "wf": {
     "vsFrom": "vs {amount} fin du mois dernier",

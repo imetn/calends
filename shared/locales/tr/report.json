@@ -30,10 +30,7 @@
     "active": "Etkin",
     "recover": "Ortak planlardan geri gelen/ay",
     "fxHist": "O günkü kurlar",
-    "fxNow": "Bugünkü kurlar",
-    "range1": "1Y",
-    "range3": "3Y",
-    "rangeAll": "Tümü"
+    "fxNow": "Bugünkü kurlar"
   },
   "wf": {
     "vsFrom": "geçen ay sonu {amount} karşısında",

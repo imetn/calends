@@ -30,10 +30,7 @@
     "active": "计费中",
     "recover": "合租回血/月",
     "fxHist": "当时汇率",
-    "fxNow": "今天汇率",
-    "range1": "1 年",
-    "range3": "3 年",
-    "rangeAll": "全部"
+    "fxNow": "今天汇率"
   },
   "wf": {
     "vsFrom": "比上月末 {amount}",

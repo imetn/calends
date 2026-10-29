@@ -30,10 +30,7 @@
     "active": "Active",
     "recover": "Recovered from sharing/mo",
     "fxHist": "Rates then",
-    "fxNow": "Today's rates",
-    "range1": "1Y",
-    "range3": "3Y",
-    "rangeAll": "All"
+    "fxNow": "Today's rates"
   },
   "wf": {
     "vsFrom": "vs. {amount} at last month-end",

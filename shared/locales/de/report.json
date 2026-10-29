@@ -30,10 +30,7 @@
     "active": "Aktiv",
     "recover": "Durch Teilen zurück/Mon.",
     "fxHist": "Damalige Kurse",
-    "fxNow": "Heutige Kurse",
-    "range1": "1 J.",
-    "range3": "3 J.",
-    "rangeAll": "Alle"
+    "fxNow": "Heutige Kurse"
   },
   "wf": {
     "vsFrom": "ggü. {amount} Ende Vormonat",

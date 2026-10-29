@@ -30,10 +30,7 @@
     "active": "計費中",
     "recover": "共享回收/月",
     "fxHist": "當時匯率",
-    "fxNow": "今天匯率",
-    "range1": "1 年",
-    "range3": "3 年",
-    "rangeAll": "全部"
+    "fxNow": "今天匯率"
   },
   "wf": {
     "vsFrom": "比上月底 {amount}",

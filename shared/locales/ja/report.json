@@ -30,10 +30,7 @@
     "active": "利用中",
     "recover": "共有で回収/月",
     "fxHist": "当時のレート",
-    "fxNow": "今日のレート",
-    "range1": "1年",
-    "range3": "3年",
-    "rangeAll": "全期間"
+    "fxNow": "今日のレート"
   },
   "wf": {
     "vsFrom": "先月末 {amount} から",

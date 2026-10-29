@@ -77,13 +77,9 @@ export function Report({ state, today, onOpen, onReview }: { state: AppState; to
 /** 头部：负 MRR + 历史走势 */
 function Hero({ state, today }: { state: AppState; today: string }) {
   const base = state.settings.baseCurrency;
-  const [range, setRange] = useState<'12' | '36' | 'all'>('36');
   const [hist, setHist] = useState(true);
-  // 图表不早于账本第一笔数据；比账本还长的区间画出来和「全部」一样，不给这个选项，只剩一档时整组不显示
-  const span = chartMonths(firstStart(state, today), today);
-  const ranges = (['12', '36', 'all'] as const).filter((r) => r === 'all' || Number(r) < span);
-  const shown = ranges.includes(range) ? range : 'all';
-  const months = shown === 'all' ? span : Number(shown);
+  // 固定看最近 12 个月，多取一个点让起点正好是「一年前」；账本更短时从第一笔数据开始
+  const months = chartMonths(firstStart(state, today), today, 13);
   const series = useMemo(() => mrrSeries(state, today, months, hist), [state, today, months, hist]);
   const tot = totals(state, today);
   const current = series[series.length - 1].partial;
@@ -136,14 +132,6 @@ function Hero({ state, today }: { state: AppState; today: string }) {
               ['c', t('report.hero.fxNow')],
             ]}
           />
-          {ranges.length > 1 && (
-            <Seg
-              small
-              value={shown}
-              onChange={setRange}
-              options={ranges.map((r) => [r, t(r === '12' ? 'report.hero.range1' : r === '36' ? 'report.hero.range3' : 'report.hero.rangeAll')])}
-            />
-          )}
         </div>
         <AreaChart
           values={series.map((p) => p.partial.value)}

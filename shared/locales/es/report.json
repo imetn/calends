@@ -30,10 +30,7 @@
     "active": "Activas",
     "recover": "Recuperado al compartir/mes",
     "fxHist": "Tipos de entonces",
-    "fxNow": "Tipos de hoy",
-    "range1": "1 a",
-    "range3": "3 a",
-    "rangeAll": "Todo"
+    "fxNow": "Tipos de hoy"
   },
   "wf": {
     "vsFrom": "vs. {amount} a fin del mes pasado",
