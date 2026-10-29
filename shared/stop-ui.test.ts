@@ -334,81 +334,18 @@ test('详情历史阶段：各停止阶段使用自己的退款、币种、停�
   assert.ok(!text(tree).includes(format.cnDateFull('2026-12-05')));
 });
 
-test('概览今年（已付加预计）附注：只计今年停止的损失；零、全退和只读隐藏，预留位置且可点按跳报告', () => {
-  const navigations: string[] = [];
-  let scrolls = 0;
-  const r = runtime(
-    '../app/src/views/Overview.tsx',
-    {
-      React: renderedReact,
-      // 这几项只影响已付总额，损失筛选仍使用真实 stopLosses。
-      allCharges: () => [],
-      sumBase: () => 0,
-      yearOutlook: (st: Parameters<typeof yearOutlook>[0], day: string) => yearOutlook({ ...st, subscriptions: [] }, day),
-      packCircles: () => [],
-      Amount: 'Amount',
-      go: (route: string) => navigations.push(route),
-      requestAnimationFrame: (cb: () => void) => cb(),
-      document: { getElementById: () => ({ scrollIntoView: () => scrolls++ }) },
-    },
-    'Statement',
-  );
-  const old = phases.stopSubscription({ ...sub, id: 'old', start: '2025-10-05' }, '2025-10-19', 'cancel');
+test('概览今年已付：只显示报告年卡的已付金额，不带附注、不再列损失', () => {
+  const r = runtime('../app/src/views/Overview.tsx', { React: renderedReact, yearOutlook, packCircles: () => [], Amount: 'Amount' }, 'Statement');
   const current = phases.stopSubscription({ ...sub, id: 'current' }, today, 'terminate', today, 'Provider closure', { amount: 6 });
-  const full = phases.stopSubscription(sub, today, 'cancel', today, undefined, { amount: 16 });
-  const future = phases.stopSubscription({ ...sub, id: 'future' }, '2026-10-25', 'cancel');
-  const render = (subscriptions: Subscription[], readonly = false) =>
-    r.render('Statement', {
-      state: { subscriptions, methods: [], settings: DEFAULT_SETTINGS, fx: billing.FALLBACK_FX, readonly },
-      today,
-      onOpen() {},
-    });
-  for (const subscriptions of [[old], [], [full], [future], [old, full, future]]) {
-    const tree = render(subscriptions);
-    assert.equal(withClass(tree, 'stmt-loss-note').length, 0);
-    assert.ok(!text(tree).includes(t('overview.stmt.loss')));
-    assert.equal(withClass(tree, 'stmt-paid-note').length, 1);
-  }
-  const tree = render([old, current, future]);
-  const note = withClass(tree, 'stmt-loss-note')[0];
-  assert.ok(text(note).includes(t('overview.stmt.loss')));
-  assert.ok(
-    text(note).includes(
-      format.money(
-        metrics.stopLosses({ subscriptions: [current], methods: [], settings: DEFAULT_SETTINGS, fx: billing.FALLBACK_FX }, today).total,
-        DEFAULT_SETTINGS.baseCurrency,
-        { compact: true },
-      ),
-    ),
-  );
-  const facts = withClass(tree, 'metric-cards')[0];
-  const cells = withClass(facts, 'metric');
+  const state = { subscriptions: [current], methods: [], settings: DEFAULT_SETTINGS, fx: billing.FALLBACK_FX };
+  const tree = r.render('Statement', { state, today, onOpen() {} });
+  const cells = withClass(withClass(tree, 'metric-cards')[0], 'metric');
   assert.equal(cells.length, 4);
   const paid = cells[1];
-  assert.ok(text(paid).includes(t('scope.yearTotal')));
-  assert.ok(text(withClass(paid, 'stmt-paid-note')[0]).includes(t('scope.paidAmount', { amount: '' }).trim()));
-  assert.equal(withClass(paid, 'stmt-loss-note').length, 1);
-  assert.equal(note.type, 'button');
-  assert.equal(note.props.type, 'button');
-  note.props.onClick();
-  assert.deepEqual(navigations, ['report']);
-  assert.equal(scrolls, 1);
-  assert.equal(withClass(render([current], true), 'stmt-loss-note').length, 0);
-  const missing = render([phases.stopSubscription({ ...sub, currency: 'XYZ' }, today, 'cancel')]);
-  assert.equal(
-    withClass(missing, 'stmt-loss-note')[0].props.title,
-    fxTotals.totalNote(
-      metrics.stopLosses(
-        {
-          subscriptions: [phases.stopSubscription({ ...sub, currency: 'XYZ' }, today, 'cancel')],
-          methods: [],
-          settings: DEFAULT_SETTINGS,
-          fx: billing.FALLBACK_FX,
-        },
-        today,
-      ).partial,
-    ),
-  );
+  assert.ok(text(paid).includes(t('scope.yearPaid')));
+  assert.ok(text(paid).includes(format.money(yearOutlook(state, today).current.partial.paid.value, DEFAULT_SETTINGS.baseCurrency, { compact: true })));
+  assert.equal(withClass(paid, 'metric-note').length, 0);
+  assert.ok(!text(tree).includes(t('overview.stmt.loss')));
 });
 
 test('时间轴金额：宽段显示紧凑负金额，窄段仅保留悬停说明，停用半圆避让且公开隐藏', () => {

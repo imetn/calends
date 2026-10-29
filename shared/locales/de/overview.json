@@ -69,7 +69,6 @@
     "active": "Aktiv",
     "share": "{amount}/Mon.\n{pct} %",
     "caption": "Abo-Sternenhimmel\nBlasengröße zeigt monatliche Kosten",
-    "aria": "{name}, {amount} pro Monat",
-    "loss": "Davon nicht erstatteter Verlust"
+    "aria": "{name}, {amount} pro Monat"
   }
 }

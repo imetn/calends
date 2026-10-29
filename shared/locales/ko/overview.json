@@ -65,7 +65,6 @@
     "active": "이용 중",
     "share": "{amount}/월\n{pct}%",
     "caption": "구독 별자리\n거품 크기는 월 비용을 나타냅니다",
-    "aria": "{name}, 월 {amount}",
-    "loss": "미환불 손실 포함"
+    "aria": "{name}, 월 {amount}"
   }
 }

@@ -69,7 +69,6 @@
     "active": "Activas",
     "share": "{amount}/mes\n{pct}%",
     "caption": "Constelación de suscripciones\nel tamaño indica el coste mensual",
-    "aria": "{name}, {amount} al mes",
-    "loss": "Incluye pérdida no reembolsada"
+    "aria": "{name}, {amount} al mes"
   }
 }

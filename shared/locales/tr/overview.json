@@ -69,7 +69,6 @@
     "active": "Etkin",
     "share": "{amount}/ay\n%{pct}",
     "caption": "Abonelik yıldızları\nbalon boyutu aylık maliyeti gösterir",
-    "aria": "{name}, ayda {amount}",
-    "loss": "İade edilmeyen kayıp dahil"
+    "aria": "{name}, ayda {amount}"
   }
 }

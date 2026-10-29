@@ -409,12 +409,10 @@ test('14 种语言统一未退款损失语义，金额标签取代未用天数�
   for (const { code } of LOCALES) {
     const core = locale(code, 'core').stop;
     const report = locale(code, 'report');
-    const overview = locale(code, 'overview').stmt;
     const review = locale(code, 'review');
     const detail = locale(code, 'detail').stop;
     assert.equal(report.stops.loss, core.lossTitle, code);
     assert.ok(core.unused.includes(core.lossTitle), code);
-    assert.ok(overview.loss.toLocaleLowerCase(code).includes(core.lossTitle.toLocaleLowerCase(code)), code);
     assert.ok(review.stopLoss.toLocaleLowerCase(code).includes(core.lossTitle.toLocaleLowerCase(code)), code);
     assert.ok(core.unrefunded.includes('{money}'), code);
     assert.ok(!core.unrefunded.includes('{days}'), code);

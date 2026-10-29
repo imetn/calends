@@ -1,5 +1,5 @@
 import { useSnapshotRender } from '../snapshot-render.tsx';
-import { chargeTotal, chargesTotal, emptyTotal, formatTotal, scaleTotal, totalNote } from '../../../shared/fx-total.ts';
+import { chargeTotal, chargesTotal, formatTotal, scaleTotal, totalNote } from '../../../shared/fx-total.ts';
 import { FxAmount } from '../components/FxAmount.tsx';
 import { DAYS_PER_MONTH } from '../../../shared/billing.ts';
 import { CopyImageButton } from '../components/CopyImageButton.tsx';
@@ -10,7 +10,7 @@ import { addDays, addMonths, cycleLabel, diffDays, perLabel, runwayFor, totals, 
 import { moneyTick, flow, cnDate, money, monthLabel, relDays } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue } from '../../../shared/fx.ts';
-import { contributionOn, insights, mrrChangeSinceLastMonth, mrrSeries, stopLosses } from '../../../shared/metrics.ts';
+import { contributionOn, insights, mrrChangeSinceLastMonth, mrrSeries } from '../../../shared/metrics.ts';
 import { BALANCE_KINDS, type AppState, type Subscription } from '../../../shared/types.ts';
 import { Activity, packCircles, type Bucket } from '../components/charts.tsx';
 import { Timeline, type TimelineGroup } from '../components/Timeline.tsx';
@@ -22,7 +22,6 @@ import { TipTable } from '../components/overlays.tsx';
 import { Icon } from '../components/icons.tsx';
 import { allCharges, catColor, sortValue, sumBaseOrNaN, firstStart } from '../derive.ts';
 import { yearOutlook } from '../../../shared/scope-report.ts';
-import { go } from '../router.ts';
 import { useMoneyPair } from '../components/MoneyPair.tsx';
 
 type Scale = 'month' | 'year';
@@ -503,18 +502,6 @@ function Tips({ state, today, onOpen }: { state: AppState; today: string; onOpen
 export { perLabel };
 
 /** 账单头：深色底，左边负 MRR，右边订阅星图（圆的面积 = 每月成本） */
-/** 打开报告页并滚到「退订与停用」卡片；报告页是按需加载的，等卡片渲染出来再滚动 */
-function openLosses() {
-  go('report');
-  let tries = 0;
-  const scroll = () => {
-    const el = document.getElementById('report-stops');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    else if (tries++ < 60) requestAnimationFrame(scroll);
-  };
-  requestAnimationFrame(scroll);
-}
-
 function Statement({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
   const captureRef = useRef<HTMLElement>(null);
   useSnapshotRender(captureRef, () => <Statement state={state} today={today} onOpen={onOpen} />);
@@ -522,12 +509,8 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
   const tot = totals(state, today);
   const series = useMemo(() => mrrSeries(state, today, 24, true), [state, today]);
   const delta = mrrChangeSinceLastMonth(state, today);
-  // 今年 = 已付 + 剩余预计，与报告页「本年」同一份结果
-  const year = useMemo(() => yearOutlook(state, today).current.partial, [state, today]);
-  const loss = useMemo(
-    () => (state.readonly ? emptyTotal() : stopLosses(state, today, { from: `${today.slice(0, 4)}-01-01`, to: today }).partial),
-    [state, today],
-  );
+  // 今年已付与报告页年卡同一份结果；全年预计只在报告页
+  const paid = useMemo(() => yearOutlook(state, today).current.partial.paid, [state, today]);
   const live = useMemo(
     () =>
       state.subscriptions
@@ -585,26 +568,7 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
         </svg>
         <MetricCards plain>
           <Metric label={t('overview.stmt.annual')} value={formatTotal(scaleTotal(tot.partial.mrr, 12), base, { direction: -1, compact: true, main: true })} />
-          <Metric
-            label={t('scope.yearTotal')}
-            value={formatTotal(year.total, base, { direction: -1, compact: true, main: true })}
-            note={
-              <div className="stmt-paid-note">
-                <small>{t('scope.paidAmount', { amount: formatTotal(year.paid, base, { direction: -1, compact: true }) })}</small>
-                {!state.readonly && (loss.value !== 0 || loss.incomplete) && (
-                  <button
-                    type="button"
-                    className="stmt-loss-note"
-                    data-snapshot-keep
-                    onClick={openLosses}
-                    title={loss.incomplete ? totalNote(loss) : undefined}
-                  >
-                    {t('overview.stmt.loss')} <strong>{formatTotal(loss, base, { direction: -1, compact: true })}</strong>
-                  </button>
-                )}
-              </div>
-            }
-          />
+          <Metric label={t('scope.yearPaid')} value={formatTotal(paid, base, { direction: -1, compact: true, main: true })} />
           <Metric
             label={t('overview.stmt.perDay')}
             value={formatTotal(scaleTotal(tot.partial.mrr, 1 / DAYS_PER_MONTH), base, { direction: -1, main: true, average: true })}
@@ -612,10 +576,7 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
           <Metric
             label={t('overview.stmt.active')}
             value={tot.activeCount}
-            note={
-              [totalNote(tot.partial.mrr), year.total.incomplete ? `${t('scope.yearTotal')}: ${totalNote(year.total)}` : ''].filter(Boolean).join('\n') ||
-              undefined
-            }
+            note={[totalNote(tot.partial.mrr), paid.incomplete ? `${t('scope.yearPaid')}: ${totalNote(paid)}` : ''].filter(Boolean).join('\n') || undefined}
           />
         </MetricCards>
       </div>

@@ -4181,37 +4181,6 @@ button.h-price-row:focus-visible {
 .stmt-spark path:first-child {
   opacity: 0.5;
 }
-/* 已付金额下的补充说明预留两行，零损失时其余格子仍保持对齐。 */
-.stmt-paid-note {
-  min-height: 32px;
-  margin-top: 3px;
-}
-.stmt-loss-note {
-  border: 0;
-  padding: 0;
-  background: none;
-  color: var(--label-3);
-  font: inherit;
-  font-size: var(--fs-1);
-  line-height: 16px;
-  text-align: start;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-}
-.stmt-loss-note strong {
-  color: var(--red);
-  font-weight: 500;
-  white-space: nowrap;
-}
-.stmt-loss-note:hover {
-  color: var(--label);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.stmt-loss-note:focus-visible {
-  outline: var(--hairline) solid var(--focus-ring);
-  outline-offset: 3px;
-}
 .stmt-r {
   display: flex;
   flex-direction: column;

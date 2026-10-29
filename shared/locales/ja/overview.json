@@ -65,7 +65,6 @@
     "active": "利用中",
     "share": "{amount}/月\n{pct}%",
     "caption": "サブスクの星\n泡の大きさは月額を表します",
-    "aria": "{name}、月額{amount}",
-    "loss": "未返金損失を含む"
+    "aria": "{name}、月額{amount}"
   }
 }

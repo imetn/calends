@@ -57,7 +57,6 @@
     "active": "計費中",
     "share": "{amount}/月\n佔 {pct}%",
     "caption": "訂閱星圖\n圓的大小依每月金額比例",
-    "aria": "{name} 每月 {amount}",
-    "loss": "含未退款損失"
+    "aria": "{name} 每月 {amount}"
   }
 }

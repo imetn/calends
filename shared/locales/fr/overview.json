@@ -69,7 +69,6 @@
     "active": "Actifs",
     "share": "{amount}/mois\n{pct} %",
     "caption": "Constellation d’abonnements\nla taille des bulles indique le coût mensuel",
-    "aria": "{name}, {amount} par mois",
-    "loss": "Dont perte non remboursée"
+    "aria": "{name}, {amount} par mois"
   }
 }

@@ -65,7 +65,6 @@
     "active": "Đang hoạt động",
     "share": "{amount}/tháng\n{pct}%",
     "caption": "Chòm sao gói đăng ký\nkích thước bong bóng thể hiện chi phí hằng tháng",
-    "aria": "{name}, {amount} mỗi tháng",
-    "loss": "Gồm tổn thất chưa hoàn tiền"
+    "aria": "{name}, {amount} mỗi tháng"
   }
 }

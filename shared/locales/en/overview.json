@@ -69,7 +69,6 @@
     "active": "Active",
     "share": "{amount}/mo\n{pct}%",
     "caption": "Subscription stars\nbubble size shows monthly cost",
-    "aria": "{name}, {amount} per month",
-    "loss": "Includes unrefunded loss"
+    "aria": "{name}, {amount} per month"
   }
 }
