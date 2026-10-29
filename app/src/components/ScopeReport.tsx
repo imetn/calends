@@ -324,7 +324,7 @@ export function ScopeReport({ report, state, today, onOpen, title, animate, open
                   <div className="mv-bar">
                     <i style={{ width: `${(Math.abs(r.amount) / peak) * 100}%` }} />
                   </div>
-                  <b className="num">
+                  <b className={`num ${r.amount > 0 ? 'red' : 'green'}`}>
                     {r.amount > 0 ? '↑' : '↓'} {money(Math.abs(r.amount), base)}
                   </b>
                 </div>
@@ -357,12 +357,12 @@ export function ScopeReport({ report, state, today, onOpen, title, animate, open
                       <span className="num">
                         {money(r.from, base)} → {money(r.to, base)}
                       </span>
-                      <span className="scope-movement-date">
-                        {cnDateAuto(r.since, today)}
-                        {r.until !== r.since && ` – ${cnDateAuto(r.until, today)}`}
-                      </span>
                     </>,
                   )}
+                  <span className="scope-movement-date">
+                    {cnDateAuto(r.since, today)}
+                    {r.until !== r.since && ` – ${cnDateAuto(r.until, today)}`}
+                  </span>
                 </button>
               ))}
               {eventRows(remainingEvents)}

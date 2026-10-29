@@ -8936,6 +8936,9 @@ img.mm-flag {
   padding: 12px 0;
   border-top: var(--hairline) solid var(--sep);
 }
+.hero-delta + .mv-rows {
+  margin-top: 16px;
+}
 .mv-row {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) auto;
@@ -8959,7 +8962,7 @@ img.mm-flag {
   min-width: 3px;
   border-radius: var(--radius-sm);
 }
-/* 变化来源只比大小，不分好坏：新增、停用、汇率都用中性色；涨跌结论只在合计上表达 */
+/* 条形只比大小，用中性色；右侧金额与合计一样，增加支出红、减少支出绿 */
 .mv-bar i {
   background: var(--label-3);
 }

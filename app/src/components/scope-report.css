@@ -139,10 +139,12 @@
 .scope-movements .scope-row {
   align-items: flex-start;
 }
+/* 日期与名称同一行靠右，名称下只留一行说明 */
 .scope-movement-date {
-  display: block;
-  margin-top: 2px;
+  flex-shrink: 0;
+  margin-top: 1px;
   color: var(--label-3);
+  white-space: nowrap;
 }
 .scope-note {
   margin: 8px 0 12px;
