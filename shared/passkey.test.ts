@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { MIGRATIONS } from '../worker/migrations.gen.ts';
 import { sha256 } from '../worker/auth.ts';
 import type { Env } from '../worker/env.ts';
-import { beginPasskeyAutofill, isPasskeyCancellation } from '../app/src/passkey-autofill.ts';
+import { afterSelection, beginPasskeyAutofill, isPasskeyCancellation } from '../app/src/passkey-autofill.ts';
 
 registerHooks({
   load(url, ctx, next) {
@@ -152,6 +152,12 @@ test('Worker 独立挑战可逆序使用，旧 owner 凭据仍可签名登录，
     assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM login_attempts').get()!.n, 0);
     const fresh = await options();
     assert.equal((await f.request('/api/auth/passkey/login', { challengeId: fresh.challengeId, response: assertion(fresh.options.challenge, 3) })).status, 200);
+    // 账本已删掉的凭据：带 code 返回，前端据此通知密码管理器
+    f.db.prepare('DELETE FROM passkeys').run();
+    const orphan = await options();
+    const gone = await f.request('/api/auth/passkey/login', { challengeId: orphan.challengeId, response: assertion(orphan.options.challenge, 4) });
+    assert.equal(gone.status, 401);
+    assert.equal((await gone.json()).code, 'PASSKEY_NOT_BOUND');
     f.env.DEV_BYPASS_AUTH = '1';
     assert.equal((await (await f.request('/api/auth/passkey/login/options', undefined, undefined, 'http://localhost:5173')).json()).options.rpId, 'localhost');
   } finally {
@@ -244,4 +250,25 @@ test('条件式登录挑战过期后获取新挑战；取消和其他错误安�
     assert.equal(calls, 'code' in error && error.code === 'PASSKEY_CHALLENGE_EXPIRED' ? 2 : 1);
     stop();
   }
+});
+
+test('条件式登录选中的凭据被拒时提示原因并重新等待选择', async () => {
+  const errors: unknown[] = [];
+  let calls = 0;
+  const stop = beginPasskeyAutofill({
+    supports: async () => true,
+    login: (s) => {
+      if (++calls === 1) return Promise.reject(afterSelection(Object.assign(new Error('not bound'), { code: 'PASSKEY_NOT_BOUND', status: 401 })));
+      return new Promise((_, reject) => s.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError'))));
+    },
+    cancel() {},
+    onError: (e) => errors.push(e),
+  });
+  await tick();
+  assert.equal(calls, 2);
+  assert.equal(errors.length, 1);
+  assert.equal((errors[0] as Error).message, 'not bound');
+  stop();
+  await tick();
+  assert.equal(calls, 2);
 });

@@ -1,5 +1,5 @@
 import { browserSupportsWebAuthnAutofill, startAuthentication, WebAuthnAbortService } from '@simplewebauthn/browser';
-import { beginPasskeyAutofill } from './passkey-autofill.ts';
+import { afterSelection, beginPasskeyAutofill } from './passkey-autofill.ts';
 import { BASE_PATH, base, storageKey } from './base.ts';
 import type { AppState } from '../../shared/types.ts';
 export const CACHE_KEY = storageKey('ledger:state:v1');
@@ -8,6 +8,12 @@ export const ASSISTANT_KEY = storageKey('calends.assistant');
 export const HANDOFF_KEY = storageKey('calends.assistant.handoff');
 /** 编辑草稿的键 ledger:draft:<new|id>（经 storageKey）；只认本安装的 */
 const isDraftKey = (k: string) => k.startsWith('ledger:draft:') && (BASE_PATH ? k.endsWith(`:${BASE_PATH}`) : !k.includes(':/'));
+
+/** 账本不认这条凭据（已删除或注册时没存上）：告诉密码管理器隐藏或删除它；浏览器不支持时跳过 */
+function signalUnknownPasskey(rpId: string, credentialId: string) {
+  const pkc = window.PublicKeyCredential as unknown as { signalUnknownCredential?: (o: { rpId: string; credentialId: string }) => Promise<void> };
+  pkc?.signalUnknownCredential?.({ rpId, credentialId }).catch(() => {});
+}
 
 export function createAuth(core: {
   api: typeof import('./store.ts').api;
@@ -97,18 +103,22 @@ export function createAuth(core: {
     signal?.throwIfAborted();
     const response = await startAuthentication({ optionsJSON: options, useBrowserAutofill });
     signal?.throwIfAborted();
-    await api('/api/auth/passkey/login', { method: 'POST', body: JSON.stringify({ challengeId, response }), signal });
+    await api('/api/auth/passkey/login', { method: 'POST', body: JSON.stringify({ challengeId, response }), signal }).catch((e: unknown) => {
+      if ((e as { code?: string }).code === 'PASSKEY_NOT_BOUND') signalUnknownPasskey(options.rpId ?? location.hostname, response.id);
+      throw afterSelection(e);
+    });
     signal?.throwIfAborted();
     set({ phase: 'loading' });
     await boot();
   }
 
   /** 条件式登录与按钮登录各取独立挑战；停止时也取消尚未返回的网络请求。 */
-  function startPasskeyAutofill(): () => void {
+  function startPasskeyAutofill(onError: (error: unknown) => void): () => void {
     return beginPasskeyAutofill({
       supports: browserSupportsWebAuthnAutofill,
       login: (signal) => loginPasskey(true, signal),
       cancel: () => WebAuthnAbortService.cancelCeremony(),
+      onError,
     });
   }
 

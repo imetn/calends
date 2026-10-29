@@ -155,7 +155,7 @@ function Login() {
   const canPasskey = !setupMode && !!status?.passkeys && typeof window.PublicKeyCredential === 'function';
   useEffect(() => {
     if (!canPasskey || busy) return;
-    const stop = startPasskeyAutofill();
+    const stop = startPasskeyAutofill((x) => setErr(x instanceof Error ? x.message : String(x)));
     autofill.current = stop;
     return stop;
   }, [canPasskey, busy]);

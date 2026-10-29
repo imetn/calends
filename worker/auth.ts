@@ -434,7 +434,8 @@ export async function passkeyLoginVerify(req: Request, env: Env): Promise<Respon
   const row = await env.DB.prepare('SELECT * FROM passkeys WHERE id = ?1').bind(body.response.id).first<PasskeyRow>();
   if (!row) {
     await th.fail();
-    return err(t('server.auth.passkeyNotBound'), 401);
+    // 带 code，浏览器据此通知密码管理器这条凭据已作废（WebAuthn Signal API）
+    return Response.json({ error: t('server.auth.passkeyNotBound'), code: 'PASSKEY_NOT_BOUND' }, { status: 401 });
   }
   const { rpID, origin } = rp(req, env);
   const v = await verifyAuthenticationResponse({
