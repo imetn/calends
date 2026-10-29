@@ -288,6 +288,18 @@
   padding-left: 0;
   border-left: 0;
 }
+/* 八项排成两行四列：行间一条横线，各列竖线上下贯通、穿过横线 */
+.metric-cards.inline[data-count='8'] .metric-grid > div:nth-child(5) {
+  padding-left: 0;
+  border-left: 0;
+}
+.metric-cards.inline[data-count='8'] .metric-grid > div:nth-child(-n + 4) {
+  padding-bottom: 12px;
+}
+.metric-cards.inline[data-count='8'] .metric-grid > div:nth-child(n + 5) {
+  padding-top: 12px;
+  border-top: var(--hairline) solid var(--sep);
+}
 .metric-top {
   display: flex;
   align-items: center;
@@ -423,7 +435,6 @@
     padding-left: 0;
     border-left: 0;
   }
-}
   /* 两行两列用井字线：行间也画一条横线，与竖线相交 */
   .metric-cards.inline[data-count='4'] .metric-grid {
     row-gap: 0;
@@ -435,6 +446,35 @@
     padding-top: 12px;
     border-top: var(--hairline) solid var(--sep);
   }
+  /* 八项在窄屏排成四行两列，同样用井字线 */
+  .metric-cards.inline[data-count='8'] .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 0;
+  }
+  .metric-cards.inline[data-count='8'] .metric-grid > div {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .metric-cards.inline[data-count='8'] .metric-grid > div:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .metric-cards.inline[data-count='8'] .metric-grid > div:nth-child(5) {
+    padding-left: 0;
+  }
+  .metric-cards.inline[data-count='8'] .metric-grid > div:nth-child(-n + 2) {
+    padding-top: 0;
+  }
+  .metric-cards.inline[data-count='8'] .metric-grid > div:nth-child(n + 7) {
+    padding-bottom: 0;
+  }
+  .metric-cards.inline[data-count='8'] .metric-grid > div:nth-child(n + 3) {
+    border-top: var(--hairline) solid var(--sep);
+  }
+  .metric-cards.inline[data-count='8'] .metric-grid > div:nth-child(even) {
+    border-left: var(--hairline) solid var(--sep);
+  }
+}
 
 .sheet-actions,
 .cell.sheet-actions {

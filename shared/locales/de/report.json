@@ -135,14 +135,14 @@
   "year": {
     "title": "{year}",
     "basis": "Nettoausgaben mit meinem Anteil, inklusive Erstattungen und Übertragungen; ab heute Prognose aus den aktuellen Abos. Gleicher Zeitraum: 1. Januar bis heute gegenüber 1. Januar bis zum selben Tag im Vorjahr.",
-    "total": "Dieses Jahr",
+    "total": "Prognose dieses Jahr",
+    "pendingAmount": "Offen {amount}",
     "vsLast": "ggü. Vorjahreszeitraum",
     "lastAmount": "Vorjahr: {amount}",
     "nextMonth": "Prognose {month}",
     "vsMonth": "ggü. Vorjahresmonat {delta}",
     "nextYear": "Prognose {year}",
     "vsYear": "ggü. diesem Jahr {delta}",
-    "changes": "Gegenüber Vorjahr",
     "count": {
       "one": "{count} Eintrag",
       "other": "{count} Einträge"

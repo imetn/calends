@@ -135,14 +135,14 @@
   "year": {
     "title": "{year}",
     "basis": "Net cash at my share, including refunds and transfers; after today, forecast from current subscriptions. Same period means Jan 1 to today, against Jan 1 to the same day last year.",
-    "total": "This year",
+    "total": "This year forecast",
+    "pendingAmount": "Remaining {amount}",
     "vsLast": "vs same period last year",
     "lastAmount": "Last year: {amount}",
     "nextMonth": "{month} forecast",
     "vsMonth": "vs same month last year {delta}",
     "nextYear": "{year} forecast",
     "vsYear": "vs this year {delta}",
-    "changes": "Compared with last year",
     "count": {
       "one": "{count} item",
       "other": "{count} items"

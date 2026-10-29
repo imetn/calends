@@ -135,14 +135,14 @@
   "year": {
     "title": "{year}",
     "basis": "Gasto neto de mi parte, con reembolsos y transferencias; a partir de hoy, previsión según las suscripciones actuales. Mismo periodo: del 1 de enero a hoy frente al 1 de enero hasta el mismo día del año pasado.",
-    "total": "Este año",
+    "total": "Previsión de este año",
+    "pendingAmount": "Pendiente {amount}",
     "vsLast": "vs mismo periodo del año pasado",
     "lastAmount": "Año pasado: {amount}",
     "nextMonth": "Previsión {month}",
     "vsMonth": "vs. mismo mes del año pasado {delta}",
     "nextYear": "Previsión {year}",
     "vsYear": "vs. este año {delta}",
-    "changes": "Frente al año pasado",
     "count": {
       "one": "{count} elemento",
       "other": "{count} elementos"

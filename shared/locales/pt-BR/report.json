@@ -135,14 +135,14 @@
   "year": {
     "title": "{year}",
     "basis": "Gasto líquido da minha parte, com reembolsos e transferências; depois de hoje, previsão pelas assinaturas atuais. Mesmo período: de 1º de janeiro até hoje, comparado a 1º de janeiro até o mesmo dia do ano passado.",
-    "total": "Este ano",
+    "total": "Previsão deste ano",
+    "pendingAmount": "A pagar {amount}",
     "vsLast": "vs mesmo período do ano passado",
     "lastAmount": "Ano passado: {amount}",
     "nextMonth": "Previsão de {month}",
     "vsMonth": "vs. mesmo mês do ano passado {delta}",
     "nextYear": "Previsão de {year}",
     "vsYear": "vs. este ano {delta}",
-    "changes": "Em relação ao ano passado",
     "count": {
       "one": "{count} item",
       "other": "{count} itens"

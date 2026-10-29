@@ -306,14 +306,13 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
   const short = (v: number) => money(v, base, { compact: true });
   const arrow = (v: number) => (!Number.isFinite(v) ? '—' : `${v > 0.005 ? '↑' : v < -0.005 ? '↓' : ''} ${short(Math.abs(v))}`.trim());
   const versus = (key: 'vsMonth' | 'vsYear', c?: Comparison) => c && <small>{t(`report.year.${key}`, { delta: arrow(c.amount) })}</small>;
-  // 变化来源按类型汇总成指标卡：新增、停用、多付、少付，各写差额合计与项数；类内按差额大小排
-  const groups = (['added', 'stopped', 'up', 'down'] as const)
-    .map((kind) => {
-      const items = r.drivers.filter((d) => d.kind === kind);
-      return { kind, items, delta: items.reduce((n, d) => n + d.delta, 0) };
-    })
-    .filter((g) => g.items.length > 0);
-  const solo = groups.length === 1 && !!change && Math.abs(groups[0].delta - change.amount) < 0.5;
+  // 变化来源按类型汇总成第二排指标卡：新增、停用、多付、少付，各写差额合计与项数，与上排同为四列，竖线上下贯通
+  const groups = (['added', 'stopped', 'up', 'down'] as const).map((kind) => {
+    const items = r.drivers.filter((d) => d.kind === kind);
+    return { kind, items, delta: items.reduce((n, d) => n + d.delta, 0) };
+  });
+  const used = groups.filter((g) => g.items.length > 0);
+  const solo = used.length === 1 && !!change && Math.abs(used[0].delta - change.amount) < 0.5;
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
@@ -326,14 +325,24 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
       </div>
       <MetricCards inline>
         <Metric
-          label={t('scope.yearTotal')}
+          label={t('report.year.total')}
           value={<FxAmount total={r.current.partial.total} ccy={base} direction={-1} compact />}
-          note={<small>{totalNote(r.current.partial.total) || t('scope.paidAmount', { amount: amount(r.current.partial.paid) })}</small>}
+          // 已付加待付即今年预计，待付是今年还要花出去的钱；两段各不断行，窄屏时整段换行
+          note={
+            <small>
+              {totalNote(r.current.partial.total) || (
+                <>
+                  <span style={{ whiteSpace: 'nowrap' }}>{t('scope.paidAmount', { amount: amount(r.current.partial.paid) })}</span>{' '}
+                  <span style={{ whiteSpace: 'nowrap' }}>{t('report.year.pendingAmount', { amount: amount(r.current.partial.pending) })}</span>
+                </>
+              )}
+            </small>
+          }
         />
         {change && (
           <Metric
             label={t('report.year.vsLast')}
-            value={<SpendingDelta value={change} base={base} compact />}
+            value={arrow(change.amount)}
             valueClassName={!ok || Math.abs(change.amount) < 0.5 ? '' : change.amount > 0 ? 'loss' : 'gain'}
             note={<small>{t('report.year.lastAmount', { amount: amount(same.partial.previous) })}</small>}
           />
@@ -348,39 +357,33 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
           value={<FxAmount total={r.nextYear.partial.total} ccy={base} direction={-1} compact />}
           note={totalNote(r.nextYear.partial.total) || versus('vsYear', r.nextYear.change)}
         />
+        {ok &&
+          used.length > 0 &&
+          groups.map((g) => (
+            <Metric
+              key={g.kind}
+              label={kindLabel(g.kind)}
+              // 只有一类且就是全部差额时，金额与上方「较去年同期」重复，改写项数
+              value={!g.items.length ? '—' : solo ? t('report.year.count', { count: g.items.length }) : arrow(g.delta)}
+              note={
+                g.items.length > 0 && (
+                  // 项数在前，后面跟最多 3 个订阅图标，点开详情；一行放不下时截掉图标，不换行
+                  <div className="ins-subs" style={{ flexWrap: 'nowrap', alignItems: 'center', overflow: 'hidden' }} data-snapshot-list>
+                    {!solo && <small style={{ marginRight: 2, whiteSpace: 'nowrap' }}>{t('report.year.count', { count: g.items.length })}</small>}
+                    {g.items.slice(0, 3).map((d) => (
+                      <button type="button" data-snapshot-keep key={d.sub.id} onClick={() => onOpen(d.sub)} title={d.sub.name} aria-label={d.sub.name}>
+                        <SubIcon sub={d.sub} size={18} />
+                      </button>
+                    ))}
+                  </div>
+                )
+              }
+            />
+          ))}
       </MetricCards>
-      {ok && (
-        <div className="wf-items">
-          <h4 className="stop-list-title" style={{ marginTop: 6 }}>
-            {t('report.year.changes')}
-          </h4>
-          {groups.length === 0 ? (
-            <div className="muted" style={{ fontSize: 'var(--fs-2)', padding: '8px 0' }}>
-              {t('report.year.empty')}
-            </div>
-          ) : (
-            <MetricCards inline>
-              {groups.map((g) => (
-                <Metric
-                  key={g.kind}
-                  label={kindLabel(g.kind)}
-                  // 只有一类且就是全部差额时，金额与上方「较去年同期」重复，改写项数
-                  value={solo ? t('report.year.count', { count: g.items.length }) : arrow(g.delta)}
-                  note={
-                    // 项数在前，后面跟最多 3 个订阅图标，点开详情；一行放不下时截掉图标，不换行
-                    <div className="ins-subs" style={{ flexWrap: 'nowrap', alignItems: 'center', overflow: 'hidden' }} data-snapshot-list>
-                      {!solo && <small style={{ marginRight: 2, whiteSpace: 'nowrap' }}>{t('report.year.count', { count: g.items.length })}</small>}
-                      {g.items.slice(0, 3).map((d) => (
-                        <button type="button" data-snapshot-keep key={d.sub.id} onClick={() => onOpen(d.sub)} title={d.sub.name} aria-label={d.sub.name}>
-                          <SubIcon sub={d.sub} size={18} />
-                        </button>
-                      ))}
-                    </div>
-                  }
-                />
-              ))}
-            </MetricCards>
-          )}
+      {ok && used.length === 0 && (
+        <div className="muted" style={{ fontSize: 'var(--fs-2)', paddingTop: 12 }}>
+          {t('report.year.empty')}
         </div>
       )}
     </div>

@@ -135,14 +135,14 @@
   "year": {
     "title": "{year}",
     "basis": "Dépenses nettes pour ma part, remboursements et transferts inclus ; après aujourd’hui, prévision d’après les abonnements actuels. Même période : du 1er janvier à aujourd’hui, comparé au 1er janvier jusqu’au même jour l’an dernier.",
-    "total": "Cette année",
+    "total": "Prévision de cette année",
+    "pendingAmount": "À venir {amount}",
     "vsLast": "vs même période l’an dernier",
     "lastAmount": "L’an dernier : {amount}",
     "nextMonth": "Prévision {month}",
     "vsMonth": "vs même mois l’an dernier {delta}",
     "nextYear": "Prévision {year}",
     "vsYear": "vs cette année {delta}",
-    "changes": "Par rapport à l’an dernier",
     "count": {
       "one": "{count} élément",
       "other": "{count} éléments"
