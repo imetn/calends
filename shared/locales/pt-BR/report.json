@@ -126,9 +126,7 @@
   },
   "stops": {
     "title": "Cancelamentos e desativações",
-    "details": "Detalhes das perdas não reembolsadas",
     "loss": "Perda não reembolsada",
-    "lossHint": "Valor pago por um serviço encerrado antes do prazo e não reembolsado",
     "basis": "Todo o histórico\nMinha parte; perda não reembolsada pelo câmbio do dia do encerramento.",
     "cancel": "Cancelamento antecipado voluntário"
   },

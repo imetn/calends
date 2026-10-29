@@ -2050,10 +2050,8 @@ select.btn {
   font-size: var(--fs-1);
   line-height: 1.5;
 }
-.stop-list-title {
-  margin: 20px 0 6px;
-  font-size: var(--fs-2);
-  font-weight: 600;
+.stop-list {
+  margin-top: 12px;
 }
 .stop-row {
   display: grid;
@@ -2103,6 +2101,11 @@ select.btn {
 }
 .stop-amount > b {
   font-size: var(--fs-2);
+}
+.stop-reason {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .review-loss {
   font-size: var(--fs-1);

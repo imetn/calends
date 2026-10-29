@@ -496,16 +496,16 @@ function StopsCard({ state, today, onOpen }: { state: AppState; today: string; o
         <CopyImageButton hover />
       </div>
       <div className="card-h">
-        <CardTitle>{t('report.stops.title')}</CardTitle>
+        {/* 口径说明收进 ⓘ，卡片里只留数字和明细 */}
+        <CardTitle hint={t('report.stops.basis')}>{t('report.stops.title')}</CardTitle>
       </div>
-      <p className="stop-basis">{copyParts(t('report.stops.basis'))}</p>
       <MetricCards inline>
         <Metric
           label={t('report.stops.loss')}
           value={<FxAmount total={losses.partial} ccy={base} direction={-1} compact />}
           // 没有损失时 ¥0 不标红
           valueClassName={losses.total > 0 || !Number.isFinite(losses.total) ? 'loss' : ''}
-          note={t('report.stops.lossHint')}
+          note={losses.items.length > 0 && t('report.year.count', { count: losses.items.length })}
         />
         {count('cancel') > 0 && <Metric label={t('report.stops.cancel')} value={count('cancel')} />}
         {count('terminate') > 0 && <Metric label={t('core.stop.terminate')} value={count('terminate')} />}
@@ -514,21 +514,22 @@ function StopsCard({ state, today, onOpen }: { state: AppState; today: string; o
       {/* 没有未退款损失时，上面的指标已写 ¥0，不再放一个空的明细区块 */}
       {losses.items.length > 0 && (
         <>
-          <h4 className="stop-list-title">{t('report.stops.details')}</h4>
           <div className="stop-list" data-snapshot-list data-snapshot-total={losses.items.length}>
             {shown.map((i) => (
               <button key={`${i.sub.id}-${i.phaseIndex}`} className="stop-row" data-snapshot-keep onClick={() => onOpen(i.sub)}>
                 <SubIcon sub={i.sub} size={32} />
                 <span className="stop-info">
                   <b>{i.sub.name}</b>
+                  {/* 日期、方式与退款同一行，各段不断开；原因另起一行 */}
                   <small>
-                    {cnDate(i.date)} <span className="copy-gap" aria-hidden="true" />{' '}
-                    {i.kind === 'terminate' ? t('core.stop.terminate') : t('report.stops.cancel')}
-                    {copyParts(i.reason ? `\n${i.reason}` : '')}
+                    <span className="nowrap">{cnDate(i.date)}</span> <span className="copy-gap" aria-hidden="true" />{' '}
+                    <span className="nowrap">{i.kind === 'terminate' ? t('core.stop.terminate') : t('report.stops.cancel')}</span>{' '}
+                    <span className="copy-gap" aria-hidden="true" />{' '}
+                    <span className="nowrap" style={i.refunded > 0 ? { color: 'var(--green)' } : undefined}>
+                      {i.refundStatus === 'none' ? t('core.stop.refundNo') : t('core.stop.partial', { money: flow(i.refunded, i.currency) })}
+                    </span>
                   </small>
-                  <small style={i.refunded > 0 ? { color: 'var(--green)' } : undefined}>
-                    {i.refundStatus === 'none' ? t('core.stop.refundNo') : t('core.stop.partial', { money: flow(i.refunded, i.currency) })}
-                  </small>
+                  {i.reason && <small className="stop-reason">{i.reason}</small>}
                 </span>
                 <span className="stop-amount">
                   <b className="red">

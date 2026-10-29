@@ -123,9 +123,7 @@
   },
   "stops": {
     "title": "Pembatalan & penghentian",
-    "details": "Rincian kerugian tanpa pengembalian dana",
     "loss": "Kerugian tanpa pengembalian dana",
-    "lossHint": "Biaya yang dibayar untuk layanan yang berakhir lebih awal dan tidak dikembalikan",
     "basis": "Seluruh riwayat\nBagian saya; kerugian tanpa pengembalian dana memakai kurs tanggal penghentian.",
     "cancel": "Pembatalan dini sukarela"
   },

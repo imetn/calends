@@ -126,9 +126,7 @@
   },
   "stops": {
     "title": "Kündigungen & Abschaltungen",
-    "details": "Nicht erstattete Verluste im Detail",
     "loss": "Nicht erstatteter Verlust",
-    "lossHint": "Bezahlte Gebühren für vorzeitig beendete Leistungen, die nicht erstattet wurden",
     "basis": "Gesamter Verlauf\nMein Anteil; nicht erstatteter Verlust zum Kurs am Beendigungstag.",
     "cancel": "Freiwillig vorzeitig gekündigt"
   },

@@ -126,9 +126,7 @@
   },
   "stops": {
     "title": "Résiliations et suspensions",
-    "details": "Détail des pertes non remboursées",
     "loss": "Perte non remboursée",
-    "lossHint": "Frais payés pour un service arrêté avant terme et non remboursés",
     "basis": "Tout l’historique\nMa part ; perte non remboursée au taux du jour de l’arrêt.",
     "cancel": "Résiliation anticipée volontaire"
   },

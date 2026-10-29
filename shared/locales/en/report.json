@@ -126,9 +126,7 @@
   },
   "stops": {
     "title": "Cancellations & terminations",
-    "details": "Unrefunded loss details",
     "loss": "Unrefunded loss",
-    "lossHint": "Paid for service that ended early and was not refunded",
     "basis": "All history\nMy share; unrefunded loss at stop-date FX.",
     "cancel": "Voluntary early cancellation"
   },

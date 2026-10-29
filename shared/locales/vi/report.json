@@ -123,9 +123,7 @@
   },
   "stops": {
     "title": "Hủy và ngừng dịch vụ",
-    "details": "Chi tiết tổn thất chưa hoàn tiền",
     "loss": "Tổn thất chưa hoàn tiền",
-    "lossHint": "Khoản đã trả cho dịch vụ kết thúc sớm nhưng không được hoàn lại",
     "basis": "Toàn bộ lịch sử\nPhần của tôi; tổn thất chưa hoàn tiền theo tỷ giá ngày dừng.",
     "cancel": "Chủ động hủy sớm"
   },

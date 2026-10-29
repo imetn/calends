@@ -419,15 +419,12 @@ test('14 种语言统一未退款损失语义，金额标签取代未用天数�
     assert.ok(core.unrefunded.includes('{money}'), code);
     assert.ok(!core.unrefunded.includes('{days}'), code);
     assert.ok(detail.loss.includes('{money}') && detail.loss.includes('{days}'), code);
-    assert.ok(report.stops.lossHint && core.fullyRefunded && detail.title, code);
+    assert.ok(core.fullyRefunded && detail.title, code);
     assert.notEqual(core.unusedTitle, core.lossTitle, code); // 图例只写“未退款”。
-    assert.notEqual(report.cash.prepaidSub, report.stops.lossHint, code);
   }
   assert.equal(locale('zh-CN', 'report').cash.prepaidSub, '{count} 项已付未用完');
   assert.equal(locale('zh-CN', 'core').stop.lossTitle, '未退款损失');
   assert.equal(locale('en', 'core').stop.lossTitle, 'Unrefunded loss');
-  assert.equal(locale('zh-CN', 'report').stops.lossHint, '服务提前终止、没有退回的费用');
-  assert.equal(locale('en', 'report').stops.lossHint, 'Paid for service that ended early and was not refunded');
 });
 
 test('登录与首次设置表单为密码管理器提供同一账号和正确的 autocomplete、无障碍标签', () => {

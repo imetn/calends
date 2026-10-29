@@ -126,9 +126,7 @@
   },
   "stops": {
     "title": "Cancelaciones y bajas",
-    "details": "Detalle de pérdidas no reembolsadas",
     "loss": "Pérdida no reembolsada",
-    "lossHint": "Importe pagado por un servicio que terminó antes de tiempo y no se reembolsó",
     "basis": "Todo el historial\nMi parte; pérdida no reembolsada al cambio del día del cese.",
     "cancel": "Cancelación anticipada voluntaria"
   },

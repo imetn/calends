@@ -126,9 +126,7 @@
   },
   "stops": {
     "title": "İptaller ve sonlandırmalar",
-    "details": "İade edilmeyen kayıp ayrıntıları",
     "loss": "İade edilmeyen kayıp",
-    "lossHint": "Erken sona eren hizmet için ödenen ve iade edilmeyen tutar",
     "basis": "Tüm geçmiş\nBenim payım; iade edilmeyen kayıp sonlandırma tarihindeki kurla hesaplanır.",
     "cancel": "İsteğe bağlı erken iptal"
   },
