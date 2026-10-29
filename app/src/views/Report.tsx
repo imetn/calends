@@ -34,7 +34,8 @@ import { Icon } from '../components/icons.tsx';
 import { tipProps } from '../components/overlays.tsx';
 import { allCharges, toBase, firstStart } from '../derive.ts';
 import { SpendingDelta } from '../components/ScopeReport.tsx';
-import { yearOutlook, type YearDriver } from '../../../shared/scope-report.ts';
+import { yearOutlook, type Comparison, type YearDriver } from '../../../shared/scope-report.ts';
+import './year-card.css';
 
 const mLabel = (m: string) => (m.endsWith('-01') ? t('report.axis.year', { yy: m.slice(2, 4), year: m.slice(0, 4) }) : monthLabel(m, { year: false }));
 const perMonth = (amount: string) => t('report.perMonth', { amount });
@@ -312,6 +313,11 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
   const ok = !!change && Number.isFinite(change.amount);
   const amount = (total: Parameters<typeof formatTotal>[0]) => formatTotal(total, base, { direction: -1, compact: true });
   const kindLabel = (k: YearDriver['kind']) => t(`report.year.${k}`);
+  const short = (v: number) => money(v, base, { compact: true });
+  const arrow = (v: number) => (!Number.isFinite(v) ? '—' : `${v > 0.005 ? '↑' : v < -0.005 ? '↓' : ''} ${short(Math.abs(v))}`.trim());
+  const versus = (key: 'vsMonth' | 'vsYear', c?: Comparison) => c && <small>{t(`report.year.${key}`, { delta: arrow(c.amount) })}</small>;
+  const shown = r.drivers.slice(0, 6);
+  const peak = Math.max(1, ...shown.map((d) => Math.abs(d.delta)));
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
@@ -331,20 +337,20 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
         {change && (
           <Metric
             label={t('report.year.vsLast')}
-            value={<SpendingDelta value={change} base={base} />}
+            value={<SpendingDelta value={change} base={base} compact />}
             valueClassName={!ok || Math.abs(change.amount) < 0.5 ? '' : change.amount > 0 ? 'loss' : 'gain'}
-            note={<small>{t('report.year.lastAmount', { date: cnDate(same.previousThrough), amount: amount(same.partial.previous) })}</small>}
+            note={<small>{t('report.year.lastAmount', { amount: amount(same.partial.previous) })}</small>}
           />
         )}
         <Metric
           label={t('report.year.nextMonth', { month: monthLabel(r.nextMonth.month, { year: false }) })}
           value={<FxAmount total={r.nextMonth.partial.total} ccy={base} direction={-1} compact />}
-          note={totalNote(r.nextMonth.partial.total) || undefined}
+          note={totalNote(r.nextMonth.partial.total) || versus('vsMonth', r.nextMonth.change)}
         />
         <Metric
           label={t('report.year.nextYear', { year: r.nextYear.year })}
           value={<FxAmount total={r.nextYear.partial.total} ccy={base} direction={-1} compact />}
-          note={totalNote(r.nextYear.partial.total) || undefined}
+          note={totalNote(r.nextYear.partial.total) || versus('vsYear', r.nextYear.change)}
         />
       </MetricCards>
       {ok && (
@@ -352,21 +358,44 @@ function YearCard({ state, today, onOpen }: { state: AppState; today: string; on
           <h4 className="stop-list-title" style={{ marginTop: 6 }}>
             {t('report.year.changes')}
           </h4>
-          {r.drivers.length === 0 && (
+          {r.drivers.length === 0 ? (
             <div className="muted" style={{ fontSize: 'var(--fs-2)', padding: '8px 0' }}>
               {t('report.year.empty')}
             </div>
+          ) : (
+            <div className="yr-drivers" data-snapshot-list>
+              {shown.map((d) => (
+                <button type="button" className="scope-row scope-tap yr-driver" data-snapshot-keep key={d.sub.id} onClick={() => onOpen(d.sub)}>
+                  <span className="scope-sub">
+                    <SubIcon sub={d.sub} size={24} />
+                    <span>
+                      <span className="scope-name">{d.sub.name}</span>
+                      <small>
+                        {kindLabel(d.kind)}
+                        {/* 新增、停用的一端是 0，右侧差额已说明，不再写前后金额 */}
+                        {(d.kind === 'up' || d.kind === 'down') && (
+                          <>
+                            {' '}
+                            <span className="copy-gap" aria-hidden="true" />{' '}
+                            <span className="num">{t('report.year.fromTo', { from: short(d.previous), to: short(d.current) })}</span>
+                          </>
+                        )}
+                      </small>
+                    </span>
+                  </span>
+                  {/* 只有一项时比例条恒满、差额与上方同期差额重复，都不画 */}
+                  {shown.length > 1 ? (
+                    <span className="mv-bar" aria-hidden="true">
+                      <i style={{ width: `${(Math.abs(d.delta) / peak) * 100}%` }} />
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  <b className="num">{shown.length > 1 ? arrow(d.delta) : ''}</b>
+                </button>
+              ))}
+            </div>
           )}
-          {r.drivers.slice(0, 4).map((d) => (
-            <button key={d.sub.id} className="wf-item" data-snapshot-keep onClick={() => onOpen(d.sub)}>
-              <SubIcon sub={d.sub} size={24} />
-              <span className="wf-name">{d.sub.name}</span>
-              <em>{kindLabel(d.kind)}</em>
-              <b className="num">
-                {d.delta > 0 ? '↑' : '↓'} {money(Math.abs(d.delta), base, { compact: true })}
-              </b>
-            </button>
-          ))}
         </div>
       )}
     </div>

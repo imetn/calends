@@ -35,11 +35,11 @@ interface Props {
 const LIFECYCLE = new Set<ReportEvent['kind']>(['start', 'end', 'cancel', 'terminate', 'trial', 'pause', 'resume']);
 
 /** Spending increases use the same direction and unsigned comparison in both calendar modes. */
-export function SpendingDelta({ value, base }: { value: Comparison; base: string }) {
+export function SpendingDelta({ value, base, compact }: { value: Comparison; base: string; compact?: boolean }) {
   const direction = value.amount > 0.005 ? 'up' : value.amount < -0.005 ? 'down' : '';
   return (
     <span className={`chip-d ${direction}`}>
-      {copyParts(direction === 'up' ? '↑' : direction === 'down' ? '↓' : '')} {money(Math.abs(value.amount), base)}
+      {copyParts(direction === 'up' ? '↑' : direction === 'down' ? '↓' : '')} {money(Math.abs(value.amount), base, compact ? { compact: true } : undefined)}
       {copyParts(
         value.percent != null &&
           Number.isFinite(value.percent) &&

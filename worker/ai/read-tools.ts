@@ -665,6 +665,11 @@ export const get_insights: Tool = {
         x.partial.total.incomplete
           ? { total: null, paid: null, pending: null, ...partialOut(x.partial.total) }
           : { total: fin(x.total), paid: fin(x.paid), pending: fin(x.pending), ...partialOut(x.partial.total) };
+      // 无可比（对比期没有现金）为 null；缺汇率时 change 为 null
+      const delta = (c?: { amount: number; percent?: number | null }) =>
+        c
+          ? { change: Number.isFinite(c.amount) ? fin(c.amount) : null, change_percent: Number.isFinite(c.percent ?? NaN) ? round(c.percent! * 100) : null }
+          : null;
       const same = r.samePeriod;
       const ok = !!same.change && Number.isFinite(same.change.amount);
       return {
@@ -688,8 +693,8 @@ export const get_insights: Tool = {
         drivers: ok
           ? r.drivers.slice(0, 10).map((d) => ({ name: d.sub.name, kind: d.kind, this_year: fin(d.current), last_year: fin(d.previous), change: fin(d.delta) }))
           : [],
-        next_month: { month: r.nextMonth.month, ...span(r.nextMonth) },
-        next_year: { year: r.nextYear.year, ...span(r.nextYear) },
+        next_month: { month: r.nextMonth.month, ...span(r.nextMonth), vs_same_month_last_year: delta(r.nextMonth.change) },
+        next_year: { year: r.nextYear.year, ...span(r.nextYear), vs_this_year: delta(r.nextYear.change) },
       };
     }
     if (sec === 'year_review') {

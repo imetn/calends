@@ -592,8 +592,10 @@ export interface YearOutlook {
   };
   /** Per-subscription cash differences behind the same-period change, largest first; empty without a comparison. */
   drivers: YearDriver[];
-  nextMonth: CashSpan & { month: string };
-  nextYear: CashSpan & { year: string };
+  /** `change` compares with the same month last year; undefined when that month has no cash. */
+  nextMonth: CashSpan & { month: string; change?: Comparison };
+  /** `change` compares with this year's paid plus forecast total. */
+  nextYear: CashSpan & { year: string; change?: Comparison };
 }
 
 /** Year-level net cash on the monthReport basis: my share, refunds and transfer cash, proxies excluded. */
@@ -634,19 +636,29 @@ export function yearOutlook(state: AppState, today: string): YearOutlook {
     .filter((d) => Number.isFinite(d.delta) && Math.abs(d.delta) >= 0.005)
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.sub.id.localeCompare(b.sub.id));
   const nextMonth = addMonths(today.slice(0, 8) + '01', 1).slice(0, 7);
+  const monthAgo = `${Number(nextMonth.slice(0, 4)) - 1}${nextMonth.slice(4)}`;
+  const versus = (rows: CashRow[], before: CashRow[]): Comparison | undefined =>
+    !before.length ? undefined : rowTotal(rows).incomplete || rowTotal(before).incomplete ? { amount: NaN, percent: NaN } : compare(sum(rows), sum(before));
+  const yearRows = cashRows(scoped, `${y}-01-01`, `${y}-12-31`, today);
+  const nextMonthRows = cashRows(scoped, `${nextMonth}-01`, monthEnd(nextMonth), today);
+  const nextYearRows = cashRows(scoped, `${y + 1}-01-01`, `${y + 1}-12-31`, today);
   return {
     year: String(y),
-    current: cashSpan(cashRows(scoped, `${y}-01-01`, `${y}-12-31`, today), today),
+    current: cashSpan(yearRows, today),
     samePeriod: {
       through: today,
       previousThrough: lastThrough,
       amount: sum(ytd),
       previous: sum(last),
-      change: !last.length ? undefined : amount.incomplete || previous.incomplete ? { amount: NaN, percent: NaN } : compare(sum(ytd), sum(last)),
+      change: versus(ytd, last),
       partial: { amount, previous },
     },
     drivers: last.length ? drivers : [],
-    nextMonth: { month: nextMonth, ...cashSpan(cashRows(scoped, `${nextMonth}-01`, monthEnd(nextMonth), today), today) },
-    nextYear: { year: String(y + 1), ...cashSpan(cashRows(scoped, `${y + 1}-01-01`, `${y + 1}-12-31`, today), today) },
+    nextMonth: {
+      month: nextMonth,
+      ...cashSpan(nextMonthRows, today),
+      change: versus(nextMonthRows, cashRows(scoped, `${monthAgo}-01`, monthEnd(monthAgo), today)),
+    },
+    nextYear: { year: String(y + 1), ...cashSpan(nextYearRows, today), change: versus(nextYearRows, yearRows) },
   };
 }

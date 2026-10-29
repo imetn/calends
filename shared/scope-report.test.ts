@@ -514,6 +514,9 @@ test('year outlook: this year is paid plus forecast, same period compares Jan 1 
   );
   assert.deepEqual([r.nextMonth.month, r.nextMonth.total, r.nextMonth.paid], ['2026-11', 10, 0]);
   assert.deepEqual([r.nextYear.year, r.nextYear.total], ['2027', 240]);
+  // 下月比去年同月（Base 10 + Gone 5），明年比今年合计
+  assert.equal(r.nextMonth.change?.amount, -5);
+  assert.equal(r.nextYear.change?.amount, 0);
   // 同一份年数，订阅列表的迷你报告也按「已付 + 预计」给出
   const head = get(scopeReport(st, st.subscriptions, today), 'headline');
   assert.ok(head?.mode === 'scope');

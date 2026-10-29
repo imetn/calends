@@ -1,0 +1,25 @@
+/* 报告 · 本年卡的变化来源：单列「订阅 | 比例条 | 差额」，各行共用列宽，比例条左缘对齐 */
+.yr-drivers {
+  display: grid;
+  grid-template-columns: fit-content(300px) minmax(48px, 1fr) auto;
+  column-gap: 20px;
+}
+.yr-drivers .yr-driver {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+.yr-driver .mv-bar {
+  height: 6px;
+}
+.yr-driver > b {
+  min-width: 64px;
+  font-weight: 600;
+}
+@media (max-width: 560px) {
+  .yr-drivers {
+    grid-template-columns: minmax(0, 1fr) 48px auto;
+    column-gap: 12px;
+  }
+}
