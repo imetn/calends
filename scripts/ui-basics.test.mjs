@@ -503,11 +503,11 @@ const withoutWallet = (css) =>
     .map(([selector, body]) => (selector.startsWith('@') ? `${selector}{${withoutWallet(body)}}` : walletRule(selector) ? '' : `${selector}{${body}}`))
     .join('\n');
 
-test('app and public CSS use only the four shared type sizes, including font shorthands', async () => {
+test('app and public CSS use only the shared type sizes, including font shorthands', async () => {
   const failures = [];
   for (const [file, css] of styleSources.map(([f, c]) => [f, withoutWallet(c)])) {
     for (const [, value] of css.matchAll(/font-size:\s*([^;]+);/g)) {
-      if (!/^(?:var\(--fs-[1-4]\)|12px|14px|17px|28px)(?: !important)?$/.test(value)) failures.push(`${file}: ${value}`);
+      if (!/^(?:var\(--fs-(?:[1-4]|metric)\)|12px|14px|17px|22px|28px)(?: !important)?$/.test(value)) failures.push(`${file}: ${value}`);
     }
     for (const [, value] of css.matchAll(/(?<![\w-])font:\s*([^;]+);/g)) {
       if (value !== 'inherit' && !/var\(--fs-[1-4]\)/.test(value)) failures.push(`${file}: font ${value}`);

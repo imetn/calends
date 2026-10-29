@@ -329,6 +329,17 @@
   font-weight: 650;
   white-space: normal;
 }
+/* 桌面端主数字再大一号，手机沿用 --fs-3 */
+@media (min-width: 681px) {
+  .metric-value,
+  .metric-grid > div > b,
+  .metric-value .amt,
+  .metric-value .amt .cur,
+  .metric-value .amt .dec,
+  .metric-value > b {
+    font-size: var(--fs-metric);
+  }
+}
 .metric-note,
 .metric-grid > div > span {
   color: var(--label-3);

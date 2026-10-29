@@ -38,6 +38,8 @@
   --fs-2: 14px;
   --fs-3: 17px;
   --fs-4: 28px;
+  /* 只给桌面端指标卡的主数字用 */
+  --fs-metric: 22px;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
