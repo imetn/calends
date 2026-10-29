@@ -145,6 +145,14 @@
     "stopped": "Durduruldu",
     "up": "Daha fazla",
     "down": "Daha az",
+    "carpoolGain": "Ortak planlar kârı",
+    "carpoolLoss": "Ortak planlar zararı",
+    "carpoolEven": "Ortak planlar başa baş",
+    "carpoolNet": "Ortak planlar net",
+    "proxyGain": "Başkaları için kâr",
+    "proxyLoss": "Başkaları için zarar",
+    "proxyEven": "Başkaları için başa baş",
+    "proxyNet": "Başkaları için net",
     "empty": "Geçen yılın aynı dönemiyle aynı."
   }
 }

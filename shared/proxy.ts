@@ -137,3 +137,14 @@ export function proxyTotals(rows: ProxyRow[]) {
       .reduce<string | undefined>((a, d) => (!a || d > a ? d : a), undefined),
   };
 }
+
+/**
+ * 今年（自然年）扣款的代付期合计：盈亏同 proxyTotals，只算已收回的期（收回 − 实扣），还没收的期计入待收。
+ * subs 是今年有扣款的代付订阅
+ */
+export function proxyYear(state: AppState, today: string) {
+  const y = today.slice(0, 4);
+  const bySub = state.subscriptions.filter((s) => s.proxy).map((s) => ({ s, rows: proxyRows(state, s, today).filter((r) => r.date.slice(0, 4) === y) }));
+  const used = bySub.filter((x) => x.rows.length > 0);
+  return { subs: used.map((x) => x.s), ...proxyTotals(used.flatMap((x) => x.rows)) };
+}
