@@ -235,7 +235,8 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                         <div className="cal-icons" style={{ '--m0': `${fits(shown.length) ? 3 : step - icon}px` } as Record<string, string>}>
                           {shown.map((c, i) => (
                             <span
-                              key={c.sub.id}
+                              // 同一订阅同一天可能既扣款又返佣，订阅 ID 会重复
+                              key={`${c.sub.id}-${i}`}
                               style={{ '--i': i } as Record<string, number>}
                               {...tipProps(() => `${c.sub.name}\n${flow(-c.amount, c.currency)}`)}
                             >

@@ -3906,3 +3906,26 @@ test('report charts: bar tops carry amounts, money gridlines never repeat', () =
     assert.ok(xs.length >= 2 && new Set(xs).size === xs.length, `${values}: ${xs}`);
   }
 });
+
+test('calendar day icons keep unique keys when one subscription charges and rebates on the same day', () => {
+  const sub = {
+    id: 'dup',
+    name: 'Dup',
+    category: 'Tools',
+    tags: [],
+    price: 10,
+    currency: 'USD',
+    cycle: { unit: 'month' as const, every: 1 },
+    start: '2026-01-22',
+    status: 'active' as const,
+    payments: [],
+  };
+  const charges = [
+    { sub, date: today, amount: 10, currency: 'USD', projected: false },
+    { sub, date: today, amount: -2, currency: 'USD', projected: false, kind: 'refund' },
+  ];
+  const r = harness('../app/src/views/Calendar.tsx', 'Calendar', {}, { allCharges: () => charges, stopLabel: () => '' });
+  const nodes = r.render('Calendar', { state: st, today, onOpen() {}, onIcs() {} });
+  const keys = nodes.filter((n) => n.children.some((c: { type?: string }) => c?.type === 'SubIcon') && 'key' in n.props).map((n) => n.props.key);
+  assert.equal(new Set(keys).size, 2);
+});
