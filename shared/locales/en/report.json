@@ -91,6 +91,8 @@
     "legendAccrual": "Cost spread per month",
     "forecast": "\nForecast",
     "tip": "Charged {cash}\nCost {cost}",
+    "open": "\nOpen this month in the calendar",
+    "openYear": "\nOpen this year in the calendar",
     "prepaidItem": "{name}\n{amount}\nuntil {until}",
     "prepaid": "Prepaid value",
     "prepaidSub": "{count} paid, not used up",

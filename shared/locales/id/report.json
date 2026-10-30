@@ -90,6 +90,8 @@
     "legendAccrual": "Biaya dibagi per bulan",
     "forecast": "\nPerkiraan",
     "tip": "Ditagih {cash}\nBiaya {cost}",
+    "open": "\nBuka bulan ini di kalender",
+    "openYear": "\nBuka tahun ini di kalender",
     "prepaidItem": "{name}\n{amount}\nhingga {until}",
     "prepaid": "Nilai prabayar",
     "prepaidSub": "{count} sudah dibayar, belum habis",

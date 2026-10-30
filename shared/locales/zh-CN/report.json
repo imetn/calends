@@ -88,6 +88,8 @@
     "legendAccrual": "摊到每月的成本",
     "forecast": "\n预测",
     "tip": "扣款 {cash}\n成本 {cost}",
+    "open": "\n点按查看当月日历",
+    "openYear": "\n点按查看当年日历",
     "prepaidItem": "{name}\n{amount}\n至 {until}",
     "prepaid": "预付余值",
     "prepaidSub": "{count} 项已付未用完",

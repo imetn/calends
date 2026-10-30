@@ -24,6 +24,7 @@ import * as receivables from './receivables.ts';
 import * as periodGrid from './period-grid.ts';
 import * as assistantFields from '../app/src/views/assistant-fields.ts';
 import { detailForecast, detailHistoryEnd } from '../app/src/views/detail-data.ts';
+import { calendarJump } from '../app/src/views/calendar-jump.ts';
 import { PERSON_COLORS, DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 
 // Execute component event handlers in the existing JSX harness, retaining pure financial builders.
@@ -140,6 +141,9 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     useRef: () => ({ current: null }),
     useEffect: (fn: () => unknown) => fn(),
     useLayoutEffect: (fn: () => unknown) => fn(),
+    calendarJump,
+    location: { search: '', pathname: '/calendar' },
+    history: { state: null, replaceState() {} },
     useState(initial: unknown) {
       const i = cursor++;
       if (!(i in values)) values[i] = typeof initial === 'function' ? initial() : initial;
@@ -3834,6 +3838,45 @@ test('跨年各段悬停一起高亮，点击仍返回同一期；触屏按下�
   buttons[2].props.onBlur();
   buttons[1].props.onFocus({});
   assert.equal(render().filter((n) => n.type === 'button' && n.props.className.endsWith(' active')).length, 3);
+});
+
+test('report bars open the calendar: buttons only when pickable, URL params parsed strictly', () => {
+  const r = harness('../app/src/components/charts.tsx', 'BarLine');
+  const bars = [100, 200];
+  const base = { bars, line: [], labels: ['1月', '2月'], tip: () => '', future: bars.map(() => false) };
+  const cols = (nodes: Node[]) => nodes.filter((n) => String(n.props.className ?? '').startsWith('bl-col'));
+  // 订阅页迷你报告没给 onPick：仍是普通 div，不可点
+  assert.ok(cols(r.render('BarLine', base)).every((n) => n.type === 'div' && !n.props.onClick));
+  const picked: number[] = [];
+  const btns = cols(r.render('BarLine', { ...base, onPick: (i: number) => picked.push(i) }));
+  assert.deepEqual(
+    btns.map((n) => [n.type, n.props.type, n.props['aria-label']]),
+    [
+      ['button', 'button', '1月'],
+      ['button', 'button', '2月'],
+    ],
+  );
+  // 鼠标点一下就跳；键盘（click 的 detail 为 0）也直接跳
+  btns[1].props.onPointerDown({ pointerType: 'mouse' });
+  btns[1].props.onClick({ detail: 1 });
+  btns[0].props.onClick({ detail: 0 });
+  assert.deepEqual(picked, [1, 0]);
+  // 触屏第一下只弹浮窗，同一根再按才跳；iOS 第一下不派发 click 时，按下记账照样成立
+  btns[0].props.onPointerDown({ pointerType: 'touch' });
+  btns[0].props.onClick({ detail: 1 });
+  assert.deepEqual(picked, [1, 0]);
+  btns[0].props.onPointerDown({ pointerType: 'touch' });
+  btns[0].props.onClick({ detail: 1 });
+  assert.deepEqual(picked, [1, 0, 0]);
+  btns[1].props.onPointerDown({ pointerType: 'touch' });
+  btns[1].props.onPointerDown({ pointerType: 'touch' });
+  btns[1].props.onClick({ detail: 1 });
+  assert.deepEqual(picked, [1, 0, 0, 1]);
+  // 日历只认合法的 ?month / ?year；今年停在本月，别的年停在 1 月
+  assert.deepEqual(calendarJump('?month=2025-03', '2026-10-30'), { month: '2025-03', mode: 'month' });
+  assert.deepEqual(calendarJump('?year=2026', '2026-10-30'), { month: '2026-10', mode: 'year' });
+  assert.deepEqual(calendarJump('?year=2024', '2026-10-30'), { month: '2024-01', mode: 'year' });
+  for (const bad of ['', '?month=2025-13', '?month=2025-3', '?year=24', '?year=abcd']) assert.equal(calendarJump(bad, '2026-10-30'), null, bad);
 });
 
 test('report charts: bar tops carry amounts, money gridlines never repeat', () => {

@@ -90,6 +90,8 @@
     "legendAccrual": "월별로 나눈 비용",
     "forecast": "\n예측",
     "tip": "결제 {cash}\n비용 {cost}",
+    "open": "\n이 달을 캘린더에서 열기",
+    "openYear": "\n이 해를 캘린더에서 열기",
     "prepaidItem": "{name}\n{amount}\n{until}까지",
     "prepaid": "선결제 잔여 가치",
     "prepaidSub": "{count}개 결제 완료, 아직 사용 중",

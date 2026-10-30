@@ -1,6 +1,6 @@
 import { useSnapshotRender } from '../snapshot-render.tsx';
-import type { ReactNode as ComponentChildren } from 'react';
-import { tipProps } from './overlays.tsx';
+import { useRef, type ReactNode as ComponentChildren } from 'react';
+import { tipProps, tipSet } from './overlays.tsx';
 import { useWidth } from './inputs.tsx';
 import { monthTicks } from '../../../shared/format.ts';
 
@@ -140,6 +140,7 @@ export function BarLine({
   tip,
   months,
   fmt,
+  onPick,
 }: {
   bars: number[];
   line: number[];
@@ -151,6 +152,8 @@ export function BarLine({
   months?: string[];
   /** 给了就在柱顶标金额，返回空串的柱子不标；顶部留出一行字的高度 */
   fmt?: (v: number, i: number) => string;
+  /** 给了柱子就可点：鼠标点一下就触发；触屏第一下先弹浮窗看金额，同一根再点一下才触发 */
+  onPick?: (i: number) => void;
 }) {
   const max = Math.max(1, ...bars, ...line) * 1.08;
   const min = Math.min(0, ...bars, ...line) * 1.08;
@@ -164,6 +167,23 @@ export function BarLine({
   // 每个月份标签约占 44px，按实际宽度决定隔几根柱子标一次，窄屏不挤
   const [box, w] = useWidth();
   useSnapshotRender(box, () => <BarLine bars={bars} line={line} labels={labels} future={future} height={height} tip={tip} months={months} fmt={fmt} />);
+  // 在按下时判断：触屏按下的是上次已点过的那根才放行。iOS 第一下可能只弹浮窗不派发 click，按下时记账两种情况都对
+  const armed = useRef(-1);
+  const ready = useRef(false);
+  const press = (i: number, pointer: string) => {
+    ready.current = pointer === 'mouse' || armed.current === i;
+    armed.current = pointer === 'mouse' ? -1 : i;
+  };
+  // 键盘触发的 click（detail 为 0）没有按下这一步，直接放行
+  const pick = (i: number, detail: number) => {
+    const go = detail === 0 || ready.current;
+    ready.current = false;
+    if (!go) return;
+    armed.current = -1;
+    tipSet?.(null);
+    onPick?.(i);
+  };
+  const Col = onPick ? 'button' : 'div';
   const step = Math.max(1, Math.ceil(n / Math.min(12, Math.max(2, Math.floor(w / 44) || 12))));
   // 柱顶金额：每格放得下就每根都标，放不下只标最高的一根
   const vals = fmt ? bars.map((v, i) => (v >= 0.5 ? fmt(v, i) : '')) : [];
@@ -175,7 +195,20 @@ export function BarLine({
     <div className="barline" ref={box} style={{ height: height + 22 }}>
       <div className="bl-bars" style={{ height }}>
         {bars.map((v, i) => (
-          <div key={i} className={`bl-col ${future[i] ? 'future' : ''}`} style={{ position: 'relative' }} {...tipProps(() => tip(i))}>
+          <Col
+            key={i}
+            className={`bl-col ${future[i] ? 'future' : ''}`}
+            style={{ position: 'relative' }}
+            {...tipProps(() => tip(i))}
+            {...(onPick
+              ? {
+                  type: 'button' as const,
+                  'aria-label': labels[i],
+                  onPointerDown: (e: { pointerType: string }) => press(i, e.pointerType),
+                  onClick: (e: { detail: number }) => pick(i, e.detail),
+                }
+              : {})}
+          >
             <i style={{ position: 'absolute', top: y(Math.max(0, v)), height: (Math.abs(v) / span) * (height - pad) }} />
             {shown(i) && (
               // 折线在柱顶之上时标到折线点上方，免得线穿过数字
@@ -183,7 +216,7 @@ export function BarLine({
                 {vals[i]}
               </span>
             )}
-          </div>
+          </Col>
         ))}
       </div>
       <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="none" style={{ height }} className="bl-line">

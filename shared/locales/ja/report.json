@@ -90,6 +90,8 @@
     "legendAccrual": "月割りのコスト",
     "forecast": "\n予測",
     "tip": "請求 {cash}\nコスト {cost}",
+    "open": "\nこの月をカレンダーで開く",
+    "openYear": "\nこの年をカレンダーで開く",
     "prepaidItem": "{name}\n{amount}\n{until}まで",
     "prepaid": "前払いの残存価値",
     "prepaidSub": "{count}件が支払い済み・未消化",

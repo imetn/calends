@@ -91,6 +91,8 @@
     "legendAccrual": "Kosten pro Monat verteilt",
     "forecast": "\nPrognose",
     "tip": "Abgebucht {cash}\nKosten {cost}",
+    "open": "\nDiesen Monat im Kalender öffnen",
+    "openYear": "\nDieses Jahr im Kalender öffnen",
     "prepaidItem": "{name}\n{amount}\nbis {until}",
     "prepaid": "Vorausbezahlter Wert",
     "prepaidSub": "{count} bezahlt, nicht aufgebraucht",

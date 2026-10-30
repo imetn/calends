@@ -35,6 +35,7 @@ import { allOutlook, cumulativeTrend, spendPiecesBetween, subscriptionTenure, ye
 import { Picker } from '../components/Picker.tsx';
 import { carpoolYear } from '../../../shared/carpool.ts';
 import { proxyYear } from '../../../shared/proxy.ts';
+import { go } from '../router.ts';
 
 const mLabel = (m: string) => (m.endsWith('-01') ? t('report.axis.year', { yy: m.slice(2, 4), year: m.slice(0, 4) }) : monthLabel(m, { year: false }));
 const perMonth = (amount: string) => t('report.perMonth', { amount });
@@ -744,6 +745,8 @@ function CashCard({ state, today, year }: { state: AppState; today: string; year
           bars={rows.map((r) => r.partial.cash.value)}
           // 缺汇率的柱子只有部分金额，不标数字，完整金额看浮窗
           fmt={(v, i) => (rows[i].partial.cash.incomplete ? '' : moneyTick(v, base))}
+          // 点柱子去日历看这个月（全部模式是这一年）有哪几笔
+          onPick={(i) => go(year === null ? `calendar?year=${rows[i].month}` : `calendar?month=${rows[i].month}`)}
           line={rows.map((r) => r.partial.accrual.value)}
           future={rows.map((r) => r.projected)}
           labels={rows.map((r) => (year === null ? r.month : mLabel(r.month)))}
@@ -759,6 +762,7 @@ function CashCard({ state, today, year }: { state: AppState; today: string; year
                   cost: formatTotal(rows[i].partial.accrual, base, { direction: -1, compact: true }),
                 }),
               )}
+              {copyParts(t(year === null ? 'report.cash.openYear' : 'report.cash.open'))}
             </>
           )}
         />

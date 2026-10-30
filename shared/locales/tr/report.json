@@ -91,6 +91,8 @@
     "legendAccrual": "Aylara yayılan maliyet",
     "forecast": "\nTahmin",
     "tip": "Ödenen {cash}\nMaliyet {cost}",
+    "open": "\nBu ayı takvimde aç",
+    "openYear": "\nBu yılı takvimde aç",
     "prepaidItem": "{name}\n{amount}\n{until} tarihine kadar",
     "prepaid": "Ön ödemeli değer",
     "prepaidSub": "{count} ödendi, henüz tüketilmedi",

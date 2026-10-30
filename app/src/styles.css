@@ -2219,6 +2219,14 @@ select.btn {
 }
 /* 报告「现金与真实成本」里未来几个月的应付：同一种「未扣」虚框样式，见下方 .bl-col.future i */
 
+/* 可点的柱子（报告页点进日历）：去掉按钮自带的样式 */
+button.bl-col {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
 .bl-col:hover i {
   background: var(--gray-9);
 }

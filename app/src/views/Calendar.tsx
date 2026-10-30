@@ -2,7 +2,7 @@ import { chargesTotal, formatTotal, sumTotals, type FxTotal } from '../../../sha
 import { FxAmount } from '../components/FxAmount.tsx';
 import { canUseSingleKey } from '../keyboard.ts';
 import { copyParts } from '../components/copy.tsx';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Maximize2 } from 'lucide-react';
 import {
@@ -31,6 +31,7 @@ import { chargeBaseOrNaN } from '../../../shared/fx.ts';
 import { allCharges } from '../derive.ts';
 import { useMoneyPair } from '../components/MoneyPair.tsx';
 import { usePref } from '../prefs.ts';
+import { calendarJump } from './calendar-jump.ts';
 import { monthReport } from '../../../shared/scope-report.ts';
 import { ScopeReport, SpendingDelta } from '../components/ScopeReport.tsx';
 import { StopText, stopDescription, stopLabel } from '../components/StopPanel.tsx';
@@ -53,14 +54,23 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
   const pair = useMoneyPair(state);
   const weekStart = state.settings.weekStart ?? 1;
   const DOW = dows(weekStart);
-  const [month, setMonth] = useState(today.slice(0, 7));
-  const [mode, setMode] = usePref<'month' | 'year'>('cal-mode', 'month', (v): v is 'month' | 'year' => v === 'month' || v === 'year');
+  // 从别处跳来时地址可带 ?month=YYYY-MM 或 ?year=YYYY（报告页点柱子），打开对应的月或年；读完即从地址去掉
+  const [jump] = useState(() => calendarJump(location.search, today));
+  const [month, setMonth] = useState(jump?.month ?? today.slice(0, 7));
+  const [savedMode, setMode] = usePref<'month' | 'year'>('cal-mode', 'month', (v): v is 'month' | 'year' => v === 'month' || v === 'year');
+  // 跳来的视图只管这一次，不改写记住的月／年偏好；手动切换后回到偏好
+  const [jumpMode, setJumpMode] = useState(jump?.mode ?? null);
+  const mode = jumpMode ?? savedMode;
+  useLayoutEffect(() => {
+    if (jump) history.replaceState(history.state, '', location.pathname);
+  }, [jump]);
   // 月、年切换的「神奇移动」：当前月的月历与年视图里那一格共用 view-transition-name，浏览器在两者之间缩放过渡；
   // 不支持视图过渡或开了「减少动态效果」时直接切换
   const switchMode = (next: 'month' | 'year', pick?: string) => {
     const apply = () =>
       flushSync(() => {
         if (pick) goMonth(pick);
+        setJumpMode(null);
         setMode(next);
       });
     if (next === mode && !pick) return;
@@ -73,7 +83,7 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
     const transition = document.startViewTransition(apply);
     void transition.finished.finally(() => root.classList.remove('vt-cal', 'vt-zoom-in'));
   };
-  const [sel, setSel] = useState<string | null>(today);
+  const [sel, setSel] = useState<string | null>(jump && !today.startsWith(jump.month) ? null : today);
   const [reportMode, setReportMode] = usePref<'mini' | 'full'>('cal-report-mode', 'mini', (v): v is 'mini' | 'full' => v === 'mini' || v === 'full');
   const report = useMemo(() => (mode === 'month' ? monthReport(state, month, today) : null), [state, month, today, mode]);
   const base = state.settings.baseCurrency;

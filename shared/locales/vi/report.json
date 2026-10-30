@@ -90,6 +90,8 @@
     "legendAccrual": "Chi phí phân bổ theo tháng",
     "forecast": "\nDự báo",
     "tip": "Đã trừ {cash}\nChi phí {cost}",
+    "open": "\nMở tháng này trong lịch",
+    "openYear": "\nMở năm này trong lịch",
     "prepaidItem": "{name}\n{amount}\nđến {until}",
     "prepaid": "Giá trị trả trước",
     "prepaidSub": "{count} đã trả, chưa dùng hết",
