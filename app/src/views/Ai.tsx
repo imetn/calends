@@ -47,6 +47,10 @@ interface Client {
   id: string;
   name: string;
   logo: string;
+  /** 单色标志：跟随文字颜色（深色主题、主按钮上都看得清） */
+  mono?: boolean;
+  /** 标志本身是带底色的应用图标，按圆角方块显示 */
+  tile?: boolean;
   /** 代码块的语言提示（只用来显示角标） */
   lang: 'shell' | 'json' | 'yaml' | 'http';
   /** 配置放在哪里（文件路径或操作位置） */
@@ -73,6 +77,7 @@ const CLIENTS: Client[] = [
     id: 'codex',
     name: 'Codex',
     logo: base('/ai/openai.svg'),
+    mono: true,
     lang: 'shell',
     where: () => t('ai.where.codex'),
     snippet: (url, tk) => `export CALENDS_TOKEN=${tk}\ncodex mcp add calends --url ${url} --bearer-token-env-var CALENDS_TOKEN`,
@@ -81,6 +86,7 @@ const CLIENTS: Client[] = [
     id: 'cursor',
     name: 'Cursor',
     logo: base('/ai/cursor.svg'),
+    mono: true,
     lang: 'json',
     where: () => t('ai.where.file', { path: '~/.cursor/mcp.json' }),
     snippet: (url, tk) => json({ mcpServers: { calends: { url, headers: { Authorization: `Bearer ${tk}` } } } }),
@@ -107,13 +113,14 @@ const CLIENTS: Client[] = [
     id: 'grokbot',
     name: 'Grok Bot',
     logo: base('/ai/grokbot.png'),
+    tile: true,
     lang: 'yaml',
     where: () => t('ai.where.grokbot'),
     snippet: (url, tk) => `name: calends\nurl: ${url}\nheaders:\n  Authorization: Bearer ${tk}`,
   },
   {
     id: 'deepseek',
-    name: 'DeepSeek Harness',
+    name: 'DeepSeek',
     logo: base('/ai/deepseek.svg'),
     lang: 'yaml',
     experimental: true,
@@ -136,7 +143,13 @@ const copy = (text: string, what = t('ai.copied')) => copyText(text, what);
 function ClientLogo({ c, size = 28 }: { c: Client; size?: number }) {
   return (
     <span className="ai-logo" style={{ width: size, height: size }}>
-      {c.logo ? <img src={c.logo} alt="" /> : <Icon name="link" size={size * 0.55} />}
+      {!c.logo ? (
+        <Icon name="link" size={size * 0.7} />
+      ) : c.mono ? (
+        <i style={{ maskImage: `url(${c.logo})`, WebkitMaskImage: `url(${c.logo})` }} />
+      ) : (
+        <img src={c.logo} alt="" className={c.tile ? 'tile' : undefined} />
+      )}
     </span>
   );
 }

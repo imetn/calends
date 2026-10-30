@@ -7781,14 +7781,28 @@ a.car-toggle {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  border-radius: var(--radius-sm);
-  background: var(--white-a12);
-  box-shadow: inset 0 0 0 var(--hairline) var(--line);
   color: var(--label-2);
+/* 客户端标志不另垫白底：彩色标志原样放，单色标志用遮罩跟随文字颜色，自带底色的应用图标缩成圆角方块 */
 }
-.ai-logo img {
-  width: 66%;
-  height: 66%;
+.ai-logo img,
+.ai-logo i {
+  width: 80%;
+  height: 80%;
+}
+.ai-logo i {
+  background: currentColor;
+  mask: no-repeat center / contain;
+  -webkit-mask: no-repeat center / contain;
+}
+.ai-logo img.tile {
+  border-radius: 22%;
+}
+.ai-client .ai-logo i {
+  color: var(--label);
+}
+/* 主按钮上的单色标志跟按钮文字同色 */
+.ai-install .ai-logo {
+  color: inherit;
 }
 .ai-steps {
   list-style: none;
@@ -7882,9 +7896,6 @@ a.car-toggle {
 .ai-install {
   align-self: flex-start;
   gap: 8px;
-}
-.ai-install .ai-logo {
-  border-radius: var(--radius-sm);
 }
 .ai-empty {
   padding: 18px;
