@@ -7,7 +7,7 @@ import { copyParts } from '../components/copy.tsx';
 import { base as appPath } from '../base.ts';
 import { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { addDays, addMonths, DAYS_PER_MONTH, diffDays, effectiveStatus, isStopped } from '../../../shared/billing.ts';
-import { flow, cnDate, money, monthLabel } from '../../../shared/format.ts';
+import { flow, cnDate, money, moneyTick, monthLabel } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { tx } from '../i18n.ts';
 import {
@@ -89,9 +89,9 @@ export function Report({
           <>
             <AllHero state={state} today={today} />
             <AllCard state={state} today={today} first={first} onOpen={onOpen} />
+            <CashCard state={state} today={today} year={null} />
             <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} hint={t('report.comp.basisAll')} />
             <TenureCard state={state} today={today} onOpen={onOpen} />
-            <CashCard state={state} today={today} year={null} />
             <StopsCard state={state} today={today} year={null} onOpen={onOpen} />
           </>
         ) : (
@@ -208,6 +208,7 @@ function Hero({ state, today, year }: { state: AppState; today: string; year: nu
       <div className="hero-r">
         <AreaChart
           values={trend.values}
+          fmt={(v) => moneyTick(v, base)}
           labels={r.months.map((m) => mLabel(m.month))}
           months={r.months.map((m) => m.month)}
           now={trend.now}
@@ -273,6 +274,7 @@ function AllHero({ state, today }: { state: AppState; today: string }) {
       <div className="hero-r">
         <AreaChart
           values={cum}
+          fmt={(v) => moneyTick(v, base)}
           labels={r.months.map((m) => mLabel(m.month))}
           months={r.months.map((m) => m.month)}
           tip={(i) => (
@@ -740,6 +742,8 @@ function CashCard({ state, today, year }: { state: AppState; today: string; year
       <div className="cash-grid">
         <BarLine
           bars={rows.map((r) => r.partial.cash.value)}
+          // 缺汇率的柱子只有部分金额，不标数字，完整金额看浮窗
+          fmt={(v, i) => (rows[i].partial.cash.incomplete ? '' : moneyTick(v, base))}
           line={rows.map((r) => r.partial.accrual.value)}
           future={rows.map((r) => r.projected)}
           labels={rows.map((r) => (year === null ? r.month : mLabel(r.month)))}

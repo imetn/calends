@@ -3835,3 +3835,31 @@ test('跨年各段悬停一起高亮，点击仍返回同一期；触屏按下�
   buttons[1].props.onFocus({});
   assert.equal(render().filter((n) => n.type === 'button' && n.props.className.endsWith(' active')).length, 3);
 });
+
+test('report charts: bar tops carry amounts, money gridlines never repeat', () => {
+  const r = harness('../app/src/components/charts.tsx', 'BarLine, AreaChart');
+  const base = { line: [], labels: [], tip: () => '' };
+  const vals = (nodes: Node[]) => nodes.filter((n) => n.props.className === 'bl-val').map((n) => n.children.join(''));
+  // 缺汇率（fmt 返回空串）与取整后为 0 的柱子不标；没给 fmt 的图（订阅页迷你报告）不变
+  const fmt = (v: number, i: number) => (i === 2 ? '' : format.moneyTick(v, 'USD'));
+  const bars = [100, 600, 50, 0.2];
+  assert.deepEqual(vals(r.render('BarLine', { ...base, bars, future: bars.map(() => false), fmt })), ['$100', '$600']);
+  assert.deepEqual(vals(r.render('BarLine', { ...base, bars, future: bars.map(() => false) })), []);
+  // 每格放不下时只标最高的一根
+  const many = Array.from({ length: 30 }, (_, i) => (i === 7 ? 9000 : 6000));
+  assert.deepEqual(vals(r.render('BarLine', { ...base, bars: many, future: many.map(() => false), fmt })), ['$9.0k']);
+  // 走势图的金额刻度：全为 0、小额时也不出现重复标签
+  const ticks = (values: number[]) =>
+    r
+      .render('AreaChart', { values, labels: values.map(String), tip: () => '', fmt: (v: number) => format.moneyTick(v, 'USD') })
+      .filter((n) => n.props.className === 'area-y')
+      .map((n) => n.children.join(''));
+  for (const values of [
+    [0, 0, 0],
+    [1, 4, 7],
+    [100, 2400, 51062],
+  ]) {
+    const xs = ticks(values);
+    assert.ok(xs.length >= 2 && new Set(xs).size === xs.length, `${values}: ${xs}`);
+  }
+});

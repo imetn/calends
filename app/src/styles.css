@@ -1914,6 +1914,17 @@ select.btn {
     transparent calc(50% + 0.25px)
   );
 }
+/* 走势图左侧的金额刻度：贴在横线上方 */
+.area-y {
+  position: absolute;
+  left: 0;
+  transform: translateY(-100%);
+  padding-bottom: 2px;
+  font-size: var(--fs-1);
+  color: var(--label-3);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
 .area-x {
   position: absolute;
   left: 0;
@@ -2189,6 +2200,22 @@ select.btn {
   border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) var(--radius-sm);
   background: var(--chart-ink-2);
   min-height: 1px;
+}
+/* 柱顶金额：居中贴在柱子上方 */
+.bl-val {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  z-index: 1;
+  padding: 0 2px;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  line-height: 1.3;
+  font-size: var(--fs-1);
+  color: var(--label-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 /* 报告「现金与真实成本」里未来几个月的应付：同一种「未扣」虚框样式，见下方 .bl-col.future i */
 
@@ -9956,6 +9983,10 @@ img.mm-flag {
 .year-step-arrow {
   display: grid;
   place-items: center;
+/* 两侧已有箭头，中间不再显示下拉的上下双箭头，点年份本身仍会展开下拉 */
+.year-step > .pk-btn.btn > .i:last-child {
+  display: none;
+}
   width: 30px;
   height: 100%;
   padding: 0;

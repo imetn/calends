@@ -40,6 +40,7 @@ export function AreaChart({
   markers,
   months,
   now,
+  fmt,
 }: {
   values: number[];
   labels: string[];
@@ -50,9 +51,14 @@ export function AreaChart({
   months?: string[];
   /** 今天：小数下标与当时的值；之前实线铺底，之后虚线。at < 0 全是预计，不给则全已发生 */
   now?: { at: number; value: number };
+  /** 给了就把横线放在整数金额上，并在左侧标出金额 */
+  fmt?: (v: number) => string;
 }) {
   const W = 1000;
-  const max = Math.max(1, ...values) * 1.12;
+  // 刻度至少到 10，小额时不出现取整后重复的标签；留 8% 余量，曲线不贴顶
+  const ticks = fmt ? niceTicks(Math.max(10, ...values) * 1.08, 3).slice(1) : [];
+  const max = fmt ? ticks[ticks.length - 1] : Math.max(1, ...values) * 1.12;
+  const grid = fmt ? ticks.map((v) => v / max) : [0.25, 0.5, 0.75];
   const n = values.length;
   const x = (i: number) => (n === 1 ? W / 2 : (i / (n - 1)) * W);
   const y = (v: number) => height - (v / max) * height;
@@ -69,7 +75,7 @@ export function AreaChart({
   const area = end && end.at > 0 ? `${line}L${x(end.at).toFixed(1)},${height}L0,${height}Z` : '';
   const step = Math.max(1, Math.ceil(n / 8));
   const [box, w] = useWidth();
-  useSnapshotRender(box, () => <AreaChart values={values} labels={labels} height={height} tip={tip} markers={markers} months={months} now={now} />);
+  useSnapshotRender(box, () => <AreaChart values={values} labels={labels} height={height} tip={tip} markers={markers} months={months} now={now} fmt={fmt} />);
   return (
     <div className="area" ref={box} style={{ height: height + 22 }}>
       <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="none" style={{ height }}>
@@ -79,13 +85,13 @@ export function AreaChart({
             <stop offset="1" stopColor="var(--chart-ink)" stopOpacity="0" />
           </linearGradient>
         </defs>
-        {[0.25, 0.5, 0.75].map((f) => (
+        {grid.map((f) => (
           <line
             key={f}
             x1="0"
             x2={W}
-            y1={height * f}
-            y2={height * f}
+            y1={height * (1 - f)}
+            y2={height * (1 - f)}
             stroke="var(--sep)"
             strokeWidth="0.5"
             vectorEffect="non-scaling-stroke"
@@ -101,6 +107,12 @@ export function AreaChart({
       {markers?.map((i) => (
         <i key={i} className="area-mark" style={{ left: `${(x(i) / W) * 100}%`, top: y(values[i]) }} />
       ))}
+      {fmt &&
+        ticks.map((v) => (
+          <span key={v} className="area-y" style={{ top: y(v) }}>
+            {fmt(v)}
+          </span>
+        ))}
       {end && <i className="area-end" style={{ left: `${(x(end.at) / W) * 100}%`, top: y(end.value) }} />}
       <div className="area-hit">
         {values.map((_, i) => (
@@ -111,6 +123,9 @@ export function AreaChart({
     </div>
   );
 }
+
+/** 柱顶金额每个字符约占的宽度（12px 等宽数字），用来判断放不放得下 */
+const VAL_PX = 7;
 
 /** 柱子宽度：占格宽的比例与上限，与 design-tokens.css 的 --bar-ratio、--bar-max 同值，给 SVG 画的柱子用 */
 export const BAR = { ratio: 0.6, max: 28 };
@@ -124,6 +139,7 @@ export function BarLine({
   height = 150,
   tip,
   months,
+  fmt,
 }: {
   bars: number[];
   line: number[];
@@ -133,25 +149,40 @@ export function BarLine({
   tip: (i: number) => ComponentChildren;
   /** 每根柱子的月份（YYYY-MM）：给了就按日历边界取刻度 */
   months?: string[];
+  /** 给了就在柱顶标金额，返回空串的柱子不标；顶部留出一行字的高度 */
+  fmt?: (v: number, i: number) => string;
 }) {
   const max = Math.max(1, ...bars, ...line) * 1.08;
   const min = Math.min(0, ...bars, ...line) * 1.08;
   const span = max - min;
-  const y = (v: number) => ((max - v) / span) * height;
+  const pad = fmt ? 18 : 0;
+  const y = (v: number) => pad + ((max - v) / span) * (height - pad);
   const n = bars.length;
   const W = 1000;
   const cx = (i: number) => ((i + 0.5) / n) * W;
   const path = line.map((v, i) => `${i ? 'L' : 'M'}${cx(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
   // 每个月份标签约占 44px，按实际宽度决定隔几根柱子标一次，窄屏不挤
   const [box, w] = useWidth();
-  useSnapshotRender(box, () => <BarLine bars={bars} line={line} labels={labels} future={future} height={height} tip={tip} months={months} />);
+  useSnapshotRender(box, () => <BarLine bars={bars} line={line} labels={labels} future={future} height={height} tip={tip} months={months} fmt={fmt} />);
   const step = Math.max(1, Math.ceil(n / Math.min(12, Math.max(2, Math.floor(w / 44) || 12))));
+  // 柱顶金额：每格放得下就每根都标，放不下只标最高的一根
+  const vals = fmt ? bars.map((v, i) => (v >= 0.5 ? fmt(v, i) : '')) : [];
+  // 加上左右 2px 内边距，再留 2px 间隔
+  const fits = !!w && vals.every((s) => s.length * VAL_PX + 6 <= w / n);
+  const top = bars.indexOf(Math.max(...bars));
+  const shown = (i: number) => !!vals[i] && (fits || i === top);
   return (
     <div className="barline" ref={box} style={{ height: height + 22 }}>
       <div className="bl-bars" style={{ height }}>
         {bars.map((v, i) => (
           <div key={i} className={`bl-col ${future[i] ? 'future' : ''}`} style={{ position: 'relative' }} {...tipProps(() => tip(i))}>
-            <i style={{ position: 'absolute', top: y(Math.max(0, v)), height: `${(Math.abs(v) / span) * 100}%` }} />
+            <i style={{ position: 'absolute', top: y(Math.max(0, v)), height: (Math.abs(v) / span) * (height - pad) }} />
+            {shown(i) && (
+              // 折线在柱顶之上时标到折线点上方，免得线穿过数字
+              <span className="bl-val" style={{ top: Math.min(y(Math.max(0, v)), y(line[i] ?? v)) - 3 }}>
+                {vals[i]}
+              </span>
+            )}
           </div>
         ))}
       </div>
