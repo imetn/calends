@@ -54,6 +54,13 @@
     "grokbot": "Grok Bot의 설정 → Plugins에서 MCP 서버를 추가하고 아래 이름, URL, 헤더를 입력하세요. Grok Bot은 클라우드에서 실행되므로 공개 주소여야 합니다.",
     "http": "Streamable HTTP를 지원하는 모든 MCP 클라이언트에서 사용할 수 있습니다. 아래는 간단한 테스트 요청입니다."
   },
+  "via": {
+    "command": "터미널 명령",
+    "install": "원클릭 설치",
+    "file": "설정 파일",
+    "settings": "앱 설정",
+    "http": "모든 MCP 클라이언트"
+  },
   "step": {
     "token": "토큰",
     "tokenReady": "“{name}” 사용 중, 아래 스니펫에 포함됨",

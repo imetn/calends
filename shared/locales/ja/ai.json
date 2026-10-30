@@ -54,6 +54,13 @@
     "grokbot": "Grok Bot の 設定 → Plugins で MCP サーバーを追加し、下の名前・URL・ヘッダーを入力します。Grok Bot はクラウドで動くため、公開アドレスが必要です。",
     "http": "Streamable HTTP に対応した MCP クライアントならどれでも使えます。以下はテスト用リクエストです。"
   },
+  "via": {
+    "command": "ターミナルコマンド",
+    "install": "ワンクリックで追加",
+    "file": "設定ファイル",
+    "settings": "アプリの設定",
+    "http": "任意の MCP クライアント"
+  },
   "step": {
     "token": "トークン",
     "tokenReady": "「{name}」を使用中。下のスニペットに含まれています",

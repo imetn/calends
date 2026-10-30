@@ -56,6 +56,13 @@
     "grokbot": "Grok Bot’ta Ayarlar → Plugins’i açın, bir MCP sunucusu ekleyin ve aşağıdaki ad, URL ve başlığı girin. Grok Bot bulutta çalışır, bu yüzden adres herkese açık olmalı.",
     "http": "Streamable HTTP destekleyen her MCP istemcisi. Bu kısa bir test isteğidir."
   },
+  "via": {
+    "command": "Terminal komutu",
+    "install": "Tek tıkla kurulum",
+    "file": "Yapılandırma dosyası",
+    "settings": "Uygulama ayarları",
+    "http": "Herhangi bir MCP istemcisi"
+  },
   "step": {
     "token": "Token",
     "tokenReady": "“{name}” kullanılıyor, aşağıdaki parçaya eklendi",

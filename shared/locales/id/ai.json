@@ -54,6 +54,13 @@
     "grokbot": "Di Grok Bot, buka Pengaturan → Plugins, tambahkan server MCP, lalu isi nama, URL, dan header di bawah. Grok Bot berjalan di cloud, jadi alamatnya harus bisa diakses publik.",
     "http": "Klien MCP apa pun yang mendukung Streamable HTTP. Ini permintaan uji singkat."
   },
+  "via": {
+    "command": "Perintah terminal",
+    "install": "Pasang sekali klik",
+    "file": "File konfigurasi",
+    "settings": "Pengaturan aplikasi",
+    "http": "Klien MCP apa pun"
+  },
   "step": {
     "token": "Token",
     "tokenReady": "Memakai “{name}”, sudah ada di cuplikan di bawah",

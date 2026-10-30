@@ -53,6 +53,8 @@ interface Client {
   tile?: boolean;
   /** 代码块的语言提示（只用来显示角标） */
   lang: 'shell' | 'json' | 'yaml' | 'http';
+  /** 怎么接入，显示在客户端名字下面，选之前就知道要做什么；有一键安装且已有令牌时显示「一键安装」 */
+  via: 'command' | 'file' | 'settings' | 'http';
   /** 配置放在哪里（文件路径或操作位置） */
   where: () => string;
   snippet: (url: string, token: string) => string;
@@ -70,6 +72,7 @@ const CLIENTS: Client[] = [
     name: 'Claude Code',
     logo: base('/ai/claude.svg'),
     lang: 'shell',
+    via: 'command',
     where: () => t('ai.where.terminal'),
     snippet: (url, tk) => `claude mcp add --transport http calends ${url} \\\n  --header "Authorization: Bearer ${tk}"`,
   },
@@ -79,6 +82,7 @@ const CLIENTS: Client[] = [
     logo: base('/ai/openai.svg'),
     mono: true,
     lang: 'shell',
+    via: 'command',
     where: () => t('ai.where.codex'),
     snippet: (url, tk) => `export CALENDS_TOKEN=${tk}\ncodex mcp add calends --url ${url} --bearer-token-env-var CALENDS_TOKEN`,
   },
@@ -88,6 +92,7 @@ const CLIENTS: Client[] = [
     logo: base('/ai/cursor.svg'),
     mono: true,
     lang: 'json',
+    via: 'file',
     where: () => t('ai.where.file', { path: '~/.cursor/mcp.json' }),
     snippet: (url, tk) => json({ mcpServers: { calends: { url, headers: { Authorization: `Bearer ${tk}` } } } }),
     install: (url, tk) =>
@@ -98,6 +103,7 @@ const CLIENTS: Client[] = [
     name: 'Claude Desktop',
     logo: base('/ai/claude.svg'),
     lang: 'json',
+    via: 'file',
     where: () => t('ai.where.file', { path: 'claude_desktop_config.json' }),
     snippet: (url, tk) => json({ mcpServers: { calends: { command: 'npx', args: ['-y', 'mcp-remote', url, '--header', `Authorization: Bearer ${tk}`] } } }),
   },
@@ -106,6 +112,7 @@ const CLIENTS: Client[] = [
     name: 'Gemini CLI',
     logo: base('/ai/gemini.svg'),
     lang: 'shell',
+    via: 'command',
     where: () => t('ai.where.terminal'),
     snippet: (url, tk) => `gemini mcp add --transport http calends ${url} \\\n  --header "Authorization: Bearer ${tk}"`,
   },
@@ -115,6 +122,7 @@ const CLIENTS: Client[] = [
     logo: base('/ai/grokbot.png'),
     tile: true,
     lang: 'yaml',
+    via: 'settings',
     where: () => t('ai.where.grokbot'),
     snippet: (url, tk) => `name: calends\nurl: ${url}\nheaders:\n  Authorization: Bearer ${tk}`,
   },
@@ -123,6 +131,7 @@ const CLIENTS: Client[] = [
     name: 'DeepSeek',
     logo: base('/ai/deepseek.svg'),
     lang: 'yaml',
+    via: 'file',
     experimental: true,
     where: () => t('ai.where.file', { path: '~/.dsh/profiles/web/cordis.patch.yml' }),
     snippet: (url, tk) =>
@@ -133,6 +142,7 @@ const CLIENTS: Client[] = [
     name: '',
     logo: '',
     lang: 'http',
+    via: 'http',
     where: () => t('ai.where.http'),
     snippet: (url, tk) => `POST ${url}\nAuthorization: Bearer ${tk}\nContent-Type: application/json\n\n{"jsonrpc":"2.0","id":1,"method":"tools/list"}`,
   },
@@ -205,7 +215,10 @@ function Connect({
             onClick={() => setClient(client === x.id ? null : x.id)}
           >
             <ClientLogo c={x} />
-            <span>{x.name || t('ai.clientOther')}</span>
+            <span className="ai-client-text">
+              {x.name || t('ai.clientOther')}
+              <small>{t(`ai.via.${token && x.install ? 'install' : x.via}`)}</small>
+            </span>
           </button>
         ))}
       </div>
@@ -301,24 +314,32 @@ export function Ai({ state }: { state: AppState }) {
           </button>
         )}
       </Toolbar>
-      <div className="page fade-in ai-page">
-        {/* 状态与地址 */}
-        <div className={`ai-status ${enabled ? 'on' : ''}`}>
-          {/* 开关已表示正常启用状态，只额外提示停用。 */}
-          <div className="ai-status-l">
-            <b className="icon-text">
-              {t('settings.open.ai')}
-              {!enabled && <span className="ai-badge">{t('settings.open.off')}</span>}
-            </b>
-            <small className="m-hide">{enabled ? t('ai.status.onHint') : t('ai.status.offHint')}</small>
+      <div className={`page fade-in ai-page ${enabled ? '' : 'off'}`}>
+        {/* 状态与地址：地址是这项服务的附属信息，放在开关卡的底栏；停用时地址不可复制，下面的卡片一起变淡 */}
+        <div className="ai-status-card">
+          <div className="ai-status">
+            {/* 开关已表示正常启用状态，只额外提示停用。 */}
+            <div className="ai-status-l">
+              <b className="icon-text">
+                {t('settings.open.ai')}
+                {!enabled && <span className="ai-badge">{t('settings.open.off')}</span>}
+              </b>
+              <small className="m-hide">{enabled ? t('ai.status.onHint') : t('ai.status.offHint')}</small>
+            </div>
+            {!ro && <Toggle checked={enabled} label={t('ai.title')} onChange={(v) => run(() => saveSettings({ aiEnabled: v }))} />}
           </div>
-          {!ro && <Toggle checked={enabled} label={t('ai.title')} onChange={(v) => run(() => saveSettings({ aiEnabled: v }))} />}
+          <button
+            type="button"
+            className="ai-endpoint"
+            disabled={!enabled}
+            onClick={() => copy(url, t('ai.urlCopied'))}
+            title={enabled ? t('ai.copy') : t('ai.status.offHint')}
+          >
+            <span>{t('ai.mcpUrl')}</span>
+            <code>{url}</code>
+            <Icon name="copy" size={15} />
+          </button>
         </div>
-        <button type="button" className="ai-endpoint" onClick={() => copy(url, t('ai.urlCopied'))} title={t('ai.copy')}>
-          <span>{t('ai.mcpUrl')}</span>
-          <code>{url}</code>
-          <Icon name="copy" size={15} />
-        </button>
 
         <section className="ai-card">
           <header>

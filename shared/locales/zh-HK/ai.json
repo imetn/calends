@@ -54,6 +54,13 @@
     "grokbot": "在 Grok Bot 打開 設定 → Plugins，新增 MCP 伺服器，按下面填寫名稱、地址和請求標頭。Grok Bot 在雲端運行，地址需要公網可訪問。",
     "http": "任何支援 Streamable HTTP 的 MCP 用戶端都可以。下面是一個測試請求。"
   },
+  "via": {
+    "command": "終端機指令",
+    "install": "一鍵安裝",
+    "file": "設定檔",
+    "settings": "App 內設定",
+    "http": "任何用戶端"
+  },
   "step": {
     "token": "令牌",
     "tokenReady": "使用「{name}」，已寫入下面的設定",

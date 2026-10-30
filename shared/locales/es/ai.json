@@ -56,6 +56,13 @@
     "grokbot": "En Grok Bot, abre Ajustes → Plugins, añade un servidor MCP y rellena el nombre, la URL y la cabecera de abajo. Grok Bot se ejecuta en la nube, así que la dirección debe ser pública.",
     "http": "Cualquier cliente MCP compatible con Streamable HTTP. Esta es una solicitud de prueba rápida."
   },
+  "via": {
+    "command": "Comando de terminal",
+    "install": "Instalación en un clic",
+    "file": "Archivo de configuración",
+    "settings": "Ajustes de la app",
+    "http": "Cualquier cliente MCP"
+  },
   "step": {
     "token": "Token",
     "tokenReady": "Usando «{name}», incluido en el fragmento de abajo",

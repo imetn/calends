@@ -7641,15 +7641,19 @@ a.car-toggle {
   margin: 0 auto;
   width: 100%;
 }
+/* 用真实边框而不是内阴影：底栏有底色，会盖住父元素的内阴影 */
+.ai-status-card {
+  overflow: hidden;
+  border: var(--hairline) solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
 .ai-status {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 16px 20px;
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  box-shadow: inset 0 0 0 var(--hairline) var(--line);
 }
 .ai-status-l {
   display: flex;
@@ -7679,21 +7683,44 @@ a.car-toggle {
   font-size: var(--fs-1);
   font-weight: 600;
 }
+/* 开关卡的底栏：整条可点，点了复制地址 */
 .ai-endpoint {
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 12px 20px;
   border: 0;
-  border-radius: var(--radius-lg);
+  border-top: var(--hairline) solid var(--sep);
   background: var(--fill-2);
   color: var(--label);
   text-align: left;
   cursor: pointer;
-  transition: background var(--duration) var(--ease);
+  transition:
+    background var(--duration) var(--ease),
+    color var(--duration) var(--ease);
 }
-.ai-endpoint:hover {
+.ai-endpoint:hover:not(:disabled) {
   background: var(--fill);
+}
+/* 卡片裁掉了外侧，焦点框画在里面 */
+.ai-endpoint:focus-visible {
+  outline-offset: -2px;
+}
+/* 停用时地址连不上，变灰、不能复制，下面三张卡一起变淡（令牌仍可吊销） */
+.ai-endpoint:disabled {
+  opacity: 1;
+  color: var(--label-2);
+  cursor: default;
+}
+.ai-endpoint:disabled svg {
+  visibility: hidden;
+}
+.ai-page .ai-card {
+  transition: opacity var(--duration) var(--ease);
+}
+.ai-page.off .ai-card {
+  opacity: 0.55;
 }
 .ai-endpoint span {
   color: var(--label-2);
@@ -7753,10 +7780,19 @@ a.car-toggle {
   cursor: pointer;
   transition: background var(--duration) var(--ease);
 }
-.ai-client span:last-child {
+/* 名字下面一行灰色小字说明接入方式 */
+.ai-client-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
   line-height: 1.2;
   overflow-wrap: anywhere;
+}
+.ai-client-text small {
+  color: var(--label-2);
+  font-weight: 400;
+  overflow-wrap: break-word;
 }
 .ai-client:hover {
   background: var(--fill);
@@ -7765,13 +7801,6 @@ a.car-toggle {
   background: var(--card);
   box-shadow: inset 0 0 0 var(--hairline) var(--label);
 }
-.ai-logo {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  color: var(--label-2);
-}
-.ai-logo img,
 /* 窄屏两列，不然八个客户端排成长长一列 */
 @media (max-width: 640px) {
   .ai-clients {
@@ -7795,6 +7824,13 @@ a.car-toggle {
   }
 }
 /* 客户端标志不另垫白底：彩色标志原样放，单色标志用遮罩跟随文字颜色，自带底色的应用图标缩成圆角方块 */
+.ai-logo {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--label-2);
+}
+.ai-logo img,
 .ai-logo i {
   width: 80%;
   height: 80%;
@@ -7854,14 +7890,6 @@ a.car-toggle {
   align-items: center;
   gap: 6px;
 }
-.ai-step-ok {
-  color: var(--green) !important;
-}
-.ai-code {
-  border-radius: var(--radius-md);
-  background: var(--black-a12);
-  color: var(--white-a12);
-  overflow: hidden;
 /* 「为 X 生成令牌」：长语言、长客户端名在窄屏里折行，不撑出卡片 */
 .btn.ai-create {
   height: auto;
@@ -7871,11 +7899,19 @@ a.car-toggle {
   white-space: normal;
   text-align: left;
 }
+.ai-step-ok {
+  color: var(--green) !important;
+}
+.ai-code {
+  border: var(--hairline) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--black-a12);
+  color: var(--white-a12);
+  overflow: hidden;
 }
 .ai-code-bar {
   display: flex;
   align-items: center;
-  border: var(--hairline) solid var(--line);
   justify-content: space-between;
   padding: 6px 8px 6px 14px;
   background: var(--white-a2);
@@ -8094,6 +8130,13 @@ a.car-toggle {
   align-items: center;
   gap: 6px;
 }
+/* 名称与数字紧挨，两组之间拉开，不会把前一组的数字读成后一组的 */
+.ai-tools-legend > span {
+  gap: 4px;
+}
+.ai-tools-legend .copy-gap {
+  display: none;
+}
 .ai-tools-legend .write,
 .ai-tool.write .ai-tool-ico {
   color: var(--orange);
@@ -8102,13 +8145,6 @@ a.car-toggle {
 .ai-tools {
   columns: 2;
   column-gap: 24px;
-/* 名称与数字紧挨，两组之间拉开，不会把前一组的数字读成后一组的 */
-.ai-tools-legend > span {
-  gap: 4px;
-}
-.ai-tools-legend .copy-gap {
-  display: none;
-}
   margin-top: 18px;
 }
 .ai-tool-group {
@@ -8260,6 +8296,12 @@ a.car-toggle {
 @media (max-width: 680px) {
   .ai-card {
     padding: 16px;
+  }
+  .ai-status {
+    padding: 14px 16px;
+  }
+  .ai-endpoint {
+    padding-inline: 16px;
   }
   .ai-tools {
     grid-template-columns: 1fr;

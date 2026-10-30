@@ -54,6 +54,13 @@
     "grokbot": "Trong Grok Bot, mở Cài đặt → Plugins, thêm máy chủ MCP rồi điền tên, URL và header bên dưới. Grok Bot chạy trên đám mây nên địa chỉ phải truy cập công khai được.",
     "http": "Mọi MCP client hỗ trợ Streamable HTTP. Đây là một yêu cầu thử nhanh."
   },
+  "via": {
+    "command": "Lệnh terminal",
+    "install": "Cài đặt một chạm",
+    "file": "Tệp cấu hình",
+    "settings": "Cài đặt trong ứng dụng",
+    "http": "Mọi ứng dụng MCP"
+  },
   "step": {
     "token": "Token",
     "tokenReady": "Đang dùng “{name}”, đã có trong đoạn bên dưới",
