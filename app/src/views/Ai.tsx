@@ -220,8 +220,8 @@ function Connect({
             ) : onCreate ? (
               <span>
                 {t('ai.step.tokenNeeded')}{' '}
-                <button type="button" className="btn plain" onClick={() => onCreate(name)}>
-                  {t('ai.step.createFor', { name })}
+                <button type="button" className="btn ai-create" onClick={() => onCreate(name)}>
+                  <Icon name="plus" size={14} /> {t('ai.step.createFor', { name })}
                 </button>
               </span>
             ) : null}

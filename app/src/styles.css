@@ -7703,9 +7703,8 @@ a.car-toggle {
 .ai-endpoint code {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* 地址末尾的 /mcp 最要紧，显示完整不截断，放不下就折行 */
+  overflow-wrap: anywhere;
   font:
     500 var(--fs-2)/1.4 ui-monospace,
     'SF Mono',
@@ -7739,17 +7738,6 @@ a.car-toggle {
   grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
   gap: 8px;
 }
-/* 窄屏两列，不然八个客户端排成长长一列 */
-@media (max-width: 640px) {
-  .ai-clients {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .ai-client {
-    padding: 9px 10px;
-    gap: 8px;
-    font-size: var(--fs-2);
-  }
-}
 .ai-client {
   display: flex;
   align-items: center;
@@ -7782,9 +7770,31 @@ a.car-toggle {
   place-items: center;
   flex-shrink: 0;
   color: var(--label-2);
-/* 客户端标志不另垫白底：彩色标志原样放，单色标志用遮罩跟随文字颜色，自带底色的应用图标缩成圆角方块 */
 }
 .ai-logo img,
+/* 窄屏两列，不然八个客户端排成长长一列 */
+@media (max-width: 640px) {
+  .ai-clients {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ai-client {
+    padding: 9px 10px;
+    gap: 6px;
+    font-size: var(--fs-2);
+  }
+  /* 窄屏「MCP 地址」单独一行，地址独占整行，常见长度不用折行 */
+  .ai-endpoint {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 12px;
+    padding: 10px 16px;
+  }
+  .ai-endpoint span {
+    grid-column: 1 / -1;
+    font-size: var(--fs-1);
+  }
+}
+/* 客户端标志不另垫白底：彩色标志原样放，单色标志用遮罩跟随文字颜色，自带底色的应用图标缩成圆角方块 */
 .ai-logo i {
   width: 80%;
   height: 80%;
@@ -7852,10 +7862,20 @@ a.car-toggle {
   background: var(--black-a12);
   color: var(--white-a12);
   overflow: hidden;
+/* 「为 X 生成令牌」：长语言、长客户端名在窄屏里折行，不撑出卡片 */
+.btn.ai-create {
+  height: auto;
+  min-height: var(--ctl-h-md);
+  max-width: 100%;
+  padding-block: 6px;
+  white-space: normal;
+  text-align: left;
+}
 }
 .ai-code-bar {
   display: flex;
   align-items: center;
+  border: var(--hairline) solid var(--line);
   justify-content: space-between;
   padding: 6px 8px 6px 14px;
   background: var(--white-a2);
@@ -8064,7 +8084,7 @@ a.car-toggle {
 }
 .ai-tools-legend {
   display: flex;
-  gap: 14px;
+  gap: 18px;
   color: var(--label-2);
   font-size: var(--fs-1);
 }
@@ -8082,6 +8102,13 @@ a.car-toggle {
 .ai-tools {
   columns: 2;
   column-gap: 24px;
+/* 名称与数字紧挨，两组之间拉开，不会把前一组的数字读成后一组的 */
+.ai-tools-legend > span {
+  gap: 4px;
+}
+.ai-tools-legend .copy-gap {
+  display: none;
+}
   margin-top: 18px;
 }
 .ai-tool-group {
