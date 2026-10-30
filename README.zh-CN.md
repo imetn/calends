@@ -79,7 +79,7 @@ docker run -d --name calends -p 8787:8787 -v calends-data:/data xizozhe/calends:
 docker logs calends
 ```
 
-打开 `http://localhost:8787/`，在登录页使用日志中的初始化令牌设置密码。命名卷 `calends-data` 将 SQLite 数据持久化到 `/data`。也可使用 `ghcr.io/imetn/calends:latest`。生产环境建议固定版本标签，如 `1.16.0`，而不是使用 `latest`。
+打开 `http://localhost:8787/`，在登录页使用日志中的初始化令牌设置密码。命名卷 `calends-data` 将 SQLite 数据持久化到 `/data`。也可使用 `ghcr.io/imetn/calends:latest`。生产环境建议固定版本标签，如 `1.17.0`，而不是使用 `latest`。
 
 也可以通过 Compose 从源码构建。在源码目录的 `docker/` 下执行，Compose 会使用仓库中的 [Dockerfile](docker/Dockerfile) 构建并启动应用：
 
