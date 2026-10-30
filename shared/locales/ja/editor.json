@@ -246,5 +246,14 @@
     "choose": {
       "other": "App Store のプラン {count} 件"
     }
+  },
+  "logoSearch": {
+    "search": "ロゴをネット検索",
+    "placeholder": "ロゴを検索",
+    "searching": "検索中…",
+    "empty": "結果がありません",
+    "hint": "手動で選んだアイコンは保持され、再検索でも上書きされません。",
+    "sourceSite": "公式サイト",
+    "sourceWeb": "Web 画像"
   }
 }

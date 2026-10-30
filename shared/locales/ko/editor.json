@@ -246,5 +246,14 @@
     "choose": {
       "other": "App Store 요금제 {count}개"
     }
+  },
+  "logoSearch": {
+    "search": "로고 온라인 검색",
+    "placeholder": "로고 검색",
+    "searching": "검색 중…",
+    "empty": "결과 없음",
+    "hint": "직접 고른 아이콘은 유지되며 다시 검색해도 덮어쓰지 않습니다.",
+    "sourceSite": "공식 사이트",
+    "sourceWeb": "웹 이미지"
   }
 }

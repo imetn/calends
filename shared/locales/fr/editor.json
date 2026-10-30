@@ -256,5 +256,14 @@
       "one": "{count} formule App Store",
       "other": "{count} formules App Store"
     }
+  },
+  "logoSearch": {
+    "search": "Chercher un logo en ligne",
+    "placeholder": "Chercher un logo",
+    "searching": "Recherche…",
+    "empty": "Aucun résultat",
+    "hint": "Les logos choisis manuellement sont conservés.",
+    "sourceSite": "Site officiel",
+    "sourceWeb": "Images web"
   }
 }

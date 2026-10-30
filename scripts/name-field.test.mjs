@@ -46,6 +46,7 @@ function harness({ catalog = true } = {}) {
     base: (v) => v,
     copyParts: (v) => v,
     SubIcon: () => null,
+    LogoSearch: () => null,
   };
   const Component = new Function(...Object.keys(deps), compiled.code.replace(/export /g, '') + '; return NameField;')(...Object.values(deps));
   let tree;

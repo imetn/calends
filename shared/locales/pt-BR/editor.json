@@ -256,5 +256,14 @@
       "one": "{count} plano da App Store",
       "other": "{count} planos da App Store"
     }
+  },
+  "logoSearch": {
+    "search": "Buscar logo online",
+    "placeholder": "Buscar um logo",
+    "searching": "Buscando…",
+    "empty": "Nenhum resultado",
+    "hint": "Os logos escolhidos manualmente são mantidos.",
+    "sourceSite": "Site oficial",
+    "sourceWeb": "Imagens da web"
   }
 }

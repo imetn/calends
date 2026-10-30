@@ -256,5 +256,14 @@
       "one": "{count} App-Store-Tarif",
       "other": "{count} App-Store-Tarife"
     }
+  },
+  "logoSearch": {
+    "search": "Logo online suchen",
+    "placeholder": "Logo suchen",
+    "searching": "Suche läuft…",
+    "empty": "Keine Ergebnisse",
+    "hint": "Manuell gewählte Logos bleiben erhalten und werden nicht überschrieben.",
+    "sourceSite": "Offizielle Website",
+    "sourceWeb": "Webbilder"
   }
 }

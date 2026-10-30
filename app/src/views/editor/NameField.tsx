@@ -5,6 +5,7 @@ import { t } from '../../../../shared/i18n.ts';
 import { SubIcon } from '../../components/marks.tsx';
 import { api } from '../../store.ts';
 import { searchCatalog, type CatalogItem } from '../../catalog.ts';
+import { LogoSearch } from '../../components/LogoSearch.tsx';
 
 export interface AppHit {
   /** App Store 数字 ID，用来读内购套餐 */
@@ -54,12 +55,14 @@ export function NameField({
   onChange: onInput,
   onPick,
   onPickCatalog,
+  onPickLogo,
 }: {
   value: string;
   region: string;
   onChange: (v: string) => void;
   onPick: (h: AppHit) => void;
   onPickCatalog: (c: CatalogItem) => void;
+  onPickLogo: (icon: string) => void;
 }) {
   const [hits, setHits] = useState<AppHit[]>([]);
   const [open, setOpen] = useState(false);
@@ -136,6 +139,7 @@ export function NameField({
           e.stopPropagation();
         }}
       />
+      <LogoSearch value={value} onPick={onPickLogo} />
       {open && all.length > 0 && (
         <div className="ed-suggest" role="listbox">
           {all.map((x, i) => (

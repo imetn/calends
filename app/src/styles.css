@@ -10350,3 +10350,136 @@ img.mm-flag {
   flex: 1;
   min-width: 0;
 }
+
+/* 网上搜 Logo：名称框右侧的入口按钮，以及内联展开的选择面板 */
+.ed-name {
+  position: relative;
+}
+.ed-logo-btn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  color: var(--label-3);
+}
+.ed-logo-btn:hover {
+  color: var(--label);
+  background: var(--fill-2);
+}
+/* 给右侧按钮留出位置，文字不压到图标下面 */
+.ed-name > input {
+  padding-right: 42px;
+}
+/* 面板内联展开在名称行下方，不再套弹框，避免「弹框盖弹框」 */
+.logo-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow:
+    0 18px 50px color-mix(in srgb, var(--black-a12) 18%, transparent),
+    0 0 0 var(--hairline) var(--line);
+}
+.logo-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.logo-q {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  height: var(--ctl-h-md);
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  color: var(--label-3);
+}
+.logo-q input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--label);
+  font: inherit;
+  font-size: var(--fs-2);
+}
+.logo-close {
+  flex-shrink: 0;
+  color: var(--label-3);
+}
+.logo-close:hover {
+  color: var(--label);
+  background: var(--fill-2);
+}
+.logo-body {
+  max-height: 300px;
+  overflow-y: auto;
+}
+/* 三个来源一次全部列出，分组标题与联想列表的标题同一套样式 */
+.logo-group + .logo-group {
+  margin-top: 12px;
+}
+.logo-group-h {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 2px 7px;
+  font-size: var(--fs-1);
+  color: var(--label-3);
+}
+.logo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+}
+/* 格子复用 IconButton（带悬停提示），要盖掉 .icon-btn 的固定宽高、圆形和描边 */
+.icon-btn.logo-cell {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: 8px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--fill);
+  box-shadow: none;
+  cursor: pointer;
+  transition: background var(--duration) var(--ease);
+}
+.icon-btn.logo-cell:hover {
+  background: var(--fill-2);
+}
+.logo-cell img {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
+}
+.logo-state {
+  padding: 26px 0;
+  text-align: center;
+  font-size: var(--fs-1);
+  color: var(--label-3);
+}
+.logo-foot {
+  margin-top: 10px;
+  font-size: var(--fs-1);
+  color: var(--label-3);
+  line-height: 1.5;
+}

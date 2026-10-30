@@ -276,5 +276,14 @@
       "many": "{count} тарифов App Store",
       "other": "{count} тарифа App Store"
     }
+  },
+  "logoSearch": {
+    "search": "Найти логотип в сети",
+    "placeholder": "Найти логотип",
+    "searching": "Поиск…",
+    "empty": "Ничего не найдено",
+    "hint": "Выбранные вручную логотипы сохраняются.",
+    "sourceSite": "Официальный сайт",
+    "sourceWeb": "Картинки из сети"
   }
 }

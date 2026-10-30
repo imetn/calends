@@ -62,6 +62,7 @@ import type { Revision } from './store.ts';
 import { mergePrefs, type Prefs } from '../shared/prefs.ts';
 import { cleanCategories, renameInSubs } from '../shared/categories.ts';
 import { createToken, listTokens, mcp, revokeToken } from './ai/mcp.ts';
+import { searchLogos } from './ai/logo-search.ts';
 import { fetchPublic } from './url-guard.ts';
 import { TOOLS, toolTitle } from './ai/mcp-tools.ts';
 import { appStorePlans, searchAppStore } from './appstore.ts';
@@ -149,7 +150,8 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   if (path === '/api/state' && method === 'GET') return json(await loadState(env));
   if (method !== 'GET' && !dev && !sameOrigin(req)) return bad('forbidden', 403);
 
-  // 图片中转：分享图要把订阅图标画进 canvas，跨域图片会污染画布，所以经同源转一道。只转 https 的图片，限 1MB
+  // 图片中转：分享图要把订阅图标画进 canvas，跨域图片会污染画布，所以经同源转一道。只转 https 的图片，限 1MB。
+  // 「网上搜 Logo」会把这个接口当图床用（选中后把外链图转存本地），所以必须先挡住内网地址，否则能被用来探测内网。
   if (path === '/api/img' && method === 'GET') {
     // 只转公网地址，跳转的每一跳也检查：不能被拿来探测服务器所在的内网
     const res = await fetchPublic(new URL(req.url).searchParams.get('u') ?? '', { cf: { cacheTtl: 86400, cacheEverything: true } });
@@ -159,6 +161,11 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     const body = await res.arrayBuffer();
     if (body.byteLength > 1_000_000) return bad('too large', 413);
     return new Response(body, { headers: { 'content-type': type, 'cache-control': 'private, max-age=86400' } });
+  }
+  // 网上搜 Logo：四路来源（官网 / selfh.st / Dashboard Icons / 图片搜索），只返回候选，不改任何数据
+  if (path === '/api/logos/search' && method === 'GET') {
+    const q = new URL(req.url).searchParams.get('q') ?? '';
+    return json({ results: await searchLogos(env, q) });
   }
   // 已登录：账号安全
   if (path === '/api/auth/security' && method === 'GET') return json({ passkeys: await listPasskeys(env), sessions: await listSessions(req, env) });
