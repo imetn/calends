@@ -10,10 +10,11 @@ const storeCountry = (country: string) =>
 
 /** App Store 搜索（也接受 App Store 链接，按 id 精确查找）；后台的名称联想和 AI 共用 */
 export async function searchAppStore(query: string, country = 'us') {
+  // 先从完整输入里取 id：中文名编码后的链接常超 80 字，id 在末尾会被截掉
+  const id = query.match(/id(\d{6,})/)?.[1];
   const term = query.trim().slice(0, 80);
   const cc = storeCountry(country);
   if (!term) return [];
-  const id = term.match(/id(\d{6,})/)?.[1];
   const api = id
     ? `https://itunes.apple.com/lookup?id=${id}&country=${cc}`
     : `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=software&limit=8&country=${cc}`;

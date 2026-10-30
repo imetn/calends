@@ -59,3 +59,22 @@ test('plan names map to cycles only when the period is recognizable', () => {
   assert.equal(guessCycle('100 Credits'), undefined);
   assert.equal(guessCycle('7 days free'), undefined);
 });
+
+test('a long App Store link with a percent-encoded name still looks up by its id', async () => {
+  const { searchAppStore } = await import('../worker/appstore.ts');
+  const saved = globalThis.fetch;
+  const asked: string[] = [];
+  globalThis.fetch = (async (url: string) => {
+    asked.push(url);
+    return Response.json({ results: [{ trackId: 1642682818, trackName: 'Panda', artworkUrl100: 'icon', trackViewUrl: 'url' }] });
+  }) as typeof fetch;
+  try {
+    const link =
+      'https://apps.apple.com/us/app/%E7%86%8A%E7%8C%AB%E5%90%83%E7%9F%AD%E4%BF%A12-%E5%9E%83%E5%9C%BE%E7%9F%AD%E4%BF%A1%E6%8B%A6%E6%88%AA/id1642682818';
+    const hits = await searchAppStore(link, 'us');
+    assert.equal(asked[0], 'https://itunes.apple.com/lookup?id=1642682818&country=us');
+    assert.equal(hits[0]?.name, 'Panda');
+  } finally {
+    globalThis.fetch = saved;
+  }
+});
