@@ -30,9 +30,11 @@
   "hero": {
     "label": "Gasto anual en suscripciones",
     "tip": "Mes {month}\nAcumulado {total}",
+    "tipNow": "Mes {month}, Cargos pendientes {pending}\nAcumulado {total}",
     "paid": "Pagado",
     "avg": "Media mensual",
-    "peak": "Mes pico"
+    "peak": "Mes pico",
+    "peakAt": "Pico en {when}"
   },
   "all": {
     "label": "Gasto total en suscripciones",

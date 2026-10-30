@@ -39,7 +39,7 @@ export function AreaChart({
   tip,
   markers,
   months,
-  ahead,
+  now,
 }: {
   values: number[];
   labels: string[];
@@ -48,26 +48,28 @@ export function AreaChart({
   markers?: number[];
   /** 每个点的月份（YYYY-MM）：给了就按日历边界取刻度 */
   months?: string[];
-  /** 最后一个已发生的点；之后是预计，画虚线、不铺底 */
-  ahead?: number;
+  /** 今天：小数下标与当时的值；之前实线铺底，之后虚线。at < 0 全是预计，不给则全已发生 */
+  now?: { at: number; value: number };
 }) {
   const W = 1000;
   const max = Math.max(1, ...values) * 1.12;
   const n = values.length;
   const x = (i: number) => (n === 1 ? W / 2 : (i / (n - 1)) * W);
   const y = (v: number) => height - (v / max) * height;
-  const last = ahead == null ? n - 1 : Math.min(ahead, n - 1);
-  const pts = (from: number, to: number) =>
-    values
-      .slice(from, to + 1)
-      .map((v, i) => `${i ? 'L' : 'M'}${x(from + i).toFixed(1)},${y(v).toFixed(1)}`)
-      .join('');
-  const line = last >= 0 ? pts(0, last) : '';
-  const rest = last < n - 1 ? pts(Math.max(0, last), n - 1) : '';
-  const area = last > 0 ? `${line}L${x(last).toFixed(1)},${height}L0,${height}Z` : '';
+  // 实线终点：今天，或最后一个点
+  const end = !n || (now && now.at < 0) ? undefined : now ? { at: Math.min(now.at, n - 1), value: now.value } : { at: n - 1, value: values[n - 1] };
+  const path = (p: Array<[number, number]>) => p.map(([i, v], k) => `${k ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const done: Array<[number, number]> = end ? [...values.flatMap((v, i): Array<[number, number]> => (i < end.at ? [[i, v]] : [])), [end.at, end.value]] : [];
+  const todo: Array<[number, number]> = [
+    ...(end ? [[end.at, end.value] as [number, number]] : []),
+    ...values.flatMap((v, i): Array<[number, number]> => (!end || i > end.at ? [[i, v]] : [])),
+  ];
+  const line = done.length ? path(done) : '';
+  const rest = todo.length > 1 ? path(todo) : '';
+  const area = end && end.at > 0 ? `${line}L${x(end.at).toFixed(1)},${height}L0,${height}Z` : '';
   const step = Math.max(1, Math.ceil(n / 8));
   const [box, w] = useWidth();
-  useSnapshotRender(box, () => <AreaChart values={values} labels={labels} height={height} tip={tip} markers={markers} months={months} ahead={ahead} />);
+  useSnapshotRender(box, () => <AreaChart values={values} labels={labels} height={height} tip={tip} markers={markers} months={months} now={now} />);
   return (
     <div className="area" ref={box} style={{ height: height + 22 }}>
       <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="none" style={{ height }}>
@@ -99,7 +101,7 @@ export function AreaChart({
       {markers?.map((i) => (
         <i key={i} className="area-mark" style={{ left: `${(x(i) / W) * 100}%`, top: y(values[i]) }} />
       ))}
-      {last >= 0 && <i className="area-end" style={{ left: `${(x(last) / W) * 100}%`, top: y(values[last]) }} />}
+      {end && <i className="area-end" style={{ left: `${(x(end.at) / W) * 100}%`, top: y(end.value) }} />}
       <div className="area-hit">
         {values.map((_, i) => (
           <span key={i} {...tipProps(() => tip(i))} />

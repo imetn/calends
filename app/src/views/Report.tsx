@@ -31,7 +31,7 @@ import { Icon } from '../components/icons.tsx';
 import { tipProps } from '../components/overlays.tsx';
 import { allCharges, toBase, firstStart } from '../derive.ts';
 import { SpendingDelta } from '../components/ScopeReport.tsx';
-import { allOutlook, spendPiecesBetween, subscriptionTenure, yearOutlook, type YearDriver } from '../../../shared/scope-report.ts';
+import { allOutlook, cumulativeTrend, spendPiecesBetween, subscriptionTenure, yearOutlook, type YearDriver } from '../../../shared/scope-report.ts';
 import { Picker } from '../components/Picker.tsx';
 import { carpoolYear } from '../../../shared/carpool.ts';
 import { proxyYear } from '../../../shared/proxy.ts';
@@ -134,9 +134,7 @@ function Hero({ state, today, year }: { state: AppState; today: string; year: nu
   const cur = Number(today.slice(0, 4));
   const change = r.samePeriod.change;
   const delta = change?.amount ?? NaN;
-  const cum = r.months.reduce<number[]>((acc, m) => [...acc, (acc[acc.length - 1] ?? 0) + (Number.isFinite(m.total) ? m.total : 0)], []);
-  // 往年全实线，明年全虚线
-  const ahead = year < cur ? r.months.length - 1 : year > cur ? -1 : r.months.findIndex((m) => m.month === today.slice(0, 7)) - 1;
+  const trend = useMemo(() => cumulativeTrend(r.months, today), [r, today]);
   const peak = r.months.reduce((a, m) => (m.total > a.total ? m : a), r.months[0]);
   const amount = (total: Parameters<typeof formatTotal>[0]) => formatTotal(total, base, { direction: -1, compact: true });
   const arrow = (v: number) => (!Number.isFinite(v) ? '—' : `${v > 0.005 ? '↑' : v < -0.005 ? '↓' : ''} ${money(Math.abs(v), base, { compact: true })}`.trim());
@@ -170,9 +168,8 @@ function Hero({ state, today, year }: { state: AppState; today: string; year: nu
             value={formatTotal(scaleTotal(r.current.partial.total, 1 / 12), base, { direction: -1, compact: true, main: true })}
           />
           <Metric
-            label={t('report.hero.peak')}
+            label={peak.total > 0.005 ? t('report.hero.peakAt', { when: monthLabel(peak.month, { year: false }) }) : t('report.hero.peak')}
             value={peak.total > 0.005 ? formatTotal(peak.partial.total, base, { direction: -1, compact: true, main: true }) : '—'}
-            note={peak.total > 0.005 && <small>{monthLabel(peak.month, { year: false })}</small>}
           />
         </MetricCards>
       </div>
@@ -181,16 +178,18 @@ function Hero({ state, today, year }: { state: AppState; today: string; year: nu
           <CopyImageButton hover />
         </div>
         <AreaChart
-          values={cum}
+          values={trend.values}
           labels={r.months.map((m) => mLabel(m.month))}
           months={r.months.map((m) => m.month)}
-          ahead={ahead}
+          now={trend.now}
           tip={(i) => (
             <>
               <b>{monthLabel(r.months[i].month, { year: false })}</b> <span className="copy-gap" aria-hidden="true" />{' '}
               {copyParts(
-                t('report.hero.tip', {
+                // 今天所在月还有待扣时单列，免得当月数看着比已付多
+                t(r.months[i].month === today.slice(0, 7) && r.months[i].pending > 0.005 ? 'report.hero.tipNow' : 'report.hero.tip', {
                   month: amount(r.months[i].partial.total),
+                  pending: amount(r.months[i].partial.pending),
                   total: amount(sumTotals(r.months.slice(0, i + 1).map((m) => m.partial.total))),
                 }),
               )}
@@ -229,14 +228,12 @@ function AllHero({ state, today }: { state: AppState; today: string }) {
           />
           <Metric label={t('report.all.avg')} value={formatTotal(scaleTotal(r.total, 1 / years), base, { direction: -1, compact: true, main: true })} />
           <Metric
-            label={t('report.all.peak')}
+            label={peak && peak.paid > 0.005 ? t('report.hero.peakAt', { when: t('report.pick.year', { year: peak.year }) }) : t('report.all.peak')}
             value={peak && peak.paid > 0.005 ? formatTotal(peak.partial.paid, base, { direction: -1, compact: true, main: true }) : '—'}
-            note={peak && peak.paid > 0.005 && <small>{t('report.pick.year', { year: peak.year })}</small>}
           />
           <Metric
-            label={t('report.hero.peak')}
+            label={peakMonth && peakMonth.total > 0.005 ? t('report.hero.peakAt', { when: monthLabel(peakMonth.month) }) : t('report.hero.peak')}
             value={peakMonth && peakMonth.total > 0.005 ? formatTotal(peakMonth.partial.total, base, { direction: -1, compact: true, main: true }) : '—'}
-            note={peakMonth && peakMonth.total > 0.005 && <small>{monthLabel(peakMonth.month)}</small>}
           />
         </MetricCards>
       </div>

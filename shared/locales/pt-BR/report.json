@@ -30,9 +30,11 @@
   "hero": {
     "label": "Gasto anual com assinaturas",
     "tip": "Mês {month}\nAcumulado {total}",
+    "tipNow": "Mês {month}, Cobranças pendentes {pending}\nAcumulado {total}",
     "paid": "Pago",
     "avg": "Média mensal",
-    "peak": "Mês de pico"
+    "peak": "Mês de pico",
+    "peakAt": "Pico em {when}"
   },
   "all": {
     "label": "Gasto total com assinaturas",

@@ -30,9 +30,11 @@
   "hero": {
     "label": "Abo-Ausgaben im Jahr",
     "tip": "Monat {month}\nKumuliert {total}",
+    "tipNow": "Monat {month}, Ausstehende Abbuchungen {pending}\nKumuliert {total}",
     "paid": "Bezahlt",
     "avg": "Monatsschnitt",
-    "peak": "Spitzenmonat"
+    "peak": "Spitzenmonat",
+    "peakAt": "Spitze {when}"
   },
   "all": {
     "label": "Abo-Ausgaben insgesamt",

@@ -6,6 +6,7 @@ import { cashVsAccrual, contributionOn, movement, mrrOn, stopLosses, yearReview 
 import {
   allOutlook,
   compactComposition,
+  cumulativeTrend,
   spendPiecesBetween,
   subscriptionTenure,
   monthReport,
@@ -710,4 +711,24 @@ test('tenure counts paused and undated cancellations as current before they stop
   // 退订没写结束日：服务天数到最后一次扣款为止，不一直累计到今天
   const dropped = r.stopped.count ? r.stopped.avgDays : NaN;
   assert.ok(dropped < 365, `dropped served ${dropped} days`);
+});
+
+test('year trend: the solid line runs through today, forecast only after it', () => {
+  // 每月 1 日扣 10，再加一笔 10 月 31 日的年付 120：10 月 30 日时当月已付 10、待扣 120
+  const st = state([sub('Base'), sub('Late', { price: 120, cycle: { unit: 'year', every: 1 }, start: '2026-10-31' })]);
+  const day = '2026-10-30';
+  const r = yearOutlook(st, day);
+  const { values, now } = cumulativeTrend(r.months, day);
+  assert.equal(values[8], 90);
+  assert.equal(values[9], 220);
+  // 今天落在 9 月底与 10 月底之间，值是到今天为止的已付，不是整月
+  assert.ok(now && Math.abs(now.at - (8 + 30 / 31)) < 1e-9);
+  assert.equal(now?.value, 100);
+  assert.equal(now?.value, r.current.paid);
+  // 月末当天：今天就是 10 月这一点
+  assert.equal(cumulativeTrend(r.months, '2026-10-31').now?.at, 9);
+  // 一月贴在首点上；往年全已发生；明年全是预计
+  assert.equal(cumulativeTrend(yearOutlook(st, '2026-01-05').months, '2026-01-05').now?.at, 0);
+  assert.equal(cumulativeTrend(yearOutlook(st, day, 2025).months, day).now, undefined);
+  assert.equal(cumulativeTrend(yearOutlook(st, day, 2027).months, day).now?.at, -1);
 });

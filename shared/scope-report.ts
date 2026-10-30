@@ -601,6 +601,21 @@ export interface YearOutlook {
 }
 
 /**
+ * 年度走势：第 i 点是截至第 i 月月末的累计。今年另给今天这一点（`at` 为小数下标，按当月天数折算），
+ * 之前已发生、之后为预计；明年 `at` 为 -1，全是预计；往年不给，全已发生。
+ */
+export function cumulativeTrend(months: MonthCash[], today: string): { values: number[]; now?: { at: number; value: number } } {
+  const fin = (v: number) => (Number.isFinite(v) ? v : 0);
+  const values = months.reduce<number[]>((acc, m) => [...acc, (acc[acc.length - 1] ?? 0) + fin(m.total)], []);
+  const k = months.findIndex((m) => m.month === today.slice(0, 7));
+  if (k < 0) return months[0] && months[0].month > today ? { values, now: { at: -1, value: 0 } } : { values };
+  const day = Number(today.slice(8, 10));
+  const days = Number(monthEnd(today.slice(0, 7)).slice(8, 10));
+  // 一月里今天落在首点之前，贴在首点上
+  return { values, now: { at: Math.max(0, k - 1 + day / days), value: (values[k - 1] ?? 0) + fin(months[k].paid) } };
+}
+
+/**
  * Year-level net cash on the monthReport basis: my share, refunds and transfer cash, proxies excluded.
  * `year` defaults to today's year; for another year the same period is the whole year against the whole year before.
  */

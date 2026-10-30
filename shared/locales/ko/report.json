@@ -30,9 +30,11 @@
   "hero": {
     "label": "연간 구독 지출",
     "tip": "이번 달 {month}\n누적 {total}",
+    "tipNow": "이번 달 {month}, 결제 예정 {pending}\n누적 {total}",
     "paid": "결제됨",
     "avg": "월평균",
-    "peak": "최고 월"
+    "peak": "최고 월",
+    "peakAt": "최고 {when}"
   },
   "all": {
     "label": "누적 구독 지출",

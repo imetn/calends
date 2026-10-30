@@ -30,9 +30,11 @@
   "hero": {
     "label": "Chi tiêu đăng ký cả năm",
     "tip": "Tháng {month}\nLũy kế {total}",
+    "tipNow": "Tháng {month}, Chờ trừ {pending}\nLũy kế {total}",
     "paid": "Đã trả",
     "avg": "Trung bình tháng",
-    "peak": "Tháng cao nhất"
+    "peak": "Tháng cao nhất",
+    "peakAt": "Cao nhất {when}"
   },
   "all": {
     "label": "Tổng chi tiêu đăng ký",

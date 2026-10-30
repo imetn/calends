@@ -30,9 +30,11 @@
   "hero": {
     "label": "年間サブスク支出",
     "tip": "当月 {month}\n累計 {total}",
+    "tipNow": "当月 {month}、請求予定 {pending}\n累計 {total}",
     "paid": "支払済み",
     "avg": "月平均",
-    "peak": "最多月"
+    "peak": "最多月",
+    "peakAt": "最多 {when}"
   },
   "all": {
     "label": "累計サブスク支出",

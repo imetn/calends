@@ -30,9 +30,11 @@
   "hero": {
     "label": "Dépenses d’abonnement de l’année",
     "tip": "Mois {month}\nCumul {total}",
+    "tipNow": "Mois {month}, Prélèvements à venir {pending}\nCumul {total}",
     "paid": "Payé",
     "avg": "Moyenne mensuelle",
-    "peak": "Mois le plus élevé"
+    "peak": "Mois le plus élevé",
+    "peakAt": "Pic en {when}"
   },
   "all": {
     "label": "Dépenses d’abonnement cumulées",
