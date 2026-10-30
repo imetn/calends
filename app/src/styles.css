@@ -10063,6 +10063,10 @@ img.mm-flag {
   background: none;
   box-shadow: none;
 }
+/* 两侧已有箭头，中间不再显示下拉的上下双箭头，点年份本身仍会展开下拉 */
+.year-step > .pk-btn.btn > .i:last-child {
+  display: none;
+}
 .year-step > .pk-btn.btn:hover,
 .year-step > .pk-btn.btn.open {
   background: none;
@@ -10071,10 +10075,6 @@ img.mm-flag {
 .year-step-arrow {
   display: grid;
   place-items: center;
-/* 两侧已有箭头，中间不再显示下拉的上下双箭头，点年份本身仍会展开下拉 */
-.year-step > .pk-btn.btn > .i:last-child {
-  display: none;
-}
   width: 30px;
   height: 100%;
   padding: 0;
