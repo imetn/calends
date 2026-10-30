@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { addMonths, diffDays } from '../../../shared/billing.ts';
 import { monthLabel } from '../../../shared/format.ts';
 import { useWidth } from '../components/inputs.tsx';
+import { BAR } from '../components/charts.tsx';
 
 export interface ChartBar {
   date: string;
@@ -110,8 +111,8 @@ export function ChargeBars({
   useEffect(() => onBucket?.(bucket), [bucket, onBucket]);
   // 柱子放在组内各笔日期的平均位置
   for (const g of groups) g.x = g.idx.reduce((a, i) => a + x(bars[i].date), 0) / g.idx.length;
-  // 柱宽随密度变：密时 3px，稀疏的年付最宽 16px
-  const bw = Math.max(3, Math.min(16, (iw / Math.max(1, groups.length)) * 0.55));
+  // 柱宽随密度变：密时 3px，稀疏的年付最宽 BAR.max（与全站柱宽一致）
+  const bw = Math.max(3, Math.min(BAR.max, (iw / Math.max(1, groups.length)) * BAR.ratio));
   const val = (i: number) => (Number.isFinite(bars[i].v) ? Math.max(0, bars[i].v) : 0);
   const listOf = (g: Group) =>
     g.idx.every((i) => bars[i].list != null)

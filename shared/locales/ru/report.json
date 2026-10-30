@@ -5,7 +5,9 @@
   "pick": {
     "label": "Выбрать год",
     "all": "Все",
-    "year": "{year}"
+    "year": "{year}",
+    "prev": "Назад",
+    "next": "Вперёд"
   },
   "perMonth": "{amount}/мес.",
   "per": {

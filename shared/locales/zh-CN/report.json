@@ -5,7 +5,9 @@
   "pick": {
     "label": "选择年份",
     "all": "全部",
-    "year": "{year} 年"
+    "year": "{year} 年",
+    "prev": "上一个",
+    "next": "下一个"
   },
   "perMonth": "{amount}/月",
   "per": {

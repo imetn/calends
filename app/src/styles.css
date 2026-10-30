@@ -1814,7 +1814,7 @@ select.btn {
    ================================================================ */
 .hero-card {
   display: grid;
-  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 2fr) minmax(0, 3fr);
   gap: 28px;
   padding: 22px 24px 18px;
 }
@@ -1860,6 +1860,12 @@ select.btn {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+}
+/* 两栏时右上角是复制按钮（top 16px、高 32px），走势图从按钮下方开始，曲线终点不被盖住 */
+@media (min-width: 901px) {
+  .hero-r {
+    padding-top: 36px;
+  }
 }
 
 .area {
@@ -2086,16 +2092,6 @@ select.btn {
 .stop-meta > span {
   white-space: nowrap;
 }
-.stop-meta > .stop-reason {
-  order: 1;
-  flex-basis: 100%;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.stop-meta > .stop-reason:empty {
-  display: none;
-}
 .stop-days {
   display: flex;
   align-items: center;
@@ -2175,7 +2171,6 @@ select.btn {
 .bl-bars {
   display: flex;
   align-items: flex-end;
-  gap: 3px;
   position: absolute;
   left: 0;
   right: 0;
@@ -2186,10 +2181,11 @@ select.btn {
   height: 100%;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   min-width: 0;
 }
 .bl-col i {
-  width: 100%;
+  width: min(var(--bar-ratio), var(--bar-max));
   border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) var(--radius-sm);
   background: var(--chart-ink-2);
   min-height: 1px;
@@ -3103,8 +3099,7 @@ select.btn {
   filter: brightness(1.06);
 }
 .act-stack {
-  width: 100%;
-  max-width: 34px;
+  width: min(var(--bar-ratio), var(--bar-max));
   display: flex;
   flex-direction: column-reverse;
   border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) var(--radius-sm);
@@ -9930,8 +9925,56 @@ img.mm-flag {
 /* 报告页右上：复制整份报告的按钮平时隐藏，鼠标移到分享一组上或键盘聚焦时出现在分享左边；触屏没有悬停，一直显示 */
 .report-share {
   display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 8px;
+  /* 手机放不下一行时，分享按钮换到年份下面，不顶出屏幕 */
+  max-width: 100%;
+}
+/* 报告页年份胶囊：外框同 .btn，两侧箭头用浅灰、悬停变深，中间的下拉按钮去掉自己的框 */
+.year-step {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ctl-h-md);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  box-shadow: inset 0 0 0 var(--hairline) var(--line);
+}
+.year-step > .pk-btn.btn {
+  height: 100%;
+  padding: 0 4px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.year-step > .pk-btn.btn:hover,
+.year-step > .pk-btn.btn.open {
+  background: none;
+  color: var(--label);
+}
+.year-step-arrow {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--gray-9);
+  cursor: pointer;
+  transition:
+    color var(--duration) var(--ease),
+    background var(--duration) var(--ease);
+}
+.year-step-arrow:hover {
+  color: var(--label);
+  background: var(--fill-2);
+}
+.year-step-arrow .i {
+  width: 14px;
+  height: 14px;
 }
 @media (hover: hover) {
   .report-share > .copy-image {

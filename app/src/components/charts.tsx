@@ -112,6 +112,9 @@ export function AreaChart({
   );
 }
 
+/** 柱子宽度：占格宽的比例与上限，与 design-tokens.css 的 --bar-ratio、--bar-max 同值，给 SVG 画的柱子用 */
+export const BAR = { ratio: 0.6, max: 28 };
+
 /** 柱 + 线：柱为现金，线为权责 */
 export function BarLine({
   bars,

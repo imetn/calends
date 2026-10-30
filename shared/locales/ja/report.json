@@ -5,7 +5,9 @@
   "pick": {
     "label": "年を選択",
     "all": "すべて",
-    "year": "{year}年"
+    "year": "{year}年",
+    "prev": "前へ",
+    "next": "次へ"
   },
   "perMonth": "{amount}/月",
   "per": {

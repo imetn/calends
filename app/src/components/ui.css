@@ -568,9 +568,3 @@
     transition: none;
   }
 }
-
-@container (max-width: 440px) {
-  .hero-r .copy-controls > .copy-hover {
-    display: none;
-  }
-}

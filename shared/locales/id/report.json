@@ -5,7 +5,9 @@
   "pick": {
     "label": "Pilih tahun",
     "all": "Semua",
-    "year": "{year}"
+    "year": "{year}",
+    "prev": "Sebelumnya",
+    "next": "Berikutnya"
   },
   "perMonth": "{amount}/bln",
   "per": {

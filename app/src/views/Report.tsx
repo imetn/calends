@@ -75,7 +75,7 @@ export function Report({
         {/* 鼠标移到分享上才出现：复制整份报告为一张图（卡片上的复制只取那一张）；「分享年度回顾」是另做的个性化回顾 */}
         <span className="report-share">
           <CopyImageButton render={() => snapshotCard(pageRef.current!)} />
-          <Picker variant="btn" value={pick} options={options} onChange={setPick} ariaLabel={t('report.pick.label')} search={false} />
+          <YearStep value={pick} options={options} onChange={setPick} />
           {/* 回顾只回看今年及以前；全部是从第一笔到今天的累计回顾 */}
           <button className="btn" disabled={future} onClick={() => onReview(pick)}>
             <Icon name="share" /> {all ? t('report.shareAll') : t('report.shareReview', { year })}
@@ -127,6 +127,34 @@ export function Report({
   );
 }
 
+/** 年份胶囊：两侧淡色箭头逐个切换，中间仍可下拉；按时间顺序循环，最晚一年之后是全部，再回到第一年 */
+function YearStep({ value, options, onChange }: { value: string; options: Array<{ value: string; label: string }>; onChange: (v: string) => void }) {
+  // 下拉里最新的在上；循环按时间从早到晚，全部排在最后
+  const order = [
+    ...options
+      .filter((o) => o.value !== 'all')
+      .map((o) => o.value)
+      .reverse(),
+    'all',
+  ];
+  // 当前值不在列表里（如最早的年份已被删掉）时，下一个从第一年起，上一个从全部起
+  const step = (d: number) => {
+    const i = order.indexOf(value);
+    onChange(order[i < 0 ? (d > 0 ? 0 : order.length - 1) : (i + d + order.length) % order.length]);
+  };
+  return (
+    <span className="year-step">
+      <button type="button" className="year-step-arrow" aria-label={t('report.pick.prev')} title={t('report.pick.prev')} onClick={() => step(-1)}>
+        <Icon name="left" />
+      </button>
+      <Picker variant="btn" value={value} options={options} onChange={onChange} ariaLabel={t('report.pick.label')} search={false} />
+      <button type="button" className="year-step-arrow" aria-label={t('report.pick.next')} title={t('report.pick.next')} onClick={() => step(1)}>
+        <Icon name="right" />
+      </button>
+    </span>
+  );
+}
+
 /** 头部：所选年份全年已付加预计，与上一年比较（今年比同期）；走势为逐月累计，今天所在月起是预计 */
 function Hero({ state, today, year }: { state: AppState; today: string; year: number }) {
   const base = state.settings.baseCurrency;
@@ -140,6 +168,10 @@ function Hero({ state, today, year }: { state: AppState; today: string; year: nu
   const arrow = (v: number) => (!Number.isFinite(v) ? '—' : `${v > 0.005 ? '↑' : v < -0.005 ? '↓' : ''} ${money(Math.abs(v), base, { compact: true })}`.trim());
   return (
     <div className="card hero-card copy-card" data-copy-card>
+      {/* 复制按钮与其他卡片一样放在整张卡片右上角 */}
+      <div className="copy-corner">
+        <CopyImageButton hover />
+      </div>
       <div className="hero-l">
         <CardTitle as="div" className="stat-label" hint={t('report.year.basis')}>
           {t('report.hero.label')}
@@ -174,9 +206,6 @@ function Hero({ state, today, year }: { state: AppState; today: string; year: nu
         </MetricCards>
       </div>
       <div className="hero-r">
-        <div className="row copy-controls" style={{ justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
-          <CopyImageButton hover />
-        </div>
         <AreaChart
           values={trend.values}
           labels={r.months.map((m) => mLabel(m.month))}
@@ -213,6 +242,10 @@ function AllHero({ state, today }: { state: AppState; today: string }) {
   const amount = (total: Parameters<typeof formatTotal>[0]) => formatTotal(total, base, { direction: -1, compact: true });
   return (
     <div className="card hero-card copy-card" data-copy-card>
+      {/* 复制按钮与其他卡片一样放在整张卡片右上角 */}
+      <div className="copy-corner">
+        <CopyImageButton hover />
+      </div>
       <div className="hero-l">
         <CardTitle as="div" className="stat-label" hint={t('report.all.basis')}>
           {t('report.all.label')}
@@ -238,9 +271,6 @@ function AllHero({ state, today }: { state: AppState; today: string }) {
         </MetricCards>
       </div>
       <div className="hero-r">
-        <div className="row copy-controls" style={{ justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
-          <CopyImageButton hover />
-        </div>
         <AreaChart
           values={cum}
           labels={r.months.map((m) => mLabel(m.month))}
@@ -805,7 +835,6 @@ function StopsCard({ state, today, year, onOpen }: { state: AppState; today: str
                 </span>
                 <span className="stop-meta">
                   <span>{cnDate(i.date)}</span> <span>{i.kind === 'terminate' ? t('core.stop.terminate') : t('report.stops.cancel')}</span>{' '}
-                  <span className="stop-reason">{i.reason}</span>{' '}
                   <span style={i.refunded > 0 ? { color: 'var(--green)' } : undefined}>
                     {i.refundStatus === 'none' ? t('core.stop.refundNo') : t('core.stop.partial', { money: flow(i.refunded, i.currency) })}
                   </span>{' '}

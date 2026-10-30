@@ -64,6 +64,9 @@
   --chart-ink: var(--gray-12);
   /* 双系列图的第二系列（如报告页现金柱） */
   --chart-ink-2: var(--gray-8);
+  /* 柱状图的柱子：占所在格宽的 60%，最宽 28px；SVG 柱（DetailChart）用 charts.tsx 的 BAR，两处同值 */
+  --bar-ratio: 60%;
+  --bar-max: 28px;
   /* 还没扣的钱（预测、本月待扣、首期优惠省下）：全站同一种浅底 + 虚线框，SVG 柱与 HTML 柱都用这两个值 */
   --unpaid-fill: var(--gray-3);
   --unpaid-line: var(--gray-9);

@@ -5,7 +5,9 @@
   "pick": {
     "label": "Yıl seç",
     "all": "Tümü",
-    "year": "{year}"
+    "year": "{year}",
+    "prev": "Önceki",
+    "next": "Sonraki"
   },
   "perMonth": "{amount}/ay",
   "per": {

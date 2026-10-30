@@ -5,7 +5,9 @@
   "pick": {
     "label": "Chọn năm",
     "all": "Tất cả",
-    "year": "Năm {year}"
+    "year": "Năm {year}",
+    "prev": "Trước",
+    "next": "Sau"
   },
   "perMonth": "{amount}/tháng",
   "per": {

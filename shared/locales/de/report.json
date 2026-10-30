@@ -5,7 +5,9 @@
   "pick": {
     "label": "Jahr wählen",
     "all": "Alle",
-    "year": "{year}"
+    "year": "{year}",
+    "prev": "Zurück",
+    "next": "Weiter"
   },
   "perMonth": "{amount}/Mon.",
   "per": {
