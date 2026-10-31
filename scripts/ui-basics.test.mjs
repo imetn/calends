@@ -829,6 +829,37 @@ test('subscription headings omit normal status badges and retain exceptional sta
   }
 });
 
+test('wallet hides the shared-plans entry when there are no shared plans', () => {
+  const [, ast, source] = sources.find(([file]) => file === 'views/Wallet.tsx');
+  let entry;
+  visit(ast, (node) => {
+    if (node.type === 'JSXExpressionContainer' && text(node, source).includes("go('family')") && !text(node, source).includes('<DndContext'))
+      entry ??= text(node, source);
+  });
+  assert.ok(entry);
+  const result = transformSync('WalletFamily.tsx', `function Entry() { return (<>${entry}</>); }`, {
+    lang: 'tsx',
+    jsx: { runtime: 'classic' },
+    reactCompiler: false,
+  });
+  assert.equal(result.fatal, false);
+  const stub = (tag) => (props) => React.createElement(tag, null, props.label, props.children);
+  for (const sharedCount of [0, 2]) {
+    const Entry = new Function('React', 'Group', 'Cell', 'Icon', 'go', 't', 'sharedCount', `${result.code}; return Entry;`)(
+      React,
+      stub('section'),
+      stub('div'),
+      () => null,
+      () => {},
+      (key, vars) => `${key}${vars ? `:${vars.count}` : ''}`,
+      sharedCount,
+    );
+    const html = renderToStaticMarkup(React.createElement(Entry));
+    if (sharedCount) assert.match(html, /wallet\.familyCount:2/);
+    else assert.equal(html, '');
+  }
+});
+
 test('MCP connection headings only add a status badge when access is disabled', () => {
   const [, ast, source] = sources.find(([file]) => file === 'views/Ai.tsx');
   let header;

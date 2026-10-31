@@ -186,6 +186,7 @@ export function Wallet({ state, today, onOpen }: { state: AppState; today: strin
   const live = liveSubs(state, today);
   const base = state.settings.baseCurrency;
   const unassigned = live.filter((s) => !s.methodId || !state.methods.some((m) => m.id === s.methodId));
+  const sharedCount = state.subscriptions.filter((s) => s.share).length;
   const opened = state.methods.find((m) => m.id === open);
   const [dragging, setDragging] = useState(false);
   // 鼠标拖 6px 才算拖动，单击仍是打开；触屏长按 250ms 再拖，不影响滚动
@@ -270,19 +271,22 @@ export function Wallet({ state, today, onOpen }: { state: AppState; today: strin
           </Group>
         )}
 
-        <Group>
-          <Cell
-            label={
-              <span className="row">
-                <Icon name="car" />
-                {t('wallet.family')}
-              </span>
-            }
-            onClick={() => go('family')}
-          >
-            {t('wallet.familyCount', { count: state.subscriptions.filter((s) => s.share).length })}
-          </Cell>
-        </Group>
+        {/* 没有合租时不占位置，入口仍在侧栏 */}
+        {sharedCount > 0 && (
+          <Group>
+            <Cell
+              label={
+                <span className="row">
+                  <Icon name="car" />
+                  {t('wallet.family')}
+                </span>
+              }
+              onClick={() => go('family')}
+            >
+              {t('wallet.familyCount', { count: sharedCount })}
+            </Cell>
+          </Group>
+        )}
 
         {unassigned.length > 0 && (
           <Group title={t('wallet.unassigned', { count: unassigned.length })}>
