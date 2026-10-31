@@ -133,3 +133,5 @@ Calends 是罗马历每个月的第一天，那天结清账目、收回欠款；
 ## 许可
 
 Calends 以 MIT 许可开源，详见 [LICENSE](LICENSE)。你可以使用、修改和分发它，包括用于商业用途，但须在软件副本或实质性部分中保留版权与许可声明。如果你 Fork Calends，请使用独立的项目名称，并注明 Calends 是上游来源，让用户能够区分你的版本与本项目。
+
+西文与数字使用小米 [MiSans Latin](https://hyperos.mi.com/font/zh/) 字体，未经修改地随附于 `app/public/fonts/`，遵循 [MiSans 字体许可协议](https://hyperos.mi.com/font/zh/download/)；该字体不属于 MIT 许可范围，不得修改或单独分发。

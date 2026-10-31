@@ -133,3 +133,5 @@ _Calends_ were the first day of every Roman month, when accounts were settled an
 ## License
 
 Calends is open source under the MIT License; see [LICENSE](LICENSE). You may use, modify and redistribute it, including commercially, provided you retain the copyright and license notices in copies or substantial portions of the software. If you fork Calends, please use a distinct name and credit Calends as the upstream source so users can distinguish your version from this project.
+
+The Latin letters and numerals use Xiaomi's [MiSans Latin](https://hyperos.mi.com/font/en/), bundled unmodified in `app/public/fonts/` under the [MiSans license](https://hyperos.mi.com/font/en/download/); it is not covered by the MIT License and may not be modified or redistributed on its own.
