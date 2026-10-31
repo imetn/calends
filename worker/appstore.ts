@@ -1,33 +1,15 @@
 // App Store 查询：后台的名称联想、套餐预填与 AI 工具共用；只读公开接口和商店页，不写账本
 import { parseAppStorePlans } from '../shared/appstore-plans.ts';
+import { appStoreHits, appStoreSearchUrl, storeCountry } from '../shared/appstore-search.ts';
+import { edgeCache, HttpError } from './http.ts';
 
-/** 两位商店地区代码，缺省 us */
-const storeCountry = (country: string) =>
-  country
-    .toLowerCase()
-    .replace(/[^a-z]/g, '')
-    .slice(0, 2) || 'us';
-
-/** App Store 搜索（也接受 App Store 链接，按 id 精确查找）；后台的名称联想和 AI 共用 */
+/** App Store 搜索（也接受 App Store 链接，按 id 精确查找）；后台的名称联想和 AI 共用。苹果限流或出错时抛 502，不当成没有结果 */
 export async function searchAppStore(query: string, country = 'us') {
-  // 先从完整输入里取 id：中文名编码后的链接常超 80 字，id 在末尾会被截掉
-  const id = query.match(/id(\d{6,})/)?.[1];
-  const term = query.trim().slice(0, 80);
-  const cc = storeCountry(country);
-  if (!term) return [];
-  const api = id
-    ? `https://itunes.apple.com/lookup?id=${id}&country=${cc}`
-    : `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=software&limit=8&country=${cc}`;
-  const res = await fetch(api, { cf: { cacheTtl: 86400 } });
-  const body = (await res.json().catch(() => ({}))) as { results?: Array<Record<string, unknown>> };
-  return (body.results ?? []).map((r) => ({
-    id: String(r.trackId),
-    name: r.trackName as string,
-    icon: r.artworkUrl100 as string,
-    url: r.trackViewUrl as string,
-    seller: r.sellerName as string,
-    genre: r.primaryGenreName as string,
-  }));
+  const api = appStoreSearchUrl(query, country);
+  if (!api) return [];
+  const res = await fetch(api, edgeCache(86400));
+  if (!res.ok) throw new HttpError(502, `App Store ${res.status}`);
+  return appStoreHits(await res.json().catch(() => ({})));
 }
 
 /**
@@ -39,10 +21,10 @@ export async function appStorePlans(id: string, country = 'us') {
   const cc = storeCountry(country);
   if (!appId) return { currency: undefined, plans: [] };
   const [page, lookup] = await Promise.all([
-    fetch(`https://apps.apple.com/${cc}/app/id${appId}`, { cf: { cacheTtl: 86400 }, headers: { 'user-agent': 'Mozilla/5.0 (Macintosh)' } })
+    fetch(`https://apps.apple.com/${cc}/app/id${appId}`, { ...edgeCache(86400), headers: { 'user-agent': 'Mozilla/5.0 (Macintosh)' } })
       .then((r) => (r.ok ? r.text() : ''))
       .catch(() => ''),
-    fetch(`https://itunes.apple.com/lookup?id=${appId}&country=${cc}`, { cf: { cacheTtl: 86400 } })
+    fetch(`https://itunes.apple.com/lookup?id=${appId}&country=${cc}`, edgeCache(86400))
       .then((r) => r.json() as Promise<{ results?: Array<{ currency?: string }> }>)
       .catch(() => ({ results: [] as Array<{ currency?: string }> })),
   ]);

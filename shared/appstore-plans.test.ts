@@ -78,3 +78,20 @@ test('a long App Store link with a percent-encoded name still looks up by its id
     globalThis.fetch = saved;
   }
 });
+
+test('App Store rate limits surface as an error and are never edge-cached', async () => {
+  const { searchAppStore } = await import('../worker/appstore.ts');
+  const saved = globalThis.fetch;
+  const inits: RequestInit[] = [];
+  globalThis.fetch = (async (_url: string, init: RequestInit) => {
+    inits.push(init);
+    return new Response('Rate limit has been exceeded', { status: 429 });
+  }) as typeof fetch;
+  try {
+    await assert.rejects(searchAppStore('Spotify', 'us'), (e: { status?: number }) => e.status === 502);
+    const cf = (inits[0] as { cf?: { cacheTtlByStatus?: Record<string, number> } }).cf;
+    assert.deepEqual(cf?.cacheTtlByStatus, { '200-299': 86400, '300-599': 0 });
+  } finally {
+    globalThis.fetch = saved;
+  }
+});

@@ -70,7 +70,7 @@ import { apply, chat, clearChats, listChats, saveChat, saveConfig, testConfig, v
 import { requestLocale, settingsLocale, applyLocale, withLocaleScope } from './i18n.ts';
 import { t } from '../shared/i18n.ts';
 import { ensureMigrated } from './migrate.ts';
-import { HttpError, readJson } from './http.ts';
+import { edgeCache, HttpError, readJson } from './http.ts';
 
 const json = (data: unknown, status = 200, rev?: number | Revision) =>
   Response.json(data, {
@@ -152,7 +152,7 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   // 图片中转：分享图要把订阅图标画进 canvas，跨域图片会污染画布，所以经同源转一道。只转 https 的图片，限 1MB
   if (path === '/api/img' && method === 'GET') {
     // 只转公网地址，跳转的每一跳也检查：不能被拿来探测服务器所在的内网
-    const res = await fetchPublic(new URL(req.url).searchParams.get('u') ?? '', { cf: { cacheTtl: 86400, cacheEverything: true } });
+    const res = await fetchPublic(new URL(req.url).searchParams.get('u') ?? '', edgeCache(86400, true));
     if (!res) return bad('bad url', 400);
     const type = res.headers.get('content-type') ?? '';
     if (!res.ok || !type.startsWith('image/')) return bad('not an image', 502);

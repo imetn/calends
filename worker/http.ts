@@ -18,3 +18,8 @@ export async function readJson<T = unknown>(req: Request): Promise<T> {
     throw new HttpError(400, t('server.invalidJson'));
   }
 }
+
+/** 外部请求的边缘缓存只存成功响应：限流 429、上游故障页若也缓存，会把失败钉住一整个 TTL */
+export const edgeCache = (ttl: number, everything = false) => ({
+  cf: { cacheTtlByStatus: { '200-299': ttl, '300-599': 0 }, ...(everything ? { cacheEverything: true } : {}) },
+});

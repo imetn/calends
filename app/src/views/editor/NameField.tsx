@@ -1,6 +1,7 @@
 import { copyParts } from '../../components/copy.tsx';
 import { base } from '../../base.ts';
 import { useRef, useState } from 'react';
+import { appStoreHits, appStoreSearchUrl } from '../../../../shared/appstore-search.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { SubIcon } from '../../components/marks.tsx';
 import { api } from '../../store.ts';
@@ -83,8 +84,16 @@ export function NameField({
     timer.current = window.setTimeout(async () => {
       const n = ++seq.current;
       try {
-        const r = await api<{ results: AppHit[] }>(`/api/appstore/search?q=${encodeURIComponent(term)}&country=${country}`);
-        if (n === seq.current) setHits(r.results.slice(0, 5).map((h) => ({ ...h, country, fromLink: !!fromLink })));
+        // 服务端出口被苹果限流（502）时，浏览器用自己的网络直连同一接口；未登录等其他错误不绕过
+        const results = await api<{ results: AppHit[] }>(`/api/appstore/search?q=${encodeURIComponent(term)}&country=${country}`)
+          .then((r) => r.results)
+          .catch(async (e: { status?: number }) => {
+            if (!(e.status! >= 500)) throw e;
+            const res = await fetch(appStoreSearchUrl(term, country)!, { referrerPolicy: 'no-referrer' });
+            if (!res.ok) throw e;
+            return appStoreHits(await res.json());
+          });
+        if (n === seq.current) setHits(results.slice(0, 5).map((h) => ({ ...h, country, fromLink: !!fromLink })));
       } catch {
         /* 联想失败不影响手动输入 */
       }
