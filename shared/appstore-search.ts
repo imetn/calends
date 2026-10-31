@@ -32,3 +32,19 @@ export function appStoreHits(body: unknown) {
     genre: r.primaryGenreName as string,
   }));
 }
+
+/**
+ * 先走服务端；服务端出口被苹果限流（5xx）时，用调用方的网络直连同一接口。
+ * 未登录等其他错误照原样抛出，不绕过；直连也失败时抛服务端的错误。
+ */
+export async function searchWithFallback<T>(server: () => Promise<T[]>, query: string, country: string, fetchFn: typeof fetch = fetch) {
+  try {
+    return await server();
+  } catch (e) {
+    const url = appStoreSearchUrl(query, country);
+    if (!url || !((e as { status?: number }).status! >= 500)) throw e;
+    const res = await fetchFn(url, { referrerPolicy: 'no-referrer' });
+    if (!res.ok) throw e;
+    return appStoreHits(await res.json());
+  }
+}

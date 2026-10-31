@@ -95,3 +95,25 @@ test('App Store rate limits surface as an error and are never edge-cached', asyn
     globalThis.fetch = saved;
   }
 });
+
+test('name suggestions fall back to a direct browser request only when the server is rate-limited', async () => {
+  const { searchWithFallback } = await import('./appstore-search.ts');
+  const link =
+    'https://apps.apple.com/us/app/%E7%86%8A%E7%8C%AB%E5%90%83%E7%9F%AD%E4%BF%A12-%E5%9E%83%E5%9C%BE%E7%9F%AD%E4%BF%A1%E6%8B%A6%E6%88%AA/id1642682818';
+  const asked: Array<[string, RequestInit | undefined]> = [];
+  const direct = (async (url: string, init?: RequestInit) => {
+    asked.push([url, init]);
+    return Response.json({ results: [{ trackId: 1642682818, trackName: 'Panda', artworkUrl100: 'icon', trackViewUrl: 'url' }] });
+  }) as typeof fetch;
+  const fail = (status: number) => () => Promise.reject(Object.assign(new Error('x'), { status }));
+
+  const hits = await searchWithFallback(fail(502), link, 'us', direct);
+  assert.equal(hits[0]?.name, 'Panda');
+  assert.deepEqual(asked, [['https://itunes.apple.com/lookup?id=1642682818&country=us', { referrerPolicy: 'no-referrer' }]]);
+
+  await assert.rejects(searchWithFallback(fail(401), link, 'us', direct), (e: { status?: number }) => e.status === 401);
+  assert.equal(asked.length, 1);
+  const limited = (async () => new Response('Rate limit', { status: 429 })) as typeof fetch;
+  await assert.rejects(searchWithFallback(fail(502), link, 'us', limited), (e: { status?: number }) => e.status === 502);
+  assert.deepEqual(await searchWithFallback(async () => [{ name: 'server' }], link, 'us', direct), [{ name: 'server' }]);
+});

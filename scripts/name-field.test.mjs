@@ -41,6 +41,8 @@ function harness({ catalog = true } = {}) {
       },
     },
     api: async () => ({ results: [{ ...item, name: 'Fictional App Store' }] }),
+    // 兜底逻辑另在 shared/appstore-plans.test.ts 覆盖；这里只走服务端
+    searchWithFallback: (server) => server(),
     searchCatalog: () => (catalog ? [item] : []),
     t: (k) => k,
     base: (v) => v,
