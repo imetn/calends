@@ -1299,3 +1299,8 @@ test('叠在成员弹窗上的收款表单在成员弹窗挂上之后才打开�
   assert.doesNotMatch(source, /useState<[^>]*>\(initialReceipt/);
   assert.match(source, /useEffect\(\(\) => \{[\s\S]*?if \(initialReceipt\) setReceipt\(initialReceipt\)/);
 });
+
+test('登录页隐藏的固定账号字段不继承输入框内边距，裁切后实际只占 1×1', () => {
+  const rule = allCss.match(/\.login-card input\.login-account\s*\{([^}]*)\}/)?.[1] ?? '';
+  for (const decl of ['width: 1px', 'height: 1px', 'padding: 0', 'clip-path: inset(50%)']) assert.ok(rule.includes(decl), decl);
+});
