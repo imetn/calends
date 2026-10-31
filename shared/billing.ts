@@ -159,9 +159,8 @@ export function subError(s: Subscription): string | undefined {
             !Number.isFinite(p.fee) ||
             p.fee < 0 ||
             !CURRENCY_CODE.test(p.currency) ||
-            !Number.isInteger(p.billEvery) ||
-            p.billEvery < 1 ||
-            p.billEvery > 120 ||
+            // 买断合租沿用内部周期 LIFETIME_BILL_MONTHS，改规则时会写进历史
+            !(validBillMonths(p.billEvery) || p.billEvery === LIFETIME_BILL_MONTHS) ||
             (p.share != null && (!Number.isFinite(p.share) || p.share < 0)),
         ))
     )

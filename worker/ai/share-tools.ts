@@ -172,7 +172,8 @@ export const set_share: Tool = {
       const currency = (str(r.fee_currency) ?? prev.currency).toUpperCase();
       validateCurrency(st, currency);
       const billEvery = r.bill_every != null ? Number(r.bill_every) : prev.billEvery;
-      if (!validBillMonths(billEvery)) throw new Error(t('mcp.error.invalidInput', { field: 'rule.bill_every' }));
+      // 只校验传入的值；沿用的规则可能是买断的内部值 LIFETIME_BILL_MONTHS，超出 1–120
+      if (r.bill_every != null && !validBillMonths(billEvery)) throw new Error(t('mcp.error.invalidInput', { field: 'rule.bill_every' }));
       const rule = { fee: r.fee != null ? num(r.fee, 'rule.fee') : prev.fee, currency, billEvery };
       after = applyCarRule(st, after, rule, date(a.rule_from, 'rule_from', today), today);
     }
@@ -278,7 +279,8 @@ export const save_share_member: Tool = {
           : ruleDefault
             ? rule.billEvery
             : 1;
-    if (!validBillMonths(billEvery)) throw new Error(t('mcp.error.invalidInput', { field: 'bill_every' }));
+    // 只校验传入的值；推算出的周期可能是买断的内部值 LIFETIME_BILL_MONTHS，超出 1–120
+    if (feeArgs.bill_every != null && !validBillMonths(billEvery)) throw new Error(t('mcp.error.invalidInput', { field: 'bill_every' }));
     if (a.first_period != null && !['prorate', 'full', 'free'].includes(String(a.first_period))) throw new Error(t('mcp.error.invalidFirstPeriod'));
     let m: ShareMember = {
       ...(old ?? { id: str(a.id) ?? uid(), name: '', share: 0 }),

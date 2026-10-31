@@ -131,7 +131,7 @@ async function run(base) {
   assert.deepEqual(await api('rev'), revision);
   assert.equal((await call('set_share', edit, reader)).isError, true);
   for (const invalid of [
-    { ...edit, rule: { bill_every: 5 } },
+    { ...edit, rule: { bill_every: 121 } },
     { ...edit, role: 'member' },
     { ...edit, rule_from: '2026-02-30' },
   ])

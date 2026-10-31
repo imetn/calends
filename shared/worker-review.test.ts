@@ -486,6 +486,29 @@ test('W-16 刷新汇率：上游非 2xx 时报汇率接口错误（502），当�
   assert.deepEqual(await getKv(f.env, 'fx'), fx);
 });
 
+test('W-20 买断合租沿用内部周期 1200：MCP 新增成员、改备注、改规则都不报 bill_every 无效', async () => {
+  const f = await ledger();
+  await upsert(
+    f.env,
+    'subscriptions',
+    'life',
+    sub('life', 'Fictional Lifetime Car', {
+      cycle: { unit: 'lifetime', every: 1 },
+      share: { role: 'owner', seats: 4, members: [{ id: 'm', name: 'Fictional member', share: 3, billEvery: 1200, fee: 3, feeCurrency: 'USD' }] },
+    }),
+  );
+  for (const [name, args] of [
+    ['save_share_member', { subscription: 'life', name: 'New fictional member', dry_run: true }],
+    ['save_share_member', { subscription: 'life', member: 'm', note: 'Harmless note change', dry_run: true }],
+    ['set_share', { subscription: 'life', role: 'owner', rule: { fee: 4 }, dry_run: true }],
+  ] as const) {
+    const r = await f.call(name, args);
+    assert.ok(!r.isError, `${name}: ${JSON.stringify(r).slice(0, 300)}`);
+  }
+  // 显式传入的周期仍按 1–120 校验
+  assert.equal((await f.call('save_share_member', { subscription: 'life', member: 'm', bill_every: 1200, dry_run: true })).isError, true);
+});
+
 test('W-17 写入管线重构前的行为基线：清退出日连带清退款，删除与账本工具的草稿叠加', async () => {
   const f = await ledger();
   const past = `${Number(today.slice(0, 4)) - 1}-01-01`;
