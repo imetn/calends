@@ -62,6 +62,7 @@
     "refundBeforeStop": "退款日期不能早於停止日。",
     "paymentOutOfRange": "扣款日期 {date} 必須在開始日期到今天之間",
     "invalidFirstPeriod": "首期方式必須是 prorate、full 或 free。",
+    "invalidCollectDay": "收款日必須是 plan 或 joined。",
     "invalidInput": "工具参数不合法：{field}",
     "invalidTarget": "目标不存在、不唯一、重复或不合法。请先读取最新记录并指定准确的 ID/索引。",
     "references": "此项仍被引用。请指定 migrate_to 或先移除这些引用：{references}",

@@ -62,6 +62,7 @@
     "refundBeforeStop": "A data do reembolso não pode preceder a interrupção.",
     "paymentOutOfRange": "A data de pagamento {date} deve estar entre a data de início e hoje",
     "invalidFirstPeriod": "first_period deve ser prorate, full ou free.",
+    "invalidCollectDay": "collect_day deve ser plan ou joined.",
     "invalidInput": "Invalid tool input: {field}",
     "invalidTarget": "Target is missing, ambiguous, duplicated or invalid. Read the current records and specify an exact id/index.",
     "references": "This item is still referenced. Supply migrate_to or remove these references first: {references}",

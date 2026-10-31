@@ -12,6 +12,7 @@ import {
   carRule,
   followCarRule,
   followsCar,
+  sameRule,
   memberFee,
   changeMemberFee,
   shareFromFee,
@@ -97,6 +98,14 @@ export function useMemberForm({
   const cur = memberFee(state, s, f, today);
   const [fee, setFee] = useState({ amount: cur.amount, currency: cur.currency, billEvery: memberBillMonths(s, f, today) });
   const [feeFrom, setFeeFrom] = useState(today);
+  // 新成员改了周期或金额就是自定义，改回与车一致又回到跟随车
+  const setFeeRule = (r: { billEvery: number; fee: number; currency: string }) => {
+    setFee({ amount: r.fee, currency: r.currency, billEvery: r.billEvery });
+    setMode(sameRule(r, rule) ? 'follow' : 'custom');
+  };
+  // 新成员的收款日：跟随车的收款日，或从加入日起按自己的日子收（成员的收款基准日钉在加入日）
+  const [ownDay, setOwnDay] = useState(false);
+  const joinedDay = f.joined ?? s.share?.since ?? s.start;
   const feeEdited = fee.amount !== cur.amount || fee.currency !== cur.currency || fee.billEvery !== memberBillMonths(s, f, today);
   // 新成员从加入日起按选定的收费；已有成员从生效日起调价，历史收款不变
   const start = isNew ? (f.joined ?? today) : feeFrom;
@@ -105,17 +114,23 @@ export function useMemberForm({
     const base = { ...m, exempt: undefined };
     // 对齐车的节奏会改动期初结清、免收盖住的期，以账本里最新的记录为准
     if (mode === 'follow')
-      return isNew || initialMode !== 'follow'
+      // 从加入日起收的新成员不对齐车的收款日
+      return (isNew && !base.anchor) || (!isNew && initialMode !== 'follow')
         ? followCarRule(state, s, { ...base, receipts: member?.receipts, waivers: member?.waivers }, start, today)
         : { ...base, custom: undefined };
     const custom = { ...base, custom: true as const };
     return feeEdited ? changeMemberFee(state, s, custom, { from: start, fee: fee.amount, currency: fee.currency, billEvery: fee.billEvery }, today) : custom;
   };
+  // 加入日正好在车的收款日上时两种收款日一样，不用选
+  const carFirst = memberCollection(s, isNew ? withFee(f) : f, joinedDay, collectCcy);
+  const canOwnDay = isNew && !once && mode !== 'exempt' && carFirst.partial;
+  // 从加入日起收：首期是整期，之前填的首期方式、金额不再适用
+  const fx: ShareMember = canOwnDay && ownDay ? { ...f, anchor: joinedDay, firstPeriod: undefined, firstAmount: undefined } : f;
   const rateChanged = !isNew && mode !== 'exempt' && (mode === 'follow' ? initialMode !== 'follow' : initialMode !== 'custom' || feeEdited);
 
   // 已有成员改回跟随车：收款日对齐车的节奏，车的下一个收款日前那期（过渡期）不满一整期时缺省按天折算，
   // 可以改收整期或自定义金额，存成这一期的单独定价
-  const aligned = withFee(f);
+  const aligned = withFee(fx);
   const alignDay = !isNew && mode === 'follow' && initialMode !== 'follow' ? nextCollectionDay(s, rule.billEvery, addDays(start, -1)) : undefined;
   const bridgeAt = alignDay
     ? memberLedgerAhead(state, s, { ...aligned, periodDues: undefined }, today).periods.find((p) => p.until === addDays(alignDay, -1))
@@ -132,6 +147,7 @@ export function useMemberForm({
     setFee({ amount: c.amount, currency: c.currency, billEvery: memberBillMonths(s, fresh, today) });
     setFeeFrom(today);
     setBridgeDue(undefined);
+    setOwnDay(false);
   };
   const realigned = !isNew && mode === 'follow' && initialMode !== 'follow';
   const draft = (): ShareMember => {
@@ -153,7 +169,8 @@ export function useMemberForm({
   // 新成员：勾上就在保存后接着打开收款表单，与之后记收款是同一个表单
   const [collectAfter, setCollectAfter] = useState(false);
 
-  const first = memberCollection(s, f, f.joined ?? s.share?.since ?? s.start, collectCcy);
+  // 新成员的首期按改过的收费周期算，已有成员按账本里的
+  const first = memberCollection(s, isNew ? next : f, joinedDay, collectCcy);
   // 同一个人还出现在别的合租、代付里：已关联名册里的人，称呼、联系方式只读，改人员资料去人员详情
   const linked = !!f.personId && !!state.people?.some((p) => p.id === f.personId);
   const [profile, setProfile] = useState(false);
@@ -295,6 +312,10 @@ export function useMemberForm({
     collectAfter,
     setCollectAfter,
     first,
+    canOwnDay,
+    ownDay,
+    setOwnDay,
+    setFeeRule,
     linked,
     profile,
     setProfile,

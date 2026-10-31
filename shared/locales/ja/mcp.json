@@ -62,6 +62,7 @@
     "refundBeforeStop": "返金日は停止日より前にできません。",
     "paymentOutOfRange": "請求日 {date} は開始日から今日までの間にしてください",
     "invalidFirstPeriod": "first_period は prorate、full、free のいずれかです。",
+    "invalidCollectDay": "collect_day は plan または joined を指定してください。",
     "invalidInput": "Invalid tool input: {field}",
     "invalidTarget": "Target is missing, ambiguous, duplicated or invalid. Read the current records and specify an exact id/index.",
     "references": "This item is still referenced. Supply migrate_to or remove these references first: {references}",

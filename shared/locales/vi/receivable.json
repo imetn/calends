@@ -5,7 +5,6 @@
   "unmatched": "Kỳ từ {date} (không còn trong lịch)",
   "unmatchedHint": "Ngày tham gia hoặc chu kỳ thanh toán đã đổi. Bỏ chọn rồi chọn lại các kỳ hiện tại.",
   "unmatchedNote": "{count} bản ghi không còn khớp với lịch. Mở ra để chọn lại kỳ.",
-  "modeReceipt": "Thu tiền",
   "modeWaiver": "Miễn thu",
   "record": "Ghi khoản thu",
   "waive": "Miễn thu các kỳ",

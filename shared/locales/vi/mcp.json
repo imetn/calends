@@ -62,6 +62,7 @@
     "refundBeforeStop": "Ngày hoàn tiền không được trước ngày dừng.",
     "paymentOutOfRange": "Ngày thanh toán {date} phải nằm giữa ngày bắt đầu và hôm nay",
     "invalidFirstPeriod": "first_period phải là prorate, full hoặc free.",
+    "invalidCollectDay": "collect_day phải là plan hoặc joined.",
     "invalidInput": "Invalid tool input: {field}",
     "invalidTarget": "Target is missing, ambiguous, duplicated or invalid. Read the current records and specify an exact id/index.",
     "references": "This item is still referenced. Supply migrate_to or remove these references first: {references}",

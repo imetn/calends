@@ -159,6 +159,10 @@ export function MemberForm({
     collectAfter,
     setCollectAfter,
     first,
+    canOwnDay,
+    ownDay,
+    setOwnDay,
+    setFeeRule,
     linked,
     profile,
     setProfile,
@@ -263,19 +267,22 @@ export function MemberForm({
       <span className="muted">{perBill('family.pool.perFee', point.billEvery, { fee: money(point.fee, point.currency) })}</span>
     </Cell>
   );
+  // 收费方式三选一，平铺出来一眼看清当前是哪种
+  const modeSeg = (onChange: (v: typeof mode) => void) => (
+    <Seg
+      small
+      value={mode}
+      onChange={onChange}
+      options={[
+        ['follow', t('family.rule.follow')],
+        ['custom', t('family.rule.custom')],
+        ['exempt', t('family.member.exempt')],
+      ]}
+    />
+  );
   const feeFields = (
     <>
-      <Cell label={t('family.member.feeGroup')} sub={isNew && mode === 'follow' ? carFee : undefined}>
-        <Picker
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: 'follow' as const, label: t('family.rule.follow') },
-            { value: 'custom' as const, label: t('family.rule.custom') },
-            { value: 'exempt' as const, label: t('family.member.exempt') },
-          ]}
-        />
-      </Cell>
+      <Cell label={t('family.member.feeGroup')}>{modeSeg(setMode)}</Cell>
       {!isNew && history.filter((p) => p.from <= today && p !== current).map(pointRow)}
       {!isNew && mode === 'follow' && !rateChanged && <Cell label={cnDateFull(current?.from ?? joinedOn)}>{carFee}</Cell>}
       {mode === 'custom' && (
@@ -334,6 +341,19 @@ export function MemberForm({
     <>
       <Group title={t('family.member.seatGroup')}>
         {joinedField}
+        {/* 收款日跟着加入日期写：跟随车的日子，或从加入日起；下面写出下次收款日 */}
+        {canOwnDay && (
+          <Cell label={t('family.member.collectDay')} sub={t('family.member.nextCollect', { date: cnDate(first.next) })}>
+            <Picker
+              value={ownDay ? 'own' : 'car'}
+              onChange={(v) => setOwnDay(v === 'own')}
+              options={[
+                { value: 'car', label: t('family.member.collectDayCar') },
+                { value: 'own', label: t('family.member.collectDayOwn') },
+              ]}
+            />
+          </Cell>
+        )}
         {first.partial && mode !== 'exempt' && bridge?.from !== first.from && !ledger.periods.some((p) => p.key === first.from && p.status === 'paid') && (
           <>
             {/* 首期起止写在「首期方式」标签下面；折算出的金额是首期金额的占位，不再单独一行提示 */}
@@ -357,13 +377,22 @@ export function MemberForm({
             )}
           </>
         )}
+        {/* 首笔款紧跟首期金额；勾上则存好后接着打开收款表单 */}
+        {mode !== 'exempt' && (
+          <Cell label={t('family.member.firstPayToggle')}>
+            <Toggle checked={collectAfter} onChange={setCollectAfter} />
+          </Cell>
+        )}
       </Group>
     </>
   );
+  // 新成员：周期、金额直接摆出来，默认是合租的标准；改了就成自定义，点「跟随合租」回到合租的标准
+  const feeRule = mode === 'custom' ? { billEvery: fee.billEvery, fee: fee.amount, currency: fee.currency } : rule;
   const feeGroup = (
-    <>
-      <Group title={t('family.member.feeGroup')}>{feeFields}</Group>
-    </>
+    <Group title={t('family.member.feeGroup')} foot={mode === 'follow' ? t('family.rule.followNote') : undefined}>
+      <Cell label={t('family.rule.mode')}>{modeSeg((v) => (v === 'follow' ? setFeeRule(rule) : setMode(v)))}</Cell>
+      {mode !== 'exempt' && <FeeRuleFields value={feeRule} onChange={setFeeRule} />}
+    </Group>
   );
   // 已有成员的收费标准、退出写成一句话（只读时）
   const feeText =
@@ -494,14 +523,6 @@ export function MemberForm({
           <>
             {whoGroup}
             {seatGroup}
-            {/* 收款：与已有成员同一位置；勾上则存好后接着打开收款表单 */}
-            {mode !== 'exempt' && (
-              <Group title={t('receivable.modeReceipt')}>
-                <Cell label={t('family.member.firstPayToggle')}>
-                  <Toggle checked={collectAfter} onChange={setCollectAfter} />
-                </Cell>
-              </Group>
-            )}
             {feeGroup}
           </>
         ) : (

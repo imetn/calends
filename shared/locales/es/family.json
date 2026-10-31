@@ -95,6 +95,8 @@
     "left": "Salió",
     "leftPh": "Sigue en el plan",
     "feeGroup": "Tarifa",
+    "billMonths": "Intervalo",
+    "monthsUnit": "meses",
     "seg": {
       "m1": "Mensual",
       "m3": "Trimestral",
@@ -175,7 +177,11 @@
     "accountHere": "Cuenta",
     "accountPhShort": "Correo / teléfono / usuario",
     "unlinkPerson": "Desvincular",
-    "namePickPh": "Escribe un nombre o elige a alguien"
+    "namePickPh": "Escribe un nombre o elige a alguien",
+    "collectDay": "Día de cobro",
+    "collectDayCar": "Seguir plan",
+    "collectDayOwn": "Desde la fecha de alta",
+    "nextCollect": "Próximo cobro {date}"
   },
   "pool": {
     "seatsFree": "{count} libres",
@@ -309,6 +315,7 @@
   },
   "rule": {
     "title": "Tarifa",
+    "mode": "Modo de cobro",
     "follow": "Seguir plan",
     "custom": "Personalizado",
     "followValue": "{rule} (regla del plan)",
@@ -316,7 +323,8 @@
     "applyNote": {
       "one": "{count} miembro que sigue el plan paga la nueva cuota desde el próximo cobro; las cuotas personalizadas y los cobros registrados no cambian.",
       "other": "{count} miembros que siguen el plan pagan la nueva cuota desde el próximo cobro; las cuotas personalizadas y los cobros registrados no cambian."
-    }
+    },
+    "followNote": "Se cobra con la tarifa del plan y cambia cuando esta cambie."
   },
   "quick": {
     "late": {

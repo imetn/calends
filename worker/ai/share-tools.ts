@@ -1,5 +1,5 @@
 import { dueTotal } from '../../shared/fx-total.ts';
-import { cycleLabel, memberDues, collectionAnchor, memberBillMonths, memberPeriods, memberAboard, uid } from '../../shared/billing.ts';
+import { cycleLabel, memberDues, memberCollection, collectionAnchor, memberBillMonths, memberPeriods, memberAboard, uid } from '../../shared/billing.ts';
 import { setOpening } from '../../shared/receivables.ts';
 import {
   deleteRecord,
@@ -11,7 +11,7 @@ import {
   type ReceivableTarget,
 } from '../../shared/receivable-edit.ts';
 import { personLink } from '../../shared/people.ts';
-import type { Receipt, ShareMember, Subscription } from '../../shared/types.ts';
+import { MAX_BILL_MONTHS, validBillMonths, type Receipt, type ShareMember, type Subscription } from '../../shared/types.ts';
 import {
   applyCarRule,
   moveCollectFrom,
@@ -131,7 +131,13 @@ export const set_share: Tool = {
         properties: {
           fee: { type: 'number', minimum: 0, description: 'Amount collected from each member per bill.' },
           fee_currency: { type: 'string', description: 'Defaults to the current rule currency, else the collection currency.' },
-          bill_every: { type: 'integer', enum: [1, 3, 6, 12] },
+          bill_every: {
+            type: 'integer',
+            minimum: 1,
+            maximum: MAX_BILL_MONTHS,
+            description:
+              'Billing interval in months: 1 monthly, 3 quarterly, 6 half-yearly, 12 yearly, or any whole number of months up to 120 (e.g. 2 bimonthly, 24 every two years).',
+          },
         },
         additionalProperties: false,
       },
@@ -166,7 +172,7 @@ export const set_share: Tool = {
       const currency = (str(r.fee_currency) ?? prev.currency).toUpperCase();
       validateCurrency(st, currency);
       const billEvery = r.bill_every != null ? Number(r.bill_every) : prev.billEvery;
-      if (![1, 3, 6, 12].includes(billEvery)) throw new Error(t('mcp.error.invalidInput', { field: 'rule.bill_every' }));
+      if (!validBillMonths(billEvery)) throw new Error(t('mcp.error.invalidInput', { field: 'rule.bill_every' }));
       const rule = { fee: r.fee != null ? num(r.fee, 'rule.fee') : prev.fee, currency, billEvery };
       after = applyCarRule(st, after, rule, date(a.rule_from, 'rule_from', today), today);
     }
@@ -181,7 +187,7 @@ export const set_share: Tool = {
 export const save_share_member: Tool = {
   name: 'save_share_member',
   description:
-    'Add a member to a shared plan I organize, or update one (pass member = id or name to update). fee = how much they pay each time, in fee_currency (defaults to the collection currency), every bill_every months (1 monthly, 3 quarterly, 6 half-yearly, 12 yearly). exempt = takes a seat but pays nothing. paid_until = settled before record-keeping through this date (periods starting on/before it become an opening settlement with no amount; null removes it); record real money with record_receivable. Only the joining period aligns to the shared anchor; later periods follow the member’s own billing cycle. Fee changes use fee_from (default today), preserve the old rate and receipts, and apply to whole periods starting on/after that date. A mid-period join covers joined through the aligned period end inclusive: first_period prorate (default, actual days / full period days, rounded to cents), full, or free. first_amount optionally overrides the first amount in fee_currency; free always charges zero. Later periods use the regular fee. Use save_person for name/contact changes of a linked roster person; person=null detaches the link. New members default to the plan collection rule (see get_carpool rule) when fee and bill_every are omitted. follow_rule=true makes the member follow the plan rule from fee_from (default today); follow_rule=false keeps their own fee. Changing fee, fee_currency or bill_every without follow_rule marks the member custom unless the result at fee_from equals the rule. Each call inserts/replaces one dated fee point; later fee_history points remain. For an ongoing custom rate, also replace conflicting later points with the same fee and cycle. Do not postpone fee_from to avoid them; omit it to start today. Set left to retain all join/receipt history. Optional leave_refund stores the actual positive refund, with date defaulting to left and currency to the suggested refund currency; null means no refund. left=null also clears the refund. Preview returns suggested_refund (including original-currency parts) and unused_days; never save the suggestion as an actual refund without user confirmation. Preview and save return member.first_collection (inclusive coverage and amount), follows_rule, collect_from, paid_until, next_collection_date and overdue_days.',
+    'Add a member to a shared plan I organize, or update one (pass member = id or name to update). fee = how much they pay each time, in fee_currency (defaults to the collection currency), every bill_every months (1 monthly, 3 quarterly, 6 half-yearly, 12 yearly, or any whole number up to 120). exempt = takes a seat but pays nothing. paid_until = settled before record-keeping through this date (periods starting on/before it become an opening settlement with no amount; null removes it); record real money with record_receivable. Only the joining period aligns to the shared anchor; later periods follow the member’s own billing cycle. Fee changes use fee_from (default today), preserve the old rate and receipts, and apply to whole periods starting on/after that date. A mid-period join covers joined through the aligned period end inclusive: first_period prorate (default, actual days / full period days, rounded to cents), full, or free. first_amount optionally overrides the first amount in fee_currency; free always charges zero. Later periods use the regular fee. Use save_person for name/contact changes of a linked roster person; person=null detaches the link. New members default to the plan collection rule (see get_carpool rule) when fee and bill_every are omitted. follow_rule=true makes the member follow the plan rule from fee_from (default today); follow_rule=false keeps their own fee. Changing fee, fee_currency or bill_every without follow_rule marks the member custom unless the result at fee_from equals the rule. Each call inserts/replaces one dated fee point; later fee_history points remain. For an ongoing custom rate, also replace conflicting later points with the same fee and cycle. Do not postpone fee_from to avoid them; omit it to start today. Set left to retain all join/receipt history. Optional leave_refund stores the actual positive refund, with date defaulting to left and currency to the suggested refund currency; null means no refund. left=null also clears the refund. Preview returns suggested_refund (including original-currency parts) and unused_days; never save the suggestion as an actual refund without user confirmation. Preview and save return member.first_collection (inclusive coverage and amount), follows_rule, collect_from, paid_until, next_collection_date and overdue_days.',
   write: true,
   inputSchema: obj(
     {
@@ -201,7 +207,13 @@ export const save_share_member: Tool = {
         description:
           'Effective date for a fee/currency/billing-cycle change; omit when the user gave no date (today), including follow_rule switches. Do not align it to a future plan-rule date. Period start selects the whole-period rate; no split at price changes.',
       },
-      bill_every: { type: 'integer', enum: [1, 3, 6, 12] },
+      bill_every: {
+        type: 'integer',
+        minimum: 1,
+        maximum: MAX_BILL_MONTHS,
+        description:
+          'Billing interval in months: 1 monthly, 3 quarterly, 6 half-yearly, 12 yearly, or any whole number of months up to 120 (e.g. 2 bimonthly, 24 every two years).',
+      },
       follow_rule: { type: 'boolean', description: 'true = follow the plan collection rule (ignores fee/fee_currency/bill_every); false = custom fee.' },
       first_period: {
         type: 'string',
@@ -210,6 +222,12 @@ export const save_share_member: Tool = {
           'Partial first period only: prorate (default, actual inclusive days / full aligned period days, rounded to cents), full (regular fee), or free (zero; skipped for the next collection). Later periods charge the regular fee.',
       },
       first_amount: { type: ['number', 'null'], minimum: 0, description: 'Custom first-period fee; null resets to calculated amount.' },
+      collect_day: {
+        type: 'string',
+        enum: ['plan', 'joined'],
+        description:
+          'New members only: plan (default) aligns the first period to the shared anchor; joined collects from the join date on the member’s own day, so the first period is a full period and later ones start on that day. Ignored when the join date already falls on the shared collection day, for exempt members and for lifetime plans.',
+      },
       exempt: { type: 'boolean' },
       paid_until: { ...DATE, type: ['string', 'null'] },
       joined: {
@@ -260,6 +278,7 @@ export const save_share_member: Tool = {
           : ruleDefault
             ? rule.billEvery
             : 1;
+    if (!validBillMonths(billEvery)) throw new Error(t('mcp.error.invalidInput', { field: 'bill_every' }));
     if (a.first_period != null && !['prorate', 'full', 'free'].includes(String(a.first_period))) throw new Error(t('mcp.error.invalidFirstPeriod'));
     let m: ShareMember = {
       ...(old ?? { id: str(a.id) ?? uid(), name: '', share: 0 }),
@@ -281,6 +300,7 @@ export const save_share_member: Tool = {
       ...(a.account ? { account: String(a.account) } : {}),
       ...(a.note ? { note: String(a.note) } : {}),
     };
+    if (a.collect_day != null && !['plan', 'joined'].includes(String(a.collect_day))) throw new Error(t('mcp.error.invalidCollectDay'));
     if ('fee_currency' in feeArgs) m.feeCurrency = ccy;
     if (a.person === null) m.personId = undefined;
     if (a.person) {
@@ -314,6 +334,15 @@ export const save_share_member: Tool = {
       };
     } else if (a.leave_refund === null) m.leaveRefund = undefined;
     m = updateMemberLeave(m, {});
+    // 新成员从加入日起收：收款基准日钉在加入日，与网页成员表单一致；不分摊的不用收款日
+    // 加入日正好在收款日上、买断的首期本来就完整，不钉；首期方式、金额随之不再适用
+    if (!old && a.collect_day === 'joined' && !m.exempt && s.cycle.unit !== 'lifetime') {
+      const joined = m.joined ?? s.share.since ?? s.start;
+      if (memberCollection(s, m, joined, collectCcy(st)).partial) m = { ...m, anchor: joined, firstPeriod: undefined, firstAmount: undefined };
+    }
+    // 从加入日起收的已有成员改加入日：收款基准日一起挪，与网页一致
+    if (old?.anchor && old.anchor === (old.joined ?? s.share.since ?? s.start) && m.anchor === old.anchor && m.joined && m.joined !== old.joined)
+      m.anchor = m.joined;
     if (!m.name) throw new Error(t('mcp.error.needMemberName'));
     const feeEdited = ['fee', 'fee_currency', 'bill_every'].some((key) => key in a);
     if (old && feeEdited && a.follow_rule !== true) {

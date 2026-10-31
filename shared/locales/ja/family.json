@@ -88,6 +88,8 @@
     "left": "脱退日",
     "leftPh": "参加中",
     "feeGroup": "料金",
+    "billMonths": "請求間隔",
+    "monthsUnit": "か月",
     "seg": {
       "m1": "毎月",
       "m3": "3か月",
@@ -166,7 +168,11 @@
     "accountHere": "アカウント",
     "accountPhShort": "メール / 電話番号 / ユーザー名",
     "unlinkPerson": "関連付けを解除",
-    "namePickPh": "名前を入力、または既存の人を選択"
+    "namePickPh": "名前を入力、または既存の人を選択",
+    "collectDay": "集金日",
+    "collectDayCar": "プランに合わせる",
+    "collectDayOwn": "参加日から",
+    "nextCollect": "次回集金 {date}"
   },
   "pool": {
     "seatsFree": "空き {count}",
@@ -289,11 +295,13 @@
   },
   "rule": {
     "title": "料金",
+    "mode": "請求方法",
     "follow": "プランに合わせる",
     "custom": "個別",
     "followValue": "{rule}（プラン共通）",
     "sheetTitle": "料金と席数",
-    "applyNote": "プランに従う {count} 人は次回の集金日から新しい料金になります。個別料金のメンバーと記録済みの入金は変わりません。"
+    "applyNote": "プランに従う {count} 人は次回の集金日から新しい料金になります。個別料金のメンバーと記録済みの入金は変わりません。",
+    "followNote": "プランの料金で請求し、プランの料金が変わると一緒に変わります。"
   },
   "quick": {
     "late": {

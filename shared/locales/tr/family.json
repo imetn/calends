@@ -89,6 +89,8 @@
     "left": "Ayrılma",
     "leftPh": "Hâlâ planda",
     "feeGroup": "Ücret",
+    "billMonths": "Aralık",
+    "monthsUnit": "ay",
     "seg": {
       "m1": "Aylık",
       "m3": "Üç aylık",
@@ -169,7 +171,11 @@
     "accountHere": "Hesap",
     "accountPhShort": "E-posta / telefon / kullanıcı adı",
     "unlinkPerson": "Bağlantıyı kaldır",
-    "namePickPh": "Ad yazın veya birini seçin"
+    "namePickPh": "Ad yazın veya birini seçin",
+    "collectDay": "Tahsilat günü",
+    "collectDayCar": "Planı izle",
+    "collectDayOwn": "Katılma tarihinden",
+    "nextCollect": "Sonraki tahsilat {date}"
   },
   "pool": {
     "seatsFree": "{count} boş",
@@ -297,11 +303,13 @@
   },
   "rule": {
     "title": "Ücret",
+    "mode": "Ücretlendirme",
     "follow": "Planı izle",
     "custom": "Özel",
     "followValue": "{rule} (plan kuralı)",
     "sheetTitle": "Ücret ve koltuklar",
-    "applyNote": "Plana uyan {count} üye sonraki tahsilattan itibaren yeni ücreti öder; özel ücretler ve kayıtlı ödemeler değişmez."
+    "applyNote": "Plana uyan {count} üye sonraki tahsilattan itibaren yeni ücreti öder; özel ücretler ve kayıtlı ödemeler değişmez.",
+    "followNote": "Plan ücretiyle alınır, plan ücreti değişince birlikte değişir."
   },
   "quick": {
     "late": {

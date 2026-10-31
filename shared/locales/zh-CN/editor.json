@@ -102,7 +102,7 @@
     "ownerPlaceholder": "付给谁",
     "perPeriod": "每期份额",
     "paidUntil": "已付至",
-    "manageHint": "保存后在「合租」里打开这辆车，添加成员、记收款。"
+    "manageHint": "保存后在「合租」里打开这个合租，添加成员、记收款。"
   },
   "proxy": {
     "for": "替谁付",

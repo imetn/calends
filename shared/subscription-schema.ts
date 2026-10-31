@@ -1,7 +1,7 @@
 // Editable full records use the same domain validation as the web editor. This schema
 // describes the wire shape to models without rejecting preserved legacy extension fields.
 import { daySchema as day, type Schema } from './tool-schema.ts';
-import type { Phase, Subscription } from './types.ts';
+import { MAX_BILL_MONTHS, type Phase, type Subscription } from './types.ts';
 
 const text: Schema = { type: 'string' };
 const amount: Schema = { type: 'number' };
@@ -101,7 +101,7 @@ const member = record(
     custom: bool,
     fee: positive,
     feeCurrency: text,
-    billEvery: { type: 'integer', enum: [1, 3, 6, 12] },
+    billEvery: { type: 'integer', minimum: 1, maximum: MAX_BILL_MONTHS },
     feeHistory: list(record({ from: day, fee: positive, currency: text, billEvery: positive, share: amount }, ['from', 'fee', 'currency', 'billEvery'])),
     firstPeriod: { type: 'string', enum: ['prorate', 'full', 'free'] },
     firstAmount: positive,

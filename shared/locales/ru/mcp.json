@@ -62,6 +62,7 @@
     "refundBeforeStop": "Дата возврата не может быть раньше остановки.",
     "paymentOutOfRange": "Дата платежа {date} должна быть между датой начала и сегодняшним днём",
     "invalidFirstPeriod": "first_period должен быть prorate, full или free.",
+    "invalidCollectDay": "collect_day должен быть plan или joined.",
     "invalidInput": "Invalid tool input: {field}",
     "invalidTarget": "Target is missing, ambiguous, duplicated or invalid. Read the current records and specify an exact id/index.",
     "references": "This item is still referenced. Supply migrate_to or remove these references first: {references}",

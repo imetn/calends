@@ -5,7 +5,6 @@
   "unmatched": "{date} tarihinden itibaren dönem (artık planda yok)",
   "unmatchedHint": "Katılım tarihi veya faturalama döngüsü değişti. İşareti kaldırıp güncel dönemleri seçin.",
   "unmatchedNote": "{count} kayıt artık plana uymuyor. Dönemleri seçmek için açın.",
-  "modeReceipt": "Ödeme",
   "modeWaiver": "Bağışla",
   "record": "Ödeme kaydet",
   "waive": "Dönemleri bağışla",

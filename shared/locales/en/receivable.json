@@ -14,7 +14,6 @@
     "one": "{count} record no longer matches the schedule. Open it to pick periods.",
     "other": "{count} records no longer match the schedule. Open them to pick periods."
   },
-  "modeReceipt": "Payment",
   "modeWaiver": "Waive",
   "record": "Record payment",
   "waive": "Waive periods",

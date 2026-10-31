@@ -487,3 +487,7 @@ export function channelsOf(s: Settings): Channel[] {
 
 /** 买断的合租只收一次：收费周期按 100 年算，避免无限长的周期让日期计算失效 */
 export const LIFETIME_BILL_MONTHS = 1200;
+
+/** 自定义收费周期最长 10 年（按月计） */
+export const MAX_BILL_MONTHS = 120;
+export const validBillMonths = (n: number) => Number.isInteger(n) && n >= 1 && n <= MAX_BILL_MONTHS;

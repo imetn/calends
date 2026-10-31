@@ -5,7 +5,6 @@
   "unmatched": "{date}부터의 회차(일정에 더 이상 없음)",
   "unmatchedHint": "가입일 또는 청구 주기가 바뀌었습니다. 선택을 해제하고 현재 회차를 고르세요.",
   "unmatchedNote": "일정과 맞지 않는 기록이 {count}건 있습니다. 열어서 회차를 고르세요.",
-  "modeReceipt": "입금",
   "modeWaiver": "면제",
   "record": "입금 기록",
   "waive": "회차 면제",

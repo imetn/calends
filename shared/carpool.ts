@@ -478,6 +478,8 @@ export function moveMemberJoin(
 ): { member: ShareMember; dropped: LedgerPeriod[] } {
   const joined = memberSince(s, after);
   if (joined === memberSince(s, before)) return { member: after, dropped: [] };
+  // 从加入日起收的成员（收款基准日就是加入日）：基准日随加入日一起挪
+  if (before.anchor && before.anchor === memberSince(s, before) && after.anchor === before.anchor) after = { ...after, anchor: joined };
   // 记录以 after 上的为准，期按原来的加入日切
   let r: Receivable = { receipts: after.receipts, waivers: after.waivers };
   const was = memberLedger(s, { ...before, ...r }, today, collectCurrency).periods;

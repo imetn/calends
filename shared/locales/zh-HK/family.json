@@ -31,14 +31,14 @@
     "rangeFrom": "從",
     "rangeTo": "至",
     "vacancy": "空位",
-    "departed": "已下車 {count} 人",
+    "departed": "已退出 {count} 人",
     "hidePersonal": "隱藏個人資料",
     "showPersonal": "顯示個人資料",
     "hiddenMember": "已隱藏成員",
     "addMember": "新增成員",
     "vacancyTrack": "暫時空缺",
     "copyFailed": "複製圖片失敗",
-    "ownerFee": "車主",
+    "ownerFee": "發起人",
     "ledgerTitle": "收付紀錄"
   },
   "contact": {
@@ -86,6 +86,8 @@
     "left": "退出日期",
     "leftPh": "仍在共享",
     "feeGroup": "收費標準",
+    "billMonths": "收費間隔",
+    "monthsUnit": "個月",
     "seg": {
       "m1": "按月",
       "m3": "按季",
@@ -160,11 +162,15 @@
     "accountHere": "帳號",
     "accountPhShort": "電郵 / 手機號碼 / 用戶名",
     "unlinkPerson": "解除關聯",
-    "namePickPh": "輸入稱呼，或揀已有嘅人"
+    "namePickPh": "輸入稱呼，或揀已有嘅人",
+    "collectDay": "收款日",
+    "collectDayCar": "跟隨合租",
+    "collectDayOwn": "從加入日起",
+    "nextCollect": "下次收款 {date}"
   },
   "pool": {
     "seatsFree": "空 {count} 位",
-    "seatsFull": "滿車",
+    "seatsFull": "已滿",
     "filter": {
       "all": "全部",
       "live": "進行中",
@@ -273,11 +279,13 @@
   },
   "rule": {
     "title": "收費",
-    "follow": "跟隨車",
+    "mode": "收費方式",
+    "follow": "跟隨合租",
     "custom": "自訂",
-    "followValue": "{rule}（跟隨車）",
+    "followValue": "{rule}（跟隨合租）",
     "sheetTitle": "收費與席位",
-    "applyNote": "{count} 位跟隨車嘅成員由生效日期起按新標準收；自訂收費嘅成員唔受影響，已記嘅收款不變。"
+    "applyNote": "{count} 位跟隨合租嘅成員由生效日期起按新標準收；自訂收費嘅成員唔受影響，已記嘅收款不變。",
+    "followNote": "按合租嘅收費標準收，合租嘅標準改咗一齊變。"
   },
   "quick": {
     "late": "已逾期 {count} 天",
@@ -303,7 +311,7 @@
     "waived": "已免收"
   },
   "refund": {
-    "title": "下車退款",
+    "title": "退出退款",
     "none": "不退",
     "unused": "退還未用",
     "date": "退款日期"

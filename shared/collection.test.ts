@@ -66,6 +66,24 @@ test('半年合租：中途加入只收到共同期末，之后与原成员同�
   assert.equal(memberDues(s, '2027-07-17')[1].owed, 149.02);
 });
 
+// issue #9：新成员选从加入日起收，首期是整期，之后都按加入那天的日号收
+test('从加入日起收：月付、按季都从加入日起算整期，不对齐车的收款日', () => {
+  for (const [billEvery, until, next, after] of [
+    [1, '2026-11-19', '2026-11-20', '2026-12-20'],
+    [3, '2027-01-19', '2027-01-20', '2027-04-20'],
+  ] as const) {
+    const m = newcomer({ billEvery, anchor: '2026-10-20' });
+    const s = sub(m);
+    assert.deepEqual(memberCollection(s, m, m.joined!), { from: '2026-10-20', until, next, amount: 60, currency: 'CNY', partial: false });
+    assert.deepEqual(
+      memberPeriods(s, m, after).map((p) => p.from),
+      ['2026-10-20', next, after],
+    );
+    // 车的收款日不受影响，老成员仍在 17 号
+    assert.equal(collectionAnchor(s), '2026-01-17');
+  }
+});
+
 test('月、季、半年、年对齐：月末、闰日及原始日号不会累积漂移', () => {
   const s = sub();
   s.share!.collectFrom = '2024-01-31';

@@ -62,6 +62,7 @@
     "refundBeforeStop": "İade tarihi durdurma tarihinden önce olamaz.",
     "paymentOutOfRange": "Ödeme tarihi {date}, başlangıç tarihi ile bugün arasında olmalıdır",
     "invalidFirstPeriod": "first_period prorate, full veya free olmalıdır.",
+    "invalidCollectDay": "collect_day plan veya joined olmalıdır.",
     "invalidInput": "Invalid tool input: {field}",
     "invalidTarget": "Target is missing, ambiguous, duplicated or invalid. Read the current records and specify an exact id/index.",
     "references": "This item is still referenced. Supply migrate_to or remove these references first: {references}",

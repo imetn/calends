@@ -88,6 +88,8 @@
     "left": "탈퇴일",
     "leftPh": "참여 중",
     "feeGroup": "요금",
+    "billMonths": "청구 간격",
+    "monthsUnit": "개월",
     "seg": {
       "m1": "매월",
       "m3": "분기",
@@ -166,7 +168,11 @@
     "accountHere": "계정",
     "accountPhShort": "이메일 / 전화번호 / 사용자 이름",
     "unlinkPerson": "연결 해제",
-    "namePickPh": "이름을 입력하거나 기존 사람을 선택"
+    "namePickPh": "이름을 입력하거나 기존 사람을 선택",
+    "collectDay": "수금일",
+    "collectDayCar": "요금제 따름",
+    "collectDayOwn": "참여일부터",
+    "nextCollect": "다음 수금 {date}"
   },
   "pool": {
     "seatsFree": "빈자리 {count}",
@@ -289,11 +295,13 @@
   },
   "rule": {
     "title": "요금",
+    "mode": "청구 방식",
     "follow": "요금제 따름",
     "custom": "개별",
     "followValue": "{rule} (요금제 규칙)",
     "sheetTitle": "요금과 좌석",
-    "applyNote": "플랜을 따르는 {count}명은 다음 수금일부터 새 요금을 냅니다. 개별 요금 멤버와 기록된 입금은 바뀌지 않습니다."
+    "applyNote": "플랜을 따르는 {count}명은 다음 수금일부터 새 요금을 냅니다. 개별 요금 멤버와 기록된 입금은 바뀌지 않습니다.",
+    "followNote": "플랜 요금으로 받으며, 플랜 요금이 바뀌면 함께 바뀝니다."
   },
   "quick": {
     "late": {

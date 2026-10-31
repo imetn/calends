@@ -192,6 +192,7 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     subRegion: (s: { region?: string }) => s.region,
     Seg: 'Seg',
     Stepper: 'Stepper',
+    Toggle: 'Toggle',
     SubIcon: 'SubIcon',
     TailName: 'TailName',
     CatIcon: 'CatIcon',
@@ -1824,6 +1825,90 @@ test('收款保存失败保留草稿且不关闭；重试成功只增加一条�
   assert.deepEqual(receipts.at(-1)!.periods, ['2026-10-14']);
 });
 
+// issue #9：新成员选「从加入日起」才钉收款基准日；加入日改到合租收款日上时选项收起，也不再钉
+test('新成员从加入日起收：中途加入可选并存下基准日，加入日落在收款日上不钉', async () => {
+  const sub: Subscription = {
+    id: 's',
+    name: 'Plan',
+    category: 'Tools',
+    tags: [],
+    price: 15,
+    currency: 'USD',
+    start: '2025-10-14',
+    cycle: { unit: 'month', every: 1 },
+    status: 'active',
+    share: { role: 'owner', seats: 6, collectFrom: '2025-10-14', members: [] },
+  };
+  let saved: Subscription | undefined;
+  const r = harness(
+    '../app/src/views/Members.tsx',
+    'MemberForm',
+    {},
+    {
+      ...carpool,
+      statusOf: carpool.memberStatus,
+      Sheet: 'Sheet',
+      DatePicker: 'DatePicker',
+      Toggle: 'Toggle',
+      CurrencySelect: 'CurrencySelect',
+      NumInput: 'NumInput',
+      Picker: 'Picker',
+      todayIn: () => today,
+      getState: () => ({ ...st, subscriptions: [sub] }),
+      linkPerson: async () => ({}),
+      run: (fn: () => Promise<unknown>) => fn(),
+      saveSub: async (next: Subscription) => {
+        saved = next;
+      },
+    },
+  );
+  const render = () => r.render('MemberForm', { state: st, s: sub, onClose() {} });
+  const dayPicker = () => render().find((n) => n.type === 'Picker' && (n.props.value === 'car' || n.props.value === 'own'));
+  const add = async () =>
+    all(render().find((n) => n.type === 'Sheet')!.props.foot)
+      .find((n) => n.type === 'button' && n.children.includes('family.member.add'))!
+      .props.onClick();
+  render()
+    .find((n) => typeof n.props?.onType === 'function')!
+    .props.onType('New');
+  // 今天 22 号加入，合租 14 号收：可选从加入日起
+  dayPicker()!.props.onChange('own');
+  // 已收到首笔款在「加入与退出」组里
+  const seat = render().filter((n) => n.type === 'Group')[1];
+  assert.ok(all(seat).some((n) => n.type === 'Cell' && n.props.label === 'family.member.firstPayToggle'));
+  await add();
+  assert.equal(saved!.share!.members[0].anchor, today);
+  // 加入日改到 14 号：两种收款日一样，选项收起，保存不钉
+  saved = undefined;
+  render()
+    .find((n) => n.type === 'DatePicker')!
+    .props.onChange('2026-10-14');
+  assert.equal(dayPicker(), undefined);
+  await add();
+  assert.equal(saved!.share!.members[0].anchor, undefined);
+  // 收费周期自定义：选「自定义」先给两个月，可改成任意整月数，存成自定义收费
+  const cycle = () => render().find((n) => n.type === 'Seg' && n.props.options.some(([k]: [string]) => k === '12'))!;
+  cycle().props.onChange('custom');
+  assert.equal(cycle().props.value, 'custom');
+  const monthsInput = () => render().find((n) => n.type === 'NumInput' && n.props['aria-label'] === 'family.member.billMonths');
+  assert.equal(monthsInput()!.props.value, 2);
+  // 输到 12 这种常用值也留在自定义里，不跳回按年
+  monthsInput()!.props.onValue(12);
+  assert.equal(cycle().props.value, 'custom');
+  monthsInput()!.props.onValue(121);
+  assert.equal(monthsInput()!.props.value, 12);
+  monthsInput()!.props.onValue(24);
+  await add();
+  assert.equal(saved!.share!.members[0].billEvery, 24);
+  assert.equal(saved!.share!.members[0].custom, true);
+  // 点回「跟随合租」：周期回到合租的按月，自定义输入收起
+  render()
+    .find((n) => n.type === 'Seg' && n.props.value === 'custom' && n.props.options.some(([k]: [string]) => k === 'follow'))!
+    .props.onChange('follow');
+  assert.equal(cycle().props.value, '1');
+  assert.equal(monthsInput(), undefined);
+});
+
 test('成员先改收费再改生效日只留下一个调整，今天标准与旧收款保持', async () => {
   const member = {
     id: 'm',
@@ -1873,7 +1958,7 @@ test('成员先改收费再改生效日只留下一个调整，今天标准与�
   const render = () => r.render('MemberForm', { state: st, s: sub, member, onClose() {} });
   expandMember(render());
   render()
-    .find((n) => n.type === 'Picker' && n.props.value === 'follow')!
+    .find((n) => n.type === 'Seg' && n.props.value === 'follow')!
     .props.onChange('custom');
   // 没改金额前不问生效日
   assert.equal(
@@ -2103,7 +2188,7 @@ test('成员表单：改自定义收费从生效日起记调价', async () => {
       .props.onClick();
   expandMember(render());
   render()
-    .find((n) => n.type === 'Picker' && n.props.value === 'follow')!
+    .find((n) => n.type === 'Seg' && n.props.value === 'follow')!
     .props.onChange('custom');
   render()
     .find((n) => n.type === 'NumInput' && n.props.value === 44)!
@@ -3758,7 +3843,7 @@ test('成员弹窗分三段：人员账号在上、收款格子居中、收费�
   expandMember(nodes);
   assert.ok(all(group(0)).some((n) => typeof n.type === 'function' && (n.type as Function).name === 'PersonNameField'));
   assert.ok(all(group(0)).some((n) => n.type === 'input'));
-  assert.ok(all(group(2)).some((n) => n.type === 'Picker' && n.props.value === 'follow'));
+  assert.ok(all(group(2)).some((n) => n.type === 'Seg' && n.props.value === 'follow'));
   // 跟随车：车的标准不再写在标签下，而是作为现行的一条接在调价记录后面
   const feeCells = all(group(2)).filter((n) => n.type === 'Cell');
   assert.equal(feeCells[0].props.sub, undefined);

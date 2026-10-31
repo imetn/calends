@@ -796,4 +796,9 @@ test('加入日往后改：之前整期的收款删掉（一笔分几期只去�
   const earlier = moveMemberJoin(s, m, { ...m, joined: '2023-11-05' }, today, 'CNY');
   assert.deepEqual(earlier.dropped, []);
   assert.deepEqual(earlier.member.receipts, m.receipts);
+  // 从加入日起收的成员改加入日：收款基准日跟着挪；钉住别的日子的不动
+  const own: ShareMember = { ...m, receipts: undefined, joined: '2024-01-20', anchor: '2024-01-20' };
+  assert.equal(moveMemberJoin(s, own, { ...own, joined: '2024-01-25' }, today, 'CNY').member.anchor, '2024-01-25');
+  const pinned: ShareMember = { ...own, anchor: '2024-01-05' };
+  assert.equal(moveMemberJoin(s, pinned, { ...pinned, joined: '2024-01-25' }, today, 'CNY').member.anchor, '2024-01-05');
 });

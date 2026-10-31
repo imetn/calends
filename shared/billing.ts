@@ -1,6 +1,7 @@
 import { amountTotal, convertedTotal, chargeTotal, scaleTotal, sumTotals, type FxTotal } from './fx-total.ts';
 import {
   LIFETIME_BILL_MONTHS,
+  validBillMonths,
   type AppState,
   type Cycle,
   type FxTable,
@@ -1144,7 +1145,7 @@ export interface MemberDue {
   originals?: Record<string, number>;
 }
 
-export { LIFETIME_BILL_MONTHS };
+export { LIFETIME_BILL_MONTHS, validBillMonths };
 
 /** 旧成员未设置周期时沿用订阅周期。 */
 export function memberBillMonths(s: Subscription, m: ShareMember, day?: string): number {

@@ -5,7 +5,6 @@
   "unmatched": "{date} 起的一期（已不在賬期裡）",
   "unmatchedHint": "加入日或收費週期改過，取消勾選後改選現在的期",
   "unmatchedNote": "有 {count} 筆記錄對不上現在的賬期，點開改選期",
-  "modeReceipt": "收款",
   "modeWaiver": "免收",
   "record": "記收款",
   "waive": "免收這幾期",

@@ -5,7 +5,6 @@
   "unmatched": "Periode sejak {date} (sudah tidak ada di jadwal)",
   "unmatchedHint": "Tanggal bergabung atau siklus tagihan berubah. Hapus centangnya dan pilih periode saat ini.",
   "unmatchedNote": "{count} catatan tidak lagi cocok dengan jadwal. Buka untuk memilih periode.",
-  "modeReceipt": "Pembayaran",
   "modeWaiver": "Bebaskan",
   "record": "Catat pembayaran",
   "waive": "Bebaskan periode",

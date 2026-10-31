@@ -88,6 +88,8 @@
     "left": "Ngày rời",
     "leftPh": "Vẫn đang trong gói",
     "feeGroup": "Phí",
+    "billMonths": "Chu kỳ",
+    "monthsUnit": "tháng",
     "seg": {
       "m1": "Hằng tháng",
       "m3": "Hằng quý",
@@ -166,7 +168,11 @@
     "accountHere": "Tài khoản",
     "accountPhShort": "Email / số điện thoại / tên người dùng",
     "unlinkPerson": "Bỏ liên kết",
-    "namePickPh": "Nhập tên hoặc chọn người có sẵn"
+    "namePickPh": "Nhập tên hoặc chọn người có sẵn",
+    "collectDay": "Ngày thu",
+    "collectDayCar": "Theo gói",
+    "collectDayOwn": "Từ ngày tham gia",
+    "nextCollect": "Lần thu tới {date}"
   },
   "pool": {
     "seatsFree": "Trống {count}",
@@ -289,11 +295,13 @@
   },
   "rule": {
     "title": "Phí",
+    "mode": "Cách thu",
     "follow": "Theo gói",
     "custom": "Tùy chỉnh",
     "followValue": "{rule} (quy tắc gói)",
     "sheetTitle": "Phí và số chỗ",
-    "applyNote": "{count} thành viên theo gói trả mức mới từ lần thu tiếp theo; phí riêng và các khoản đã ghi không đổi."
+    "applyNote": "{count} thành viên theo gói trả mức mới từ lần thu tiếp theo; phí riêng và các khoản đã ghi không đổi.",
+    "followNote": "Thu theo mức phí của gói và thay đổi theo khi mức phí gói thay đổi."
   },
   "quick": {
     "late": {

@@ -14,7 +14,6 @@
     "one": "{count} enregistrement ne correspond plus à l’échéancier. Ouvrez-le pour choisir les paiements.",
     "other": "{count} enregistrements ne correspondent plus à l’échéancier. Ouvrez-les pour choisir les paiements."
   },
-  "modeReceipt": "Paiement",
   "modeWaiver": "Remise",
   "record": "Enregistrer un paiement",
   "waive": "Remettre des paiements",

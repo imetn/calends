@@ -88,6 +88,8 @@
     "left": "Keluar",
     "leftPh": "Masih di paket",
     "feeGroup": "Biaya",
+    "billMonths": "Interval",
+    "monthsUnit": "bulan",
     "seg": {
       "m1": "Bulanan",
       "m3": "Triwulanan",
@@ -166,7 +168,11 @@
     "accountHere": "Akun",
     "accountPhShort": "Email / nomor telepon / nama pengguna",
     "unlinkPerson": "Lepas tautan",
-    "namePickPh": "Ketik nama atau pilih orang"
+    "namePickPh": "Ketik nama atau pilih orang",
+    "collectDay": "Tanggal tagih",
+    "collectDayCar": "Ikuti paket",
+    "collectDayOwn": "Sejak bergabung",
+    "nextCollect": "Tagihan berikutnya {date}"
   },
   "pool": {
     "seatsFree": "{count} kosong",
@@ -289,11 +295,13 @@
   },
   "rule": {
     "title": "Biaya",
+    "mode": "Cara tagih",
     "follow": "Ikuti paket",
     "custom": "Kustom",
     "followValue": "{rule} (aturan paket)",
     "sheetTitle": "Biaya dan kursi",
-    "applyNote": "{count} anggota yang mengikuti paket membayar tarif baru mulai penagihan berikutnya; tarif khusus dan pembayaran tercatat tidak berubah."
+    "applyNote": "{count} anggota yang mengikuti paket membayar tarif baru mulai penagihan berikutnya; tarif khusus dan pembayaran tercatat tidak berubah.",
+    "followNote": "Ditagih sesuai tarif paket dan ikut berubah saat tarif paket berubah."
   },
   "quick": {
     "late": {

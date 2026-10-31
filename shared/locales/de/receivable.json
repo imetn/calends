@@ -14,7 +14,6 @@
     "one": "{count} Eintrag passt nicht mehr zum Plan. Öffnen, um Zahlungen zu wählen.",
     "other": "{count} Einträge passen nicht mehr zum Plan. Öffnen, um Zahlungen zu wählen."
   },
-  "modeReceipt": "Zahlung",
   "modeWaiver": "Erlassen",
   "record": "Zahlung erfassen",
   "waive": "Zahlungen erlassen",

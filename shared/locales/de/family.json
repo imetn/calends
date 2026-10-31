@@ -95,6 +95,8 @@
     "left": "Ausgetreten",
     "leftPh": "Noch dabei",
     "feeGroup": "Gebühr",
+    "billMonths": "Intervall",
+    "monthsUnit": "Monate",
     "seg": {
       "m1": "Monatlich",
       "m3": "Vierteljährlich",
@@ -175,7 +177,11 @@
     "accountHere": "Konto",
     "accountPhShort": "E-Mail / Telefon / Benutzername",
     "unlinkPerson": "Verknüpfung lösen",
-    "namePickPh": "Namen eingeben oder Person wählen"
+    "namePickPh": "Namen eingeben oder Person wählen",
+    "collectDay": "Abrechnungstag",
+    "collectDayCar": "Wie Abo",
+    "collectDayOwn": "Ab Beitritt",
+    "nextCollect": "Nächste Zahlung {date}"
   },
   "pool": {
     "seatsFree": "{count} frei",
@@ -309,6 +315,7 @@
   },
   "rule": {
     "title": "Gebühr",
+    "mode": "Abrechnung",
     "follow": "Wie Abo",
     "custom": "Eigen",
     "followValue": "{rule} (Abo-Regel)",
@@ -316,7 +323,8 @@
     "applyNote": {
       "one": "{count} Mitglied, das dem Abo folgt, zahlt ab der nächsten Zahlung den neuen Betrag; individuelle Beiträge und erfasste Zahlungen bleiben unverändert.",
       "other": "{count} Mitglieder, die dem Abo folgen, zahlen ab der nächsten Zahlung den neuen Betrag; individuelle Beiträge und erfasste Zahlungen bleiben unverändert."
-    }
+    },
+    "followNote": "Wird zum Tarif des Plans berechnet und ändert sich mit ihm."
   },
   "quick": {
     "late": {

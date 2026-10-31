@@ -95,6 +95,8 @@
     "left": "Left",
     "leftPh": "Still on the plan",
     "feeGroup": "Fee",
+    "billMonths": "Interval",
+    "monthsUnit": "months",
     "seg": {
       "m1": "Monthly",
       "m3": "Quarterly",
@@ -175,7 +177,11 @@
     "accountHere": "Account",
     "accountPhShort": "Email / phone / username",
     "unlinkPerson": "Unlink person",
-    "namePickPh": "Type a name, or pick someone"
+    "namePickPh": "Type a name, or pick someone",
+    "collectDay": "Collection day",
+    "collectDayCar": "Follow plan",
+    "collectDayOwn": "From join date",
+    "nextCollect": "Next collection {date}"
   },
   "pool": {
     "seatsFree": "{count} open",
@@ -312,6 +318,7 @@
   },
   "rule": {
     "title": "Fee",
+    "mode": "Fee type",
     "follow": "Follow plan",
     "custom": "Custom",
     "followValue": "{rule} (plan rule)",
@@ -319,7 +326,8 @@
     "applyNote": {
       "one": "{count} member following the plan pays the new rate from the next collection; custom-fee members and recorded payments stay unchanged.",
       "other": "{count} members following the plan pay the new rate from the next collection; custom-fee members and recorded payments stay unchanged."
-    }
+    },
+    "followNote": "Charged at the plan rate and updated when the plan rate changes."
   },
   "quick": {
     "late": {

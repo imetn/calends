@@ -95,6 +95,8 @@
     "left": "Départ",
     "leftPh": "Toujours membre",
     "feeGroup": "Tarif",
+    "billMonths": "Intervalle",
+    "monthsUnit": "mois",
     "seg": {
       "m1": "Mensuel",
       "m3": "Trimestriel",
@@ -175,7 +177,11 @@
     "accountHere": "Compte",
     "accountPhShort": "E-mail / téléphone / identifiant",
     "unlinkPerson": "Dissocier",
-    "namePickPh": "Saisissez un nom ou choisissez une personne"
+    "namePickPh": "Saisissez un nom ou choisissez une personne",
+    "collectDay": "Jour d’encaissement",
+    "collectDayCar": "Suivre le forfait",
+    "collectDayOwn": "À partir de l’arrivée",
+    "nextCollect": "Prochain encaissement {date}"
   },
   "pool": {
     "seatsFree": "{count} libre(s)",
@@ -309,6 +315,7 @@
   },
   "rule": {
     "title": "Tarif",
+    "mode": "Mode de facturation",
     "follow": "Suivre le forfait",
     "custom": "Personnalisé",
     "followValue": "{rule} (règle du forfait)",
@@ -316,7 +323,8 @@
     "applyNote": {
       "one": "{count} membre qui suit l’abonnement paie le nouveau tarif dès le prochain encaissement ; les tarifs personnalisés et les paiements enregistrés ne changent pas.",
       "other": "{count} membres qui suivent l’abonnement paient le nouveau tarif dès le prochain encaissement ; les tarifs personnalisés et les paiements enregistrés ne changent pas."
-    }
+    },
+    "followNote": "Facturé au tarif du plan et mis à jour quand celui-ci change."
   },
   "quick": {
     "late": {

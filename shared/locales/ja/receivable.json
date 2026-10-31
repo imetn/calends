@@ -5,7 +5,6 @@
   "unmatched": "{date} からの期（スケジュールにありません）",
   "unmatchedHint": "参加日または請求サイクルが変更されました。チェックを外して現在の期を選び直してください。",
   "unmatchedNote": "{count} 件の記録がスケジュールと一致しません。開いて期を選び直してください。",
-  "modeReceipt": "受取",
   "modeWaiver": "免除",
   "record": "受取を記録",
   "waive": "期を免除",

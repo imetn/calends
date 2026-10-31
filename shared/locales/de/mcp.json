@@ -62,6 +62,7 @@
     "refundBeforeStop": "Das Erstattungsdatum darf nicht vor dem Enddatum liegen.",
     "paymentOutOfRange": "Das Zahlungsdatum {date} muss zwischen Startdatum und heute liegen",
     "invalidFirstPeriod": "first_period muss prorate, full oder free sein.",
+    "invalidCollectDay": "collect_day muss plan oder joined sein.",
     "invalidInput": "Invalid tool input: {field}",
     "invalidTarget": "Target is missing, ambiguous, duplicated or invalid. Read the current records and specify an exact id/index.",
     "references": "This item is still referenced. Supply migrate_to or remove these references first: {references}",

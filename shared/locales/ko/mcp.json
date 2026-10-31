@@ -62,6 +62,7 @@
     "refundBeforeStop": "환불일은 중지일보다 빠를 수 없습니다.",
     "paymentOutOfRange": "결제일 {date}은(는) 시작일과 오늘 사이여야 합니다",
     "invalidFirstPeriod": "first_period는 prorate, full 또는 free여야 합니다.",
+    "invalidCollectDay": "collect_day는 plan 또는 joined여야 합니다.",
     "invalidInput": "Invalid tool input: {field}",
     "invalidTarget": "Target is missing, ambiguous, duplicated or invalid. Read the current records and specify an exact id/index.",
     "references": "This item is still referenced. Supply migrate_to or remove these references first: {references}",

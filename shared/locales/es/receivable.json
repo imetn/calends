@@ -14,7 +14,6 @@
     "one": "{count} registro ya no coincide con el calendario. Ábrelo para elegir pagos.",
     "other": "{count} registros ya no coinciden con el calendario. Ábrelos para elegir pagos."
   },
-  "modeReceipt": "Cobro",
   "modeWaiver": "Condonar",
   "record": "Registrar cobro",
   "waive": "Condonar pagos",

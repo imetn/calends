@@ -14,7 +14,6 @@
     "one": "{count} registro não corresponde mais ao calendário. Abra para escolher pagamentos.",
     "other": "{count} registros não correspondem mais ao calendário. Abra para escolher pagamentos."
   },
-  "modeReceipt": "Recebimento",
   "modeWaiver": "Dispensar",
   "record": "Registrar recebimento",
   "waive": "Dispensar pagamentos",

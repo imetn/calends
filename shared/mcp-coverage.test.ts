@@ -995,6 +995,37 @@ test('accounts belong to person × plan: API/MCP persistence, independent update
   }
 });
 
+test('collect_day=joined: MCP pins the anchor only for whole first periods and moves it with the join date', async () => {
+  const f = await setup();
+  try {
+    const plan = async () => (await f.call('get_carpool', { subscription: 's' }, f.read)).structuredContent.plans[0];
+    const member = async (id: string) =>
+      (await f.snapshot()).subscriptions.find((s) => s.id === 's')!.share!.members.find((m) => m.id === id || m.name === id)!;
+    assert.equal((await f.call('set_share', { subscription: 's', role: 'owner', seats: 8 })).isError, undefined);
+    // 实际保存：钉在加入日，之前给的首期方式不再适用；不分摊的不钉；改加入日时基准日跟着挪
+    assert.equal(
+      (await f.call('save_share_member', { subscription: 's', name: 'Own day', joined: '2026-10-20', collect_day: 'joined', first_period: 'full' })).isError,
+      undefined,
+    );
+    assert.equal((await member('Own day')).anchor, '2026-10-20');
+    assert.equal((await member('Own day')).firstPeriod, undefined);
+    assert.equal((await f.call('save_share_member', { subscription: 's', member: 'Own day', joined: '2026-10-25' })).isError, undefined);
+    assert.equal((await member('Own day')).anchor, '2026-10-25');
+    assert.equal(
+      (await f.call('save_share_member', { subscription: 's', name: 'Free rider', joined: '2026-10-20', exempt: true, collect_day: 'joined' })).isError,
+      undefined,
+    );
+    assert.equal((await member('Free rider')).anchor, undefined);
+    // 加入日就在车的收款日上：首期本来完整，不钉
+    const carAnchor = (await plan()).collect_from as string;
+    const onDay = `2026-10-${carAnchor.slice(8, 10)}`;
+    assert.equal((await f.call('save_share_member', { subscription: 's', name: 'On day', joined: onDay, collect_day: 'joined' })).isError, undefined);
+    assert.equal((await member('On day')).anchor, undefined);
+  } finally {
+    f.db.close();
+  }
+});
+
 test('carpool collection rule: MCP reads, sets, follows and customizes member fees', async () => {
   const f = await setup();
   try {
@@ -1010,6 +1041,20 @@ test('carpool collection rule: MCP reads, sets, follows and customizes member fe
     assert.equal((await f.call('save_share_member', { subscription: 's', name: 'Newcomer' })).isError, undefined);
     assert.equal((await member('Newcomer')).fee, 3);
     assert.equal((await member('Newcomer')).feeCurrency, 'USD');
+    // issue #9：新成员从加入日起收，基准日钉在加入日；非法取值报错
+    const ownDay = await f.call('save_share_member', { subscription: 's', name: 'Own day', joined: '2026-10-20', collect_day: 'joined', dry_run: true });
+    assert.equal(ownDay.isError, undefined);
+    assert.deepEqual(ownDay.structuredContent.member.first_collection, {
+      from: '2026-10-20',
+      until: '2026-11-19',
+      next: '2026-11-20',
+      amount: 3,
+      currency: 'USD',
+      partial: false,
+    });
+    const carDay = await f.call('save_share_member', { subscription: 's', name: 'Car day', joined: '2026-10-20', dry_run: true });
+    assert.equal(carDay.structuredContent.member.first_collection.partial, true);
+    assert.equal((await f.call('save_share_member', { subscription: 's', name: 'Bad', collect_day: 'x', dry_run: true })).isError, true);
 
     // 预览不写入
     const before = await f.snapshot();
@@ -1043,7 +1088,13 @@ test('carpool collection rule: MCP reads, sets, follows and customizes member fe
 
     // 只读令牌不能改规则；非法周期报错
     assert.equal((await f.call('set_share', { subscription: 's', role: 'owner', rule: { fee: 1 } }, f.read)).isError, true);
-    assert.equal((await f.call('set_share', { subscription: 's', role: 'owner', rule: { bill_every: 5 } })).isError, true);
+    assert.equal((await f.call('set_share', { subscription: 's', role: 'owner', rule: { bill_every: 121 } })).isError, true);
+    assert.equal((await f.call('set_share', { subscription: 's', role: 'owner', rule: { bill_every: 1.5 } })).isError, true);
+    // 自定义周期：任意整月数（双月、两年）
+    const bimonthly = await f.call('set_share', { subscription: 's', role: 'owner', rule: { bill_every: 2 } });
+    assert.deepEqual(bimonthly.structuredContent.rule.every_months, 2);
+    assert.equal((await f.call('save_share_member', { subscription: 's', member: 'member', bill_every: 24, dry_run: true })).isError, undefined);
+    assert.equal((await f.call('save_share_member', { subscription: 's', member: 'member', bill_every: 0, dry_run: true })).isError, true);
   } finally {
     f.db.close();
   }
