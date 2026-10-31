@@ -12,9 +12,9 @@ import { cnDateFull, esc, relDays } from '../shared/format.ts';
 import { locale, t } from '../shared/i18n.ts';
 import type { Digest, Row, Section } from './notify.ts';
 
-/** 亮色配色：黑白为主，蓝色强调 */
+/** 亮色配色：通体白底，靠留白与细线分隔，蓝色强调；灰底只留给小标签和首字母方块 */
 const L = {
-  page: '#f4f4f5',
+  page: '#ffffff',
   card: '#ffffff',
   border: '#e4e4e7',
   ink: '#09090b',
@@ -32,7 +32,7 @@ const L = {
 
 /** 深色配色：与亮色一一对应，供 <style> 覆盖 */
 const D: Record<keyof typeof L, string> = {
-  page: '#0a0a0b',
+  page: '#161618',
   card: '#161618',
   border: '#2a2a2e',
   ink: '#fafafa',
@@ -86,7 +86,7 @@ img{border:0;outline:none;text-decoration:none}
 a{text-decoration:none}
 @media (max-width:620px){
   .px{padding-left:20px !important;padding-right:20px !important}
-  .outer{padding:20px 10px 32px !important}
+  .outer{padding:20px 4px 32px !important}
   .h1{font-size:22px !important}
   .stat-v{font-size:17px !important}
   .stat{padding:12px 12px !important}
@@ -148,7 +148,7 @@ ${r.amountSub ? `<div class="c-faint" style="padding-top:2px;font-size:12.5px;li
 
 /** 空状态 / 说明框 */
 function noteBox(text: string): string {
-  return `<tr><td class="px" style="padding:24px 32px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="bg-chip c-body" style="padding:16px 18px;border-radius:12px;background:${L.chip};color:${L.body};font-family:${FONT};font-size:14px;line-height:1.65">${esc(text)}</td></tr></table></td></tr>`;
+  return `<tr><td class="px" style="padding:24px 32px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="ln c-body" style="padding:16px 0 0;border-top:1px solid ${L.line};color:${L.body};font-family:${FONT};font-size:14px;line-height:1.65">${esc(text)}</td></tr></table></td></tr>`;
 }
 
 function sectionHtml(s: Section, site: string, kind: Digest['kind']): string {
@@ -176,7 +176,7 @@ function statsHtml(stats: NonNullable<Digest['stats']>): string {
   const cells = stats
     .map(
       (x, i) =>
-        `${i ? '<td width="8" style="width:8px;font-size:0;line-height:0">&nbsp;</td>' : ''}<td class="stat bg-chip" valign="top" style="padding:14px 16px;border-radius:12px;background:${L.chip};vertical-align:top;font-family:${FONT}">
+        `${i ? '<td width="8" style="width:8px;font-size:0;line-height:0">&nbsp;</td>' : ''}<td class="stat bd" valign="top" style="padding:14px 16px;border:1px solid ${L.border};border-radius:12px;vertical-align:top;font-family:${FONT}">
 <div class="c-mute" style="font-size:12px;line-height:1.4;color:${L.mute}">${esc(x.label)}</div>
 <div class="stat-v c-ink" style="padding-top:4px;font-size:20px;font-weight:700;line-height:1.25;letter-spacing:-.01em;color:${L.ink};font-variant-numeric:tabular-nums;white-space:nowrap">${esc(x.value)}</div>
 </td>`,
@@ -240,11 +240,11 @@ export function renderEmail(d: Digest, siteUrl: string): { html: string; text: s
 </td></tr></table>
 </td></tr>`;
 
-  const footer = `<tr><td class="px c-faint" style="padding:24px 32px 0;font-family:${FONT};font-size:12px;line-height:1.7;color:${L.faint}">
+  const footer = `<tr><td class="px" style="padding:0 32px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="ln c-faint" style="padding:20px 0 0;border-top:1px solid ${L.line};font-family:${FONT};font-size:12px;line-height:1.7;color:${L.faint}">
 ${esc(t('notify.email.why', { app }))}<br>
 ${esc(t('notify.email.footer'))} ${esc(t('notify.email.off'))}<br>
 <a class="c-mute" href="${esc(site)}/settings" target="_blank" style="color:${L.mute};text-decoration:underline">${esc(t('notify.email.settings'))}</a>${host ? `<span class="c-faint" style="color:${L.faint}">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a class="c-mute" href="${esc(site)}" target="_blank" style="color:${L.mute};text-decoration:none">${esc(host)}</a>` : ''}
-</td></tr>`;
+</td></tr></table></td></tr>`;
 
   const html = `<!DOCTYPE html>
 <html lang="${esc(locale())}">
@@ -265,7 +265,7 @@ ${esc(t('notify.email.footer'))} ${esc(t('notify.email.off'))}<br>
 <table class="bg-page" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${L.page}">
 <tr><td class="outer" align="center" style="padding:32px 16px 40px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;margin:0 auto">
-<tr><td style="padding:0 4px 16px">
+<tr><td class="px" style="padding:0 32px 4px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
 <td style="vertical-align:middle">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -276,7 +276,7 @@ ${esc(t('notify.email.footer'))} ${esc(t('notify.email.off'))}<br>
 <td class="c-faint" align="right" style="vertical-align:middle;text-align:right;font-family:${FONT};font-size:12.5px;color:${L.faint};white-space:nowrap">${esc(date)}</td>
 </tr></table>
 </td></tr>
-<tr><td class="bg-card bd" style="background:${L.card};border:1px solid ${L.border};border-radius:20px">
+<tr><td class="bg-card" style="background:${L.card}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 ${body}
 ${cta}
