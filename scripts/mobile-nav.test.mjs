@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mobileNav, pickSlot } from '../app/src/mobile-nav.ts';
+import { arcAngle, mobileNav, navPath, pickSlot } from '../app/src/mobile-nav.ts';
 
 const all = ['overview', 'list', 'calendar', 'report', 'wallet', 'family', 'behalf', 'assistant', 'connect'];
 
@@ -26,4 +26,30 @@ test('choosing a module already on the tab bar swaps the two slots', () => {
   assert.deepEqual(pickSlot(bar, 0, 'report'), ['report', 'list', 'calendar', 'overview']);
   assert.deepEqual(pickSlot(bar, 1, 'ai'), ['overview', 'ai', 'calendar', 'report']);
   assert.deepEqual(bar, ['overview', 'list', 'calendar', 'report']);
+});
+
+test('the merged AI entry takes the desktop module it opens, so it is named Assistant rather than a separate AI label', () => {
+  assert.equal(navPath('ai', all), 'assistant');
+  // Read-only or assistant hidden: it falls back to the connect page and its name.
+  assert.equal(navPath('ai', ['overview', 'connect']), 'connect');
+  assert.equal(navPath('wallet', all), 'wallet');
+});
+
+test('More arc items keep one gap between neighbours, centred on the diagonal', () => {
+  const at = (deg, r) => [Math.cos((deg * Math.PI) / 180) * r, Math.sin((deg * Math.PI) / 180) * r];
+  const dist = ([x0, y0], [x1, y1]) => Math.hypot(x1 - x0, y1 - y0);
+  const ring = (n, r) => Array.from({ length: n }, (_, i) => arcAngle(i, n, r, 68));
+  assert.equal(arcAngle(0, 1, 100, 68), 225);
+  for (const [n, r] of [
+    [3, 100],
+    [5, 168],
+    [2, 168],
+  ]) {
+    const angles = ring(n, r);
+    assert.ok(Math.abs(angles[0] + angles.at(-1) - 450) < 1e-9, `symmetric around 225 for ${n}`);
+    for (let i = 1; i < n; i++) assert.ok(Math.abs(dist(at(angles[i - 1], r), at(angles[i], r)) - 68) < 1e-9);
+  }
+  // The full default outer ring stays within a few degrees of the quarter.
+  const outer = ring(5, 168);
+  assert.ok(outer[0] > 175 && outer.at(-1) < 275);
 });

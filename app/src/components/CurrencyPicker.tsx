@@ -10,7 +10,20 @@ import { useTextSearch } from '../use-search.ts';
  * 侧边栏的货币切换：点开在右侧弹出，可搜索。最上面是「原币」，然后是常用币种，再往下是汇率接口支持的全部货币。
  * 上下键移动、回车选中、Esc 关闭；窄屏贴底显示。
  */
-export function CurrencyPicker({ value, used, all, onChange }: { value: string; used: string[]; all: string[]; onChange: (v: string) => void }) {
+/** arc：手机「更多」圆弧里的圆形按钮，只有图标和名称 */
+export function CurrencyPicker({
+  value,
+  used,
+  all,
+  onChange,
+  arc,
+}: {
+  value: string;
+  used: string[];
+  all: string[];
+  onChange: (v: string) => void;
+  arc?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [hi, setHi] = useState(0);
@@ -67,7 +80,7 @@ export function CurrencyPicker({ value, used, all, onChange }: { value: string; 
       <button
         type="button"
         ref={btn}
-        className={`side-item theme-item ${open ? 'open' : ''}`}
+        className={arc ? 'arc-item' : `side-item theme-item ${open ? 'open' : ''}`}
         onClick={() => {
           setOpen(!open);
           setTurn(turn + 1);
@@ -75,13 +88,14 @@ export function CurrencyPicker({ value, used, all, onChange }: { value: string; 
         aria-haspopup="listbox"
         aria-expanded={open}
         title={t('picker.ccy.switch')}
+        aria-label={arc ? `${t('picker.ccy.label')} ${orig ? t('picker.ccy.orig') : ccyName(value)}` : undefined}
       >
         {/* 每点一下两枚硬币交换位置（转半圈，带回弹） */}
         <span className="ico-turn swap" style={{ transform: `rotate(${turn * 180}deg)` }}>
           <Icon name="coins" />
         </span>
-        <span>{t('picker.ccy.label')}</span>
-        <small>{orig ? t('picker.ccy.orig') : ccyName(value)}</small>
+        <span className={arc ? 'arc-label' : undefined}>{t('picker.ccy.label')}</span>
+        {!arc && <small>{orig ? t('picker.ccy.orig') : ccyName(value)}</small>}
       </button>
       {open && (
         <Pop triggerRef={btn} onClose={close} label={t('picker.ccy.label')} className="cp-pop" placement="right bottom">

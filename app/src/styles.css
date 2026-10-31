@@ -10362,49 +10362,89 @@ button.name-edit:focus-visible {
   box-shadow: 0 0 0 2px var(--ink);
 }
 
-/* ---------------- 手机底栏：4 个入口 +「更多」，只在窄屏渲染 ---------------- */
+/* ---------------- 手机底栏：4 个入口的玻璃胶囊 + 圆形「更多」，只在窄屏渲染 ---------------- */
 @media (max-width: 860px) {
   /* 底栏占用的高度：页面留白、Toast、助手输入框都让在它上面；输入时底栏收起，高度归零 */
-  :root:has(.tabbar:not(.hide)) {
-    --tab-h: calc(56px + var(--safe-b));
+  :root {
+    --dock-h: 60px;
+    --dock-b: max(16px, calc(var(--safe-b) - 8px));
+    --dock-x: max(16px, env(safe-area-inset-right));
+    --dock-glass: color-mix(in srgb, var(--gray-2) 70%, transparent);
+    --dock-edge:
+      inset 0 0 0 var(--hairline) color-mix(in srgb, var(--line) 80%, transparent), inset 0 1px 0 color-mix(in srgb, var(--white-a12) 45%, transparent);
+    --dock-shadow: 0 10px 30px -10px color-mix(in srgb, var(--black-a12) 22%, transparent);
+    --spring: cubic-bezier(0.34, 1.36, 0.64, 1);
   }
-  :root:has(.tabbar:not(.hide)) .page {
+  :root[data-theme='dark'] {
+    --dock-edge:
+      inset 0 0 0 var(--hairline) color-mix(in srgb, var(--line) 80%, transparent), inset 0 1px 0 color-mix(in srgb, var(--white-a12) 8%, transparent);
+    --dock-shadow: 0 10px 30px -10px color-mix(in srgb, var(--black-a12) 60%, transparent);
+  }
+  :root:has(.dock:not(.hide)) {
+    --tab-h: calc(var(--dock-h) + var(--dock-b) + 8px);
+  }
+  :root:has(.dock:not(.hide)) .page {
     padding-bottom: calc(40px + var(--tab-h));
   }
-  .tabbar {
+  .dock {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 40;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    height: calc(56px + var(--safe-b));
-    padding: 0 max(4px, env(safe-area-inset-right)) var(--safe-b) max(4px, env(safe-area-inset-left));
-    background: var(--bg);
-    box-shadow: 0 calc(-1 * var(--hairline)) 0 var(--line);
+    left: max(16px, env(safe-area-inset-left));
+    right: var(--dock-x);
+    bottom: var(--dock-b);
+    z-index: 46;
+    display: flex;
+    gap: 10px;
+    height: var(--dock-h);
+    pointer-events: none;
     transition:
       transform var(--duration) var(--ease),
       visibility var(--duration) var(--ease);
   }
-  .tabbar.hide {
-    transform: translateY(100%);
+  .dock.hide {
+    transform: translateY(calc(100% + var(--dock-b) + 8px));
     visibility: hidden;
+  }
+  .dock-bar,
+  .dock-more,
+  .arc-item {
+    pointer-events: auto;
+    background: var(--dock-glass);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    box-shadow: var(--dock-edge), var(--dock-shadow);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dock-bar {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 4px;
+    border-radius: var(--radius-pill);
+    transition:
+      transform 0.42s var(--ease),
+      opacity 0.3s var(--ease);
+  }
+  /* 展开圆弧时胶囊向左滑出屏幕，收起时滑回 */
+  .dock.open .dock-bar {
+    transform: translateX(calc(-100% - 32px));
+    opacity: 0;
   }
   .tab {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 2px;
     min-width: 0;
-    border: 0;
-    background: none;
     padding: 0 2px;
-    color: var(--label-3);
+    border-radius: var(--radius-pill);
+    color: var(--label-2);
     font: 500 var(--fs-1)/1.2 var(--font);
     text-decoration: none;
-    -webkit-tap-highlight-color: transparent;
+    transition:
+      background var(--duration) var(--ease),
+      transform var(--duration) var(--ease);
   }
   .tab .i {
     width: 22px;
@@ -10418,6 +10458,7 @@ button.name-edit:focus-visible {
     white-space: nowrap;
   }
   .tab.on {
+    background: color-mix(in srgb, var(--label) 8%, transparent);
     color: var(--label);
     font-weight: 600;
   }
@@ -10425,15 +10466,147 @@ button.name-edit:focus-visible {
     stroke-width: 2;
   }
   .tab:active {
-    opacity: 0.6;
+    transform: scale(0.94);
   }
-  .tab:focus-visible {
+  .tab:focus-visible,
+  .dock-more:focus-visible,
+  .arc-item:focus-visible {
     outline: var(--hairline) solid var(--focus-ring);
-    outline-offset: -4px;
-    border-radius: var(--radius-md);
+    outline-offset: 2px;
+  }
+  .dock-more {
+    position: relative;
+    flex: none;
+    width: var(--dock-h);
+    height: var(--dock-h);
+    border: 0;
+    border-radius: 50%;
+    padding: 0;
+    color: var(--label-2);
+    transition: transform 0.2s var(--ease);
+  }
+  /* 当前页不在胶囊里时，「更多」带当前态 */
+  .dock-more.on {
+    color: var(--label);
+  }
+  .dock-more.on::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--label) 8%, transparent);
+  }
+  .dock.open .dock-more::after {
+    opacity: 0;
+  }
+  .dock-more:active {
+    transform: scale(0.92);
+  }
+  /* 三个点与叉号交替：转过 90° 同时淡入淡出 */
+  .dock-more .i {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.9;
+    transition:
+      transform 0.4s var(--spring),
+      opacity 0.2s var(--ease);
+  }
+  .dock-more .i:last-child {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
+  }
+  .dock.open .dock-more {
+    color: var(--label);
+  }
+  .dock.open .dock-more .i:first-child {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.6);
+  }
+  .dock.open .dock-more .i:last-child {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* 圆弧：原点就是「更多」按钮的圆心 */
+  .arc-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 44;
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    opacity: 0;
+    transition: opacity 0.3s var(--ease);
+  }
+  .arc-scrim.on {
+    opacity: 1;
+  }
+  .arc {
+    position: fixed;
+    right: calc(var(--dock-x) + var(--dock-h) / 2);
+    bottom: calc(var(--dock-b) + var(--dock-h) / 2);
+    z-index: 45;
+    width: 0;
+    height: 0;
+  }
+  .arc-slot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+    transition:
+      transform 0.2s var(--ease),
+      opacity 0.16s var(--ease);
+  }
+  /* 各项从按钮处弹到各自位置，沿弧依次出现 */
+  .arc.on .arc-slot {
+    transform: translate(calc(var(--x) - 50%), calc(var(--y) - 50%));
+    opacity: 1;
+    transition:
+      transform 0.5s var(--spring) var(--d),
+      opacity 0.2s var(--ease) var(--d);
+  }
+  .arc-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    width: 56px;
+    height: 56px;
+    border: 0;
+    border-radius: 50%;
+    padding: 0 6px;
+    color: var(--label);
+    text-decoration: none;
+    transition:
+      background var(--duration) var(--ease),
+      transform 0.2s var(--ease);
+  }
+  .arc-item .i {
+    width: 20px;
+    height: 20px;
+    stroke-width: 1.8;
+  }
+  .arc-item.on {
+    background: var(--label);
+    color: var(--bg);
+  }
+  .arc-item:active {
+    transform: scale(0.92);
+  }
+  /* 名称排在图标下方，过长时收成省略号而不压到邻项 */
+  .arc-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font: 500 var(--fs-1)/1.1 var(--font);
+    white-space: nowrap;
   }
   /* 助手输入框吸在底栏上方，底部安全区已由底栏让出 */
-  :root:has(.tabbar:not(.hide)) .as-composer {
+  :root:has(.dock:not(.hide)) .as-composer {
     bottom: var(--tab-h);
     padding-bottom: 10px;
   }
@@ -10463,34 +10636,30 @@ button.name-edit:focus-visible {
     box-shadow: 0 0 0 var(--hairline) var(--line);
     font-weight: 600;
   }
-  /* 「更多」面板：模块一组、货币/主题/设置一组 */
-  .more {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding-top: 4px;
+}
+@media (max-width: 860px) and (prefers-reduced-motion: reduce) {
+  .dock-bar,
+  .dock-more .i,
+  .arc-slot,
+  .arc.on .arc-slot {
+    transition: opacity 0.2s linear;
+    transition-delay: 0s;
   }
-  .more-group {
-    display: flex;
-    flex-direction: column;
-    padding: 4px;
-    border-radius: var(--radius-lg);
-    background: var(--card);
-    box-shadow: 0 0 0 var(--hairline) var(--line);
+  .dock.open .dock-bar,
+  .arc-slot {
+    transform: none;
   }
-  .more .side-item {
-    height: 46px;
-    padding: 0 12px;
-    text-decoration: none;
+  .arc-slot {
+    transform: translate(-50%, -50%);
+  }
+  .arc.on .arc-slot {
+    transform: translate(calc(var(--x) - 50%), calc(var(--y) - 50%));
   }
 }
 /* 横屏手机：底栏变矮，图标与文字并排 */
 @media (max-width: 860px) and (max-height: 500px) {
-  :root:has(.tabbar:not(.hide)) {
-    --tab-h: calc(44px + var(--safe-b));
-  }
-  .tabbar {
-    height: calc(44px + var(--safe-b));
+  :root {
+    --dock-h: 48px;
   }
   .tab {
     flex-direction: row;

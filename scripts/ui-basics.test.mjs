@@ -584,6 +584,8 @@ test('remaining CSS transitions use 250ms ease-out and only physical cards lift 
     for (const [selector, body] of leafRules(css)) {
       for (const [, value] of body.matchAll(/transition:\s*([^;]+);/g)) {
         if (value.startsWith('none')) continue;
+        // The phone dock's More arc is the one choreographed motion: springs, sweeps and staggered delays.
+        if (/^\.(?:dock(?:-bar|-more)?|arc(?:-scrim|-slot|-item)?)(?![\w-])/.test(selector.trim()) && !selector.includes(':hover')) continue;
         // dnd-kit owns only translate timing; card transform/shadow still use the shared transition.
         const fixed = physicalCardSelector(selector) ? value.replace(/,\s*var\(--sort-t, translate 0s\)/, '') : value;
         for (const part of fixed.split(',')) assert.match(part.trim(), /^[\w-]+ var\(--duration\) var\(--ease\)$/, `${file}: ${value}`);
@@ -732,6 +734,8 @@ test('glass is limited to sticky toolbars and sheet headers and footers', () => 
     for (const [selector, body] of rules) {
       if (selector.startsWith('@')) walk(cssRules(body), file);
       else if ([...body.matchAll(/(?:^|;)\s*(?:-webkit-)?backdrop-filter:\s*([^;]+);/g)].some((m) => m[1].trim() !== 'none')) {
+        // The phone dock is the one floating glass surface: fixed, not sticky.
+        if (selector.replace(/\s+/g, ' ') === '.dock-bar, .dock-more, .arc-item') continue;
         if (!['.toolbar', '.sheet-head', '.sheet-foot'].includes(selector)) failures.push(`${file}: ${selector}`);
         assert.match(body, /position:\s*sticky/, `${file}: ${selector}`);
       }

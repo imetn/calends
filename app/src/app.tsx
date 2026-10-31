@@ -8,8 +8,8 @@ import { addDays, diffDays, effectiveStatus, nextCharge, isStopped } from '../..
 import { cnDate, money, setSignedAmounts } from '../../shared/format.ts';
 import { avatarOf, type AppState, type Subscription } from '../../shared/types.ts';
 import { IconButton } from './components/ui.tsx';
-import { AiSwitch, MoreSheet, TabBar, type MobileItem } from './components/MobileNav.tsx';
-import { mobileNav } from './mobile-nav.ts';
+import { AiSwitch, Dock, type MobileItem } from './components/MobileNav.tsx';
+import { mobileNav, navPath } from './mobile-nav.ts';
 import { AskLayer, TipLayer, Toasts } from './components/overlays.tsx';
 import { Icon } from './components/icons.tsx';
 import { SubIcon } from './components/marks.tsx';
@@ -71,23 +71,18 @@ const NAV = [
 ];
 
 /**
- * 手机导航：助手与连接合成一个 AI 入口（只读时没有助手）；底栏按设置放 4 项，其余进「更多」
+ * 手机导航：助手与连接合成一个入口，名称同桌面「助手」（只读时没有助手，退回「连接」）；底栏按设置放 4 项，其余进「更多」
  */
 function mobileOf(st: AppState['settings'], ro: boolean) {
   const shown = navOf(st).filter((n) => !(ro && n.path === 'assistant'));
   const hasAssistant = shown.some((n) => n.path === 'assistant');
   const hasConnect = shown.some((n) => n.path === 'connect');
+  const paths = shown.map((n) => n.path);
   const item = (key: string): MobileItem => {
-    if (key !== 'ai') {
-      const n = shown.find((x) => x.path === key)!;
-      return { key, path: n.path, label: n.label, icon: n.icon };
-    }
-    return { key, path: hasAssistant ? 'assistant' : 'connect', label: t('app.nav.aiHub'), icon: 'bot' };
+    const n = shown.find((x) => x.path === navPath(key, paths))!;
+    return { key, path: n.path, label: n.label, icon: n.icon };
   };
-  const { bar, more } = mobileNav(
-    shown.map((n) => n.path),
-    st.bottomNav,
-  );
+  const { bar, more } = mobileNav(paths, st.bottomNav);
   return { bar: bar.map(item), more: more.map(item), aiSwitch: hasAssistant && hasConnect };
 }
 
@@ -364,7 +359,7 @@ function Sidebar({
  * 侧边栏「货币」：点开直接是下拉。原币 = 列表按各自币种显示；选一种货币 = 全站统计按它折算，列表也换成它。
  * 原币只影响显示，统计仍沿用上次选的货币。
  */
-function CurrencyItem({ state }: { state: AppState }) {
+function CurrencyItem({ state, arc }: { state: AppState; arc?: boolean }) {
   const orig = useOrig();
   const base = state.settings.baseCurrency;
   const value = orig ? 'orig' : base;
@@ -380,7 +375,7 @@ function CurrencyItem({ state }: { state: AppState }) {
     setOrig(false);
     if (v !== base && !state.readonly) run(() => saveSettings({ baseCurrency: v }));
   };
-  return <CurrencyPicker value={value} used={used} all={rest} onChange={pick} />;
+  return <CurrencyPicker value={value} used={used} all={rest} onChange={pick} arc={arc} />;
 }
 
 /** ⌘K 搜索：订阅、页面、操作 */
@@ -699,16 +694,18 @@ function App() {
         )}
         <Suspense fallback={null}>{view}</Suspense>
       </div>
-      {mobile && <TabBar bar={mobile.bar} route={route} moreOpen={more} onMore={() => setMore(!more)} />}
-      {mobile && more && (
-        <MoreSheet
+      {mobile && (
+        <Dock
+          bar={mobile.bar}
           more={mobile.more}
           route={route}
-          currency={<CurrencyItem state={state} />}
+          open={more}
+          onOpen={setMore}
+          currency={<CurrencyItem state={state} arc />}
           theme={theme}
           toggleTheme={toggleTheme}
           settings={!ro}
-          onClose={() => setMore(false)}
+          onAdd={ro ? undefined : add}
         />
       )}
 
