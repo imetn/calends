@@ -416,7 +416,7 @@ export function List({
                 return (
                   <button key={s.id} className={`lt-row st-${st}`} role="row" onClick={() => onOpen(s)}>
                     <span className="lt-name">
-                      <SubIcon sub={s} size={32} />
+                      <SubIcon sub={s} size={28} />
                       <span className="lt-title">
                         <span className="nm">
                           <b>{s.name}</b>

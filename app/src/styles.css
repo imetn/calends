@@ -5678,7 +5678,7 @@ a.car-toggle {
   align-items: center;
   gap: 12px 40px;
   width: 100%;
-  min-height: 56px;
+  min-height: 52px;
   padding: 8px 16px;
   border: 0;
   border-top: var(--hairline) solid var(--sep);
@@ -5698,6 +5698,12 @@ a.car-toggle {
 .lt-head {
   border-top: 0;
   cursor: default;
+}
+/* 带外框的整宽表：表头是一条浅灰底带，比数据行矮，与行区分开 */
+.ltable > .lt-head.table-head {
+  height: 36px;
+  min-height: 36px;
+  background: var(--fill-2);
 }
 .lt-head:hover,
 .lt-head:active {
@@ -5751,7 +5757,7 @@ a.car-toggle {
   min-width: 0;
 }
 .lt-title .nm b {
-  font-weight: 600;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

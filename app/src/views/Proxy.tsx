@@ -217,7 +217,7 @@ export function ProxyTable({
           return (
             <button key={s.id} className={`lt-row ${stopped ? 'st-ended' : ''}`} role="row" onClick={() => setLedger(s.id)}>
               <span className="lt-name">
-                <SubIcon sub={s} size={32} />
+                <SubIcon sub={s} size={28} />
                 <span className="lt-title">
                   <span className="nm">
                     <b>{s.name}</b>
