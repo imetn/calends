@@ -1088,6 +1088,9 @@ a {
 .pc-foot > :last-child {
   min-width: 0;
 }
+.pc-meta {
+  text-align: right;
+}
 .pc-foot > :last-child > * {
   white-space: nowrap;
   overflow: hidden;
@@ -1368,10 +1371,38 @@ a {
     gap: 12px;
   }
 }
+/* 手机一行两张：卡太窄放不下横向信息，改为自然增高，右下说明落到金额下方 */
 @media (max-width: 520px) {
   .wallet-grid {
-    grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 10px;
+  }
+  .paycard {
+    aspect-ratio: auto;
+    height: 100%;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 14px;
+  }
+  .pc-id {
+    gap: 8px;
+  }
+  .pc-logo {
+    width: 24px;
+    height: 24px;
+  }
+  .pc-id .pc-name {
+    font-size: 15px;
+  }
+  .pc-bal {
+    font-size: 21px;
+  }
+  .pc-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .pc-meta {
+    text-align: start;
   }
 }
 

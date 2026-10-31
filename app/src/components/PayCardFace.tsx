@@ -55,7 +55,7 @@ export function CardFace({ m, label, value, right, rightSub }: { m: PaymentMetho
             {label && <div className="o">{label}</div>}
             <div className="pc-bal">{value}</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div className="pc-meta">
             <div className="o">{right}</div>
             <div style={{ fontWeight: 600 }}>{rightSub}</div>
           </div>
@@ -81,7 +81,7 @@ export function CardFace({ m, label, value, right, rightSub }: { m: PaymentMetho
             {label && <div className="ac-o">{label}</div>}
             <div className="pc-bal">{value}</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div className="pc-meta">
             <div className="ac-o">{right}</div>
             <div style={{ fontWeight: 600 }}>{rightSub}</div>
           </div>
@@ -121,7 +121,7 @@ export function CardFace({ m, label, value, right, rightSub }: { m: PaymentMetho
           {label && <div className="o">{label}</div>}
           <div className="pc-bal">{value}</div>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div className="pc-meta">
           <div className="o">{right}</div>
           <div style={{ fontWeight: 600 }}>{rightSub}</div>
         </div>
