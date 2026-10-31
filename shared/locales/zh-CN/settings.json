@@ -35,6 +35,11 @@
     "lookAhead": "往后看",
     "lookAheadAria": "即将扣款天数"
   },
+  "bottomNav": {
+    "title": "手机底栏",
+    "slot": "第 {n} 项",
+    "foot": "第 5 项固定为「更多」，其余模块都收在里面。侧边栏里隐藏的模块不会出现在底栏。"
+  },
   "remind": {
     "title": "提醒",
     "lead": "默认提前",

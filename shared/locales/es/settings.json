@@ -35,6 +35,11 @@
     "lookAhead": "Anticipación",
     "lookAheadAria": "Periodo de próximos cobros"
   },
+  "bottomNav": {
+    "title": "Barra de pestañas (móvil)",
+    "slot": "Pestaña {n}",
+    "foot": "La quinta pestaña siempre es «Más» y contiene el resto de módulos. Los módulos ocultos en la barra lateral no aparecen."
+  },
   "remind": {
     "title": "Recordatorios",
     "lead": "Recordarme",

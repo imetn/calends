@@ -3,12 +3,13 @@ import { KeyboardHelp } from './components/KeyboardHelp.tsx';
 import { isPasskeyCancellation } from './passkey-autofill.ts';
 import { base } from './base.ts';
 import { createRoot } from 'react-dom/client';
-import { FocusScope } from 'react-aria';
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { addDays, diffDays, effectiveStatus, nextCharge, isStopped } from '../../shared/billing.ts';
 import { cnDate, money, setSignedAmounts } from '../../shared/format.ts';
 import { avatarOf, type AppState, type Subscription } from '../../shared/types.ts';
 import { IconButton } from './components/ui.tsx';
+import { AiSwitch, MoreSheet, TabBar, type MobileItem } from './components/MobileNav.tsx';
+import { mobileNav } from './mobile-nav.ts';
 import { AskLayer, TipLayer, Toasts } from './components/overlays.tsx';
 import { Icon } from './components/icons.tsx';
 import { SubIcon } from './components/marks.tsx';
@@ -68,6 +69,27 @@ const NAV = [
   { path: 'assistant', label: 'assistant', icon: 'chat' },
   { path: 'connect', label: 'ai', icon: 'bot' },
 ];
+
+/**
+ * 手机导航：助手与连接合成一个 AI 入口（只读时没有助手）；底栏按设置放 4 项，其余进「更多」
+ */
+function mobileOf(st: AppState['settings'], ro: boolean) {
+  const shown = navOf(st).filter((n) => !(ro && n.path === 'assistant'));
+  const hasAssistant = shown.some((n) => n.path === 'assistant');
+  const hasConnect = shown.some((n) => n.path === 'connect');
+  const item = (key: string): MobileItem => {
+    if (key !== 'ai') {
+      const n = shown.find((x) => x.path === key)!;
+      return { key, path: n.path, label: n.label, icon: n.icon };
+    }
+    return { key, path: hasAssistant ? 'assistant' : 'connect', label: t('app.nav.aiHub'), icon: 'bot' };
+  };
+  const { bar, more } = mobileNav(
+    shown.map((n) => n.path),
+    st.bottomNav,
+  );
+  return { bar: bar.map(item), more: more.map(item), aiSwitch: hasAssistant && hasConnect };
+}
 
 /** 侧边栏实际显示的模块：去掉设置里隐藏的；AI 接入关掉时也不显示 */
 function navOf(st: AppState['settings']) {
@@ -499,28 +521,17 @@ function App() {
   const [collapsedPref, setCollapsedPref] = usePref<'0' | '1'>('sidebar-collapsed', '0', (v): v is '0' | '1' => v === '0' || v === '1');
   const collapsed = collapsedPref === '1';
   const setCollapsed = (v: boolean) => setCollapsedPref(v ? '1' : '0');
-  const [drawer, setDrawer] = useState(false);
+  const [more, setMore] = useState(false);
   const loaded = !!state;
   useEffect(() => {
     if (loaded) prefetchViews();
   }, [loaded]);
+  // 窄屏：侧边栏换成底栏 +「更多」
   const narrow = useMedia('(max-width: 860px)');
-  // 变宽后抽屉不再适用：关掉
   useEffect(() => {
-    if (!narrow) setDrawer(false);
+    if (!narrow) setMore(false);
   }, [narrow]);
-  useEffect(() => {
-    if (!drawer) return;
-    const close = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || document.querySelector('.scrim, [aria-modal="true"]')) return;
-      e.preventDefault();
-      setDrawer(false);
-    };
-    document.addEventListener('keydown', close);
-    return () => document.removeEventListener('keydown', close);
-  }, [drawer]);
-
-  useEffect(() => setDrawer(false), [route]);
+  useEffect(() => setMore(false), [route]);
   // 未登录：除登录页外都跳到 /login 并记下原地址；根路径在开了公开页时让访客看公开页
   useEffect(() => {
     if (phase !== 'login' || route === 'login') return;
@@ -544,11 +555,10 @@ function App() {
         setPalette(true);
         return;
       }
-      // ⌘B 折叠或展开侧栏（旧的 ⌘\ 保留）；窄屏时开关抽屉
+      // ⌘B 折叠或展开侧栏（旧的 ⌘\ 保留）；窄屏没有侧栏
       if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key.toLowerCase() === 'b' || e.key === '\\')) {
         e.preventDefault();
-        if (narrow) setDrawer(!drawer);
-        else setCollapsed(!collapsed);
+        if (!narrow) setCollapsed(!collapsed);
         return;
       }
       const detail = viewId ? document.querySelector<HTMLElement>('.sheet-dlg:has(.dt)') : null;
@@ -569,7 +579,8 @@ function App() {
         navigate(navOf(state.settings)[action - 1].path);
       }
     };
-    const onDrawer = () => (matchMedia('(max-width: 860px)').matches ? setDrawer(true) : setCollapsed(false));
+    // 手机端工具栏左上角的搜索
+    const onSearch = () => setPalette(true);
     // 可以带着草稿（AI 助手「编辑后添加」）
     const onAdd = (e: Event) =>
       state &&
@@ -577,15 +588,15 @@ function App() {
       setEditing((e as CustomEvent<Subscription | undefined>).detail ?? newSub(today(), state?.settings.defaultMethodId, state?.settings.baseCurrency));
     document.addEventListener('keydown', onKey);
     document.addEventListener('keydown', preventBrowserSave, true);
-    window.addEventListener('ledger:drawer', onDrawer);
+    window.addEventListener('ledger:search', onSearch);
     window.addEventListener('ledger:add', onAdd);
     return () => {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('keydown', preventBrowserSave, true);
-      window.removeEventListener('ledger:drawer', onDrawer);
+      window.removeEventListener('ledger:search', onSearch);
       window.removeEventListener('ledger:add', onAdd);
     };
-  }, [state, collapsed, narrow, drawer, editing, viewId, review, ics, palette]);
+  }, [state, collapsed, narrow, editing, viewId, review, ics, palette]);
 
   if (phase === 'loading' || (phase === 'login' && route !== 'login')) return <div className="login" />;
   // 连不上又没有缓存：只提示离线并可重试，不显示登录表单（此时输入密码也无法验证）
@@ -597,14 +608,16 @@ function App() {
   const d = today();
   const ro = !!state.readonly;
   const open = (s: Subscription) => {
-    setDrawer(false);
+    setMore(false);
     setViewId(s.id);
   };
   const add = () => {
-    setDrawer(false);
     setEditing(newSub(d, state?.settings.defaultMethodId, state?.settings.baseCurrency));
   };
   const viewing = state.subscriptions.find((s) => s.id === viewId);
+  const mobile = narrow ? mobileOf(state.settings, ro) : null;
+  // 手机端 AI 入口里的「助手 | 连接」切换
+  const aiSwitch = mobile?.aiSwitch ? <AiSwitch route={route} /> : undefined;
 
   let view;
   if (route.startsWith('cat/')) view = <List key={route} state={state} today={d} onOpen={open} onAdd={add} category={route.slice(4)} />;
@@ -629,10 +642,10 @@ function App() {
         view = <ProxyPage state={state} today={d} onOpen={open} />;
         break;
       case 'connect':
-        view = <Ai state={state} />;
+        view = <Ai state={state} switcher={aiSwitch} />;
         break;
       case 'assistant':
-        view = ro ? null : <Assistant state={state} today={d} onOpen={open} />;
+        view = ro ? null : <Assistant state={state} today={d} onOpen={open} switcher={aiSwitch} />;
         break;
       case 'report':
         view = <Report state={state} today={d} onOpen={open} onReview={(y) => setReview(String(y))} />;
@@ -656,7 +669,7 @@ function App() {
 
   const sidebar = (
     <Sidebar
-      inert={narrow ? !drawer : collapsed}
+      inert={narrow || collapsed}
       state={state}
       route={route}
       d={d}
@@ -664,25 +677,15 @@ function App() {
       toggleTheme={toggleTheme}
       onOpen={open}
       onAdd={add}
-      onSearch={() => {
-        setDrawer(false);
-        setPalette(true);
-      }}
-      onCollapse={() => (drawer ? setDrawer(false) : setCollapsed(true))}
+      onSearch={() => setPalette(true)}
+      onCollapse={() => setCollapsed(true)}
     />
   );
 
   return (
-    <div className={`app ${collapsed ? 'collapsed' : ''} ${drawer ? 'drawer' : ''}`}>
-      {drawer && narrow ? (
-        <FocusScope contain autoFocus restoreFocus>
-          {sidebar}
-        </FocusScope>
-      ) : (
-        sidebar
-      )}
-      <div className="drawer-scrim" onClick={() => setDrawer(false)} />
-      <div className="main" inert={drawer && narrow}>
+    <div className={`app ${collapsed ? 'collapsed' : ''}`}>
+      {sidebar}
+      <div className="main">
         {phase === 'offline' && (
           <div className="badge orange" style={{ position: 'fixed', top: 10, right: 10, zIndex: 50 }}>
             {t('app.offline')}
@@ -700,6 +703,18 @@ function App() {
         )}
         <Suspense fallback={null}>{view}</Suspense>
       </div>
+      {mobile && <TabBar bar={mobile.bar} route={route} moreOpen={more} onMore={() => setMore(!more)} />}
+      {mobile && more && (
+        <MoreSheet
+          more={mobile.more}
+          route={route}
+          currency={<CurrencyItem state={state} />}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          settings={!ro}
+          onClose={() => setMore(false)}
+        />
+      )}
 
       {viewing && <Detail sub={viewing} state={state} today={d} onEdit={editFromDetail} onClose={() => setViewId(null)} />}
       {editing && (

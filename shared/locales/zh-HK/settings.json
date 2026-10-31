@@ -35,6 +35,11 @@
     "lookAhead": "往後看",
     "lookAheadAria": "即將扣款天數"
   },
+  "bottomNav": {
+    "title": "手機底部列",
+    "slot": "第 {n} 項",
+    "foot": "第 5 項固定為「更多」，其餘模組都收在裡面。側邊欄中隱藏的模組不會出現在底部列。"
+  },
   "remind": {
     "title": "提醒",
     "lead": "預設提前",

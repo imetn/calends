@@ -67,17 +67,21 @@ export function Toolbar({
   children,
   onAdd,
   addLabel = t('ui.toolbar.add'),
+  switcher,
 }: {
   title: ComponentChildren;
   sub?: ComponentChildren;
   children?: ComponentChildren;
   onAdd?: () => void;
   addLabel?: string;
+  /** 手机端工具栏下方的一行切换（如 AI 的「助手 | 连接」）；桌面端不传，结构不变 */
+  switcher?: ComponentChildren;
 }) {
   return (
     <header className="toolbar">
-      <IconButton className="sb-btn tb-lead" aria-label={t('ui.toolbar.openSidebar')} onClick={() => window.dispatchEvent(new Event('ledger:drawer'))}>
-        <Icon name="menu" />
+      {/* 手机端左上角是搜索（导航在底栏），桌面端隐藏 */}
+      <IconButton className="sb-btn tb-lead" aria-label={t('app.sidebar.search')} onClick={() => window.dispatchEvent(new Event('ledger:search'))}>
+        <Icon name="search" />
       </IconButton>
       <div className="tb-title">
         <h1>{copyParts(title)}</h1>
@@ -87,6 +91,7 @@ export function Toolbar({
         <Icon name="compose" />
       </IconButton>
       <div className="tb-actions">{children}</div>
+      {switcher && <div className="tb-switch">{switcher}</div>}
     </header>
   );
 }
