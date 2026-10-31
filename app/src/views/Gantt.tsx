@@ -475,7 +475,7 @@ export function Gantt({
       )}
       <div
         ref={gtEl}
-        className={`gt ${pannable ? 'pannable' : ''} ${liveW != null ? 'resizing' : ''}`}
+        className={`gt ${pannable ? 'pannable' : 'whole'} ${liveW != null ? 'resizing' : ''}`}
         style={{ '--lw': `${labelW}px` } as Record<string, string>}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

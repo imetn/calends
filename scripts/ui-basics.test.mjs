@@ -493,6 +493,29 @@ test('timeline loss amount uses its own line box so the digits stay vertically c
   assert.match(rule[1], /font-size:\s*var\(--fs-1\)/);
 });
 
+test('timeline “all” range keeps start and end markers whole at both track edges without shifting the axis', () => {
+  const rule = (sel) => cssRules(allCss).find(([s]) => s === sel)?.[1] ?? '';
+  const px = (body, prop) => body.match(new RegExp(`(?:^|;|\\s)${prop}:\\s*([^;]+);`))?.[1].trim();
+  const [, gantt, ganttSource] = sources.find(([file]) => file === 'views/Gantt.tsx');
+  let marked = false;
+  visit(gantt, (node) => {
+    if (node.type === 'TemplateLiteral' && text(node, ganttSource).startsWith('`gt ${pannable ?'))
+      marked = /'pannable' : 'whole'/.test(text(node, ganttSource));
+  });
+  assert.ok(marked, 'non-pannable timelines (the “all” zoom and report snapshots) carry .whole');
+  const bar = Number(ganttSource.match(/const BAR = (\d+);/)?.[1]);
+  const dot = parseFloat(px(rule('.gt-lifetime'), 'width'));
+  const reserve = parseFloat(px(rule('.gt-track'), 'margin-right'));
+  const track = rule('.gt.whole .gt-body .gt-track');
+  const [top, right, bottom, left] = px(track, 'padding').split(/\s+/).map(parseFloat);
+  assert.deepEqual([top, bottom], [0, 0]);
+  assert.equal(px(track, 'margin'), `0 0 0 -${left}px`);
+  assert.equal(px(rule('.gt.whole .gt-body .gt-pan'), 'inset'), px(track, 'padding'));
+  // 裁切框向外让出的空间盖得住停用标志（直径 = 条高）与买断圆点的一半；内容框与表头同宽，刻度和网格不移位
+  assert.ok(left >= bar / 2 && left >= dot / 2, `left clip margin ${left}px`);
+  assert.equal(right, reserve);
+});
+
 const styleFiles = readdirSync(root, { recursive: true }).filter((file) => file.endsWith('.css'));
 const styleSources = styleFiles.map((file) => [file, readUiSource(new URL(file, root)).replace(/\/\*[\s\S]*?\*\//g, '')]);
 // 钱包卡面按用户要求与 main 第一版保持一致（实体卡模拟：卡面配色、投影、倾斜反光、随卡片缩放的字号），

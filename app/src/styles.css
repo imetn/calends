@@ -6578,6 +6578,15 @@ a.car-toggle {
 .gt.panning .gt-pan {
   will-change: transform;
 }
+/* 「全部」范围的两端就是数据的起止：正文的裁切框向左让出半个停用标志、向右用满留白，
+   起止处的买断圆点、停用标志与最短胶囊不被切掉；内容框与表头同宽，刻度和网格照旧对齐 */
+.gt.whole .gt-body .gt-track {
+  margin: 0 0 0 -11px;
+  padding: 0 16px 0 11px;
+}
+.gt.whole .gt-body .gt-pan {
+  inset: 0 16px 0 11px;
+}
 .gt-tick {
   position: absolute;
   top: 9px;
