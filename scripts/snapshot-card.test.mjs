@@ -13,6 +13,20 @@ class Element {
   width = 390;
   height = 240;
   className = '';
+  nodeType = 1;
+  childNodes = [];
+  rects = [];
+  scrollWidth = 0;
+  clientWidth = 0;
+  ownerDocument = {
+    createRange: () => {
+      let target;
+      return { selectNodeContents: (node) => (target = node), getClientRects: () => target.rects };
+    },
+  };
+  getClientRects() {
+    return this.rects;
+  }
   css = { backgroundColor: 'rgba(0, 0, 0, 0)', borderRadius: '0px', transform: 'none' };
   get attributes() {
     return [...this.attrs].map(([name, value]) => ({ name, value }));
@@ -110,6 +124,7 @@ function harness(fail = false) {
     HTMLElement: Element,
     SVGElement: Element,
     HTMLImageElement: Image,
+    Node: { TEXT_NODE: 3, ELEMENT_NODE: 1 },
     requestAnimationFrame: (fn) => fn(),
     location: { origin: 'https://ledger.example.invalid' },
     base: (path) => path,
@@ -127,7 +142,9 @@ function harness(fail = false) {
       return new Blob(['PNG']);
     },
   };
-  const api = new Function(...Object.keys(deps), `${compiled.code.replace(/export /g, '')}; return { snapshot, snapshotCard };`)(...Object.values(deps));
+  const api = new Function(...Object.keys(deps), `${compiled.code.replace(/export /g, '')}; return { snapshot, snapshotCard, holdLines };`)(
+    ...Object.values(deps),
+  );
   return { ...api, document, frame: () => frame, capture: () => captured, disposed: () => disposed };
 }
 
@@ -203,4 +220,48 @@ test('failed rendering removes its isolated document and leaves the source alone
   assert.equal(h.frame().removed, true);
   assert.equal(h.disposed(), 1);
   assert.equal(source.removed, undefined);
+});
+
+test('text that fits one line on the page cannot wrap or gain an ellipsis when the image re-lays out its glyphs', () => {
+  const line = (top, height = 18) => ({ top, bottom: top + height });
+  const text = (textContent, ...rects) => ({ nodeType: 3, textContent, rects });
+  const inline = (...rects) => Object.assign(new Element(), { rects, css: { display: 'inline' } });
+  const block = (whiteSpace) => Object.assign(new Element(), { css: { display: 'block', whiteSpace } });
+  const root = new Element();
+  // 「10月28日 到期不续」：日期、行内标记、说明在同一行，导出时字宽稍大也不能把「续」挤到下一行
+  const meta = root.appendChild(new Element());
+  meta.childNodes = [text('10月28日 ', line(0)), inline(line(1)), text(' 到期不续', line(0))];
+  const wrapped = root.appendChild(new Element());
+  wrapped.childNodes = [text('一段在页面上本来就折成两行的说明', line(0), line(20))];
+  // 先放一个高图标，再放折成两行的文字：两行都与图标重叠，但文字本身不是一行
+  const iconFirst = root.appendChild(new Element());
+  iconFirst.childNodes = [inline(line(0, 40)), text('Long label that wraps', line(2), line(22))];
+  // 行内子元素落到第二行：整段不是一行
+  const spill = root.appendChild(new Element());
+  spill.childNodes = [text('Hello ', line(0)), inline(line(20))];
+  // 短文字 + 多行块级子块：父级锁一行，子块写回原本的 white-space，不继承 nowrap
+  const mixed = root.appendChild(new Element());
+  const sub = mixed.appendChild(block('normal'));
+  mixed.childNodes = [text('标题', line(10)), sub];
+  const name = root.appendChild(new Element());
+  name.childNodes = [text('Surge Mac', line(0))];
+  name.css = { ...name.css, textOverflow: 'ellipsis' };
+  name.scrollWidth = name.clientWidth = 80;
+  const cut = root.appendChild(new Element());
+  cut.childNodes = [text('A very long subscription name', line(0))];
+  cut.css = { ...cut.css, textOverflow: 'ellipsis' };
+  cut.scrollWidth = 200;
+  cut.clientWidth = 80;
+  const box = root.appendChild(new Element());
+  box.childNodes = [new Element()];
+  harness().holdLines(root);
+  assert.equal(meta.style.whiteSpace, 'nowrap');
+  assert.equal(wrapped.style.whiteSpace, undefined);
+  assert.equal(iconFirst.style.whiteSpace, undefined, 'a tall leading icon does not make wrapped text count as one line');
+  assert.equal(spill.style.whiteSpace, undefined);
+  assert.equal(mixed.style.whiteSpace, 'nowrap');
+  assert.equal(sub.style.whiteSpace, 'normal', 'block children keep their own wrapping');
+  assert.deepEqual([name.style.textOverflow, name.style.overflow], ['clip', 'visible']);
+  assert.equal(cut.style.textOverflow, undefined, 'names already shortened on the page keep their ellipsis');
+  assert.deepEqual(box.style, {});
 });

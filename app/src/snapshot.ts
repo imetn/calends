@@ -39,6 +39,47 @@ function inlineSvg(el: HTMLElement) {
   });
 }
 
+/**
+ * 导出图在 SVG 里重新排字，字形宽度与页面量出的冻结宽度稍有出入，就会多折一行或冒出省略号。
+ * 页面上排成一行的文字锁定不折行；页面上没被截断的省略号文字改为不截断。
+ * 「一行」只看直属文字和行内子元素的矩形，以第一段文字为准，图标和块级子元素不算；
+ * 块级子元素写回原本的 white-space，不让 nowrap 继承下去。先全部量完再统一写，避免逐个触发重排。
+ */
+export function holdLines(root: HTMLElement) {
+  const range = root.ownerDocument.createRange();
+  const hasText = (c: ChildNode) => c.nodeType === Node.TEXT_NODE && !!c.textContent?.trim();
+  const plans = [...root.querySelectorAll<HTMLElement>('*')].flatMap((node) => {
+    if (![...node.childNodes].some(hasText)) return [];
+    let line: DOMRect | undefined;
+    const rects = [...node.childNodes].flatMap((c) => {
+      if (hasText(c)) {
+        range.selectNodeContents(c);
+        const r = [...range.getClientRects()];
+        line ??= r[0];
+        return r;
+      }
+      return c.nodeType === Node.ELEMENT_NODE && getComputedStyle(c as Element).display.startsWith('inline') ? [...(c as Element).getClientRects()] : [];
+    });
+    const hold = !!line && rects.every((r) => r.top < line!.bottom && r.bottom > line!.top);
+    const style = getComputedStyle(node);
+    const blocks = hold
+      ? [...(node.children as HTMLCollectionOf<HTMLElement>)].flatMap((c) => {
+          const cs = getComputedStyle(c);
+          return cs.display.startsWith('inline') ? [] : [[c, cs.whiteSpace] as const];
+        })
+      : [];
+    return [{ node, hold, blocks, unclip: style.textOverflow === 'ellipsis' && node.scrollWidth <= node.clientWidth }];
+  });
+  for (const { blocks } of plans) for (const [c, ws] of blocks) c.style.whiteSpace ||= ws;
+  for (const { node, hold, unclip } of plans) {
+    if (hold) node.style.whiteSpace = 'nowrap';
+    if (unclip) {
+      node.style.textOverflow = 'clip';
+      node.style.overflow = 'visible';
+    }
+  }
+}
+
 /** Desktop detail width; independent of the caller's viewport and disclosure controls. */
 export const SNAPSHOT_WIDTH = 760;
 
@@ -179,6 +220,7 @@ export async function snapshot(el: HTMLElement, opts: SnapshotOptions = {}) {
     await doc.fonts.ready;
     await Promise.all(images.map((image) => image.decode().catch(() => {})));
     opts.prepare?.(clone, copies);
+    holdLines(clone);
     const fontEmbedCSS = await fontCSS();
     inlineSvg(clone);
     return await toBlob(clone, {
