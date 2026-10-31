@@ -1,7 +1,7 @@
 import { ConfirmButton } from '../components/ConfirmButton.tsx';
 import { copyParts } from '../components/copy.tsx';
 import { base } from '../base.ts';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { AppState } from '../../../shared/types.ts';
 import { CardTitle, Toolbar } from '../components/ui.tsx';
 import { LoadFailed, Sheet } from '../components/overlays.tsx';
@@ -266,7 +266,7 @@ function Connect({
  * AI 接入：把账本以 MCP 服务的形式开放给 AI 助手。
  * 这里不做聊天，只负责开关、令牌和各家客户端的接入方式；AI 助手拿到令牌后，用自己的对话来查询、记账。
  */
-export function Ai({ state }: { state: AppState }) {
+export function Ai({ state, switcher }: { state: AppState; switcher?: ReactNode }) {
   const url = `${location.origin}${base('/mcp')}`;
   const [tokens, setTokens] = useState<Token[] | null>(null);
   const [tools, setTools] = useState<ToolMeta[]>([]);
@@ -307,7 +307,7 @@ export function Ai({ state }: { state: AppState }) {
 
   return (
     <>
-      <Toolbar title={t('ai.title')}>
+      <Toolbar title={t('ai.title')} switcher={switcher}>
         {!ro && (
           <button className="btn primary" onClick={() => setCreating(CLIENTS.find((x) => x.id === client)?.name || 'AI')}>
             <Icon name="plus" /> {t('ai.newToken')}

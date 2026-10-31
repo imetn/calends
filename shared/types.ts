@@ -418,6 +418,8 @@ export interface Settings {
   hiddenNav?: string[];
   /** 侧边栏模块的顺序（overview、list、calendar…），用户在设置里拖出来的；没列到的按默认位置 */
   navOrder?: string[];
+  /** 手机底栏前 4 项（模块键，助手与连接合为 ai）；缺省取侧边栏前 4 个可见模块，第 5 项固定为「更多」 */
+  bottomNav?: string[];
   /** 打开后台时进入的页面（路由名，空为概览） */
   startPage?: string;
   /** 每周从哪天开始：1 周一（缺省）、0 周日 */

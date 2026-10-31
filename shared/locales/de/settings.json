@@ -38,6 +38,11 @@
     "lookAhead": "Vorschau",
     "lookAheadAria": "Zeitraum für anstehende Abbuchungen"
   },
+  "bottomNav": {
+    "title": "Tab-Leiste (Smartphone)",
+    "slot": "Tab {n}",
+    "foot": "Der fünfte Tab ist immer „Mehr“ und enthält alle übrigen Module. In der Seitenleiste ausgeblendete Module stehen nicht zur Auswahl."
+  },
   "remind": {
     "title": "Erinnerungen",
     "lead": "Erinnern",

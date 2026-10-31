@@ -2955,30 +2955,8 @@ button.bl-col {
   padding: 8px 12px 4px;
 }
 
-/* 移动端：抽屉式侧边栏 */
-.drawer-scrim {
-  display: none;
-}
+/* 移动端：侧边栏换成底栏（见文件末尾「手机底栏」），工具栏吸顶 */
 @media (max-width: 860px) {
-  .sidebar {
-    display: flex !important;
-    transform: translateX(-100%);
-    width: min(300px, 84vw);
-    z-index: 70;
-    box-shadow: none;
-  }
-  .app.drawer .sidebar {
-    transform: none;
-    box-shadow: 0 0 40px color-mix(in srgb, var(--black-a12) 18%, transparent);
-  }
-  .app.drawer .drawer-scrim {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 65;
-    background: color-mix(in srgb, var(--black-a12) 30%, transparent);
-    animation: none;
-  }
   .toolbar {
     position: sticky;
     top: 0;
@@ -10349,4 +10327,145 @@ img.mm-flag {
 .car-card-identity {
   flex: 1;
   min-width: 0;
+}
+
+/* ---------------- 手机底栏：4 个入口 +「更多」，只在窄屏渲染 ---------------- */
+@media (max-width: 860px) {
+  /* 底栏占用的高度：页面留白、Toast、助手输入框都让在它上面；输入时底栏收起，高度归零 */
+  :root:has(.tabbar:not(.hide)) {
+    --tab-h: calc(56px + var(--safe-b));
+  }
+  :root:has(.tabbar:not(.hide)) .page {
+    padding-bottom: calc(40px + var(--tab-h));
+  }
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: calc(56px + var(--safe-b));
+    padding: 0 max(4px, env(safe-area-inset-right)) var(--safe-b) max(4px, env(safe-area-inset-left));
+    background: var(--bg);
+    box-shadow: 0 calc(-1 * var(--hairline)) 0 var(--line);
+    transition:
+      transform var(--duration) var(--ease),
+      visibility var(--duration) var(--ease);
+  }
+  .tabbar.hide {
+    transform: translateY(100%);
+    visibility: hidden;
+  }
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    border: 0;
+    background: none;
+    padding: 0 2px;
+    color: var(--label-3);
+    font: 500 var(--fs-1)/1.2 var(--font);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab .i {
+    width: 22px;
+    height: 22px;
+    stroke-width: 1.7;
+  }
+  .tab > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tab.on {
+    color: var(--label);
+    font-weight: 600;
+  }
+  .tab.on .i {
+    stroke-width: 2;
+  }
+  .tab:active {
+    opacity: 0.6;
+  }
+  .tab:focus-visible {
+    outline: var(--hairline) solid var(--focus-ring);
+    outline-offset: -4px;
+    border-radius: var(--radius-md);
+  }
+  /* 助手输入框吸在底栏上方，底部安全区已由底栏让出 */
+  :root:has(.tabbar:not(.hide)) .as-composer {
+    bottom: var(--tab-h);
+    padding-bottom: 10px;
+  }
+  /* AI 页「助手 | 连接」：标题下单独一行，排在页面操作之前 */
+  .tb-switch {
+    order: 3;
+    width: 100%;
+  }
+  .ai-switch {
+    display: flex;
+    height: var(--ctl-h-md);
+  }
+  .ai-switch a {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-2);
+    font-weight: 500;
+    color: var(--label-2);
+    text-decoration: none;
+  }
+  .ai-switch a.on {
+    background: var(--card);
+    color: var(--label);
+    box-shadow: 0 0 0 var(--hairline) var(--line);
+    font-weight: 600;
+  }
+  /* 「更多」面板：模块一组、货币/主题/设置一组 */
+  .more {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 4px;
+  }
+  .more-group {
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    border-radius: var(--radius-lg);
+    background: var(--card);
+    box-shadow: 0 0 0 var(--hairline) var(--line);
+  }
+  .more .side-item {
+    height: 46px;
+    padding: 0 12px;
+    text-decoration: none;
+  }
+}
+/* 横屏手机：底栏变矮，图标与文字并排 */
+@media (max-width: 860px) and (max-height: 500px) {
+  :root:has(.tabbar:not(.hide)) {
+    --tab-h: calc(44px + var(--safe-b));
+  }
+  .tabbar {
+    height: calc(44px + var(--safe-b));
+  }
+  .tab {
+    flex-direction: row;
+    gap: 6px;
+    font-size: var(--fs-1);
+  }
+  .tab .i {
+    width: 20px;
+    height: 20px;
+  }
 }

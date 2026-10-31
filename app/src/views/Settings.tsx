@@ -21,6 +21,7 @@ import { SecurityGroup } from './Security.tsx';
 import { CategoriesGroup } from './Categories.tsx';
 import { PublicSubsSheet, publicCandidates } from './PublicSubs.tsx';
 import { go, sortNav } from '../router.ts';
+import { mobileKey, mobileNav, pickSlot } from '../mobile-nav.ts';
 import { LOCALES, isLocale, t } from '../../../shared/i18n.ts';
 import { preferredLocale } from '../i18n.ts';
 
@@ -154,6 +155,18 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
   const s = state.settings;
   // 侧边栏模块按设置里的顺序列出，拖动后存回 navOrder（服务端，多台设备一致）
   const navRows = sortNav(NAV_ROWS, ([k]) => k, s.navOrder);
+  // 手机底栏只能放侧边栏里可见的模块；助手与连接合成一个 AI 入口
+  const shownNav = navRows.filter(([k]) => !(s.hiddenNav ?? []).includes(k) && (k !== 'connect' || s.aiEnabled !== false));
+  const tabBar = mobileNav(
+    shownNav.map(([k]) => k),
+    s.bottomNav,
+  ).bar;
+  const tabOptions = [...new Map(shownNav.map(([k, l]) => [mobileKey(k), mobileKey(k) === 'ai' ? t('app.nav.aiHub') : t(`app.nav.${l}`)]))].map(
+    ([value, label]) => ({
+      value,
+      label,
+    }),
+  );
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 6 } }),
@@ -390,6 +403,20 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
               />
             </Cell>
           )}
+        </Group>
+
+        <Group title={t('settings.bottomNav.title')} foot={t('settings.bottomNav.foot')}>
+          {tabBar.map((k, i) => (
+            <Cell key={i} label={t('settings.bottomNav.slot', { n: i + 1 })}>
+              <Picker
+                value={k}
+                onChange={(v) => run(() => saveSettings({ bottomNav: pickSlot(tabBar, i, v) }))}
+                options={tabOptions}
+                ariaLabel={t('settings.bottomNav.slot', { n: i + 1 })}
+                search={false}
+              />
+            </Cell>
+          ))}
         </Group>
 
         <Group title={t('settings.remind.title')}>

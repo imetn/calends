@@ -35,6 +35,11 @@
     "lookAhead": "Rentang ke depan",
     "lookAheadAria": "Rentang tagihan mendatang"
   },
+  "bottomNav": {
+    "title": "Bilah tab (ponsel)",
+    "slot": "Tab {n}",
+    "foot": "Tab kelima selalu “Lainnya” dan berisi modul lainnya. Modul yang disembunyikan di bilah samping tidak tersedia."
+  },
   "remind": {
     "title": "Pengingat",
     "lead": "Ingatkan saya",

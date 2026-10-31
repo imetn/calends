@@ -56,7 +56,7 @@ export function fmtWhen(iso: string): string {
 }
 
 // ---------- 页面 ----------
-export function Assistant({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
+export function Assistant({ state, today, onOpen, switcher }: { state: AppState; today: string; onOpen: (s: Subscription) => void; switcher?: ReactNode }) {
   const [cfg, setCfg] = useState<AssistantConfigView | null>(null);
   const [setup, setSetup] = useState(false);
   const [chat, setChat] = useState<Saved>(load);
@@ -306,7 +306,7 @@ export function Assistant({ state, today, onOpen }: { state: AppState; today: st
   const ready = !!cfg?.configured;
   return (
     <>
-      <Toolbar title={t('assistant.title')}>
+      <Toolbar title={t('assistant.title')} switcher={switcher}>
         <span className="as-tb">
           {!empty && (
             <IconButton onClick={reset} title={t('assistant.new')} aria-label={t('assistant.new')}>

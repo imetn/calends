@@ -35,6 +35,11 @@
     "lookAhead": "Antecedência",
     "lookAheadAria": "Janela de próximas cobranças"
   },
+  "bottomNav": {
+    "title": "Barra de abas (celular)",
+    "slot": "Aba {n}",
+    "foot": "A quinta aba é sempre “Mais” e reúne os demais módulos. Módulos ocultos na barra lateral não aparecem."
+  },
   "remind": {
     "title": "Lembretes",
     "lead": "Lembrar",

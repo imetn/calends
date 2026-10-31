@@ -181,7 +181,7 @@ export function Toasts() {
       theme={theme as 'light' | 'dark'}
       position="bottom-center"
       offset={24}
-      mobileOffset={{ bottom: 'calc(16px + env(safe-area-inset-bottom))' }}
+      mobileOffset={{ bottom: 'calc(16px + var(--tab-h, env(safe-area-inset-bottom)))' }}
       gap={8}
       visibleToasts={4}
       toastOptions={{ className: 'ledger-toast' }}
