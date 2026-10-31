@@ -6,8 +6,8 @@
 @import './design-tokens.css';
 
 :root {
-  --font: 'Geist', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  --font-num: 'Geist', -apple-system, 'PingFang SC', sans-serif;
+  --font: 'MiSans Latin', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-num: 'MiSans Latin', -apple-system, 'PingFang SC', sans-serif;
   --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --side-w: 260px;
   --safe-b: env(safe-area-inset-bottom, 0px);

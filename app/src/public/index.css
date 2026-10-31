@@ -56,7 +56,7 @@
   --radius-md: 10px;
   --radius-lg: 14px;
   --radius-xl: 14px;
-  --font-sans: 'Geist', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
+  --font-sans: 'MiSans Latin', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);

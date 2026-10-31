@@ -1,0 +1,37 @@
+/* MiSans Latin（小米官方西文版，未修改）：只覆盖西文、数字与货币符号，中文落到系统字体。
+ * 字重各降一档：500→Medium、600→Demibold、650/700→Semibold、800→Bold。 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('MiSansLatin-Regular.woff2') format('woff2');
+  font-weight: 100 450;
+  unicode-range: U+0000-024F, U+20A0-20CF, U+2212;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('MiSansLatin-Medium.woff2') format('woff2');
+  font-weight: 451 575;
+  unicode-range: U+0000-024F, U+20A0-20CF, U+2212;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('MiSansLatin-Demibold.woff2') format('woff2');
+  font-weight: 576 625;
+  unicode-range: U+0000-024F, U+20A0-20CF, U+2212;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('MiSansLatin-Semibold.woff2') format('woff2');
+  font-weight: 626 750;
+  unicode-range: U+0000-024F, U+20A0-20CF, U+2212;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('MiSansLatin-Bold.woff2') format('woff2');
+  font-weight: 751 1000;
+  unicode-range: U+0000-024F, U+20A0-20CF, U+2212;
+  font-display: swap;
+}

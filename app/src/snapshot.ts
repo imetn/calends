@@ -4,26 +4,27 @@ import { base } from './base.ts';
 import { renderSnapshotCharts } from './snapshot-render.tsx';
 import './components/copy.css';
 
-// 截图在独立的 SVG 里渲染，用不到页面加载的网络字体：把 Google Fonts 的字体转成 data URL 内嵌（只取一次）
+// 截图在独立的 SVG 里渲染，用不到页面加载的字体：把 data-font 样式表里的字体转成 data URL 内嵌（只取一次）
 let fonts: Promise<string> | undefined;
+async function inlineFonts(href: string): Promise<string> {
+  const css = await (await fetch(href)).text();
+  const urls = [...new Set([...css.matchAll(/url\(['"]?([^'")]+)['"]?\)/g)].map((m) => m[1]))];
+  const data = await Promise.all(
+    urls.map(async (u) => {
+      const b = await (await fetch(new URL(u, href))).blob();
+      return new Promise<string>((r) => {
+        const fr = new FileReader();
+        fr.onload = () => r(fr.result as string);
+        fr.readAsDataURL(b);
+      });
+    }),
+  );
+  return urls.reduce((s, u, i) => s.replaceAll(u, data[i]), css);
+}
 function fontCSS(): Promise<string> {
-  fonts ??= (async () => {
-    const href = document.querySelector<HTMLLinkElement>('link[rel="stylesheet"][href*="fonts.googleapis.com"]')?.href;
-    if (!href) return '';
-    const css = await (await fetch(href)).text();
-    const urls = [...new Set([...css.matchAll(/url\((https:[^)]+)\)/g)].map((m) => m[1]))];
-    const data = await Promise.all(
-      urls.map(async (u) => {
-        const b = await (await fetch(u)).blob();
-        return new Promise<string>((r) => {
-          const fr = new FileReader();
-          fr.onload = () => r(fr.result as string);
-          fr.readAsDataURL(b);
-        });
-      }),
-    );
-    return urls.reduce((s, u, i) => s.replaceAll(u, data[i]), css);
-  })().catch(() => '');
+  fonts ??= Promise.all(
+    [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][data-font]')].map((l) => inlineFonts(l.href).catch(() => '')),
+  ).then((css) => css.join('\n'));
   return fonts;
 }
 
