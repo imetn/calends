@@ -270,7 +270,8 @@ export const save_share_member: Tool = {
     validateCurrency(st, ccy);
     // 新成员没给收费标准时按车的收款规则
     const rule = carRule(st, s, today);
-    const ruleDefault = !old && a.fee == null && a.bill_every == null && a.fee_currency == null;
+    // 看实际生效的 feeArgs：follow_rule=true 时带来的 fee 等参数应被忽略
+    const ruleDefault = !old && feeArgs.fee == null && feeArgs.bill_every == null && feeArgs.fee_currency == null;
     const billEvery =
       feeArgs.bill_every != null
         ? Number(feeArgs.bill_every)

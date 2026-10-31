@@ -509,6 +509,28 @@ test('W-20 买断合租沿用内部周期 1200：MCP 新增成员、改备注、
   assert.equal((await f.call('save_share_member', { subscription: 'life', member: 'm', bill_every: 1200, dry_run: true })).isError, true);
 });
 
+test('W-21 新成员 follow_rule=true 时忽略附带的 fee：从加入日起收仍按车的季度规则收完整一期', async () => {
+  const f = await ledger();
+  const share = { role: 'owner', seats: 5, since: '2026-01-01', collectFrom: '2026-01-01', rule: { fee: 30, currency: 'USD', billEvery: 3 }, members: [] };
+  await upsert(f.env, 'subscriptions', 'quarter', sub('quarter', 'Fictional quarterly car', { start: '2026-01-01', share } as Partial<Subscription>));
+  const firsts = [];
+  for (const extra of [{}, { fee: 999 }]) {
+    const r = await f.call('save_share_member', {
+      subscription: 'quarter',
+      name: 'Fictional member',
+      follow_rule: true,
+      collect_day: 'joined',
+      joined: '2026-02-01',
+      dry_run: true,
+      ...extra,
+    });
+    assert.ok(!r.isError, JSON.stringify(r).slice(0, 300));
+    firsts.push((r.structuredContent as { member: { first_collection: unknown } }).member.first_collection);
+  }
+  assert.deepEqual(firsts[1], firsts[0]);
+  assert.deepEqual(firsts[0], { from: '2026-02-01', until: '2026-04-30', next: '2026-05-01', amount: 30, currency: 'USD', partial: false });
+});
+
 test('W-17 写入管线重构前的行为基线：清退出日连带清退款，删除与账本工具的草稿叠加', async () => {
   const f = await ledger();
   const past = `${Number(today.slice(0, 4)) - 1}-01-01`;
