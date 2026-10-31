@@ -29,10 +29,12 @@
       "other": "New password must be at least {min} characters"
     },
     "invalidDevice": "Invalid device",
+    "nameRequired": "Name can’t be empty",
     "cannotRemoveCurrent": "You can't remove this device. Use Log Out instead.",
     "expired": "The request expired. Please try again.",
-    "passkeyFailed": "Passkey verification failed",
-    "passkeyNotBound": "This passkey isn't registered with this site"
+    "passkeyFailed": "Passkey verification failed. Sign in with your password, then add it again in Settings → Security",
+    "passkeyRegisterFailed": "Passkey verification failed",
+    "passkeyNotBound": "This passkey isn't registered with this site. Sign in with your password, then add it again in Settings → Security"
   },
   "ics": {
     "calName": "Subscription charges",

@@ -29,10 +29,12 @@
       "other": "A nova senha deve ter pelo menos {min} caracteres"
     },
     "invalidDevice": "Dispositivo inválido",
+    "nameRequired": "O nome não pode ficar vazio",
     "cannotRemoveCurrent": "Não é possível remover este dispositivo. Use Sair.",
     "expired": "A solicitação expirou. Tente de novo.",
-    "passkeyFailed": "Falha na verificação da chave de acesso",
-    "passkeyNotBound": "Esta chave de acesso não está registrada neste site"
+    "passkeyFailed": "Falha na verificação da chave de acesso. Entre com sua senha e adicione-a novamente em Ajustes → Segurança",
+    "passkeyRegisterFailed": "Falha na verificação da chave de acesso",
+    "passkeyNotBound": "Esta chave de acesso não está registrada neste site. Entre com sua senha e adicione-a novamente em Ajustes → Segurança"
   },
   "ics": {
     "calName": "Cobranças de assinaturas",

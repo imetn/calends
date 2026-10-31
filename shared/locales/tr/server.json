@@ -29,10 +29,12 @@
       "other": "Yeni parola en az {min} karakter olmalı"
     },
     "invalidDevice": "Geçersiz cihaz",
+    "nameRequired": "Ad boş olamaz",
     "cannotRemoveCurrent": "Bu cihazı kaldıramazsınız. Bunun yerine Çıkış Yap'ı kullanın.",
     "expired": "İsteğin süresi doldu. Lütfen tekrar deneyin.",
-    "passkeyFailed": "Geçiş anahtarı doğrulanamadı",
-    "passkeyNotBound": "Bu geçiş anahtarı bu sitede kayıtlı değil"
+    "passkeyFailed": "Geçiş anahtarı doğrulanamadı. Parolanızla giriş yapın, ardından Ayarlar → Güvenlik bölümünden yeniden ekleyin",
+    "passkeyRegisterFailed": "Geçiş anahtarı doğrulanamadı",
+    "passkeyNotBound": "Bu geçiş anahtarı bu sitede kayıtlı değil. Parolanızla giriş yapın, ardından Ayarlar → Güvenlik bölümünden yeniden ekleyin"
   },
   "ics": {
     "calName": "Abonelik ödemeleri",

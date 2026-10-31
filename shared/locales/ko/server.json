@@ -27,10 +27,12 @@
       "other": "새 비밀번호는 {min}자 이상이어야 합니다"
     },
     "invalidDevice": "유효하지 않은 기기입니다",
+    "nameRequired": "이름을 입력하세요",
     "cannotRemoveCurrent": "이 기기는 삭제할 수 없습니다. 로그아웃을 사용하세요.",
     "expired": "요청이 만료되었습니다. 다시 시도하세요.",
-    "passkeyFailed": "패스키 인증에 실패했습니다",
-    "passkeyNotBound": "이 패스키는 이 사이트에 등록되어 있지 않습니다"
+    "passkeyFailed": "패스키 인증에 실패했습니다. 비밀번호로 로그인한 뒤 설정 → 보안에서 다시 추가하세요",
+    "passkeyRegisterFailed": "패스키 인증에 실패했습니다",
+    "passkeyNotBound": "이 패스키는 이 사이트에 등록되어 있지 않습니다. 비밀번호로 로그인한 뒤 설정 → 보안에서 다시 추가하세요"
   },
   "ics": {
     "calName": "구독 결제",

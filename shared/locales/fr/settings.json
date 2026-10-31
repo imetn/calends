@@ -250,11 +250,10 @@
     "signedInPassword": "Connecté avec un mot de passe le {time}",
     "revoke": "Déconnecter",
     "revoked": "Déconnecté",
-    "passkeyFoot": "Avec une clé d’accès, connectez-vous avec Face ID, Touch ID ou le code de votre appareil, sans mot de passe.",
-    "passkeyUnsupported": "Ce navigateur ne prend pas en charge les clés d’accès.",
     "lastUsed": "Dernière utilisation {time}",
     "addedAt": "Ajoutée {time}",
     "remove": "Supprimer",
+    "rename": "Renommer",
     "removed": "Supprimée",
     "addPasskey": "Ajouter une clé d’accès",
     "alreadyBound": "Cet appareil a déjà une clé d’accès",
@@ -264,7 +263,6 @@
       "one": "Appareil connecté\n{count}",
       "other": "Appareils connectés\n{count}"
     },
-    "devicesFoot": "Une fois la limite atteinte, l’appareil inactif depuis le plus longtemps est déconnecté automatiquement. Les lieux sont estimés à partir de l’IP et peuvent être imprécis.",
     "maxSessions": "Appareils connectés max.",
     "maxSessionsSaved": {
       "one": "Jusqu’à {count} appareil",

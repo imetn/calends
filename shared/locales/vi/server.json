@@ -27,10 +27,12 @@
       "other": "Mật khẩu mới phải có ít nhất {min} ký tự"
     },
     "invalidDevice": "Thiết bị không hợp lệ",
+    "nameRequired": "Tên không được để trống",
     "cannotRemoveCurrent": "Không thể xóa thiết bị này. Hãy dùng Đăng xuất.",
     "expired": "Yêu cầu đã hết hạn. Vui lòng thử lại.",
-    "passkeyFailed": "Xác minh passkey thất bại",
-    "passkeyNotBound": "Passkey này chưa được đăng ký với trang này"
+    "passkeyFailed": "Xác minh passkey thất bại. Hãy đăng nhập bằng mật khẩu rồi thêm lại trong Cài đặt → Bảo mật",
+    "passkeyRegisterFailed": "Xác minh passkey thất bại",
+    "passkeyNotBound": "Passkey này chưa được đăng ký với trang này. Hãy đăng nhập bằng mật khẩu rồi thêm lại trong Cài đặt → Bảo mật"
   },
   "ics": {
     "calName": "Khoản phí gói đăng ký",

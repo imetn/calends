@@ -127,15 +127,18 @@ function Login() {
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
   const [token, setToken] = useState('');
+  // 服务端只认密码；账号字段可编辑，Safari 与密码管理器才会把「账号 + 密码」存成一条
+  const [account, setAccount] = useState(`owner@${location.hostname}`);
   const [err, setErr] = useState<string>();
-  const [busy, setBusy] = useState(false);
+  /** 正在进行的那种登录：只有被点的按钮显示「验证中」 */
+  const [busy, setBusy] = useState<'password' | 'passkey'>();
   const autofill = useRef<(() => void) | undefined>(undefined);
   useEffect(() => {
     authStatus().then(setStatus, () => setStatus({ needsSetup: false, passkeys: 0 }));
   }, []);
-  const go = async (fn: () => Promise<void>) => {
+  const go = async (kind: 'password' | 'passkey', fn: () => Promise<void>) => {
     autofill.current?.();
-    setBusy(true);
+    setBusy(kind);
     setErr(undefined);
     try {
       await fn();
@@ -143,14 +146,14 @@ function Login() {
       // 用户在系统弹窗里取消 Passkey 不算错误
       if (!isPasskeyCancellation(x)) setErr(x instanceof Error ? x.message : String(x));
     } finally {
-      setBusy(false);
+      setBusy(undefined);
     }
   };
   const setupMode = status?.needsSetup;
   const mismatch = setupMode && pw2 !== '' && pw !== pw2;
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    void go(() => (setupMode ? setupPassword(token.trim(), pw) : login(pw)));
+    void go('password', () => (setupMode ? setupPassword(token.trim(), pw) : login(pw)));
   };
   const canPasskey = !setupMode && !!status?.passkeys && typeof window.PublicKeyCredential === 'function';
   useEffect(() => {
@@ -165,17 +168,17 @@ function Login() {
         <img src={base('/icons/icon-192.png')} alt="" />
         <h1>{t('app.name')}</h1>
         <p>{setupMode ? t('app.login.setupHint') : t('app.login.tagline')}</p>
-        <label className="login-account" htmlFor="login-username">
-          <span>{t('app.login.username')}</span>
-          <input
-            id="login-username"
-            name="username"
-            type="text"
-            autoComplete={setupMode ? 'username' : 'username webauthn'}
-            value={`owner@${location.hostname}`}
-            readOnly
-          />
-        </label>
+        <input
+          name="username"
+          type="text"
+          autoCapitalize="off"
+          spellCheck={false}
+          aria-label={t('app.login.username')}
+          placeholder={t('app.login.username')}
+          autoComplete={setupMode ? 'username' : 'username webauthn'}
+          value={account}
+          onChange={(e) => setAccount((e.target as HTMLInputElement).value)}
+        />
         {setupMode && (
           <input
             type="password"
@@ -211,12 +214,12 @@ function Login() {
             {mismatch ? t('app.login.mismatch') : err}
           </div>
         )}
-        <button className="btn primary lg" disabled={!status || !pw || busy || (setupMode && (!token || pw.length < 8 || pw !== pw2))}>
-          {busy ? t('app.login.verifying') : setupMode ? t('app.login.setupEnter') : t('app.login.enter')}
+        <button className="btn primary lg" disabled={!status || !pw || !!busy || (setupMode && (!token || pw.length < 8 || pw !== pw2))}>
+          {busy === 'password' ? t('app.login.verifying') : setupMode ? t('app.login.setupEnter') : t('app.login.enter')}
         </button>
         {canPasskey && (
-          <button type="button" className="btn lg" disabled={busy} onClick={() => go(() => loginPasskey())}>
-            <Icon name="key" /> {t('app.login.passkey')}
+          <button type="button" className="btn lg" disabled={!!busy} onClick={() => go('passkey', () => loginPasskey())}>
+            <Icon name="key" /> {busy === 'passkey' ? t('app.login.verifying') : t('app.login.passkey')}
           </button>
         )}
       </form>

@@ -32,6 +32,8 @@ import {
   passkeyRegisterVerify,
   pruneSessions,
   randomToken,
+  renamePasskey,
+  renameSession,
   revokeSession,
   sameOrigin,
   setup,
@@ -164,11 +166,13 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   if (path === '/api/auth/security' && method === 'GET') return json({ passkeys: await listPasskeys(env), sessions: await listSessions(req, env) });
   const sess = path.match(/^\/api\/auth\/sessions\/(\w+)$/);
   if (sess && method === 'DELETE') return revokeSession(req, env, sess[1]);
+  if (sess && method === 'PATCH') return renameSession(req, env, sess[1]);
   if (path === '/api/auth/password' && method === 'POST') return changePassword(req, env);
   if (path === '/api/auth/logout-others' && method === 'POST') return logoutOthers(req, env);
   if (path === '/api/auth/passkey/register/options' && method === 'POST') return passkeyRegisterOptions(req, env);
   if (path === '/api/auth/passkey/register' && method === 'POST') return passkeyRegisterVerify(req, env);
   const pk = path.match(/^\/api\/auth\/passkey\/([\w-]+)$/);
+  if (pk && method === 'PATCH') return renamePasskey(req, env, pk[1]);
   if (pk && method === 'DELETE') {
     await deletePasskey(env, pk[1]);
     return json({ ok: true });

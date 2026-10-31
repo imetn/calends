@@ -239,11 +239,10 @@
     "signedInPassword": "{time}にパスワードでログイン",
     "revoke": "ログアウト",
     "revoked": "ログアウトしました",
-    "passkeyFoot": "パスキーを使うと、Face ID、Touch ID、デバイスのパスコードでログインでき、パスワードは不要です。",
-    "passkeyUnsupported": "このブラウザはパスキーに対応していません。",
     "lastUsed": "最終使用 {time}",
     "addedAt": "{time}に追加",
     "remove": "削除",
+    "rename": "名前を変更",
     "removed": "削除しました",
     "addPasskey": "パスキーを追加",
     "alreadyBound": "このデバイスにはすでにパスキーがあります",
@@ -252,7 +251,6 @@
     "devicesCount": {
       "other": "ログイン中のデバイス\n{count}"
     },
-    "devicesFoot": "上限に達すると、最も長く使われていないデバイスが自動的にログアウトされます。所在地は IP から推定しているため、正確でない場合があります。",
     "maxSessions": "ログインできるデバイスの上限",
     "maxSessionsSaved": {
       "other": "最大{count}台"

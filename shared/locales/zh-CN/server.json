@@ -23,10 +23,12 @@
     "wrongCurrentPassword": "当前密码不正确",
     "newPasswordTooShort": "新密码至少 {min} 位",
     "invalidDevice": "无效的设备",
+    "nameRequired": "名称不能为空",
     "cannotRemoveCurrent": "不能移出当前设备，请用「退出登录」",
     "expired": "请求已过期，请重试",
-    "passkeyFailed": "Passkey 校验失败",
-    "passkeyNotBound": "这个 Passkey 没有绑定到本站"
+    "passkeyFailed": "Passkey 校验失败；请先用密码登录，到「设置 → 安全」重新添加",
+    "passkeyRegisterFailed": "Passkey 校验失败",
+    "passkeyNotBound": "这个 Passkey 没有绑定到本站；请先用密码登录，到「设置 → 安全」重新添加"
   },
   "ics": {
     "calName": "订阅扣款",

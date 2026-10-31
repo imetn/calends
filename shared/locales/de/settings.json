@@ -250,11 +250,10 @@
     "signedInPassword": "Mit Passwort angemeldet am {time}",
     "revoke": "Abmelden",
     "revoked": "Abgemeldet",
-    "passkeyFoot": "Mit einem Passkey meldest du dich per Face ID, Touch ID oder Gerätecode an – ganz ohne Passwort.",
-    "passkeyUnsupported": "Dieser Browser unterstützt keine Passkeys.",
     "lastUsed": "Zuletzt verwendet {time}",
     "addedAt": "Hinzugefügt {time}",
     "remove": "Entfernen",
+    "rename": "Umbenennen",
     "removed": "Entfernt",
     "addPasskey": "Passkey hinzufügen",
     "alreadyBound": "Dieses Gerät hat bereits einen Passkey",
@@ -264,7 +263,6 @@
       "one": "Angemeldetes Gerät\n{count}",
       "other": "Angemeldete Geräte\n{count}"
     },
-    "devicesFoot": "Ist das Limit erreicht, wird das am längsten inaktive Gerät automatisch abgemeldet. Standorte werden anhand der IP geschätzt und können ungenau sein.",
     "maxSessions": "Max. angemeldete Geräte",
     "maxSessionsSaved": {
       "one": "Bis zu {count} Gerät",

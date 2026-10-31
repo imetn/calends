@@ -29,10 +29,12 @@
       "other": "Das neue Passwort muss mindestens {min} Zeichen lang sein"
     },
     "invalidDevice": "Ungültiges Gerät",
+    "nameRequired": "Der Name darf nicht leer sein",
     "cannotRemoveCurrent": "Dieses Gerät kann nicht entfernt werden. Melde dich stattdessen ab.",
     "expired": "Die Anfrage ist abgelaufen. Bitte versuch es erneut.",
-    "passkeyFailed": "Passkey-Überprüfung fehlgeschlagen",
-    "passkeyNotBound": "Dieser Passkey ist für diese Website nicht registriert"
+    "passkeyFailed": "Passkey-Überprüfung fehlgeschlagen. Melde dich mit deinem Passwort an und füge ihn unter Einstellungen → Sicherheit erneut hinzu",
+    "passkeyRegisterFailed": "Passkey-Überprüfung fehlgeschlagen",
+    "passkeyNotBound": "Dieser Passkey ist für diese Website nicht registriert. Melde dich mit deinem Passwort an und füge ihn unter Einstellungen → Sicherheit erneut hinzu"
   },
   "ics": {
     "calName": "Abo-Abbuchungen",

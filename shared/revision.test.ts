@@ -40,7 +40,13 @@ const settings = { ...DEFAULT_SETTINGS, timezone: 'UTC', publicView: true };
 function fixture(legacy = false) {
   const db = new DatabaseSync(':memory:');
   db.exec('CREATE TABLE d1_migrations (id INTEGER PRIMARY KEY, name TEXT UNIQUE)');
-  for (const m of MIGRATIONS.slice(0, legacy ? -1 : undefined)) {
+  // legacy：停在 rev 迁移之前，之后的迁移由 Worker 启动时自动补上
+  for (const m of legacy
+    ? MIGRATIONS.slice(
+        0,
+        MIGRATIONS.findIndex((m) => m.name === '0007_state_rev.sql'),
+      )
+    : MIGRATIONS) {
     for (const sql of m.statements) db.exec(sql);
     db.prepare('INSERT INTO d1_migrations (name) VALUES (?)').run(m.name);
   }

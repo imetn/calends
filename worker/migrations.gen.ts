@@ -65,5 +65,11 @@ export const MIGRATIONS: Array<{ name: string; statements: string[] }> = [
       "CREATE TRIGGER rev_kv_update AFTER UPDATE ON kv\nWHEN NEW.key IN ('settings', 'people', 'prefs', 'fx') OR OLD.key IN ('settings', 'people', 'prefs', 'fx')\nBEGIN\n  UPDATE kv SET value = CAST(value AS INTEGER) + 1 WHERE key = 'rev';\nEND",
       "CREATE TRIGGER rev_kv_delete AFTER DELETE ON kv\nWHEN OLD.key IN ('settings', 'people', 'prefs', 'fx')\nBEGIN\n  UPDATE kv SET value = CAST(value AS INTEGER) + 1 WHERE key = 'rev';\nEND"
     ]
+  },
+  {
+    "name": "0008_session_name.sql",
+    "statements": [
+      "-- Owner-chosen device name; NULL falls back to the browser and OS parsed from user_agent.\nALTER TABLE sessions ADD COLUMN name TEXT"
+    ]
   }
 ];

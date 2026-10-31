@@ -23,10 +23,12 @@
     "wrongCurrentPassword": "目前密碼不正確",
     "newPasswordTooShort": "新密碼至少需要 {min} 個字元",
     "invalidDevice": "無效的裝置",
+    "nameRequired": "名稱不能空白",
     "cannotRemoveCurrent": "無法移除目前裝置，請使用「登出」",
     "expired": "請求已過期，請重試",
-    "passkeyFailed": "Passkey 驗證失敗",
-    "passkeyNotBound": "這個 Passkey 沒有綁定到本站"
+    "passkeyFailed": "Passkey 驗證失敗；請先用密碼登入，到「設定 → 安全」重新新增",
+    "passkeyRegisterFailed": "Passkey 驗證失敗",
+    "passkeyNotBound": "這個 Passkey 沒有綁定到本站；請先用密碼登入，到「設定 → 安全」重新新增"
   },
   "ics": {
     "calName": "訂閱扣款",

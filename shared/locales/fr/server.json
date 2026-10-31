@@ -29,10 +29,12 @@
       "other": "Le nouveau mot de passe doit contenir au moins {min} caractères"
     },
     "invalidDevice": "Appareil non valide",
+    "nameRequired": "Le nom ne peut pas être vide",
     "cannotRemoveCurrent": "Impossible de retirer cet appareil. Utilisez plutôt Se déconnecter.",
     "expired": "La demande a expiré. Veuillez réessayer.",
-    "passkeyFailed": "Échec de la vérification de la clé d’accès",
-    "passkeyNotBound": "Cette clé d’accès n’est pas enregistrée sur ce site"
+    "passkeyFailed": "Échec de la vérification de la clé d’accès. Connectez-vous avec votre mot de passe, puis ajoutez-la à nouveau dans Réglages → Sécurité",
+    "passkeyRegisterFailed": "Échec de la vérification de la clé d’accès",
+    "passkeyNotBound": "Cette clé d’accès n’est pas enregistrée sur ce site. Connectez-vous avec votre mot de passe, puis ajoutez-la à nouveau dans Réglages → Sécurité"
   },
   "ics": {
     "calName": "Prélèvements d’abonnements",

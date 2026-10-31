@@ -50,10 +50,16 @@ function fixture() {
       },
     },
   } as unknown as Env;
-  const request = (path: string, body?: unknown, cookie?: string, origin = 'https://ledger.example.test') =>
+  const request = (
+    path: string,
+    body?: unknown,
+    cookie?: string,
+    origin = 'https://ledger.example.test',
+    method = path === '/api/auth/status' ? 'GET' : 'POST',
+  ) =>
     worker.fetch(
       new Request(`https://ledger.example.test${path}`, {
-        method: path === '/api/auth/status' ? 'GET' : 'POST',
+        method,
         headers: { origin, 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
         ...(body ? { body: JSON.stringify(body) } : {}),
       }),
@@ -165,6 +171,26 @@ test('Worker 独立挑战可逆序使用，旧 owner 凭据仍可签名登录，
   }
 });
 
+test('按钮登录列出已绑定凭据（不带 transports 提示）供密码管理器匹配；条件式请求仍为空列表', async () => {
+  const f = fixture();
+  try {
+    const button = async () => (await (await f.request('/api/auth/passkey/login/options?mode=button')).json()).options;
+    assert.equal('allowCredentials' in (await button()), false); // 尚未绑定时不给空列表
+    f.db
+      .prepare('INSERT INTO passkeys(id,public_key,counter,transports,name) VALUES (?,?,?,?,?)')
+      .run(credentialId, publicKey.toString('base64url'), 0, '["internal","hybrid"]', 'iPhone');
+    const opts = await button();
+    assert.deepEqual(opts.allowCredentials, [{ id: credentialId, type: 'public-key' }]);
+    const auto = (await (await f.request('/api/auth/passkey/login/options')).json()).options;
+    assert.equal('allowCredentials' in auto, false);
+    // 列出的凭据照常签名登录
+    const data = await (await f.request('/api/auth/passkey/login/options?mode=button')).json();
+    assert.equal((await f.request('/api/auth/passkey/login', { challengeId: data.challengeId, response: assertion(data.options.challenge, 1) })).status, 200);
+  } finally {
+    f.db.close();
+  }
+});
+
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 test('取消错误覆盖原生、SimpleWebAuthn 包装和跨 realm 对象，不吞普通验证失败', () => {
@@ -271,4 +297,39 @@ test('条件式登录选中的凭据被拒时提示原因并重新等待选择',
   stop();
   await tick();
   assert.equal(calls, 2);
+});
+
+test('Passkey 与登录设备可改名：名称去空白、限 40 字；设备清空回到默认，Passkey 不可清空', async () => {
+  const f = fixture();
+  const hash = await sha256('fictional-session');
+  f.db.prepare('INSERT INTO sessions(token_hash, expires_at) VALUES (?, ?)').run(hash, Date.now() + 60_000);
+  f.db.prepare("INSERT INTO passkeys(id, public_key, counter, name, created_at) VALUES ('fictional-key', 'AA', 0, '旧名', ?)").run(new Date().toISOString());
+  const cookie = 'sid=fictional-session';
+  const origin = 'https://ledger.example.test';
+  const security = async () =>
+    (await (await f.request('/api/auth/security', undefined, cookie, origin, 'GET')).json()) as {
+      passkeys: Array<{ name: string }>;
+      sessions: Array<{ id: string; name: string }>;
+    };
+
+  const id = hash.slice(0, 16);
+  assert.equal((await security()).sessions[0].name, '');
+  assert.equal((await f.request(`/api/auth/sessions/${id}`, { name: '  办公室 Mac  ' }, cookie, origin, 'PATCH')).status, 200);
+  assert.equal((await security()).sessions[0].name, '办公室 Mac');
+  assert.equal((await f.request(`/api/auth/sessions/${id}`, { name: '' }, cookie, origin, 'PATCH')).status, 200);
+  assert.equal(f.db.prepare('SELECT name FROM sessions').get()!.name, null);
+  assert.equal((await f.request('/api/auth/sessions/not_a_device', { name: 'x' }, cookie, origin, 'PATCH')).status, 400);
+
+  assert.equal((await f.request('/api/auth/passkey/fictional-key', { name: '😀'.repeat(50) }, cookie, origin, 'PATCH')).status, 200);
+  assert.equal((await security()).passkeys[0].name, '😀'.repeat(40));
+  assert.equal((await f.request('/api/auth/passkey/fictional-key', { name: '   ' }, cookie, origin, 'PATCH')).status, 400);
+  assert.equal((await security()).passkeys[0].name, '😀'.repeat(40));
+  assert.equal((await f.request('/api/auth/passkey/fictional-key', { name: 'x' }, cookie, 'https://evil.example.test', 'PATCH')).status, 403);
+  // 非字符串、目标已不存在、未登录都不能当成功
+  assert.equal((await f.request(`/api/auth/sessions/${id}`, { name: 123 }, cookie, origin, 'PATCH')).status, 400);
+  assert.equal((await f.request(`/api/auth/sessions/${id}`, null, cookie, origin, 'PATCH')).status, 400);
+  assert.equal((await f.request('/api/auth/sessions/0123456789abcdef', { name: 'x' }, cookie, origin, 'PATCH')).status, 404);
+  assert.equal((await f.request('/api/auth/passkey/deleted-key', { name: 'x' }, cookie, origin, 'PATCH')).status, 404);
+  assert.equal((await f.request(`/api/auth/sessions/${id}`, { name: 'x' }, undefined, origin, 'PATCH')).status, 401);
+  assert.equal((await security()).sessions[0].name, '');
 });

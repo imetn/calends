@@ -256,7 +256,7 @@ export async function logoutOthers(req: Request, env: Env): Promise<Response> {
 export async function listSessions(req: Request, env: Env) {
   const mineHash = await sessionHash(req);
   const rows = await env.DB.prepare(
-    'SELECT token_hash, created_at, user_agent, ip, location, method, last_seen_at FROM sessions WHERE expires_at > ?1 ORDER BY COALESCE(last_seen_at, 0) DESC',
+    'SELECT token_hash, created_at, user_agent, ip, location, method, last_seen_at, name FROM sessions WHERE expires_at > ?1 ORDER BY COALESCE(last_seen_at, 0) DESC',
   )
     .bind(Date.now())
     .all<{
@@ -267,6 +267,7 @@ export async function listSessions(req: Request, env: Env) {
       location: string | null;
       method: string | null;
       last_seen_at: number | null;
+      name: string | null;
     }>();
   return rows.results.map((r) => ({
     id: r.token_hash.slice(0, 16),
@@ -277,6 +278,7 @@ export async function listSessions(req: Request, env: Env) {
     method: r.method ?? 'password',
     createdAt: r.created_at.replace(' ', 'T') + 'Z',
     lastSeenAt: r.last_seen_at ? new Date(r.last_seen_at).toISOString() : null,
+    name: r.name ?? '',
   }));
 }
 
@@ -295,6 +297,22 @@ export async function revokeSession(req: Request, env: Env, id: string): Promise
   const mine = await sessionHash(req);
   if (mine && mine.startsWith(id)) return err(t('server.auth.cannotRemoveCurrent'));
   await env.DB.prepare('DELETE FROM sessions WHERE substr(token_hash, 1, 16) = ?1').bind(id).run();
+  return Response.json({ ok: true });
+}
+
+/** 设备与 Passkey 的名称：去掉首尾空白，最长 40 个字符（按码点，不切开 emoji）；非字符串返回 null */
+const clipName = (name: unknown) => (typeof name === 'string' ? Array.from(name.trim()).slice(0, 40).join('').trim() : null);
+const cleanName = async (req: Request) => clipName(((await readJson(req)) as { name?: unknown } | null)?.name);
+
+/** 给登录设备起名；清空则回到按浏览器和系统显示 */
+export async function renameSession(req: Request, env: Env, id: string): Promise<Response> {
+  if (!/^[0-9a-f]{16}$/.test(id)) return err(t('server.auth.invalidDevice'));
+  const name = await cleanName(req);
+  if (name === null) return err(t('server.auth.nameRequired'));
+  const r = await env.DB.prepare('UPDATE sessions SET name = ?1 WHERE substr(token_hash, 1, 16) = ?2')
+    .bind(name || null, id)
+    .run();
+  if (!r.meta.changes) return err(t('server.auth.invalidDevice'), 404);
   return Response.json({ ok: true });
 }
 
@@ -370,6 +388,15 @@ export async function listPasskeys(env: Env) {
   return rows.results.map((r) => ({ id: r.id, name: r.name, createdAt: r.created_at, lastUsedAt: r.last_used_at }));
 }
 
+/** Passkey 改名；名称不能为空 */
+export async function renamePasskey(req: Request, env: Env, id: string): Promise<Response> {
+  const name = await cleanName(req);
+  if (!name) return err(t('server.auth.nameRequired'));
+  const r = await env.DB.prepare('UPDATE passkeys SET name = ?1 WHERE id = ?2').bind(name, id).run();
+  if (!r.meta.changes) return err(t('server.auth.invalidDevice'), 404);
+  return Response.json({ ok: true });
+}
+
 export async function deletePasskey(env: Env, id: string): Promise<void> {
   await env.DB.prepare('DELETE FROM passkeys WHERE id = ?1').bind(id).run();
 }
@@ -404,23 +431,27 @@ export async function passkeyRegisterVerify(req: Request, env: Env): Promise<Res
     expectedRPID: rpID,
     requireUserVerification: false,
   }).catch(logPasskeyError('register'));
-  if (!v?.verified || !v.registrationInfo) return err(t('server.auth.passkeyFailed'));
+  if (!v?.verified || !v.registrationInfo) return err(t('server.auth.passkeyRegisterFailed'));
   const c = v.registrationInfo.credential;
   await env.DB.prepare('INSERT INTO passkeys (id, public_key, counter, transports, name) VALUES (?1, ?2, ?3, ?4, ?5)')
-    .bind(
-      c.id,
-      b64url(c.publicKey),
-      c.counter,
-      JSON.stringify(c.transports ?? body.response.response.transports ?? []),
-      (body.name ?? '').trim().slice(0, 40) || 'Passkey',
-    )
+    .bind(c.id, b64url(c.publicKey), c.counter, JSON.stringify(c.transports ?? body.response.response.transports ?? []), clipName(body.name) || 'Passkey')
     .run();
   return Response.json({ ok: true });
 }
 
-/** 用 Passkey 登录：第一步，生成挑战（可发现凭据，不需要先输用户名） */
+/**
+ * 用 Passkey 登录：第一步，生成挑战（可发现凭据，不需要先输用户名）。
+ * 点按钮登录（?mode=button）时列出已绑定的凭据，系统和密码管理器只去找这几条；
+ * 不带 transports 提示：iOS 上第三方密码管理器的凭据也报 internal，提示反而可能把它们筛掉。
+ * 条件式自动填充保持空列表；凭据 ID 不是秘密。
+ */
 export async function passkeyLoginOptions(req: Request, env: Env): Promise<Response> {
-  const options = await generateAuthenticationOptions({ rpID: rp(req, env).rpID, userVerification: 'preferred' });
+  const bound = new URL(req.url).searchParams.get('mode') === 'button' ? (await env.DB.prepare('SELECT id FROM passkeys').all<{ id: string }>()).results : [];
+  const options = await generateAuthenticationOptions({
+    rpID: rp(req, env).rpID,
+    userVerification: 'preferred',
+    ...(bound.length ? { allowCredentials: bound.map((c) => ({ id: c.id })) } : {}),
+  });
   return Response.json({ options, challengeId: await saveChallenge(env, 'login', options.challenge) });
 }
 

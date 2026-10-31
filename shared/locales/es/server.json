@@ -29,10 +29,12 @@
       "other": "La nueva contraseña debe tener al menos {min} caracteres"
     },
     "invalidDevice": "Dispositivo no válido",
+    "nameRequired": "El nombre no puede estar vacío",
     "cannotRemoveCurrent": "No puedes quitar este dispositivo. Usa Cerrar sesión.",
     "expired": "La solicitud caducó. Inténtalo de nuevo.",
-    "passkeyFailed": "No se pudo verificar la llave de acceso",
-    "passkeyNotBound": "Esta llave de acceso no está registrada en este sitio"
+    "passkeyFailed": "No se pudo verificar la llave de acceso. Inicia sesión con tu contraseña y vuelve a añadirla en Ajustes → Seguridad",
+    "passkeyRegisterFailed": "No se pudo verificar la llave de acceso",
+    "passkeyNotBound": "Esta llave de acceso no está registrada en este sitio. Inicia sesión con tu contraseña y vuelve a añadirla en Ajustes → Seguridad"
   },
   "ics": {
     "calName": "Cobros de suscripciones",

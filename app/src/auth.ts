@@ -97,7 +97,7 @@ export function createAuth(core: {
 
   async function loginPasskey(useBrowserAutofill = false, signal?: AbortSignal): Promise<void> {
     const { options, challengeId } = await api<{ options: Parameters<typeof startAuthentication>[0]['optionsJSON']; challengeId: string }>(
-      '/api/auth/passkey/login/options',
+      `/api/auth/passkey/login/options${useBrowserAutofill ? '' : '?mode=button'}`,
       { method: 'POST', signal },
     );
     signal?.throwIfAborted();

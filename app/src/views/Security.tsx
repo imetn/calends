@@ -1,6 +1,6 @@
 import { ConfirmButton } from '../components/ConfirmButton.tsx';
 import { copyParts } from '../components/copy.tsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { AppState } from '../../../shared/types.ts';
 import { localTime } from '../../../shared/format.ts';
 import { ask, LoadFailed, Sheet } from '../components/overlays.tsx';
@@ -9,6 +9,7 @@ import { Icon } from '../components/icons.tsx';
 import { Picker } from '../components/Picker.tsx';
 import { api, registerPasskey, saveSettings } from '../store.ts';
 import { run } from '../toast.ts';
+import { composing } from '../keyboard.ts';
 import { t } from '../../../shared/i18n.ts';
 
 interface Device {
@@ -20,6 +21,7 @@ interface Device {
   method: string;
   createdAt: string;
   lastSeenAt: string | null;
+  name: string;
 }
 
 interface Security {
@@ -61,14 +63,69 @@ function ago(iso: string | null): string {
   return iso.slice(0, 10);
 }
 
-function DeviceCell({ d, tz, onRevoke }: { d: Device; tz: string; onRevoke: () => void }) {
+/** 点名称即可改名：回车或失焦保存，Esc 取消；保存失败回到输入框。required 时清空等于取消（Passkey），否则交给 onSave（设备回到默认名） */
+function NameEdit({ name, fallback, required, onSave }: { name: string; fallback?: string; required?: boolean; onSave: (name: string) => Promise<unknown> }) {
+  const [draft, setDraft] = useState<string>();
+  const [saving, setSaving] = useState<string>();
+  // Esc 卸载输入框时 Chromium 仍会派发 blur，用它挡掉这次保存
+  const cancelled = useRef(false);
+  if (draft === undefined)
+    return (
+      <button type="button" className="name-edit" title={t('settings.security.rename')} disabled={saving !== undefined} onClick={() => setDraft(name)}>
+        {(saving ?? name) || copyParts(fallback)}
+      </button>
+    );
+  const done = () => {
+    if (cancelled.current) return void (cancelled.current = false);
+    const v = draft.trim();
+    setDraft(undefined);
+    if (v === name || (required && !v)) return;
+    setSaving(v);
+    let ok = false;
+    void run(() => onSave(v).then(() => (ok = true)), t('settings.toast.saved')).then(() => {
+      setSaving(undefined);
+      if (!ok) setDraft(v);
+    });
+  };
+  return (
+    <input
+      className="name-edit"
+      ref={(el) => {
+        if (el && document.activeElement !== el) {
+          el.focus();
+          el.select();
+        }
+      }}
+      value={draft}
+      placeholder={fallback?.replaceAll('\n', ' ')}
+      aria-label={t('settings.security.rename')}
+      onChange={(e) => setDraft((e.target as HTMLInputElement).value)}
+      onBlur={done}
+      onKeyDown={(e) => {
+        if (composing(e.nativeEvent)) return;
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          (e.target as HTMLInputElement).blur();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          cancelled.current = true;
+          setDraft(undefined);
+        }
+      }}
+    />
+  );
+}
+
+function DeviceCell({ d, tz, onRevoke, onRename }: { d: Device; tz: string; onRevoke: () => void; onRename: (name: string) => Promise<unknown> }) {
   const { browser, os } = describeUA(d.userAgent);
+  const ua = [browser, os].filter(Boolean).join('\n');
   const where = [d.location, d.ip].filter(Boolean).join('\n');
   return (
     <Cell
       label={
         <span>
-          {copyParts([browser, os].filter(Boolean).join('\n'))}
+          <NameEdit name={d.name} fallback={ua} onSave={onRename} />
           {d.current && (
             <span className="pill" style={{ marginLeft: 8, color: 'var(--green)' }}>
               {t('settings.security.thisDevice')}
@@ -77,6 +134,7 @@ function DeviceCell({ d, tz, onRevoke }: { d: Device; tz: string; onRevoke: () =
         </span>
       }
       sub={[
+        d.name ? ua.replaceAll('\n', ' ') : '',
         where,
         [
           t(d.method === 'passkey' ? 'settings.security.signedInPasskey' : 'settings.security.signedInPassword', { time: localTime(d.createdAt, tz, true) }),
@@ -127,12 +185,18 @@ export function SecurityGroup({ state }: { state: AppState }) {
   const tz = state.settings.timezone;
   return (
     <>
-      <Group title={t('settings.security.title')} foot={supported ? t('settings.security.passkeyFoot') : t('settings.security.passkeyUnsupported')}>
+      <Group title={t('settings.security.title')}>
         {failed && !sec && <LoadFailed onRetry={() => void load()} />}
         {sec?.passkeys.map((p) => (
           <Cell
             key={p.id}
-            label={p.name}
+            label={
+              <NameEdit
+                name={p.name}
+                required
+                onSave={(name) => api(`/api/auth/passkey/${encodeURIComponent(p.id)}`, { method: 'PATCH', body: JSON.stringify({ name }) }).then(load)}
+              />
+            }
             sub={
               p.lastUsedAt
                 ? t('settings.security.lastUsed', { time: localTime(p.lastUsedAt, tz, true) })
@@ -169,10 +233,7 @@ export function SecurityGroup({ state }: { state: AppState }) {
         )}
         <Cell label={t('settings.security.changePassword')} onClick={() => setPwSheet(true)} />
       </Group>
-      <Group
-        title={sec ? t('settings.security.devicesCount', { count: sec.sessions.length }) : t('settings.security.devices')}
-        foot={t('settings.security.devicesFoot')}
-      >
+      <Group title={sec ? t('settings.security.devicesCount', { count: sec.sessions.length }) : t('settings.security.devices')}>
         <Cell label={t('settings.security.maxSessions')}>
           <Picker
             value={max}
@@ -190,6 +251,7 @@ export function SecurityGroup({ state }: { state: AppState }) {
               d={d}
               tz={tz}
               onRevoke={() => run(() => api(`/api/auth/sessions/${d.id}`, { method: 'DELETE' }).then(load), t('settings.security.revoked'))}
+              onRename={(name) => api(`/api/auth/sessions/${d.id}`, { method: 'PATCH', body: JSON.stringify({ name }) }).then(load)}
             />
           ))}
         {sec && sec.sessions.length > 1 && (

@@ -1735,25 +1735,10 @@ a {
   outline: var(--hairline) solid var(--focus-ring);
   outline-offset: 2px;
 }
-.login-account {
-  width: 100%;
-  color: var(--label-2);
-  font-size: var(--fs-1);
-}
-.login-card .login-account input {
-  height: var(--ctl-h-lg);
-  font-size: var(--fs-2);
-  color: var(--label-2);
-  background: transparent;
-  box-shadow: none;
-}
-.login-card .login-account input:focus {
-  box-shadow: none;
-  outline: var(--hairline) solid var(--focus-ring);
-  outline-offset: 2px;
-}
 .login-card .btn {
   width: 100%;
+  /* 与上面的输入框同高，整列控件一个高度 */
+  height: 50px;
 }
 .codebox {
   font: var(--fs-2)/1.5 var(--mono);
@@ -10349,4 +10334,31 @@ img.mm-flag {
 .car-card-identity {
   flex: 1;
   min-width: 0;
+}
+/* Security: passkey and device names rename in place. */
+.name-edit {
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  max-width: 100%;
+  margin: -2px -6px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+button.name-edit {
+  cursor: text;
+}
+button.name-edit:hover,
+input.name-edit {
+  background: var(--fill-2);
+}
+input.name-edit {
+  width: 16em;
+  outline: none;
+}
+input.name-edit:focus-visible,
+button.name-edit:focus-visible {
+  box-shadow: 0 0 0 2px var(--ink);
 }

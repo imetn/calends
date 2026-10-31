@@ -456,9 +456,11 @@ test('登录与首次设置表单为密码管理器提供同一账号和正确�
     const username = nodes.find((e) => e.type === 'input' && e.props.name === 'username')!;
     assert.equal(username.props.value, 'owner@ledger.example.test');
     assert.equal(username.props.autoComplete, needsSetup ? 'username' : 'username webauthn');
-    assert.equal(username.props.readOnly, true);
-    const label = nodes.find((e) => e.type === 'label' && e.props.htmlFor === username.props.id)!;
-    assert.ok(JSON.stringify(label.children).includes('app.login.username'));
+    // 只读字段会被 Safari 与密码管理器跳过，账号密码存不成一条；账号与密码同一种输入框
+    assert.equal(username.props.readOnly, undefined);
+    assert.equal(typeof username.props.onChange, 'function');
+    assert.equal(username.props['aria-label'], 'app.login.username');
+    assert.equal(username.props.className, undefined);
     const password = nodes.find((e) => e.type === 'input' && e.props.name === 'password')!;
     assert.equal(password.props.type, 'password');
     assert.equal(password.props.autoComplete, needsSetup ? 'new-password' : 'current-password webauthn');
@@ -467,4 +469,14 @@ test('登录与首次设置表单为密码管理器提供同一账号和正确�
   }
   assert.ok(login.includes('autofill.current?.();')); // 密码提交和 Passkey 按钮共用 go() 的同步取消
   assert.ok(login.includes('return stop;')); // 卸载时清理条件式请求
+  // 只有被点的按钮显示「验证中」
+  assert.ok(login.includes("busy === 'password' ? t('app.login.verifying')"));
+  assert.ok(login.includes("busy === 'passkey' ? t('app.login.verifying')"));
+  // 按钮登录带 mode=button，服务端据此列出已绑定凭据；条件式请求不带
+  assert.ok(read('../app/src/auth.ts').includes("useBrowserAutofill ? '' : '?mode=button'"));
+  const css = read('../app/src/styles.css');
+  const rule = (sel: string) => css.match(new RegExp(`\\n${sel.replace(/[.*]/g, '\\$&')} \\{([^}]*)\\}`))?.[1] ?? '';
+  // 登录页输入框与按钮同高
+  assert.match(rule('.login-card .btn'), /height: \d+px/);
+  assert.equal(rule('.login-card input').match(/height: (\w+)/)?.[1], rule('.login-card .btn').match(/height: (\w+)/)?.[1]);
 });

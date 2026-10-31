@@ -27,10 +27,12 @@
       "other": "Kata sandi baru minimal {min} karakter"
     },
     "invalidDevice": "Perangkat tidak valid",
+    "nameRequired": "Nama tidak boleh kosong",
     "cannotRemoveCurrent": "Perangkat ini tidak bisa dihapus. Gunakan Keluar.",
     "expired": "Permintaan kedaluwarsa. Silakan coba lagi.",
-    "passkeyFailed": "Verifikasi passkey gagal",
-    "passkeyNotBound": "Passkey ini tidak terdaftar di situs ini"
+    "passkeyFailed": "Verifikasi passkey gagal. Masuk dengan kata sandi, lalu tambahkan lagi di Pengaturan → Keamanan",
+    "passkeyRegisterFailed": "Verifikasi passkey gagal",
+    "passkeyNotBound": "Passkey ini tidak terdaftar di situs ini. Masuk dengan kata sandi, lalu tambahkan lagi di Pengaturan → Keamanan"
   },
   "ics": {
     "calName": "Tagihan langganan",
