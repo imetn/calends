@@ -579,8 +579,6 @@ function App() {
         navigate(navOf(state.settings)[action - 1].path);
       }
     };
-    // 手机端工具栏左上角的搜索
-    const onSearch = () => setPalette(true);
     // 可以带着草稿（AI 助手「编辑后添加」）
     const onAdd = (e: Event) =>
       state &&
@@ -588,12 +586,10 @@ function App() {
       setEditing((e as CustomEvent<Subscription | undefined>).detail ?? newSub(today(), state?.settings.defaultMethodId, state?.settings.baseCurrency));
     document.addEventListener('keydown', onKey);
     document.addEventListener('keydown', preventBrowserSave, true);
-    window.addEventListener('ledger:search', onSearch);
     window.addEventListener('ledger:add', onAdd);
     return () => {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('keydown', preventBrowserSave, true);
-      window.removeEventListener('ledger:search', onSearch);
       window.removeEventListener('ledger:add', onAdd);
     };
   }, [state, collapsed, narrow, editing, viewId, review, ics, palette]);

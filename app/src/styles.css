@@ -2712,9 +2712,6 @@ button.bl-col {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.tb-lead {
-  display: none;
-}
 .page {
   padding: 20px 32px 64px;
   max-width: 1180px;
@@ -2954,9 +2951,6 @@ button.bl-col {
     align-items: center;
     row-gap: 8px;
   }
-  .tb-lead {
-    display: grid;
-  }
   .tb-title {
     flex-basis: auto;
     flex: 1;
@@ -2993,19 +2987,12 @@ button.bl-col {
   .tb-actions .d-only {
     display: none;
   }
-  .toolbar .tb-trail {
-    display: grid;
-    order: 2;
-  }
   .page {
     padding: 8px 14px calc(40px + var(--safe-b));
   }
   .hero-num {
     font-size: var(--fs-4);
   }
-}
-.tb-trail {
-  display: none;
 }
 .reopen {
   position: fixed;

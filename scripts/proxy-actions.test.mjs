@@ -50,24 +50,23 @@ test('proxy candidates include supported tags and future/lifetime plans, excludi
   assert.deepEqual(sub.tags, ['代付']);
 });
 
-test('Toolbar custom add action replaces its default ledger:add dispatch', () => {
-  const dispatched = [];
+test('Toolbar draws no add button and hands a page-specific add to the phone dock', () => {
+  const registered = [];
   const Toolbar = compile('components/ui.tsx', 'Toolbar', {
     t: (k) => k,
     copyParts: (v) => v,
     IconButton: 'icon-button',
     Icon: 'icon',
-    window: { dispatchEvent: (e) => dispatched.push(e.type) },
+    useRegisterPageAdd: (onAdd, label) => registered.push({ onAdd, label }),
   });
   let custom = 0;
-  const click = (props) =>
-    nodes(Toolbar({ title: 'Fictional', ...props }), 'icon-button')
-      .find((n) => n.props.className.includes('tb-trail'))
-      .props.onClick();
-  click({});
-  click({ onAdd: () => custom++ });
-  assert.deepEqual(dispatched, ['ledger:add']);
+  // Phones have one add, in the dock's More arc; toolbars never draw their own.
+  assert.deepEqual(nodes(Toolbar({ title: 'Fictional', onAdd: () => custom++, addLabel: 'Add person' }), 'icon-button'), []);
+  assert.equal(registered[0].label, 'Add person');
+  registered[0].onAdd();
   assert.equal(custom, 1);
+  Toolbar({ title: 'Fictional' });
+  assert.equal(registered[1].onAdd, undefined);
 });
 
 test('a proxy editor draft survives new-subscription save and JSON round trip', () => {

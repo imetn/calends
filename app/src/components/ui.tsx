@@ -5,6 +5,7 @@ import { Children } from 'react';
 import { t } from '../../../shared/i18n.ts';
 import { Icon } from './icons.tsx';
 import { Hint } from './overlays.tsx';
+import { useRegisterPageAdd } from '../page-add.ts';
 
 /**
  * 一组并列指标（金额与颜色由调用处提供）。页面顶部与弹窗顶部用独立灰卡；放在另一张卡片里时传 inline，改为竖线分隔的一行，避免卡片套卡片；
@@ -72,24 +73,19 @@ export function Toolbar({
   title: ComponentChildren;
   sub?: ComponentChildren;
   children?: ComponentChildren;
+  /** 页面自带的新建：不在工具栏画按钮，登记给手机底栏「更多」里唯一的新建 */
   onAdd?: () => void;
   addLabel?: string;
   /** 手机端工具栏下方的一行切换（如 AI 的「助手 | 连接」）；桌面端不传，结构不变 */
   switcher?: ComponentChildren;
 }) {
+  useRegisterPageAdd(onAdd, addLabel);
   return (
     <header className="toolbar">
-      {/* 手机端左上角是搜索（导航在底栏），桌面端隐藏 */}
-      <IconButton className="sb-btn tb-lead" aria-label={t('app.sidebar.search')} onClick={() => window.dispatchEvent(new Event('ledger:search'))}>
-        <Icon name="search" />
-      </IconButton>
       <div className="tb-title">
         <h1>{copyParts(title)}</h1>
         {sub && <div className="tb-sub">{copyParts(sub)}</div>}
       </div>
-      <IconButton className="sb-btn tb-trail" aria-label={addLabel} onClick={onAdd ?? (() => window.dispatchEvent(new Event('ledger:add')))}>
-        <Icon name="compose" />
-      </IconButton>
       <div className="tb-actions">{children}</div>
       {switcher && <div className="tb-switch">{switcher}</div>}
     </header>
