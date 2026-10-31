@@ -3516,7 +3516,7 @@ test('stopped subscription cards and list rows keep the existing end-date fallba
         StopBadge: 'StopBadge',
         StopText: 'StopText',
         SubBadges: 'SubBadges',
-        useIconTint: () => undefined,
+        useIconPalette: () => undefined,
       },
     );
     const nodes = r.render('List', {

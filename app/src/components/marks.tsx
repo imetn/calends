@@ -134,10 +134,10 @@ export function CatIcon({ cat, size = 14 }: { cat: string; size?: number }) {
   return <CatGlyph icon={catIcon(cat)} size={size} />;
 }
 
-/** 分类胶囊：分类色 + 图标 + 名称 */
+/** 分类胶囊：中性底 + 分类色图标 + 名称 */
 export function CatChip({ cat }: { cat: string }) {
   return (
-    <span className="cat-chip" style={{ '--tint': catColor(cat), '--tint-text': catColor(cat, 11), '--tint-soft': catColor(cat, 3) } as Record<string, string>}>
+    <span className="cat-chip" style={{ '--tint-text': catColor(cat, 11) } as Record<string, string>}>
       <CatIcon cat={cat} size={12} />
       {cat}
     </span>

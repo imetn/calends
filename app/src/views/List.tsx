@@ -28,7 +28,7 @@ import { proxyOwed } from './proxy/common.tsx';
 import { locale, t } from '../../../shared/i18n.ts';
 import { tx } from '../i18n.ts';
 import { catColor, categories, isDomainCat, subImage, toBase } from '../derive.ts';
-import { useIconTint } from '../iconTint.ts';
+import { useIconPalette } from '../iconTint.ts';
 import { useOrig } from '../display.ts';
 import { Gantt } from './Gantt.tsx';
 import { perLabel } from './Overview.tsx';
@@ -688,8 +688,10 @@ function FacetRow({
 }
 
 /**
- * 卡片顶部的光晕：用图标的主色（白底图标模糊后只剩一片白，所以不直接铺图片）；
- * 域名类用注册商图标（默认 Cloudflare）；取不到颜色时用分类色
+ * 卡片顶部的背景渐变：取图标里的两三种主色铺开，再用蒙版向下淡出
+ * （白底图标模糊后只剩一片白，所以不直接铺图片）。方向、颜色顺序、中间色位置和淡出深度
+ * 由订阅 id 决定：每张卡各不相同，同一张卡每次一样。
+ * 域名类用注册商图标（默认 Cloudflare）；取不到颜色时退回分类色的单色光晕
  */
 function CardGlow({ sub }: { sub: Subscription }) {
   const src = isDomainCat(sub.category)
@@ -699,8 +701,16 @@ function CardGlow({ sub }: { sub: Subscription }) {
     : sub.icon?.startsWith('/')
       ? sub.icon
       : subImage(sub);
-  const tint = useIconTint(src);
-  return <div className="sc-glow" style={{ '--glow': tint ?? catColor(sub.category) } as Record<string, string>} />;
+  const palette = useIconPalette(src);
+  if (!palette) return <div className="sc-glow" style={{ '--glow': catColor(sub.category) } as Record<string, string>} />;
+  let h = 0;
+  for (const ch of sub.id) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
+  const shift = (h >>> 8) % palette.length;
+  const [g1, g2 = g1, g3 = g2] = [...palette.slice(shift), ...palette.slice(0, shift)];
+  // 方向避开接近竖直的角度：竖直铺色会被蒙版吃掉，只剩一种颜色
+  const angle = 30 + (h % 120) + (h & 0x10000 ? 180 : 0);
+  const style = { '--g1': g1, '--g2': g2, '--g3': g3, '--ga': `${angle}deg`, '--gm': `${30 + ((h >>> 12) % 41)}%`, '--gf': `${62 + ((h >>> 20) % 21)}%` };
+  return <div className="sc-glow mesh" style={style as Record<string, string>} />;
 }
 
 /** 卡片与列表视图共用的状态徽章（试用、即将到期、暂停、已结束、被停用）；未开始、合租、代付由 SubBadges 统一判定 */

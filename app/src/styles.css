@@ -3989,14 +3989,24 @@ button.h-price-row:focus-visible {
   opacity: 0.18;
   pointer-events: none;
 }
+/* 多色：图标里的两三种主色按各卡自己的方向（--ga）铺开、中间色落在 --gm，
+   再用蒙版自上而下淡出（到 --gf 为止），下半张卡回到卡面底色，文字不受影响 */
+.sc-glow.mesh {
+  background: linear-gradient(var(--ga), var(--g1) 0%, var(--g3) var(--gm), var(--g2) 100%);
+  -webkit-mask-image: linear-gradient(180deg, var(--black-a12) 0%, color-mix(in srgb, var(--black-a12) 55%, transparent) 30%, transparent var(--gf));
+  mask-image: linear-gradient(180deg, var(--black-a12) 0%, color-mix(in srgb, var(--black-a12) 55%, transparent) 30%, transparent var(--gf));
+  opacity: 0.26;
+}
 .sc-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 10px;
 }
-.sc-top .ico {
-  box-shadow: inset 0 0 0 var(--hairline) var(--line);
+/* 卡片上的图标、支付方式标志不加外框：底下有渐变衬着，细边只会显得发灰 */
+.sc-top .ico,
+.scard .mmark {
+  box-shadow: none;
 }
 .sc-flags {
   display: flex;
@@ -4029,7 +4039,10 @@ button.h-price-row:focus-visible {
   width: 18px;
   height: 13px;
   border-radius: 0;
-  box-shadow: 0 0 0 var(--hairline) var(--line);
+}
+/* 卡片里的国旗不描边 */
+.scard .flag-img {
+  box-shadow: none;
 }
 .sc-meta {
   display: flex;
@@ -4086,6 +4099,10 @@ button.h-price-row:focus-visible {
 .scard.st-ended .sc-glow,
 .scard.st-terminated .sc-glow {
   opacity: 0.09;
+}
+.scard.st-ended .sc-glow.mesh,
+.scard.st-terminated .sc-glow.mesh {
+  opacity: 0.14;
 }
 .scard.st-ended .sc-price .amt,
 .scard.st-terminated .sc-price .amt {
@@ -4755,7 +4772,7 @@ button.h-price-row:focus-visible {
   box-shadow: 0 0 0 var(--hairline) var(--line);
 }
 
-/* 分类胶囊：分类色淡底 + 图标 + 名称 */
+/* 分类胶囊：与支付方式胶囊同一种中性细边底，分类色只留在图标上 */
 .cat-chip {
   display: inline-flex;
   align-items: center;
@@ -4765,9 +4782,10 @@ button.h-price-row:focus-visible {
   border-radius: var(--radius-pill);
   flex-shrink: 0;
   font-size: var(--fs-1);
-  font-weight: 600;
-  color: var(--tint-text);
-  background: var(--tint-soft);
+  font-weight: 500;
+  color: var(--label-2);
+  background: var(--fill-2);
+  box-shadow: inset 0 0 0 var(--hairline) var(--line);
   white-space: nowrap;
   vertical-align: middle;
 }
@@ -4775,6 +4793,7 @@ button.h-price-row:focus-visible {
   width: 12px;
   height: 12px;
   stroke-width: 2;
+  color: var(--tint-text);
 }
 .cat-emo {
   display: inline-grid;
