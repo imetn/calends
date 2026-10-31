@@ -1761,6 +1761,15 @@ a {
   outline: 0;
   text-align: center;
 }
+/* 固定账号只给密码管理器读：裁掉而不是 display:none，否则 Safari 不把它当账号存 */
+.login-card input.login-account {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  pointer-events: none;
+}
 .login-card input:focus {
   box-shadow: none;
   outline: var(--hairline) solid var(--focus-ring);

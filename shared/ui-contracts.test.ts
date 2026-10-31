@@ -456,11 +456,12 @@ test('登录与首次设置表单为密码管理器提供同一账号和正确�
     const username = nodes.find((e) => e.type === 'input' && e.props.name === 'username')!;
     assert.equal(username.props.value, 'owner@ledger.example.test');
     assert.equal(username.props.autoComplete, needsSetup ? 'username' : 'username webauthn');
-    // 只读字段会被 Safari 与密码管理器跳过，账号密码存不成一条；账号与密码同一种输入框
+    // 账号固定，界面上不显示；只读或 display:none 的字段会被 Safari 与密码管理器跳过，账号密码存不成一条
     assert.equal(username.props.readOnly, undefined);
-    assert.equal(typeof username.props.onChange, 'function');
+    assert.equal(username.props.className, 'login-account');
+    assert.equal(username.props.tabIndex, -1);
+    assert.equal(username.props['aria-hidden'], 'true');
     assert.equal(username.props['aria-label'], 'app.login.username');
-    assert.equal(username.props.className, undefined);
     const password = nodes.find((e) => e.type === 'input' && e.props.name === 'password')!;
     assert.equal(password.props.type, 'password');
     assert.equal(password.props.autoComplete, needsSetup ? 'new-password' : 'current-password webauthn');

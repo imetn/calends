@@ -144,8 +144,8 @@ function Login() {
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
   const [token, setToken] = useState('');
-  // 服务端只认密码；账号字段可编辑，Safari 与密码管理器才会把「账号 + 密码」存成一条
-  const [account, setAccount] = useState(`owner@${location.hostname}`);
+  // 服务端只认密码；账号固定，界面上不显示。字段仍是可编辑的普通输入框，只读字段会被 Safari 与密码管理器跳过，账号密码就存不成一条
+  const account = `owner@${location.hostname}`;
   const [err, setErr] = useState<string>();
   /** 正在进行的那种登录：只有被点的按钮显示「验证中」 */
   const [busy, setBusy] = useState<'password' | 'passkey'>();
@@ -188,13 +188,13 @@ function Login() {
         <input
           name="username"
           type="text"
-          autoCapitalize="off"
-          spellCheck={false}
+          className="login-account"
+          tabIndex={-1}
+          aria-hidden="true"
           aria-label={t('app.login.username')}
-          placeholder={t('app.login.username')}
           autoComplete={setupMode ? 'username' : 'username webauthn'}
           value={account}
-          onChange={(e) => setAccount((e.target as HTMLInputElement).value)}
+          onChange={() => {}}
         />
         {setupMode && (
           <input
