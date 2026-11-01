@@ -16,6 +16,21 @@
     "label": "主导航",
     "settings": "设置"
   },
+  "navShort": {
+    "overview": "概览",
+    "list": "订阅",
+    "calendar": "日历",
+    "report": "报告",
+    "wallet": "钱包",
+    "family": "合租",
+    "behalf": "代付",
+    "assistant": "助手",
+    "ai": "连接",
+    "settings": "设置",
+    "new": "新建",
+    "theme": "主题",
+    "currency": "货币"
+  },
   "login": {
     "username": "账号",
     "setupHint": "首次使用，请设置登录密码。",

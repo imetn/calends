@@ -16,6 +16,21 @@
     "label": "Ana gezinme",
     "settings": "Ayarlar"
   },
+  "navShort": {
+    "overview": "Özet",
+    "list": "Liste",
+    "calendar": "Takvim",
+    "report": "Raporlar",
+    "wallet": "Cüzdan",
+    "family": "Ortak",
+    "behalf": "Alacaklar",
+    "assistant": "Asistan",
+    "ai": "YZ",
+    "settings": "Ayarlar",
+    "new": "Yeni",
+    "theme": "Tema",
+    "currency": "Döviz"
+  },
   "login": {
     "username": "Hesap",
     "setupHint": "İlk kez mi buradasınız? Giriş için bir parola belirleyin.",

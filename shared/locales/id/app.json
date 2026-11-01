@@ -16,6 +16,21 @@
     "label": "Navigasi utama",
     "settings": "Pengaturan"
   },
+  "navShort": {
+    "overview": "Beranda",
+    "list": "Daftar",
+    "calendar": "Kalender",
+    "report": "Laporan",
+    "wallet": "Dompet",
+    "family": "Bersama",
+    "behalf": "Talangan",
+    "assistant": "Asisten",
+    "ai": "AI",
+    "settings": "Setelan",
+    "new": "Baru",
+    "theme": "Tema",
+    "currency": "Valuta"
+  },
   "login": {
     "username": "Akun",
     "setupHint": "Pertama kali di sini? Atur kata sandi untuk masuk.",

@@ -16,6 +16,21 @@
     "label": "Navegación principal",
     "settings": "Ajustes"
   },
+  "navShort": {
+    "overview": "Resumen",
+    "list": "Lista",
+    "calendar": "Agenda",
+    "report": "Informes",
+    "wallet": "Cartera",
+    "family": "Grupos",
+    "behalf": "Por otros",
+    "assistant": "IA",
+    "ai": "IA",
+    "settings": "Ajustes",
+    "new": "Nueva",
+    "theme": "Tema",
+    "currency": "Moneda"
+  },
   "login": {
     "username": "Cuenta",
     "setupHint": "¿Primera vez aquí? Crea una contraseña para iniciar sesión.",

@@ -16,6 +16,21 @@
     "label": "Navigation principale",
     "settings": "Réglages"
   },
+  "navShort": {
+    "overview": "Aperçu",
+    "list": "Abos",
+    "calendar": "Agenda",
+    "report": "Rapports",
+    "wallet": "Cartes",
+    "family": "Partagés",
+    "behalf": "Avances",
+    "assistant": "IA",
+    "ai": "IA",
+    "settings": "Réglages",
+    "new": "Nouveau",
+    "theme": "Thème",
+    "currency": "Devise"
+  },
   "login": {
     "username": "Compte",
     "setupHint": "Première visite ? Définissez un mot de passe pour vous connecter.",

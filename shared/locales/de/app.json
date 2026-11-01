@@ -16,6 +16,21 @@
     "label": "Hauptnavigation",
     "settings": "Einstellungen"
   },
+  "navShort": {
+    "overview": "Start",
+    "list": "Abos",
+    "calendar": "Kalender",
+    "report": "Berichte",
+    "wallet": "Wallet",
+    "family": "Geteilt",
+    "behalf": "Auslagen",
+    "assistant": "KI",
+    "ai": "KI",
+    "settings": "Optionen",
+    "new": "Neu",
+    "theme": "Design",
+    "currency": "Währung"
+  },
   "login": {
     "username": "Konto",
     "setupHint": "Zum ersten Mal hier? Lege ein Passwort zum Anmelden fest.",

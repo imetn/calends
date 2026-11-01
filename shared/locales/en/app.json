@@ -16,6 +16,21 @@
     "label": "Main navigation",
     "settings": "Settings"
   },
+  "navShort": {
+    "overview": "Overview",
+    "list": "Subs",
+    "calendar": "Calendar",
+    "report": "Reports",
+    "wallet": "Wallet",
+    "family": "Shared",
+    "behalf": "Fronted",
+    "assistant": "Assistant",
+    "ai": "AI",
+    "settings": "Settings",
+    "new": "New",
+    "theme": "Theme",
+    "currency": "Currency"
+  },
   "login": {
     "username": "Account",
     "setupHint": "First time here? Set a password to sign in.",

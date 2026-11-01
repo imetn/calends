@@ -16,6 +16,21 @@
     "label": "Điều hướng chính",
     "settings": "Cài đặt"
   },
+  "navShort": {
+    "overview": "Tóm tắt",
+    "list": "Gói",
+    "calendar": "Lịch",
+    "report": "Báo cáo",
+    "wallet": "Ví",
+    "family": "Chia sẻ",
+    "behalf": "Trả hộ",
+    "assistant": "Trợ lý",
+    "ai": "AI",
+    "settings": "Cài đặt",
+    "new": "Mới",
+    "theme": "Chủ đề",
+    "currency": "Tiền tệ"
+  },
   "login": {
     "username": "Tài khoản",
     "setupHint": "Lần đầu đến đây? Hãy đặt mật khẩu để đăng nhập.",

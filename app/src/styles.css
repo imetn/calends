@@ -10605,11 +10605,12 @@ button.name-edit:focus-visible {
     align-items: center;
     justify-content: center;
     gap: 3px;
-    width: 56px;
-    height: 56px;
+    /* 与「更多」按钮同大（竖屏 --dock-h）；圆弧间距写在 MobileNav.tsx 的 PITCH */
+    width: 60px;
+    height: 60px;
     border: 0;
     border-radius: 50%;
-    padding: 0 6px;
+    padding: 0 2px;
     color: var(--label);
     text-decoration: none;
     transition:
@@ -10628,12 +10629,12 @@ button.name-edit:focus-visible {
   .arc-item:active {
     transform: scale(0.92);
   }
-  /* 名称排在图标下方，过长时收成省略号而不压到邻项 */
+  /* 名称排在图标下方，用 app.navShort 的短名，按钮内字号比全站最小档再小一号（11px），各语言都在 56px 内容宽里留有余量；仍过长时收成省略号而不压到邻项 */
   .arc-label {
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
-    font: 500 var(--fs-1)/1.1 var(--font);
+    font: 500 11px/1.1 var(--font);
     white-space: nowrap;
   }
   /* 助手输入框吸在底栏上方，底部安全区已由底栏让出 */

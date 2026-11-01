@@ -16,6 +16,21 @@
     "label": "メインナビゲーション",
     "settings": "設定"
   },
+  "navShort": {
+    "overview": "概要",
+    "list": "サブスク",
+    "calendar": "日程",
+    "report": "レポート",
+    "wallet": "財布",
+    "family": "共有",
+    "behalf": "立替",
+    "assistant": "AI",
+    "ai": "AI 連携",
+    "settings": "設定",
+    "new": "新規",
+    "theme": "テーマ",
+    "currency": "通貨"
+  },
   "login": {
     "username": "アカウント",
     "setupHint": "初めての方は、ログイン用のパスワードを設定してください。",

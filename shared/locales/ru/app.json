@@ -16,6 +16,21 @@
     "label": "Основная навигация",
     "settings": "Настройки"
   },
+  "navShort": {
+    "overview": "Обзор",
+    "list": "Список",
+    "calendar": "График",
+    "report": "Отчёты",
+    "wallet": "Карты",
+    "family": "Общие",
+    "behalf": "Долги",
+    "assistant": "ИИ",
+    "ai": "ИИ",
+    "settings": "Опции",
+    "new": "Создать",
+    "theme": "Тема",
+    "currency": "Валюта"
+  },
   "login": {
     "username": "Аккаунт",
     "setupHint": "Впервые здесь? Задайте пароль для входа.",

@@ -16,6 +16,21 @@
     "label": "主導覽",
     "settings": "設定"
   },
+  "navShort": {
+    "overview": "概覽",
+    "list": "訂閱",
+    "calendar": "日曆",
+    "report": "報告",
+    "wallet": "錢包",
+    "family": "共享",
+    "behalf": "代付",
+    "assistant": "助手",
+    "ai": "連接",
+    "settings": "設定",
+    "new": "新增",
+    "theme": "主題",
+    "currency": "貨幣"
+  },
   "login": {
     "username": "帳戶",
     "setupHint": "首次使用，請設定登入密碼。",

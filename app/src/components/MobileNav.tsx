@@ -47,10 +47,10 @@ function useTyping() {
 }
 
 /**
- * 圆弧几何：圆按钮直径 56、任意相邻两圆之间留 12（同圈相邻按弦长，内外圈按半径差），
+ * 圆弧几何：圆按钮直径 60（与「更多」一样大）、任意相邻两圆之间留 12（同圈相邻按弦长，内外圈按半径差），
  * 所以圆心间距 PITCH 同时是弦长和两圈半径差。改直径要同步 styles.css 的 .arc-item。
  */
-const PITCH = 56 + 12;
+const PITCH = 60 + 12;
 const RING = { inner: 100, outer: 100 + PITCH };
 
 const at = (deg: number, r: number) => [Math.cos((deg * Math.PI) / 180) * r, Math.sin((deg * Math.PI) / 180) * r];
@@ -159,21 +159,21 @@ export function Dock({
         }}
       >
         <Icon name="plus" />
-        <span className="arc-label">{t('app.sidebar.new')}</span>
+        <span className="arc-label">{t('app.navShort.new')}</span>
       </button>,
     );
   const inner: ReactNode[] = [
     <Fragment key="currency">{currency}</Fragment>,
     <button key="theme" type="button" className="arc-item" onClick={toggleTheme} aria-label={`${t('app.sidebar.theme')} ${THEME_LABEL[theme]}`}>
       <ThemeIcon mode={theme} size={20} />
-      <span className="arc-label">{t('app.sidebar.theme')}</span>
+      <span className="arc-label">{t('app.navShort.theme')}</span>
     </button>,
   ];
   if (settings)
     inner.push(
       <a key="settings" className={`arc-item ${route === 'settings' ? 'on' : ''}`} href={href('settings')} onClick={close}>
         <Icon name="gear" />
-        <span className="arc-label">{t('app.nav.settings')}</span>
+        <span className="arc-label">{t('app.navShort.settings')}</span>
       </a>,
     );
 

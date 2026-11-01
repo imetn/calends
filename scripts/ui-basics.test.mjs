@@ -533,6 +533,8 @@ test('app and public CSS use only the shared type sizes, including font shorthan
       if (!/^(?:var\(--fs-(?:[1-4]|metric)\)|12px|14px|17px|22px|28px)(?: !important)?$/.test(value)) failures.push(`${file}: ${value}`);
     }
     for (const [, value] of css.matchAll(/(?<![\w-])font:\s*([^;]+);/g)) {
+      // 唯一例外：手机「更多」圆按钮里的短名，60px 圆内放图标加名称，比最小档再小一号
+      if (value === '500 11px/1.1 var(--font)' && file === 'styles.css') continue;
       if (value !== 'inherit' && !/var\(--fs-[1-4]\)/.test(value)) failures.push(`${file}: font ${value}`);
     }
   }
@@ -1321,4 +1323,22 @@ const rulesFor = (selector) => {
 test('手机底栏当前项只换文字与图标颜色，不画灰色底', () => {
   for (const sel of ['.tab.on', '.dock-more.on']) assert.doesNotMatch(rulesFor(sel), /background/, sel);
   for (const sel of ['.dock-more.on::after', '.dock.open .dock-more::after']) assert.equal(rulesFor(sel), '', sel);
+});
+
+test('手机「更多」圆按钮与底栏用短名，不用侧栏全称', () => {
+  const nav = readFileSync(new URL('components/MobileNav.tsx', root), 'utf8');
+  const label = [...nav.matchAll(/className="arc-label">\{t\('([^']+)'\)/g)].map((m) => m[1]);
+  assert.ok(label.length >= 3);
+  for (const key of label) assert.match(key, /^app\.navShort\./);
+  assert.match(readFileSync(new URL('app.tsx', root), 'utf8'), /label: t\(`app\.navShort\.\$\{/);
+  // 11px 只给圆按钮里的短名用，别处仍走统一字号
+  assert.match(rulesFor('.arc-label'), /font: 500 11px\/1\.1 var\(--font\)/);
+  assert.equal(allCss.match(/(?<![\w-])font:[^;]*\b11px/g)?.length, 1);
+  const locales = new URL('../../shared/locales/', root);
+  for (const loc of readdirSync(locales, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)) {
+    const short = JSON.parse(readFileSync(new URL(`${loc}/app.json`, locales), 'utf8')).navShort;
+    for (const [key, value] of Object.entries(short)) assert.ok([...value].length <= 9, `${loc} ${key}: ${value}`);
+  }
 });

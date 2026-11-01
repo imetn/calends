@@ -94,7 +94,7 @@ export function CurrencyPicker({
         <span className="ico-turn swap" style={{ transform: `rotate(${turn * 180}deg)` }}>
           <Icon name="coins" />
         </span>
-        <span className={arc ? 'arc-label' : undefined}>{t('picker.ccy.label')}</span>
+        <span className={arc ? 'arc-label' : undefined}>{arc ? t('app.navShort.currency') : t('picker.ccy.label')}</span>
         {!arc && <small>{orig ? t('picker.ccy.orig') : ccyName(value)}</small>}
       </button>
       {open && (

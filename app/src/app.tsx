@@ -80,7 +80,8 @@ function mobileOf(st: AppState['settings'], ro: boolean) {
   const paths = shown.map((n) => n.path);
   const item = (key: string): MobileItem => {
     const n = shown.find((x) => x.path === navPath(key, paths))!;
-    return { key, path: n.path, label: n.label, icon: n.icon };
+    // 手机上的圆按钮与底栏放不下全称，用短名
+    return { key, path: n.path, label: t(`app.navShort.${NAV.find((x) => x.path === n.path)!.label}`), icon: n.icon };
   };
   const { bar, more } = mobileNav(paths, st.bottomNav);
   return { bar: bar.map(item), more: more.map(item), aiSwitch: hasAssistant && hasConnect };

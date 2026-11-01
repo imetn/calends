@@ -16,6 +16,21 @@
     "label": "주 탐색",
     "settings": "설정"
   },
+  "navShort": {
+    "overview": "개요",
+    "list": "구독",
+    "calendar": "캘린더",
+    "report": "리포트",
+    "wallet": "지갑",
+    "family": "공유",
+    "behalf": "대신 결제",
+    "assistant": "도우미",
+    "ai": "AI 연동",
+    "settings": "설정",
+    "new": "추가",
+    "theme": "테마",
+    "currency": "통화"
+  },
   "login": {
     "username": "계정",
     "setupHint": "처음이신가요? 로그인할 비밀번호를 설정하세요.",
