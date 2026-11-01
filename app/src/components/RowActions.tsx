@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useArmed } from './ConfirmButton.tsx';
 import { Icon } from './icons.tsx';
 import { IconButton } from './ui.tsx';
 
 /**
  * 行尾的「编辑 + 删除」两个圆形按钮，删除需要二次确认：
- * 第一次点删除，它向左伸展成占满两个按钮位置的长条，显示「确认」和红色对勾；再点一次才删除。
+ * 第一次点删除，它向左伸展成占满两个按钮位置的长条，显示「确认」和红色对勾；稍候再点一次才删除（紧跟着的双击不算）。
  * 失焦、按 Esc 或 4 秒不操作就收回。没有 onEdit 时（如刚添加还没保存的条目）直接删除，不需要确认。
  */
 export function RowActions({
@@ -20,16 +21,12 @@ export function RowActions({
   removeLabel: string;
   confirmLabel: string;
 }) {
-  const [armed, setArmed] = useState(false);
+  const { armed, arm, disarm, ready } = useArmed();
   const [done, setDone] = useState(false);
-  useEffect(() => {
-    if (!armed || done) return;
-    const id = setTimeout(() => setArmed(false), 4000);
-    return () => clearTimeout(id);
-  }, [armed, done]);
   const remove = () => {
     if (!onEdit) return onRemove();
-    if (!armed) return setArmed(true);
+    if (!armed) return arm();
+    if (!ready()) return;
     // 对勾弹一下再删，减少动效时立即删除
     setDone(true);
     setTimeout(onRemove, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250);
@@ -45,11 +42,11 @@ export function RowActions({
         className="danger row-remove"
         aria-label={armed ? confirmLabel : removeLabel}
         onClick={remove}
-        onBlur={() => !done && setArmed(false)}
+        onBlur={() => !done && disarm()}
         onKeyDown={(e) => {
           if (e.key === 'Escape' && armed) {
             e.stopPropagation();
-            setArmed(false);
+            disarm();
           }
         }}
       >

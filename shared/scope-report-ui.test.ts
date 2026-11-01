@@ -2388,7 +2388,10 @@ test('行尾删除需二次确认：第一次点只展开「确认」，第二�
   g.matchMedia = () => ({ matches: true });
   try {
     let removed = 0;
-    const r = harness('../app/src/components/RowActions.tsx', 'RowActions', {}, { IconButton: 'IconButton', useEffect() {} });
+    // 确认态与防误触间隔在 ConfirmButton 的 useArmed，计时由 confirm-button.test 覆盖；这里只看行尾按钮怎么用它
+    let armed = false;
+    const useArmed = () => ({ armed, arm: () => (armed = true), disarm: () => (armed = false), ready: () => true });
+    const r = harness('../app/src/components/RowActions.tsx', 'RowActions', {}, { IconButton: 'IconButton', useEffect() {}, useArmed });
     const props = { onEdit() {}, editLabel: 'edit', removeLabel: 'remove', confirmLabel: 'confirm', onRemove: () => removed++ };
     const button = () =>
       all(r.render('RowActions', props))
@@ -2407,7 +2410,7 @@ test('行尾删除需二次确认：第一次点只展开「确认」，第二�
     assert.equal(removed, 1);
 
     let direct = 0;
-    const single = harness('../app/src/components/RowActions.tsx', 'RowActions', {}, { IconButton: 'IconButton', useEffect() {} });
+    const single = harness('../app/src/components/RowActions.tsx', 'RowActions', {}, { IconButton: 'IconButton', useEffect() {}, useArmed });
     all(single.render('RowActions', { removeLabel: 'remove', confirmLabel: 'confirm', onRemove: () => direct++ }))
       .find((n) => n.type === 'IconButton')!
       .props.onClick();

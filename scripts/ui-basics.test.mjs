@@ -1375,3 +1375,10 @@ test('手机排序没有单独的升降序按钮：下拉选中项右侧标方�
   // 选中项再点也要回调，方向切换靠它
   assert.match(picker, /const pick = \(v: T\) => \{\s*onChange\(v\);/);
 });
+
+test('行尾删除与弹窗删除共用同一个确认态，紧跟着的双击都不会删除', () => {
+  const row = readFileSync(new URL('components/RowActions.tsx', root), 'utf8');
+  assert.match(row, /useArmed\(\)/);
+  assert.match(row, /if \(!armed\) return arm\(\);\s*if \(!ready\(\)\) return;/);
+  assert.doesNotMatch(row, /useState\(false\);\s*const \[done/);
+});
