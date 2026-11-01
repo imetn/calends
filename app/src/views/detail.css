@@ -1022,13 +1022,9 @@
 }
 
 /*
- * 带标题的表格卡片（扣款记录、收付记录、代付逐期明细）：上面已经有标题区，表头矮一些（32px），
+ * 带标题的表格卡片（扣款记录、收付记录、代付逐期明细）：表头用全站行高，不比年份行矮；
  * 标题区下方少留一点，两层加起来不显得头重
  */
-.dt-panel.dt-charges .table-head.table-head {
-  height: 32px;
-  min-height: 32px;
-}
 .dt-panel.dt-charges > .dt-ph {
   padding-bottom: 6px;
 }
