@@ -94,6 +94,8 @@ test('后付费：停止后出最后一张账单，账期不给已付、退款�
   assert.deepEqual(stopped.stop, { kind: 'cancel', date: '2026-04-20', paidThrough: '2026-04-20', reason: undefined });
   assert.equal(subError(stopped), undefined);
   assert.deepEqual(dates(stopped), ['2026-02-10', '2026-03-10', '2026-04-10', '2026-05-10']);
+  // 最后一张只收 [4-10, 4-21) 用到的 11 / 30 天
+  assert.equal(chargesBetween(stopped, '2026-05-01', '2026-05-31', '2026-06-01')[0].amount, 3.67);
   assert.equal(nextCharge(stopped, '2026-04-25'), '2026-05-10');
   assert.deepEqual(billingPeriod(s, '2026-04-20'), { from: '2026-04-10', paidThrough: '2026-04-20', paid: 0, days: 30 });
   const sm = stopSummary(stopped)!;
