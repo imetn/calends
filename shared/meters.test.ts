@@ -299,6 +299,13 @@ test('postpaid bills sit on the last day of the period they settle, prepaid char
   const eom = vps({ billing: 'postpaid', start: '2026-01-31', meters: [], readings: [] });
   assert.deepEqual(chargeServicePeriod(eom, '2026-03-30'), { from: '2026-01-31', until: '2026-02-28' });
   assert.deepEqual(chargeServicePeriod(eom, '2026-05-30'), { from: '2026-03-31', until: '2026-04-30' });
+  // 4 月 30 日按时交了 4 月账单，5 月 3 日补交的是 3 月那期，两笔不归到同一期
+  const both = { ...eom, payments: [{ date: '2026-04-30', amount: 10 }, { date: '2026-05-03', amount: 12 }] };
+  assert.deepEqual(chargeServicePeriod(both, '2026-04-30'), { from: '2026-03-31', until: '2026-04-30' });
+  assert.deepEqual(chargeServicePeriod(both, '2026-05-03'), { from: '2026-02-28', until: '2026-03-31' });
+  // 前几期都已按时结清：重复扣款仍归最近结束的一期
+  const dup = { ...eom, payments: [{ date: '2026-02-28', amount: 10 }, { date: '2026-03-31', amount: 10 }, { date: '2026-04-30', amount: 10 }, { date: '2026-05-03', amount: 10 }] };
+  assert.deepEqual(chargeServicePeriod(dup, '2026-05-03'), { from: '2026-03-31', until: '2026-04-30' });
   const [mar10] = chargesBetween(vps(), '2025-03-10', '2025-03-10', today);
   assert.equal(chargeDay(mar10), '2025-03-10');
 });

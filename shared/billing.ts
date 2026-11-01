@@ -759,11 +759,21 @@ export function chargeServicePeriod(s: Subscription, cashDate: string, serviceDa
     if (anchor !== original) {
       const base = firstCycle(s, original);
       const near = Math.max(base, Math.round(diffDays(original, cashDate) / cycleDays(s.cycle)));
+      // 当天另有一笔正常扣款的边界已由那笔结清（4 月 30 日交了 4 月账单，5 月 3 日补交的是 3 月的）
+      const onTime = new Set((s.payments ?? []).filter((p) => !p.kind && p.date !== cashDate).map((p) => p.date));
+      // 往前几期都已结清（重复扣款）时仍归最近结束的一期，不落到不在边界上的时段
+      let latest: number | undefined;
       for (let k = near + 1; k > base && k >= near - 2; k--) {
-        const boundary = nthCharge(original, s.cycle, k);
-        const due = renewalDate(s, boundary);
+        const due = renewalDate(s, nthCharge(original, s.cycle, k));
         if (due > cashDate) continue;
-        const prev = nthCharge(original, s.cycle, k - 1);
+        latest ??= k;
+        if (onTime.has(due)) continue;
+        latest = k;
+        break;
+      }
+      if (latest != null) {
+        const boundary = nthCharge(original, s.cycle, latest);
+        const prev = nthCharge(original, s.cycle, latest - 1);
         return { from: serviceDate ?? (prev === original ? prev : addDays(prev, offset)), until: addDays(boundary, offset) };
       }
     }

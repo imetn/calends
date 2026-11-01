@@ -72,7 +72,13 @@ export function PaymentSheet({
   const blanks = (split ?? []).filter((x) => x.amount === '').length;
   // 用量跟计费周期走：填的数记在这笔扣款覆盖的那段时间里，周期内已有记录就改它；只写改过的指标
   const meters = sub.meters ?? [];
-  const period = kind === 'charge' && meters.length && phase.cycle.unit !== 'lifetime' ? chargeServicePeriod(phase, date) : undefined;
+  // 改日期时原记录还在旧日期上，按它算会把旧日期当成「已按时结清」的边界，周期归错；算周期前先拿掉正在改的这笔
+  const others = (() => {
+    const list = phase.payments ?? [];
+    const at = existingPay ? list.findIndex((p) => p.date === existingPay.date && p.amount === existingPay.amount && p.kind === existingPay.kind) : -1;
+    return at < 0 ? phase : { ...phase, payments: list.filter((_, i) => i !== at) };
+  })();
+  const period = kind === 'charge' && meters.length && phase.cycle.unit !== 'lifetime' ? chargeServicePeriod(others, date) : undefined;
   const [usage, setUsage] = useState<Record<string, number | undefined>>({});
   // 周期内同一指标记了多条时只读：本期用量显示合计（与扣款记录的用量列一致），累计读数显示最新一条
   const several = (m: Meter) => !!period && periodReadingCount(sub, period.from, period.until, m.id) > 1;
