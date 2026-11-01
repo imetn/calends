@@ -243,6 +243,16 @@ a {
   flex-wrap: wrap;
   margin-left: auto;
 }
+/* 桌面端操作区保持一行：放不下时整组换到标题下一行并靠右，不在组内折行 */
+@media (min-width: 861px) {
+  .tb-actions {
+    flex-wrap: nowrap;
+  }
+  /* 只有搜索框可以收窄，排序、分段等控件保持完整文字 */
+  .tb-actions > :not(.tb-search) {
+    flex-shrink: 0;
+  }
+}
 .page {
   padding: 24px 28px 48px;
   flex: 1;
@@ -2741,7 +2751,7 @@ button.bl-col {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  min-width: 0;
+  min-width: min(220px, 100%);
 }
 .tb-sub {
   flex: 0 1 auto;

@@ -1350,3 +1350,9 @@ test('筛选胶囊的底色比点按区矮，手机上选中的「全部」不�
   const pills = [...rulesFor('.facet').matchAll(/--facet-pill:\s*(\d+)px/g)].map((m) => +m[1]);
   assert.deepEqual(pills, [26, 30]);
 });
+
+test('桌面工具栏操作区不在组内折行，排序等控件不被压缩截断', () => {
+  const desk = cssRules(allCss).find(([sel, body]) => sel === '@media (min-width: 861px)' && body.includes('.tb-actions'))?.[1] ?? '';
+  assert.match(desk, /\.tb-actions\s*\{\s*flex-wrap:\s*nowrap/);
+  assert.match(desk, /\.tb-actions > :not\(\.tb-search\)\s*\{\s*flex-shrink:\s*0/);
+});
