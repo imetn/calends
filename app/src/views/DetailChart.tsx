@@ -1,6 +1,6 @@
 import { DAYS_PER_MONTH } from '../../../shared/billing.ts';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { addMonths, diffDays } from '../../../shared/billing.ts';
 import { monthLabel } from '../../../shared/format.ts';
 import { useWidth } from '../components/inputs.tsx';
@@ -60,6 +60,7 @@ export function ChargeBars({
   lanes,
   tip,
   onBucket,
+  onPick,
 }: {
   bars: ChartBar[];
   from: string;
@@ -71,6 +72,8 @@ export function ChargeBars({
   tip: (indices: number[], summed: boolean) => ReactNode;
   /** 柱子太密改为按月（1）、季（3）、年（12）汇总时，告诉调用方写一句说明 */
   onBucket?: (months: number) => void;
+  /** 点一根柱：给出它包含的下标（如用量图点柱修改那条记录） */
+  onPick?: (indices: number[]) => void;
 }) {
   const [box, w] = useWidth();
   const [hover, setHover] = useState<number | null>(null);
@@ -147,19 +150,36 @@ export function ChargeBars({
   }
 
   const nLanes = lanes.reduce((m, l) => Math.max(m, l.lane + 1), 0);
-  const onMove = (e: React.PointerEvent) => {
-    if (!bars.length) return;
+  const nearest = (e: React.PointerEvent) => {
     const px = e.clientX - box.current!.getBoundingClientRect().left;
     let best = 0;
     for (let i = 1; i < cx.length; i++) if (Math.abs(cx[i] - px) < Math.abs(cx[best] - px)) best = i;
-    setHover(best);
+    return best;
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (bars.length) setHover(nearest(e));
+  };
+  // 与 BarLine 一致：鼠标点一下就触发；触屏第一下先看浮窗，按住的还是同一根再点才触发
+  const ready = useRef(false);
+  const onDown = (e: React.PointerEvent) => {
+    if (!bars.length) return;
+    const i = nearest(e);
+    ready.current = e.pointerType === 'mouse' || hover === i;
+    setHover(i);
   };
   const hx = hover != null ? cx[hover] : 0;
   const tx = x(today);
   const showToday = today >= from && today <= to;
 
   return (
-    <div className="cc" ref={box} onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={() => setHover(null)}>
+    <div
+      className={`cc ${onPick ? 'cc-pick' : ''}`}
+      ref={box}
+      onPointerMove={onMove}
+      onPointerDown={onDown}
+      onPointerLeave={() => setHover(null)}
+      onClick={onPick && (() => ready.current && hover != null && onPick(groups[hover].idx))}
+    >
       {w > 0 && (
         <>
           <svg className="cc-plot" width={w} height={H}>

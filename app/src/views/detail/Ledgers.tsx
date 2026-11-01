@@ -2,7 +2,9 @@ import { amountTotal, chargesTotal, formatTotal, sumTotals } from '../../../../s
 import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { Plus } from 'lucide-react';
-import { phaseSubs, type Charge } from '../../../../shared/billing.ts';
+import { chargeServicePeriod, phaseSubs, type Charge } from '../../../../shared/billing.ts';
+import { meterRows, usageWithin } from '../../../../shared/meters.ts';
+import { withUnit } from './Meters.tsx';
 import { flow, cnDateFull } from '../../../../shared/format.ts';
 import { transfersOf, transferSign, transferValue } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
@@ -93,6 +95,15 @@ export function Charges({
   // 卡上实扣的原币：这张表里某个币种的金额都是整数（如奈拉、日元整价扣款）就不写 .00，省出宽度
   const whole = new Set([...new Set(rows.map((r) => r.c.currency))].filter((ccy) => rows.every((r) => r.c.currency !== ccy || Number.isInteger(r.c.amount))));
   const orig = (v: number, ccy: string) => flow(v, ccy, whole.has(ccy) ? { decimals: 0 } : {});
+  // 有用量指标时多一列：每笔扣款覆盖的服务期内记下的用量（第一个指标），失败、退款不算；窄屏收起
+  const meter = sub.meters?.[0];
+  const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(sub, meter, today) : undefined;
+  const usageOf = (c: Charge) => {
+    if (!readings || c.kind) return undefined;
+    const p = chargeServicePeriod(c.sub, c.date, c.serviceDate);
+    return usageWithin(readings, p.from, p.until);
+  };
+  const usageCell = (v: number | undefined) => (v != null ? withUnit(v, meter!.unit) : '—');
   return (
     <Panel
       // 还没有记录时只是一条带「记一笔」的细条，不进列表网格被拉高
@@ -114,11 +125,20 @@ export function Charges({
           items={rows}
           dateOf={(r) => r.c.date}
           head={[t('proxy.table.date'), t('detail.field.method'), t('proxy.table.charged'), t('proxy.table.cost')]}
+          extraHead={readings && meter!.name}
           yearCells={(ys) => {
             const total = ys.reduce((a, r) => a + r.b, 0);
             return {
               // 这一年用过的支付方式：一种时与下面的行一样写胶囊，几种时把卡的图标叠在一起
               second: <YearMethods ids={chargeMethodIds(ys.map((r) => r.c))} state={state} />,
+              extra:
+                readings &&
+                usageCell(
+                  ys.reduce<number | undefined>((a, r) => {
+                    const v = usageOf(r.c);
+                    return v == null ? a : (a ?? 0) + v;
+                  }, undefined),
+                ),
               // 卡上实扣按原币合计；一年里有几种币种时逐个列出，不留空
               orig: copyParts(
                 currencyTotals(
@@ -142,6 +162,7 @@ export function Charges({
             // 日期写全，不再加「几天前」
             date: <time dateTime={c.date}>{cnDateFull(c.date)}</time>,
             second: <ChargeMethods c={c} state={state} />,
+            extra: readings && usageCell(usageOf(c)),
             orig: (
               <>
                 {orig(-c.amount, c.currency)}

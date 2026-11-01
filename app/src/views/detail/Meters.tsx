@@ -11,7 +11,6 @@ import { ConfirmButton } from '../../components/ConfirmButton.tsx';
 import { DatePicker } from '../../components/DatePicker.tsx';
 import { Panel } from '../../components/DetailKit.tsx';
 import { Picker } from '../../components/Picker.tsx';
-import { YearLedger } from '../../components/YearLedger.tsx';
 import { BarLine } from '../../components/charts.tsx';
 import { ChargeBars } from '../DetailChart.tsx';
 import { NumInput, Seg, useSubmit } from '../../components/inputs.tsx';
@@ -21,7 +20,7 @@ import { saveSub } from '../../store.ts';
 import { run } from '../../toast.ts';
 
 const qty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: 3 }).format(n);
-const withUnit = (n: number, unit: string, f = qty) => (unit ? `${f(n)} ${unit}` : f(n));
+export const withUnit = (n: number, unit: string, f = qty) => (unit ? `${f(n)} ${unit}` : f(n));
 /** 平均值是算出来的，按量级留小数：307.2 度、3.47 GB */
 const avgQty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: Math.abs(n) >= 100 ? 1 : 2 }).format(n);
 /** 柱顶标数：过千用紧凑写法，免得挤 */
@@ -36,7 +35,8 @@ const priceText = (r: MeterRow, unit: string) => unitMoney(r.unitPrice!, r.cost!
 
 /**
  * 业务数据：订阅上自定义的指标（电量、里程、流量……）与按日期的记录，和付款分开存。
- * 没有指标时只留一个轻入口；有指标时每个指标一张卡（最近一期用量、累计、最近单价），下面是选中指标的记录表，点一行修改。
+ * 没有指标时只留一个轻入口；有指标时每个指标一张卡（最近一期用量、累计、最近单价），下面是用量走势，点柱修改那条记录；
+ * 每期用量另在扣款记录里按每笔的服务期列出。
  * 只读（公开页、演示）不显示任何编辑入口
  */
 /** axis：与费用走势共用的日期横轴与范围；没有费用图时按自己的记录画 */
@@ -94,6 +94,7 @@ export function Meters({ sub, state, today, axis }: { sub: Subscription; state: 
   const summary = meterSummary(sub, cur, today);
   const stats = meterStats(summary.rows);
   const latest = summary.latest;
+  const isReading = cur.kind === 'reading';
   const used = summary.rows.filter((r) => r.usage != null);
   const trend = axis ? used.filter((r) => r.reading.date >= axis.since && r.reading.date >= axis.from && r.reading.date <= axis.to) : used.slice(-24);
   // 提示框与费用走势同一套样式：标题行日期，逐行列用量、费用、单价；平均每期已在指标卡里，不再重复
@@ -128,8 +129,6 @@ export function Meters({ sub, state, today, axis }: { sub: Subscription; state: 
       </>
     );
   };
-  const rows = summary.rows.slice().reverse();
-  const isReading = cur.kind === 'reading';
   return (
     <Panel
       className="dt-charges dt-meters"
@@ -190,6 +189,7 @@ export function Meters({ sub, state, today, axis }: { sub: Subscription; state: 
               todayLabel={t('calendar.today')}
               fmt={compactQty}
               lanes={[]}
+              onPick={ro ? undefined : (idx) => idx.length === 1 && setReading({ id: trend[idx[0]].reading.id })}
               tip={(idx, summed) =>
                 summed && idx.length > 1 ? (
                   <>
@@ -222,41 +222,10 @@ export function Meters({ sub, state, today, axis }: { sub: Subscription; state: 
               labels={trend.map((r) => monthLabel(r.reading.date.slice(0, 7), { year: false }))}
               fmt={(v) => compactQty(v)}
               tip={tipOf}
+              onPick={ro ? undefined : (i) => setReading({ id: trend[i].reading.id })}
             />
           ))}
       </div>
-      <YearLedger
-        items={rows}
-        dateOf={(r) => r.reading.date}
-        head={[
-          t('detail.meters.head.date'),
-          isReading ? t('detail.meters.head.reading') : t('detail.meters.head.note'),
-          t('detail.meters.head.usage'),
-          t('detail.meters.head.price'),
-        ]}
-        yearCells={(ys) => {
-          const used = ys.filter((r) => r.usage != null);
-          return {
-            second: null,
-            orig: used.length
-              ? withUnit(
-                  used.reduce((a, r) => a + r.usage!, 0),
-                  cur.unit,
-                )
-              : '—',
-            base: null,
-          };
-        }}
-        row={(r) => ({
-          date: <time dateTime={r.reading.date}>{cnDateFull(r.reading.date)}</time>,
-          second: isReading ? qty(r.value) : (r.reading.note ?? ''),
-          orig: r.usage != null ? withUnit(r.usage, cur.unit) : '—',
-          base: r.unitPrice != null ? priceText(r, cur.unit) : '—',
-        })}
-        rowKey={(r) => r.reading.id}
-        rowTitle={(r) => r.reading.note}
-        onRow={ro ? undefined : (r) => setReading({ id: r.reading.id })}
-      />
       {sheets}
     </Panel>
   );

@@ -233,8 +233,6 @@
     "readingValue": "Okuma {v}",
     "head": {
       "date": "Tarih",
-      "note": "Not",
-      "reading": "Okuma",
       "usage": "Kullanım",
       "price": "Birim fiyat"
     },

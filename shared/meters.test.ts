@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { FALLBACK_FX, subError } from './billing.ts';
+import { chargeServicePeriod, FALLBACK_FX, subError } from './billing.ts';
 import { maskForPublic } from './mask.ts';
-import { costBetween, meterError, meterRows, meterStats, meterSuggestions, meterSummary, removeMeter, replaceMeters, stableId } from './meters.ts';
+import { costBetween, meterError, meterRows, meterStats, meterSuggestions, meterSummary, removeMeter, replaceMeters, stableId, usageWithin } from './meters.ts';
 import { DEFAULT_SETTINGS, type AppState, type Meter, type Payment, type Reading, type Subscription } from './types.ts';
 
 // 虚构场景：月付 ¥100 的 VPS，每月 10 日扣款；每月 15 日记一次出站流量（本期用量）和里程式累计读数
@@ -229,4 +229,26 @@ test('a usage meter started mid-subscription prices its first reading against on
   assert.equal(row.since, '2025-03-15');
   assert.equal(row.cost?.amount, 100);
   near(row.unitPrice, 2);
+});
+
+// 扣款记录的用量列：每笔按它覆盖的服务期汇总，后付费 10 月 1 日的账单对应 9 月 30 日那条
+test('usage within a charge service period sums readings dated inside it', () => {
+  const kwh: Meter = { id: 'kwh', name: 'Electricity', unit: 'kWh' };
+  const power = vps({
+    billing: 'postpaid',
+    start: '2025-01-01',
+    meters: [kwh],
+    readings: [
+      { id: 'jan', date: '2025-01-31', values: { kwh: 100 } },
+      { id: 'feb', date: '2025-02-28', values: { kwh: 200 } },
+    ],
+  });
+  const rows = meterRows(power, kwh, '2025-03-15');
+  const feb1 = chargeServicePeriod(power, '2025-02-01');
+  assert.equal(usageWithin(rows, feb1.from, feb1.until), 100);
+  const mar1 = chargeServicePeriod(power, '2025-03-01');
+  assert.equal(usageWithin(rows, mar1.from, mar1.until), 200);
+  // 年付的一笔覆盖全年，记录逐月记也能合计
+  assert.equal(usageWithin(meterRows(vps(), traffic, today), '2025-01-10', '2026-01-10'), 30);
+  assert.equal(usageWithin(rows, '2024-01-01', '2024-12-31'), undefined);
 });

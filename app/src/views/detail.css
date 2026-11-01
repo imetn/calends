@@ -396,6 +396,9 @@
   touch-action: pan-y;
   user-select: none;
 }
+.cc-pick .cc-plot {
+  cursor: pointer;
+}
 .cc-plot {
   display: block;
   overflow: visible;
@@ -1133,6 +1136,10 @@
   }
   .ld-table.dt-ledger.dt-ledger-5 .ld-row:not(.car-more) {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr);
+  }
+  /* 扣款记录多了用量列时，窄屏支付方式与用量都收起，剩三列 */
+  .ld-table.dt-ledger.dt-ledger-5 .ld-row:not(.car-more):has(> .dt-ledger-pay) {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
   }
   .dt-ledger-extra {
     display: none !important;

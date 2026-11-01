@@ -215,8 +215,6 @@
     "readingValue": "读数 {v}",
     "head": {
       "date": "日期",
-      "note": "备注",
-      "reading": "读数",
       "usage": "用量",
       "price": "单价"
     },

@@ -242,8 +242,6 @@
     "readingValue": "Lectura {v}",
     "head": {
       "date": "Fecha",
-      "note": "Nota",
-      "reading": "Lectura",
       "usage": "Consumo",
       "price": "Precio unitario"
     },

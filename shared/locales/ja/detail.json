@@ -227,8 +227,6 @@
     "readingValue": "読み値 {v}",
     "head": {
       "date": "日付",
-      "note": "メモ",
-      "reading": "読み値",
       "usage": "使用量",
       "price": "単価"
     },

@@ -242,8 +242,6 @@
     "readingValue": "Relevé {v}",
     "head": {
       "date": "Date",
-      "note": "Note",
-      "reading": "Relevé",
       "usage": "Consommation",
       "price": "Prix unitaire"
     },

@@ -242,8 +242,6 @@
     "readingValue": "Reading {v}",
     "head": {
       "date": "Date",
-      "note": "Note",
-      "reading": "Reading",
       "usage": "Usage",
       "price": "Unit price"
     },

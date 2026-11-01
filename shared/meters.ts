@@ -94,6 +94,12 @@ export function meterSummary(s: Subscription, meter: Meter, today: string, from?
   };
 }
 
+/** 记录日落在 [from, until) 内的用量合计，供扣款记录按每笔覆盖的服务期显示用量；没有有用量的记录时返回 undefined */
+export function usageWithin(rows: MeterRow[], from: string, until: string): number | undefined {
+  const hit = rows.filter((r) => r.usage != null && r.reading.date >= from && r.reading.date < until);
+  return hit.length ? Math.round(hit.reduce((a, r) => a + r.usage!, 0) * 1e6) / 1e6 : undefined;
+}
+
 /** 走势统计：平均每期用量、平均单价（有单价各期的费用合计 ÷ 用量合计）、用量最高的一期 */
 export function meterStats(rows: MeterRow[]) {
   const used = rows.filter((r) => r.usage != null);

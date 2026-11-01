@@ -242,8 +242,6 @@
     "readingValue": "Stand {v}",
     "head": {
       "date": "Datum",
-      "note": "Notiz",
-      "reading": "Stand",
       "usage": "Verbrauch",
       "price": "Stückpreis"
     },
