@@ -216,8 +216,7 @@
   },
   "billing": {
     "postpaid": "Pospago",
-    "nextBill": "Próxima factura",
-    "period": "{from}–{to}"
+    "nextBill": "Próxima factura"
   },
   "meters": {
     "title": "Detalles de uso",

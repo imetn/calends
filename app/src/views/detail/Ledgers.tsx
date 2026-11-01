@@ -2,21 +2,13 @@ import { amountTotal, chargesTotal, formatTotal, sumTotals } from '../../../../s
 import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { Plus } from 'lucide-react';
-import { addDays, chargeServicePeriod, isPostpaid, phaseSubs, type Charge } from '../../../../shared/billing.ts';
-import { flow, cnDate, cnDateFull } from '../../../../shared/format.ts';
+import { phaseSubs, type Charge } from '../../../../shared/billing.ts';
+import { flow, cnDateFull } from '../../../../shared/format.ts';
 import { transfersOf, transferSign, transferValue } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { Panel } from '../../components/DetailKit.tsx';
-
-/** 后付费账单所属的服务期：起止含当天，跨年时写全年份 */
-function postpaidPeriod(c: Charge): string {
-  const p = chargeServicePeriod(c.sub, c.date, c.serviceDate);
-  const last = addDays(p.until, -1);
-  const fmt = p.from.slice(0, 4) === last.slice(0, 4) ? cnDate : cnDateFull;
-  return t('detail.billing.period', { from: fmt(p.from), to: fmt(last) });
-}
 
 /**
  * 转让收付：二手买入付给原主的钱、卖出收到的钱，与扣款记录同一张表（日期 · 类型 · 原币 · 折合）；
@@ -155,7 +147,6 @@ export function Charges({
                 {orig(-c.amount, c.currency)}
                 {c.kind && <em className={`dt-kind ${c.kind}`}>{t(`detail.charges.kind.${c.kind}`)}</em>}
                 {multi && c.sub.region && !c.kind && <em className="dt-kind">{c.sub.region}</em>}
-                {!c.kind && isPostpaid(c.sub) && <em className="dt-kind">{postpaidPeriod(c)}</em>}
               </>
             ),
             base: Number.isFinite(b) ? flow(-b, base) : '—',

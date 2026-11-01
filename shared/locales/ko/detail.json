@@ -201,8 +201,7 @@
   },
   "billing": {
     "postpaid": "후불",
-    "nextBill": "다음 청구",
-    "period": "{from}~{to}"
+    "nextBill": "다음 청구"
   },
   "meters": {
     "title": "사용량 상세",

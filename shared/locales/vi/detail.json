@@ -201,8 +201,7 @@
   },
   "billing": {
     "postpaid": "Trả sau",
-    "nextBill": "Hóa đơn tiếp theo",
-    "period": "{from}–{to}"
+    "nextBill": "Hóa đơn tiếp theo"
   },
   "meters": {
     "title": "Chi tiết sử dụng",

@@ -189,8 +189,7 @@
   },
   "billing": {
     "postpaid": "後付費",
-    "nextBill": "下張賬單",
-    "period": "{from}–{to}"
+    "nextBill": "下張賬單"
   },
   "meters": {
     "title": "用量詳情",

@@ -219,8 +219,7 @@
   },
   "billing": {
     "postpaid": "Постоплата",
-    "nextBill": "Следующий счёт",
-    "period": "{from}–{to}"
+    "nextBill": "Следующий счёт"
   },
   "meters": {
     "title": "Подробности использования",

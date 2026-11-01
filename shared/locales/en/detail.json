@@ -216,8 +216,7 @@
   },
   "billing": {
     "postpaid": "Postpaid",
-    "nextBill": "Next bill",
-    "period": "{from}–{to}"
+    "nextBill": "Next bill"
   },
   "meters": {
     "title": "Usage details",

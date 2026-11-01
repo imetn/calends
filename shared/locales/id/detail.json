@@ -201,8 +201,7 @@
   },
   "billing": {
     "postpaid": "Pascabayar",
-    "nextBill": "Tagihan berikutnya",
-    "period": "{from}–{to}"
+    "nextBill": "Tagihan berikutnya"
   },
   "meters": {
     "title": "Rincian penggunaan",

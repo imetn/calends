@@ -207,8 +207,7 @@
   },
   "billing": {
     "postpaid": "Sonradan ödemeli",
-    "nextBill": "Sonraki fatura",
-    "period": "{from}–{to}"
+    "nextBill": "Sonraki fatura"
   },
   "meters": {
     "title": "Kullanım ayrıntıları",
