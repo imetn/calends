@@ -10197,8 +10197,12 @@ img.mm-flag {
   .report-share {
     display: flex;
     flex-wrap: nowrap;
-    justify-content: space-between;
+    justify-content: flex-end;
     width: 100%;
+  }
+  .report-share > .year-step {
+    order: -1;
+    margin-right: auto;
   }
 }
 /* 报告页年份胶囊：外框同 .btn，两侧箭头用浅灰、悬停变深，中间的下拉按钮去掉自己的框 */

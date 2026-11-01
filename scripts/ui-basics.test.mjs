@@ -1391,3 +1391,12 @@ test('助手页内标题写全称「AI 助手」，与「连接 AI 助手」对�
   for (const loc of ['zh-CN', 'zh-HK', 'zh-TW', 'ja', 'ko', 'en']) assert.match(read(loc, 'assistant').title, /^AI /, loc);
   assert.equal(read('zh-CN', 'app').navShort.assistant, '助手');
 });
+
+test('phone report years stay at the left edge when touch exposes the copy action', () => {
+  const css = readFileSync(new URL('styles.css', root), 'utf8');
+  const phone = css.match(/@media \(max-width: 860px\)\s*\{\s*\.report-share\s*\{([^}]+)\}\s*\.report-share > \.year-step\s*\{([^}]+)\}/);
+  assert.ok(phone, 'phone report needs its own row and year alignment');
+  assert.match(phone[1], /flex-wrap:\s*nowrap/);
+  assert.match(phone[2], /order:\s*-1/);
+  assert.match(phone[2], /margin-right:\s*auto/);
+});
