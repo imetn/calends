@@ -632,7 +632,9 @@ export function chargesBetween(s: Subscription, from: string, to: string, today:
   const after = schedule(s, b.until, from, to, today, lastPaid > renewalDate(s, b.until) ? lastPaid : addDays(renewalDate(s, b.until), -1));
   // 后付费：赠送结束日起用的那一期才再出账单
   const postpaid = isPostpaid(s);
-  return keep.concat(after.filter((c) => !paid.has(c.date) && known(c) && (!postpaid || (c.serviceDate ?? c.date) >= b.until))).sort((x, y) => x.date.localeCompare(y.date));
+  return keep
+    .concat(after.filter((c) => !paid.has(c.date) && known(c) && (!postpaid || (c.serviceDate ?? c.date) >= b.until)))
+    .sort((x, y) => x.date.localeCompare(y.date));
 }
 
 function rawCharges(s: Subscription, from: string, to: string, today: string): Charge[] {

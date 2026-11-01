@@ -792,7 +792,10 @@ export const set_meters: Tool = {
     const s = findSub(st, a.subscription, { exact: remove.length > 0 });
     let next: Subscription = s;
     for (const id of remove) {
-      if (!(next.meters ?? []).some((m) => m.id === id)) throw new Error(t('mcp.error.meterNotFound', { q: id, list: (s.meters ?? []).map((m) => t('mcp.item', { name: m.name, id: m.id })).join(t('mcp.sep')) || '—' }));
+      if (!(next.meters ?? []).some((m) => m.id === id))
+        throw new Error(
+          t('mcp.error.meterNotFound', { q: id, list: (s.meters ?? []).map((m) => t('mcp.item', { name: m.name, id: m.id })).join(t('mcp.sep')) || '—' }),
+        );
       next = removeMeter(next, id);
     }
     const meters = [...(next.meters ?? [])];
@@ -879,7 +882,9 @@ export const add_readings: Tool = {
       else list.push(item);
     });
     list = list.filter((r) => Object.keys(r.values).length > 0);
-    return commit(ctx, st, today, { ...s, readings: list.length ? list : undefined }, a.dry_run, [remove.length && !inputs.length ? 'delete_readings' : 'readings']);
+    return commit(ctx, st, today, { ...s, readings: list.length ? list : undefined }, a.dry_run, [
+      remove.length && !inputs.length ? 'delete_readings' : 'readings',
+    ]);
   },
 };
 

@@ -49,7 +49,12 @@ export function Meters({ sub, state, today }: { sub: Subscription; state: AppSta
     <>
       {manage &&
         createPortal(
-          <MetersSheet sub={sub} suggestions={meterSuggestions(state.subscriptions, sub)} onSave={(next) => save(next, () => setManage(false))} onClose={() => setManage(false)} />,
+          <MetersSheet
+            sub={sub}
+            suggestions={meterSuggestions(state.subscriptions, sub)}
+            onSave={(next) => save(next, () => setManage(false))}
+            onClose={() => setManage(false)}
+          />,
           document.body,
         )}
       {reading &&
@@ -98,34 +103,34 @@ export function Meters({ sub, state, today }: { sub: Subscription; state: AppSta
       }
     >
       <div className="dt-meters-body">
-      <MetricCards inline>
-        {meters.map((m) => {
-          const s = meterSummary(sub, m, today);
-          const last = s.latest;
-          const price = s.latestPriced && priceText(s.latestPriced, m.unit);
-          const total = s.periods ? withUnit(s.total, m.unit) : undefined;
-          const note =
-            total && price
-              ? t('detail.meters.both', { total, price })
-              : total
-                ? t('detail.meters.total', { v: total })
-                : price
-                  ? t('detail.meters.unitPrice', { v: price })
-                  : last && m.kind === 'reading'
-                    ? t('detail.meters.readingValue', { v: withUnit(last.value, m.unit) })
-                    : undefined;
-          return <Metric key={m.id} label={m.name} value={last?.usage != null ? withUnit(last.usage, m.unit) : '—'} note={note} />;
-        })}
-      </MetricCards>
-      {meters.length > 1 && (
-        <div className="dt-meters-pick">
-          {meters.length <= 4 ? (
-            <Seg small value={cur.id} onChange={setPicked} options={meters.map((m) => [m.id, m.name] as [string, string])} />
-          ) : (
-            <Picker variant="btn" value={cur.id} onChange={setPicked} options={meters.map((m) => ({ value: m.id, label: m.name }))} />
-          )}
-        </div>
-      )}
+        <MetricCards inline>
+          {meters.map((m) => {
+            const s = meterSummary(sub, m, today);
+            const last = s.latest;
+            const price = s.latestPriced && priceText(s.latestPriced, m.unit);
+            const total = s.periods ? withUnit(s.total, m.unit) : undefined;
+            const note =
+              total && price
+                ? t('detail.meters.both', { total, price })
+                : total
+                  ? t('detail.meters.total', { v: total })
+                  : price
+                    ? t('detail.meters.unitPrice', { v: price })
+                    : last && m.kind === 'reading'
+                      ? t('detail.meters.readingValue', { v: withUnit(last.value, m.unit) })
+                      : undefined;
+            return <Metric key={m.id} label={m.name} value={last?.usage != null ? withUnit(last.usage, m.unit) : '—'} note={note} />;
+          })}
+        </MetricCards>
+        {meters.length > 1 && (
+          <div className="dt-meters-pick">
+            {meters.length <= 4 ? (
+              <Seg small value={cur.id} onChange={setPicked} options={meters.map((m) => [m.id, m.name] as [string, string])} />
+            ) : (
+              <Picker variant="btn" value={cur.id} onChange={setPicked} options={meters.map((m) => ({ value: m.id, label: m.name }))} />
+            )}
+          </div>
+        )}
       </div>
       <YearLedger
         items={rows}
@@ -140,7 +145,12 @@ export function Meters({ sub, state, today }: { sub: Subscription; state: AppSta
           const used = ys.filter((r) => r.usage != null);
           return {
             second: null,
-            orig: used.length ? withUnit(used.reduce((a, r) => a + r.usage!, 0), cur.unit) : '—',
+            orig: used.length
+              ? withUnit(
+                  used.reduce((a, r) => a + r.usage!, 0),
+                  cur.unit,
+                )
+              : '—',
             base: null,
           };
         }}
@@ -193,7 +203,12 @@ function MetersSheet({
         const label = new Intl.ListFormat(intlLocale(), { type: 'conjunction' }).format(lost.map((m) => m.name));
         if (!(await ask(t('detail.meters.removeConfirm', { names: label }), { ok: t('common.delete') }))) return;
       }
-      const meters: Meter[] = list.map((d) => ({ id: d.id, name: d.name.trim(), unit: d.unit.trim(), ...(d.kind === 'reading' ? { kind: 'reading' as const } : {}) }));
+      const meters: Meter[] = list.map((d) => ({
+        id: d.id,
+        name: d.name.trim(),
+        unit: d.unit.trim(),
+        ...(d.kind === 'reading' ? { kind: 'reading' as const } : {}),
+      }));
       await onSave(replaceMeters(sub, meters));
     });
 

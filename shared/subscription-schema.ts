@@ -181,7 +181,13 @@ const full = {
     description: 'Custom business meters (electricity, mileage, traffic…). kind=reading is a cumulative counter; omitted = usage per period.',
   },
   readings: {
-    ...list(record({ id: text, date: day, values: { type: 'object', additionalProperties: true, description: 'Meter id → finite number.' }, note: text }, ['id', 'date', 'values'])),
+    ...list(
+      record({ id: text, date: day, values: { type: 'object', additionalProperties: true, description: 'Meter id → finite number.' }, note: text }, [
+        'id',
+        'date',
+        'values',
+      ]),
+    ),
     description: 'Recorded meter values by date; values maps meter id to a number. Prefer set_meters / add_readings for edits.',
   },
   account: text,

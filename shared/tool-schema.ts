@@ -36,7 +36,7 @@ export const billingSchema: Schema = {
   description:
     'Omit (or null) for prepaid. postpaid = billed at the end of each cycle for the cycle just used: no charge on the start/anchor day, first bill one cycle later; after end/stop/pause one final bill still covers the last period started before it. No prepaid days, refund cap or "paid through". Ignored for lifetime.',
 };
-export const drySchema: Schema ={ type: 'boolean', description: 'Preview before/after and references without saving.' };
+export const drySchema: Schema = { type: 'boolean', description: 'Preview before/after and references without saving.' };
 
 export function validateToolInput(schema: Schema, value: unknown, path = 'arguments'): void {
   const fail = (field = path) => {

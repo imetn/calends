@@ -198,17 +198,17 @@ export function StopFields({ sub, today, value, onChange }: { sub: Subscription;
             </Cell>
           )}
           {!postpaid && (
-          <Cell label={t('editor.payment.kind.refund')} sub={priorRefunds > 1 ? t('core.stop.latestRefundHint') : undefined}>
-            <Picker
-              value={refund ? 'yes' : 'no'}
-              onChange={(v) => up({ refund: v === 'yes' })}
-              options={[
-                { value: 'no', label: t('core.stop.refundNo') },
-                { value: 'yes', label: t('core.stop.refundYes') },
-              ]}
-              ariaLabel={t('editor.payment.kind.refund')}
-            />
-          </Cell>
+            <Cell label={t('editor.payment.kind.refund')} sub={priorRefunds > 1 ? t('core.stop.latestRefundHint') : undefined}>
+              <Picker
+                value={refund ? 'yes' : 'no'}
+                onChange={(v) => up({ refund: v === 'yes' })}
+                options={[
+                  { value: 'no', label: t('core.stop.refundNo') },
+                  { value: 'yes', label: t('core.stop.refundYes') },
+                ]}
+                ariaLabel={t('editor.payment.kind.refund')}
+              />
+            </Cell>
           )}
           {refund && !postpaid && (
             <>

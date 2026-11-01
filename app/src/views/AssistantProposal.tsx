@@ -159,11 +159,7 @@ export function summaryRows(
     case 'set_meters': {
       const list = (a.meters as Array<{ name?: string; unit?: string }> | undefined) ?? [];
       const remove = (a.remove as string[] | undefined) ?? [];
-      if (list.length)
-        add(
-          t('detail.meters.manageTitle'),
-          list.map((m) => (m.unit ? `${m.name ?? ''} (${m.unit})` : (m.name ?? ''))).join('\n'),
-        );
+      if (list.length) add(t('detail.meters.manageTitle'), list.map((m) => (m.unit ? `${m.name ?? ''} (${m.unit})` : (m.name ?? ''))).join('\n'));
       if (remove.length) add(t('assistant.f.effect'), t('detail.meters.removeMeters'));
       break;
     }

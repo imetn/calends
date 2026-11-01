@@ -133,7 +133,9 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
             detail: [cnDate(n, true), method?.name].filter(Boolean).join(' · '),
             note: introEnds ? t('notify.renew.introEnds') : undefined,
           });
-          headline.push(t(postpaid ? 'notify.renew.billHeadline' : 'notify.renew.headline', { name: s.name, when: relDays(d), price: money(price, s.currency) }));
+          headline.push(
+            t(postpaid ? 'notify.renew.billHeadline' : 'notify.renew.headline', { name: s.name, when: relDays(d), price: money(price, s.currency) }),
+          );
         }
       }
     }

@@ -188,9 +188,19 @@ test('先付费回归：缺省与原来完全一致，买断忽略后付费', ()
 });
 
 test('后付费：退款以最近一张账单为上限', () => {
-  const ok = base({ payments: [{ date: '2026-03-10', amount: 10 }, { date: '2026-03-15', amount: -6, kind: 'refund' }] });
+  const ok = base({
+    payments: [
+      { date: '2026-03-10', amount: 10 },
+      { date: '2026-03-15', amount: -6, kind: 'refund' },
+    ],
+  });
   assert.equal(subError(ok), undefined);
-  const over = base({ payments: [{ date: '2026-03-10', amount: 10 }, { date: '2026-03-15', amount: -11, kind: 'refund' }] });
+  const over = base({
+    payments: [
+      { date: '2026-03-10', amount: 10 },
+      { date: '2026-03-15', amount: -11, kind: 'refund' },
+    ],
+  });
   assert.ok(subError(over));
 });
 
@@ -199,7 +209,10 @@ test('billing 字段校验与公开页保留', () => {
   assert.ok(subError(bad));
   assert.ok(newShapeError(undefined, bad));
   assert.equal(newShapeError(undefined, base()), undefined);
-  const badPhase = { ...base({ billing: undefined }), phases: [{ start: '2026-01-10', price: 10, currency: 'USD', cycle: { unit: 'month', every: 1 }, billing: 'later' }] } as unknown as Subscription;
+  const badPhase = {
+    ...base({ billing: undefined }),
+    phases: [{ start: '2026-01-10', price: 10, currency: 'USD', cycle: { unit: 'month', every: 1 }, billing: 'later' }],
+  } as unknown as Subscription;
   assert.ok(newShapeError(undefined, badPhase));
   const sub = switchPlan(base({ billing: undefined }), '2026-04-10', { price: 20, currency: 'USD', cycle: { unit: 'month', every: 1 }, billing: 'postpaid' });
   const pub = maskForPublic({ subscriptions: [sub], methods: [], settings: DEFAULT_SETTINGS, fx: { base: 'USD', rates: { USD: 1 }, fetchedAt: '' } });

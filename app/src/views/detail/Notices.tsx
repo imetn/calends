@@ -72,17 +72,17 @@ export function Outcome({ sub, state, today }: { sub: Subscription; state: AppSt
               {!postpaid && <Prop k={t('detail.stop.paidThrough')}>{cnDateFull(sm.paidThrough)}</Prop>}
               {sold && <Prop k={t('detail.transfer.kind.sell')}>{cnDateFull(sold.date)}</Prop>}
               {(!postpaid || sm.refunded > 0) && (
-              <Prop k={t('editor.payment.kind.refund')}>
-                {sm.refunded > 0 ? (
-                  <span className="dt-in">
-                    {(phase.payments ?? []).filter((p) => p.kind === 'refund' && p.date >= sm.date && p.date <= today).length > 1
-                      ? flow(sm.refunded, phase.currency)
-                      : t(sm.refundStatus === 'full' ? 'core.stop.fullyRefunded' : 'core.stop.partial', { money: '' }).trim()}
-                  </span>
-                ) : (
-                  t('core.stop.refundNo')
-                )}
-              </Prop>
+                <Prop k={t('editor.payment.kind.refund')}>
+                  {sm.refunded > 0 ? (
+                    <span className="dt-in">
+                      {(phase.payments ?? []).filter((p) => p.kind === 'refund' && p.date >= sm.date && p.date <= today).length > 1
+                        ? flow(sm.refunded, phase.currency)
+                        : t(sm.refundStatus === 'full' ? 'core.stop.fullyRefunded' : 'core.stop.partial', { money: '' }).trim()}
+                    </span>
+                  ) : (
+                    t('core.stop.refundNo')
+                  )}
+                </Prop>
               )}
             </dl>
           </section>

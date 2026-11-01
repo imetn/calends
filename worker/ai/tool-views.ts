@@ -278,7 +278,9 @@ export function metersOut(s: Subscription, today: string, from: string) {
       total_usage: sum.total,
       periods: sum.periods,
       latest: sum.latest ? one(sum.latest) : null,
-      latest_unit_price: sum.latestPriced ? { date: sum.latestPriced.reading.date, amount: unitRound(sum.latestPriced.unitPrice!), currency: sum.latestPriced.cost!.currency } : null,
+      latest_unit_price: sum.latestPriced
+        ? { date: sum.latestPriced.reading.date, amount: unitRound(sum.latestPriced.unitPrice!), currency: sum.latestPriced.cost!.currency }
+        : null,
       readings: sum.rows.filter((r) => r.reading.date >= from).map(one),
     };
   });
