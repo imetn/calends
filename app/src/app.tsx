@@ -9,7 +9,7 @@ import { cnDate, money, setSignedAmounts } from '../../shared/format.ts';
 import { avatarOf, type AppState, type Subscription } from '../../shared/types.ts';
 import { IconButton } from './components/ui.tsx';
 import { AiSwitch, Dock, type MobileItem } from './components/MobileNav.tsx';
-import { mobileNav, navPath } from './mobile-nav.ts';
+import { mobileNav, navPath, WIDE_DOCK } from './mobile-nav.ts';
 import { AskLayer, TipLayer, Toasts } from './components/overlays.tsx';
 import { Icon } from './components/icons.tsx';
 import { SubIcon } from './components/marks.tsx';
@@ -71,9 +71,10 @@ const NAV = [
 ];
 
 /**
- * 手机导航：助手与连接合成一个入口，名称同桌面「助手」（只读时没有助手，退回「连接」）；底栏按设置放 4 项，其余进「更多」
+ * 手机导航：助手与连接合成一个入口，名称同桌面「助手」（只读时没有助手，退回「连接」）；底栏按设置放 4 项，其余进「更多」；
+ * wide（平板、横屏）时模块全部上底栏
  */
-function mobileOf(st: AppState['settings'], ro: boolean) {
+function mobileOf(st: AppState['settings'], ro: boolean, wide: boolean) {
   const shown = navOf(st).filter((n) => !(ro && n.path === 'assistant'));
   const hasAssistant = shown.some((n) => n.path === 'assistant');
   const hasConnect = shown.some((n) => n.path === 'connect');
@@ -83,7 +84,7 @@ function mobileOf(st: AppState['settings'], ro: boolean) {
     // 手机上的圆按钮与底栏放不下全称，用短名
     return { key, path: n.path, label: t(`app.navShort.${NAV.find((x) => x.path === n.path)!.label}`), icon: n.icon };
   };
-  const { bar, more } = mobileNav(paths, st.bottomNav);
+  const { bar, more } = mobileNav(paths, st.bottomNav, wide ? Infinity : undefined);
   return { bar: bar.map(item), more: more.map(item), aiSwitch: hasAssistant && hasConnect };
 }
 
@@ -524,6 +525,7 @@ function App() {
   }, [loaded]);
   // 窄屏：侧边栏换成底栏 +「更多」
   const narrow = useMedia('(max-width: 860px)');
+  const wideDock = useMedia(WIDE_DOCK);
   useEffect(() => {
     if (!narrow) setMore(false);
   }, [narrow]);
@@ -607,7 +609,7 @@ function App() {
     setEditing(newSub(d, state?.settings.defaultMethodId, state?.settings.baseCurrency));
   };
   const viewing = state.subscriptions.find((s) => s.id === viewId);
-  const mobile = narrow ? mobileOf(state.settings, ro) : null;
+  const mobile = narrow ? mobileOf(state.settings, ro, wideDock) : null;
   // 手机端 AI 入口里的「助手 | 连接」切换
   const aiSwitch = mobile?.aiSwitch ? <AiSwitch route={route} /> : undefined;
 

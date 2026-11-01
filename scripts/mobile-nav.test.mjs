@@ -21,6 +21,14 @@ test('phone tab bar keeps chosen items, drops hidden or duplicate ones and fills
   assert.deepEqual(mobileNav(['overview', 'list', 'report'], ['calendar', 'report']).bar, ['report', 'overview', 'list']);
 });
 
+test('wide screens put every module on the tab bar, chosen ones first, leaving only the fixed items in More', () => {
+  assert.deepEqual(mobileNav(all, ['ai', 'wallet'], Infinity), {
+    bar: ['ai', 'wallet', 'overview', 'list', 'calendar', 'report', 'family', 'behalf'],
+    more: [],
+  });
+  assert.deepEqual(mobileNav(['overview', 'report'], undefined, Infinity).bar, ['overview', 'report']);
+});
+
 test('choosing a module already on the tab bar swaps the two slots', () => {
   const bar = ['overview', 'list', 'calendar', 'report'];
   assert.deepEqual(pickSlot(bar, 0, 'report'), ['report', 'list', 'calendar', 'overview']);

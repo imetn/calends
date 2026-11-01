@@ -10517,8 +10517,10 @@ button.name-edit:focus-visible {
   .dock-bar {
     flex: 1;
     min-width: 0;
+    /* 手机 4 项，平板等宽屏放下全部模块：按项数等分 */
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
     padding: 4px;
     border-radius: var(--radius-pill);
     transition:
