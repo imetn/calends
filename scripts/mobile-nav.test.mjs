@@ -1,39 +1,29 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { arcAngle, mobileNav, navPath, pickSlot } from '../app/src/mobile-nav.ts';
+import { arcAngle, mobileNav, navPath } from '../app/src/mobile-nav.ts';
 
 const all = ['overview', 'list', 'calendar', 'report', 'wallet', 'family', 'behalf', 'assistant', 'connect'];
 
-test('phone tab bar defaults to the first four sidebar modules and merges assistant with connect', () => {
-  assert.deepEqual(mobileNav(all, undefined), {
+test('phone tab bar takes the first four sidebar modules in sidebar order and merges assistant with connect', () => {
+  assert.deepEqual(mobileNav(all), {
     bar: ['overview', 'list', 'calendar', 'report'],
     more: ['wallet', 'family', 'behalf', 'ai'],
   });
-  assert.deepEqual(mobileNav(['overview', 'connect', 'list', 'assistant'], undefined).bar, ['overview', 'ai', 'list']);
+  assert.deepEqual(mobileNav(['overview', 'connect', 'list', 'assistant']).bar, ['overview', 'ai', 'list']);
+  // Reordered sidebar: the tab bar follows the same order.
+  assert.deepEqual(mobileNav(['wallet', 'report', 'overview', 'list', 'calendar']), { bar: ['wallet', 'report', 'overview', 'list'], more: ['calendar'] });
 });
 
-test('phone tab bar keeps chosen items, drops hidden or duplicate ones and fills from sidebar order', () => {
-  assert.deepEqual(mobileNav(all, ['ai', 'wallet', 'ai', 'gone']), {
-    bar: ['ai', 'wallet', 'overview', 'list'],
-    more: ['calendar', 'report', 'family', 'behalf'],
-  });
-  // Hidden in the sidebar: not offered on the tab bar either.
-  assert.deepEqual(mobileNav(['overview', 'list', 'report'], ['calendar', 'report']).bar, ['report', 'overview', 'list']);
+test('only two modules left in the sidebar: the bar holds those two and More keeps only its fixed items', () => {
+  assert.deepEqual(mobileNav(['overview', 'list']), { bar: ['overview', 'list'], more: [] });
 });
 
-test('wide screens put every module on the tab bar, chosen ones first, leaving only the fixed items in More', () => {
-  assert.deepEqual(mobileNav(all, ['ai', 'wallet'], Infinity), {
-    bar: ['ai', 'wallet', 'overview', 'list', 'calendar', 'report', 'family', 'behalf'],
+test('wide screens put every module on the tab bar in sidebar order, leaving only the fixed items in More', () => {
+  assert.deepEqual(mobileNav(all, Infinity), {
+    bar: ['overview', 'list', 'calendar', 'report', 'wallet', 'family', 'behalf', 'ai'],
     more: [],
   });
-  assert.deepEqual(mobileNav(['overview', 'report'], undefined, Infinity).bar, ['overview', 'report']);
-});
-
-test('choosing a module already on the tab bar swaps the two slots', () => {
-  const bar = ['overview', 'list', 'calendar', 'report'];
-  assert.deepEqual(pickSlot(bar, 0, 'report'), ['report', 'list', 'calendar', 'overview']);
-  assert.deepEqual(pickSlot(bar, 1, 'ai'), ['overview', 'ai', 'calendar', 'report']);
-  assert.deepEqual(bar, ['overview', 'list', 'calendar', 'report']);
+  assert.deepEqual(mobileNav(['overview', 'report'], Infinity).bar, ['overview', 'report']);
 });
 
 test('the merged AI entry takes the desktop module it opens, so it is named Assistant rather than a separate AI label', () => {

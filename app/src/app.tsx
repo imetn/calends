@@ -71,7 +71,7 @@ const NAV = [
 ];
 
 /**
- * 手机导航：助手与连接合成一个入口，名称同桌面「助手」（只读时没有助手，退回「连接」）；底栏按设置放 4 项，其余进「更多」；
+ * 手机导航：助手与连接合成一个入口，名称同桌面「助手」（只读时没有助手，退回「连接」）；底栏按侧边栏顺序放前 4 项，其余进「更多」；
  * wide（平板、横屏）时模块全部上底栏
  */
 function mobileOf(st: AppState['settings'], ro: boolean, wide: boolean) {
@@ -84,7 +84,7 @@ function mobileOf(st: AppState['settings'], ro: boolean, wide: boolean) {
     // 手机上的圆按钮与底栏放不下全称，用短名
     return { key, path: n.path, label: t(`app.navShort.${NAV.find((x) => x.path === n.path)!.label}`), icon: n.icon };
   };
-  const { bar, more } = mobileNav(paths, st.bottomNav, wide ? Infinity : undefined);
+  const { bar, more } = mobileNav(paths, wide ? Infinity : undefined);
   return { bar: bar.map(item), more: more.map(item), aiSwitch: hasAssistant && hasConnect };
 }
 

@@ -38,11 +38,6 @@
     "lookAhead": "Horizon",
     "lookAheadAria": "Période des prélèvements à venir"
   },
-  "bottomNav": {
-    "title": "Barre d’onglets (mobile)",
-    "slot": "Onglet {n}",
-    "foot": "Le cinquième onglet est toujours « Plus » et regroupe les autres modules. Les modules masqués dans la barre latérale ne sont pas proposés."
-  },
   "remind": {
     "title": "Rappels",
     "lead": "Me rappeler",

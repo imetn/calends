@@ -35,11 +35,6 @@
     "lookAhead": "Xem trước",
     "lookAheadAria": "Khoảng thời gian khoản phí sắp tới"
   },
-  "bottomNav": {
-    "title": "Thanh tab (điện thoại)",
-    "slot": "Tab {n}",
-    "foot": "Tab thứ năm luôn là “Thêm”, chứa các mô-đun còn lại. Mô-đun bị ẩn ở thanh bên sẽ không có ở đây."
-  },
   "remind": {
     "title": "Nhắc nhở",
     "lead": "Nhắc tôi",

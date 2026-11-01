@@ -35,11 +35,6 @@
     "lookAhead": "Look ahead",
     "lookAheadAria": "Upcoming charges window"
   },
-  "bottomNav": {
-    "title": "Phone tab bar",
-    "slot": "Tab {n}",
-    "foot": "The fifth tab is always More, which holds everything else. Modules hidden in the sidebar aren’t offered."
-  },
   "remind": {
     "title": "Reminders",
     "lead": "Remind me",

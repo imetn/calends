@@ -35,11 +35,6 @@
     "lookAhead": "İleriye bakış",
     "lookAheadAria": "Yaklaşan ödemeler aralığı"
   },
-  "bottomNav": {
-    "title": "Alt sekme çubuğu (telefon)",
-    "slot": "Sekme {n}",
-    "foot": "Beşinci sekme her zaman “Daha fazla”dır ve diğer modülleri içerir. Kenar çubuğunda gizlenen modüller sunulmaz."
-  },
   "remind": {
     "title": "Hatırlatmalar",
     "lead": "Hatırlat",
