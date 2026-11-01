@@ -12,6 +12,8 @@ export interface ChartBar {
   v: number;
   /** 今天之后的预测扣款 */
   future?: boolean;
+  /** 参照值（如用量图的平均每期），画成虚线台阶；汇总柱用组内合计 */
+  ref?: number;
   /** 属于哪一段方案：只有不同方案的扣款挨在一起时才并排，同一方案的相邻扣款各自一根 */
   phase?: string;
   /** 首期优惠期间这一笔的原价（同单位）：实际扣的是实色，原价比实际多出的部分画成柱顶的虚框 */
@@ -115,7 +117,13 @@ export function ChargeBars({
   // 柱宽随密度变：密时 3px，稀疏的年付最宽 BAR.max（与全站柱宽一致）
   const bw = Math.max(3, Math.min(BAR.max, (iw / Math.max(1, groups.length)) * BAR.ratio));
   const val = (i: number) => (Number.isFinite(bars[i].v) ? Math.max(0, bars[i].v) : 0);
-  const max = Math.max(0, ...groups.map((g) => g.idx.reduce((a, i) => a + val(i), 0))) || 1;
+  const refOf = (g: Group) =>
+    g.idx.every((i) => bars[i].ref != null)
+      ? g.stack
+        ? Math.max(...g.idx.map((i) => bars[i].ref!))
+        : g.idx.reduce((a, i) => a + bars[i].ref!, 0)
+      : undefined;
+  const max = Math.max(0, ...groups.map((g) => Math.max(g.idx.reduce((a, i) => a + val(i), 0), refOf(g) ?? 0))) || 1;
   const step = niceStep(max * 1.08);
   const top = Math.ceil((max * 1.08) / step) * step;
   const y = (v: number) => T + (1 - v / top) * (H - T - 6);
@@ -226,6 +234,24 @@ export function ChargeBars({
                 );
               });
             })}
+            {/* 参照线：每根柱上一段虚线，相邻相同时连成台阶 */}
+            {(() => {
+              let d = '';
+              let prev: number | undefined;
+              groups.forEach((g) => {
+                const rv = refOf(g);
+                if (rv == null) {
+                  prev = undefined;
+                  return;
+                }
+                const ry = y(rv);
+                const x0 = g.x - bw / 2 - 2;
+                const x1 = g.x + bw / 2 + 2;
+                d += prev == null ? `M${x0},${ry}H${x1}` : `L${x0},${prev}L${x0},${ry}H${x1}`;
+                prev = ry;
+              });
+              return d && <path className="cc-ref" d={d} />;
+            })()}
             {showToday && <line className="cc-today" x1={tx} x2={tx} y1={T - 4} y2={H} />}
             {showToday && (
               <text className="cc-today-l" x={tx} y={T - 8} textAnchor={tx > w - PAD_R - 24 ? 'end' : tx < PAD_L + 24 ? 'start' : 'middle'}>

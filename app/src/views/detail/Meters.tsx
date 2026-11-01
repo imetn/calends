@@ -189,7 +189,7 @@ export function Meters({
         {trend.length > 1 &&
           (axis ? (
             <ChargeBars
-              bars={trend.map((r) => ({ date: r.reading.date, v: r.usage!, list: stats.average }))}
+              bars={trend.map((r) => ({ date: r.reading.date, v: r.usage!, ref: stats.average }))}
               from={axis.from}
               to={axis.to}
               today={today}

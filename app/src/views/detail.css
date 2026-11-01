@@ -431,6 +431,13 @@
 .cc-bar.on {
   opacity: 0.7;
 }
+/* 参照线（用量图的平均每期）：细虚线台阶 */
+.cc-ref {
+  fill: none;
+  stroke: var(--dt-warn);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
 .cc-today {
   stroke: var(--label-2);
   stroke-width: 1;
