@@ -705,7 +705,17 @@ test('detail timeline forecasts only the next charge, for monthly and yearly pla
     t: (k: string) => k,
   });
   const today = '2026-11-02';
-  const base: Subscription = { id: 'f', name: 'Fictional', category: 'tools', tags: [], price: 10, currency: 'USD', start: '2025-01-05', cycle: { unit: 'month', every: 1 }, status: 'active' };
+  const base: Subscription = {
+    id: 'f',
+    name: 'Fictional',
+    category: 'tools',
+    tags: [],
+    price: 10,
+    currency: 'USD',
+    start: '2025-01-05',
+    cycle: { unit: 'month', every: 1 },
+    status: 'active',
+  };
   for (const sub of [base, { ...base, cycle: { unit: 'year' as const, every: 1 } }]) {
     const history = billing.chargesBetween(sub, sub.start, today, today);
     const ax = timelineAxis(sub, today, history);

@@ -124,7 +124,12 @@ export function Charges({
           items={rows}
           // 后付费的周期账单按所属周期分年（12 月电费次年 1 月交，仍归当年）
           dateOf={(r) => chargeDay(r.c)}
-          head={[t(regular.length && regular.every((r) => post(r.c)) ? 'detail.chart.period' : 'proxy.table.date'), t('detail.field.method'), t('proxy.table.charged'), t('proxy.table.cost')]}
+          head={[
+            t(regular.length && regular.every((r) => post(r.c)) ? 'detail.chart.period' : 'proxy.table.date'),
+            t('detail.field.method'),
+            t('proxy.table.charged'),
+            t('proxy.table.cost'),
+          ]}
           extraHead={readings && meter!.name}
           yearCells={(ys) => {
             const total = ys.reduce((a, r) => a + r.b, 0);

@@ -65,7 +65,12 @@ export function timelineAxis(sub: Subscription, today: string, history: Charge[]
   // 未来只画下一期：再往后都是同样的柱子，没有信息量；下一笔的金额与日期在顶部「下张账单」卡里
   const days = cycleDays(cur.cycle);
   const until = next && next.date > today ? next.date : anchor;
-  const future = live && next ? chargesBetween(sub, addDays(today, 1), until, today).filter((c) => !c.kind).slice(0, 1) : [];
+  const future =
+    live && next
+      ? chargesBetween(sub, addDays(today, 1), until, today)
+          .filter((c) => !c.kind)
+          .slice(0, 1)
+      : [];
 
   // 只有范围内至少三笔、且比全部少时才给这个范围：两年付、年付这类稀疏记录不显示无意义的「1 年 / 6 个月」
   // 范围按归期日筛（后付费归到所属周期），横轴按柱子位置算

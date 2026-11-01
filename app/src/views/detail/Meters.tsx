@@ -25,7 +25,10 @@ import { run } from '../../toast.ts';
 const avgQty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: Math.abs(n) >= 100 ? 1 : 2 }).format(n);
 /** 刻度标数：轴顶过十万才用紧凑写法（2.5万、1.2亿），同一根轴写法一致，不会出现 5,000 与 1万 混排、两个 2万 */
 const compactQty = (n: number, top = n) =>
-  numberFormat(intlLocale(), top >= 100000 ? { notation: 'compact', maximumFractionDigits: 1 } : { maximumFractionDigits: top >= 100 ? 0 : top >= 10 ? 1 : 2 }).format(n);
+  numberFormat(
+    intlLocale(),
+    top >= 100000 ? { notation: 'compact', maximumFractionDigits: 1 } : { maximumFractionDigits: top >= 100 ? 0 : top >= 10 ? 1 : 2 },
+  ).format(n);
 const priceText = (r: MeterRow, unit: string) => unitMoney(r.unitPrice!, r.cost!.currency, unit);
 
 /**

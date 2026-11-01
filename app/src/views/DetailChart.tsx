@@ -129,12 +129,17 @@ export function ChargeBars({
   const bw = Math.max(3, Math.min(BAR.max, gap * BAR.ratio));
   const val = (i: number) => (Number.isFinite(bars[i].v) ? Math.max(0, bars[i].v) : 0);
   const refOf = (g: Group) =>
-    g.idx.every((i) => bars[i].ref != null)
-      ? g.stack
-        ? Math.max(...g.idx.map((i) => bars[i].ref!))
-        : g.idx.reduce((a, i) => a + bars[i].ref!, 0)
-      : undefined;
-  const max = Math.max(0, ...groups.map((g) => Math.max(g.idx.reduce((a, i) => a + val(i), 0), refOf(g) ?? 0))) || 1;
+    g.idx.every((i) => bars[i].ref != null) ? (g.stack ? Math.max(...g.idx.map((i) => bars[i].ref!)) : g.idx.reduce((a, i) => a + bars[i].ref!, 0)) : undefined;
+  const max =
+    Math.max(
+      0,
+      ...groups.map((g) =>
+        Math.max(
+          g.idx.reduce((a, i) => a + val(i), 0),
+          refOf(g) ?? 0,
+        ),
+      ),
+    ) || 1;
   const step = niceStep(max * 1.08);
   const top = Math.ceil((max * 1.08) / step) * step;
   const y = (v: number) => T + (1 - v / top) * (H - T - 6);

@@ -2,7 +2,21 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { chargeDay, chargeServicePeriod, chargesBetween, FALLBACK_FX, subError } from './billing.ts';
 import { maskForPublic } from './mask.ts';
-import { costBetween, meterError, meterRows, meterStats, meterSuggestions, meterSummary, periodReading, periodReadingCount, removeMeter, replaceMeters, setPeriodValues, stableId, usageWithin } from './meters.ts';
+import {
+  costBetween,
+  meterError,
+  meterRows,
+  meterStats,
+  meterSuggestions,
+  meterSummary,
+  periodReading,
+  periodReadingCount,
+  removeMeter,
+  replaceMeters,
+  setPeriodValues,
+  stableId,
+  usageWithin,
+} from './meters.ts';
 import { DEFAULT_SETTINGS, type AppState, type Meter, type Payment, type Reading, type Subscription } from './types.ts';
 
 // 虚构场景：月付 ¥100 的 VPS，每月 10 日扣款；每月 15 日记一次出站流量（本期用量）和里程式累计读数
@@ -267,7 +281,10 @@ test('charge sheet writes usage into the reading of that billing period', () => 
   assert.deepEqual(added.readings?.at(-1), { id: 'new', date: '2025-05-10', values: { gb: 7 } });
   // 全部清掉的记录删掉；本来就没有、也没填时不写
   const r4 = chargeServicePeriod(s, '2025-04-10');
-  assert.equal(setPeriodValues(s, r4.from, r4.until, { odo: undefined }, { id: 'x', date: '2025-04-10' }).readings?.some((r) => r.id === 'r4'), false);
+  assert.equal(
+    setPeriodValues(s, r4.from, r4.until, { odo: undefined }, { id: 'x', date: '2025-04-10' }).readings?.some((r) => r.id === 'r4'),
+    false,
+  );
   assert.equal(setPeriodValues(s, may.from, may.until, { gb: undefined }, { id: 'x', date: '2025-05-10' }), s);
   // 同一周期多条时改最晚的一条
   const two = vps({ readings: [...readings, { id: 'r3b', date: '2025-03-20', values: { gb: 1 } }] });
@@ -300,11 +317,25 @@ test('postpaid bills sit on the last day of the period they settle, prepaid char
   assert.deepEqual(chargeServicePeriod(eom, '2026-03-30'), { from: '2026-01-31', until: '2026-02-28' });
   assert.deepEqual(chargeServicePeriod(eom, '2026-05-30'), { from: '2026-03-31', until: '2026-04-30' });
   // 4 月 30 日按时交了 4 月账单，5 月 3 日补交的是 3 月那期，两笔不归到同一期
-  const both = { ...eom, payments: [{ date: '2026-04-30', amount: 10 }, { date: '2026-05-03', amount: 12 }] };
+  const both = {
+    ...eom,
+    payments: [
+      { date: '2026-04-30', amount: 10 },
+      { date: '2026-05-03', amount: 12 },
+    ],
+  };
   assert.deepEqual(chargeServicePeriod(both, '2026-04-30'), { from: '2026-03-31', until: '2026-04-30' });
   assert.deepEqual(chargeServicePeriod(both, '2026-05-03'), { from: '2026-02-28', until: '2026-03-31' });
   // 前几期都已按时结清：重复扣款仍归最近结束的一期
-  const dup = { ...eom, payments: [{ date: '2026-02-28', amount: 10 }, { date: '2026-03-31', amount: 10 }, { date: '2026-04-30', amount: 10 }, { date: '2026-05-03', amount: 10 }] };
+  const dup = {
+    ...eom,
+    payments: [
+      { date: '2026-02-28', amount: 10 },
+      { date: '2026-03-31', amount: 10 },
+      { date: '2026-04-30', amount: 10 },
+      { date: '2026-05-03', amount: 10 },
+    ],
+  };
   assert.deepEqual(chargeServicePeriod(dup, '2026-05-03'), { from: '2026-03-31', until: '2026-04-30' });
   const [mar10] = chargesBetween(vps(), '2025-03-10', '2025-03-10', today);
   assert.equal(chargeDay(mar10), '2025-03-10');
