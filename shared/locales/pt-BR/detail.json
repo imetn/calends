@@ -213,5 +213,10 @@
       "amount": "Valor",
       "base": "Em {ccy}"
     }
+  },
+  "billing": {
+    "postpaid": "Pós-pago",
+    "nextBill": "Próxima fatura",
+    "period": "{from}–{to}"
   }
 }

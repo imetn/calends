@@ -241,6 +241,8 @@ export interface Phase extends RenewalRules {
   price: number;
   currency: string;
   cycle: Cycle;
+  /** 付费方式：缺省为先付费；postpaid 为后付费，每期结束时按刚用完的那一期出账单 */
+  billing?: 'postpaid';
   methodId?: string;
   region?: string;
   priceHistory?: PricePoint[];
@@ -266,6 +268,8 @@ export interface Subscription extends RenewalRules {
   price: number;
   currency: string;
   cycle: Cycle;
+  /** 付费方式：缺省为先付费；postpaid 为后付费。有阶段时镜像最后一个阶段 */
+  billing?: 'postpaid';
   start: string;
   /** Import boundary: do not infer older charges without actual payment records. */
   estimateFrom?: string;

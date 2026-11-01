@@ -25,7 +25,7 @@ import { editStop } from '../../shared/stop-form.ts';
 import { iconInput } from '../../shared/icon.ts';
 import type { Payment, Subscription } from '../../shared/types.ts';
 import { t } from '../../shared/i18n.ts';
-import { drySchema, objectSchema as obj } from '../../shared/tool-schema.ts';
+import { billingSchema, drySchema, nullable, objectSchema as obj } from '../../shared/tool-schema.ts';
 import { SUBSCRIPTION_SCHEMA } from '../../shared/subscription-schema.ts';
 import { prepareSubWrite } from '../../shared/sub-write.ts';
 import { validateCurrency, deleteSubscriptionSettings } from '../../shared/ledger-edit.ts';
@@ -72,7 +72,8 @@ export const create_subscription: Tool = {
       price: { type: 'number', minimum: 0 },
       currency: { type: 'string', description: 'ISO code, e.g. USD, CNY, TRY.' },
       cycle: CYCLE,
-      start: { ...DATE, description: 'First charge / purchase date. Defaults to today.' },
+      billing: billingSchema,
+      start: { ...DATE, description: 'First charge / purchase date (postpaid: first service day). Defaults to today.' },
       category: { ...CATEGORY, description: `${CATEGORY.description} Defaults to the existing Tools category; if absent, specify an existing category.` },
       ...CATEGORY_CREATE,
       tags: { type: 'array', items: { type: 'string' } },
@@ -168,6 +169,7 @@ export const create_subscription: Tool = {
       price: num(a.price, 'price'),
       currency,
       cycle: { unit: cyc?.unit, every: Math.max(1, Number(cyc?.every ?? 1)) },
+      ...(a.billing === 'postpaid' ? { billing: 'postpaid' as const } : {}),
       start,
       chargeLeadDays: a.chargeLeadDays == null ? undefined : Number(a.chargeLeadDays),
       cancelLeadDays: a.cancelLeadDays == null ? undefined : Number(a.cancelLeadDays),
@@ -255,7 +257,7 @@ export const save_subscription: Tool = {
 export const update_subscription: Tool = {
   name: 'update_subscription',
   description:
-    'Change descriptive fields and settings of a subscription (name, category, tags, url, notes, icon, payment method, region, reminder days, start, end date (no renewal after it), next due date, trial end). Only provided keys change. A start correction keeps the original billing anchor and future charge dates (preview next_charges) unless shift_billing=true. For price changes use change_price; for plan/region switches use change_plan. Call list_categories before assigning a category. Unknown names fail; use save_category action=create or create_category=true with optional category_icon/category_color to explicitly create one.',
+    'Change descriptive fields and settings of a subscription (name, category, tags, url, notes, icon, payment method, region, billing (prepaid / postpaid), reminder days, start, end date (no renewal after it), next due date, trial end). Only provided keys change. A start correction keeps the original billing anchor and future charge dates (preview next_charges) unless shift_billing=true. For price changes use change_price; for plan/region switches use change_plan. Call list_categories before assigning a category. Unknown names fail; use save_category action=create or create_category=true with optional category_icon/category_color to explicitly create one.',
   write: true,
   inputSchema: obj(
     {
@@ -280,6 +282,7 @@ export const update_subscription: Tool = {
         account: { type: 'string', description: 'Login account (email / phone / username).' },
         method: { type: ['string', 'null'], description: 'Payment method id or name.' },
         region: { type: 'string' },
+        billing: { ...nullable(billingSchema), description: `${billingSchema.description} Applies to the current phase.` },
         remind_days: { type: ['integer', 'null'], minimum: -1, description: '-1 disables; null restores the global setting.' },
         end: { type: ['string', 'null'], description: 'YYYY-MM-DD, or null to clear (will renew again).' },
         next_due: { type: ['string', 'null'] },
@@ -328,6 +331,7 @@ export const update_subscription: Tool = {
     if ('account' in set) put('account', str(set.account));
     if ('method' in set) put('methodId', methodRef(st, set.method), 'method');
     if ('region' in set) put('region', str(set.region)?.toUpperCase());
+    if ('billing' in set) put('billing', set.billing === 'postpaid' ? 'postpaid' : undefined);
     if ('remind_days' in set) put('remindDays', set.remind_days == null ? undefined : Number(set.remind_days), 'remind_days');
     for (const [k, f] of [
       ['end', 'end'],
@@ -396,6 +400,7 @@ export const change_plan: Tool = {
         price: { type: 'number', minimum: 0 },
         currency: { type: 'string' },
         cycle: CYCLE,
+        billing: nullable(billingSchema),
         method: { type: ['string', 'null'] },
         region: { type: ['string', 'null'] },
         note: { type: ['string', 'null'] },
@@ -420,6 +425,7 @@ export const change_plan: Tool = {
           price: { type: 'number' },
           currency: { type: 'string' },
           cycle: CYCLE,
+          billing: billingSchema,
           method: { type: ['string', 'null'] },
           region: { type: 'string' },
           note: { type: 'string' },
@@ -477,6 +483,7 @@ export const change_plan: Tool = {
       price: num(p.price, 'plan.price'),
       currency: String(p.currency).toUpperCase(),
       cycle: { unit: cyc.unit, every: Math.max(1, Number(cyc.every ?? 1)) },
+      ...(p.billing === 'postpaid' ? { billing: 'postpaid' as const } : {}),
       methodId: 'method' in p ? methodRef(st, p.method) : currentPhase(s, today).methodId,
       region: str(p.region)?.toUpperCase(),
       note: str(p.note),

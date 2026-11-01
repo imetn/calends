@@ -216,5 +216,10 @@
       "amount": "Сумма",
       "base": "В {ccy}"
     }
+  },
+  "billing": {
+    "postpaid": "Постоплата",
+    "nextBill": "Следующий счёт",
+    "period": "{from}–{to}"
   }
 }

@@ -213,5 +213,10 @@
       "amount": "Amount",
       "base": "In {ccy}"
     }
+  },
+  "billing": {
+    "postpaid": "Postpaid",
+    "nextBill": "Next bill",
+    "period": "{from}–{to}"
   }
 }

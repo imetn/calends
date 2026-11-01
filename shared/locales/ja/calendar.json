@@ -25,5 +25,6 @@
   },
   "pickDay": "日付を選んでその日の支払いを表示",
   "nextCharge": "次回の支払い\n{date}",
-  "expandReport": "完全なレポートを表示"
+  "expandReport": "完全なレポートを表示",
+  "nextBill": "次回の請求\n{date}"
 }

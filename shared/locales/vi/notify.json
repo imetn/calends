@@ -7,7 +7,8 @@
   },
   "renew": {
     "introEnds": "Hết giá ưu đãi, trở về giá thường",
-    "headline": "{name} gia hạn {when} với giá {price}"
+    "headline": "{name} gia hạn {when} với giá {price}",
+    "billHeadline": "{name} xuất hóa đơn {when}: {price}"
   },
   "ending": {
     "sub": "Kết thúc {when}, không gia hạn",

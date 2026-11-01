@@ -1,5 +1,5 @@
 // Transient stop fields owned by the editor or the standalone stop dialog.
-import { nonrenewalDate, billingPeriod, currentPhase, effectiveStatus, stopSummary, subError } from './billing.ts';
+import { nonrenewalDate, stopBillingPeriod, currentPhase, effectiveStatus, stopSummary, subError } from './billing.ts';
 import { cancelAtEnd, reactivate, reopenStopped, statusChangeError, stopSubscription } from './phases.ts';
 import { t } from './i18n.ts';
 import { settlementCurrencyOf } from './fx.ts';
@@ -41,7 +41,7 @@ export function stopForm(
 
 export function stopPreview(sub: Subscription, form: StopForm, today: string) {
   const cur = currentPhase(sub, form.date);
-  const period = billingPeriod(cur, form.date < today ? form.date : today);
+  const period = stopBillingPeriod(cur, form.date, today);
   return {
     cur,
     period,

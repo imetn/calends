@@ -102,7 +102,8 @@
     "notesPlaceholder": "Notas (opcional)",
     "pausedAt": "Data de pausa",
     "plan": "Plano",
-    "iconImported": "Imagem importada; digite uma URL ou emoji para substituir"
+    "iconImported": "Imagem importada; digite uma URL ou emoji para substituir",
+    "billing": "Pagamento"
   },
   "share": {
     "none": "Só eu",
@@ -256,5 +257,9 @@
       "one": "{count} plano da App Store",
       "other": "{count} planos da App Store"
     }
+  },
+  "billing": {
+    "prepaid": "Pré-pago",
+    "postpaid": "Pós-pago"
   }
 }

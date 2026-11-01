@@ -25,5 +25,6 @@
   },
   "pickDay": "날짜를 선택하여 당일 결제 보기",
   "nextCharge": "다음 결제\n{date}",
-  "expandReport": "전체 보고서 펼치기"
+  "expandReport": "전체 보고서 펼치기",
+  "nextBill": "다음 청구\n{date}"
 }

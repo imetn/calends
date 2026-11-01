@@ -1,7 +1,6 @@
 // 订阅历程的编辑操作：调价、换区/换套餐、断更、续订。全部为纯函数，返回新的订阅对象。
 import {
   addDays,
-  billingPeriod,
   chargesBetween,
   collectionAnchor,
   currentPhase,
@@ -9,6 +8,7 @@ import {
   isStopped,
   phaseSubs,
   priceAt,
+  stopBillingPeriod,
   subError,
   validDay,
 } from './billing.ts';
@@ -20,6 +20,7 @@ export interface PlanChange extends RenewalRules {
   price: number;
   currency: string;
   cycle: Cycle;
+  billing?: 'postpaid';
   methodId?: string;
   region?: string;
   note?: string;
@@ -41,6 +42,7 @@ function fromTop(s: Subscription, start: string): Phase {
     price: s.price,
     currency: s.currency,
     cycle: s.cycle,
+    billing: s.billing,
     methodId: s.methodId,
     region: s.region,
     priceHistory: s.priceHistory,
@@ -67,6 +69,7 @@ function phaseToTop(s: Subscription, p: Phase): Subscription {
     price: p.price,
     currency: p.currency,
     cycle: p.cycle,
+    billing: p.billing,
     methodId: p.methodId,
     region: p.region,
     priceHistory: p.priceHistory,
@@ -90,6 +93,7 @@ function mirror(s: Subscription, phases: Phase[]): Subscription {
     price: last.price,
     currency: last.currency,
     cycle: last.cycle,
+    billing: last.billing,
     methodId: last.methodId,
     region: last.region,
     chargeLeadDays: last.chargeLeadDays,
@@ -275,6 +279,7 @@ export function toEditForm(s: Subscription, today: string): Subscription {
     price: p.price,
     currency: p.currency,
     cycle: p.cycle,
+    billing: p.billing,
     methodId: p.methodId,
     region: p.region,
     chargeLeadDays: p.chargeLeadDays,
@@ -297,6 +302,7 @@ export function syncPhase(s: Subscription, today: string): Subscription {
     price: s.price,
     currency: s.currency,
     cycle: s.cycle,
+    billing: s.billing,
     methodId: s.methodId,
     region: s.region,
     chargeLeadDays: s.chargeLeadDays,
@@ -517,7 +523,7 @@ export function stopSubscription(s: Subscription, today: string, kind: Stop['kin
   if (s.stop || isStopped(effectiveStatus(s, today))) throw new Error(t('mcp.error.subscriptionEnded'));
   const current = currentPhase(s, at);
   if (at < current.start) throw new Error(t('mcp.error.stopBeforeStart'));
-  const period = billingPeriod(current, at < today ? at : today);
+  const period = stopBillingPeriod(current, at, today);
   if (at > period.paidThrough) throw new Error(t('mcp.error.stopAfterPaidThrough'));
   const stop: Stop = { kind, date: at, paidThrough: period.paidThrough, reason: kind === 'terminate' ? reason?.trim() || undefined : undefined };
   let next: Subscription;
@@ -576,7 +582,7 @@ export function statusChangeError(previous: Subscription | undefined, next: Subs
     const undated = (previous.status === 'cancelled' || previous.status === 'terminated') && !previous.end;
     const status = effectiveStatus(previous, today);
     if (!undated && (status === 'terminated' || (status === 'ended' && !previous.end))) return t('mcp.error.subscriptionEnded');
-    const period = billingPeriod(currentPhase(previous, next.stop.date), next.stop.date < today ? next.stop.date : today);
+    const period = stopBillingPeriod(currentPhase(previous, next.stop.date), next.stop.date, today);
     if (next.stop.date > period.paidThrough) return t('mcp.error.stopAfterPaidThrough');
   }
   if (previous && (previous.stop?.kind === 'terminate' || previous.status === 'terminated') && next.stop?.kind !== 'terminate') {

@@ -21,5 +21,6 @@
   "heatCount": "{count} 筆\n",
   "pickDay": "點日期查看當天扣款",
   "nextCharge": "下次扣款\n{date}",
-  "expandReport": "展開完整報告"
+  "expandReport": "展開完整報告",
+  "nextBill": "下張帳單\n{date}"
 }

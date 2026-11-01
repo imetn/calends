@@ -27,5 +27,6 @@
   },
   "pickDay": "Click a date to view its charges",
   "nextCharge": "Next charge\n{date}",
-  "expandReport": "Expand full report"
+  "expandReport": "Expand full report",
+  "nextBill": "Next bill\n{date}"
 }

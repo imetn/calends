@@ -27,5 +27,6 @@
   },
   "pickDay": "Selecciona una fecha para ver sus cargos",
   "nextCharge": "Próximo cargo\n{date}",
-  "expandReport": "Ampliar informe completo"
+  "expandReport": "Ampliar informe completo",
+  "nextBill": "Próxima factura\n{date}"
 }

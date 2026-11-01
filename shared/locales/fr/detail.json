@@ -213,5 +213,10 @@
       "amount": "Montant",
       "base": "En {ccy}"
     }
+  },
+  "billing": {
+    "postpaid": "Postpayé",
+    "nextBill": "Prochaine facture",
+    "period": "{from}–{to}"
   }
 }

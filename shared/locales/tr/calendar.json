@@ -27,5 +27,6 @@
   },
   "pickDay": "Ödemeleri görmek için bir tarih seçin",
   "nextCharge": "Sonraki ödeme\n{date}",
-  "expandReport": "Tam raporu aç"
+  "expandReport": "Tam raporu aç",
+  "nextBill": "Sonraki fatura\n{date}"
 }

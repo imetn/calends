@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { nonrenewalDate, renewalDates, chargesBetween, currentPhase, effectiveStatus, phaseSubs, stopSummary, isStopped } from '../../../shared/billing.ts';
+import {
+  nonrenewalDate,
+  renewalDates,
+  chargesBetween,
+  currentPhase,
+  effectiveStatus,
+  isPostpaid,
+  phaseSubs,
+  stopSummary,
+  isStopped,
+} from '../../../shared/billing.ts';
 import { flow, cnDateFull } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { reactivate } from '../../../shared/phases.ts';
@@ -15,6 +25,8 @@ import { useSubmit } from './inputs.tsx';
 export function stopLabel(sub: Subscription, today: string): string | undefined {
   const summary = stopSummary(sub, today);
   if (!summary || summary.date > today) return undefined;
+  // 后付费没有预付，也就谈不上退款；有退款记录时才写
+  if (isPostpaid(sub) && summary.refunded <= 0) return undefined;
   if (summary.refunded > 0)
     return t(summary.refundStatus === 'full' ? 'core.stop.refunded' : 'core.stop.partial', { money: flow(summary.refunded, sub.currency) });
   return summary.unusedValue > 0 ? t('core.stop.unrefunded', { money: flow(-summary.unusedValue, sub.currency) }) : t('core.stop.refundNo');
@@ -23,7 +35,7 @@ export function stopLabel(sub: Subscription, today: string): string | undefined 
 /** 与 stopLabel 同一句话，金额单独加粗着色：未退款损失为红色（与时间轴灰段金额一致），已退款为绿色 */
 export function StopText({ sub, today }: { sub: Subscription; today: string }) {
   const summary = stopSummary(sub, today);
-  if (!summary || summary.date > today) return null;
+  if (!summary || summary.date > today || (isPostpaid(sub) && summary.refunded <= 0)) return null;
   const [key, money, tone] =
     summary.refunded > 0
       ? [summary.refundStatus === 'full' ? 'core.stop.refunded' : 'core.stop.partial', flow(summary.refunded, sub.currency), 'gain']
@@ -52,7 +64,9 @@ export function stopDescription(sub: Subscription, today: string): string {
       ? t('core.stop.fullyRefunded')
       : summary.refunded > 0
         ? t('core.stop.partial', { money: flow(summary.refunded, sub.currency) })
-        : t('core.stop.refundNo'),
+        : isPostpaid(sub)
+          ? ''
+          : t('core.stop.refundNo'),
     summary.unusedValue > 0
       ? t('core.stop.unused', { days: t('core.stop.lossDays', { count: summary.wastedDays }), money: flow(-summary.unusedValue, sub.currency) })
       : '',
@@ -92,7 +106,7 @@ export function StopPanel({ sub, today, onApply }: { sub: Subscription; today: s
         {stops.map((p) => (
           <div className="stop-summary" key={p.start}>
             <b>{stopDescription(p, today)}</b>
-            <small>{t('core.stop.paidThrough', { date: cnDateFull(p.stop!.paidThrough) })}</small>
+            {!isPostpaid(p) && <small>{t('core.stop.paidThrough', { date: cnDateFull(p.stop!.paidThrough) })}</small>}
           </div>
         ))}
         {sub.stop?.kind !== 'terminate' && sub.status !== 'terminated' && (
@@ -128,6 +142,8 @@ export function StopFields({ sub, today, value, onChange }: { sub: Subscription;
   const { cur, period, summary: preview } = stopPreview(sub, value, today);
   const priorRefunds = cur.stop ? (cur.payments?.filter((p) => p.kind === 'refund' && p.date >= cur.stop!.date).length ?? 0) : 0;
   const terminated = sub.stop?.kind === 'terminate' || sub.status === 'terminated';
+  // 后付费：没有预付期，不提示已付至、续费日扣款与退款，最后一张账单照出
+  const postpaid = isPostpaid(cur);
   return (
     <div className="stop-panel">
       <Cell label={t('core.stop.method')}>
@@ -153,6 +169,7 @@ export function StopFields({ sub, today, value, onChange }: { sub: Subscription;
         // 结束日当天正好是续费日时仍会扣款：提醒改成前一天
         sub={
           mode === 'nonrenew' &&
+          !postpaid &&
           chargesBetween({ ...cur, end: undefined, stop: undefined, status: sub.status === 'trial' ? 'trial' : 'active' }, date, date, today).some(
             (c) => !c.kind && c.amount > 0,
           ) ? (
@@ -169,17 +186,18 @@ export function StopFields({ sub, today, value, onChange }: { sub: Subscription;
           }}
         />
       </Cell>
-      {mode === 'nonrenew' && renewalDates(sub, today).cancelBy && today > renewalDates(sub, today).cancelBy! && (
+      {mode === 'nonrenew' && !postpaid && renewalDates(sub, today).cancelBy && today > renewalDates(sub, today).cancelBy! && (
         <p className="stop-warn">{t('core.renewal.tooLate')}</p>
       )}
       {mode !== 'nonrenew' && (
         <>
-          <p className="stop-hint">{t('core.stop.paidThrough', { date: cnDateFull(period.paidThrough) })}</p>
+          {!postpaid && <p className="stop-hint">{t('core.stop.paidThrough', { date: cnDateFull(period.paidThrough) })}</p>}
           {mode === 'terminate' && (
             <Cell label={t('core.stop.reason')}>
               <input value={reason} onChange={(e) => up({ reason: e.target.value })} />
             </Cell>
           )}
+          {!postpaid && (
           <Cell label={t('editor.payment.kind.refund')} sub={priorRefunds > 1 ? t('core.stop.latestRefundHint') : undefined}>
             <Picker
               value={refund ? 'yes' : 'no'}
@@ -191,7 +209,8 @@ export function StopFields({ sub, today, value, onChange }: { sub: Subscription;
               ariaLabel={t('editor.payment.kind.refund')}
             />
           </Cell>
-          {refund && (
+          )}
+          {refund && !postpaid && (
             <>
               <Cell label={`${t('core.stop.refundAmount')}\n${cur.currency}`} sub={t('core.stop.currencyHint', { currency: cur.currency })}>
                 <input

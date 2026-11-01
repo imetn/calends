@@ -1,6 +1,6 @@
 // Editable full records use the same domain validation as the web editor. This schema
 // describes the wire shape to models without rejecting preserved legacy extension fields.
-import { daySchema as day, type Schema } from './tool-schema.ts';
+import { billingSchema, daySchema as day, type Schema } from './tool-schema.ts';
 import { MAX_BILL_MONTHS, type Phase, type Subscription } from './types.ts';
 
 const text: Schema = { type: 'string' };
@@ -67,6 +67,7 @@ const phaseFields = {
   price: positive,
   currency: text,
   cycle,
+  billing: billingSchema,
   methodId: text,
   region: text,
   stop,

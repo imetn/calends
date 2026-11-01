@@ -7,7 +7,8 @@
   },
   "renew": {
     "introEnds": "Вводная цена заканчивается, далее обычная цена",
-    "headline": "{name} продлится {when} за {price}"
+    "headline": "{name} продлится {when} за {price}",
+    "billHeadline": "{name}: счёт {when} на {price}"
   },
   "ending": {
     "sub": "Закончится {when}, без продления",

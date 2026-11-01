@@ -7,7 +7,8 @@
   },
   "renew": {
     "introEnds": "Harga promo berakhir, kembali ke harga normal",
-    "headline": "{name} diperpanjang {when} seharga {price}"
+    "headline": "{name} diperpanjang {when} seharga {price}",
+    "billHeadline": "{name} ditagih {when}: {price}"
   },
   "ending": {
     "sub": "Berakhir {when}, tidak diperpanjang",

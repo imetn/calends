@@ -25,5 +25,6 @@
   },
   "pickDay": "Chọn ngày để xem các khoản thu trong ngày",
   "nextCharge": "Lần thu tiếp theo\n{date}",
-  "expandReport": "Mở báo cáo đầy đủ"
+  "expandReport": "Mở báo cáo đầy đủ",
+  "nextBill": "Hóa đơn tiếp theo\n{date}"
 }

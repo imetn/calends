@@ -97,7 +97,8 @@
     "notesPlaceholder": "메모(선택 사항)",
     "pausedAt": "일시 중지일",
     "plan": "요금제",
-    "iconImported": "가져온 이미지 (URL 또는 이모지로 교체)"
+    "iconImported": "가져온 이미지 (URL 또는 이모지로 교체)",
+    "billing": "결제 방식"
   },
   "share": {
     "none": "나만 사용",
@@ -246,5 +247,9 @@
     "choose": {
       "other": "App Store 요금제 {count}개"
     }
+  },
+  "billing": {
+    "prepaid": "선불",
+    "postpaid": "후불"
   }
 }

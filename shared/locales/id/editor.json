@@ -97,7 +97,8 @@
     "notesPlaceholder": "Catatan (opsional)",
     "pausedAt": "Tanggal jeda",
     "plan": "Paket",
-    "iconImported": "Gambar impor; ketik URL atau emoji untuk mengganti"
+    "iconImported": "Gambar impor; ketik URL atau emoji untuk mengganti",
+    "billing": "Pembayaran"
   },
   "share": {
     "none": "Hanya saya",
@@ -246,5 +247,9 @@
     "choose": {
       "other": "{count} paket App Store"
     }
+  },
+  "billing": {
+    "prepaid": "Prabayar",
+    "postpaid": "Pascabayar"
   }
 }

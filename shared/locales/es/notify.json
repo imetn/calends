@@ -7,7 +7,8 @@
   },
   "renew": {
     "introEnds": "Termina el precio inicial y vuelve al precio normal",
-    "headline": "{name} se renueva {when} por {price}"
+    "headline": "{name} se renueva {when} por {price}",
+    "billHeadline": "{name} factura {when}: {price}"
   },
   "ending": {
     "sub": "Termina {when}, no se renovará",

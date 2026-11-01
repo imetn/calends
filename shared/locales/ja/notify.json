@@ -7,7 +7,8 @@
   },
   "renew": {
     "introEnds": "特典価格が終了し、通常価格に戻ります",
-    "headline": "{name}が{when}に{price}で更新されます"
+    "headline": "{name}が{when}に{price}で更新されます",
+    "billHeadline": "{name}の請求は{when}：{price}"
   },
   "ending": {
     "sub": "{when}に終了、更新はされません",

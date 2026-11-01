@@ -25,5 +25,6 @@
   },
   "pickDay": "Pilih tanggal untuk melihat tagihan hari itu",
   "nextCharge": "Tagihan berikutnya\n{date}",
-  "expandReport": "Buka laporan lengkap"
+  "expandReport": "Buka laporan lengkap",
+  "nextBill": "Tagihan berikutnya\n{date}"
 }

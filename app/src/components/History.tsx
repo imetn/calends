@@ -1,5 +1,5 @@
 import { durationLabel } from '../../../shared/billing.ts';
-import { addDays, coveredUntil, cycleLabel, diffDays, isGap, phaseLanes, phaseSubs } from '../../../shared/billing.ts';
+import { addDays, coveredUntil, cycleLabel, diffDays, isGap, isPostpaid, phaseLanes, phaseSubs } from '../../../shared/billing.ts';
 import { cnDateFull, money } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
@@ -94,6 +94,7 @@ export function History({
         <div className="h-plan">
           {v.region && <span className="badge">{v.region}</span>}
           {!showPrices && <b>{money(v.price, v.currency)}</b>} {cycleLabel(v.cycle)}
+          {isPostpaid(v) && <span className="badge">{t('detail.billing.postpaid')}</span>}
           {method(v.methodId) && <PayBadge m={method(v.methodId)} />}
           {parallel > 0 && <span className="badge blue h-par">{t('editor.overlap.parallel', { count: parallel })}</span>}
         </div>

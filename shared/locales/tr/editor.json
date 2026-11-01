@@ -102,7 +102,8 @@
     "notesPlaceholder": "Notlar (isteğe bağlı)",
     "pausedAt": "Duraklatma tarihi",
     "plan": "Paket",
-    "iconImported": "İçe aktarılan görsel; değiştirmek için URL veya emoji yazın"
+    "iconImported": "İçe aktarılan görsel; değiştirmek için URL veya emoji yazın",
+    "billing": "Ödeme"
   },
   "share": {
     "none": "Yalnızca ben",
@@ -255,5 +256,9 @@
     "choose": {
       "other": "{count} App Store paketi"
     }
+  },
+  "billing": {
+    "prepaid": "Ön ödemeli",
+    "postpaid": "Sonradan ödemeli"
   }
 }
