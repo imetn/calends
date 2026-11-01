@@ -72,6 +72,7 @@
     "recentN": "Yalnızca son {count}",
     "addShort": "Ekle",
     "title": "Ödemeler",
+    "paidOn": "{date} ödendi",
     "kind": {
       "refund": "İade",
       "adjust": "Düzeltme",
@@ -127,6 +128,7 @@
     "converted": "Karşılığı",
     "average": "Ortalama",
     "method": "Ödeme",
+    "paidOn": "Ödendi",
     "bucket": {
       "m1": "Her çubuk aylık toplamdır",
       "m3": "Her çubuk üç aylık toplamdır",

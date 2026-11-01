@@ -6,12 +6,16 @@ import { useSnapshotRender } from '../../snapshot-render.tsx';
 import {
   addDays,
   addMonths,
+  chargeDay,
+  chargeServicePeriod,
   chargesBetween,
   currentPhase,
   cycleDays,
   cycleLabel,
   diffDays,
   effectiveStatus,
+  isPostpaid,
+  midDay,
   phaseLanes,
   phaseSubs,
   priceAt,
@@ -35,6 +39,18 @@ import { regular } from './shared.tsx';
 export type Range = 'all' | '1y' | '6m';
 
 /**
+ * 柱子位置：后付费的周期账单画在所属周期中间（8 月电费在 8 月中），与用量柱对齐；其余在扣款日。
+ * 还没出的账单若中间日已过（周期还没走完），挪到周期末日，不画在「今天」左边
+ */
+export function barDay(c: Charge, today: string): string {
+  if (c.kind || !isPostpaid(c.sub)) return c.date;
+  const p = chargeServicePeriod(c.sub, c.date, c.serviceDate);
+  const last = addDays(p.until, -1);
+  const mid = midDay(p.from, last);
+  return c.date > today && mid <= today ? last : mid;
+}
+
+/**
  * 费用走势的时间范围与横轴：详情页据此同时驱动费用图和用量图，两张图日期对齐、范围同步。
  * 预测长度按周期：月付及更短看半年，更长的看一个周期（至少半年、至多两年）。
  */
@@ -52,7 +68,8 @@ export function timelineAxis(sub: Subscription, today: string, history: Charge[]
   const future = live ? chargesBetween(sub, addDays(today, 1), until, today).filter((c) => !c.kind) : [];
 
   // 只有范围内至少三笔、且比全部少时才给这个范围：两年付、年付这类稀疏记录不显示无意义的「1 年 / 6 个月」
-  const within = (months: number) => reg.filter((c) => c.date >= addMonths(anchor, -months)).length;
+  // 范围按归期日筛（后付费归到所属周期），横轴按柱子位置算
+  const within = (months: number) => reg.filter((c) => chargeDay(c) >= addMonths(anchor, -months)).length;
   const ranges: Array<[Range, string]> = [
     ['all', t('detail.chart.all')],
     ...(
@@ -68,10 +85,11 @@ export function timelineAxis(sub: Subscription, today: string, history: Charge[]
   const fallback: Range = days <= 31 && ranges.some(([k]) => k === '1y') ? '1y' : 'all';
   const range = picked && ranges.some(([k]) => k === picked) ? picked : fallback;
   const since = range === 'all' ? '' : addMonths(anchor, range === '1y' ? -12 : -6);
-  const past = reg.filter((c) => c.date >= since);
+  const past = reg.filter((c) => chargeDay(c) >= since);
   // Preserve late payments after a known service end without extending the service lane.
-  const firstDate = (past[0] ?? future[0])?.date ?? anchor;
-  const lastDate = (future[future.length - 1] ?? past[past.length - 1])?.date ?? anchor;
+  const dayOf = (c: Charge | undefined) => (c ? barDay(c, today) : anchor);
+  const firstDate = dayOf(past[0] ?? future[0]);
+  const lastDate = dayOf(future[future.length - 1] ?? past[past.length - 1]);
   const first = firstDate < anchor ? firstDate : anchor;
   const lastBar = lastDate > anchor ? lastDate : anchor;
   const pad = Math.max(4, Math.round(diffDays(first, lastBar) * 0.03));
@@ -139,7 +157,7 @@ export function Timeline({
     const full = regularPrice && r.c.amount > 0 && regularPrice > r.c.amount ? (v * regularPrice) / r.c.amount : undefined;
     return {
       ...r,
-      date: r.c.date,
+      date: barDay(r.c, today),
       phase: r.c.sub.start,
       v,
       full: full != null && Number.isFinite(full) ? full : undefined,
@@ -208,6 +226,7 @@ export function Timeline({
         to={to}
         today={today}
         todayLabel={t('calendar.today')}
+        midMonth={isPostpaid(sub)}
         fmt={fmt}
         lanes={lanes}
         onBucket={setBucket}
@@ -219,7 +238,7 @@ export function Timeline({
               <>
                 <div className="cc-tip-h">
                   <b>
-                    {cnDateFull(rows[idx[0]].c.date)} – {cnDateFull(rows[idx[idx.length - 1]].c.date)}
+                    {cnDateFull(chargeDay(rows[idx[0]].c))} – {cnDateFull(chargeDay(rows[idx[idx.length - 1]].c))}
                   </b>
                 </div>
                 <div className="cc-tip-r">
@@ -236,7 +255,7 @@ export function Timeline({
             return (
               <>
                 <div className="cc-tip-h">
-                  <b>{cnDateFull(rows[idx[0]].c.date)}</b>
+                  <b>{cnDateFull(chargeDay(rows[idx[0]].c))}</b>
                   <span>{t('detail.stats.count', { count: idx.length })}</span>
                 </div>
                 {idx.map((i) => {
@@ -246,7 +265,7 @@ export function Timeline({
                       <i className={r.future ? 'k-f' : 'k-v'} />
                       <span>
                         {copyParts(
-                          [cnDate(r.c.date), methodOf(state, chargeMethodId(r.c))?.name ?? t('ui.method.none'), r.c.sub.region ?? '']
+                          [cnDate(chargeDay(r.c)), methodOf(state, chargeMethodId(r.c))?.name ?? t('ui.method.none'), r.c.sub.region ?? '']
                             .filter(Boolean)
                             .join('\n'),
                         )}

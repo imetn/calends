@@ -72,6 +72,7 @@
     "recentN": "Chỉ {count} lần gần nhất",
     "addShort": "Ghi",
     "title": "Khoản phí",
+    "paidOn": "Trả ngày {date}",
     "kind": {
       "refund": "Hoàn tiền",
       "adjust": "Điều chỉnh",
@@ -122,6 +123,7 @@
     "converted": "Quy đổi",
     "average": "Trung bình",
     "method": "Thanh toán",
+    "paidOn": "Đã trả",
     "bucket": {
       "m1": "Mỗi cột là tổng một tháng",
       "m3": "Mỗi cột là tổng một quý",

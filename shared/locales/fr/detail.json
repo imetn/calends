@@ -75,6 +75,7 @@
     },
     "addShort": "Ajouter",
     "title": "Prélèvements",
+    "paidOn": "Payé le {date}",
     "kind": {
       "refund": "Remboursement",
       "adjust": "Ajustement",
@@ -130,6 +131,7 @@
     "converted": "Converti",
     "average": "Moyenne",
     "method": "Paiement",
+    "paidOn": "Payé",
     "bucket": {
       "m1": "Chaque barre est un total mensuel",
       "m3": "Chaque barre est un total trimestriel",

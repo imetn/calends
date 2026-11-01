@@ -75,6 +75,7 @@
     },
     "addShort": "Registrar",
     "title": "Cobranças",
+    "paidOn": "Pago em {date}",
     "kind": {
       "refund": "Reembolso",
       "adjust": "Ajuste",
@@ -130,6 +131,7 @@
     "converted": "Convertido",
     "average": "Média",
     "method": "Pagamento",
+    "paidOn": "Pago",
     "bucket": {
       "m1": "Cada barra é o total do mês",
       "m3": "Cada barra é o total do trimestre",

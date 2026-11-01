@@ -75,6 +75,7 @@
     },
     "addShort": "Añadir",
     "title": "Cobros",
+    "paidOn": "Pagado el {date}",
     "kind": {
       "refund": "Reembolso",
       "adjust": "Ajuste",
@@ -130,6 +131,7 @@
     "converted": "Equivale a",
     "average": "Promedio",
     "method": "Pago",
+    "paidOn": "Pagado",
     "bucket": {
       "m1": "Cada barra es el total de un mes",
       "m3": "Cada barra es el total de un trimestre",

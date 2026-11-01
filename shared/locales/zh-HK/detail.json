@@ -72,6 +72,7 @@
     "recentN": "只看最近 {count} 筆",
     "addShort": "記一筆",
     "title": "扣款記錄",
+    "paidOn": "{date} 付款",
     "kind": {
       "refund": "退款",
       "adjust": "補差",
@@ -112,6 +113,7 @@
     "converted": "約合",
     "average": "平均",
     "method": "付款",
+    "paidOn": "付於",
     "bucket": {
       "m1": "每根柱為一個月合計",
       "m3": "每根柱為一季合計",

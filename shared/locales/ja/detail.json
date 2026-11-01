@@ -72,6 +72,7 @@
     "recentN": "最新 {count} 件のみ",
     "addShort": "記録",
     "title": "請求",
+    "paidOn": "{date} 支払い",
     "kind": {
       "refund": "返金",
       "adjust": "調整",
@@ -122,6 +123,7 @@
     "converted": "換算",
     "average": "平均",
     "method": "支払い",
+    "paidOn": "支払日",
     "bucket": {
       "m1": "各棒は1か月の合計",
       "m3": "各棒は四半期の合計",

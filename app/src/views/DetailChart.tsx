@@ -61,6 +61,7 @@ export function ChargeBars({
   tip,
   onBucket,
   onPick,
+  midMonth,
 }: {
   bars: ChartBar[];
   from: string;
@@ -74,6 +75,8 @@ export function ChargeBars({
   onBucket?: (months: number) => void;
   /** 点一根柱：给出它包含的下标（如用量图点柱修改那条记录） */
   onPick?: (indices: number[]) => void;
+  /** 柱子画在周期中间（后付费）：月份标签写在 15 日 */
+  midMonth?: boolean;
 }) {
   const [box, w] = useWidth();
   const [hover, setHover] = useState<number | null>(null);
@@ -137,11 +140,13 @@ export function ChargeBars({
   const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
   const cx = groups.map((g) => g.x);
 
-  // 月份刻度：间隔按宽度挑，最多约每 90px 一个
+  // 月份刻度：间隔按宽度挑，最多约每 90px 一个。后付费的柱子画在所属周期中间，标签也写在那个月中间（15 日），
+  // 柱子正好落在自己的月份上，不被误读成下个月；预付费在 1 日扣款，标签留在月初
   const months = Math.max(1, Math.round(span / DAYS_PER_MONTH));
   const every = [1, 2, 3, 6, 12, 24, 36].find((m) => (months / m) * 90 <= iw) ?? 48;
   const xt: Array<{ d: string; label: string }> = [];
-  for (let d = addMonths(`${from.slice(0, 7)}-01`, 1); d <= to; d = addMonths(d, 1)) {
+  for (let d = `${from.slice(0, 7)}-${midMonth ? '15' : '01'}`; d <= to; d = addMonths(d, 1)) {
+    if (d <= from) continue;
     const m = Number(d.slice(5, 7)) - 1;
     if (every >= 12 ? m !== 0 || Number(d.slice(0, 4)) % (every / 12) : m % every) continue;
     xt.push({ d, label: m === 0 ? d.slice(0, 4) : monthLabel(d.slice(0, 7), { year: false }) });

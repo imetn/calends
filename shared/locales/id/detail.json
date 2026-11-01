@@ -72,6 +72,7 @@
     "recentN": "Hanya {count} terakhir",
     "addShort": "Catat",
     "title": "Tagihan",
+    "paidOn": "Dibayar {date}",
     "kind": {
       "refund": "Refund",
       "adjust": "Penyesuaian",
@@ -122,6 +123,7 @@
     "converted": "Setara",
     "average": "Rata-rata",
     "method": "Bayar",
+    "paidOn": "Dibayar",
     "bucket": {
       "m1": "Setiap batang adalah total bulanan",
       "m3": "Setiap batang adalah total kuartalan",

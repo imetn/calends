@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { addDays, chargeMethodId, chargeServicePeriod, type Charge } from '../../../../shared/billing.ts';
-import { cnDate, cnDateFull, flow, money, weekdayOf } from '../../../../shared/format.ts';
+import { addDays, addMonths, chargeMethodId, chargeServicePeriod, isPostpaid, type Charge } from '../../../../shared/billing.ts';
+import { cnDate, cnDateFull, flow, money, monthLabel, weekdayOf } from '../../../../shared/format.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
 import { numberFormat } from '../../../../shared/intl.ts';
 import { usageWithin, type MeterRow } from '../../../../shared/meters.ts';
@@ -16,6 +16,11 @@ export const unitMoney = (p: number, currency: string, unit: string) => {
   return unit ? `${s}/${unit}` : s;
 };
 
+/** 计费周期的写法：正好是一个自然月时写「2026年8月」，否则写起止日 */
+export function periodLabel(p: { from: string; until: string }) {
+  return p.from.endsWith('-01') && p.until === addMonths(p.from, 1) ? monthLabel(p.from.slice(0, 7)) : `${cnDate(p.from)} – ${cnDate(addDays(p.until, -1))}`;
+}
+
 /** 这一笔结算的那段时间里记下的用量；退款等非周期扣款没有 */
 export function chargeUsage(readings: MeterRow[] | undefined, c: Charge) {
   if (!readings || c.kind) return undefined;
@@ -26,6 +31,7 @@ export function chargeUsage(readings: MeterRow[] | undefined, c: Charge) {
 /**
  * 单笔扣款的提示框，费用走势与用量走势共用：标题行扣款日，下面左字段右内容——
  * 计费周期、金额（原币）、与图表货币不同时的折合、首期优惠原价、用量与平均单价、支付方式。
+ * 后付费的周期账单按所属周期归：标题写周期，扣款日另起一行。
  */
 export function ChargeTip({
   c,
@@ -50,6 +56,7 @@ export function ChargeTip({
 }) {
   // 终身买断没有计费周期
   const p = c.kind || c.sub.cycle.unit === 'lifetime' ? undefined : chargeServicePeriod(c.sub, c.date, c.serviceDate);
+  const post = p && isPostpaid(c.sub);
   const row = (label: string, value: ReactNode) => (
     <div className="cc-tip-r">
       <span>{label}</span>
@@ -58,11 +65,18 @@ export function ChargeTip({
   );
   return (
     <>
-      <div className="cc-tip-h">
-        <b>{cnDateFull(c.date)}</b>
-        <span>{weekdayOf(c.date)}</span>
-      </div>
-      {p && row(t('detail.chart.period'), `${cnDate(p.from)} – ${cnDate(addDays(p.until, -1))}`)}
+      {post ? (
+        <div className="cc-tip-h">
+          <b>{periodLabel(p)}</b>
+        </div>
+      ) : (
+        <div className="cc-tip-h">
+          <b>{cnDateFull(c.date)}</b>
+          <span>{weekdayOf(c.date)}</span>
+        </div>
+      )}
+      {p && !post && row(t('detail.chart.period'), `${cnDate(p.from)} – ${cnDate(addDays(p.until, -1))}`)}
+      {post && row(t('detail.chart.paidOn'), cnDateFull(c.date))}
       {row(future ? t('detail.timeline.planned') : t('detail.field.amount'), flow(-c.amount, c.currency))}
       {converted != null && row(t('detail.chart.converted'), converted)}
       {full != null && row(t('detail.chart.regular'), full)}

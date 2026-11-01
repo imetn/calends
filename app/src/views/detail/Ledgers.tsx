@@ -2,9 +2,9 @@ import { amountTotal, chargesTotal, formatTotal, sumTotals } from '../../../../s
 import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { Plus } from 'lucide-react';
-import { phaseSubs, type Charge } from '../../../../shared/billing.ts';
+import { chargeDay, chargeServicePeriod, isPostpaid, phaseSubs, type Charge } from '../../../../shared/billing.ts';
 import { meterRows } from '../../../../shared/meters.ts';
-import { chargeUsage, withUnit } from './ChargeTip.tsx';
+import { chargeUsage, periodLabel, withUnit } from './ChargeTip.tsx';
 import { flow, cnDateFull } from '../../../../shared/format.ts';
 import { transfersOf, transferSign, transferValue } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
@@ -99,6 +99,9 @@ export function Charges({
   const meter = sub.meters?.[0];
   const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(sub, meter, today) : undefined;
   const usageOf = (c: Charge) => chargeUsage(readings, c);
+  const post = (c: Charge) => !c.kind && isPostpaid(c.sub);
+  // 表头按行走：周期账单全是后付费时写「周期」，与预付费阶段混在一起时写「日期」
+  const regular = rows.filter((r) => !r.c.kind);
   const usageCell = (v: number | undefined) => (v != null ? withUnit(v, meter!.unit) : '—');
   return (
     <Panel
@@ -119,8 +122,9 @@ export function Charges({
       {history.length > 0 && (
         <YearLedger
           items={rows}
-          dateOf={(r) => r.c.date}
-          head={[t('proxy.table.date'), t('detail.field.method'), t('proxy.table.charged'), t('proxy.table.cost')]}
+          // 后付费的周期账单按所属周期分年（12 月电费次年 1 月交，仍归当年）
+          dateOf={(r) => chargeDay(r.c)}
+          head={[t(regular.length && regular.every((r) => post(r.c)) ? 'detail.chart.period' : 'proxy.table.date'), t('detail.field.method'), t('proxy.table.charged'), t('proxy.table.cost')]}
           extraHead={readings && meter!.name}
           yearCells={(ys) => {
             const total = ys.reduce((a, r) => a + r.b, 0);
@@ -155,8 +159,12 @@ export function Charges({
             };
           }}
           row={({ c, b }) => ({
-            // 日期写全，不再加「几天前」
-            date: <time dateTime={c.date}>{cnDateFull(c.date)}</time>,
+            // 日期写全，不再加「几天前」；后付费的周期账单写所属周期，扣款日放进悬停提示，不加第二行撑高行
+            date: post(c) ? (
+              <time dateTime={chargeDay(c)}>{periodLabel(chargeServicePeriod(c.sub, c.date, c.serviceDate))}</time>
+            ) : (
+              <time dateTime={c.date}>{cnDateFull(c.date)}</time>
+            ),
             second: <ChargeMethods c={c} state={state} />,
             extra: readings && usageCell(usageOf(c)),
             orig: (
@@ -171,7 +179,7 @@ export function Charges({
           })}
           rowKey={({ c }, i) => `${c.date}-${c.sub.start}-${i}`}
           rowClass={({ c }) => c.kind ?? ''}
-          rowTitle={({ c }) => c.note}
+          rowTitle={({ c }) => (post(c) ? [t('detail.charges.paidOn', { date: cnDateFull(c.date) }), c.note].filter(Boolean).join('\n') : c.note)}
           onRow={onRow && (({ c }) => onRow(c))}
         />
       )}

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { chargeServicePeriod, FALLBACK_FX, subError } from './billing.ts';
+import { chargeDay, chargeServicePeriod, chargesBetween, FALLBACK_FX, subError } from './billing.ts';
 import { maskForPublic } from './mask.ts';
 import { costBetween, meterError, meterRows, meterStats, meterSuggestions, meterSummary, periodReading, periodReadingCount, removeMeter, replaceMeters, setPeriodValues, stableId, usageWithin } from './meters.ts';
 import { DEFAULT_SETTINGS, type AppState, type Meter, type Payment, type Reading, type Subscription } from './types.ts';
@@ -281,4 +281,24 @@ test('charge sheet writes usage into the reading of that billing period', () => 
   // 两个指标都新建时写进同一条
   const both = setPeriodValues(vps({ readings: [] }), may.from, may.until, { gb: 7, odo: 1600 }, { id: 'n', date: '2025-05-10' });
   assert.deepEqual(both.readings, [{ id: 'n', date: '2025-05-10', values: { gb: 7, odo: 1600 } }]);
+});
+
+test('postpaid bills sit on the last day of the period they settle, prepaid charges on the cash date', () => {
+  const power = vps({ billing: 'postpaid', start: '2025-01-01', meters: [], readings: [] });
+  const [feb1] = chargesBetween(power, '2025-02-01', '2025-02-01', '2025-03-01');
+  assert.equal(chargeDay(feb1), '2025-01-31');
+  // 12 月的账单次年 1 月交，仍归 12 月
+  const [jan1] = chargesBetween(power, '2026-01-01', '2026-01-01', '2026-02-01');
+  assert.equal(chargeDay(jan1), '2025-12-31');
+  assert.equal(chargeDay({ ...feb1, kind: 'refund' }), '2025-02-01');
+  // 晚几天才交（1 月 5 日交 12 月电费）：仍归付款日前刚结束的那一期
+  assert.deepEqual(chargeServicePeriod(power, '2026-01-05'), { from: '2025-12-01', until: '2026-01-01' });
+  assert.equal(chargeDay({ ...jan1, date: '2026-01-05' }), '2025-12-31');
+  assert.deepEqual(chargeServicePeriod(power, '2025-03-04'), { from: '2025-02-01', until: '2025-03-01' });
+  // 月末起始：3 月 30 日交的仍是 2 月那期（下一个边界 3 月 31 日还没到）
+  const eom = vps({ billing: 'postpaid', start: '2026-01-31', meters: [], readings: [] });
+  assert.deepEqual(chargeServicePeriod(eom, '2026-03-30'), { from: '2026-01-31', until: '2026-02-28' });
+  assert.deepEqual(chargeServicePeriod(eom, '2026-05-30'), { from: '2026-03-31', until: '2026-04-30' });
+  const [mar10] = chargesBetween(vps(), '2025-03-10', '2025-03-10', today);
+  assert.equal(chargeDay(mar10), '2025-03-10');
 });

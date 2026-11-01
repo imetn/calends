@@ -190,6 +190,8 @@ test('Detail charge rows and annual totals show expenses/refunds consistently, i
     }),
     phaseSubs,
     isPostpaid: billing.isPostpaid,
+    chargeDay: billing.chargeDay,
+    periodLabel: (p: { from: string }) => p.from,
     chargeServicePeriod: billing.chargeServicePeriod,
     addDays: billing.addDays,
     cnDate: (d: string) => d,
@@ -241,6 +243,14 @@ test('Detail charge rows and annual totals show expenses/refunds consistently, i
     if (!on) assert.ok(!/[+−]/.test(content));
     assert.ok(html.includes('dt-in')); // Net-refund annual subtotal stays green with signs off.
   }
+  // 后付费：每笔按所属周期显示、分年，扣款日只进悬停提示，不加第二行撑高行
+  const power = { ...sub, id: 'fictional-power', billing: 'postpaid' };
+  const bills = Array.from({ length: 13 }, (_, i) => ({ sub: power, date: billing.addMonths('2025-02-01', i), amount: 20, currency: 'USD' }));
+  const post = renderToStaticMarkup(React.createElement(Charges, { sub: power, state, today: '2026-10-22', history: bills, onRow() {} }));
+  assert.ok(post.includes('<time dateTime="2025-12-31">2025-12-01</time>'));
+  assert.ok(!post.includes('</time><small'));
+  assert.ok(post.includes('detail.chart.period'));
+  assert.ok(post.includes('title="detail.charges.paidOn"'));
 });
 
 test('Detail charge history groups every year when one year has multiple rows, and sparse years stay directly editable', () => {
@@ -261,6 +271,8 @@ test('Detail charge history groups every year when one year has multiple rows, a
     YearLedger: yearLedger({ useState: hook, t: (key: string, args?: { count?: number; year?: string }) => `${key}:${args?.count ?? args?.year ?? ''}` }),
     phaseSubs,
     isPostpaid: billing.isPostpaid,
+    chargeDay: billing.chargeDay,
+    periodLabel: (p: { from: string }) => p.from,
     chargeServicePeriod: billing.chargeServicePeriod,
     addDays: billing.addDays,
     cnDate: (d: string) => d,

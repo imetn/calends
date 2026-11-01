@@ -75,6 +75,7 @@
     },
     "addShort": "Add",
     "title": "Charges",
+    "paidOn": "Paid {date}",
     "kind": {
       "refund": "Refund",
       "adjust": "Adjustment",
@@ -130,6 +131,7 @@
     "converted": "Converted",
     "average": "Average",
     "method": "Payment",
+    "paidOn": "Paid",
     "bucket": {
       "m1": "Each bar is a monthly total",
       "m3": "Each bar is a quarterly total",

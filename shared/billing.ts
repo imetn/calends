@@ -755,6 +755,18 @@ export function chargeServicePeriod(s: Subscription, cashDate: string, serviceDa
   const maxLead = maxChargeLead(s);
   const original = billingAnchor(s);
   if (isPostpaid(s)) {
+    // 不在边界当天付（1 月 5 日才交 12 月电费，锚点没能还原到原始边界）：结清的是付款日前最近结束的一期
+    if (anchor !== original) {
+      const base = firstCycle(s, original);
+      const near = Math.max(base, Math.round(diffDays(original, cashDate) / cycleDays(s.cycle)));
+      for (let k = near + 1; k > base && k >= near - 2; k--) {
+        const boundary = nthCharge(original, s.cycle, k);
+        const due = renewalDate(s, boundary);
+        if (due > cashDate) continue;
+        const prev = nthCharge(original, s.cycle, k - 1);
+        return { from: serviceDate ?? (prev === original ? prev : addDays(prev, offset)), until: addDays(boundary, offset) };
+      }
+    }
     // 后付费：账单覆盖刚结束的 [上一边界, 本边界)
     for (let k = Math.max(first, guess - 2); k <= guess + Math.ceil(maxLead / cycleDays(s.cycle)) + 2; k++) {
       const boundary = nthCharge(anchor, s.cycle, k);
@@ -776,6 +788,19 @@ export function chargeServicePeriod(s: Subscription, cashDate: string, serviceDa
   }
   const from = serviceDate ?? addDays(cashDate, renewalRuleAt(s, cashDate).chargeLeadDays);
   return { from, until: extend(addDays(nthCharge(addDays(from, -offset), s.cycle, 1), offset)) };
+}
+
+/**
+ * 归期日：后付费的周期账单按它结清的服务期末日算（9 月 1 日交的 8 月电费归 8 月 31 日），与读数同一天；
+ * 其余（预付费、退款、调整）按扣款日。详情页的柱子位置、扣款记录分年用它，日历与现金统计仍按扣款日
+ */
+export function chargeDay(c: Pick<Charge, 'sub' | 'date' | 'serviceDate' | 'kind'>): string {
+  return !c.kind && isPostpaid(c.sub) ? addDays(chargeServicePeriod(c.sub, c.date, c.serviceDate).until, -1) : c.date;
+}
+
+/** 一段日子 [first, last] 的中间一天：后付费账单与用量的柱子画在所属周期中间，不贴着下个月的刻度 */
+export function midDay(first: string, last: string): string {
+  return addDays(first, Math.floor(diffDays(first, last) / 2));
 }
 
 /** 服务端全记录写入也保留规则历史；不依赖客户端是否携带历史项。 */

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Settings2 } from 'lucide-react';
-import { uid, type Charge } from '../../../../shared/billing.ts';
+import { addDays, isPostpaid, midDay, uid, type Charge } from '../../../../shared/billing.ts';
 import { chargesTotal, formatTotal } from '../../../../shared/fx-total.ts';
 import { cnDateFull, monthLabel, weekdayOf } from '../../../../shared/format.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
@@ -207,11 +207,13 @@ export function Meters({
         {trend.length > 1 &&
           (axis ? (
             <ChargeBars
-              bars={trend.map((r) => ({ date: r.reading.date, v: r.usage!, ref: stats.average }))}
+              // 用量柱画在它那一期 (since, date] 的中间，与后付费的费用柱同一位置
+              bars={trend.map((r) => ({ date: r.since ? midDay(addDays(r.since, 1), r.reading.date) : r.reading.date, v: r.usage!, ref: stats.average }))}
               from={axis.from}
               to={axis.to}
               today={today}
               todayLabel={t('calendar.today')}
+              midMonth={isPostpaid(sub)}
               fmt={compactQty}
               lanes={[]}
               onPick={ro ? undefined : (idx) => idx.length === 1 && setReading({ id: trend[idx[0]].reading.id })}

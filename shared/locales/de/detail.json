@@ -75,6 +75,7 @@
     },
     "addShort": "Erfassen",
     "title": "Abbuchungen",
+    "paidOn": "Bezahlt am {date}",
     "kind": {
       "refund": "Erstattung",
       "adjust": "Korrektur",
@@ -130,6 +131,7 @@
     "converted": "Umgerechnet",
     "average": "Durchschnitt",
     "method": "Zahlung",
+    "paidOn": "Bezahlt",
     "bucket": {
       "m1": "Jeder Balken ist eine Monatssumme",
       "m3": "Jeder Balken ist eine Quartalssumme",
