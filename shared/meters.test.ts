@@ -148,6 +148,7 @@ test('validation rejects malformed meters and readings; subError runs it', () =>
   const bad: Array<Partial<Subscription>> = [
     { meters: [traffic, { ...odo, id: 'gb' }], readings: [] },
     { meters: [{ ...traffic, name: '  ' }] },
+    { meters: [traffic, { ...odo, name: ' Traffic ' }], readings: [] },
     { meters: [{ ...traffic, kind: 'usage' as never }] },
     { meters: 'x' as never },
     { readings: [{ id: 'r', date: '2025-02-30', values: { gb: 1 } }] },
@@ -219,4 +220,13 @@ test('postpaid bills count toward the reading at the end of the period they sett
 
 test('stats stay empty without usage', () => {
   assert.deepEqual(meterStats([]), { average: undefined, unitPrice: undefined, peak: undefined });
+});
+
+// 回归：中途才开始记录时，首条只摊前一个周期的扣款，不把订阅开始以来的全部算进去
+test('a usage meter started mid-subscription prices its first reading against one cycle only', () => {
+  const late = vps({ readings: [{ id: 'late', date: '2025-04-15', values: { gb: 50 } }] });
+  const [row] = meterRows(late, traffic, today);
+  assert.equal(row.since, '2025-03-15');
+  assert.equal(row.cost?.amount, 100);
+  near(row.unitPrice, 2);
 });

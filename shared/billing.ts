@@ -587,8 +587,11 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
       if (pausedFrom && serviceDate >= pausedFrom) break;
       if (serviceDate < s.start || d < from || d <= after || (cashAnchor && d < begin)) continue;
       if (s.status === 'trial' && s.trialEnd && serviceDate < s.trialEnd) continue;
-      // 金额按所用那一期的价格（首期优惠、调价都看服务期起点）
-      out.push({ sub: s, date: d, serviceDate, amount: priceAt(s, serviceDate), currency: s.currency, projected: d > today });
+      // 金额按所用那一期的价格（首期优惠、调价都看服务期起点）；结束日（含）在期中时只收用到的天数，换方案不重复计费
+      const full = priceAt(s, serviceDate);
+      const cut = s.end && s.end < addDays(boundary, -1) ? addDays(s.end, 1) : undefined;
+      const amount = cut ? Math.round(((full * diffDays(serviceDate, cut)) / diffDays(serviceDate, boundary)) * 100) / 100 : full;
+      out.push({ sub: s, date: d, serviceDate, amount, currency: s.currency, projected: d > today });
       continue;
     }
     const initial = boundary === original;

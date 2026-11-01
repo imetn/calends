@@ -219,3 +219,15 @@ test('billing 字段校验与公开页保留', () => {
   assert.equal(pub.subscriptions[0].billing, 'postpaid');
   assert.equal(pub.subscriptions[0].phases?.[1].billing, 'postpaid');
 });
+
+test('后付费：期中换方案，旧方案最后一张只收用到的天数，不与新方案重叠', () => {
+  const sub = switchPlan(base(), '2026-04-25', { price: 20, currency: 'USD', cycle: { unit: 'month', every: 1 }, billing: 'postpaid' });
+  const got = chargesBetween(sub, '2026-04-01', '2026-06-30', '2026-06-01').map((c) => [c.date, c.amount]);
+  // 旧方案 [4-10, 4-25) 用了 15 天 / 30 天；新方案从 4-25 起按月出账
+  assert.deepEqual(got, [
+    ['2026-04-10', 10],
+    ['2026-05-10', 5],
+    ['2026-05-25', 20],
+    ['2026-06-25', 20],
+  ]);
+});

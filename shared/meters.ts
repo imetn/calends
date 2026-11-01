@@ -1,6 +1,6 @@
 // 业务数据：订阅上用户自定义的指标（电量、里程、出站流量……）与按期记录。
 // 读数和付款分开存：服务器年付但按月看流量、车险一年一交但里程随时记。这里只放纯计算与校验，浏览器与 Worker 共用。
-import { addDays, chargeServicePeriod, chargesBetween, fnv1a, isPostpaid, validDay } from './billing.ts';
+import { addDays, chargeServicePeriod, chargesBetween, fnv1a, isPostpaid, nthCharge, validDay } from './billing.ts';
 import { t } from './i18n.ts';
 import type { Charge } from './billing.ts';
 import type { Meter, Reading, Subscription } from './types.ts';
@@ -47,6 +47,13 @@ export function costBetween(s: Subscription, from: string, to: string, today: st
   return { amount: Math.round(charges.reduce((a, c) => a + c.amount, 0) * 1e6) / 1e6, currency: charges[0].currency };
 }
 
+function firstSince(s: Subscription, date: string): string {
+  const open = addDays(s.start, -1);
+  if (s.cycle.unit === 'lifetime') return open;
+  const back = nthCharge(date, s.cycle, -1);
+  return back > open ? back : open;
+}
+
 /** 一个指标逐条记录的本期用量与单价，按日期从早到晚 */
 export function meterRows(s: Subscription, meter: Meter, today: string): MeterRow[] {
   const out: MeterRow[] = [];
@@ -60,8 +67,8 @@ export function meterRows(s: Subscription, meter: Meter, today: string): MeterRo
       usage = prev ? value - prev.value : undefined;
       if (usage != null) usage = usage < 0 ? undefined : Math.round(usage * 1e6) / 1e6;
     }
-    // 本期用量型的首条：期间从订阅开始算起（开始日前一天，不含）
-    const since = prev?.reading.date ?? (meter.kind === 'reading' ? undefined : addDays(s.start, -1));
+    // 本期用量型的首条：期间往前推一个周期，最早到订阅开始；中途才开始记录时不把更早的扣款摊进来
+    const since = prev?.reading.date ?? (meter.kind === 'reading' ? undefined : firstSince(s, reading.date));
     const cost = since ? costBetween(s, since, reading.date, today) : undefined;
     const row: MeterRow = { reading, value, ...(usage != null ? { usage } : {}), ...(since ? { since } : {}), ...(cost ? { cost } : {}) };
     if (cost && usage != null && usage > 0) row.unitPrice = cost.amount / usage;
@@ -155,6 +162,7 @@ export function meterError(s: Pick<Subscription, 'meters' | 'readings'>): string
   if (s.meters != null && !Array.isArray(s.meters)) return t('core.subError.meter');
   if (s.readings != null && !Array.isArray(s.readings)) return t('core.subError.reading');
   const ids = new Set<string>();
+  const names = new Set<string>();
   for (const m of s.meters ?? []) {
     if (
       !m ||
@@ -163,11 +171,13 @@ export function meterError(s: Pick<Subscription, 'meters' | 'readings'>): string
       ids.has(m.id) ||
       typeof m.name !== 'string' ||
       !m.name.trim() ||
+      names.has(m.name.trim()) ||
       typeof m.unit !== 'string' ||
       (m.kind != null && m.kind !== 'reading')
     )
       return t('core.subError.meter');
     ids.add(m.id);
+    names.add(m.name.trim());
   }
   const readingIds = new Set<string>();
   for (const r of s.readings ?? []) {
