@@ -7,6 +7,7 @@ import {
   cycleDays,
   effectiveStatus,
   phaseSubs,
+  isPostpaid,
   isStopped,
 } from '../../../shared/billing.ts';
 import type { Subscription } from '../../../shared/types.ts';
@@ -36,7 +37,8 @@ export function detailHistoryEnd(sub: Subscription, today: string): { date: stri
       .map((p) => p.date)
       .sort()
       .at(-1) ?? sub.start;
-  const coverage = sub.cycle.unit === 'lifetime' ? last : addDays(chargeServicePeriod(sub, last).until, -1);
+  // 后付费的账单日即已用到的那天，没有预付期
+  const coverage = sub.cycle.unit === 'lifetime' || isPostpaid(sub) ? last : addDays(chargeServicePeriod(sub, last).until, -1);
   // An already-disposed service can have prepaid time left. Do not draw that as future ownership.
   return { date: coverage < today ? coverage : last, unknown: true };
 }
@@ -58,8 +60,9 @@ export function detailForecast(sub: Subscription, today: string) {
 function computeForecast(sub: Subscription, today: string) {
   if (sub.cycle.unit === 'lifetime') return { sparse: true, charges: [] };
   const from = addDays(today, 1);
-  const ended = isStopped(effectiveStatus(sub, today));
   const cur = currentPhase(sub, today);
+  // 后付费停止后还有最后一张账单要出
+  const ended = isStopped(effectiveStatus(sub, today)) && !isPostpaid(cur);
   const charges = ended ? [] : chargesBetween(sub, from, addMonths(today, 12), today).filter((c) => !c.kind);
   const sparse = cycleDays(cur.cycle) >= 365 || charges.length <= 2;
   if (!sparse) return { sparse, charges };

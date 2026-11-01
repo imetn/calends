@@ -198,5 +198,10 @@
       "amount": "Jumlah",
       "base": "Dalam {ccy}"
     }
+  },
+  "billing": {
+    "postpaid": "Pascabayar",
+    "nextBill": "Tagihan berikutnya",
+    "period": "{from}–{to}"
   }
 }

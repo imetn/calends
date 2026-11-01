@@ -5,6 +5,7 @@ import {
   cycleLabel,
   diffDays,
   effectiveStatus,
+  isPostpaid,
   phaseSubs,
   priceAt,
   stopSummary,
@@ -39,6 +40,8 @@ export function Outcome({ sub, state, today }: { sub: Subscription; state: AppSt
         // 卖出时剩余服务随转让收回：不写已付未用损失，改写卖出日
         const sold = transferredStop(phase);
         if (sold) sm.unusedValue = 0;
+        // 后付费没有预付期：不写原本付到日；没有退款记录时也不写退款
+        const postpaid = isPostpaid(phase);
         return (
           <section key={phase.start} className={`dt-panel dt-outcome ${sm.kind === 'terminate' ? 'bad' : ''} ${sm.unusedValue > 0 ? 'loss' : ''}`}>
             <div className="dt-ph row">
@@ -66,8 +69,9 @@ export function Outcome({ sub, state, today }: { sub: Subscription; state: AppSt
             {sm.kind === 'terminate' && sm.reason && <p className="dt-oc-reason">{sm.reason}</p>}
             <dl className="dt-props">
               <Prop k={t('core.stop.date')}>{cnDateFull(sm.date)}</Prop>
-              <Prop k={t('detail.stop.paidThrough')}>{cnDateFull(sm.paidThrough)}</Prop>
+              {!postpaid && <Prop k={t('detail.stop.paidThrough')}>{cnDateFull(sm.paidThrough)}</Prop>}
               {sold && <Prop k={t('detail.transfer.kind.sell')}>{cnDateFull(sold.date)}</Prop>}
+              {(!postpaid || sm.refunded > 0) && (
               <Prop k={t('editor.payment.kind.refund')}>
                 {sm.refunded > 0 ? (
                   <span className="dt-in">
@@ -79,6 +83,7 @@ export function Outcome({ sub, state, today }: { sub: Subscription; state: AppSt
                   t('core.stop.refundNo')
                 )}
               </Prop>
+              )}
             </dl>
           </section>
         );

@@ -7,7 +7,8 @@
   },
   "renew": {
     "introEnds": "Einführungspreis endet, zurück zum regulären Preis",
-    "headline": "{name} verlängert sich {when} für {price}"
+    "headline": "{name} verlängert sich {when} für {price}",
+    "billHeadline": "{name} rechnet {when} ab: {price}"
   },
   "ending": {
     "sub": "Endet {when}, keine Verlängerung",

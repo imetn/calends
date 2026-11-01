@@ -213,5 +213,10 @@
       "amount": "Importe",
       "base": "En {ccy}"
     }
+  },
+  "billing": {
+    "postpaid": "Pospago",
+    "nextBill": "Próxima factura",
+    "period": "{from}–{to}"
   }
 }

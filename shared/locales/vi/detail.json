@@ -198,5 +198,10 @@
       "amount": "Số tiền",
       "base": "Quy đổi {ccy}"
     }
+  },
+  "billing": {
+    "postpaid": "Trả sau",
+    "nextBill": "Hóa đơn tiếp theo",
+    "period": "{from}–{to}"
   }
 }

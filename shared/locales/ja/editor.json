@@ -97,7 +97,8 @@
     "notesPlaceholder": "メモ（任意）",
     "pausedAt": "一時停止日",
     "plan": "プラン",
-    "iconImported": "インポートした画像（URL か絵文字で置き換え）"
+    "iconImported": "インポートした画像（URL か絵文字で置き換え）",
+    "billing": "支払い方式"
   },
   "share": {
     "none": "自分だけ",
@@ -246,5 +247,9 @@
     "choose": {
       "other": "App Store のプラン {count} 件"
     }
+  },
+  "billing": {
+    "prepaid": "前払い",
+    "postpaid": "後払い"
   }
 }

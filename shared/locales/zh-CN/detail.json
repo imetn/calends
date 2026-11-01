@@ -186,5 +186,10 @@
       "amount": "金额",
       "base": "折合 {ccy}"
     }
+  },
+  "billing": {
+    "postpaid": "后付费",
+    "nextBill": "下张账单",
+    "period": "{from}–{to}"
   }
 }

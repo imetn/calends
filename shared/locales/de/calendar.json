@@ -27,5 +27,6 @@
   },
   "pickDay": "Datum wählen, um Abbuchungen anzuzeigen",
   "nextCharge": "Nächste Abbuchung\n{date}",
-  "expandReport": "Vollständigen Bericht öffnen"
+  "expandReport": "Vollständigen Bericht öffnen",
+  "nextBill": "Nächste Rechnung\n{date}"
 }

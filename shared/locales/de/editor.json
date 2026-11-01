@@ -102,7 +102,8 @@
     "notesPlaceholder": "Notizen (optional)",
     "pausedAt": "Pausiert ab",
     "plan": "Tarif",
-    "iconImported": "Importiertes Bild; URL oder Emoji ersetzt es"
+    "iconImported": "Importiertes Bild; URL oder Emoji ersetzt es",
+    "billing": "Zahlung"
   },
   "share": {
     "none": "Nur ich",
@@ -256,5 +257,9 @@
       "one": "{count} App-Store-Tarif",
       "other": "{count} App-Store-Tarife"
     }
+  },
+  "billing": {
+    "prepaid": "Vorauszahlung",
+    "postpaid": "Nachträglich"
   }
 }

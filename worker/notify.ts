@@ -4,8 +4,10 @@ import {
   addMonths,
   chargesBetween,
   convert,
+  currentPhase,
   diffDays,
   effectiveStatus,
+  isPostpaid,
   nextCharge,
   renewalDates,
   memberAboard,
@@ -109,13 +111,16 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
         headline.push(t('notify.trial.headline', { name: s.name, when: relDays(d) }));
       }
     }
-    if (st === 'active' || st === 'ending') {
+    // 后付费停止、暂停后还有最后一张账单，同样提醒
+    const postpaid = isPostpaid(currentPhase(s, today));
+    if (st === 'active' || st === 'ending' || (postpaid && ['ended', 'terminated', 'paused'].includes(st))) {
       const n = nextCharge(s, today);
       if (n) {
         const d = diffDays(today, n);
         if (d === remind || (remind > 1 && d === 1)) {
           const method = state.methods.find((m) => m.id === s.methodId);
-          const price = priceAt(s, n);
+          // 后付费账单按所用那一期计价
+          const price = postpaid ? (chargesBetween(s, n, n, today).find((c) => !c.kind)?.amount ?? priceAt(s, n)) : priceAt(s, n);
           const conv = s.currency !== base ? `≈ ${money(convert(price, s.currency, base, fx), base)}` : undefined;
           const introEnds = !(s.intro && s.intro.until > n) && !!s.intro && diffDays(s.intro.until, n) < 40;
           renew.push({
@@ -128,7 +133,7 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
             detail: [cnDate(n, true), method?.name].filter(Boolean).join(' · '),
             note: introEnds ? t('notify.renew.introEnds') : undefined,
           });
-          headline.push(t('notify.renew.headline', { name: s.name, when: relDays(d), price: money(price, s.currency) }));
+          headline.push(t(postpaid ? 'notify.renew.billHeadline' : 'notify.renew.headline', { name: s.name, when: relDays(d), price: money(price, s.currency) }));
         }
       }
     }

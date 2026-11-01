@@ -7,7 +7,8 @@
   },
   "renew": {
     "introEnds": "优惠结束，恢复原价",
-    "headline": "{name} {when}扣款 {price}"
+    "headline": "{name} {when}扣款 {price}",
+    "billHeadline": "{name} {when}出账单 {price}"
   },
   "ending": {
     "sub": "{when}到期，不会自动续费",

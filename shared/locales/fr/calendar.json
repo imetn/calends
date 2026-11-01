@@ -27,5 +27,6 @@
   },
   "pickDay": "Choisissez une date pour voir ses prélèvements",
   "nextCharge": "Prochain prélèvement\n{date}",
-  "expandReport": "Afficher le rapport complet"
+  "expandReport": "Afficher le rapport complet",
+  "nextBill": "Prochaine facture\n{date}"
 }

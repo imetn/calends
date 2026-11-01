@@ -100,6 +100,7 @@ export function ChangePanel({
   const [cycle, setCycle] = useState(() => options.find(([, c]) => same(c))![0]);
   const [methodId, setMethodId] = useState(f.methodId ?? '');
   const [region, setRegion] = useState(f.region ?? '');
+  const [billing, setBilling] = useState<'prepaid' | 'postpaid'>(f.billing ?? 'prepaid');
   const [planned, setPlanned] = useState(false);
   // 换区时旧的继续用到某天（已预付、还没到期），两段并行
   const [keep, setKeep] = useState(false);
@@ -159,6 +160,7 @@ export function ChangePanel({
         price: n,
         currency,
         cycle: options.find(([k]) => k === cycle)![1],
+        billing: billing === 'postpaid' ? ('postpaid' as const) : undefined,
         methodId: methodId || undefined,
         region: region.trim().toUpperCase() || undefined,
         planned: mode === 'switch' && planned ? true : undefined,
@@ -300,6 +302,20 @@ export function ChangePanel({
                   ariaLabel={t('editor.field.cycle')}
                 />
               </label>
+              {options.find(([k]) => k === cycle)![1].unit !== 'lifetime' && (
+                <label>
+                  {t('editor.field.billing')}
+                  <Picker
+                    value={billing}
+                    onChange={setBilling}
+                    options={[
+                      { value: 'prepaid', label: t('editor.billing.prepaid') },
+                      { value: 'postpaid', label: t('editor.billing.postpaid') },
+                    ]}
+                    ariaLabel={t('editor.field.billing')}
+                  />
+                </label>
+              )}
               <label>
                 {t('editor.field.method')}
                 <MethodPicker methods={state.methods} value={methodId || undefined} onChange={(id) => setMethodId(id ?? '')} />

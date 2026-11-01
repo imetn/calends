@@ -89,7 +89,8 @@
     "notesPlaceholder": "備註（選填）",
     "pausedAt": "暫停日",
     "plan": "方案",
-    "iconImported": "已匯入圖片，輸入網址或 emoji 可替換"
+    "iconImported": "已匯入圖片，輸入網址或 emoji 可替換",
+    "billing": "付費方式"
   },
   "share": {
     "none": "自用",
@@ -230,5 +231,9 @@
     "choose": {
       "other": "App Store 有 {count} 個方案"
     }
+  },
+  "billing": {
+    "prepaid": "先付費",
+    "postpaid": "後付費"
   }
 }

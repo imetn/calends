@@ -97,7 +97,8 @@
     "notesPlaceholder": "Ghi chú (tùy chọn)",
     "pausedAt": "Ngày tạm dừng",
     "plan": "Gói",
-    "iconImported": "Ảnh đã nhập; nhập URL hoặc emoji để thay"
+    "iconImported": "Ảnh đã nhập; nhập URL hoặc emoji để thay",
+    "billing": "Thanh toán"
   },
   "share": {
     "none": "Chỉ mình tôi",
@@ -246,5 +247,9 @@
     "choose": {
       "other": "{count} gói trên App Store"
     }
+  },
+  "billing": {
+    "prepaid": "Trả trước",
+    "postpaid": "Trả sau"
   }
 }

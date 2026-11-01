@@ -94,6 +94,19 @@ export function BillingFields({ context }: { context: ReturnType<typeof useEdito
           />
         </Cell>
       )}
+      {f.cycle.unit !== 'lifetime' && (
+        <Cell label={t('editor.field.billing')}>
+          <Seg
+            small
+            value={f.billing ?? 'prepaid'}
+            onChange={(v) => up({ billing: v === 'postpaid' ? 'postpaid' : undefined })}
+            options={[
+              ['prepaid', t('editor.billing.prepaid')],
+              ['postpaid', t('editor.billing.postpaid')],
+            ]}
+          />
+        </Cell>
+      )}
       <Cell label={t('editor.field.category')}>
         <Picker
           value={f.category}

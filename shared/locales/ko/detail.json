@@ -198,5 +198,10 @@
       "amount": "금액",
       "base": "{ccy} 환산"
     }
+  },
+  "billing": {
+    "postpaid": "후불",
+    "nextBill": "다음 청구",
+    "period": "{from}~{to}"
   }
 }

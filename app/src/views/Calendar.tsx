@@ -9,7 +9,9 @@ import {
   addDays,
   addMonths,
   billingPeriod,
+  chargeServicePeriod,
   diffDays,
+  isPostpaid,
   parseDay,
   cycleLabel,
   currentPhase,
@@ -264,7 +266,14 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                       const cur = currentPhase(sub, today);
                       const status = effectiveStatus(sub, today);
                       const next = nextCharge(sub, addDays(today, 1));
-                      const period = c.kind !== 'refund' && c.sub.cycle.unit !== 'lifetime' ? billingPeriod(c.sub, c.date) : undefined;
+                      // 后付费账单写它所属的已用服务期；先付费写本期付到哪天
+                      const postpaid = isPostpaid(c.sub);
+                      const period =
+                        c.kind === 'refund' || c.sub.cycle.unit === 'lifetime'
+                          ? undefined
+                          : postpaid
+                            ? (({ from, until }) => ({ from, paidThrough: addDays(until, -1) }))(chargeServicePeriod(c.sub, c.date, c.serviceDate))
+                            : billingPeriod(c.sub, c.date);
                       const endedOn = cur.stop?.date ?? cur.end;
                       const stopped = !state.readonly && c.kind !== 'refund' && stopLabel(cur, today);
                       return (
@@ -307,10 +316,14 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                             ) : isStopped(status) ? (
                               endedOn && <small>{t('list.endedOn', { date: cnDateAuto(endedOn, today) })}</small>
                             ) : status === 'ending' && cur.end ? (
-                              <small>{t('core.stop.paidThrough', { date: cnDateAuto(cur.end, today) })}</small>
+                              <small>
+                                {isPostpaid(cur)
+                                  ? t('list.endedOn', { date: cnDateAuto(cur.end, today) })
+                                  : t('core.stop.paidThrough', { date: cnDateAuto(cur.end, today) })}
+                              </small>
                             ) : next && next !== c.date ? (
                               // 下次扣款就是选中的这一天时，标题已写明日期，不再重复
-                              <small>{copyParts(t('calendar.nextCharge', { date: cnDateAuto(next, today) }))}</small>
+                              <small>{copyParts(t(isPostpaid(cur) ? 'calendar.nextBill' : 'calendar.nextCharge', { date: cnDateAuto(next, today) }))}</small>
                             ) : null}
                             {stopped && (
                               <small title={stopDescription(cur, today)}>

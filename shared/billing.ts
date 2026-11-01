@@ -196,7 +196,9 @@ export function subError(s: Subscription): string | undefined {
   }
   if (!s.cycle || !['day', 'week', 'month', 'year', 'lifetime'].includes(s.cycle.unit) || !Number.isInteger(s.cycle.every) || !(s.cycle.every >= 1))
     return t('core.subError.cycle');
+  if (s.billing != null && s.billing !== 'postpaid') return t('mcp.error.invalidInput', { field: 'billing' });
   for (const v of phaseSubs(s)) {
+    if (v.billing != null && v.billing !== 'postpaid') return t('mcp.error.invalidInput', { field: 'billing' });
     if (v.estimateFrom && !validDay(v.estimateFrom)) return t('core.subError.start');
     if (v.billingStart && !validDay(v.billingStart)) return t('core.subError.start');
     if ([v.chargeLeadDays, v.cancelLeadDays, v.renewalOffsetDays].some((n) => n != null && (!Number.isInteger(n) || n < 0 || n > 3660)))
@@ -242,6 +244,7 @@ function shapeIssues(s: Subscription): Array<[key: string, error: string]> {
     const c = p.cycle;
     if (!c || !['day', 'week', 'month', 'year', 'lifetime'].includes(c.unit) || !Number.isInteger(c.every) || !(c.every >= 1))
       add('cycle', c, t('core.subError.cycle'));
+    if (p.billing != null && p.billing !== 'postpaid') add('billing', p.billing, t('mcp.error.invalidInput', { field: 'billing' }));
     day('end', p.end);
     if (isDay(p.end) && isDay(p.start) && p.end < p.start) add('end', [p.start, p.end], t('core.phase.endTooEarly'));
     day('nextDue', p.nextDue);
@@ -307,6 +310,7 @@ export function phaseSubs(s: Subscription): Subscription[] {
       price: p.price,
       currency: p.currency,
       cycle: p.cycle,
+      billing: p.billing,
       methodId: p.methodId,
       region: p.region,
       priceHistory: p.priceHistory,
@@ -498,6 +502,11 @@ export function fundingError(p: Payment): string | undefined {
   return undefined;
 }
 
+/** 后付费：每个周期边界为刚用完的上一期出账单，开始日本身不扣款；买断不适用 */
+export function isPostpaid(s: Pick<Subscription, 'billing' | 'cycle'>): boolean {
+  return s.billing === 'postpaid' && s.cycle.unit !== 'lifetime';
+}
+
 /** 规则修改只影响尚未发生的扣款；已扣过的服务边界不重复收费。 */
 function renewalDate(s: Subscription, boundary: string, initial = false): string {
   if (initial) return boundary;
@@ -545,7 +554,7 @@ export function renewalAnchor(s: Subscription, anchor: string): string {
   const guess = Math.max(first, Math.round(diffDays(original, anchor) / cycleDays(s.cycle)));
   for (let k = Math.max(first, guess - 2); k <= guess + Math.ceil(maxChargeLead(s) / cycleDays(s.cycle)) + 2; k++) {
     const boundary = nthCharge(original, s.cycle, k);
-    if (renewalDate(s, boundary, k === 0) === anchor) return original;
+    if (renewalDate(s, boundary, k === 0 && !isPostpaid(s)) === anchor) return original;
   }
   return addDays(anchor, (renewalRuleAt(s, anchor).chargeLeadDays ?? 0) - (s.renewalOffsetDays ?? 0));
 }
@@ -557,6 +566,7 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
   const original = billingAnchor(s);
   if (cashAnchor) anchor = renewalAnchor(s, anchor);
   const pausedFrom = s.status === 'paused' ? (s.pausedAt ?? today) : undefined;
+  const postpaid = isPostpaid(s);
   // 开始日提前时，沿原计费锚点向前补周期；保留月底日号及之后的续费日期。
   const first = firstCycle(s, anchor);
   let k = Math.max(first, Math.floor(diffDays(anchor, addDays(from, -(s.renewalOffsetDays ?? 0))) / cycleDays(s.cycle)) - 2);
@@ -564,6 +574,22 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
   for (let guard = 0; guard < 10000; guard++, k++) {
     const boundary = nthCharge(anchor, s.cycle, k);
     if (boundary > addDays(to, maxLead)) break;
+    if (postpaid) {
+      // 后付费：边界日为上一期 [prev, boundary) 出账单；服务期在停止/结束/暂停前开始的仍出最后一张
+      const prev = nthCharge(anchor, s.cycle, k - 1);
+      const d = renewalDate(s, boundary);
+      const serviceDate = prev === original ? prev : addDays(prev, s.renewalOffsetDays ?? 0);
+      if (d > to) continue;
+      if (s.stop && serviceDate > s.stop.date) break;
+      if (s.end && serviceDate > s.end) break;
+      if (s.status === 'cancelled' && !s.end && serviceDate > original) break;
+      if (pausedFrom && serviceDate >= pausedFrom) break;
+      if (serviceDate < s.start || d < from || d <= after || (cashAnchor && d < begin)) continue;
+      if (s.status === 'trial' && s.trialEnd && serviceDate < s.trialEnd) continue;
+      // 金额按所用那一期的价格（首期优惠、调价都看服务期起点）
+      out.push({ sub: s, date: d, serviceDate, amount: priceAt(s, serviceDate), currency: s.currency, projected: d > today });
+      continue;
+    }
     const initial = boundary === original;
     const d = renewalDate(s, boundary, initial);
     const serviceDate = initial ? boundary : addDays(boundary, s.renewalOffsetDays ?? 0);
@@ -603,16 +629,20 @@ export function chargesBetween(s: Subscription, from: string, to: string, today:
   const lastPaid = (s.payments ?? []).filter((p) => !p.kind).reduce((m, p) => (p.date > m ? p.date : m), '');
   const keep = raw.filter((c) => paid.has(c.date) || (c.serviceDate ?? c.date) < b.from);
   const after = schedule(s, b.until, from, to, today, lastPaid > renewalDate(s, b.until) ? lastPaid : addDays(renewalDate(s, b.until), -1));
-  return keep.concat(after.filter((c) => !paid.has(c.date) && known(c))).sort((x, y) => x.date.localeCompare(y.date));
+  // 后付费：赠送结束日起用的那一期才再出账单
+  const postpaid = isPostpaid(s);
+  return keep.concat(after.filter((c) => !paid.has(c.date) && known(c) && (!postpaid || (c.serviceDate ?? c.date) >= b.until))).sort((x, y) => x.date.localeCompare(y.date));
 }
 
 function rawCharges(s: Subscription, from: string, to: string, today: string): Charge[] {
   const pays = (s.payments ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
   const renewals = pays.filter((p) => !p.kind);
+  // 后付费：停止日之后才出的最后一张账单仍属于停止前的服务期
+  const postpaidBefore = (date: string, stop: string) => isPostpaid(s) && chargeServicePeriod(s, date).from <= stop;
   if (pays.length) {
     // 扣款失败的记一笔 0，不计入支出，但留在记录里
     const out: Charge[] = pays
-      .filter((p) => p.date >= from && p.date <= to && (!s.stop || p.date <= s.stop.date || p.kind === 'refund'))
+      .filter((p) => p.date >= from && p.date <= to && (!s.stop || p.date <= s.stop.date || p.kind === 'refund' || postpaidBefore(p.date, s.stop.date)))
       .map((p) => ({
         sub: s,
         date: p.date,
@@ -691,6 +721,8 @@ export function renewalDates(s: Subscription, from: string): { nextCharge?: stri
   const charge = chargesBetween(s, from, horizon, from).find((c) => !c.kind);
   if (!charge || charge.sub.cycle.unit === 'lifetime') return {};
   const rule = renewalRuleAt(charge.sub, charge.date);
+  // 后付费的账单为已用完的一期付款，没有「服务到期」
+  if (isPostpaid(charge.sub)) return { nextCharge: charge.date };
   return {
     nextCharge: charge.date,
     serviceExpires: charge.serviceDate ?? chargeServicePeriod(charge.sub, charge.date).from,
@@ -701,6 +733,8 @@ export function renewalDates(s: Subscription, from: string): { nextCharge?: stri
 /** 非续费默认截在下次现金扣款之前；已过取消截止时须再承担下一期。 */
 export function nonrenewalDate(s: Subscription, today: string): string {
   const dates = renewalDates(s, today);
+  // 后付费：没有预付期，默认用到当期结束（下张账单前一天），最后一张账单照出
+  if (isPostpaid(currentPhase(s, today))) return dates.nextCharge ? addDays(dates.nextCharge, -1) : today;
   if (!dates.nextCharge) return billingPeriod(s, today).paidThrough;
   if (dates.cancelBy && today > dates.cancelBy) return billingPeriod(s, dates.nextCharge).paidThrough;
   return addDays(dates.nextCharge, -1);
@@ -714,6 +748,17 @@ export function chargeServicePeriod(s: Subscription, cashDate: string, serviceDa
   const guess = Math.max(first, Math.round(diffDays(anchor, cashDate) / cycleDays(s.cycle)));
   const maxLead = maxChargeLead(s);
   const original = billingAnchor(s);
+  if (isPostpaid(s)) {
+    // 后付费：账单覆盖刚结束的 [上一边界, 本边界)
+    for (let k = Math.max(first, guess - 2); k <= guess + Math.ceil(maxLead / cycleDays(s.cycle)) + 2; k++) {
+      const boundary = nthCharge(anchor, s.cycle, k);
+      if (renewalDate(s, boundary) !== cashDate) continue;
+      const prev = nthCharge(anchor, s.cycle, k - 1);
+      return { from: serviceDate ?? (prev === original ? prev : addDays(prev, offset)), until: addDays(boundary, offset) };
+    }
+    const until = addDays(cashDate, renewalRuleAt(s, cashDate).chargeLeadDays);
+    return { from: serviceDate ?? addDays(nthCharge(addDays(until, -offset), s.cycle, -1), offset), until };
+  }
   const extend = (until: string) => (s.bonus && until >= s.bonus.from && until < s.bonus.until ? s.bonus.until : until);
   for (let k = Math.max(first, guess - 2); k <= guess + Math.ceil(maxLead / cycleDays(s.cycle)) + 2; k++) {
     const boundary = nthCharge(anchor, s.cycle, k);
@@ -747,7 +792,8 @@ export function reconcileRenewalRules(previous: Subscription | undefined, next: 
 
 export function nextCharge(s: Subscription, today: string): string | undefined {
   if (s.cycle.unit === 'lifetime') return s.start > today ? s.start : undefined;
-  if (s.stop && s.stop.date <= today) return undefined;
+  // 后付费停止后还有最后一张账单，交给 chargesBetween 判断
+  if (s.stop && s.stop.date <= today && !isPostpaid(s)) return undefined;
   return chargesBetween(s, today, addMonths(today, 12 * Math.max(1, s.cycle.unit === 'year' ? s.cycle.every : 1) + 1), today).find((c) => !c.kind)?.date;
 }
 
@@ -760,6 +806,14 @@ export function lastCharge(s: Subscription, today: string): string | undefined {
 export function billingPeriod(s: Subscription, at: string): { from: string; paidThrough: string; paid: number; days: number } {
   if (s.phases?.length) return billingPeriod(currentPhase(s, at), at);
   const open = { ...s, stop: undefined, end: undefined, status: s.status === 'trial' || (s.stop && s.trialEnd) ? ('trial' as const) : ('active' as const) };
+  if (isPostpaid(s)) {
+    // 后付费没有预付：已付 0、不可退款、不浪费，用到哪天算到哪天；from 为 at 所在服务期的起点
+    const span = Math.ceil(cycleDays(s.cycle) * 2) + maxChargeLead(s) + 32;
+    const next = chargesBetween(open, addDays(at, 1), addDays(at, span), at).find((c) => !c.kind);
+    const period = next ? chargeServicePeriod(s, next.date, next.serviceDate) : undefined;
+    const from = period && period.from <= at ? period.from : s.start <= at ? s.start : at;
+    return { from, paidThrough: at, paid: 0, days: Math.max(1, diffDays(from, period?.until ?? addDays(at, 1))) };
+  }
   // 修正服务开始日后，之前的实付/计费锚点仍决定已付账期。
   const paidFrom = [s.start, s.billingStart, s.nextDue, ...(s.payments ?? []).filter((p) => !p.kind).map((p) => p.date)]
     .filter((d): d is string => !!d)
@@ -795,6 +849,11 @@ export function billingPeriod(s: Subscription, at: string): { from: string; paid
         .reduce((a, c) => a + c.amount, 0)
     : 0;
   return { from, paidThrough, paid, days: Math.max(1, diffDays(from, next)) };
+}
+
+/** 在 at 停止时校验用的账期：先付费按今天已付到哪天；后付费随时可停，账期截到 at */
+export function stopBillingPeriod(s: Subscription, at: string, today: string) {
+  return billingPeriod(s, isPostpaid(s) || at < today ? at : today);
 }
 
 export function stopSummary(s: Subscription, asOf = '9999-12-31') {
@@ -845,6 +904,17 @@ export function paymentError(s: Subscription): string | undefined {
     if (p.kind !== 'refund') continue;
     if (p.currency && p.currency !== s.currency) return t('mcp.error.refundCurrency');
     if (p.amount > 0 || (p.settled && p.settled.amount > 0)) return t('mcp.error.invalidRefund');
+    if (isPostpaid(s)) {
+      // 后付费：退款以退款日前最近一张账单为上限
+      const bill = chargesBetween(s, s.start, p.date, p.date)
+        .filter((c) => !c.kind && c.amount > 0)
+        .at(-1);
+      const refunded = -(s.payments ?? [])
+        .filter((r) => r.kind === 'refund' && !!bill && r.date >= bill.date && r.date <= p.date)
+        .reduce((a, r) => a + r.amount, 0);
+      if (!bill || refunded > bill.amount + 0.005) return t('mcp.error.refundExceedsPaid');
+      continue;
+    }
     const stopPeriod = s.stop && p.date >= s.stop.date;
     const period = billingPeriod(s, stopPeriod ? s.stop!.date : s.end && p.date > s.end ? s.end : p.date);
     const paidOn = lastCharge(s, stopPeriod ? s.stop!.date : p.date);

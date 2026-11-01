@@ -204,5 +204,10 @@
       "amount": "Tutar",
       "base": "{ccy} karşılığı"
     }
+  },
+  "billing": {
+    "postpaid": "Sonradan ödemeli",
+    "nextBill": "Sonraki fatura",
+    "period": "{from}–{to}"
   }
 }

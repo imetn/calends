@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ExternalLink, CircleStop, Pause, Pencil, Play, Plus, Settings2, Share } from 'lucide-react';
-import { addDays, chargesBetween, currentPhase, cycleLabel, effectiveStatus, nextCharge, phaseSubs, priceAt, type Charge } from '../../../shared/billing.ts';
+import { addDays, chargesBetween, currentPhase, cycleLabel, effectiveStatus, isPostpaid, nextCharge, phaseSubs, priceAt, type Charge } from '../../../shared/billing.ts';
 import { cnDateFull } from '../../../shared/format.ts';
 import type { AppState, Payment, ShareMember, Subscription } from '../../../shared/types.ts';
 import { CarSheet } from './carpool/CarSheet.tsx';
@@ -204,6 +204,7 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
                 state.methods.find((x) => x.id === cur.methodId),
               )}
             />
+            {isPostpaid(cur) && <span className="badge">{t('detail.billing.postpaid')}</span>}
             {sub.category && <CatChip cat={sub.category} />}
           </>
         }

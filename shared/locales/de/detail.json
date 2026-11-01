@@ -213,5 +213,10 @@
       "amount": "Betrag",
       "base": "In {ccy}"
     }
+  },
+  "billing": {
+    "postpaid": "Nachträglich",
+    "nextBill": "Nächste Rechnung",
+    "period": "{from}–{to}"
   }
 }

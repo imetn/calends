@@ -102,7 +102,8 @@
     "notesPlaceholder": "Notes (facultatif)",
     "pausedAt": "Date de pause",
     "plan": "Formule",
-    "iconImported": "Image importée ; saisissez une URL ou un emoji pour la remplacer"
+    "iconImported": "Image importée ; saisissez une URL ou un emoji pour la remplacer",
+    "billing": "Paiement"
   },
   "share": {
     "none": "Moi seul",
@@ -256,5 +257,9 @@
       "one": "{count} formule App Store",
       "other": "{count} formules App Store"
     }
+  },
+  "billing": {
+    "prepaid": "Prépayé",
+    "postpaid": "Postpayé"
   }
 }

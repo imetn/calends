@@ -3,7 +3,7 @@ import { DAYS_PER_MONTH } from '../../../../shared/billing.ts';
 import { copyParts } from '../../components/copy.tsx';
 import { isStopped } from '../../../../shared/billing.ts';
 import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
-import { currentPhase, diffDays, effectiveStatus, monthlyGross, phaseSubs, servedTime, type Charge } from '../../../../shared/billing.ts';
+import { currentPhase, diffDays, effectiveStatus, isPostpaid, monthlyGross, phaseSubs, servedTime, type Charge } from '../../../../shared/billing.ts';
 import { flow, cnDateAuto, cnDateFull, relDays } from '../../../../shared/format.ts';
 import { netCost, transfersOf } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
@@ -83,7 +83,9 @@ export function Kpis({ sub, state, today, history }: { sub: Subscription; state:
       ? amountTotal(monthlyGross(currentPhase(sub, today), today, state.fx), currentPhase(sub, today).currency, perMonth)
       : scaleTotal(cost.partial, 1 / Math.max(1, active / DAYS_PER_MONTH));
   const monthlyAmount = formatTotal(monthlyPartial, base, { direction: -1, compact: true, main: true, average: true });
-  const next = ['ended', 'terminated', 'lifetime', 'paused'].includes(st) ? undefined : detailForecast(sub, today).charges[0];
+  const postpaid = isPostpaid(currentPhase(sub, today));
+  // 后付费停止、暂停后仍有最后一张账单
+  const next = st === 'lifetime' || (!postpaid && ['ended', 'terminated', 'paused'].includes(st)) ? undefined : detailForecast(sub, today).charges[0];
   const nextValue = next ? chargeBaseOrNaN(state, next, base) : NaN;
   // 停止的订阅由下方停止卡片写停止日，这里不再重复
   const ended = isStopped(st) && sub.end && !phaseSubs(sub).some((p) => p.stop);
@@ -105,7 +107,7 @@ export function Kpis({ sub, state, today, history }: { sub: Subscription; state:
     <MetricCards>
       {next ? (
         <Metric
-          label={st === 'trial' ? t('detail.renewal.afterTrial') : t('detail.ev.next')}
+          label={st === 'trial' ? t('detail.renewal.afterTrial') : isPostpaid(next.sub) ? t('detail.billing.nextBill') : t('detail.ev.next')}
           value={cnDateAuto(next.date, today)}
           note={copyParts(
             [Number.isFinite(nextValue) ? flow(-nextValue, base) : flow(-next.amount, next.currency), relDays(diffDays(today, next.date))].join('\n'),

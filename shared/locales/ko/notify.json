@@ -7,7 +7,8 @@
   },
   "renew": {
     "introEnds": "프로모션 가격이 끝나고 정가로 돌아갑니다",
-    "headline": "{name}이(가) {when} {price}에 갱신됩니다"
+    "headline": "{name}이(가) {when} {price}에 갱신됩니다",
+    "billHeadline": "{name} {when} 청구 {price}"
   },
   "ending": {
     "sub": "{when} 종료, 갱신되지 않음",

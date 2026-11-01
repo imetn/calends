@@ -198,5 +198,10 @@
       "amount": "金額",
       "base": "{ccy} 換算"
     }
+  },
+  "billing": {
+    "postpaid": "後払い",
+    "nextBill": "次回の請求",
+    "period": "{from}〜{to}"
   }
 }
