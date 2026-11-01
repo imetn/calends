@@ -1237,6 +1237,7 @@ test('sheet and embedded form action rows use one right-aligned container with t
   const css = readFileSync(new URL('components/ui.css', root), 'utf8');
   assert.match(css, /\.sheet-actions\s*\{[^}]*justify-content:\s*flex-end/);
   assert.match(css, /\.sheet-actions > :is\(\.primary, \.danger-solid\)\s*\{\s*order:\s*1/);
+  assert.match(css, /\.sheet-foot > \.confirm-btn:first-child\s*\{\s*margin-right:\s*auto/);
   for (const [file, css] of styleSources) {
     if (file.startsWith('public/')) continue;
     for (const [selector, body] of nestedCssRules(css)) {

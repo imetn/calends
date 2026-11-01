@@ -511,6 +511,10 @@
 .sheet-actions > :is(.btn, .dt-act) {
   border-radius: var(--radius-pill);
 }
+/* 弹窗底栏的删除放在左下角，与取消、保存分开 */
+.sheet-foot > .confirm-btn:first-child {
+  margin-right: auto;
+}
 
 /* Image actions share the normal icon hit area; only page cards fade them. */
 .copy-card {
