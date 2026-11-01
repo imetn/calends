@@ -46,7 +46,10 @@
     "refundDate": "Đặt ngày rời nhóm; ngày hoàn tiền không được trước ngày tham gia",
     "funding": "Chia thanh toán không hợp lệ: dùng ít nhất hai phương thức khác nhau với số tiền khác 0 và không gán thêm một phương thức riêng cho cùng khoản thanh toán",
     "fundingSum": "Tổng các phần chia phải bằng số tiền của khoản thanh toán",
-    "transfer": "Chuyển nhượng không hợp lệ: cần loại, ngày, số tiền dương và tiền tệ"
+    "transfer": "Chuyển nhượng không hợp lệ: cần loại, ngày, số tiền dương và tiền tệ",
+    "meter": "Chỉ số không hợp lệ: cần id duy nhất và tên",
+    "reading": "Bản ghi sử dụng không hợp lệ: cần id duy nhất, ngày hợp lệ và giá trị số",
+    "readingMeter": "Một bản ghi sử dụng tham chiếu đến chỉ số chưa được định nghĩa"
   },
   "phase": {
     "switchTooEarly": "Ngày hiệu lực phải sau ngày bắt đầu giai đoạn hiện tại",

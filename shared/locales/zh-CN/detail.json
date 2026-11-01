@@ -186,5 +186,41 @@
       "amount": "金额",
       "base": "折合 {ccy}"
     }
+  },
+  "meters": {
+    "title": "业务数据",
+    "add": "添加业务数据",
+    "manage": "指标",
+    "manageTitle": "业务数据指标",
+    "addTitle": "记录业务数据",
+    "editTitle": "修改记录",
+    "name": "名称",
+    "unit": "单位",
+    "namePh": "如 电量、里程、流量",
+    "unitPh": "如 kWh、km、GB",
+    "kindLabel": "记法",
+    "usage": "本期用量",
+    "reading": "累计读数",
+    "kindFoot": "本期用量：每次填这一期用了多少。累计读数：填表上的读数（如里程表），用量按相邻两次读数之差计算。",
+    "newMeter": "添加指标",
+    "suggest": "其他订阅用过",
+    "removeConfirm": "删除{names}会一并清除它们的历史数值，确定吗？",
+    "dupName": "指标名称不能重复",
+    "valuesFoot": "可只填部分指标。单价 = 上一条记录之后到这一天的实际扣款 ÷ 本期用量。",
+    "saved": "业务数据已保存",
+    "total": "累计 {v}",
+    "unitPrice": "单价 {v}",
+    "both": "累计 {total}，单价 {price}",
+    "readingValue": "读数 {v}",
+    "head": {
+      "date": "日期",
+      "note": "备注",
+      "reading": "读数",
+      "usage": "用量",
+      "price": "单价"
+    },
+    "readingsCount": "{n} 条记录",
+    "deleteReadings": "删除 {n} 条记录",
+    "removeMeters": "删除指标及其历史数值"
   }
 }

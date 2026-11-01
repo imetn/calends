@@ -79,7 +79,10 @@
     "notStopped": "Langganan ini belum dihentikan, jadi tidak ada penghentian yang bisa diubah. Untuk menghentikannya, gunakan set_status cancel / terminate tanpa edit.",
     "editStopDate": "Untuk mengubah penghentian, isi tanggal sebenarnya di at (hilangkan at untuk mempertahankan tanggal tercatat). Penghentian tanpa tanggal memerlukan tanggal sebenarnya.",
     "invalidIcon": "Ikon “{value}” tidak valid: gunakan URL gambar http(s), jalur situs seperti /ai/claude.svg, atau satu emoji / simbol pendek.",
-    "badMonth": "Bulan harus berformat YYYY-MM: {month}"
+    "badMonth": "Bulan harus berformat YYYY-MM: {month}",
+    "meterNotFound": "Tidak ada meteran yang cocok dengan “{q}”. Meteran: {list}",
+    "readingNotFound": "Tidak ada catatan penggunaan dengan id “{q}”",
+    "noMeters": "Langganan ini belum punya meteran; tentukan dulu dengan set_meters"
   },
   "tool": {
     "get_overview": "Ringkasan buku catatan",
@@ -115,6 +118,8 @@
     "update_settings": "Ubah pengaturan & preferensi buku catatan",
     "set_proxy": "Kelola pembayaran titipan",
     "save_subscription": "Simpan langganan lengkap",
-    "record_transfer": "Catat atau edit pengalihan"
+    "record_transfer": "Catat atau edit pengalihan",
+    "set_meters": "Atur meteran penggunaan",
+    "add_readings": "Catat data penggunaan"
   }
 }

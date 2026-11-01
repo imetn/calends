@@ -82,7 +82,10 @@
     "notStopped": "Cet abonnement n’est pas arrêté : il n’y a pas d’arrêt à modifier. Pour l’arrêter, utilisez set_status cancel / terminate sans edit.",
     "editStopDate": "Pour modifier un arrêt, indiquez sa date réelle dans at (omettez at pour garder la date enregistrée). Un arrêt à date inconnue nécessite sa date réelle.",
     "invalidIcon": "Icône « {value} » invalide : utilisez une URL d’image http(s), un chemin du site comme /ai/claude.svg, ou un emoji ou symbole court.",
-    "badMonth": "Le mois doit être au format YYYY-MM : {month}"
+    "badMonth": "Le mois doit être au format YYYY-MM : {month}",
+    "meterNotFound": "Aucun compteur ne correspond à « {q} ». Compteurs : {list}",
+    "readingNotFound": "Aucune entrée d’usage avec l’id « {q} »",
+    "noMeters": "Cet abonnement n’a pas encore de compteurs ; définissez-les d’abord avec set_meters"
   },
   "tool": {
     "get_overview": "Aperçu du registre",
@@ -118,6 +121,8 @@
     "update_settings": "Modifier les paramètres et préférences du registre",
     "set_proxy": "Gérer les avances",
     "save_subscription": "Enregistrer l’abonnement complet",
-    "record_transfer": "Enregistrer ou modifier des cessions"
+    "record_transfer": "Enregistrer ou modifier des cessions",
+    "set_meters": "Définir les compteurs d’usage",
+    "add_readings": "Saisir des données d’usage"
   }
 }

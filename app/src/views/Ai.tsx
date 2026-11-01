@@ -32,7 +32,7 @@ interface ToolMeta {
 // 只调整展示顺序和分组，工具仍全部来自接口；未匹配的新工具归到「其他」
 const TOOL_DOMAINS: Array<{ key: string; icon: LucideIcon; test: RegExp }> = [
   { key: 'overview', icon: ChartPie, test: /overview|stats|trends|insights/ },
-  { key: 'subs', icon: Layers, test: /subscription|price|plan|status|events/ },
+  { key: 'subs', icon: Layers, test: /subscription|price|plan|status|events|meters|readings/ },
   { key: 'charges', icon: ReceiptText, test: /charges|payment$|transfer/ },
   { key: 'wallet', icon: Wallet, test: /payment_method/ },
   { key: 'people', icon: Users, test: /people|person|carpool|share|proxy|receivable/ },

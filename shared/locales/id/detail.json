@@ -198,5 +198,41 @@
       "amount": "Jumlah",
       "base": "Dalam {ccy}"
     }
+  },
+  "meters": {
+    "title": "Data penggunaan",
+    "add": "Tambah data penggunaan",
+    "manage": "Meteran",
+    "manageTitle": "Meteran data penggunaan",
+    "addTitle": "Catat nilai",
+    "editTitle": "Edit catatan",
+    "name": "Nama",
+    "unit": "Satuan",
+    "namePh": "mis. Listrik, Jarak tempuh, Trafik",
+    "unitPh": "mis. kWh, km, GB",
+    "kindLabel": "Dicatat sebagai",
+    "usage": "Pemakaian per periode",
+    "reading": "Angka meter kumulatif",
+    "kindFoot": "Pemakaian per periode: isi jumlah yang dipakai setiap kali. Angka meter kumulatif: isi angka pada meteran (seperti odometer); pemakaian adalah selisih dua angka.",
+    "newMeter": "Tambah meteran",
+    "suggest": "Dipakai di langganan lain",
+    "removeConfirm": "Menghapus {names} juga menghapus nilai yang sudah dicatat. Lanjutkan?",
+    "dupName": "Nama meteran harus unik",
+    "valuesFoot": "Isi meteran mana saja. Harga satuan = tagihan nyata setelah catatan sebelumnya hingga tanggal ini ÷ pemakaian.",
+    "saved": "Data penggunaan disimpan",
+    "total": "Total {v}",
+    "unitPrice": "Harga satuan {v}",
+    "both": "Total {total}, harga satuan {price}",
+    "readingValue": "Angka {v}",
+    "head": {
+      "date": "Tanggal",
+      "note": "Catatan",
+      "reading": "Angka",
+      "usage": "Pemakaian",
+      "price": "Harga satuan"
+    },
+    "readingsCount": "{n} catatan",
+    "deleteReadings": "Hapus {n} catatan",
+    "removeMeters": "Hapus meteran dan nilainya"
   }
 }

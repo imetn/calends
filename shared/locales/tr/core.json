@@ -51,7 +51,10 @@
     "refundDate": "Ayrılma tarihini belirleyin; iade katılma tarihinden önce olamaz",
     "funding": "Geçersiz bölünmüş ödeme: sıfır olmayan tutarlarla en az iki farklı ödeme yöntemi kullanın ve aynı ödemeye tek bir yöntem atamayın",
     "fundingSum": "Bölünmüş tutarların toplamı ödeme tutarına eşit olmalıdır",
-    "transfer": "Geçersiz devir: tür, tarih, pozitif tutar ve para birimi gerekli"
+    "transfer": "Geçersiz devir: tür, tarih, pozitif tutar ve para birimi gerekli",
+    "meter": "Geçersiz ölçüt: benzersiz bir id ve ad gerekli",
+    "reading": "Geçersiz kullanım kaydı: benzersiz bir id, geçerli bir tarih ve sayısal değerler gerekli",
+    "readingMeter": "Bir kullanım kaydı tanımlanmamış bir ölçüte başvuruyor"
   },
   "phase": {
     "switchTooEarly": "Geçerlilik tarihi mevcut dönemin başlangıcından sonra olmalı",

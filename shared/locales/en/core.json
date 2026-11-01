@@ -51,7 +51,10 @@
     "refundDate": "Set a leave date; the refund date cannot precede joining",
     "funding": "Invalid split payment: use at least two different payment methods with non-zero amounts, and no single payment method on the same charge",
     "fundingSum": "The split amounts must add up to the payment amount",
-    "transfer": "Invalid transfer: type, date, a positive amount and currency are required"
+    "transfer": "Invalid transfer: type, date, a positive amount and currency are required",
+    "meter": "Invalid meter: each needs a unique id and a name",
+    "reading": "Invalid meter record: each needs a unique id, a valid date and numeric values",
+    "readingMeter": "A meter record refers to a meter that is not defined"
   },
   "phase": {
     "switchTooEarly": "The effective date must be after the current phase starts",

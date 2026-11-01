@@ -30,6 +30,8 @@ import { SUBSCRIPTION_SCHEMA } from '../../shared/subscription-schema.ts';
 import { prepareSubWrite } from '../../shared/sub-write.ts';
 import { validateCurrency, deleteSubscriptionSettings } from '../../shared/ledger-edit.ts';
 import { cleanTransfers } from '../../shared/transfers.ts';
+import { removeMeter, stableId } from '../../shared/meters.ts';
+import type { Meter, Reading } from '../../shared/types.ts';
 import type { Tool } from './tool-kit.ts';
 import {
   state,
@@ -735,6 +737,142 @@ export const record_transfer: Tool = {
       } else next = [...list, item];
     }
     return commit(ctx, st, today, { ...s, transfers: cleanTransfers(next) }, a.dry_run, [a.delete ? 'delete_transfer' : 'transfer']);
+  },
+};
+
+const METER_INPUT = obj(
+  {
+    id: { type: 'string', description: 'Existing meter id to update; omit to match by name or create a new meter.' },
+    name: { type: 'string', description: 'Free text, e.g. Electricity, Mileage, Egress traffic.' },
+    unit: { type: 'string', description: 'Free text, e.g. kWh, km, GB, times, L; may be empty.' },
+    kind: {
+      type: 'string',
+      enum: ['usage', 'reading'],
+      description: 'usage (default) = the amount used in that period; reading = a cumulative counter (odometer, meter reading), usage = this − previous.',
+    },
+  },
+  [],
+);
+
+/** 指标引用：id，或名称（不区分大小写，须唯一） */
+function findMeter(meters: Meter[], ref: string): Meter {
+  const byId = meters.find((m) => m.id === ref);
+  if (byId) return byId;
+  const hits = meters.filter((m) => m.name.trim().toLowerCase() === ref.trim().toLowerCase());
+  if (hits.length === 1) return hits[0];
+  throw new Error(t('mcp.error.meterNotFound', { q: ref, list: meters.map((m) => t('mcp.item', { name: m.name, id: m.id })).join(t('mcp.sep')) || '—' }));
+}
+
+export const set_meters: Tool = {
+  name: 'set_meters',
+  description:
+    'Define custom business meters on a subscription (anything the user tracks per period: electricity of a utility bill, car mileage, server egress traffic, calls…). Names and units are free text; nothing is built in. Each item in meters updates the meter with that id (or the same name, case-insensitive) or creates a new one; omitted fields keep their values. remove = meter ids to delete — their values are cleared from every reading and readings left empty are deleted (subscription must then be an id or exact name). Record values with add_readings; get_subscription.meters returns per-period usage, totals and unit price (period charges ÷ usage).',
+  write: true,
+  inputSchema: obj(
+    {
+      subscription: SUBREF,
+      meters: { type: 'array', maxItems: 50, items: METER_INPUT },
+      remove: { type: 'array', maxItems: 50, items: { type: 'string' }, description: 'Meter ids to delete together with their recorded values.' },
+      dry_run: drySchema,
+    },
+    ['subscription'],
+  ),
+  async run(a, ctx) {
+    const { st, today } = await state(ctx);
+    const inputs = (a.meters as Array<Record<string, unknown>> | undefined) ?? [];
+    const remove = (a.remove as string[] | undefined) ?? [];
+    if (!inputs.length && !remove.length) throw new Error(t('mcp.error.invalidInput', { field: 'meters' }));
+    const s = findSub(st, a.subscription, { exact: remove.length > 0 });
+    let next: Subscription = s;
+    for (const id of remove) {
+      if (!(next.meters ?? []).some((m) => m.id === id)) throw new Error(t('mcp.error.meterNotFound', { q: id, list: (s.meters ?? []).map((m) => t('mcp.item', { name: m.name, id: m.id })).join(t('mcp.sep')) || '—' }));
+      next = removeMeter(next, id);
+    }
+    const meters = [...(next.meters ?? [])];
+    for (const input of inputs) {
+      const id = str(input.id);
+      const name = str(input.name)?.trim();
+      const at = meters.findIndex((m) => (id ? m.id === id : !!name && m.name.trim().toLowerCase() === name.toLowerCase()));
+      const kind = input.kind === 'reading' ? 'reading' : input.kind === 'usage' ? undefined : at >= 0 ? meters[at].kind : undefined;
+      if (at >= 0) {
+        const old = meters[at];
+        const { kind: _k, ...rest } = old;
+        meters[at] = { ...rest, ...(name ? { name } : {}), ...(input.unit != null ? { unit: String(input.unit).trim() } : {}), ...(kind ? { kind } : {}) };
+        continue;
+      }
+      if (!name) throw new Error(t('core.subError.meter'));
+      const taken = new Set(meters.map((m) => m.id));
+      meters.push({ id: id ?? stableId('m', `${s.id}|${name.toLowerCase()}`, taken), name, unit: String(input.unit ?? '').trim(), ...(kind ? { kind } : {}) });
+    }
+    next = { ...next, meters: meters.length ? meters : undefined };
+    return commit(ctx, st, today, next, a.dry_run, [remove.length ? 'remove_meters' : 'meters']);
+  },
+};
+
+export const add_readings: Tool = {
+  name: 'add_readings',
+  description:
+    'Record custom meter values on a subscription in bulk (e.g. import dozens of electricity bills at once). Each reading has a date (billing period / record day), values = {meter id or exact meter name: number} (only some meters may be filled) and an optional note. A reading with an existing id, or else on a date that already has a reading, is merged: given values overwrite, null removes that value, note replaces (null clears); otherwise a new reading is added. Readings left without values are deleted. delete = reading ids to remove. Define meters first with set_meters. Values are stored apart from payments; get_subscription.meters derives usage (cumulative readings: this − previous, none on rollback), totals and unit price (actual charges in the period after the previous reading up to this one ÷ usage).',
+  write: true,
+  inputSchema: obj(
+    {
+      subscription: SUBREF,
+      readings: {
+        type: 'array',
+        maxItems: 500,
+        items: obj(
+          {
+            id: { type: 'string', description: 'Existing reading id to edit (from get_subscription), or a stable new id.' },
+            date: DATE,
+            values: { type: 'object', additionalProperties: true, description: 'Meter id or exact name → number (null removes it).' },
+            note: { type: ['string', 'null'] },
+          },
+          ['date'],
+        ),
+      },
+      delete: { type: 'array', maxItems: 500, items: { type: 'string' }, description: 'Reading ids to delete.' },
+      dry_run: drySchema,
+    },
+    ['subscription'],
+  ),
+  async run(a, ctx) {
+    const { st, today } = await state(ctx);
+    const inputs = (a.readings as Array<Record<string, unknown>> | undefined) ?? [];
+    const remove = (a.delete as string[] | undefined) ?? [];
+    if (!inputs.length && !remove.length) throw new Error(t('mcp.error.invalidInput', { field: 'readings' }));
+    const s = findSub(st, a.subscription, { exact: remove.length > 0 });
+    const meters = s.meters ?? [];
+    if (inputs.length && !meters.length) throw new Error(t('mcp.error.noMeters'));
+    let list: Reading[] = [...(s.readings ?? [])];
+    for (const id of remove) {
+      if (!list.some((r) => r.id === id)) throw new Error(t('mcp.error.readingNotFound', { q: id }));
+      list = list.filter((r) => r.id !== id);
+    }
+    inputs.forEach((input, i) => {
+      const day = date(input.date, `readings[${i}].date`);
+      const id = str(input.id);
+      const raw = input.values ?? {};
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error(t('mcp.error.invalidInput', { field: `readings[${i}].values` }));
+      const at = list.findIndex((r) => (id ? r.id === id : r.date === day));
+      const values: Record<string, number> = at >= 0 ? { ...list[at].values } : {};
+      for (const [key, v] of Object.entries(raw as Record<string, unknown>)) {
+        const m = findMeter(meters, key);
+        if (v === null) delete values[m.id];
+        else if (typeof v === 'number' && Number.isFinite(v)) values[m.id] = v;
+        else throw new Error(t('mcp.error.notNumber', { what: `readings[${i}].values.${key}` }));
+      }
+      const note = input.note === undefined ? (at >= 0 ? list[at].note : undefined) : str(input.note)?.trim();
+      const item: Reading = {
+        id: at >= 0 ? list[at].id : (id ?? stableId('r', `${s.id}|${day}`, new Set(list.map((r) => r.id)))),
+        date: day,
+        values,
+        ...(note ? { note } : {}),
+      };
+      if (at >= 0) list[at] = item;
+      else list.push(item);
+    });
+    list = list.filter((r) => Object.keys(r.values).length > 0);
+    return commit(ctx, st, today, { ...s, readings: list.length ? list : undefined }, a.dry_run, [remove.length && !inputs.length ? 'delete_readings' : 'readings']);
   },
 };
 

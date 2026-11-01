@@ -198,5 +198,41 @@
       "amount": "금액",
       "base": "{ccy} 환산"
     }
+  },
+  "meters": {
+    "title": "업무 데이터",
+    "add": "업무 데이터 추가",
+    "manage": "지표",
+    "manageTitle": "업무 데이터 지표",
+    "addTitle": "업무 데이터 기록",
+    "editTitle": "기록 수정",
+    "name": "이름",
+    "unit": "단위",
+    "namePh": "예: 전력량, 주행거리, 트래픽",
+    "unitPh": "예: kWh, km, GB",
+    "kindLabel": "기록 방식",
+    "usage": "기간 사용량",
+    "reading": "누적 계량값",
+    "kindFoot": "기간 사용량: 매번 해당 기간에 사용한 양을 입력합니다. 누적 계량값: 계량기 값(주행거리계 등)을 입력하며 사용량은 두 값의 차이로 계산합니다.",
+    "newMeter": "지표 추가",
+    "suggest": "다른 구독에서 사용",
+    "removeConfirm": "{names}을(를) 삭제하면 기록된 값도 함께 지워집니다. 계속할까요?",
+    "dupName": "지표 이름은 중복될 수 없습니다",
+    "valuesFoot": "일부 지표만 입력해도 됩니다. 단가 = 이전 기록 다음 날부터 이 날짜까지 실제 결제 ÷ 사용량.",
+    "saved": "업무 데이터를 저장했습니다",
+    "total": "누적 {v}",
+    "unitPrice": "단가 {v}",
+    "both": "누적 {total}, 단가 {price}",
+    "readingValue": "계량값 {v}",
+    "head": {
+      "date": "날짜",
+      "note": "메모",
+      "reading": "계량값",
+      "usage": "사용량",
+      "price": "단가"
+    },
+    "readingsCount": "기록 {n}건",
+    "deleteReadings": "기록 {n}건 삭제",
+    "removeMeters": "지표와 기록된 값 삭제"
   }
 }

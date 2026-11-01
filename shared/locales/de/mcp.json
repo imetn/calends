@@ -82,7 +82,10 @@
     "notStopped": "Dieses Abo ist nicht beendet, daher gibt es keine Beendigung zum Bearbeiten. Zum Beenden set_status cancel / terminate ohne edit verwenden.",
     "editStopDate": "Zum Bearbeiten einer Beendigung das tatsächliche Datum in at angeben (ohne at bleibt ein erfasstes Datum erhalten). Eine Beendigung mit unbekanntem Datum braucht ihr echtes Datum.",
     "invalidIcon": "Ungültiges Symbol „{value}“: Verwende eine http(s)-Bild-URL, einen Seitenpfad wie /ai/claude.svg oder ein Emoji bzw. kurzes Zeichen.",
-    "badMonth": "Der Monat muss YYYY-MM sein: {month}"
+    "badMonth": "Der Monat muss YYYY-MM sein: {month}",
+    "meterNotFound": "Keine Messgröße passt zu „{q}“. Messgrößen: {list}",
+    "readingNotFound": "Kein Nutzungseintrag mit der id „{q}“",
+    "noMeters": "Dieses Abo hat noch keine Messgrößen; zuerst mit set_meters festlegen"
   },
   "tool": {
     "get_overview": "Kontoübersicht",
@@ -118,6 +121,8 @@
     "update_settings": "Buch- & Anzeigeeinstellungen ändern",
     "set_proxy": "Auslagen verwalten",
     "save_subscription": "Abo vollständig speichern",
-    "record_transfer": "Übertragungen erfassen oder bearbeiten"
+    "record_transfer": "Übertragungen erfassen oder bearbeiten",
+    "set_meters": "Messgrößen festlegen",
+    "add_readings": "Nutzungsdaten erfassen"
   }
 }

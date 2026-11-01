@@ -79,7 +79,10 @@
     "notStopped": "這個訂閱尚未停用，沒有可修改的停用資料。要停用請不帶 edit 調用 set_status cancel / terminate。",
     "editStopDate": "修改停用時請用 at 提供實際日期（省略 at 即沿用已記錄的日期）；原本日期不詳的停用需要補回真實日期。",
     "invalidIcon": "圖示「{value}」無效：請使用 http(s) 圖片網址、站內路徑（如 /ai/claude.svg），或一個 emoji／簡短符號。",
-    "badMonth": "月份格式應為 YYYY-MM：{month}"
+    "badMonth": "月份格式應為 YYYY-MM：{month}",
+    "meterNotFound": "沒有符合「{q}」的指標。現有指標：{list}",
+    "readingNotFound": "沒有 id 為「{q}」的業務數據紀錄",
+    "noMeters": "這個訂閱還沒有業務數據指標，請先用 set_meters 定義"
   },
   "tool": {
     "get_overview": "帳本概況",
@@ -115,6 +118,8 @@
     "update_settings": "修改帳本設定與偏好",
     "set_proxy": "管理代付關係",
     "save_subscription": "完整儲存訂閱",
-    "record_transfer": "記錄或修改轉讓收付"
+    "record_transfer": "記錄或修改轉讓收付",
+    "set_meters": "設定業務數據指標",
+    "add_readings": "記錄業務數據"
   }
 }

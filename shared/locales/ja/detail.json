@@ -198,5 +198,41 @@
       "amount": "金額",
       "base": "{ccy} 換算"
     }
+  },
+  "meters": {
+    "title": "業務データ",
+    "add": "業務データを追加",
+    "manage": "指標",
+    "manageTitle": "業務データの指標",
+    "addTitle": "業務データを記録",
+    "editTitle": "記録を編集",
+    "name": "名前",
+    "unit": "単位",
+    "namePh": "例：電力量、走行距離、通信量",
+    "unitPh": "例：kWh、km、GB",
+    "kindLabel": "記録方法",
+    "usage": "期間の使用量",
+    "reading": "累積の読み値",
+    "kindFoot": "期間の使用量：毎回その期間に使った量を入力します。累積の読み値：メーターの値（走行距離計など）を入力し、使用量は前回との差で計算します。",
+    "newMeter": "指標を追加",
+    "suggest": "他のサブスクで使用",
+    "removeConfirm": "{names}を削除すると記録済みの値も消去されます。続けますか？",
+    "dupName": "指標名は重複できません",
+    "valuesFoot": "一部の指標だけ入力できます。単価 = 前回の記録の翌日からこの日までの実際の請求 ÷ 使用量。",
+    "saved": "業務データを保存しました",
+    "total": "累計 {v}",
+    "unitPrice": "単価 {v}",
+    "both": "累計 {total}、単価 {price}",
+    "readingValue": "読み値 {v}",
+    "head": {
+      "date": "日付",
+      "note": "メモ",
+      "reading": "読み値",
+      "usage": "使用量",
+      "price": "単価"
+    },
+    "readingsCount": "{n} 件の記録",
+    "deleteReadings": "{n} 件の記録を削除",
+    "removeMeters": "指標と記録済みの値を削除"
   }
 }

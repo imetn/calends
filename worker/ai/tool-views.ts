@@ -27,6 +27,7 @@ import { type LedgerPeriod } from '../../shared/receivables.ts';
 import { personAmounts, type PersonLedger } from '../../shared/people.ts';
 import type { AppState, Person, ShareMember, Subscription } from '../../shared/types.ts';
 import { carRule, followsCar, memberPaidThrough } from '../../shared/carpool.ts';
+import { meterSummary, type MeterRow } from '../../shared/meters.ts';
 
 export function money(st: AppState, amount: number, currency: string, date?: string, to = st.settings.baseCurrency) {
   const conv = !Number.isFinite(amount) ? NaN : currency === to ? amount : toBaseOrNaN(st, amount, currency, date, to);
@@ -250,4 +251,35 @@ export function roundAll<T extends object>(o: T): T {
       .filter(([, v]) => v !== undefined)
       .map(([k, v]) => [k, typeof v === 'number' ? round(v) : v]),
   ) as T;
+}
+
+const unitRound = (n: number) => Math.round(n * 1e4) / 1e4;
+
+/** 业务数据：每个指标的累计、最近一期与时间窗内逐条派生（用量、期间扣款、单价，币种为扣款原币） */
+export function metersOut(s: Subscription, today: string, from: string) {
+  const one = (r: MeterRow) => ({
+    reading_id: r.reading.id,
+    date: r.reading.date,
+    value: r.value,
+    usage: r.usage ?? null,
+    since: r.since ?? null,
+    cost: r.cost ? round(r.cost.amount) : null,
+    unit_price: r.unitPrice != null ? unitRound(r.unitPrice) : null,
+    currency: r.cost?.currency ?? null,
+    note: r.reading.note ?? null,
+  });
+  return (s.meters ?? []).map((m) => {
+    const sum = meterSummary(s, m, today);
+    return {
+      id: m.id,
+      name: m.name,
+      unit: m.unit,
+      kind: m.kind ?? 'usage',
+      total_usage: sum.total,
+      periods: sum.periods,
+      latest: sum.latest ? one(sum.latest) : null,
+      latest_unit_price: sum.latestPriced ? { date: sum.latestPriced.reading.date, amount: unitRound(sum.latestPriced.unitPrice!), currency: sum.latestPriced.cost!.currency } : null,
+      readings: sum.rows.filter((r) => r.reading.date >= from).map(one),
+    };
+  });
 }

@@ -213,5 +213,41 @@
       "amount": "Amount",
       "base": "In {ccy}"
     }
+  },
+  "meters": {
+    "title": "Business data",
+    "add": "Add business data",
+    "manage": "Meters",
+    "manageTitle": "Business data meters",
+    "addTitle": "Record values",
+    "editTitle": "Edit record",
+    "name": "Name",
+    "unit": "Unit",
+    "namePh": "e.g. Electricity, Mileage, Traffic",
+    "unitPh": "e.g. kWh, km, GB",
+    "kindLabel": "Recorded as",
+    "usage": "Usage per period",
+    "reading": "Cumulative reading",
+    "kindFoot": "Usage per period: enter how much was used each time. Cumulative reading: enter the counter value (such as an odometer); usage is the difference between two readings.",
+    "newMeter": "Add meter",
+    "suggest": "Used in other subscriptions",
+    "removeConfirm": "Deleting {names} also clears their recorded values. Continue?",
+    "dupName": "Meter names must be unique",
+    "valuesFoot": "Fill in any of the meters. Unit price = actual charges after the previous record up to this date ÷ usage.",
+    "saved": "Business data saved",
+    "total": "Total {v}",
+    "unitPrice": "Unit price {v}",
+    "both": "Total {total}, unit price {price}",
+    "readingValue": "Reading {v}",
+    "head": {
+      "date": "Date",
+      "note": "Note",
+      "reading": "Reading",
+      "usage": "Usage",
+      "price": "Unit price"
+    },
+    "readingsCount": "{n} records",
+    "deleteReadings": "Delete {n} records",
+    "removeMeters": "Delete meters and their values"
   }
 }

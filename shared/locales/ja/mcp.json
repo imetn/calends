@@ -79,7 +79,10 @@
     "notStopped": "このサブスクリプションは停止されていないため、修正できる停止情報がありません。停止するには edit なしで set_status cancel / terminate を使ってください。",
     "editStopDate": "停止を修正するときは at に実際の日付を指定してください（at を省略すると記録済みの日付を維持します）。日付不明の停止には実際の日付が必要です。",
     "invalidIcon": "アイコン「{value}」は無効です。http(s) の画像 URL、サイト内パス（例：/ai/claude.svg）、または絵文字・短い記号 1 つを指定してください。",
-    "badMonth": "月は YYYY-MM 形式で指定してください：{month}"
+    "badMonth": "月は YYYY-MM 形式で指定してください：{month}",
+    "meterNotFound": "「{q}」に一致する指標がありません。指標：{list}",
+    "readingNotFound": "id「{q}」の業務データ記録はありません",
+    "noMeters": "このサブスクにはまだ指標がありません。先に set_meters で定義してください"
   },
   "tool": {
     "get_overview": "台帳の概要",
@@ -115,6 +118,8 @@
     "update_settings": "台帳設定と表示設定を更新",
     "set_proxy": "立替関係を管理",
     "save_subscription": "サブスクを丸ごと保存",
-    "record_transfer": "譲渡を記録・編集"
+    "record_transfer": "譲渡を記録・編集",
+    "set_meters": "業務データの指標を設定",
+    "add_readings": "業務データを記録"
   }
 }

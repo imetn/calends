@@ -82,7 +82,10 @@
     "notStopped": "Esta assinatura não está encerrada, então não há encerramento para editar. Para encerrá-la, use set_status cancel / terminate sem edit.",
     "editStopDate": "Para editar um encerramento, informe a data real em at (omita at para manter a data registrada). Um encerramento com data desconhecida precisa da data real.",
     "invalidIcon": "Ícone “{value}” inválido: use uma URL de imagem http(s), um caminho do site como /ai/claude.svg ou um emoji ou símbolo curto.",
-    "badMonth": "O mês deve estar no formato YYYY-MM: {month}"
+    "badMonth": "O mês deve estar no formato YYYY-MM: {month}",
+    "meterNotFound": "Nenhum medidor corresponde a “{q}”. Medidores: {list}",
+    "readingNotFound": "Nenhum registro de uso com o id “{q}”",
+    "noMeters": "Esta assinatura ainda não tem medidores; defina-os primeiro com set_meters"
   },
   "tool": {
     "get_overview": "Visão geral",
@@ -118,6 +121,8 @@
     "update_settings": "Atualizar configurações e preferências do registro",
     "set_proxy": "Gerenciar adiantamentos",
     "save_subscription": "Salvar assinatura completa",
-    "record_transfer": "Registrar ou editar transferências"
+    "record_transfer": "Registrar ou editar transferências",
+    "set_meters": "Definir medidores de uso",
+    "add_readings": "Registrar dados de uso"
   }
 }

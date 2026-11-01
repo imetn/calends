@@ -175,6 +175,14 @@ const full = {
       'currency',
     ]),
   ),
+  meters: {
+    ...list(record({ id: text, name: text, unit: text, kind: { type: 'string', enum: ['reading'] } }, ['id', 'name', 'unit'])),
+    description: 'Custom business meters (electricity, mileage, traffic…). kind=reading is a cumulative counter; omitted = usage per period.',
+  },
+  readings: {
+    ...list(record({ id: text, date: day, values: { type: 'object', additionalProperties: true, description: 'Meter id → finite number.' }, note: text }, ['id', 'date', 'values'])),
+    description: 'Recorded meter values by date; values maps meter id to a number. Prefer set_meters / add_readings for edits.',
+  },
   account: text,
   notes: text,
   createdAt: text,

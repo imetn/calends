@@ -46,7 +46,10 @@
     "refundDate": "Tetapkan tanggal keluar; pengembalian tidak boleh sebelum bergabung",
     "funding": "Pembagian pembayaran tidak valid: gunakan minimal dua metode pembayaran berbeda dengan jumlah bukan nol, dan jangan tetapkan satu metode tersendiri pada tagihan yang sama",
     "fundingSum": "Jumlah bagian harus sama dengan jumlah pembayaran",
-    "transfer": "Pengalihan tidak valid: jenis, tanggal, jumlah positif, dan mata uang wajib diisi"
+    "transfer": "Pengalihan tidak valid: jenis, tanggal, jumlah positif, dan mata uang wajib diisi",
+    "meter": "Meteran tidak valid: perlu id unik dan nama",
+    "reading": "Catatan penggunaan tidak valid: perlu id unik, tanggal valid, dan nilai angka",
+    "readingMeter": "Catatan penggunaan merujuk ke meteran yang belum ditentukan"
   },
   "phase": {
     "switchTooEarly": "Tanggal berlaku harus setelah fase saat ini dimulai",

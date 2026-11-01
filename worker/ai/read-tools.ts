@@ -35,7 +35,7 @@ import { categoryCounts, categoryList } from '../../shared/categories.ts';
 import { netCost, transferRows, transferredStop, transferSign, transfersOf, transferValue } from '../../shared/transfers.ts';
 import type { Tool } from './tool-kit.ts';
 import { state, findSub, rangeOf, chargesIn, groupOf, missingRates, outCcy, DATE, SUBREF, CURRENCY_OUT, PERIOD, str, date, methodRef } from './tool-kit.ts';
-import { money, round, fin, fxGaps, personRow, periodsOut, row, chargeRow, collectCcy, chargeCcy, roundAll } from './tool-views.ts';
+import { money, round, fin, fxGaps, personRow, periodsOut, row, chargeRow, collectCcy, chargeCcy, roundAll, metersOut } from './tool-views.ts';
 
 export const get_overview: Tool = {
   name: 'get_overview',
@@ -178,7 +178,7 @@ export const list_subscriptions: Tool = {
 export const get_subscription: Tool = {
   name: 'get_subscription',
   description:
-    'Full detail of one subscription: every phase (region or plan switches, gaps = lapses), price history, intro/bonus periods, recent and upcoming charges, shared-plan member dues, proxy repayments, and totals spent so far. Stop summaries include provider termination reasons, refunds and paid-but-unused days/value for each phase.',
+    'Full detail of one subscription: every phase (region or plan switches, gaps = lapses), price history, intro/bonus periods, recent and upcoming charges, shared-plan member dues, proxy repayments, custom business meters (per-period usage, totals, unit price = charges in the period ÷ usage), and totals spent so far. Stop summaries include provider termination reasons, refunds and paid-but-unused days/value for each phase.',
   inputSchema: obj(
     { subscription: SUBREF, months_back: { type: 'integer', default: 12 }, months_forward: { type: 'integer', default: 6 }, currency_out: CURRENCY_OUT },
     ['subscription'],
@@ -222,6 +222,8 @@ export const get_subscription: Tool = {
         base_amount: fin(transferValue(st, tr, out ?? st.settings.baseCurrency)),
         note: tr.note ?? null,
       })),
+      // 业务数据（自定义指标与按期记录）；readings 只列 months_back 以内，累计与最近一期按全部记录
+      meters: metersOut(s, today, from),
       // 生命周期净成本 = 服务付款 + 买入 − 卖出；持有期从最早买入（早于开始时）到最后一次卖出
       net_cost: (() => {
         const c = netCost(st, s, today, out ?? st.settings.baseCurrency);
