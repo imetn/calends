@@ -1304,3 +1304,21 @@ test('登录页隐藏的固定账号字段不继承输入框内边距，裁切�
   const rule = allCss.match(/\.login-card input\.login-account\s*\{([^}]*)\}/)?.[1] ?? '';
   for (const decl of ['width: 1px', 'height: 1px', 'padding: 0', 'clip-path: inset(50%)']) assert.ok(rule.includes(decl), decl);
 });
+
+/** 某个选择器（含 @media 内）的全部声明，按出现顺序拼在一起 */
+const rulesFor = (selector) => {
+  const out = [];
+  const walk = (rules) => {
+    for (const [sel, body] of rules) {
+      if (sel.startsWith('@media')) walk(cssRules(body));
+      else if (sel.split(',').some((s) => s.trim() === selector)) out.push(body);
+    }
+  };
+  walk(cssRules(allCss));
+  return out.join('\n');
+};
+
+test('手机底栏当前项只换文字与图标颜色，不画灰色底', () => {
+  for (const sel of ['.tab.on', '.dock-more.on']) assert.doesNotMatch(rulesFor(sel), /background/, sel);
+  for (const sel of ['.dock-more.on::after', '.dock.open .dock-more::after']) assert.equal(rulesFor(sel), '', sel);
+});

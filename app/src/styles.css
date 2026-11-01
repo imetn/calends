@@ -10498,8 +10498,8 @@ button.name-edit:focus-visible {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* 当前项只换文字与图标颜色、加粗，不加底色 */
   .tab.on {
-    background: color-mix(in srgb, var(--label) 8%, transparent);
     color: var(--label);
     font-weight: 600;
   }
@@ -10529,16 +10529,6 @@ button.name-edit:focus-visible {
   /* 当前页不在胶囊里时，「更多」带当前态 */
   .dock-more.on {
     color: var(--label);
-  }
-  .dock-more.on::after {
-    content: '';
-    position: absolute;
-    inset: 4px;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--label) 8%, transparent);
-  }
-  .dock.open .dock-more::after {
-    opacity: 0;
   }
   .dock-more:active {
     transform: scale(0.92);
