@@ -220,10 +220,10 @@
     "period": "{from}–{to}"
   },
   "meters": {
-    "title": "Business data",
-    "add": "Add business data",
+    "title": "Usage details",
+    "add": "Add usage data",
     "manage": "Meters",
-    "manageTitle": "Business data meters",
+    "manageTitle": "Usage data meters",
     "addTitle": "Record values",
     "editTitle": "Edit record",
     "name": "Name",
@@ -239,7 +239,7 @@
     "removeConfirm": "Deleting {names} also clears their recorded values. Continue?",
     "dupName": "Meter names must be unique",
     "valuesFoot": "Unit price = actual cost for the period ÷ usage. Postpaid bills count toward the period they settle.",
-    "saved": "Business data saved",
+    "saved": "Usage data saved",
     "readingValue": "Reading {v}",
     "head": {
       "date": "Date",
@@ -258,6 +258,6 @@
     "periods": "{n} periods",
     "latestPrice": "Latest {v}",
     "since": "Since {date}",
-    "tipCost": "Cost {v}"
+    "cost": "Cost"
   }
 }

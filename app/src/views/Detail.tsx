@@ -30,7 +30,7 @@ import { TONE } from './detail/shared.tsx';
 import { Transfers } from './detail/Ledgers.tsx';
 import { regular } from './detail/shared.tsx';
 import { Kpis } from './detail/Kpis.tsx';
-import { Timeline } from './detail/ChargeTimeline.tsx';
+import { Timeline, timelineAxis, type Range } from './detail/ChargeTimeline.tsx';
 import { Events } from './detail/Events.tsx';
 import { Summary } from './detail/Summary.tsx';
 import { Notices } from './detail/Notices.tsx';
@@ -134,6 +134,9 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   // 买断，或刚开始的长周期订阅（一段、不合租，不到两笔扣款画不出走势，也没有未来扣款图）：
   // 主栏只剩指标卡，换成窄的单列，不留半屏空白
   const compact = phaseSubs(sub).length === 1 && !sub.share && (sub.cycle.unit === 'lifetime' || (!showForecast && regular(history).length < 2));
+  // 费用图与用量图共用一个范围和横轴；换订阅时回到默认范围
+  const [rangePick, setRangePick] = useState<{ id: string; range: Range }>();
+  const axis = timelineAxis(sub, today, history, rangePick?.id === sub.id ? rangePick.range : undefined);
   const charges = (
     <Charges
       sub={sub}
@@ -226,13 +229,18 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
         <Kpis sub={sub} state={state} today={today} history={history} />
         {/* 指标下面：本期进度与属性（不加标题），然后是扣款走势、提醒和记录 */}
         <Summary key={sub.id} sub={sub} state={state} today={today} />
-        {!compact && <Timeline sub={sub} state={state} today={today} history={history} />}
+        {!compact && (
+          <Timeline sub={sub} state={state} today={today} history={history} range={axis.range} onRange={(range) => setRangePick({ id: sub.id, range })} />
+        )}
+        {/* 用量紧跟费用走势：横轴日期对齐，切换范围两张图一起变 */}
+        {!!sub.meters?.length && <Meters key={`m${sub.id}`} sub={sub} state={state} today={today} axis={!compact && axis.drawn ? axis : undefined} />}
         <Notices sub={sub} state={state} today={today} />
         {/* 合租比扣款记录重要，放在前面 */}
         <ShareCard sub={sub} state={state} today={today} onCar={() => setCar(true)} onMember={(m) => setMember({ m })} />
         {charges}
         <Transfers sub={sub} state={state} onRow={(index) => setTransfer({ index })} onAdd={() => setTransfer({})} />
-        <Meters key={`m${sub.id}`} sub={sub} state={state} today={today} />
+        {/* 还没有指标时只有一个添加入口，放在记录后面不抢走势的位置 */}
+        {!sub.meters?.length && <Meters key={`m${sub.id}`} sub={sub} state={state} today={today} />}
         {events}
         <NoteBlock sub={sub} />
       </div>

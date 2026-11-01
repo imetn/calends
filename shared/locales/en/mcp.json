@@ -122,7 +122,7 @@
     "set_proxy": "Manage proxy relationship",
     "save_subscription": "Save full subscription",
     "record_transfer": "Record or edit transfers",
-    "set_meters": "Define business data meters",
-    "add_readings": "Record business data"
+    "set_meters": "Define usage data meters",
+    "add_readings": "Record usage data"
   }
 }

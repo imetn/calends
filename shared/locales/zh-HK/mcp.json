@@ -81,8 +81,8 @@
     "invalidIcon": "圖示「{value}」無效：請使用 http(s) 圖片網址、站內路徑（如 /ai/claude.svg），或一個 emoji／簡短符號。",
     "badMonth": "月份格式應為 YYYY-MM：{month}",
     "meterNotFound": "沒有符合「{q}」的指標。現有指標：{list}",
-    "readingNotFound": "沒有 id 為「{q}」的業務數據紀錄",
-    "noMeters": "這個訂閱還沒有業務數據指標，請先用 set_meters 定義"
+    "readingNotFound": "沒有 id 為「{q}」的用量紀錄",
+    "noMeters": "這個訂閱還沒有用量指標，請先用 set_meters 定義"
   },
   "tool": {
     "get_overview": "帳本概況",
@@ -119,7 +119,7 @@
     "set_proxy": "管理代付關係",
     "save_subscription": "完整儲存訂閱",
     "record_transfer": "記錄或修改轉讓收付",
-    "set_meters": "設定業務數據指標",
-    "add_readings": "記錄業務數據"
+    "set_meters": "設定用量指標",
+    "add_readings": "記錄用量"
   }
 }

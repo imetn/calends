@@ -205,11 +205,11 @@
     "period": "{from}~{to}"
   },
   "meters": {
-    "title": "업무 데이터",
-    "add": "업무 데이터 추가",
+    "title": "사용량 상세",
+    "add": "사용량 추가",
     "manage": "지표",
-    "manageTitle": "업무 데이터 지표",
-    "addTitle": "업무 데이터 기록",
+    "manageTitle": "사용량 지표",
+    "addTitle": "사용량 기록",
     "editTitle": "기록 수정",
     "name": "이름",
     "unit": "단위",
@@ -224,7 +224,7 @@
     "removeConfirm": "{names}을(를) 삭제하면 기록된 값도 함께 지워집니다. 계속할까요?",
     "dupName": "지표 이름은 중복될 수 없습니다",
     "valuesFoot": "단가 = 해당 기간 실제 비용 ÷ 사용량. 후불 청구서는 정산하는 기간에 반영됩니다.",
-    "saved": "업무 데이터를 저장했습니다",
+    "saved": "사용량를 저장했습니다",
     "readingValue": "계량값 {v}",
     "head": {
       "date": "날짜",
@@ -243,6 +243,6 @@
     "periods": "{n}기",
     "latestPrice": "최근 {v}",
     "since": "{date}부터",
-    "tipCost": "비용 {v}"
+    "cost": "비용"
   }
 }

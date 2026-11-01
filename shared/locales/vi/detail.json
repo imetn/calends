@@ -205,7 +205,7 @@
     "period": "{from}–{to}"
   },
   "meters": {
-    "title": "Dữ liệu sử dụng",
+    "title": "Chi tiết sử dụng",
     "add": "Thêm dữ liệu sử dụng",
     "manage": "Chỉ số",
     "manageTitle": "Chỉ số dữ liệu sử dụng",
@@ -243,6 +243,6 @@
     "periods": "{n} kỳ",
     "latestPrice": "Gần nhất {v}",
     "since": "Từ {date}",
-    "tipCost": "Chi phí {v}"
+    "cost": "Chi phí"
   }
 }

@@ -81,8 +81,8 @@
     "invalidIcon": "图标“{value}”无效：请使用 http(s) 图片网址、站内路径（如 /ai/claude.svg），或一个 emoji / 简短符号。",
     "badMonth": "月份格式应为 YYYY-MM：{month}",
     "meterNotFound": "没有匹配“{q}”的指标。现有指标：{list}",
-    "readingNotFound": "没有 id 为“{q}”的业务数据记录",
-    "noMeters": "这个订阅还没有业务数据指标，先用 set_meters 定义"
+    "readingNotFound": "没有 id 为“{q}”的用量记录",
+    "noMeters": "这个订阅还没有用量指标，先用 set_meters 定义"
   },
   "tool": {
     "get_overview": "账本概况",
@@ -119,7 +119,7 @@
     "set_proxy": "管理代付关系",
     "save_subscription": "完整保存订阅",
     "record_transfer": "记录或修改转让收付",
-    "set_meters": "设置业务数据指标",
-    "add_readings": "记录业务数据"
+    "set_meters": "设置用量指标",
+    "add_readings": "记录用量"
   }
 }

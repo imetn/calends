@@ -193,11 +193,11 @@
     "period": "{from}–{to}"
   },
   "meters": {
-    "title": "業務數據",
-    "add": "新增業務數據",
+    "title": "用量詳情",
+    "add": "新增用量",
     "manage": "指標",
-    "manageTitle": "業務數據指標",
-    "addTitle": "記錄業務數據",
+    "manageTitle": "用量指標",
+    "addTitle": "記錄用量",
     "editTitle": "修改紀錄",
     "name": "名稱",
     "unit": "單位",
@@ -212,7 +212,7 @@
     "removeConfirm": "刪除{names}會一併清除它們的歷史數值，確定嗎？",
     "dupName": "指標名稱不能重複",
     "valuesFoot": "單價 = 這一期的實際費用 ÷ 本期用量；後付費的帳單按它結清的帳期計入。",
-    "saved": "業務數據已儲存",
+    "saved": "用量已儲存",
     "readingValue": "讀數 {v}",
     "head": {
       "date": "日期",
@@ -231,6 +231,6 @@
     "periods": "{n} 期",
     "latestPrice": "最近 {v}",
     "since": "自 {date}",
-    "tipCost": "費用 {v}"
+    "cost": "費用"
   }
 }

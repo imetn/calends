@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Settings2 } from 'lucide-react';
 import { uid } from '../../../../shared/billing.ts';
-import { cnDateFull, money, monthLabel } from '../../../../shared/format.ts';
+import { cnDateFull, money, monthLabel, weekdayOf } from '../../../../shared/format.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
 import { numberFormat } from '../../../../shared/intl.ts';
 import { meterStats, meterSuggestions, meterSummary, replaceMeters, type MeterRow } from '../../../../shared/meters.ts';
@@ -13,6 +13,7 @@ import { Panel } from '../../components/DetailKit.tsx';
 import { Picker } from '../../components/Picker.tsx';
 import { YearLedger } from '../../components/YearLedger.tsx';
 import { BarLine } from '../../components/charts.tsx';
+import { ChargeBars } from '../DetailChart.tsx';
 import { NumInput, Seg, useSubmit } from '../../components/inputs.tsx';
 import { ask, Sheet } from '../../components/overlays.tsx';
 import { Cell, Group, Metric, MetricCards } from '../../components/ui.tsx';
@@ -38,7 +39,8 @@ const priceText = (r: MeterRow, unit: string) => unitMoney(r.unitPrice!, r.cost!
  * 没有指标时只留一个轻入口；有指标时每个指标一张卡（最近一期用量、累计、最近单价），下面是选中指标的记录表，点一行修改。
  * 只读（公开页、演示）不显示任何编辑入口
  */
-export function Meters({ sub, state, today }: { sub: Subscription; state: AppState; today: string }) {
+/** axis：与费用走势共用的日期横轴与范围；没有费用图时按自己的记录画 */
+export function Meters({ sub, state, today, axis }: { sub: Subscription; state: AppState; today: string; axis?: { from: string; to: string; since: string } }) {
   const ro = !!state.readonly;
   const meters = sub.meters ?? [];
   const [manage, setManage] = useState(false);
@@ -92,7 +94,40 @@ export function Meters({ sub, state, today }: { sub: Subscription; state: AppSta
   const summary = meterSummary(sub, cur, today);
   const stats = meterStats(summary.rows);
   const latest = summary.latest;
-  const trend = summary.rows.filter((r) => r.usage != null).slice(-24);
+  const used = summary.rows.filter((r) => r.usage != null);
+  const trend = axis ? used.filter((r) => r.reading.date >= axis.since && r.reading.date >= axis.from && r.reading.date <= axis.to) : used.slice(-24);
+  // 提示框与费用走势同一套样式：标题行日期，逐行列用量、费用、单价；平均每期已在指标卡里，不再重复
+  const tipOf = (i: number) => {
+    const r = trend[i];
+    return (
+      <>
+        <div className="cc-tip-h">
+          <b>{cnDateFull(r.reading.date)}</b>
+          <span>{weekdayOf(r.reading.date)}</span>
+        </div>
+        <div className="cc-tip-r">
+          <i className="k-v" />
+          <span>{t('detail.meters.head.usage')}</span>
+          <b>{withUnit(r.usage!, cur.unit)}</b>
+        </div>
+        {r.cost && (
+          <div className="cc-tip-r">
+            <i />
+            <span>{t('detail.meters.cost')}</span>
+            <b className="m">{money(r.cost.amount, r.cost.currency)}</b>
+          </div>
+        )}
+        {r.unitPrice != null && (
+          <div className="cc-tip-r">
+            <i />
+            <span>{t('detail.meters.head.price')}</span>
+            <b className="m">{priceText(r, cur.unit)}</b>
+          </div>
+        )}
+        {r.reading.note && <div className="cc-tip-f">{r.reading.note}</div>}
+      </>
+    );
+  };
   const rows = summary.rows.slice().reverse();
   const isReading = cur.kind === 'reading';
   return (
@@ -144,35 +179,51 @@ export function Meters({ sub, state, today }: { sub: Subscription; state: AppSta
             note={summary.from && t('detail.meters.since', { date: cnDateFull(summary.from) })}
           />
         </MetricCards>
-        {/* 走势：最近 24 期的本期用量，横线是平均每期 */}
-        {trend.length > 1 && (
-          <BarLine
-            bars={trend.map((r) => r.usage!)}
-            line={trend.map(() => stats.average ?? 0)}
-            future={trend.map(() => false)}
-            labels={trend.map((r) => monthLabel(r.reading.date.slice(0, 7), { year: false }))}
-            fmt={(v) => compactQty(v)}
-            tip={(i) => (
-              <>
-                <b>{cnDateFull(trend[i].reading.date)}</b>
-                <br />
-                {withUnit(trend[i].usage!, cur.unit)}
-                {trend[i].cost && (
+        {/* 走势：横线是平均每期。有费用图时与它同一条日期横轴、同一个范围；否则画最近 24 期 */}
+        {trend.length > 1 &&
+          (axis ? (
+            <ChargeBars
+              bars={trend.map((r) => ({ date: r.reading.date, v: r.usage!, list: stats.average }))}
+              from={axis.from}
+              to={axis.to}
+              today={today}
+              todayLabel={t('calendar.today')}
+              fmt={compactQty}
+              lanes={[]}
+              tip={(idx, summed) =>
+                summed && idx.length > 1 ? (
                   <>
-                    <br />
-                    {t('detail.meters.tipCost', { v: money(trend[i].cost!.amount, trend[i].cost!.currency) })}
+                    <div className="cc-tip-h">
+                      <b>
+                        {cnDateFull(trend[idx[0]].reading.date)} – {cnDateFull(trend[idx[idx.length - 1]].reading.date)}
+                      </b>
+                    </div>
+                    <div className="cc-tip-r">
+                      <i className="k-v" />
+                      <span>{t('detail.meters.periods', { n: idx.length })}</span>
+                      <b>
+                        {withUnit(
+                          idx.reduce((a, i) => a + trend[i].usage!, 0),
+                          cur.unit,
+                        )}
+                      </b>
+                    </div>
                   </>
-                )}
-                {trend[i].unitPrice != null && (
-                  <>
-                    <br />
-                    {priceText(trend[i], cur.unit)}
-                  </>
-                )}
-              </>
-            )}
-          />
-        )}
+                ) : (
+                  tipOf(idx[0])
+                )
+              }
+            />
+          ) : (
+            <BarLine
+              bars={trend.map((r) => r.usage!)}
+              line={trend.map(() => stats.average ?? 0)}
+              future={trend.map(() => false)}
+              labels={trend.map((r) => monthLabel(r.reading.date.slice(0, 7), { year: false }))}
+              fmt={(v) => compactQty(v)}
+              tip={tipOf}
+            />
+          ))}
       </div>
       <YearLedger
         items={rows}

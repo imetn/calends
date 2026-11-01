@@ -81,7 +81,7 @@
     "invalidIcon": "アイコン「{value}」は無効です。http(s) の画像 URL、サイト内パス（例：/ai/claude.svg）、または絵文字・短い記号 1 つを指定してください。",
     "badMonth": "月は YYYY-MM 形式で指定してください：{month}",
     "meterNotFound": "「{q}」に一致する指標がありません。指標：{list}",
-    "readingNotFound": "id「{q}」の業務データ記録はありません",
+    "readingNotFound": "id「{q}」の使用量記録はありません",
     "noMeters": "このサブスクにはまだ指標がありません。先に set_meters で定義してください"
   },
   "tool": {
@@ -119,7 +119,7 @@
     "set_proxy": "立替関係を管理",
     "save_subscription": "サブスクを丸ごと保存",
     "record_transfer": "譲渡を記録・編集",
-    "set_meters": "業務データの指標を設定",
-    "add_readings": "業務データを記録"
+    "set_meters": "使用量の指標を設定",
+    "add_readings": "使用量を記録"
   }
 }

@@ -205,11 +205,11 @@
     "period": "{from}〜{to}"
   },
   "meters": {
-    "title": "業務データ",
-    "add": "業務データを追加",
+    "title": "使用量の詳細",
+    "add": "使用量を追加",
     "manage": "指標",
-    "manageTitle": "業務データの指標",
-    "addTitle": "業務データを記録",
+    "manageTitle": "使用量の指標",
+    "addTitle": "使用量を記録",
     "editTitle": "記録を編集",
     "name": "名前",
     "unit": "単位",
@@ -224,7 +224,7 @@
     "removeConfirm": "{names}を削除すると記録済みの値も消去されます。続けますか？",
     "dupName": "指標名は重複できません",
     "valuesFoot": "単価 = その期の実費 ÷ 使用量。後払いの請求は精算対象の期に計上します。",
-    "saved": "業務データを保存しました",
+    "saved": "使用量を保存しました",
     "readingValue": "読み値 {v}",
     "head": {
       "date": "日付",
@@ -243,6 +243,6 @@
     "periods": "{n} 期",
     "latestPrice": "最新 {v}",
     "since": "{date} から",
-    "tipCost": "費用 {v}"
+    "cost": "費用"
   }
 }

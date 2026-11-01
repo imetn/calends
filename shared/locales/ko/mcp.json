@@ -81,7 +81,7 @@
     "invalidIcon": "아이콘 “{value}”이(가) 올바르지 않습니다. http(s) 이미지 URL, 사이트 경로(예: /ai/claude.svg) 또는 이모지 또는 짧은 기호 하나를 사용하세요.",
     "badMonth": "월은 YYYY-MM 형식이어야 합니다: {month}",
     "meterNotFound": "“{q}”와 일치하는 지표가 없습니다. 지표: {list}",
-    "readingNotFound": "id가 “{q}”인 업무 데이터 기록이 없습니다",
+    "readingNotFound": "id가 “{q}”인 사용량 기록이 없습니다",
     "noMeters": "이 구독에는 아직 지표가 없습니다. 먼저 set_meters로 정의하세요"
   },
   "tool": {
@@ -119,7 +119,7 @@
     "set_proxy": "대납 관계 관리",
     "save_subscription": "구독 전체 저장",
     "record_transfer": "양도 기록 또는 수정",
-    "set_meters": "업무 데이터 지표 설정",
-    "add_readings": "업무 데이터 기록"
+    "set_meters": "사용량 지표 설정",
+    "add_readings": "사용량 기록"
   }
 }

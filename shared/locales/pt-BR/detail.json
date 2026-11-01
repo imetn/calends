@@ -220,7 +220,7 @@
     "period": "{from}–{to}"
   },
   "meters": {
-    "title": "Dados de uso",
+    "title": "Detalhes de uso",
     "add": "Adicionar dados de uso",
     "manage": "Medidores",
     "manageTitle": "Medidores de dados de uso",
@@ -258,6 +258,6 @@
     "periods": "{n} períodos",
     "latestPrice": "Último {v}",
     "since": "Desde {date}",
-    "tipCost": "Custo {v}"
+    "cost": "Custo"
   }
 }

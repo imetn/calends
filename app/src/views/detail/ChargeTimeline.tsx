@@ -21,6 +21,7 @@ import { flow, cnDate, cnDateFull, money, weekdayOf } from '../../../../shared/f
 import { chargeBaseOrNaN, chargeValue, convertOn, rateOn } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 import { Seg } from '../../components/inputs.tsx';
+import { PayBadge } from '../../components/marks.tsx';
 import { t } from '../../../../shared/i18n.ts';
 import { ChargeBars, type ChartLane } from '../DetailChart.tsx';
 import { detailForecast, detailHistoryEnd } from '../detail-data.ts';
@@ -33,24 +34,10 @@ import { regular } from './shared.tsx';
 export type Range = 'all' | '1y' | '6m';
 
 /**
- * 扣款时间轴：今天之前是每笔实际扣款，之后是预测，中间一条「今天」虚线。
+ * 费用走势的时间范围与横轴：详情页据此同时驱动费用图和用量图，两张图日期对齐、范围同步。
  * 预测长度按周期：月付及更短看半年，更长的看一个周期（至少半年、至多两年）。
- * 下次扣款的日期与金额在顶部四格；已结束、暂停按实际边界截断，未知结束日仅显示已知付款范围。
  */
-export function Timeline({
-  sub,
-  state,
-  today,
-  history,
-  snapshotSelection,
-}: {
-  sub: Subscription;
-  state: AppState;
-  today: string;
-  history: Charge[];
-  snapshotSelection?: { range: Range; unit: 'base' | 'orig' };
-}) {
-  const base = state.settings.baseCurrency;
+export function timelineAxis(sub: Subscription, today: string, history: Charge[], picked?: Range) {
   const st = effectiveStatus(sub, today);
   const cur = currentPhase(sub, today);
   const reg = regular(history);
@@ -77,9 +64,61 @@ export function Timeline({
       .map(([k, l]) => [k, l] as [Range, string]),
   ];
   // 月付及更短默认看最近一年，柱子不至于挤成一片；更长的周期默认看全部
-  const [range, setRange] = useState<Range>(() => snapshotSelection?.range ?? (days <= 31 && ranges.some(([k]) => k === '1y') ? '1y' : 'all'));
+  const fallback: Range = days <= 31 && ranges.some(([k]) => k === '1y') ? '1y' : 'all';
+  const range = picked && ranges.some(([k]) => k === picked) ? picked : fallback;
   const since = range === 'all' ? '' : addMonths(anchor, range === '1y' ? -12 : -6);
   const past = reg.filter((c) => c.date >= since);
+  // Preserve late payments after a known service end without extending the service lane.
+  const firstDate = (past[0] ?? future[0])?.date ?? anchor;
+  const lastDate = (future[future.length - 1] ?? past[past.length - 1])?.date ?? anchor;
+  const first = firstDate < anchor ? firstDate : anchor;
+  const lastBar = lastDate > anchor ? lastDate : anchor;
+  const pad = Math.max(4, Math.round(diffDays(first, lastBar) * 0.03));
+  return {
+    cur,
+    reg,
+    live,
+    end,
+    anchor,
+    future,
+    ranges,
+    range,
+    since,
+    past,
+    from: addDays(first, -pad),
+    to: addDays(lastBar, pad),
+    /** 画得出来：费用图至少两根柱 */
+    drawn: past.length + future.length >= 2,
+  };
+}
+
+/**
+ * 扣款时间轴：今天之前是每笔实际扣款，之后是预测，中间一条「今天」虚线。
+ * 下次扣款的日期与金额在顶部四格；已结束、暂停按实际边界截断，未知结束日仅显示已知付款范围。
+ * 范围可由详情页传入（与用量图同步），不传时自己记。
+ */
+export function Timeline({
+  sub,
+  state,
+  today,
+  history,
+  range: rangeProp,
+  onRange,
+  snapshotSelection,
+}: {
+  sub: Subscription;
+  state: AppState;
+  today: string;
+  history: Charge[];
+  range?: Range;
+  onRange?: (r: Range) => void;
+  snapshotSelection?: { range: Range; unit: 'base' | 'orig' };
+}) {
+  const base = state.settings.baseCurrency;
+  const [ownRange, setOwnRange] = useState<Range | undefined>(() => snapshotSelection?.range);
+  const ax = timelineAxis(sub, today, history, snapshotSelection?.range ?? rangeProp ?? ownRange);
+  const { reg, live, end, anchor, future, ranges, range, past, from, to } = ax;
+  const setRange = (r: Range) => (onRange ? onRange(r) : setOwnRange(r));
   // 单位：记账货币，或（所有扣款同一种外币时）原币；原币下卡上另币种结算的那笔没有原币实扣，按标价画
   const ccys = [...new Set([...reg, ...future].map((c) => c.currency))];
   const origCcy = ccys.length === 1 && ccys[0] !== base ? ccys[0] : undefined;
@@ -117,12 +156,6 @@ export function Timeline({
   const rows = showList ? each : each.map((r) => ({ ...r, list: undefined }));
   if (rows.length < 2) return null;
 
-  // Preserve late payments after a known service end without extending the service lane.
-  const first = rows[0].date < anchor ? rows[0].date : anchor;
-  const lastBar = rows[rows.length - 1].date > anchor ? rows[rows.length - 1].date : anchor;
-  const pad = Math.max(4, Math.round(diffDays(first, lastBar) * 0.03));
-  const from = addDays(first, -pad);
-  const to = addDays(lastBar, pad);
   const fmt = (v: number) => money(v, ccy, { compact: true });
   const lanesSrc = phaseSubs(sub);
   const laneIdx = phaseLanes(lanesSrc);
@@ -268,7 +301,7 @@ export function Timeline({
                 </div>
               )}
               <div className="cc-tip-f">
-                {m?.name ?? t('ui.method.none')}
+                <PayBadge m={m} />
                 {copyParts(
                   !r.future &&
                     ccy === base &&

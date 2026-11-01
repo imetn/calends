@@ -511,6 +511,7 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     Plus: empty,
     Share: empty,
     Timeline: empty,
+    timelineAxis: () => ({ range: 'all', drawn: false }),
     PeriodBar: empty,
     Charges: empty,
     Transfers: empty,

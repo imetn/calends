@@ -211,7 +211,7 @@
     "period": "{from}–{to}"
   },
   "meters": {
-    "title": "Kullanım verileri",
+    "title": "Kullanım ayrıntıları",
     "add": "Kullanım verisi ekle",
     "manage": "Ölçütler",
     "manageTitle": "Kullanım verisi ölçütleri",
@@ -249,6 +249,6 @@
     "periods": "{n} dönem",
     "latestPrice": "Son {v}",
     "since": "{date} itibarıyla",
-    "tipCost": "Maliyet {v}"
+    "cost": "Maliyet"
   }
 }

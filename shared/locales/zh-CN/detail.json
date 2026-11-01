@@ -193,11 +193,11 @@
     "period": "{from}–{to}"
   },
   "meters": {
-    "title": "业务数据",
-    "add": "添加业务数据",
+    "title": "用量详情",
+    "add": "添加用量",
     "manage": "指标",
-    "manageTitle": "业务数据指标",
-    "addTitle": "记录业务数据",
+    "manageTitle": "用量指标",
+    "addTitle": "记录用量",
     "editTitle": "修改记录",
     "name": "名称",
     "unit": "单位",
@@ -212,7 +212,7 @@
     "removeConfirm": "删除{names}会一并清除它们的历史数值，确定吗？",
     "dupName": "指标名称不能重复",
     "valuesFoot": "单价 = 这一期的实际费用 ÷ 本期用量；后付费的账单按它结清的账期计入。",
-    "saved": "业务数据已保存",
+    "saved": "用量已保存",
     "readingValue": "读数 {v}",
     "head": {
       "date": "日期",
@@ -231,6 +231,6 @@
     "periods": "{n} 期",
     "latestPrice": "最近 {v}",
     "since": "自 {date}",
-    "tipCost": "费用 {v}"
+    "cost": "费用"
   }
 }

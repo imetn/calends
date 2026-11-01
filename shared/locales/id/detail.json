@@ -205,7 +205,7 @@
     "period": "{from}–{to}"
   },
   "meters": {
-    "title": "Data penggunaan",
+    "title": "Rincian penggunaan",
     "add": "Tambah data penggunaan",
     "manage": "Meteran",
     "manageTitle": "Meteran data penggunaan",
@@ -243,6 +243,6 @@
     "periods": "{n} periode",
     "latestPrice": "Terakhir {v}",
     "since": "Sejak {date}",
-    "tipCost": "Biaya {v}"
+    "cost": "Biaya"
   }
 }

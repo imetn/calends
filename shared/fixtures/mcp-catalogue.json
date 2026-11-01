@@ -3303,7 +3303,7 @@
     },
     {
       "name": "set_meters",
-      "title": "Define business data meters",
+      "title": "Define usage data meters",
       "description": "Define custom business meters on a subscription (anything the user tracks per period: electricity of a utility bill, car mileage, server egress traffic, calls…). Names and units are free text; nothing is built in. Each item in meters updates the meter with that id (or the same name, case-insensitive) or creates a new one; omitted fields keep their values. remove = meter ids to delete — their values are cleared from every reading and readings left empty are deleted (subscription must then be an id or exact name). Record values with add_readings; get_subscription.meters returns per-period usage, totals and unit price (period charges ÷ usage).",
       "inputSchema": {
         "type": "object",
@@ -3365,7 +3365,7 @@
     },
     {
       "name": "add_readings",
-      "title": "Record business data",
+      "title": "Record usage data",
       "description": "Record custom meter values on a subscription in bulk (e.g. import dozens of electricity bills at once). Each reading has a date (billing period / record day), values = {meter id or exact meter name: number} (only some meters may be filled) and an optional note. A reading with an existing id, or else on a date that already has a reading, is merged: given values overwrite, null removes that value, note replaces (null clears); otherwise a new reading is added. Readings left without values are deleted. delete = reading ids to remove. Define meters first with set_meters. Values are stored apart from payments; get_subscription.meters derives usage (cumulative readings: this − previous, none on rollback), totals and unit price (actual charges in the period after the previous reading up to this one ÷ usage).",
       "inputSchema": {
         "type": "object",
