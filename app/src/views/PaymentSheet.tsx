@@ -1,7 +1,7 @@
 import { ConfirmButton } from '../components/ConfirmButton.tsx';
 import { useState } from 'react';
 import { activePhases, addDays, chargeServicePeriod, chargesBetween, currentPhase, cycleLabel, phaseSubs, uid } from '../../../shared/billing.ts';
-import { cnDate, currencyDecimals, money } from '../../../shared/format.ts';
+import { cnDateAuto, currencyDecimals, money } from '../../../shared/format.ts';
 import { settlementCurrencyOf } from '../../../shared/fx.ts';
 import { t } from '../../../shared/i18n.ts';
 import { meterRows, periodReading, periodReadingCount, setPeriodValues, usageWithin } from '../../../shared/meters.ts';
@@ -268,7 +268,7 @@ export function PaymentSheet({
         {period && (
           <Group
             title={t('detail.meters.head.usage')}
-            foot={t('editor.payment.usageFoot', { period: `${cnDate(period.from)} – ${cnDate(addDays(period.until, -1))}` })}
+            foot={t('editor.payment.usageFoot', { period: `${cnDateAuto(period.from, today)} – ${cnDateAuto(addDays(period.until, -1), today)}` })}
           >
             {meters.map((m) => (
               <Cell key={m.id} label={m.name} sub={m.kind === 'reading' ? t('detail.meters.reading') : undefined}>

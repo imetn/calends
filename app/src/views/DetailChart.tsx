@@ -68,7 +68,8 @@ export function ChargeBars({
   to: string;
   today: string;
   todayLabel: string;
-  fmt: (v: number) => string;
+  /** 刻度标签；第二个参数是轴顶，同一根轴的写法（如要不要用万）按它统一定 */
+  fmt: (v: number, top: number) => string;
   lanes: ChartLane[];
   tip: (indices: number[], summed: boolean) => ReactNode;
   /** 柱子太密改为按月（1）、季（3）、年（12）汇总时，告诉调用方写一句说明 */
@@ -198,7 +199,7 @@ export function ChargeBars({
               <g key={v}>
                 <line className="cc-grid" x1={PAD_L} x2={w - PAD_R} y1={y(v)} y2={y(v)} />
                 <text className="cc-tk" x={PAD_L - 8} y={y(v) + 3.5} textAnchor="end">
-                  {fmt(v)}
+                  {fmt(v, top)}
                 </text>
               </g>
             ))}

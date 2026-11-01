@@ -87,9 +87,10 @@ export function timelineAxis(sub: Subscription, today: string, history: Charge[]
   const since = range === 'all' ? '' : addMonths(anchor, range === '1y' ? -12 : -6);
   const past = reg.filter((c) => chargeDay(c) >= since);
   // Preserve late payments after a known service end without extending the service lane.
-  const dayOf = (c: Charge | undefined) => (c ? barDay(c, today) : anchor);
-  const firstDate = dayOf(past[0] ?? future[0]);
-  const lastDate = dayOf(future[future.length - 1] ?? past[past.length - 1]);
+  // 按柱子位置取首末：补交的旧账单扣款日晚，柱子却画在更早的所属周期，不能按扣款顺序取
+  const barDays = [...past, ...future].map((c) => barDay(c, today)).sort();
+  const firstDate = barDays[0] ?? anchor;
+  const lastDate = barDays[barDays.length - 1] ?? anchor;
   const first = firstDate < anchor ? firstDate : anchor;
   const lastBar = lastDate > anchor ? lastDate : anchor;
   const pad = Math.max(4, Math.round(diffDays(first, lastBar) * 0.03));

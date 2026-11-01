@@ -23,9 +23,9 @@ import { run } from '../../toast.ts';
 
 /** 平均值是算出来的，按量级留小数：307.2 度、3.47 GB */
 const avgQty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: Math.abs(n) >= 100 ? 1 : 2 }).format(n);
-/** 柱顶标数：过千用紧凑写法，免得挤 */
-const compactQty = (n: number) =>
-  numberFormat(intlLocale(), { notation: n >= 10000 ? 'compact' : 'standard', maximumFractionDigits: n >= 100 ? 0 : 1 }).format(n);
+/** 刻度标数：轴顶过十万才用紧凑写法（2.5万、1.2亿），同一根轴写法一致，不会出现 5,000 与 1万 混排、两个 2万 */
+const compactQty = (n: number, top = n) =>
+  numberFormat(intlLocale(), top >= 100000 ? { notation: 'compact', maximumFractionDigits: 1 } : { maximumFractionDigits: top >= 100 ? 0 : top >= 10 ? 1 : 2 }).format(n);
 const priceText = (r: MeterRow, unit: string) => unitMoney(r.unitPrice!, r.cost!.currency, unit);
 
 /**
@@ -40,7 +40,16 @@ export function usageMetrics(sub: Subscription, cur: Meter, today: string) {
     <Metric
       key="latest"
       // 多个指标时写明是哪一个（切换在下方用量卡里）
-      label={(sub.meters?.length ?? 0) > 1 ? t('detail.meters.latestOf', { name: cur.name }) : t('detail.meters.latest')}
+      label={
+        (sub.meters?.length ?? 0) > 1 ? (
+          // 指标名很长时截成一行，不把这一格撑高；全名在悬停提示和下方用量卡的切换里
+          <span className="metric-clip" title={t('detail.meters.latestOf', { name: cur.name })}>
+            {t('detail.meters.latestOf', { name: cur.name })}
+          </span>
+        ) : (
+          t('detail.meters.latest')
+        )
+      }
       value={latest?.usage != null ? withUnit(latest.usage, cur.unit) : '—'}
       note={latest && (isReading ? t('detail.meters.readingValue', { v: withUnit(latest.value, cur.unit) }) : cnDateFull(latest.reading.date))}
     />,
@@ -145,7 +154,9 @@ export function Meters({
   const stats = meterStats(summary.rows);
   const base = state.settings.baseCurrency;
   const used = summary.rows.filter((r) => r.usage != null);
-  const trend = axis ? used.filter((r) => r.reading.date >= axis.since && r.reading.date >= axis.from && r.reading.date <= axis.to) : used.slice(-24);
+  // 用量柱画在它那一期 (since, date] 的中间，与后付费的费用柱同一位置；按画的位置筛进横轴范围，免得首根柱压在纵轴刻度上
+  const barDate = (r: MeterRow) => (r.since ? midDay(addDays(r.since, 1), r.reading.date) : r.reading.date);
+  const trend = axis ? used.filter((r) => r.reading.date >= axis.since && barDate(r) >= axis.from && r.reading.date <= axis.to) : used.slice(-24);
   // 提示框与费用走势同一套样式：标题行日期，逐行列用量、费用、单价；平均每期已在指标卡里，不再重复
   const tipOf = (i: number) => {
     const r = trend[i];
@@ -207,8 +218,7 @@ export function Meters({
         {trend.length > 1 &&
           (axis ? (
             <ChargeBars
-              // 用量柱画在它那一期 (since, date] 的中间，与后付费的费用柱同一位置
-              bars={trend.map((r) => ({ date: r.since ? midDay(addDays(r.since, 1), r.reading.date) : r.reading.date, v: r.usage!, ref: stats.average }))}
+              bars={trend.map((r) => ({ date: barDate(r), v: r.usage!, ref: stats.average }))}
               from={axis.from}
               to={axis.to}
               today={today}
@@ -247,7 +257,7 @@ export function Meters({
               line={trend.map(() => stats.average ?? 0)}
               future={trend.map(() => false)}
               labels={trend.map((r) => monthLabel(r.reading.date.slice(0, 7), { year: false }))}
-              fmt={(v) => compactQty(v)}
+              fmt={(v) => compactQty(v, Math.max(...trend.map((r) => r.usage!)))}
               tip={tipOf}
               onPick={ro ? undefined : (i) => setReading({ id: trend[i].reading.id })}
             />

@@ -327,6 +327,15 @@
   color: var(--label-2);
   font-size: var(--fs-1);
 }
+.metric-top > small {
+  min-width: 0;
+}
+.metric-clip {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .metric-value,
 .metric-grid > div > b {
   color: var(--label);
