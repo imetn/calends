@@ -1,6 +1,6 @@
 import { DAYS_PER_MONTH } from '../../../shared/billing.ts';
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { addMonths, diffDays } from '../../../shared/billing.ts';
 import { monthLabel } from '../../../shared/format.ts';
 import { useWidth } from '../components/inputs.tsx';
@@ -12,8 +12,6 @@ export interface ChartBar {
   v: number;
   /** 今天之后的预测扣款 */
   future?: boolean;
-  /** 标价参照（按那一段首笔的汇率折算），画成虚线台阶；高出或低于它就是汇率带来的涨跌 */
-  list?: number;
   /** 属于哪一段方案：只有不同方案的扣款挨在一起时才并排，同一方案的相邻扣款各自一根 */
   phase?: string;
   /** 首期优惠期间这一笔的原价（同单位）：实际扣的是实色，原价比实际多出的部分画成柱顶的虚框 */
@@ -117,22 +115,7 @@ export function ChargeBars({
   // 柱宽随密度变：密时 3px，稀疏的年付最宽 BAR.max（与全站柱宽一致）
   const bw = Math.max(3, Math.min(BAR.max, (iw / Math.max(1, groups.length)) * BAR.ratio));
   const val = (i: number) => (Number.isFinite(bars[i].v) ? Math.max(0, bars[i].v) : 0);
-  const listOf = (g: Group) =>
-    g.idx.every((i) => bars[i].list != null)
-      ? g.stack
-        ? Math.max(...g.idx.map((i) => bars[i].list!))
-        : g.idx.reduce((a, i) => a + bars[i].list!, 0)
-      : undefined;
-  const max =
-    Math.max(
-      0,
-      ...groups.map((g) =>
-        Math.max(
-          g.idx.reduce((a, i) => a + val(i), 0),
-          listOf(g) ?? 0,
-        ),
-      ),
-    ) || 1;
+  const max = Math.max(0, ...groups.map((g) => g.idx.reduce((a, i) => a + val(i), 0))) || 1;
   const step = niceStep(max * 1.08);
   const top = Math.ceil((max * 1.08) / step) * step;
   const y = (v: number) => T + (1 - v / top) * (H - T - 6);
@@ -168,6 +151,14 @@ export function ChargeBars({
     setHover(i);
   };
   const hx = hover != null ? cx[hover] : 0;
+  // 提示框放在悬停柱的另一侧；窄屏两侧都放不下时贴着图表边缘，不越出卡片
+  const tipRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = tipRef.current;
+    if (!el) return;
+    const tw = el.offsetWidth;
+    el.style.left = `${Math.max(0, Math.min(hx > w / 2 ? hx - 14 - tw : hx + 14, w - tw))}px`;
+  });
   const tx = x(today);
   const showToday = today >= from && today <= to;
 
@@ -235,24 +226,6 @@ export function ChargeBars({
                 );
               });
             })}
-            {/* 标价参照：每根柱上一段虚线，相邻相同时连成台阶；汇总柱用组内合计 */}
-            {(() => {
-              let d = '';
-              let prev: number | undefined;
-              groups.forEach((g) => {
-                const lv = listOf(g);
-                if (lv == null) {
-                  prev = undefined;
-                  return;
-                }
-                const ly = y(lv);
-                const x0 = g.x - bw / 2 - 2;
-                const x1 = g.x + bw / 2 + 2;
-                d += prev == null ? `M${x0},${ly}H${x1}` : `L${x0},${prev}L${x0},${ly}H${x1}`;
-                prev = ly;
-              });
-              return d && <path className="cc-list" d={d} />;
-            })()}
             {showToday && <line className="cc-today" x1={tx} x2={tx} y1={T - 4} y2={H} />}
             {showToday && (
               <text className="cc-today-l" x={tx} y={T - 8} textAnchor={tx > w - PAD_R - 24 ? 'end' : tx < PAD_L + 24 ? 'start' : 'middle'}>
@@ -287,7 +260,7 @@ export function ChargeBars({
             ))}
           </div>
           {hover != null && (
-            <div className="cc-tip" style={hx > w / 2 ? { right: w - hx + 14 } : { left: hx + 14 }}>
+            <div className="cc-tip" ref={tipRef}>
               {tip(groups[hover].idx, !groups[hover].stack)}
             </div>
           )}

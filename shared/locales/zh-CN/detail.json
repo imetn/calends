@@ -108,10 +108,9 @@
     "all": "全部",
     "y1": "1 年",
     "m6": "6 个月",
-    "perCharge": "每笔折合",
-    "list": "标价（按首笔汇率）",
-    "listOrig": "标价",
-    "origAmount": "原币金额",
+    "period": "计费周期",
+    "converted": "折合",
+    "average": "平均",
     "bucket": {
       "m1": "每根柱为一个月合计",
       "m3": "每根柱为一季合计",
@@ -215,8 +214,7 @@
     "readingValue": "读数 {v}",
     "head": {
       "date": "日期",
-      "usage": "用量",
-      "price": "单价"
+      "usage": "用量"
     },
     "readingsCount": "{n} 条记录",
     "deleteReadings": "删除 {n} 条记录",
@@ -227,7 +225,6 @@
     "totalLabel": "累计",
     "periods": "{n} 期",
     "latestPrice": "最近 {v}",
-    "since": "自 {date}",
-    "cost": "费用"
+    "since": "自 {date}"
   }
 }

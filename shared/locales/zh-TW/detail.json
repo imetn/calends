@@ -108,10 +108,9 @@
     "all": "全部",
     "y1": "1 年",
     "m6": "6 個月",
-    "perCharge": "每筆約合",
-    "list": "標價（按首筆匯率）",
-    "listOrig": "標價",
-    "origAmount": "原幣金額",
+    "period": "計費週期",
+    "converted": "約合",
+    "average": "平均",
     "bucket": {
       "m1": "每根柱為一個月合計",
       "m3": "每根柱為一季合計",
@@ -215,8 +214,7 @@
     "readingValue": "讀數 {v}",
     "head": {
       "date": "日期",
-      "usage": "用量",
-      "price": "單價"
+      "usage": "用量"
     },
     "readingsCount": "{n} 筆紀錄",
     "deleteReadings": "刪除 {n} 筆紀錄",
@@ -227,7 +225,6 @@
     "totalLabel": "累計",
     "periods": "{n} 期",
     "latestPrice": "最近 {v}",
-    "since": "自 {date}",
-    "cost": "費用"
+    "since": "自 {date}"
   }
 }

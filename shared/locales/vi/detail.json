@@ -118,10 +118,9 @@
     "all": "Tất cả",
     "y1": "1 năm",
     "m6": "6 tháng",
-    "perCharge": "Mỗi lần",
-    "list": "Giá niêm yết theo tỷ giá đầu",
-    "listOrig": "Giá niêm yết",
-    "origAmount": "Số tiền gốc",
+    "period": "Kỳ tính phí",
+    "converted": "Quy đổi",
+    "average": "Trung bình",
     "bucket": {
       "m1": "Mỗi cột là tổng một tháng",
       "m3": "Mỗi cột là tổng một quý",
@@ -227,8 +226,7 @@
     "readingValue": "Số đọc {v}",
     "head": {
       "date": "Ngày",
-      "usage": "Lượng dùng",
-      "price": "Đơn giá"
+      "usage": "Lượng dùng"
     },
     "readingsCount": "{n} bản ghi",
     "deleteReadings": "Xóa {n} bản ghi",
@@ -239,7 +237,6 @@
     "totalLabel": "Tổng",
     "periods": "{n} kỳ",
     "latestPrice": "Gần nhất {v}",
-    "since": "Từ {date}",
-    "cost": "Chi phí"
+    "since": "Từ {date}"
   }
 }

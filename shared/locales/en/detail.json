@@ -126,10 +126,9 @@
     "all": "All",
     "y1": "1Y",
     "m6": "6M",
-    "perCharge": "Per charge",
-    "list": "List price at first rate",
-    "listOrig": "List price",
-    "origAmount": "Original amount",
+    "period": "Billing period",
+    "converted": "Converted",
+    "average": "Average",
     "bucket": {
       "m1": "Each bar is a monthly total",
       "m3": "Each bar is a quarterly total",
@@ -242,8 +241,7 @@
     "readingValue": "Reading {v}",
     "head": {
       "date": "Date",
-      "usage": "Usage",
-      "price": "Unit price"
+      "usage": "Usage"
     },
     "readingsCount": "{n} records",
     "deleteReadings": "Delete {n} records",
@@ -254,7 +252,6 @@
     "totalLabel": "Total",
     "periods": "{n} periods",
     "latestPrice": "Latest {v}",
-    "since": "Since {date}",
-    "cost": "Cost"
+    "since": "Since {date}"
   }
 }

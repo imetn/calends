@@ -126,10 +126,9 @@
     "all": "Tudo",
     "y1": "1 ano",
     "m6": "6 meses",
-    "perCharge": "Por cobrança",
-    "list": "Preço de tabela no primeiro câmbio",
-    "listOrig": "Preço de tabela",
-    "origAmount": "Valor original",
+    "period": "Período cobrado",
+    "converted": "Convertido",
+    "average": "Média",
     "bucket": {
       "m1": "Cada barra é o total do mês",
       "m3": "Cada barra é o total do trimestre",
@@ -242,8 +241,7 @@
     "readingValue": "Leitura {v}",
     "head": {
       "date": "Data",
-      "usage": "Consumo",
-      "price": "Preço unitário"
+      "usage": "Consumo"
     },
     "readingsCount": "{n} registros",
     "deleteReadings": "Excluir {n} registros",
@@ -254,7 +252,6 @@
     "totalLabel": "Total",
     "periods": "{n} períodos",
     "latestPrice": "Último {v}",
-    "since": "Desde {date}",
-    "cost": "Custo"
+    "since": "Desde {date}"
   }
 }

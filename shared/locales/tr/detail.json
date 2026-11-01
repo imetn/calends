@@ -123,10 +123,9 @@
     "all": "Tümü",
     "y1": "1 yıl",
     "m6": "6 ay",
-    "perCharge": "Ödeme başına",
-    "list": "İlk kurla liste fiyatı",
-    "listOrig": "Liste fiyatı",
-    "origAmount": "Orijinal tutar",
+    "period": "Fatura dönemi",
+    "converted": "Karşılığı",
+    "average": "Ortalama",
     "bucket": {
       "m1": "Her çubuk aylık toplamdır",
       "m3": "Her çubuk üç aylık toplamdır",
@@ -233,8 +232,7 @@
     "readingValue": "Okuma {v}",
     "head": {
       "date": "Tarih",
-      "usage": "Kullanım",
-      "price": "Birim fiyat"
+      "usage": "Kullanım"
     },
     "readingsCount": "{n} kayıt",
     "deleteReadings": "{n} kaydı sil",
@@ -245,7 +243,6 @@
     "totalLabel": "Toplam",
     "periods": "{n} dönem",
     "latestPrice": "Son {v}",
-    "since": "{date} itibarıyla",
-    "cost": "Maliyet"
+    "since": "{date} itibarıyla"
   }
 }

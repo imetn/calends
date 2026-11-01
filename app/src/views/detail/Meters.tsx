@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Settings2 } from 'lucide-react';
-import { uid } from '../../../../shared/billing.ts';
-import { cnDateFull, money, monthLabel, weekdayOf } from '../../../../shared/format.ts';
+import { uid, type Charge } from '../../../../shared/billing.ts';
+import { chargesTotal, formatTotal } from '../../../../shared/fx-total.ts';
+import { cnDateFull, monthLabel, weekdayOf } from '../../../../shared/format.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
 import { numberFormat } from '../../../../shared/intl.ts';
 import { meterStats, meterSuggestions, meterSummary, replaceMeters, type MeterRow } from '../../../../shared/meters.ts';
@@ -13,24 +14,18 @@ import { Panel } from '../../components/DetailKit.tsx';
 import { Picker } from '../../components/Picker.tsx';
 import { BarLine } from '../../components/charts.tsx';
 import { ChargeBars } from '../DetailChart.tsx';
+import { ChargeTip, chargeUsage, unitMoney, withUnit } from './ChargeTip.tsx';
 import { NumInput, Seg, useSubmit } from '../../components/inputs.tsx';
 import { ask, Sheet } from '../../components/overlays.tsx';
 import { Cell, Group, Metric, MetricCards } from '../../components/ui.tsx';
 import { saveSub } from '../../store.ts';
 import { run } from '../../toast.ts';
 
-const qty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: 3 }).format(n);
-export const withUnit = (n: number, unit: string, f = qty) => (unit ? `${f(n)} ${unit}` : f(n));
 /** 平均值是算出来的，按量级留小数：307.2 度、3.47 GB */
 const avgQty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: Math.abs(n) >= 100 ? 1 : 2 }).format(n);
 /** 柱顶标数：过千用紧凑写法，免得挤 */
 const compactQty = (n: number) =>
   numberFormat(intlLocale(), { notation: n >= 10000 ? 'compact' : 'standard', maximumFractionDigits: n >= 100 ? 0 : 1 }).format(n);
-/** 单价常是零点几（每度电、每 GB），多留一位小数 */
-const unitMoney = (p: number, currency: string, unit: string) => {
-  const s = money(p, currency, Math.abs(p) < 1 ? { decimals: 3 } : {});
-  return unit ? `${s}/${unit}` : s;
-};
 const priceText = (r: MeterRow, unit: string) => unitMoney(r.unitPrice!, r.cost!.currency, unit);
 
 /**
@@ -40,7 +35,20 @@ const priceText = (r: MeterRow, unit: string) => unitMoney(r.unitPrice!, r.cost!
  * 只读（公开页、演示）不显示任何编辑入口
  */
 /** axis：与费用走势共用的日期横轴与范围；没有费用图时按自己的记录画 */
-export function Meters({ sub, state, today, axis }: { sub: Subscription; state: AppState; today: string; axis?: { from: string; to: string; since: string } }) {
+export function Meters({
+  sub,
+  state,
+  today,
+  history = [],
+  axis,
+}: {
+  sub: Subscription;
+  state: AppState;
+  today: string;
+  /** 这个订阅的扣款：悬停用量柱时显示它所属那笔扣款的提示框 */
+  history?: Charge[];
+  axis?: { from: string; to: string; since: string };
+}) {
   const ro = !!state.readonly;
   const meters = sub.meters ?? [];
   const [manage, setManage] = useState(false);
@@ -95,11 +103,25 @@ export function Meters({ sub, state, today, axis }: { sub: Subscription; state: 
   const stats = meterStats(summary.rows);
   const latest = summary.latest;
   const isReading = cur.kind === 'reading';
+  const base = state.settings.baseCurrency;
   const used = summary.rows.filter((r) => r.usage != null);
   const trend = axis ? used.filter((r) => r.reading.date >= axis.since && r.reading.date >= axis.from && r.reading.date <= axis.to) : used.slice(-24);
   // 提示框与费用走势同一套样式：标题行日期，逐行列用量、费用、单价；平均每期已在指标卡里，不再重复
   const tipOf = (i: number) => {
     const r = trend[i];
+    // 读数所属的那笔扣款（结算区间含这一天）：与费用走势同一个提示框；还没出账的只写日期和用量
+    const c = history.find((h) => chargeUsage([r], h) != null);
+    if (c)
+      return (
+        <ChargeTip
+          c={c}
+          state={state}
+          converted={c.currency !== base ? formatTotal(chargesTotal(state, [c], base), base, { direction: -1 }) : undefined}
+          usage={chargeUsage(summary.rows, c)}
+          meter={cur}
+          note={r.reading.note}
+        />
+      );
     return (
       <>
         <div className="cc-tip-h">
@@ -107,24 +129,9 @@ export function Meters({ sub, state, today, axis }: { sub: Subscription; state: 
           <span>{weekdayOf(r.reading.date)}</span>
         </div>
         <div className="cc-tip-r">
-          <i className="k-v" />
           <span>{t('detail.meters.head.usage')}</span>
           <b>{withUnit(r.usage!, cur.unit)}</b>
         </div>
-        {r.cost && (
-          <div className="cc-tip-r">
-            <i />
-            <span>{t('detail.meters.cost')}</span>
-            <b className="m">{money(r.cost.amount, r.cost.currency)}</b>
-          </div>
-        )}
-        {r.unitPrice != null && (
-          <div className="cc-tip-r">
-            <i />
-            <span>{t('detail.meters.head.price')}</span>
-            <b className="m">{priceText(r, cur.unit)}</b>
-          </div>
-        )}
         {r.reading.note && <div className="cc-tip-f">{r.reading.note}</div>}
       </>
     );

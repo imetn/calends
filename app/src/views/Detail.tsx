@@ -233,7 +233,7 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
           <Timeline sub={sub} state={state} today={today} history={history} range={axis.range} onRange={(range) => setRangePick({ id: sub.id, range })} />
         )}
         {/* 用量紧跟费用走势：横轴日期对齐，切换范围两张图一起变 */}
-        {!!sub.meters?.length && <Meters key={`m${sub.id}`} sub={sub} state={state} today={today} axis={!compact && axis.drawn ? axis : undefined} />}
+        {!!sub.meters?.length && <Meters key={`m${sub.id}`} sub={sub} state={state} today={today} history={history} axis={!compact && axis.drawn ? axis : undefined} />}
         <Notices sub={sub} state={state} today={today} />
         {/* 合租比扣款记录重要，放在前面 */}
         <ShareCard sub={sub} state={state} today={today} onCar={() => setCar(true)} onMember={(m) => setMember({ m })} />

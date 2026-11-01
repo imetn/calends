@@ -118,10 +118,9 @@
     "all": "Semua",
     "y1": "1 thn",
     "m6": "6 bln",
-    "perCharge": "Per tagihan",
-    "list": "Harga daftar pada kurs pertama",
-    "listOrig": "Harga daftar",
-    "origAmount": "Jumlah asli",
+    "period": "Periode tagihan",
+    "converted": "Setara",
+    "average": "Rata-rata",
     "bucket": {
       "m1": "Setiap batang adalah total bulanan",
       "m3": "Setiap batang adalah total kuartalan",
@@ -227,8 +226,7 @@
     "readingValue": "Angka {v}",
     "head": {
       "date": "Tanggal",
-      "usage": "Pemakaian",
-      "price": "Harga satuan"
+      "usage": "Pemakaian"
     },
     "readingsCount": "{n} catatan",
     "deleteReadings": "Hapus {n} catatan",
@@ -239,7 +237,6 @@
     "totalLabel": "Total",
     "periods": "{n} periode",
     "latestPrice": "Terakhir {v}",
-    "since": "Sejak {date}",
-    "cost": "Biaya"
+    "since": "Sejak {date}"
   }
 }

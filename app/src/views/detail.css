@@ -431,13 +431,6 @@
 .cc-bar.on {
   opacity: 0.7;
 }
-/* 标价参照：细虚线台阶，压在柱子上方也看得清 */
-.cc-list {
-  fill: none;
-  stroke: var(--dt-warn);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 3;
-}
 .cc-today {
   stroke: var(--label-2);
   stroke-width: 1;
@@ -543,13 +536,6 @@
 .cc-tip-r i.k-v {
   background: var(--chart-ink);
 }
-.cc-tip-r i.k-l,
-.dt-legend i.k-l {
-  width: 12px;
-  height: 2px;
-  border-radius: 0;
-  background: repeating-linear-gradient(90deg, var(--dt-warn) 0 4px, transparent 4px 7px);
-}
 .cc-tip-r i.k-f {
   position: relative;
   background: var(--unpaid-fill);
@@ -563,7 +549,7 @@
   -webkit-mask: var(--unpaid-dash) 0 0 / 100% 100% no-repeat;
   mask: var(--unpaid-dash) 0 0 / 100% 100% no-repeat;
 }
-.cc-tip-r span {
+.cc-tip-r > span {
   flex: 1;
   min-width: 0;
   color: var(--label-2);
@@ -571,11 +557,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cc-tip-r b {
+.cc-tip-r > b {
+  /* 值不收缩（支付方式徽章不被截断），长了让左侧字段名省略 */
+  flex: none;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-.cc-tip-r b.m {
+.cc-tip-r > b.m {
   font-weight: 500;
 }
 .cc-tip-f {

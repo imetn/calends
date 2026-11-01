@@ -17,15 +17,16 @@ import {
   priceAt,
   type Charge,
 } from '../../../../shared/billing.ts';
-import { flow, cnDate, cnDateFull, money, weekdayOf } from '../../../../shared/format.ts';
-import { chargeBaseOrNaN, chargeValue, convertOn, rateOn } from '../../../../shared/fx.ts';
+import { cnDate, cnDateFull, money } from '../../../../shared/format.ts';
+import { chargeBaseOrNaN, chargeValue } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 import { Seg } from '../../components/inputs.tsx';
-import { PayBadge } from '../../components/marks.tsx';
 import { t } from '../../../../shared/i18n.ts';
 import { ChargeBars, type ChartLane } from '../DetailChart.tsx';
 import { detailForecast, detailHistoryEnd } from '../detail-data.ts';
 import { Panel } from '../../components/DetailKit.tsx';
+import { meterRows } from '../../../../shared/meters.ts';
+import { ChargeTip, chargeUsage } from './ChargeTip.tsx';
 import { LANE_COLORS } from './shared.tsx';
 import { Region } from './shared.tsx';
 import { methodOf } from './shared.tsx';
@@ -131,12 +132,7 @@ export function Timeline({
   // 图表在柱子太密时按月、季、年汇总，图例里写明一根柱代表多久的合计
   const [bucket, setBucket] = useState(0);
   const ccy = unit === 'orig' && origCcy ? origCcy : base;
-  // 标价参照：每一段按它首笔扣款那天的汇率折算，柱子高出或低于这条线就是汇率带来的涨跌
-  const firstOf = new Map<string, string>();
-  for (const c of reg) if (!firstOf.has(c.sub.start)) firstOf.set(c.sub.start, c.date);
   const each = [...past.map((c) => ({ c, future: false })), ...future.map((c) => ({ c, future: true }))].map((r) => {
-    const price = priceAt(r.c.sub, r.c.date);
-    const list = ccy === base ? convertOn(price, r.c.currency, base, firstOf.get(r.c.sub.start) ?? r.c.date, state.fxHistory, state.fx) : price;
     const v = ccy === base ? chargeValue(state, r.c, base) : r.c.amount;
     // 首期优惠：这一笔按优惠价扣，原价减去的部分在柱顶画成虚框（按这一笔同样的折算比例）
     const regularPrice = r.c.sub.intro && r.c.date < r.c.sub.intro.until && !r.c.kind ? priceAt({ ...r.c.sub, intro: undefined }, r.c.date) : undefined;
@@ -146,17 +142,17 @@ export function Timeline({
       date: r.c.date,
       phase: r.c.sub.start,
       v,
-      list: Number.isFinite(list) ? list : undefined,
       full: full != null && Number.isFinite(full) ? full : undefined,
     };
   });
-  // 标价与实际几乎一样（同币种、未调价）时不画参照线，免得压在柱顶上重复
-  const showList = each.some((r) => r.list != null && Number.isFinite(r.v) && Math.abs(r.list - r.v) > Math.abs(r.v) * 0.005);
   // 柱子太密时由图表按宽度自动按月、季、年汇总，这里给出每一笔
-  const rows = showList ? each : each.map((r) => ({ ...r, list: undefined }));
+  const rows = each;
   if (rows.length < 2) return null;
 
   const fmt = (v: number) => money(v, ccy, { compact: true });
+  // 有用量指标时提示框带上这一笔结算期内的用量（第一个指标，与扣款记录的用量列一致）
+  const meter = sub.meters?.[0];
+  const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(sub, meter, today) : undefined;
   const lanesSrc = phaseSubs(sub);
   const laneIdx = phaseLanes(lanesSrc);
   const methodIds = [...new Set(lanesSrc.map((v) => v.methodId ?? ''))];
@@ -264,54 +260,16 @@ export function Timeline({
             );
           }
           const r = rows[idx[0]];
-          const c = r.c;
-          const m = methodOf(state, chargeMethodId(c));
-          const rate = rateOn(state.fxHistory, c.currency, c.date);
-          const rb = rateOn(state.fxHistory, base, c.date);
           return (
-            <>
-              <div className="cc-tip-h">
-                <b>{cnDateFull(c.date)}</b>
-                <span>{weekdayOf(c.date)}</span>
-              </div>
-              <div className="cc-tip-r">
-                <i className={r.future ? 'k-f' : 'k-v'} />
-                <span>{r.future ? t('detail.timeline.planned') : t('detail.chart.perCharge')}</span>
-                <b>{formatTotal(chartTotal([r.c]), ccy, { direction: -1 })}</b>
-              </div>
-              {r.full != null && (
-                <div className="cc-tip-r">
-                  <i className="k-f" />
-                  <span>{t('detail.chart.regular')}</span>
-                  <b className="m">{money(r.full, ccy)}</b>
-                </div>
-              )}
-              {r.list != null && (
-                <div className="cc-tip-r">
-                  <i className="k-l" />
-                  <span>{ccy === base ? t('detail.chart.list') : t('detail.chart.listOrig')}</span>
-                  <b className="m">{money(r.list, ccy)}</b>
-                </div>
-              )}
-              {c.currency !== ccy && (
-                <div className="cc-tip-r">
-                  <i />
-                  <span>{t('detail.chart.origAmount')}</span>
-                  <b className="m">{flow(-c.amount, c.currency)}</b>
-                </div>
-              )}
-              <div className="cc-tip-f">
-                <PayBadge m={m} />
-                {copyParts(
-                  !r.future &&
-                    ccy === base &&
-                    c.currency !== base &&
-                    rate &&
-                    rb &&
-                    `\n1 ${c.currency} = ${((1 / rate.rate) * rb.rate).toFixed(c.currency === 'NGN' ? 5 : 4)} ${base}`,
-                )}
-              </div>
-            </>
+            <ChargeTip
+              c={r.c}
+              state={state}
+              future={r.future}
+              converted={r.c.currency !== ccy ? formatTotal(chartTotal([r.c]), ccy, { direction: -1 }) : undefined}
+              full={r.full != null ? money(r.full, ccy) : undefined}
+              usage={chargeUsage(readings, r.c)}
+              meter={meter}
+            />
           );
         }}
       />
@@ -327,12 +285,6 @@ export function Timeline({
           <span>
             <i className="k-f" />
             {t('detail.chart.saved')}
-          </span>
-        )}
-        {showList && (
-          <span>
-            <i className="k-l" />
-            {ccy === base ? t('detail.chart.list') : t('detail.chart.listOrig')}
           </span>
         )}
         {future.length > 0 && (

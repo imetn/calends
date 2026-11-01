@@ -2,9 +2,9 @@ import { amountTotal, chargesTotal, formatTotal, sumTotals } from '../../../../s
 import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { Plus } from 'lucide-react';
-import { chargeServicePeriod, phaseSubs, type Charge } from '../../../../shared/billing.ts';
-import { meterRows, usageWithin } from '../../../../shared/meters.ts';
-import { withUnit } from './Meters.tsx';
+import { phaseSubs, type Charge } from '../../../../shared/billing.ts';
+import { meterRows } from '../../../../shared/meters.ts';
+import { chargeUsage, withUnit } from './ChargeTip.tsx';
 import { flow, cnDateFull } from '../../../../shared/format.ts';
 import { transfersOf, transferSign, transferValue } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
@@ -98,11 +98,7 @@ export function Charges({
   // 有用量指标时多一列：每笔扣款覆盖的服务期内记下的用量（第一个指标），失败、退款不算；窄屏收起
   const meter = sub.meters?.[0];
   const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(sub, meter, today) : undefined;
-  const usageOf = (c: Charge) => {
-    if (!readings || c.kind) return undefined;
-    const p = chargeServicePeriod(c.sub, c.date, c.serviceDate);
-    return usageWithin(readings, p.from, p.until);
-  };
+  const usageOf = (c: Charge) => chargeUsage(readings, c);
   const usageCell = (v: number | undefined) => (v != null ? withUnit(v, meter!.unit) : '—');
   return (
     <Panel

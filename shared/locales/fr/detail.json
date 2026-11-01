@@ -126,10 +126,9 @@
     "all": "Tout",
     "y1": "1 an",
     "m6": "6 mois",
-    "perCharge": "Par prélèvement",
-    "list": "Prix catalogue au premier taux",
-    "listOrig": "Prix catalogue",
-    "origAmount": "Montant d’origine",
+    "period": "Période facturée",
+    "converted": "Converti",
+    "average": "Moyenne",
     "bucket": {
       "m1": "Chaque barre est un total mensuel",
       "m3": "Chaque barre est un total trimestriel",
@@ -242,8 +241,7 @@
     "readingValue": "Relevé {v}",
     "head": {
       "date": "Date",
-      "usage": "Consommation",
-      "price": "Prix unitaire"
+      "usage": "Consommation"
     },
     "readingsCount": "{n} entrées",
     "deleteReadings": "Supprimer {n} entrées",
@@ -254,7 +252,6 @@
     "totalLabel": "Total",
     "periods": "{n} périodes",
     "latestPrice": "Dernier {v}",
-    "since": "Depuis le {date}",
-    "cost": "Coût"
+    "since": "Depuis le {date}"
   }
 }

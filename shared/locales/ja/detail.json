@@ -118,10 +118,9 @@
     "all": "すべて",
     "y1": "1 年",
     "m6": "6 か月",
-    "perCharge": "1 回あたり",
-    "list": "定価（初回レート）",
-    "listOrig": "定価",
-    "origAmount": "原通貨の金額",
+    "period": "請求期間",
+    "converted": "換算",
+    "average": "平均",
     "bucket": {
       "m1": "各棒は1か月の合計",
       "m3": "各棒は四半期の合計",
@@ -227,8 +226,7 @@
     "readingValue": "読み値 {v}",
     "head": {
       "date": "日付",
-      "usage": "使用量",
-      "price": "単価"
+      "usage": "使用量"
     },
     "readingsCount": "{n} 件の記録",
     "deleteReadings": "{n} 件の記録を削除",
@@ -239,7 +237,6 @@
     "totalLabel": "累計",
     "periods": "{n} 期",
     "latestPrice": "最新 {v}",
-    "since": "{date} から",
-    "cost": "費用"
+    "since": "{date} から"
   }
 }

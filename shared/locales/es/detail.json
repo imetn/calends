@@ -126,10 +126,9 @@
     "all": "Todo",
     "y1": "1 año",
     "m6": "6 meses",
-    "perCharge": "Por cargo",
-    "list": "Precio de lista al primer tipo",
-    "listOrig": "Precio de lista",
-    "origAmount": "Importe original",
+    "period": "Periodo facturado",
+    "converted": "Equivale a",
+    "average": "Promedio",
     "bucket": {
       "m1": "Cada barra es el total de un mes",
       "m3": "Cada barra es el total de un trimestre",
@@ -242,8 +241,7 @@
     "readingValue": "Lectura {v}",
     "head": {
       "date": "Fecha",
-      "usage": "Consumo",
-      "price": "Precio unitario"
+      "usage": "Consumo"
     },
     "readingsCount": "{n} registros",
     "deleteReadings": "Eliminar {n} registros",
@@ -254,7 +252,6 @@
     "totalLabel": "Total",
     "periods": "{n} periodos",
     "latestPrice": "Último {v}",
-    "since": "Desde {date}",
-    "cost": "Coste"
+    "since": "Desde {date}"
   }
 }

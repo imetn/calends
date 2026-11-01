@@ -118,10 +118,9 @@
     "all": "전체",
     "y1": "1년",
     "m6": "6개월",
-    "perCharge": "회당 환산",
-    "list": "정가(첫 결제 환율)",
-    "listOrig": "정가",
-    "origAmount": "원래 통화 금액",
+    "period": "청구 기간",
+    "converted": "환산",
+    "average": "평균",
     "bucket": {
       "m1": "막대 하나가 한 달 합계",
       "m3": "막대 하나가 분기 합계",
@@ -227,8 +226,7 @@
     "readingValue": "계량값 {v}",
     "head": {
       "date": "날짜",
-      "usage": "사용량",
-      "price": "단가"
+      "usage": "사용량"
     },
     "readingsCount": "기록 {n}건",
     "deleteReadings": "기록 {n}건 삭제",
@@ -239,7 +237,6 @@
     "totalLabel": "누적",
     "periods": "{n}기",
     "latestPrice": "최근 {v}",
-    "since": "{date}부터",
-    "cost": "비용"
+    "since": "{date}부터"
   }
 }

@@ -126,10 +126,9 @@
     "all": "Alle",
     "y1": "1 J.",
     "m6": "6 M.",
-    "perCharge": "Pro Abbuchung",
-    "list": "Listenpreis zum ersten Kurs",
-    "listOrig": "Listenpreis",
-    "origAmount": "Originalbetrag",
+    "period": "Abrechnungszeitraum",
+    "converted": "Umgerechnet",
+    "average": "Durchschnitt",
     "bucket": {
       "m1": "Jeder Balken ist eine Monatssumme",
       "m3": "Jeder Balken ist eine Quartalssumme",
@@ -242,8 +241,7 @@
     "readingValue": "Stand {v}",
     "head": {
       "date": "Datum",
-      "usage": "Verbrauch",
-      "price": "Stückpreis"
+      "usage": "Verbrauch"
     },
     "readingsCount": "{n} Einträge",
     "deleteReadings": "{n} Einträge löschen",
@@ -254,7 +252,6 @@
     "totalLabel": "Gesamt",
     "periods": "{n} Zeiträume",
     "latestPrice": "Zuletzt {v}",
-    "since": "Seit {date}",
-    "cost": "Kosten"
+    "since": "Seit {date}"
   }
 }
