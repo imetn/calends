@@ -1356,3 +1356,9 @@ test('桌面工具栏操作区不在组内折行，排序等控件不被压缩�
   assert.match(desk, /\.tb-actions\s*\{\s*flex-wrap:\s*nowrap/);
   assert.match(desk, /\.tb-actions > :not\(\.tb-search\)\s*\{\s*flex-shrink:\s*0/);
 });
+
+test('新建令牌的权限选项选中时圆点实心，接入步骤里的无底色按钮与内容同列', () => {
+  assert.match(rulesFor('.ai-scope-card.on .ai-radio'), /inset 0 0 0 5px/);
+  assert.match(rulesFor('.ai-step-actions > .btn.plain:first-child'), /margin-inline-start:\s*-6px/);
+  assert.match(rulesFor('.btn.plain'), /padding:\s*0 6px/);
+});

@@ -8348,8 +8348,9 @@ a.car-toggle {
   font-size: var(--fs-2);
   line-height: 1.4;
 }
+/* 选中与上方客户端卡片同一写法：深色描边，圆点实心 */
 .ai-scope-card.on {
-  box-shadow: inset 0 0 0 var(--hairline) var(--accent);
+  box-shadow: inset 0 0 0 var(--hairline) var(--label);
 }
 .ai-radio {
   flex-shrink: 0;
@@ -8360,7 +8361,7 @@ a.car-toggle {
   box-shadow: inset 0 0 0 var(--hairline) var(--label-3);
 }
 .ai-scope-card.on .ai-radio {
-  box-shadow: inset 0 0 0 var(--hairline) var(--accent);
+  box-shadow: inset 0 0 0 5px var(--label);
 }
 @media (max-width: 680px) {
   .ai-card {
@@ -8650,6 +8651,10 @@ a.car-toggle {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+/* 无底色按钮靠内边距留出点按区，文字图标要和上方步骤内容对齐到同一列 */
+.ai-step-actions > .btn.plain:first-child {
+  margin-inline-start: -6px;
 }
 .ai-steps li > b {
   display: flex;
