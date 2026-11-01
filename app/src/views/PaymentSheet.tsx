@@ -1,16 +1,17 @@
 import { ConfirmButton } from '../components/ConfirmButton.tsx';
 import { useState } from 'react';
-import { activePhases, chargesBetween, currentPhase, cycleLabel, phaseSubs } from '../../../shared/billing.ts';
-import { currencyDecimals, money } from '../../../shared/format.ts';
+import { activePhases, addDays, chargeServicePeriod, chargesBetween, currentPhase, cycleLabel, phaseSubs, uid } from '../../../shared/billing.ts';
+import { cnDate, currencyDecimals, money } from '../../../shared/format.ts';
 import { settlementCurrencyOf } from '../../../shared/fx.ts';
 import { t } from '../../../shared/i18n.ts';
+import { meterRows, periodReading, periodReadingCount, setPeriodValues, usageWithin } from '../../../shared/meters.ts';
 import { deletePayment, savePayment, setPhaseMethod } from '../../../shared/phases.ts';
-import type { Payment, Subscription } from '../../../shared/types.ts';
+import type { Meter, Payment, Subscription } from '../../../shared/types.ts';
 import { DatePicker } from '../components/DatePicker.tsx';
 import { CurrencySelect, Picker } from '../components/Picker.tsx';
 import { MethodPicker } from '../components/MethodPicker.tsx';
 import { Sheet } from '../components/overlays.tsx';
-import { MoneyInput, Seg, useSubmit } from '../components/inputs.tsx';
+import { MoneyInput, NumInput, Seg, useSubmit } from '../components/inputs.tsx';
 import { Cell, Group, IconButton } from '../components/ui.tsx';
 import { Icon } from '../components/icons.tsx';
 import { getState, saveSub } from '../store.ts';
@@ -69,6 +70,17 @@ export function PaymentSheet({
   const left = Math.round((Number(amount) - splitSum) * unit) / unit;
   const amountValid = amount.trim() !== '' && Number(amount) >= 0;
   const blanks = (split ?? []).filter((x) => x.amount === '').length;
+  // 用量跟计费周期走：填的数记在这笔扣款覆盖的那段时间里，周期内已有记录就改它；只写改过的指标
+  const meters = sub.meters ?? [];
+  const period = kind === 'charge' && meters.length && phase.cycle.unit !== 'lifetime' ? chargeServicePeriod(phase, date) : undefined;
+  const [usage, setUsage] = useState<Record<string, number | undefined>>({});
+  // 周期内同一指标记了多条时只读：本期用量显示合计（与扣款记录的用量列一致），累计读数显示最新一条
+  const several = (m: Meter) => !!period && periodReadingCount(sub, period.from, period.until, m.id) > 1;
+  const usageOf = (m: Meter) => {
+    if (!period) return undefined;
+    if (several(m) && m.kind !== 'reading') return usageWithin(meterRows(sub, m, today), period.from, period.until);
+    return m.id in usage ? usage[m.id] : periodReading(sub, period.from, period.until, m.id)?.values[m.id];
+  };
   const setPart = (i: number, patch: Partial<{ methodId?: string; amount: string }>) => setSplit((xs) => xs!.map((x, k) => (k === i ? { ...x, ...patch } : x)));
 
   const [busy, submit] = useSubmit();
@@ -94,6 +106,12 @@ export function PaymentSheet({
         async () => {
           let next = savePayment(sub, today, pay, originalDate && originalIndex != null ? { date: originalDate, index: originalIndex } : undefined, pick);
           if (!split && changed && scope === 'phase') next = setPhaseMethod(next, phase.start, method);
+          if (period && Object.keys(usage).length) {
+            // 新建的记录记在周期末日，周期还没过完时记今天
+            const last = addDays(period.until, -1);
+            const day = last < today ? last : today < period.from ? period.from : today;
+            next = setPeriodValues(next, period.from, period.until, usage, { id: uid(), date: day });
+          }
           await saveSub(next);
           onClose();
         },
@@ -241,6 +259,26 @@ export function PaymentSheet({
             <MoneyInput ccy={ccy} className="num" value={amount} onChange={(e) => setAmount((e.target as HTMLInputElement).value)} />
           </Cell>
         </Group>
+        {period && (
+          <Group
+            title={t('detail.meters.head.usage')}
+            foot={t('editor.payment.usageFoot', { period: `${cnDate(period.from)} – ${cnDate(addDays(period.until, -1))}` })}
+          >
+            {meters.map((m) => (
+              <Cell key={m.id} label={m.name} sub={m.kind === 'reading' ? t('detail.meters.reading') : undefined}>
+                <NumInput
+                  className="num"
+                  inputMode="decimal"
+                  value={usageOf(m)}
+                  disabled={several(m)}
+                  placeholder={t('editor.field.optional')}
+                  onValue={(n) => setUsage((v) => ({ ...v, [m.id]: n }))}
+                />
+                {m.unit && <span className="cell-unit">{m.unit}</span>}
+              </Cell>
+            ))}
+          </Group>
+        )}
         <Group title={t('editor.payment.settled')}>
           <Cell label={t('editor.payment.settledCcy')}>
             <CurrencySelect value={settledCcy} onChange={setSettledCcy} />

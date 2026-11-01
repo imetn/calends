@@ -10844,3 +10844,16 @@ button.name-edit:focus-visible {
     height: 20px;
   }
 }
+
+/* 数字输入后面的单位（度、GB、公里）：常显，不随输入消失；字号跟输入框走（窄屏输入框放大到 --fs-3） */
+.cell-r .cell-unit {
+  flex: none;
+  margin-left: -2px;
+  white-space: nowrap;
+  font-size: var(--fs-2);
+}
+@media (max-width: 860px) {
+  .cell-r .cell-unit {
+    font-size: var(--fs-3);
+  }
+}

@@ -232,6 +232,7 @@
     "settledCcy": "Devise de la carte",
     "settledAmount": "Montant sur la carte",
     "blank": "Laisser vide",
+    "usageFoot": "Enregistré pour la période de facturation {period}",
     "freezeHint": "Les prélèvements de cette phase sont actuellement estimés à partir du cycle de facturation. L’enregistrement transformera d’abord les prélèvements estimés de {amount} jusqu’à aujourd’hui en opérations réelles ; ensuite, ce sont les opérations qui font foi. Les prélèvements futurs ne changent pas.",
     "method": "Moyen de paiement",
     "scopeOne": "Ce débit uniquement",

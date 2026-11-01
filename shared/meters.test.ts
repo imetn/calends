@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { chargeServicePeriod, FALLBACK_FX, subError } from './billing.ts';
 import { maskForPublic } from './mask.ts';
-import { costBetween, meterError, meterRows, meterStats, meterSuggestions, meterSummary, removeMeter, replaceMeters, stableId, usageWithin } from './meters.ts';
+import { costBetween, meterError, meterRows, meterStats, meterSuggestions, meterSummary, periodReading, periodReadingCount, removeMeter, replaceMeters, setPeriodValues, stableId, usageWithin } from './meters.ts';
 import { DEFAULT_SETTINGS, type AppState, type Meter, type Payment, type Reading, type Subscription } from './types.ts';
 
 // 虚构场景：月付 ¥100 的 VPS，每月 10 日扣款；每月 15 日记一次出站流量（本期用量）和里程式累计读数
@@ -251,4 +251,34 @@ test('usage within a charge service period sums readings dated inside it', () =>
   // 年付的一笔覆盖全年，记录逐月记也能合计
   assert.equal(usageWithin(meterRows(vps(), traffic, today), '2025-01-10', '2026-01-10'), 30);
   assert.equal(usageWithin(rows, '2024-01-01', '2024-12-31'), undefined);
+});
+
+test('charge sheet writes usage into the reading of that billing period', () => {
+  const s = vps();
+  const mar = chargeServicePeriod(s, '2025-03-10');
+  assert.equal(periodReading(s, mar.from, mar.until)?.id, 'r3');
+  // 改已有记录：只动填了的指标，其余保留
+  const edited = setPeriodValues(s, mar.from, mar.until, { gb: 5 }, { id: 'new', date: '2025-04-09' });
+  assert.deepEqual(edited.readings?.find((r) => r.id === 'r3')?.values, { gb: 5, odo: 1200 });
+  assert.equal(edited.readings?.length, 4);
+  // 周期内没有记录时新建一条
+  const may = chargeServicePeriod(s, '2025-05-10');
+  const added = setPeriodValues(s, may.from, may.until, { gb: 7, odo: undefined }, { id: 'new', date: '2025-05-10' });
+  assert.deepEqual(added.readings?.at(-1), { id: 'new', date: '2025-05-10', values: { gb: 7 } });
+  // 全部清掉的记录删掉；本来就没有、也没填时不写
+  const r4 = chargeServicePeriod(s, '2025-04-10');
+  assert.equal(setPeriodValues(s, r4.from, r4.until, { odo: undefined }, { id: 'x', date: '2025-04-10' }).readings?.some((r) => r.id === 'r4'), false);
+  assert.equal(setPeriodValues(s, may.from, may.until, { gb: undefined }, { id: 'x', date: '2025-05-10' }), s);
+  // 同一周期多条时改最晚的一条
+  const two = vps({ readings: [...readings, { id: 'r3b', date: '2025-03-20', values: { gb: 1 } }] });
+  assert.equal(periodReading(two, mar.from, mar.until)?.id, 'r3b');
+  assert.equal(periodReadingCount(two, mar.from, mar.until, 'gb'), 2);
+  // 指标分开记：最晚那条没有 odo 时，改 odo 落在记了它的那条，不在同一周期写出第二个 odo
+  assert.equal(periodReading(two, mar.from, mar.until, 'odo')?.id, 'r3');
+  const split = setPeriodValues(two, mar.from, mar.until, { odo: 1250 }, { id: 'x', date: '2025-04-09' });
+  assert.deepEqual(split.readings?.find((r) => r.id === 'r3')?.values, { gb: 0, odo: 1250 });
+  assert.deepEqual(split.readings?.find((r) => r.id === 'r3b')?.values, { gb: 1 });
+  // 两个指标都新建时写进同一条
+  const both = setPeriodValues(vps({ readings: [] }), may.from, may.until, { gb: 7, odo: 1600 }, { id: 'n', date: '2025-05-10' });
+  assert.deepEqual(both.readings, [{ id: 'n', date: '2025-05-10', values: { gb: 7, odo: 1600 } }]);
 });

@@ -447,9 +447,10 @@ function ReadingSheet({
                 className="num"
                 inputMode="decimal"
                 value={values[m.id]}
-                placeholder={m.unit || t('editor.field.optional')}
+                placeholder={t('editor.field.optional')}
                 onValue={(n) => setValues((v) => ({ ...v, [m.id]: n }))}
               />
+              {m.unit && <span className="cell-unit">{m.unit}</span>}
             </Cell>
           ))}
         </Group>

@@ -232,6 +232,7 @@
     "settledCcy": "Kartenwährung",
     "settledAmount": "Kartenbetrag",
     "blank": "Leer lassen",
+    "usageFoot": "Wird dem Abrechnungszeitraum {period} zugeordnet",
     "freezeHint": "Abbuchungen in dieser Phase werden derzeit aus dem Abrechnungszeitraum geschätzt. Beim Sichern werden die geschätzten Abbuchungen von {amount} bis heute zuerst in Einträge umgewandelt; danach sind die Einträge maßgeblich. Künftige Abbuchungen bleiben unverändert.",
     "method": "Zahlungsmethode",
     "scopeOne": "Nur diese Abbuchung",

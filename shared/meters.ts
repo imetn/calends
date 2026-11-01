@@ -100,6 +100,48 @@ export function usageWithin(rows: MeterRow[], from: string, until: string): numb
   return hit.length ? Math.round(hit.reduce((a, r) => a + r.usage!, 0) * 1e6) / 1e6 : undefined;
 }
 
+/** 一段计费周期 [from, until) 里记下这个指标的记录（不给指标时任意一条）：有多条时取最晚的；扣款弹窗按周期填用量用 */
+export function periodReading(s: Pick<Subscription, 'readings'>, from: string, until: string, meterId?: string): Reading | undefined {
+  return readingsOf(s).findLast((r) => r.date >= from && r.date < until && (meterId == null || meterId in r.values));
+}
+
+/** 周期内记了这个指标的记录条数：多于一条时扣款弹窗不让改（用量要合计），回到柱子上逐条改 */
+export function periodReadingCount(s: Pick<Subscription, 'readings'>, from: string, until: string, meterId: string): number {
+  return (s.readings ?? []).filter((r) => r.date >= from && r.date < until && meterId in r.values).length;
+}
+
+/**
+ * 按计费周期写用量：每个指标改周期内记了它的那条记录（periodReading），没有就写进周期内任意一条，
+ * 再没有就新建一条（id、日期由调用方给）。values 只放改动的指标，undefined 表示清掉；
+ * 清空的记录一并删掉（与读数弹窗、MCP 一样，一条记录至少有一个数）
+ */
+export function setPeriodValues(
+  s: Subscription,
+  from: string,
+  until: string,
+  values: Record<string, number | undefined>,
+  create: { id: string; date: string },
+): Subscription {
+  let list = s.readings ?? [];
+  let changed = false;
+  for (const [k, v] of Object.entries(values)) {
+    const num = typeof v === 'number' && Number.isFinite(v);
+    const hit = periodReading({ readings: list }, from, until, k) ?? (num ? periodReading({ readings: list }, from, until) : undefined);
+    if (!hit) {
+      if (num) list = [...list, { id: create.id, date: create.date, values: { [k]: v } }];
+      changed ||= num;
+      continue;
+    }
+    const merged = { ...hit.values };
+    if (num) merged[k] = v;
+    else delete merged[k];
+    const next = { ...hit, values: merged };
+    list = Object.keys(merged).length ? list.map((r) => (r === hit ? next : r)) : list.filter((r) => r !== hit);
+    changed = true;
+  }
+  return changed ? { ...s, readings: list.length ? list : undefined } : s;
+}
+
 /** 走势统计：平均每期用量、平均单价（有单价各期的费用合计 ÷ 用量合计）、用量最高的一期 */
 export function meterStats(rows: MeterRow[]) {
   const used = rows.filter((r) => r.usage != null);
