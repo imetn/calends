@@ -223,3 +223,14 @@ test('改过收费后同一个月切出两期：仍按月排、标年份，短�
     ],
   );
 });
+
+test('30 天周期不等于自然月，不能因部分区间恰逢 30 天月份而误判', () => {
+  const periods = Array.from({ length: 18 }, (_, i) => {
+    const from = addDays('2024-01-15', i * 30);
+    return { key: from, from, until: addDays(from, 29), due: 10, currency: 'CNY', status: 'due' as const };
+  });
+  const grid = periodGrid(periods, '2099-01-01');
+  assert.equal(grid.mode, 'periods');
+  assert.equal(grid.rows.length, 2);
+  assert.equal(grid.rows.flatMap((r) => r.segments).length, 18);
+});

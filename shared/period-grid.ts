@@ -24,12 +24,12 @@ const monthIndex = (date: string) => Number(date.slice(0, 4)) * 12 + Number(date
 /** Infer presentation from the derived schedule, including clipped joining/final periods. */
 export function periodGridMode(periods: LedgerPeriod[]): PeriodGridMode {
   const spans = periods.map((p, i) => [p.from, periods[i + 1]?.from ?? addDays(p.until, 1)]);
-  const monthly = spans.some(([from, next]) => {
-    const months = monthIndex(next) - monthIndex(from);
-    return months > 0 && addMonths(from, months) === next;
-  });
-  // 同一个月里切出两期（改过收费）也按月排，网格里顺延一格
-  if (monthly && spans.every(([from, next]) => monthIndex(next) >= monthIndex(from))) return 'months';
+  const months = spans.map(([from, next]) => monthIndex(next) - monthIndex(from));
+  const exact = spans.map(([from, next], i) => months[i] > 0 && addMonths(from, months[i]) === next);
+  // 每一期都须是整月，例外只有首期（入伙截短）和同一个月里切出的两期及其相邻一期（改过收费）；
+  // 30 天等固定天数周期偶尔恰逢整月，不能据此按月排
+  const monthly = exact.some(Boolean) && spans.every((_, i) => exact[i] || i === 0 || months[i] === 0 || months[i - 1] === 0 || months[i + 1] === 0);
+  if (monthly && months.every((m) => m >= 0)) return 'months';
   if (spans.length && spans.every(([from, next]) => diffDays(from, next) === 7)) return 'weeks';
   return 'periods';
 }
