@@ -64,6 +64,7 @@ import type { Revision } from './store.ts';
 import { mergePrefs, type Prefs } from '../shared/prefs.ts';
 import { cleanCategories, renameInSubs } from '../shared/categories.ts';
 import { createToken, listTokens, mcp, revokeToken } from './ai/mcp.ts';
+import { searchLogos } from './ai/logo-search.ts';
 import { fetchPublic } from './url-guard.ts';
 import { TOOLS, toolTitle } from './ai/mcp-tools.ts';
 import { appStorePlans, searchAppStore } from './appstore.ts';
@@ -161,6 +162,11 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     const body = await res.arrayBuffer();
     if (body.byteLength > 1_000_000) return bad('too large', 413);
     return new Response(body, { headers: { 'content-type': type, 'cache-control': 'private, max-age=86400' } });
+  }
+  // Logo search returns candidates only; selection is saved through the existing editor.
+  if (path === '/api/logos/search' && method === 'GET') {
+    const q = new URL(req.url).searchParams.get('q') ?? '';
+    return json(await searchLogos(env, q));
   }
   // 已登录：账号安全
   if (path === '/api/auth/security' && method === 'GET') return json({ passkeys: await listPasskeys(env), sessions: await listSessions(req, env) });

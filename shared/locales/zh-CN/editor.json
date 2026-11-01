@@ -230,5 +230,14 @@
     "choose": {
       "other": "App Store 有 {count} 个套餐"
     }
+  },
+  "logoSearch": {
+    "search": "网上搜 Logo",
+    "placeholder": "搜索 Logo",
+    "searching": "搜索中…",
+    "empty": "没有找到结果",
+    "hint": "手动选过的图标会保留，再次搜索不会覆盖。",
+    "sourceSite": "官网",
+    "sourceWeb": "网页图片"
   }
 }

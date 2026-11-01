@@ -184,6 +184,8 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     Pop: 'Pop',
     Icon: 'Icon',
     IconButton: 'button',
+    QuickEdit: 'QuickEdit',
+    LogoSearch: 'LogoSearch',
     CardTitle: 'h3',
     CopyImageButton: 'CopyImageButton',
     Hint: 'Hint',
@@ -4046,4 +4048,77 @@ test('TipLayer 语言重挂载时，旧实例清理不能注销新实例的提�
   cleanups[1]();
   props.onFocus({ currentTarget: { getBoundingClientRect: () => ({ left: 10, width: 20, top: 30, bottom: 40 }) } });
   assert.equal(changes[2].length, 1, 'the active instance unregisters itself on final unmount');
+});
+
+test('subscription quick editing keeps row activation separate and is absent on readonly ledgers', () => {
+  const sub: Subscription = {
+    id: 'quick',
+    name: 'Fictional',
+    category: 'Tools',
+    tags: [],
+    price: 12,
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-01-01',
+    status: 'active',
+  };
+  for (const view of ['grid', 'list']) {
+    let opened = 0,
+      edited = 0;
+    const r = harness(
+      '../app/src/views/List.tsx',
+      'List',
+      { 'list-view': view },
+      {
+        isMarked: () => false,
+        stopLabel: () => '',
+        stopDescription: () => '',
+        CatChip: 'CatChip',
+        CardGlow: 'CardGlow',
+        StopBadge: 'StopBadge',
+        StopText: 'StopText',
+        SubBadges: 'SubBadges',
+        useIconPalette: () => undefined,
+      },
+    );
+    const render = (readonly = false) =>
+      r.render('List', { state: { ...st, readonly, subscriptions: [sub] }, today, onOpen: () => opened++, onEdit: () => edited++, onAdd() {} });
+    const nodes = render();
+    nodes.find((n) => n.type === 'QuickEdit')!.props.onEdit();
+    assert.equal(edited, 1);
+    assert.equal(opened, 0);
+    const row = nodes.find((n) => n.props.className === (view === 'grid' ? 'scard st-active' : 'lt-row st-active'))!;
+    const target = {};
+    row.props.onKeyDown({
+      target,
+      currentTarget: {},
+      key: 'Enter',
+      preventDefault() {
+        throw Error('child key intercepted');
+      },
+    });
+    assert.equal(opened, 0);
+    row.props.onKeyDown({ target, currentTarget: target, key: 'Enter', preventDefault() {} });
+    assert.equal(opened, 1);
+    assert.equal(render(true).filter((n) => n.type === 'QuickEdit').length, 0);
+  }
+});
+
+test('quick edit stops pointer and click propagation before editing', () => {
+  let stopped = 0,
+    edited = 0;
+  const r = harness('../app/src/components/QuickEdit.tsx', 'QuickEdit');
+  const button = r.render('QuickEdit', { onEdit: () => edited++ }).find((n) => n.type === 'button')!;
+  button.props.onPointerDown({
+    stopPropagation() {
+      stopped++;
+    },
+  });
+  button.props.onClick({
+    stopPropagation() {
+      stopped++;
+    },
+  });
+  assert.equal(stopped, 2);
+  assert.equal(edited, 1);
 });

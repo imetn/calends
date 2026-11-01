@@ -508,6 +508,12 @@ function App() {
   const [ics, setIcs] = useState(false);
   const [palette, setPalette] = useState(false);
   const [keyboardHelp, setKeyboardHelp] = useState(false);
+  const editDirect = (sub: Subscription) => {
+    if (state?.readonly) return;
+    setBackTo(null);
+    setViewId(null);
+    setEditing(sub);
+  };
   const editFromDetail = () => {
     const sub = state?.subscriptions.find((s) => s.id === viewId);
     if (!sub || state?.readonly) return;
@@ -614,14 +620,14 @@ function App() {
   const aiSwitch = mobile?.aiSwitch ? <AiSwitch route={route} /> : undefined;
 
   let view;
-  if (route.startsWith('cat/')) view = <List key={route} state={state} today={d} onOpen={open} onAdd={add} category={route.slice(4)} />;
+  if (route.startsWith('cat/')) view = <List key={route} state={state} today={d} onOpen={open} onEdit={editDirect} onAdd={add} category={route.slice(4)} />;
   else
     switch (route) {
       case 'calendar':
         view = <Calendar state={state} today={d} onOpen={open} onIcs={() => setIcs(true)} />;
         break;
       case 'list':
-        view = <List key="all" state={state} today={d} onOpen={open} onAdd={add} />;
+        view = <List key="all" state={state} today={d} onOpen={open} onEdit={editDirect} onAdd={add} />;
         break;
       case 'wallet':
         view = <Wallet state={state} today={d} onOpen={open} />;
