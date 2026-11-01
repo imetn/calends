@@ -246,5 +246,14 @@
     "choose": {
       "other": "{count} paket App Store"
     }
+  },
+  "logoSearch": {
+    "search": "Cari logo online",
+    "placeholder": "Cari logo",
+    "searching": "Mencari…",
+    "empty": "Tidak ada hasil",
+    "hint": "Logo yang dipilih manual tetap disimpan.",
+    "sourceSite": "Situs resmi",
+    "sourceWeb": "Gambar web"
   }
 }

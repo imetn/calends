@@ -20,6 +20,7 @@ import {
 import { cnDate, money, relDays } from '../../../shared/format.ts';
 import { toBaseOrNaN } from '../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
+import { QuickEdit } from '../components/QuickEdit.tsx';
 import { IconButton, Toolbar } from '../components/ui.tsx';
 import { Amount, Seg } from '../components/inputs.tsx';
 import { CatChip, CatIcon, MethodMark, PayBadge, RegionTag, FlagImg, regionLabel, subRegion, SubIcon } from '../components/marks.tsx';
@@ -64,12 +65,14 @@ export function List({
   state,
   today,
   onOpen,
+  onEdit,
   onAdd,
   category,
 }: {
   state: AppState;
   today: string;
   onOpen: (s: Subscription) => void;
+  onEdit: (s: Subscription) => void;
   onAdd: () => void;
   category?: string;
 }) {
@@ -316,7 +319,7 @@ export function List({
         </div>
         {rows.length === 0 && <div className="empty">{t('list.empty')}</div>}
         {view === 'gantt' ? (
-          rows.length > 0 && <Gantt rows={rows} state={state} today={today} onOpen={onOpen} />
+          rows.length > 0 && <Gantt rows={rows} state={state} today={today} onOpen={onOpen} onEdit={onEdit} />
         ) : view === 'grid' ? (
           <div className="sgrid">
             {rows.map((s) => {
@@ -328,7 +331,19 @@ export function List({
               const up = upcomingPhase(s, today);
               const m = state.methods.find((x) => x.id === cur.methodId);
               return (
-                <button key={s.id} className={`scard st-${st}`} onClick={() => onOpen(s)}>
+                <div
+                  key={s.id}
+                  className={`scard st-${st}`}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onOpen(s);
+                    }
+                  }}
+                  onClick={() => onOpen(s)}
+                >
                   <CardGlow sub={s} />
                   <div className="sc-top">
                     <SubIcon sub={s} size={48} />
@@ -356,6 +371,7 @@ export function List({
                   </div>
                   <div className="sc-name">
                     <span>{s.name}</span>
+                    {!state.readonly && <QuickEdit onEdit={() => onEdit(s)} />}
                     {s.intro && s.intro.until > today && <Icon name="leaf" size={13} />}
                   </div>
                   <div className="sc-meta">
@@ -372,7 +388,7 @@ export function List({
                       {st === 'lifetime' ? s.start.slice(0, 7) : isStopped(st) ? (s.end ?? '') : n ? (d! <= 14 ? relDays(d!) : cnDate(n)) : ''}
                     </span>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -414,12 +430,25 @@ export function List({
                 const v = shown(s, n);
                 const live = !['lifetime', 'ended', 'terminated'].includes(st);
                 return (
-                  <button key={s.id} className={`lt-row st-${st}`} role="row" onClick={() => onOpen(s)}>
+                  <div
+                    key={s.id}
+                    className={`lt-row st-${st}`}
+                    role="row"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        onOpen(s);
+                      }
+                    }}
+                    onClick={() => onOpen(s)}
+                  >
                     <span className="lt-name">
                       <SubIcon sub={s} size={28} />
                       <span className="lt-title">
                         <span className="nm">
                           <b>{s.name}</b>
+                          {!state.readonly && <QuickEdit onEdit={() => onEdit(s)} />}
                           {s.intro && s.intro.until > today && <Icon name="leaf" size={13} />}
                           <RegionTag
                             cc={subRegion(
@@ -483,7 +512,7 @@ export function List({
                         '—'
                       )}
                     </span>
-                  </button>
+                  </div>
                 );
               })}
             </div>

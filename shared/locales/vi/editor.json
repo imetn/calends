@@ -246,5 +246,14 @@
     "choose": {
       "other": "{count} gói trên App Store"
     }
+  },
+  "logoSearch": {
+    "search": "Tìm logo trên mạng",
+    "placeholder": "Tìm logo",
+    "searching": "Đang tìm…",
+    "empty": "Không có kết quả",
+    "hint": "Logo đã chọn thủ công sẽ được giữ lại.",
+    "sourceSite": "Trang chính thức",
+    "sourceWeb": "Ảnh web"
   }
 }

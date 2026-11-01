@@ -230,5 +230,14 @@
     "choose": {
       "other": "App Store 有 {count} 個方案"
     }
+  },
+  "logoSearch": {
+    "search": "網上搜 Logo",
+    "placeholder": "搜尋 Logo",
+    "searching": "搜尋中…",
+    "empty": "沒有找到結果",
+    "hint": "手動選過的圖示會保留，再次搜尋不會覆蓋。",
+    "sourceSite": "官網",
+    "sourceWeb": "網頁圖片"
   }
 }

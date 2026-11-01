@@ -90,6 +90,7 @@ export function Form({
                 ...(isNew ? { chargeLeadDays: f.chargeLeadDays ?? c.chargeLeadDays, cancelLeadDays: f.cancelLeadDays ?? c.cancelLeadDays } : {}),
               });
             }}
+            onPickLogo={(icon) => up({ icon })}
           />
         </div>
       </div>

@@ -31,6 +31,7 @@ import {
   type GanttZoom,
 } from '../../../shared/gantt.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
+import { QuickEdit } from '../components/QuickEdit.tsx';
 import { IconButton } from '../components/ui.tsx';
 import { FlagImg, SubIcon } from '../components/marks.tsx';
 import { Icon } from '../components/icons.tsx';
@@ -98,12 +99,14 @@ export function Gantt({
   state,
   today,
   onOpen,
+  onEdit,
   compact = false,
 }: {
   rows: Subscription[];
   state: AppState;
   today: string;
   onOpen: (s: Subscription) => void;
+  onEdit?: (s: Subscription) => void;
   compact?: boolean;
 }) {
   const captureRef = useRef<HTMLDivElement>(null);
@@ -535,7 +538,7 @@ export function Gantt({
                 onKeyDown={
                   compact
                     ? (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
                           e.preventDefault();
                           onOpen(r.s);
                         }
@@ -550,6 +553,7 @@ export function Gantt({
                     <SubIcon sub={r.s} size={20} proxied={compact} />
                   </span>
                   {!iconOnly && <TailName className="gt-name" name={r.s.name} />}
+                  {!compact && !iconOnly && !state.readonly && onEdit && <QuickEdit onEdit={() => onEdit(r.s)} />}
                 </div>
                 <div className="gt-track">
                   <div className="gt-pan">

@@ -255,5 +255,14 @@
     "choose": {
       "other": "{count} App Store paketi"
     }
+  },
+  "logoSearch": {
+    "search": "Logoyu internette ara",
+    "placeholder": "Logo ara",
+    "searching": "Aranıyor…",
+    "empty": "Sonuç yok",
+    "hint": "Elle seçilen logolar korunur.",
+    "sourceSite": "Resmi site",
+    "sourceWeb": "Web görselleri"
   }
 }

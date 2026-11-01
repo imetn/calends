@@ -494,6 +494,7 @@ function editorRuntime(original: Subscription) {
       CatIcon: 'CatIcon',
       ReceiptText: 'ReceiptText',
       searchCatalog: () => [],
+      LogoSearch: () => null,
       base: (path: string) => path,
       RENEW_CYCLES: [['m1', { unit: 'month', every: 1 }]],
       cycleName: (cycle: any) => cycle.unit,
