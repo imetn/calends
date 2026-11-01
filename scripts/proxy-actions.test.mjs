@@ -58,7 +58,9 @@ test('Toolbar draws no add button and hands a page-specific add to the phone doc
     IconButton: 'icon-button',
     Icon: 'icon',
     useRegisterPageAdd: (onAdd, label) => registered.push({ onAdd, label }),
+    useMedia: () => narrow,
   });
+  let narrow = false;
   let custom = 0;
   // Phones have one add, in the dock's More arc; toolbars never draw their own.
   assert.deepEqual(nodes(Toolbar({ title: 'Fictional', onAdd: () => custom++, addLabel: 'Add person' }), 'icon-button'), []);
@@ -67,6 +69,37 @@ test('Toolbar draws no add button and hands a page-specific add to the phone doc
   assert.equal(custom, 1);
   Toolbar({ title: 'Fictional' });
   assert.equal(registered[1].onAdd, undefined);
+});
+
+test('on phones only the toolbar title stays pinned; the switch and actions sit below it and scroll away', () => {
+  let narrow = false;
+  const Toolbar = compile('components/ui.tsx', 'Toolbar', {
+    t: (k) => k,
+    copyParts: (v) => v,
+    IconButton: 'icon-button',
+    Icon: 'icon',
+    useRegisterPageAdd: () => {},
+    useMedia: () => narrow,
+  });
+  const props = { title: 'Fictional', switcher: 'switch', children: 'actions' };
+  const desktop = Toolbar(props);
+  assert.equal(desktop.type, 'header');
+  assert.deepEqual(
+    React.Children.toArray(desktop.props.children).map((n) => n.props.className),
+    ['tb-title', 'tb-actions', 'tb-switch'],
+  );
+  narrow = true;
+  const [header, under] = React.Children.toArray(Toolbar(props).props.children);
+  assert.equal(header.type, 'header');
+  assert.deepEqual(
+    React.Children.toArray(header.props.children).map((n) => n.props.className),
+    ['tb-title'],
+  );
+  assert.equal(under.props.className, 'tb-under');
+  assert.deepEqual(
+    React.Children.toArray(under.props.children).map((n) => n.props.className),
+    ['tb-switch', 'tb-actions'],
+  );
 });
 
 test('a proxy editor draft survives new-subscription save and JSON round trip', () => {

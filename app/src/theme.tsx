@@ -49,9 +49,10 @@ export function useThemeMode(): [ThemeMode, () => void] {
 }
 
 /**
- * 三个图标叠在一起，只淡入当前图标。
+ * 三个图标叠在一起，只淡入当前图标。跟随系统在窄屏（手机）上画手机，宽屏画显示器。
  */
 export function ThemeIcon({ mode, size = 18 }: { mode: ThemeMode; size?: number }) {
+  const phone = matchMedia('(max-width: 860px)').matches;
   const layer = (m: ThemeMode, turn: number) =>
     ({
       transformBox: 'fill-box',
@@ -81,8 +82,17 @@ export function ThemeIcon({ mode, size = 18 }: { mode: ThemeMode; size?: number 
         <path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7Z" />
       </g>
       <g style={layer('system', 180)}>
-        <rect x="2.5" y="4" width="19" height="13" rx="2" />
-        <path d="M8 21h8M12 17v4" />
+        {phone ? (
+          <>
+            <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+            <path d="M11 18.5h2" />
+          </>
+        ) : (
+          <>
+            <rect x="2.5" y="4" width="19" height="13" rx="2" />
+            <path d="M8 21h8M12 17v4" />
+          </>
+        )}
       </g>
     </svg>
   );

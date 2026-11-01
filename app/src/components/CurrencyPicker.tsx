@@ -3,6 +3,7 @@ import { symbol } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { ccyFlag, ccyName } from '../display.ts';
 import { Icon } from './icons.tsx';
+import { touchFirst } from './inputs.tsx';
 import { Pop } from './Pop.tsx';
 import { useTextSearch } from '../use-search.ts';
 
@@ -102,7 +103,7 @@ export function CurrencyPicker({
           <div className="pk-in" onKeyDown={onKey}>
             <label className="cp-search">
               <Icon name="search" />
-              <input autoFocus value={q} placeholder={t('picker.ccy.search')} onChange={(e) => setQ(e.target.value)} />
+              <input autoFocus={!touchFirst()} value={q} placeholder={t('picker.ccy.search')} onChange={(e) => setQ(e.target.value)} />
             </label>
             <div className="cp-list" ref={list} role="listbox" aria-label={t('picker.ccy.label')}>
               {sections.map((s) => (

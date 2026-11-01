@@ -1112,6 +1112,34 @@ a {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 18px;
 }
+/* 新建占位卡：与卡面同尺寸的虚线框，只在手机上出现（桌面的新建在工具栏） */
+.wallet-add {
+  display: none;
+  aspect-ratio: 1.586;
+  border-radius: 18px;
+  border: var(--hairline) dashed var(--label-3);
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  font-size: var(--fs-2);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.wallet-add .i {
+  width: 20px;
+  height: 20px;
+}
+.wallet-add:active {
+  background: var(--fill-2);
+}
+@media (max-width: 860px) {
+  .wallet-add {
+    display: flex;
+  }
+}
 /* 卡面内的字号、内边距随卡宽缩放（cqw 以卡片自身宽度为基准） */
 .wallet-grid > * {
   container-type: inline-size;
@@ -2831,6 +2859,19 @@ button.bl-col {
 .group-body {
   box-shadow: 0 0 0 var(--hairline) var(--line);
 }
+/* 退出登录是危险操作：与 danger-soft 同色，浅红底、红字、淡红描边 */
+.group-body:has(> .logout-cell) {
+  background: var(--red-3);
+  box-shadow: 0 0 0 var(--hairline) color-mix(in srgb, var(--red) 40%, transparent);
+}
+.logout-cell {
+  justify-content: center;
+  color: var(--red);
+  font-weight: 500;
+}
+.cell.tap.logout-cell:hover {
+  background: color-mix(in srgb, var(--red-3) 80%, var(--red));
+}
 .card {
   border-radius: var(--radius-lg);
   padding: 18px 20px;
@@ -2988,12 +3029,13 @@ button.bl-col {
   padding: 8px 12px 4px;
 }
 
-/* 移动端：侧边栏换成底栏（见文件末尾「手机底栏」），工具栏吸顶 */
+/* 移动端：侧边栏换成底栏（见文件末尾「手机底栏」），只有标题吸顶；操作区在 .tb-under 里随页面滚走 */
 @media (max-width: 860px) {
   .toolbar {
     position: sticky;
     top: 0;
-    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    /* 状态栏那一段完全不透明：添加到主屏幕后滚动时，内容不会从状态栏底下透出来；标题这一段才是毛玻璃 */
+    background: linear-gradient(var(--bg) var(--safe-t), color-mix(in srgb, var(--bg) 94%, transparent) var(--safe-t));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     padding: calc(8px + var(--safe-t)) 12px 8px;
@@ -3001,6 +3043,24 @@ button.bl-col {
     flex-wrap: wrap;
     align-items: center;
     row-gap: 8px;
+  }
+  /* 惯性回弹把页面拉离顶部时，标题上方也用底色盖住 */
+  .toolbar::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 100dvh;
+    background: var(--bg);
+    pointer-events: none;
+  }
+  /* 左右边距同 .page，控件与下方卡片边缘对齐 */
+  .tb-under {
+    padding: 0 14px;
+  }
+  .tb-under > * {
+    margin-top: 8px;
   }
   .tb-title {
     flex-basis: auto;
@@ -4529,15 +4589,15 @@ button.h-price-row:focus-visible {
 
 /* 手机端：工具栏控件自动换行；输入框 16px 防止 iOS 聚焦时放大页面 */
 @media (max-width: 860px) {
-  .toolbar .tb-actions {
+  .tb-under .tb-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
   }
-  .toolbar .tb-actions > * {
+  .tb-under .tb-actions > * {
     flex: 1 1 auto;
   }
-  .toolbar .tb-actions .seg button {
+  .tb-under .tb-actions .seg button {
     padding-left: 8px;
     padding-right: 8px;
   }
@@ -6039,9 +6099,10 @@ a.car-toggle {
 }
 .cp-head {
   position: sticky;
-  top: 0;
+  /* 往上多盖 1px：iOS 上吸顶位置按亚像素取整，会在搜索框下方漏出一条底下的列表 */
+  top: -1px;
   z-index: 1;
-  padding: 8px 10px 4px;
+  padding: 9px 10px 4px;
   font-size: var(--fs-1);
   font-weight: 600;
   color: var(--label-3);
@@ -9407,7 +9468,7 @@ img.mm-flag {
   white-space: nowrap;
 }
 @media (max-width: 860px) {
-  .toolbar .tb-actions > .icon-btn {
+  .tb-under .tb-actions > .icon-btn {
     flex: 0 0 auto;
   }
   .tb-actions .btn,
@@ -10131,6 +10192,15 @@ img.mm-flag {
   /* 手机放不下一行时，分享按钮换到年份下面，不顶出屏幕 */
   max-width: 100%;
 }
+/* 手机：年份胶囊靠左、分享按钮靠右，两者都按内容宽，与下方卡片左右边对齐 */
+@media (max-width: 860px) {
+  .report-share {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
 /* 报告页年份胶囊：外框同 .btn，两侧箭头用浅灰、悬停变深，中间的下拉按钮去掉自己的框 */
 .year-step {
   display: inline-flex;
@@ -10189,6 +10259,12 @@ img.mm-flag {
   .report-share > .copy-image:disabled {
     opacity: 1;
     pointer-events: auto;
+  }
+}
+/* 窄窗口又有鼠标时，隐藏的复制按钮仍占位会把整行挤偏，干脆不放；触屏照常显示 */
+@media (hover: hover) and (max-width: 860px) {
+  .report-share > .copy-image {
+    display: none;
   }
 }
 

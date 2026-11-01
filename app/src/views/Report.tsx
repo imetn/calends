@@ -25,7 +25,7 @@ import {
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { AreaChart, BarLine } from '../components/charts.tsx';
 import { MetricCards, Metric, IconButton, CardTitle, Toolbar } from '../components/ui.tsx';
-import { Seg } from '../components/inputs.tsx';
+import { Seg, useMedia } from '../components/inputs.tsx';
 import { MethodMark, SubIcon } from '../components/marks.tsx';
 import { Icon } from '../components/icons.tsx';
 import { tipProps } from '../components/overlays.tsx';
@@ -70,6 +70,8 @@ export function Report({
     ...Array.from({ length: cur + 2 - first }, (_, i) => String(cur + 1 - i)).map((y) => ({ value: y, label: t('report.pick.year', { year: y }) })),
   ];
   const pageRef = useRef<HTMLDivElement>(null);
+  // 手机一行放不下长文案，只写「分享」
+  const narrow = useMedia('(max-width: 860px)');
   return (
     <>
       <Toolbar title={t('report.title')}>
@@ -79,7 +81,7 @@ export function Report({
           <YearStep value={pick} options={options} onChange={setPick} />
           {/* 回顾只回看今年及以前；全部是从第一笔到今天的累计回顾 */}
           <button className="btn" disabled={future} onClick={() => onReview(pick)}>
-            <Icon name="share" /> {all ? t('report.shareAll') : t('report.shareReview', { year })}
+            <Icon name="share" /> {narrow ? t('detail.action.share') : all ? t('report.shareAll') : t('report.shareReview', { year })}
           </button>
         </span>
       </Toolbar>

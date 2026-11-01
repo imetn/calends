@@ -5,6 +5,7 @@ import { Children } from 'react';
 import { t } from '../../../shared/i18n.ts';
 import { Icon } from './icons.tsx';
 import { Hint } from './overlays.tsx';
+import { useMedia } from './inputs.tsx';
 import { useRegisterPageAdd } from '../page-add.ts';
 
 /**
@@ -80,14 +81,31 @@ export function Toolbar({
   switcher?: ComponentChildren;
 }) {
   useRegisterPageAdd(onAdd, addLabel);
+  const narrow = useMedia('(max-width: 860px)');
+  const head = (
+    <div className="tb-title">
+      <h1>{copyParts(title)}</h1>
+      {sub && <div className="tb-sub">{copyParts(sub)}</div>}
+    </div>
+  );
+  const actions = <div className="tb-actions">{children}</div>;
+  const sw = switcher && <div className="tb-switch">{switcher}</div>;
+  // 手机端只有标题吸顶，与概览、设置一致；切换和操作区排在标题下面，随页面滚走
+  if (narrow)
+    return (
+      <>
+        <header className="toolbar">{head}</header>
+        <div className="tb-under">
+          {sw}
+          {actions}
+        </div>
+      </>
+    );
   return (
     <header className="toolbar">
-      <div className="tb-title">
-        <h1>{copyParts(title)}</h1>
-        {sub && <div className="tb-sub">{copyParts(sub)}</div>}
-      </div>
-      <div className="tb-actions">{children}</div>
-      {switcher && <div className="tb-switch">{switcher}</div>}
+      {head}
+      {actions}
+      {sw}
     </header>
   );
 }

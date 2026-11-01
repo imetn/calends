@@ -162,6 +162,9 @@ export function useSubmit(): [boolean, (fn: () => unknown) => Promise<void>] {
   return [busy, submit];
 }
 
+/** 触屏为主：弹层打开时不自动聚焦搜索框，免得软键盘一下子顶上来；用户点进搜索框再输入 */
+export const touchFirst = () => matchMedia('(pointer: coarse)').matches;
+
 /** 媒体查询订阅按查询串缓存：同一查询在每次渲染里是同一个函数，React 不必反复退订再订阅 */
 export const mediaSubscribers = new Map<string, (cb: () => void) => () => void>();
 

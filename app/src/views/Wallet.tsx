@@ -196,11 +196,13 @@ export function Wallet({ state, today, onOpen }: { state: AppState; today: strin
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const add = () => setEdit({ id: uid(), name: '', kind: 'appstore', currency: 'TRY' });
+
   return (
     <>
-      <Toolbar title={t('wallet.title')} sub={t('wallet.sub', { count: state.methods.length })}>
+      <Toolbar title={t('wallet.title')} sub={t('wallet.sub', { count: state.methods.length })} onAdd={ro ? undefined : add} addLabel={t('wallet.add')}>
         {!ro && (
-          <button className="btn primary" onClick={() => setEdit({ id: uid(), name: '', kind: 'appstore', currency: 'TRY' })}>
+          <button className="btn primary d-only" onClick={add}>
             <Icon name="plus" /> {t('wallet.add')}
           </button>
         )}
@@ -250,6 +252,13 @@ export function Wallet({ state, today, onOpen }: { state: AppState; today: strin
                   </SortableCard>
                 );
               })}
+              {/* 手机端工具栏不放新建：最后一张卡的位置留一个虚线占位 */}
+              {!ro && (
+                <button type="button" className="wallet-add" onClick={add}>
+                  <Icon name="plus" />
+                  {t('wallet.add')}
+                </button>
+              )}
             </div>
           </SortableContext>
         </DndContext>

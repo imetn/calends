@@ -3,6 +3,7 @@ import type { PaymentMethod } from '../../../shared/types.ts';
 import { KIND_LABEL } from '../derive.ts';
 import { t } from '../../../shared/i18n.ts';
 import { Icon } from './icons.tsx';
+import { touchFirst } from './inputs.tsx';
 import { MethodMark } from './marks.tsx';
 import { Pop } from './Pop.tsx';
 import { useTextSearch } from '../use-search.ts';
@@ -42,7 +43,7 @@ export function MethodPicker({ methods, value, onChange }: { methods: PaymentMet
         <Pop triggerRef={btn} onClose={close} label={t('picker.method.label')} className="mp-pop">
           <label className="cp-search">
             <Icon name="search" />
-            <input autoFocus value={q} placeholder={t('common.search')} onChange={(e) => setQ(e.target.value)} />
+            <input autoFocus={!touchFirst()} value={q} placeholder={t('common.search')} onChange={(e) => setQ(e.target.value)} />
           </label>
           <div role="listbox" aria-label={t('picker.method.label')}>
             {showNone && (

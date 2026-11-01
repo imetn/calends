@@ -6,6 +6,7 @@ import { CURRENCIES } from '../../../shared/format.ts';
 import { locale, t } from '../../../shared/i18n.ts';
 import { ccyFlag, ccyName, FLAGS } from '../display.ts';
 import { Icon } from './icons.tsx';
+import { touchFirst } from './inputs.tsx';
 import { Pop } from './Pop.tsx';
 import { useTextSearch } from '../use-search.ts';
 
@@ -71,8 +72,8 @@ export function Picker<T extends string | number>({
         shown.findIndex((o) => o.value === value),
       ),
     );
-    // 弹层打开后把焦点给搜索框（没有搜索框就给列表，方便上下键）
-    requestAnimationFrame(() => (input.current ?? list.current)?.focus({ preventScroll: true }));
+    // 弹层打开后把焦点给搜索框（没有搜索框或触屏时给列表，方便上下键）
+    requestAnimationFrame(() => ((touchFirst() ? null : input.current) ?? list.current)?.focus({ preventScroll: true }));
   }, [open]);
   useEffect(() => {
     if (q) setHi(0);

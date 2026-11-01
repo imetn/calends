@@ -151,6 +151,7 @@ test('payment method picker filters names by pinyin and keeps currency code matc
     'Icon',
     'MethodMark',
     'Pop',
+    'touchFirst',
     `${compiled.code}; return MethodPicker;`,
   )(
     React,
@@ -165,6 +166,7 @@ test('payment method picker filters names by pinyin and keeps currency code matc
     () => null,
     () => null,
     ({ children }) => React.createElement('div', null, children),
+    () => false,
   );
   for (const [key, expected, excluded] of [
     ['zsyh', '招商银行', '土耳其钱包'],
