@@ -20,7 +20,9 @@ import { saveSub } from '../../store.ts';
 import { run } from '../../toast.ts';
 
 const qty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: 3 }).format(n);
-const withUnit = (n: number, unit: string) => (unit ? `${qty(n)} ${unit}` : qty(n));
+const withUnit = (n: number, unit: string, f = qty) => (unit ? `${f(n)} ${unit}` : f(n));
+/** 平均值是算出来的，按量级留小数：307.2 度、3.47 GB */
+const avgQty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: Math.abs(n) >= 100 ? 1 : 2 }).format(n);
 /** 柱顶标数：过千用紧凑写法，免得挤 */
 const compactQty = (n: number) =>
   numberFormat(intlLocale(), { notation: n >= 10000 ? 'compact' : 'standard', maximumFractionDigits: n >= 100 ? 0 : 1 }).format(n);
@@ -128,7 +130,7 @@ export function Meters({ sub, state, today }: { sub: Subscription; state: AppSta
           />
           <Metric
             label={t('detail.meters.average')}
-            value={stats.average != null ? withUnit(stats.average, cur.unit) : '—'}
+            value={stats.average != null ? withUnit(stats.average, cur.unit, avgQty) : '—'}
             note={summary.periods ? t('detail.meters.periods', { n: summary.periods }) : undefined}
           />
           <Metric
