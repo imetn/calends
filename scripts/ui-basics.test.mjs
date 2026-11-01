@@ -1342,3 +1342,11 @@ test('手机「更多」圆按钮与底栏用短名，不用侧栏全称', () =>
     for (const [key, value] of Object.entries(short)) assert.ok([...value].length <= 9, `${loc} ${key}: ${value}`);
   }
 });
+
+test('筛选胶囊的底色比点按区矮，手机上选中的「全部」不会是 40px 高的大胶囊', () => {
+  assert.doesNotMatch(rulesFor('.facet.on'), /background/);
+  assert.match(rulesFor('.facet.on::before'), /background:\s*var\(--ink\)/);
+  assert.match(rulesFor('.facet::before'), /inset:\s*calc\(\(var\(--ctl-h-sm\) - var\(--facet-pill\)\) \/ 2\) 0/);
+  const pills = [...rulesFor('.facet').matchAll(/--facet-pill:\s*(\d+)px/g)].map((m) => +m[1]);
+  assert.deepEqual(pills, [26, 30]);
+});
