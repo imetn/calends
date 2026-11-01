@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { FALLBACK_FX, subError } from './billing.ts';
 import { maskForPublic } from './mask.ts';
-import { costBetween, meterError, meterRows, meterSuggestions, meterSummary, removeMeter, replaceMeters, stableId } from './meters.ts';
+import { costBetween, meterError, meterRows, meterStats, meterSuggestions, meterSummary, removeMeter, replaceMeters, stableId } from './meters.ts';
 import { DEFAULT_SETTINGS, type AppState, type Meter, type Payment, type Reading, type Subscription } from './types.ts';
 
 // 虚构场景：月付 ¥100 的 VPS，每月 10 日扣款；每月 15 日记一次出站流量（本期用量）和里程式累计读数
@@ -36,12 +36,12 @@ test('usage meter takes the value as period usage and prices it against charges 
   assert.deepEqual(
     rows.map((r) => [r.reading.id, r.usage, r.since, r.cost?.amount]),
     [
-      ['r1', 10, undefined, undefined],
+      ['r1', 10, '2025-01-09', 100],
       ['r2', 20, '2025-01-15', 100],
       ['r3', 0, '2025-02-15', 100],
     ],
   );
-  assert.equal(rows[0].unitPrice, undefined, 'first reading has no period to price');
+  near(rows[0].unitPrice, 10); // 首条从订阅开始算期间
   near(rows[1].unitPrice, 5);
   assert.equal(rows[2].unitPrice, undefined, 'zero usage has no unit price');
 });
@@ -176,4 +176,47 @@ test('public page never receives meters or readings', () => {
   assert.equal(out.subscriptions[0].meters, undefined);
   assert.equal(out.subscriptions[0].readings, undefined);
   assert.doesNotMatch(JSON.stringify(out), /private reading note|Traffic|kWh/);
+});
+
+test('postpaid bills count toward the reading at the end of the period they settle', () => {
+  const kwh: Meter = { id: 'kwh', name: 'Electricity', unit: 'kWh' };
+  const power: Subscription = {
+    id: 'power',
+    name: 'Fictional power',
+    category: 'utilities',
+    tags: [],
+    price: 100,
+    currency: 'CNY',
+    cycle: { unit: 'month', every: 1 },
+    start: '2025-01-01',
+    status: 'active',
+    billing: 'postpaid',
+    payments: [
+      { date: '2025-02-01', amount: 50 },
+      { date: '2025-03-01', amount: 80 },
+    ],
+    meters: [kwh],
+    readings: [
+      { id: 'jan', date: '2025-01-31', values: { kwh: 100 } },
+      { id: 'feb', date: '2025-02-28', values: { kwh: 200 } },
+    ],
+  };
+  const rows = meterRows(power, kwh, '2025-03-15');
+  assert.deepEqual(
+    rows.map((r) => [r.reading.id, r.cost?.amount]),
+    [
+      ['jan', 50],
+      ['feb', 80],
+    ],
+  );
+  near(rows[0].unitPrice, 0.5);
+  near(rows[1].unitPrice, 0.4);
+  const stats = meterStats(rows);
+  near(stats.average, 150);
+  near(stats.unitPrice?.amount, 130 / 300);
+  assert.equal(stats.peak?.reading.id, 'feb');
+});
+
+test('stats stay empty without usage', () => {
+  assert.deepEqual(meterStats([]), { average: undefined, unitPrice: undefined, peak: undefined });
 });

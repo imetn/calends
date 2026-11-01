@@ -211,11 +211,8 @@
     "suggest": "其他訂閱用過",
     "removeConfirm": "刪除{names}會一併清除它們的歷史數值，確定嗎？",
     "dupName": "指標名稱不能重複",
-    "valuesFoot": "可只填部分指標。單價 = 上一筆紀錄之後到這一天的實際扣款 ÷ 本期用量。",
+    "valuesFoot": "單價 = 這一期的實際費用 ÷ 本期用量；後付費的帳單按它結清的帳期計入。",
     "saved": "業務數據已儲存",
-    "total": "累計 {v}",
-    "unitPrice": "單價 {v}",
-    "both": "累計 {total}，單價 {price}",
     "readingValue": "讀數 {v}",
     "head": {
       "date": "日期",
@@ -226,6 +223,14 @@
     },
     "readingsCount": "{n} 筆紀錄",
     "deleteReadings": "刪除 {n} 筆紀錄",
-    "removeMeters": "刪除指標及其歷史數值"
+    "removeMeters": "刪除指標及其歷史數值",
+    "latest": "最近一期",
+    "average": "平均每期",
+    "avgPrice": "平均單價",
+    "totalLabel": "累計",
+    "periods": "{n} 期",
+    "latestPrice": "最近 {v}",
+    "since": "自 {date}",
+    "tipCost": "費用 {v}"
   }
 }

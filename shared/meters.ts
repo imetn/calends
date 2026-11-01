@@ -1,7 +1,8 @@
 // 业务数据：订阅上用户自定义的指标（电量、里程、出站流量……）与按期记录。
 // 读数和付款分开存：服务器年付但按月看流量、车险一年一交但里程随时记。这里只放纯计算与校验，浏览器与 Worker 共用。
-import { addDays, chargesBetween, fnv1a, validDay } from './billing.ts';
+import { addDays, chargeServicePeriod, chargesBetween, fnv1a, isPostpaid, validDay } from './billing.ts';
 import { t } from './i18n.ts';
+import type { Charge } from './billing.ts';
 import type { Meter, Reading, Subscription } from './types.ts';
 
 /** 某个指标在一条记录上的派生结果 */
@@ -11,7 +12,7 @@ export interface MeterRow {
   value: number;
   /** 本期用量；累计读数型的首条、读数回退时没有 */
   usage?: number;
-  /** 期间起点（不含）：上一条有该指标数值的记录日；首条没有 */
+  /** 期间起点（不含）：上一条有该指标数值的记录日；本期用量型的首条为订阅开始前一天，累计读数型的首条没有 */
   since?: string;
   /** 期间 (since, date] 内实际扣款合计；同期没有扣款或混有多种币种时没有 */
   cost?: { amount: number; currency: string };
@@ -27,10 +28,19 @@ export function readingsOf(s: Pick<Subscription, 'readings'>): Reading[] {
     .map(([r]) => r);
 }
 
-/** (from, to] 内已发生的实际扣款合计，按原币；排除扣款失败与预测；没有扣款或币种不一时返回 undefined */
+/**
+ * (from, to] 内已发生的实际扣款合计，按原币；排除扣款失败与预测；没有扣款或币种不一时返回 undefined。
+ * 后付费的一笔按它结清的服务期末日归期：10 月 1 日交的 9 月电费，算进截至 9 月 30 日的那条记录
+ */
 export function costBetween(s: Subscription, from: string, to: string, today: string): { amount: number; currency: string } | undefined {
   if (to <= from) return undefined;
-  const charges = chargesBetween(s, addDays(from, 1), to, today).filter((c) => !c.projected && c.kind !== 'failed');
+  const dayOf = (c: Charge) => (isPostpaid(c.sub) ? addDays(chargeServicePeriod(c.sub, c.date, c.serviceDate).until, -1) : c.date);
+  // 后付费的账单在服务期之后才出，往后多取一年再按归期筛
+  const charges = chargesBetween(s, addDays(from, 1), addDays(to, 400), today).filter((c) => {
+    if (c.projected || c.kind === 'failed') return false;
+    const day = dayOf(c);
+    return day > from && day <= to;
+  });
   if (!charges.length) return undefined;
   const currencies = new Set(charges.map((c) => c.currency));
   if (currencies.size !== 1) return undefined;
@@ -50,7 +60,8 @@ export function meterRows(s: Subscription, meter: Meter, today: string): MeterRo
       usage = prev ? value - prev.value : undefined;
       if (usage != null) usage = usage < 0 ? undefined : Math.round(usage * 1e6) / 1e6;
     }
-    const since = prev?.reading.date;
+    // 本期用量型的首条：期间从订阅开始算起（开始日前一天，不含）
+    const since = prev?.reading.date ?? (meter.kind === 'reading' ? undefined : addDays(s.start, -1));
     const cost = since ? costBetween(s, since, reading.date, today) : undefined;
     const row: MeterRow = { reading, value, ...(usage != null ? { usage } : {}), ...(since ? { since } : {}), ...(cost ? { cost } : {}) };
     if (cost && usage != null && usage > 0) row.unitPrice = cost.amount / usage;
@@ -73,6 +84,21 @@ export function meterSummary(s: Subscription, meter: Meter, today: string, from?
     /** 累计里实际计入的期数 */
     periods: used.length,
     from: inWindow[0]?.reading.date,
+  };
+}
+
+/** 走势统计：平均每期用量、平均单价（有单价各期的费用合计 ÷ 用量合计）、用量最高的一期 */
+export function meterStats(rows: MeterRow[]) {
+  const used = rows.filter((r) => r.usage != null);
+  const priced = rows.filter((r) => r.unitPrice != null);
+  const currency = priced[0]?.cost!.currency;
+  const same = priced.every((r) => r.cost!.currency === currency);
+  const pricedUsage = priced.reduce((a, r) => a + r.usage!, 0);
+  return {
+    average: used.length ? used.reduce((a, r) => a + r.usage!, 0) / used.length : undefined,
+    unitPrice:
+      priced.length && same && pricedUsage > 0 ? { amount: priced.reduce((a, r) => a + r.cost!.amount, 0) / pricedUsage, currency: currency! } : undefined,
+    peak: used.reduce<MeterRow | undefined>((m, r) => (!m || r.usage! > m.usage! ? r : m), undefined),
   };
 }
 

@@ -238,11 +238,8 @@
     "suggest": "In anderen Abos verwendet",
     "removeConfirm": "Beim Löschen von {names} werden auch die erfassten Werte entfernt. Fortfahren?",
     "dupName": "Namen von Messgrößen müssen eindeutig sein",
-    "valuesFoot": "Beliebige Messgrößen ausfüllen. Stückpreis = tatsächliche Abbuchungen nach dem vorigen Eintrag bis zu diesem Datum ÷ Verbrauch.",
+    "valuesFoot": "Stückpreis = tatsächliche Kosten des Zeitraums ÷ Verbrauch. Nachträgliche Rechnungen zählen zum abgerechneten Zeitraum.",
     "saved": "Nutzungsdaten gespeichert",
-    "total": "Gesamt {v}",
-    "unitPrice": "Stückpreis {v}",
-    "both": "Gesamt {total}, Stückpreis {price}",
     "readingValue": "Stand {v}",
     "head": {
       "date": "Datum",
@@ -253,6 +250,14 @@
     },
     "readingsCount": "{n} Einträge",
     "deleteReadings": "{n} Einträge löschen",
-    "removeMeters": "Messgrößen und ihre Werte löschen"
+    "removeMeters": "Messgrößen und ihre Werte löschen",
+    "latest": "Zuletzt",
+    "average": "Ø pro Zeitraum",
+    "avgPrice": "Ø Stückpreis",
+    "totalLabel": "Gesamt",
+    "periods": "{n} Zeiträume",
+    "latestPrice": "Zuletzt {v}",
+    "since": "Seit {date}",
+    "tipCost": "Kosten {v}"
   }
 }

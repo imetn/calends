@@ -238,11 +238,8 @@
     "suggest": "Usado en otras suscripciones",
     "removeConfirm": "Al eliminar {names} también se borran sus valores registrados. ¿Continuar?",
     "dupName": "Los nombres de los medidores deben ser únicos",
-    "valuesFoot": "Rellena los medidores que quieras. Precio unitario = cargos reales tras el registro anterior hasta esta fecha ÷ consumo.",
+    "valuesFoot": "Precio unitario = coste real del periodo ÷ consumo. Las facturas pospago cuentan en el periodo que liquidan.",
     "saved": "Datos de uso guardados",
-    "total": "Total {v}",
-    "unitPrice": "Precio unitario {v}",
-    "both": "Total {total}, precio unitario {price}",
     "readingValue": "Lectura {v}",
     "head": {
       "date": "Fecha",
@@ -253,6 +250,14 @@
     },
     "readingsCount": "{n} registros",
     "deleteReadings": "Eliminar {n} registros",
-    "removeMeters": "Eliminar medidores y sus valores"
+    "removeMeters": "Eliminar medidores y sus valores",
+    "latest": "Último",
+    "average": "Promedio por periodo",
+    "avgPrice": "Precio unitario medio",
+    "totalLabel": "Total",
+    "periods": "{n} periodos",
+    "latestPrice": "Último {v}",
+    "since": "Desde {date}",
+    "tipCost": "Coste {v}"
   }
 }

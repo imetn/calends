@@ -223,11 +223,8 @@
     "suggest": "Dipakai di langganan lain",
     "removeConfirm": "Menghapus {names} juga menghapus nilai yang sudah dicatat. Lanjutkan?",
     "dupName": "Nama meteran harus unik",
-    "valuesFoot": "Isi meteran mana saja. Harga satuan = tagihan nyata setelah catatan sebelumnya hingga tanggal ini ÷ pemakaian.",
+    "valuesFoot": "Harga satuan = biaya aktual periode ÷ pemakaian. Tagihan pascabayar dihitung ke periode yang dilunasi.",
     "saved": "Data penggunaan disimpan",
-    "total": "Total {v}",
-    "unitPrice": "Harga satuan {v}",
-    "both": "Total {total}, harga satuan {price}",
     "readingValue": "Angka {v}",
     "head": {
       "date": "Tanggal",
@@ -238,6 +235,14 @@
     },
     "readingsCount": "{n} catatan",
     "deleteReadings": "Hapus {n} catatan",
-    "removeMeters": "Hapus meteran dan nilainya"
+    "removeMeters": "Hapus meteran dan nilainya",
+    "latest": "Terakhir",
+    "average": "Rata-rata per periode",
+    "avgPrice": "Rata-rata harga satuan",
+    "totalLabel": "Total",
+    "periods": "{n} periode",
+    "latestPrice": "Terakhir {v}",
+    "since": "Sejak {date}",
+    "tipCost": "Biaya {v}"
   }
 }

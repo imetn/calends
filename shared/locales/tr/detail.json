@@ -229,11 +229,8 @@
     "suggest": "Diğer aboneliklerde kullanıldı",
     "removeConfirm": "{names} silinirse kaydedilen değerleri de temizlenir. Devam edilsin mi?",
     "dupName": "Ölçüt adları benzersiz olmalı",
-    "valuesFoot": "İstediğiniz ölçütleri doldurun. Birim fiyat = önceki kayıttan sonra bu tarihe kadarki gerçek ödemeler ÷ kullanım.",
+    "valuesFoot": "Birim fiyat = dönemin gerçek maliyeti ÷ kullanım. Sonradan ödemeli faturalar kapattıkları döneme sayılır.",
     "saved": "Kullanım verileri kaydedildi",
-    "total": "Toplam {v}",
-    "unitPrice": "Birim fiyat {v}",
-    "both": "Toplam {total}, birim fiyat {price}",
     "readingValue": "Okuma {v}",
     "head": {
       "date": "Tarih",
@@ -244,6 +241,14 @@
     },
     "readingsCount": "{n} kayıt",
     "deleteReadings": "{n} kaydı sil",
-    "removeMeters": "Ölçütleri ve değerlerini sil"
+    "removeMeters": "Ölçütleri ve değerlerini sil",
+    "latest": "Son",
+    "average": "Dönem başına ort.",
+    "avgPrice": "Ort. birim fiyat",
+    "totalLabel": "Toplam",
+    "periods": "{n} dönem",
+    "latestPrice": "Son {v}",
+    "since": "{date} itibarıyla",
+    "tipCost": "Maliyet {v}"
   }
 }

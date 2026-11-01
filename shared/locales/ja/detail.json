@@ -223,11 +223,8 @@
     "suggest": "他のサブスクで使用",
     "removeConfirm": "{names}を削除すると記録済みの値も消去されます。続けますか？",
     "dupName": "指標名は重複できません",
-    "valuesFoot": "一部の指標だけ入力できます。単価 = 前回の記録の翌日からこの日までの実際の請求 ÷ 使用量。",
+    "valuesFoot": "単価 = その期の実費 ÷ 使用量。後払いの請求は精算対象の期に計上します。",
     "saved": "業務データを保存しました",
-    "total": "累計 {v}",
-    "unitPrice": "単価 {v}",
-    "both": "累計 {total}、単価 {price}",
     "readingValue": "読み値 {v}",
     "head": {
       "date": "日付",
@@ -238,6 +235,14 @@
     },
     "readingsCount": "{n} 件の記録",
     "deleteReadings": "{n} 件の記録を削除",
-    "removeMeters": "指標と記録済みの値を削除"
+    "removeMeters": "指標と記録済みの値を削除",
+    "latest": "最新",
+    "average": "1期あたり平均",
+    "avgPrice": "平均単価",
+    "totalLabel": "累計",
+    "periods": "{n} 期",
+    "latestPrice": "最新 {v}",
+    "since": "{date} から",
+    "tipCost": "費用 {v}"
   }
 }

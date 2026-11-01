@@ -238,11 +238,8 @@
     "suggest": "Utilisé dans d’autres abonnements",
     "removeConfirm": "Supprimer {names} efface aussi leurs valeurs saisies. Continuer ?",
     "dupName": "Les noms de compteurs doivent être uniques",
-    "valuesFoot": "Remplissez les compteurs de votre choix. Prix unitaire = prélèvements réels après l’entrée précédente jusqu’à cette date ÷ consommation.",
+    "valuesFoot": "Prix unitaire = coût réel de la période ÷ consommation. Les factures post-payées comptent pour la période réglée.",
     "saved": "Données d’usage enregistrées",
-    "total": "Total {v}",
-    "unitPrice": "Prix unitaire {v}",
-    "both": "Total {total}, prix unitaire {price}",
     "readingValue": "Relevé {v}",
     "head": {
       "date": "Date",
@@ -253,6 +250,14 @@
     },
     "readingsCount": "{n} entrées",
     "deleteReadings": "Supprimer {n} entrées",
-    "removeMeters": "Supprimer les compteurs et leurs valeurs"
+    "removeMeters": "Supprimer les compteurs et leurs valeurs",
+    "latest": "Dernier",
+    "average": "Moyenne par période",
+    "avgPrice": "Prix unitaire moyen",
+    "totalLabel": "Total",
+    "periods": "{n} périodes",
+    "latestPrice": "Dernier {v}",
+    "since": "Depuis le {date}",
+    "tipCost": "Coût {v}"
   }
 }

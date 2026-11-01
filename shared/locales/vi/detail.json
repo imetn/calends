@@ -223,11 +223,8 @@
     "suggest": "Đã dùng ở gói khác",
     "removeConfirm": "Xóa {names} cũng sẽ xóa các giá trị đã ghi. Tiếp tục?",
     "dupName": "Tên chỉ số không được trùng",
-    "valuesFoot": "Có thể chỉ điền một số chỉ số. Đơn giá = khoản trừ thực tế sau bản ghi trước đến ngày này ÷ lượng dùng.",
+    "valuesFoot": "Đơn giá = chi phí thực tế của kỳ ÷ lượng dùng. Hóa đơn trả sau được tính vào kỳ mà nó thanh toán.",
     "saved": "Đã lưu dữ liệu sử dụng",
-    "total": "Tổng {v}",
-    "unitPrice": "Đơn giá {v}",
-    "both": "Tổng {total}, đơn giá {price}",
     "readingValue": "Số đọc {v}",
     "head": {
       "date": "Ngày",
@@ -238,6 +235,14 @@
     },
     "readingsCount": "{n} bản ghi",
     "deleteReadings": "Xóa {n} bản ghi",
-    "removeMeters": "Xóa chỉ số và giá trị của chúng"
+    "removeMeters": "Xóa chỉ số và giá trị của chúng",
+    "latest": "Gần nhất",
+    "average": "Trung bình mỗi kỳ",
+    "avgPrice": "Đơn giá trung bình",
+    "totalLabel": "Tổng",
+    "periods": "{n} kỳ",
+    "latestPrice": "Gần nhất {v}",
+    "since": "Từ {date}",
+    "tipCost": "Chi phí {v}"
   }
 }

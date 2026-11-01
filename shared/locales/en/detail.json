@@ -238,11 +238,8 @@
     "suggest": "Used in other subscriptions",
     "removeConfirm": "Deleting {names} also clears their recorded values. Continue?",
     "dupName": "Meter names must be unique",
-    "valuesFoot": "Fill in any of the meters. Unit price = actual charges after the previous record up to this date ÷ usage.",
+    "valuesFoot": "Unit price = actual cost for the period ÷ usage. Postpaid bills count toward the period they settle.",
     "saved": "Business data saved",
-    "total": "Total {v}",
-    "unitPrice": "Unit price {v}",
-    "both": "Total {total}, unit price {price}",
     "readingValue": "Reading {v}",
     "head": {
       "date": "Date",
@@ -253,6 +250,14 @@
     },
     "readingsCount": "{n} records",
     "deleteReadings": "Delete {n} records",
-    "removeMeters": "Delete meters and their values"
+    "removeMeters": "Delete meters and their values",
+    "latest": "Latest",
+    "average": "Average per period",
+    "avgPrice": "Average unit price",
+    "totalLabel": "Total",
+    "periods": "{n} periods",
+    "latestPrice": "Latest {v}",
+    "since": "Since {date}",
+    "tipCost": "Cost {v}"
   }
 }

@@ -238,11 +238,8 @@
     "suggest": "Usado em outras assinaturas",
     "removeConfirm": "Excluir {names} também apaga os valores registrados. Continuar?",
     "dupName": "Os nomes dos medidores devem ser únicos",
-    "valuesFoot": "Preencha os medidores que quiser. Preço unitário = cobranças reais após o registro anterior até esta data ÷ consumo.",
+    "valuesFoot": "Preço unitário = custo real do período ÷ consumo. Faturas pós-pagas contam no período que quitam.",
     "saved": "Dados de uso salvos",
-    "total": "Total {v}",
-    "unitPrice": "Preço unitário {v}",
-    "both": "Total {total}, preço unitário {price}",
     "readingValue": "Leitura {v}",
     "head": {
       "date": "Data",
@@ -253,6 +250,14 @@
     },
     "readingsCount": "{n} registros",
     "deleteReadings": "Excluir {n} registros",
-    "removeMeters": "Excluir medidores e seus valores"
+    "removeMeters": "Excluir medidores e seus valores",
+    "latest": "Último",
+    "average": "Média por período",
+    "avgPrice": "Preço unitário médio",
+    "totalLabel": "Total",
+    "periods": "{n} períodos",
+    "latestPrice": "Último {v}",
+    "since": "Desde {date}",
+    "tipCost": "Custo {v}"
   }
 }

@@ -2,16 +2,17 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Settings2 } from 'lucide-react';
 import { uid } from '../../../../shared/billing.ts';
-import { cnDateFull, money } from '../../../../shared/format.ts';
+import { cnDateFull, money, monthLabel } from '../../../../shared/format.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
 import { numberFormat } from '../../../../shared/intl.ts';
-import { meterSuggestions, meterSummary, replaceMeters, type MeterRow } from '../../../../shared/meters.ts';
+import { meterStats, meterSuggestions, meterSummary, replaceMeters, type MeterRow } from '../../../../shared/meters.ts';
 import type { AppState, Meter, Reading, Subscription } from '../../../../shared/types.ts';
 import { ConfirmButton } from '../../components/ConfirmButton.tsx';
 import { DatePicker } from '../../components/DatePicker.tsx';
 import { Panel } from '../../components/DetailKit.tsx';
 import { Picker } from '../../components/Picker.tsx';
 import { YearLedger } from '../../components/YearLedger.tsx';
+import { BarLine } from '../../components/charts.tsx';
 import { NumInput, Seg, useSubmit } from '../../components/inputs.tsx';
 import { ask, Sheet } from '../../components/overlays.tsx';
 import { Cell, Group, Metric, MetricCards } from '../../components/ui.tsx';
@@ -20,12 +21,15 @@ import { run } from '../../toast.ts';
 
 const qty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: 3 }).format(n);
 const withUnit = (n: number, unit: string) => (unit ? `${qty(n)} ${unit}` : qty(n));
+/** 柱顶标数：过千用紧凑写法，免得挤 */
+const compactQty = (n: number) =>
+  numberFormat(intlLocale(), { notation: n >= 10000 ? 'compact' : 'standard', maximumFractionDigits: n >= 100 ? 0 : 1 }).format(n);
 /** 单价常是零点几（每度电、每 GB），多留一位小数 */
-const priceText = (r: MeterRow, unit: string) => {
-  const p = r.unitPrice!;
-  const s = money(p, r.cost!.currency, Math.abs(p) < 1 ? { decimals: 3 } : {});
+const unitMoney = (p: number, currency: string, unit: string) => {
+  const s = money(p, currency, Math.abs(p) < 1 ? { decimals: 3 } : {});
   return unit ? `${s}/${unit}` : s;
 };
+const priceText = (r: MeterRow, unit: string) => unitMoney(r.unitPrice!, r.cost!.currency, unit);
 
 /**
  * 业务数据：订阅上自定义的指标（电量、里程、流量……）与按日期的记录，和付款分开存。
@@ -83,7 +87,11 @@ export function Meters({ sub, state, today }: { sub: Subscription; state: AppSta
     );
   }
 
-  const rows = meterSummary(sub, cur, today).rows.slice().reverse();
+  const summary = meterSummary(sub, cur, today);
+  const stats = meterStats(summary.rows);
+  const latest = summary.latest;
+  const trend = summary.rows.filter((r) => r.usage != null).slice(-24);
+  const rows = summary.rows.slice().reverse();
   const isReading = cur.kind === 'reading';
   return (
     <Panel
@@ -103,25 +111,6 @@ export function Meters({ sub, state, today }: { sub: Subscription; state: AppSta
       }
     >
       <div className="dt-meters-body">
-        <MetricCards inline>
-          {meters.map((m) => {
-            const s = meterSummary(sub, m, today);
-            const last = s.latest;
-            const price = s.latestPriced && priceText(s.latestPriced, m.unit);
-            const total = s.periods ? withUnit(s.total, m.unit) : undefined;
-            const note =
-              total && price
-                ? t('detail.meters.both', { total, price })
-                : total
-                  ? t('detail.meters.total', { v: total })
-                  : price
-                    ? t('detail.meters.unitPrice', { v: price })
-                    : last && m.kind === 'reading'
-                      ? t('detail.meters.readingValue', { v: withUnit(last.value, m.unit) })
-                      : undefined;
-            return <Metric key={m.id} label={m.name} value={last?.usage != null ? withUnit(last.usage, m.unit) : '—'} note={note} />;
-          })}
-        </MetricCards>
         {meters.length > 1 && (
           <div className="dt-meters-pick">
             {meters.length <= 4 ? (
@@ -130,6 +119,57 @@ export function Meters({ sub, state, today }: { sub: Subscription; state: AppSta
               <Picker variant="btn" value={cur.id} onChange={setPicked} options={meters.map((m) => ({ value: m.id, label: m.name }))} />
             )}
           </div>
+        )}
+        <MetricCards inline>
+          <Metric
+            label={t('detail.meters.latest')}
+            value={latest?.usage != null ? withUnit(latest.usage, cur.unit) : '—'}
+            note={latest && (isReading ? t('detail.meters.readingValue', { v: withUnit(latest.value, cur.unit) }) : cnDateFull(latest.reading.date))}
+          />
+          <Metric
+            label={t('detail.meters.average')}
+            value={stats.average != null ? withUnit(stats.average, cur.unit) : '—'}
+            note={summary.periods ? t('detail.meters.periods', { n: summary.periods }) : undefined}
+          />
+          <Metric
+            label={t('detail.meters.avgPrice')}
+            value={stats.unitPrice ? unitMoney(stats.unitPrice.amount, stats.unitPrice.currency, cur.unit) : '—'}
+            note={summary.latestPriced && t('detail.meters.latestPrice', { v: priceText(summary.latestPriced, cur.unit) })}
+          />
+          <Metric
+            label={t('detail.meters.totalLabel')}
+            value={summary.periods ? withUnit(summary.total, cur.unit) : '—'}
+            note={summary.from && t('detail.meters.since', { date: cnDateFull(summary.from) })}
+          />
+        </MetricCards>
+        {/* 走势：最近 24 期的本期用量，横线是平均每期 */}
+        {trend.length > 1 && (
+          <BarLine
+            bars={trend.map((r) => r.usage!)}
+            line={trend.map(() => stats.average ?? 0)}
+            future={trend.map(() => false)}
+            labels={trend.map((r) => monthLabel(r.reading.date.slice(0, 7), { year: false }))}
+            fmt={(v) => compactQty(v)}
+            tip={(i) => (
+              <>
+                <b>{cnDateFull(trend[i].reading.date)}</b>
+                <br />
+                {withUnit(trend[i].usage!, cur.unit)}
+                {trend[i].cost && (
+                  <>
+                    <br />
+                    {t('detail.meters.tipCost', { v: money(trend[i].cost!.amount, trend[i].cost!.currency) })}
+                  </>
+                )}
+                {trend[i].unitPrice != null && (
+                  <>
+                    <br />
+                    {priceText(trend[i], cur.unit)}
+                  </>
+                )}
+              </>
+            )}
+          />
         )}
       </div>
       <YearLedger
