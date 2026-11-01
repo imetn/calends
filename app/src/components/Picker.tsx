@@ -32,6 +32,7 @@ export function Picker<T extends string | number>({
   ariaLabel,
   display,
   search,
+  mark,
 }: {
   value: T;
   options: Array<PickOption<T>>;
@@ -42,6 +43,8 @@ export function Picker<T extends string | number>({
   display?: ComponentChildren;
   /** 是否显示搜索框，缺省超过 12 项时显示 */
   search?: boolean;
+  /** 选中项右侧的标记，缺省为对勾（排序用它显示升降序） */
+  mark?: ComponentChildren;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
@@ -140,7 +143,7 @@ export function Picker<T extends string | number>({
                     {o.icon !== undefined && <span className="pk-ico">{o.icon}</span>}
                     <span className="cp-name">{copyParts(o.label)}</span>
                     {o.hint && <span className="cp-code">{o.hint}</span>}
-                    {o.value === value && <Icon name="check" />}
+                    {o.value === value && (mark ?? <Icon name="check" />)}
                   </button>
                 </div>
               ))}

@@ -1362,3 +1362,16 @@ test('新建令牌的权限选项选中时圆点实心，接入步骤里的无�
   assert.match(rulesFor('.ai-step-actions > .btn.plain:first-child'), /margin-inline-start:\s*-6px/);
   assert.match(rulesFor('.btn.plain'), /padding:\s*0 6px/);
 });
+
+test('手机排序没有单独的升降序按钮：下拉选中项右侧标方向，再点同一项即反转', () => {
+  const src = readFileSync(new URL('components/SortControl.tsx', root), 'utf8');
+  const narrow = src.slice(src.indexOf('if (narrow)'), src.indexOf('  return (\n    <>'));
+  assert.match(src, /useMedia\('\(max-width: 860px\)'\)/);
+  assert.doesNotMatch(narrow, /IconButton/);
+  assert.match(narrow, /onChange=\{\(v\) => \(v === value \? flip\(\) : onSort\(v\)\)\}/);
+  assert.match(narrow, /mark=\{[\s\S]*aria-label=\{label\}/);
+  const picker = readFileSync(new URL('components/Picker.tsx', root), 'utf8');
+  assert.match(picker, /o\.value === value && \(mark \?\? <Icon name="check" \/>\)/);
+  // 选中项再点也要回调，方向切换靠它
+  assert.match(picker, /const pick = \(v: T\) => \{\s*onChange\(v\);/);
+});

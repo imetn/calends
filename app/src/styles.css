@@ -6070,6 +6070,16 @@ a.car-toggle {
   flex-shrink: 0;
   color: var(--accent);
 }
+/* 手机排序：选中项右侧是升降序图标，与对勾同色同位 */
+.pk-dir {
+  display: grid;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.pk-dir .i {
+  width: 16px;
+  height: 16px;
+}
 /* 国旗图是 4:3：框也按 4:3；全站国旗一律直角，不加圆角裁掉旗面四角 */
 .cp-flag {
   display: grid;
