@@ -51,7 +51,10 @@
     "refundDate": "Defina a saída; o reembolso não pode ser anterior à entrada",
     "funding": "Divisão de pagamento inválida: use pelo menos dois métodos de pagamento diferentes com valores diferentes de zero e não defina um método único na mesma cobrança",
     "fundingSum": "Os valores divididos devem somar o valor do pagamento",
-    "transfer": "Transferência inválida: tipo, data, valor positivo e moeda são obrigatórios"
+    "transfer": "Transferência inválida: tipo, data, valor positivo e moeda são obrigatórios",
+    "meter": "Medidor inválido: é preciso um id único e um nome",
+    "reading": "Registro de uso inválido: é preciso um id único, uma data válida e valores numéricos",
+    "readingMeter": "Um registro de uso se refere a um medidor não definido"
   },
   "phase": {
     "switchTooEarly": "A data de vigência deve ser posterior ao início da fase atual",

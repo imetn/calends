@@ -82,7 +82,10 @@
     "notStopped": "This subscription is not stopped, so there is no stop to edit. Use set_status cancel / terminate without edit to stop it.",
     "editStopDate": "To edit a stop, give its actual date in at (omit at to keep a recorded date). A stop with an unknown date needs its real date.",
     "invalidIcon": "Invalid icon “{value}”: use an http(s) image URL, a site path such as /ai/claude.svg, or one emoji / short symbol.",
-    "badMonth": "month must be YYYY-MM: {month}"
+    "badMonth": "month must be YYYY-MM: {month}",
+    "meterNotFound": "No meter matches “{q}”. Meters: {list}",
+    "readingNotFound": "No meter record has the id “{q}”",
+    "noMeters": "This subscription has no meters yet; define them with set_meters first"
   },
   "tool": {
     "get_overview": "Ledger overview",
@@ -118,6 +121,8 @@
     "update_settings": "Update ledger settings & preferences",
     "set_proxy": "Manage proxy relationship",
     "save_subscription": "Save full subscription",
-    "record_transfer": "Record or edit transfers"
+    "record_transfer": "Record or edit transfers",
+    "set_meters": "Define business data meters",
+    "add_readings": "Record business data"
   }
 }

@@ -318,7 +318,7 @@ test('every new read tool and connection catalogue: read token visibility, title
   const before = await f.snapshot();
   const listed = await f.rpc('tools/list', {}, f.read);
   assert.equal(listed.tools.length, TOOLS.filter((x) => !x.write).length);
-  assert.equal(TOOLS.length, 34);
+  assert.equal(TOOLS.length, 36);
   assert.deepEqual(
     ASSISTANT_TOOLS.map((x) => x.name),
     TOOLS.map((x) => x.name),
@@ -1780,6 +1780,123 @@ test('PUT /api/subscriptions 校验转让并原样保存；备份导出带上转
   assert.deepEqual((await f.snapshot()).subscriptions.find((x) => x.id === 's')?.transfers, transfers);
   const backup = await (await f.request('backup')).json();
   assert.deepEqual(backup.subscriptions.find((x: Subscription) => x.id === 's').transfers, transfers);
+});
+
+test('set_meters / add_readings：dry_run 不写入、读令牌拒绝、增改删与合并，get_subscription 给出用量与单价', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  // 每月 1 日扣 10 USD，从 2026-01-01 起
+  const s: Subscription = { ...sub(), start: '2026-01-01', share: undefined, proxy: undefined };
+  await upsert(f.env, 'subscriptions', 's', s);
+  const stored = async () => (await f.snapshot()).subscriptions.find((x) => x.id === 's')!;
+  const before = await f.snapshot();
+  const args = {
+    subscription: 's',
+    meters: [
+      { name: 'Traffic', unit: 'GB' },
+      { name: 'Counter', unit: 'kWh', kind: 'reading' },
+    ],
+  };
+  // 没有指标时不能记读数
+  assert.equal((await f.call('add_readings', { subscription: 's', readings: [{ date: '2026-01-15', values: { Traffic: 1 } }] })).isError, true);
+  const preview = await f.call('set_meters', { ...args, dry_run: true });
+  assert.equal(preview.isError, undefined, JSON.stringify(preview));
+  assert.equal(preview.structuredContent.dry_run, true);
+  assert.deepEqual(await f.snapshot(), before);
+  assert.equal((await f.call('set_meters', args, f.read)).isError, true);
+  assert.equal((await f.call('set_meters', { subscription: 's' })).isError, true);
+  assert.equal((await f.call('set_meters', { subscription: 's', meters: [{ unit: 'GB' }] })).isError, true);
+  assert.deepEqual(await f.snapshot(), before);
+  let r = await f.call('set_meters', args);
+  assert.equal(r.isError, undefined, JSON.stringify(r));
+  const meters = (await stored()).meters!;
+  assert.deepEqual(
+    meters.map((m) => [m.name, m.unit, m.kind]),
+    [
+      ['Traffic', 'GB', undefined],
+      ['Counter', 'kWh', 'reading'],
+    ],
+  );
+  // 预览给出的 id 与确认写入一致
+  assert.deepEqual(
+    preview.structuredContent.after.meters.map((m: { id: string }) => m.id),
+    meters.map((m) => m.id),
+  );
+  const [gb, kwh] = meters.map((m) => m.id);
+  // 按名称改单位，不新增
+  r = await f.call('set_meters', { subscription: 's', meters: [{ name: 'TRAFFIC', unit: 'TB' }] });
+  assert.equal(r.isError, undefined, JSON.stringify(r));
+  assert.equal((await stored()).meters?.length, 2);
+  assert.deepEqual((await stored()).meters?.[0], { id: gb, name: 'TRAFFIC', unit: 'TB' });
+
+  const readings = [
+    { date: '2026-01-15', values: { Traffic: 3, [kwh]: 100 } },
+    { date: '2026-02-15', values: { Traffic: 5, Counter: 140 }, note: 'Fictional note' },
+  ];
+  const before2 = await f.snapshot();
+  assert.equal((await f.call('add_readings', { subscription: 's', readings, dry_run: true })).structuredContent.dry_run, true);
+  assert.equal((await f.call('add_readings', { subscription: 's', readings }, f.read)).isError, true);
+  assert.equal((await f.call('add_readings', { subscription: 's', readings: [{ date: '2026-01-15', values: { Nope: 1 } }] })).isError, true);
+  assert.equal((await f.call('add_readings', { subscription: 's', readings: [{ date: '2026-01-15', values: { Traffic: '3' } }] })).isError, true);
+  assert.deepEqual(await f.snapshot(), before2);
+  r = await f.call('add_readings', { subscription: 's', readings });
+  assert.equal(r.isError, undefined, JSON.stringify(r));
+  assert.deepEqual(
+    (await stored()).readings?.map((x) => [x.date, x.values, x.note]),
+    [
+      ['2026-01-15', { [gb]: 3, [kwh]: 100 }, undefined],
+      ['2026-02-15', { [gb]: 5, [kwh]: 140 }, 'Fictional note'],
+    ],
+  );
+  // 同一天合并：null 删掉一个数值，其他保留
+  r = await f.call('add_readings', { subscription: 's', readings: [{ date: '2026-02-15', values: { Traffic: null, Counter: 150 } }] });
+  assert.equal(r.isError, undefined, JSON.stringify(r));
+  const feb = (await stored()).readings!.find((x) => x.date === '2026-02-15')!;
+  assert.deepEqual(feb.values, { [kwh]: 150 });
+  assert.equal(feb.note, 'Fictional note');
+
+  const detail = (await f.call('get_subscription', { subscription: 's' }, f.read)).structuredContent;
+  const counter = detail.meters.find((m: { name: string }) => m.name === 'Counter');
+  assert.equal(counter.kind, 'reading');
+  assert.equal(counter.total_usage, 50);
+  assert.equal(counter.readings.length, 2);
+  assert.equal(counter.readings[1].usage, 50);
+  assert.equal(counter.readings[1].cost, 10);
+  assert.equal(counter.readings[1].unit_price, 0.2);
+  assert.deepEqual(counter.latest_unit_price, { date: '2026-02-15', amount: 0.2, currency: 'USD' });
+  const traffic = detail.meters.find((m: { id: string }) => m.id === gb);
+  assert.equal(traffic.total_usage, 3);
+
+  // 删除读数：dry_run 不动，确认后删掉
+  assert.equal((await f.call('add_readings', { subscription: 's', delete: ['missing'] })).isError, true);
+  await f.call('add_readings', { subscription: 's', delete: [feb.id], dry_run: true });
+  assert.equal((await stored()).readings?.length, 2);
+  r = await f.call('add_readings', { subscription: 's', delete: [feb.id] });
+  assert.equal(r.isError, undefined, JSON.stringify(r));
+  assert.equal((await stored()).readings?.length, 1);
+
+  // 删除指标：历史数值一起清掉，空记录删除
+  r = await f.call('set_meters', { subscription: 's', remove: [gb, kwh] });
+  assert.equal(r.isError, undefined, JSON.stringify(r));
+  assert.equal((await stored()).meters, undefined);
+  assert.equal((await stored()).readings, undefined);
+});
+
+test('PUT /api/subscriptions 校验业务数据并原样保存，备份带上读数', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const s: Subscription = { ...sub(), share: undefined, proxy: undefined };
+  const meters = [{ id: 'gb', name: 'Traffic', unit: 'GB' }];
+  const bad = await f.request('subscriptions/s', 'PUT', { ...s, meters, readings: [{ id: 'r', date: s.start, values: { other: 1 } }] });
+  assert.equal(bad.status, 400);
+  const readings = [{ id: 'r', date: s.start, values: { gb: 2.5 }, note: 'Fictional reading' }];
+  const ok = await f.request('subscriptions/s', 'PUT', { ...s, meters, readings });
+  assert.equal(ok.status, 200);
+  const saved = (await f.snapshot()).subscriptions.find((x) => x.id === 's')!;
+  assert.deepEqual(saved.meters, meters);
+  assert.deepEqual(saved.readings, readings);
+  const backup = await (await f.request('backup')).json();
+  assert.deepEqual(backup.subscriptions.find((x: Subscription) => x.id === 's').readings, readings);
 });
 
 test('MCP 改开始日与网页 movePhaseStart 一致：默认保留扣款锚点，shift_billing 才平移', async (t) => {

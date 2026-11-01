@@ -51,7 +51,10 @@
     "refundDate": "Indiquez le départ ; le remboursement ne peut précéder l’arrivée",
     "funding": "Répartition invalide : utilisez au moins deux moyens de paiement différents avec des montants non nuls, sans moyen de paiement unique sur le même paiement",
     "fundingSum": "La somme des montants répartis doit égaler le montant du paiement",
-    "transfer": "Cession invalide : type, date, montant positif et devise sont requis"
+    "transfer": "Cession invalide : type, date, montant positif et devise sont requis",
+    "meter": "Compteur invalide : un id unique et un nom sont requis",
+    "reading": "Entrée d’usage invalide : un id unique, une date valide et des valeurs numériques sont requis",
+    "readingMeter": "Une entrée d’usage fait référence à un compteur non défini"
   },
   "phase": {
     "switchTooEarly": "La date d’effet doit être postérieure au début de la phase actuelle",

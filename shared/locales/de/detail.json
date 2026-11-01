@@ -218,5 +218,41 @@
     "postpaid": "Nachträglich",
     "nextBill": "Nächste Rechnung",
     "period": "{from}–{to}"
+  },
+  "meters": {
+    "title": "Nutzungsdaten",
+    "add": "Nutzungsdaten hinzufügen",
+    "manage": "Messgrößen",
+    "manageTitle": "Messgrößen für Nutzungsdaten",
+    "addTitle": "Werte erfassen",
+    "editTitle": "Eintrag bearbeiten",
+    "name": "Name",
+    "unit": "Einheit",
+    "namePh": "z. B. Strom, Kilometer, Datenvolumen",
+    "unitPh": "z. B. kWh, km, GB",
+    "kindLabel": "Erfasst als",
+    "usage": "Verbrauch pro Zeitraum",
+    "reading": "Zählerstand",
+    "kindFoot": "Verbrauch pro Zeitraum: jedes Mal die verbrauchte Menge eingeben. Zählerstand: den Zählerwert eingeben (z. B. Kilometerstand); der Verbrauch ist die Differenz zweier Stände.",
+    "newMeter": "Messgröße hinzufügen",
+    "suggest": "In anderen Abos verwendet",
+    "removeConfirm": "Beim Löschen von {names} werden auch die erfassten Werte entfernt. Fortfahren?",
+    "dupName": "Namen von Messgrößen müssen eindeutig sein",
+    "valuesFoot": "Beliebige Messgrößen ausfüllen. Stückpreis = tatsächliche Abbuchungen nach dem vorigen Eintrag bis zu diesem Datum ÷ Verbrauch.",
+    "saved": "Nutzungsdaten gespeichert",
+    "total": "Gesamt {v}",
+    "unitPrice": "Stückpreis {v}",
+    "both": "Gesamt {total}, Stückpreis {price}",
+    "readingValue": "Stand {v}",
+    "head": {
+      "date": "Datum",
+      "note": "Notiz",
+      "reading": "Stand",
+      "usage": "Verbrauch",
+      "price": "Stückpreis"
+    },
+    "readingsCount": "{n} Einträge",
+    "deleteReadings": "{n} Einträge löschen",
+    "removeMeters": "Messgrößen und ihre Werte löschen"
   }
 }

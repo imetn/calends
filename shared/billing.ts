@@ -19,6 +19,7 @@ import { t } from './i18n.ts';
 import { chargeBaseOrNaN, convertOn } from './fx.ts';
 import { isSettled, settle, type Period } from './receivables.ts';
 import { transferError } from './transfers.ts';
+import { meterError } from './meters.ts';
 
 // ---------- 日期：全部按 UTC 日计算 ----------
 
@@ -146,7 +147,7 @@ export function subError(s: Subscription): string | undefined {
   if (!s.name?.trim()) return t('core.subError.name');
   if (!Number.isFinite(s.price) || s.price < 0) return t('core.subError.price');
   if (!validDay(s.start) || (s.share?.collectFrom && !validDay(s.share.collectFrom))) return t('core.subError.start');
-  const transfer = transferError(s);
+  const transfer = transferError(s) ?? meterError(s);
   if (transfer) return transfer;
   for (const m of s.share?.members ?? []) {
     if (

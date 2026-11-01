@@ -191,5 +191,41 @@
     "postpaid": "後付費",
     "nextBill": "下張賬單",
     "period": "{from}–{to}"
+  },
+  "meters": {
+    "title": "業務數據",
+    "add": "新增業務數據",
+    "manage": "指標",
+    "manageTitle": "業務數據指標",
+    "addTitle": "記錄業務數據",
+    "editTitle": "修改紀錄",
+    "name": "名稱",
+    "unit": "單位",
+    "namePh": "如 電量、里程、流量",
+    "unitPh": "如 kWh、km、GB",
+    "kindLabel": "記法",
+    "usage": "本期用量",
+    "reading": "累計讀數",
+    "kindFoot": "本期用量：每次填這一期用了多少。累計讀數：填錶上的讀數（如里程錶），用量按相鄰兩次讀數之差計算。",
+    "newMeter": "新增指標",
+    "suggest": "其他訂閱用過",
+    "removeConfirm": "刪除{names}會一併清除它們的歷史數值，確定嗎？",
+    "dupName": "指標名稱不能重複",
+    "valuesFoot": "可只填部分指標。單價 = 上一筆紀錄之後到這一天的實際扣款 ÷ 本期用量。",
+    "saved": "業務數據已儲存",
+    "total": "累計 {v}",
+    "unitPrice": "單價 {v}",
+    "both": "累計 {total}，單價 {price}",
+    "readingValue": "讀數 {v}",
+    "head": {
+      "date": "日期",
+      "note": "備註",
+      "reading": "讀數",
+      "usage": "用量",
+      "price": "單價"
+    },
+    "readingsCount": "{n} 筆紀錄",
+    "deleteReadings": "刪除 {n} 筆紀錄",
+    "removeMeters": "刪除指標及其歷史數值"
   }
 }

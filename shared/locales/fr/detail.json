@@ -218,5 +218,41 @@
     "postpaid": "Postpayé",
     "nextBill": "Prochaine facture",
     "period": "{from}–{to}"
+  },
+  "meters": {
+    "title": "Données d’usage",
+    "add": "Ajouter des données d’usage",
+    "manage": "Compteurs",
+    "manageTitle": "Compteurs de données d’usage",
+    "addTitle": "Saisir des valeurs",
+    "editTitle": "Modifier l’entrée",
+    "name": "Nom",
+    "unit": "Unité",
+    "namePh": "p. ex. Électricité, Kilométrage, Trafic",
+    "unitPh": "p. ex. kWh, km, Go",
+    "kindLabel": "Saisi comme",
+    "usage": "Consommation par période",
+    "reading": "Relevé cumulé",
+    "kindFoot": "Consommation par période : saisissez la quantité utilisée à chaque fois. Relevé cumulé : saisissez la valeur du compteur (comme un compteur kilométrique) ; la consommation est l’écart entre deux relevés.",
+    "newMeter": "Ajouter un compteur",
+    "suggest": "Utilisé dans d’autres abonnements",
+    "removeConfirm": "Supprimer {names} efface aussi leurs valeurs saisies. Continuer ?",
+    "dupName": "Les noms de compteurs doivent être uniques",
+    "valuesFoot": "Remplissez les compteurs de votre choix. Prix unitaire = prélèvements réels après l’entrée précédente jusqu’à cette date ÷ consommation.",
+    "saved": "Données d’usage enregistrées",
+    "total": "Total {v}",
+    "unitPrice": "Prix unitaire {v}",
+    "both": "Total {total}, prix unitaire {price}",
+    "readingValue": "Relevé {v}",
+    "head": {
+      "date": "Date",
+      "note": "Note",
+      "reading": "Relevé",
+      "usage": "Consommation",
+      "price": "Prix unitaire"
+    },
+    "readingsCount": "{n} entrées",
+    "deleteReadings": "Supprimer {n} entrées",
+    "removeMeters": "Supprimer les compteurs et leurs valeurs"
   }
 }

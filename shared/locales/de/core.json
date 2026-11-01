@@ -51,7 +51,10 @@
     "refundDate": "Austrittsdatum angeben; Erstattung nicht vor dem Beitritt",
     "funding": "Ungültige Aufteilung: Mindestens zwei verschiedene Zahlungsmethoden mit Beträgen ungleich null angeben und keine einzelne Zahlungsmethode für dieselbe Zahlung setzen",
     "fundingSum": "Die aufgeteilten Beträge müssen den Zahlungsbetrag ergeben",
-    "transfer": "Ungültige Übertragung: Art, Datum, positiver Betrag und Währung sind erforderlich"
+    "transfer": "Ungültige Übertragung: Art, Datum, positiver Betrag und Währung sind erforderlich",
+    "meter": "Ungültige Messgröße: eindeutige id und Name erforderlich",
+    "reading": "Ungültiger Nutzungseintrag: eindeutige id, gültiges Datum und Zahlenwerte erforderlich",
+    "readingMeter": "Ein Nutzungseintrag verweist auf eine nicht definierte Messgröße"
   },
   "phase": {
     "switchTooEarly": "Das Gültigkeitsdatum muss nach dem Beginn der aktuellen Phase liegen",

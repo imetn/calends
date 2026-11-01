@@ -209,5 +209,41 @@
     "postpaid": "Sonradan ödemeli",
     "nextBill": "Sonraki fatura",
     "period": "{from}–{to}"
+  },
+  "meters": {
+    "title": "Kullanım verileri",
+    "add": "Kullanım verisi ekle",
+    "manage": "Ölçütler",
+    "manageTitle": "Kullanım verisi ölçütleri",
+    "addTitle": "Değer kaydet",
+    "editTitle": "Kaydı düzenle",
+    "name": "Ad",
+    "unit": "Birim",
+    "namePh": "örn. Elektrik, Kilometre, Trafik",
+    "unitPh": "örn. kWh, km, GB",
+    "kindLabel": "Kayıt biçimi",
+    "usage": "Dönem kullanımı",
+    "reading": "Kümülatif okuma",
+    "kindFoot": "Dönem kullanımı: her seferinde ne kadar kullanıldığını girin. Kümülatif okuma: sayaç değerini girin (kilometre sayacı gibi); kullanım iki okuma arasındaki farktır.",
+    "newMeter": "Ölçüt ekle",
+    "suggest": "Diğer aboneliklerde kullanıldı",
+    "removeConfirm": "{names} silinirse kaydedilen değerleri de temizlenir. Devam edilsin mi?",
+    "dupName": "Ölçüt adları benzersiz olmalı",
+    "valuesFoot": "İstediğiniz ölçütleri doldurun. Birim fiyat = önceki kayıttan sonra bu tarihe kadarki gerçek ödemeler ÷ kullanım.",
+    "saved": "Kullanım verileri kaydedildi",
+    "total": "Toplam {v}",
+    "unitPrice": "Birim fiyat {v}",
+    "both": "Toplam {total}, birim fiyat {price}",
+    "readingValue": "Okuma {v}",
+    "head": {
+      "date": "Tarih",
+      "note": "Not",
+      "reading": "Okuma",
+      "usage": "Kullanım",
+      "price": "Birim fiyat"
+    },
+    "readingsCount": "{n} kayıt",
+    "deleteReadings": "{n} kaydı sil",
+    "removeMeters": "Ölçütleri ve değerlerini sil"
   }
 }

@@ -375,6 +375,17 @@
   margin: 0;
 }
 
+/* 业务数据：指标与选择器跟标题左右对齐；没有指标时只有一行轻入口 */
+.dt-meters-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 20px 12px;
+}
+.dt-panel.dt-meters:not(.dt-charges) {
+  padding: 6px 10px;
+}
+
 /* 走势 */
 .dt-chart {
   padding-bottom: 16px;

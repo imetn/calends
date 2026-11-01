@@ -196,6 +196,27 @@ export interface Proxy {
   charged?: ProxyCharge[];
 }
 
+/** 业务数据的一个指标：名称、单位都由用户自由填写，不内置清单 */
+export interface Meter {
+  id: string;
+  /** 电量、里程、出站流量…… */
+  name: string;
+  /** 度、km、GB、次、升……；可为空字符串 */
+  unit: string;
+  /** 缺省为本期用量（直接填这一期用了多少）；reading 为累计读数（里程表、电表读数），本期用量 = 本次 − 上次 */
+  kind?: 'reading';
+}
+
+/** 业务数据的一条记录：某个账期 / 记录日各指标的数值，可只填部分指标；与付款分开存 */
+export interface Reading {
+  id: string;
+  /** 账期或记录日 YYYY-MM-DD */
+  date: string;
+  /** meterId → 数值 */
+  values: Record<string, number>;
+  note?: string;
+}
+
 /** 头像底色：只存色名，显示时按主题取色 */
 export const PERSON_COLORS = ['blue', 'green', 'orange', 'pink', 'purple', 'teal', 'indigo', 'red'] as const;
 export type PersonColor = (typeof PERSON_COLORS)[number];
@@ -312,6 +333,9 @@ export interface Subscription extends RenewalRules {
   intro?: { price: number; until: string };
   /** 赠送时长（如买一年送一年）：[from, until) 期间不扣款，之后从 until 起重新按周期扣 */
   bonus?: { from: string; until: string };
+  /** 业务数据：自定义指标与按期记录（用电、里程、流量……）；私密，公开页不下发。派生计算见 shared/meters.ts */
+  meters?: Meter[];
+  readings?: Reading[];
   /** 登录账号：邮箱、手机号或用户名（通信类就是手机号）。公开页不下发 */
   account?: string;
   notes?: string;

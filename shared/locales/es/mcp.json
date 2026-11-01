@@ -82,7 +82,10 @@
     "notStopped": "Esta suscripción no está detenida, así que no hay una baja que editar. Para detenerla usa set_status cancel / terminate sin edit.",
     "editStopDate": "Para editar una baja, indica su fecha real en at (omite at para conservar la fecha registrada). Una baja con fecha desconocida necesita su fecha real.",
     "invalidIcon": "Icono «{value}» no válido: usa una URL de imagen http(s), una ruta del sitio como /ai/claude.svg o un emoji o símbolo corto.",
-    "badMonth": "El mes debe tener el formato YYYY-MM: {month}"
+    "badMonth": "El mes debe tener el formato YYYY-MM: {month}",
+    "meterNotFound": "Ningún medidor coincide con «{q}». Medidores: {list}",
+    "readingNotFound": "No hay ningún registro de uso con el id «{q}»",
+    "noMeters": "Esta suscripción aún no tiene medidores; defínelos primero con set_meters"
   },
   "tool": {
     "get_overview": "Resumen del registro",
@@ -118,6 +121,8 @@
     "update_settings": "Actualizar ajustes y preferencias del registro",
     "set_proxy": "Gestionar pagos por terceros",
     "save_subscription": "Guardar suscripción completa",
-    "record_transfer": "Registrar o editar traspasos"
+    "record_transfer": "Registrar o editar traspasos",
+    "set_meters": "Definir medidores de uso",
+    "add_readings": "Registrar datos de uso"
   }
 }

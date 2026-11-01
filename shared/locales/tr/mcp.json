@@ -79,7 +79,10 @@
     "notStopped": "Bu abonelik durdurulmamış, düzenlenecek bir durdurma bilgisi yok. Durdurmak için edit olmadan set_status cancel / terminate kullanın.",
     "editStopDate": "Durdurmayı düzenlerken gerçek tarihi at ile verin (at verilmezse kayıtlı tarih korunur). Tarihi bilinmeyen bir durdurmanın gerçek tarihi gerekir.",
     "invalidIcon": "Geçersiz simge “{value}”: http(s) görsel URL’si, /ai/claude.svg gibi bir site yolu ya da tek bir emoji / kısa sembol kullanın.",
-    "badMonth": "Ay YYYY-MM biçiminde olmalı: {month}"
+    "badMonth": "Ay YYYY-MM biçiminde olmalı: {month}",
+    "meterNotFound": "“{q}” ile eşleşen ölçüt yok. Ölçütler: {list}",
+    "readingNotFound": "“{q}” id’li kullanım kaydı yok",
+    "noMeters": "Bu abonelikte henüz ölçüt yok; önce set_meters ile tanımlayın"
   },
   "tool": {
     "get_overview": "Defter özeti",
@@ -115,6 +118,8 @@
     "update_settings": "Defter ve arayüz ayarlarını güncelle",
     "set_proxy": "Başkası adına ödemeleri yönet",
     "save_subscription": "Aboneliği tamamen kaydet",
-    "record_transfer": "Devir kaydet veya düzenle"
+    "record_transfer": "Devir kaydet veya düzenle",
+    "set_meters": "Kullanım ölçütlerini tanımla",
+    "add_readings": "Kullanım verisi kaydet"
   }
 }

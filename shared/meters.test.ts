@@ -1,0 +1,179 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { FALLBACK_FX, subError } from './billing.ts';
+import { maskForPublic } from './mask.ts';
+import { costBetween, meterError, meterRows, meterSuggestions, meterSummary, removeMeter, replaceMeters, stableId } from './meters.ts';
+import { DEFAULT_SETTINGS, type AppState, type Meter, type Payment, type Reading, type Subscription } from './types.ts';
+
+// 虚构场景：月付 ¥100 的 VPS，每月 10 日扣款；每月 15 日记一次出站流量（本期用量）和里程式累计读数
+const today = '2025-05-01';
+const traffic: Meter = { id: 'gb', name: 'Traffic', unit: 'GB' };
+const odo: Meter = { id: 'odo', name: 'Counter', unit: 'kWh', kind: 'reading' };
+const readings: Reading[] = [
+  { id: 'r1', date: '2025-01-15', values: { gb: 10, odo: 1000 } },
+  { id: 'r2', date: '2025-02-15', values: { gb: 20, odo: 1300 }, note: 'busy month' },
+  { id: 'r3', date: '2025-03-15', values: { gb: 0, odo: 1200 } },
+  { id: 'r4', date: '2025-04-15', values: { odo: 1500 } },
+];
+const vps = (extra: Partial<Subscription> = {}): Subscription => ({
+  id: 'vps',
+  name: 'Fictional VPS',
+  category: 'tools',
+  tags: [],
+  price: 100,
+  currency: 'CNY',
+  cycle: { unit: 'month', every: 1 },
+  start: '2025-01-10',
+  status: 'active',
+  meters: [traffic, odo],
+  readings,
+  ...extra,
+});
+const near = (actual: number | undefined, expected: number) => assert.ok(actual != null && Math.abs(actual - expected) < 1e-9, `${actual} ≈ ${expected}`);
+
+test('usage meter takes the value as period usage and prices it against charges since the previous reading', () => {
+  const rows = meterRows(vps(), traffic, today);
+  assert.deepEqual(
+    rows.map((r) => [r.reading.id, r.usage, r.since, r.cost?.amount]),
+    [
+      ['r1', 10, undefined, undefined],
+      ['r2', 20, '2025-01-15', 100],
+      ['r3', 0, '2025-02-15', 100],
+    ],
+  );
+  assert.equal(rows[0].unitPrice, undefined, 'first reading has no period to price');
+  near(rows[1].unitPrice, 5);
+  assert.equal(rows[2].unitPrice, undefined, 'zero usage has no unit price');
+});
+
+test('reading meter diffs against the previous reading; the first and a rollback have no usage', () => {
+  const rows = meterRows(vps(), odo, today);
+  assert.deepEqual(
+    rows.map((r) => [r.reading.id, r.value, r.usage]),
+    [
+      ['r1', 1000, undefined],
+      ['r2', 1300, 300],
+      ['r3', 1200, undefined],
+      ['r4', 1500, 300],
+    ],
+  );
+  near(rows[1].unitPrice, 100 / 300);
+  assert.equal(rows[2].unitPrice, undefined);
+  near(rows[3].unitPrice, 100 / 300);
+});
+
+test('readings are ordered by date regardless of storage order', () => {
+  const rows = meterRows(vps({ readings: [...readings].reverse() }), odo, today);
+  assert.deepEqual(
+    rows.map((r) => r.reading.id),
+    ['r1', 'r2', 'r3', 'r4'],
+  );
+});
+
+test('unit price excludes failed charges and has none when the period has no charge', () => {
+  // 2 月扣款失败，下一次扣款顺延到 3 月
+  const ok: Payment = { date: '2025-01-10', amount: 100, currency: 'CNY' };
+  const failed: Payment = { date: '2025-02-10', amount: 100, currency: 'CNY', kind: 'failed' };
+  const s = vps({ payments: [ok, failed], nextDue: '2025-03-10' });
+  assert.equal(costBetween(s, '2025-01-15', '2025-02-15', today), undefined);
+  const r2 = meterRows(s, traffic, today)[1];
+  assert.equal(r2.usage, 20);
+  assert.equal(r2.cost, undefined);
+  assert.equal(r2.unitPrice, undefined);
+  // 同一天内两条记录之间没有扣款
+  assert.equal(costBetween(vps(), '2025-01-11', '2025-02-09', today), undefined);
+  // 预测扣款（今天之后）不计
+  assert.equal(costBetween(vps(), '2025-04-15', '2025-06-15', today), undefined);
+});
+
+test('summary totals usage over all readings or a window and reports the latest priced period', () => {
+  const all = meterSummary(vps(), odo, today);
+  assert.equal(all.total, 600);
+  assert.equal(all.periods, 2);
+  assert.equal(all.latest?.reading.id, 'r4');
+  assert.equal(all.latestPriced?.reading.id, 'r4');
+  const win = meterSummary(vps(), traffic, today, '2025-02-01', '2025-03-31');
+  assert.equal(win.total, 20);
+  assert.equal(win.periods, 2);
+  assert.equal(win.from, '2025-02-15');
+  assert.equal(meterSummary(vps(), traffic, today).latestPriced?.reading.id, 'r2');
+  assert.equal(meterSummary(vps({ readings: undefined }), traffic, today).total, 0);
+});
+
+test('removing a meter strips its values and drops readings left empty', () => {
+  const next = removeMeter(vps(), 'odo');
+  assert.deepEqual(next.meters, [traffic]);
+  assert.deepEqual(
+    next.readings?.map((r) => [r.id, r.values]),
+    [
+      ['r1', { gb: 10 }],
+      ['r2', { gb: 20 }],
+      ['r3', { gb: 0 }],
+    ],
+  );
+  assert.equal(next.readings?.[1].note, 'busy month');
+  const none = replaceMeters(vps(), []);
+  assert.equal(none.meters, undefined);
+  assert.equal(none.readings, undefined);
+  // 改名改单位不动历史数值
+  const renamed = replaceMeters(vps(), [{ ...traffic, name: 'Egress' }, odo]);
+  assert.deepEqual(renamed.readings, readings);
+  assert.equal(renamed.meters?.[0].name, 'Egress');
+});
+
+test('stable ids are deterministic and skip taken ids', () => {
+  const a = stableId('m', 'vps|traffic', new Set());
+  assert.equal(stableId('m', 'vps|traffic', new Set()), a);
+  const b = stableId('m', 'vps|traffic', new Set([a]));
+  assert.notEqual(a, b);
+  assert.ok(a.startsWith('m'));
+});
+
+test('suggestions come from other subscriptions, most used first, excluding names already on this one', () => {
+  const other = (id: string, meters: Meter[]): Subscription => ({ ...vps(), id, meters, readings: undefined });
+  const subs = [
+    other('a', [{ id: 'x', name: 'Mileage', unit: 'km', kind: 'reading' }, traffic]),
+    other('b', [{ id: 'y', name: 'Mileage', unit: 'km', kind: 'reading' }]),
+    other('c', [{ id: 'z', name: 'traffic ', unit: 'GB' }]),
+  ];
+  const current = { ...vps(), id: 'mine', meters: [{ id: 'q', name: 'TRAFFIC', unit: 'GB' }] };
+  assert.deepEqual(meterSuggestions([...subs, current], current), [{ name: 'Mileage', unit: 'km', kind: 'reading' }]);
+  assert.deepEqual(meterSuggestions(subs).slice(0, 1), [{ name: 'Mileage', unit: 'km', kind: 'reading' }]);
+});
+
+test('validation rejects malformed meters and readings; subError runs it', () => {
+  assert.equal(meterError(vps()), undefined);
+  assert.equal(subError(vps()), undefined);
+  assert.equal(meterError({}), undefined);
+  const bad: Array<Partial<Subscription>> = [
+    { meters: [traffic, { ...odo, id: 'gb' }], readings: [] },
+    { meters: [{ ...traffic, name: '  ' }] },
+    { meters: [{ ...traffic, kind: 'usage' as never }] },
+    { meters: 'x' as never },
+    { readings: [{ id: 'r', date: '2025-02-30', values: { gb: 1 } }] },
+    { readings: [{ id: 'r', date: '2025-02-01', values: { nope: 1 } }] },
+    { readings: [{ id: 'r', date: '2025-02-01', values: { gb: Number.NaN } }] },
+    { readings: [{ id: 'r', date: '2025-02-01', values: { gb: '3' as never } }] },
+    { readings: [readings[0], { ...readings[1], id: 'r1' }] },
+    { readings: [{ id: 'r', date: '2025-02-01', values: [] as never }] },
+  ];
+  for (const patch of bad) {
+    const s = vps(patch);
+    assert.ok(meterError(s), JSON.stringify(patch));
+    assert.ok(subError(s), JSON.stringify(patch));
+  }
+});
+
+test('public page never receives meters or readings', () => {
+  const state: AppState = {
+    subscriptions: [vps({ readings: [{ id: 'rx', date: '2025-01-15', values: { gb: 1 }, note: 'private reading note' }] })],
+    methods: [],
+    settings: { ...DEFAULT_SETTINGS, baseCurrency: 'CNY', publicPage: true } as AppState['settings'],
+    fx: FALLBACK_FX,
+  };
+  const out = maskForPublic(state);
+  assert.equal(out.subscriptions.length, 1);
+  assert.equal(out.subscriptions[0].meters, undefined);
+  assert.equal(out.subscriptions[0].readings, undefined);
+  assert.doesNotMatch(JSON.stringify(out), /private reading note|Traffic|kWh/);
+});

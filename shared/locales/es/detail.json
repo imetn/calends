@@ -218,5 +218,41 @@
     "postpaid": "Pospago",
     "nextBill": "Próxima factura",
     "period": "{from}–{to}"
+  },
+  "meters": {
+    "title": "Datos de uso",
+    "add": "Añadir datos de uso",
+    "manage": "Medidores",
+    "manageTitle": "Medidores de datos de uso",
+    "addTitle": "Registrar valores",
+    "editTitle": "Editar registro",
+    "name": "Nombre",
+    "unit": "Unidad",
+    "namePh": "p. ej. Electricidad, Kilometraje, Tráfico",
+    "unitPh": "p. ej. kWh, km, GB",
+    "kindLabel": "Se registra como",
+    "usage": "Consumo por periodo",
+    "reading": "Lectura acumulada",
+    "kindFoot": "Consumo por periodo: introduce cuánto se usó cada vez. Lectura acumulada: introduce el valor del contador (como un cuentakilómetros); el consumo es la diferencia entre dos lecturas.",
+    "newMeter": "Añadir medidor",
+    "suggest": "Usado en otras suscripciones",
+    "removeConfirm": "Al eliminar {names} también se borran sus valores registrados. ¿Continuar?",
+    "dupName": "Los nombres de los medidores deben ser únicos",
+    "valuesFoot": "Rellena los medidores que quieras. Precio unitario = cargos reales tras el registro anterior hasta esta fecha ÷ consumo.",
+    "saved": "Datos de uso guardados",
+    "total": "Total {v}",
+    "unitPrice": "Precio unitario {v}",
+    "both": "Total {total}, precio unitario {price}",
+    "readingValue": "Lectura {v}",
+    "head": {
+      "date": "Fecha",
+      "note": "Nota",
+      "reading": "Lectura",
+      "usage": "Consumo",
+      "price": "Precio unitario"
+    },
+    "readingsCount": "{n} registros",
+    "deleteReadings": "Eliminar {n} registros",
+    "removeMeters": "Eliminar medidores y sus valores"
   }
 }

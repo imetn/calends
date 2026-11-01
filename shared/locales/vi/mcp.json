@@ -79,7 +79,10 @@
     "notStopped": "Gói đăng ký này chưa dừng nên không có thông tin dừng để sửa. Để dừng, hãy dùng set_status cancel / terminate không kèm edit.",
     "editStopDate": "Khi sửa thông tin dừng, hãy nhập ngày thực tế vào at (bỏ at để giữ ngày đã ghi). Lần dừng không rõ ngày cần có ngày thực tế.",
     "invalidIcon": "Biểu tượng “{value}” không hợp lệ: hãy dùng URL ảnh http(s), đường dẫn trong trang như /ai/claude.svg, hoặc một emoji / ký hiệu ngắn.",
-    "badMonth": "Tháng phải có dạng YYYY-MM: {month}"
+    "badMonth": "Tháng phải có dạng YYYY-MM: {month}",
+    "meterNotFound": "Không có chỉ số khớp với “{q}”. Chỉ số: {list}",
+    "readingNotFound": "Không có bản ghi sử dụng với id “{q}”",
+    "noMeters": "Gói này chưa có chỉ số; hãy định nghĩa bằng set_meters trước"
   },
   "tool": {
     "get_overview": "Tổng quan sổ",
@@ -115,6 +118,8 @@
     "update_settings": "Cập nhật cài đặt sổ & tùy chọn",
     "set_proxy": "Quản lý trả hộ",
     "save_subscription": "Lưu toàn bộ gói đăng ký",
-    "record_transfer": "Ghi hoặc sửa chuyển nhượng"
+    "record_transfer": "Ghi hoặc sửa chuyển nhượng",
+    "set_meters": "Thiết lập chỉ số sử dụng",
+    "add_readings": "Ghi dữ liệu sử dụng"
   }
 }

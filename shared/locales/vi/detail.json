@@ -203,5 +203,41 @@
     "postpaid": "Trả sau",
     "nextBill": "Hóa đơn tiếp theo",
     "period": "{from}–{to}"
+  },
+  "meters": {
+    "title": "Dữ liệu sử dụng",
+    "add": "Thêm dữ liệu sử dụng",
+    "manage": "Chỉ số",
+    "manageTitle": "Chỉ số dữ liệu sử dụng",
+    "addTitle": "Ghi giá trị",
+    "editTitle": "Sửa bản ghi",
+    "name": "Tên",
+    "unit": "Đơn vị",
+    "namePh": "vd. Điện, Quãng đường, Lưu lượng",
+    "unitPh": "vd. kWh, km, GB",
+    "kindLabel": "Cách ghi",
+    "usage": "Lượng dùng mỗi kỳ",
+    "reading": "Số đọc lũy kế",
+    "kindFoot": "Lượng dùng mỗi kỳ: nhập lượng đã dùng mỗi lần. Số đọc lũy kế: nhập số trên đồng hồ (như đồng hồ công-tơ-mét); lượng dùng là chênh lệch giữa hai lần đọc.",
+    "newMeter": "Thêm chỉ số",
+    "suggest": "Đã dùng ở gói khác",
+    "removeConfirm": "Xóa {names} cũng sẽ xóa các giá trị đã ghi. Tiếp tục?",
+    "dupName": "Tên chỉ số không được trùng",
+    "valuesFoot": "Có thể chỉ điền một số chỉ số. Đơn giá = khoản trừ thực tế sau bản ghi trước đến ngày này ÷ lượng dùng.",
+    "saved": "Đã lưu dữ liệu sử dụng",
+    "total": "Tổng {v}",
+    "unitPrice": "Đơn giá {v}",
+    "both": "Tổng {total}, đơn giá {price}",
+    "readingValue": "Số đọc {v}",
+    "head": {
+      "date": "Ngày",
+      "note": "Ghi chú",
+      "reading": "Số đọc",
+      "usage": "Lượng dùng",
+      "price": "Đơn giá"
+    },
+    "readingsCount": "{n} bản ghi",
+    "deleteReadings": "Xóa {n} bản ghi",
+    "removeMeters": "Xóa chỉ số và giá trị của chúng"
   }
 }

@@ -28,6 +28,8 @@ import {
   record_payment,
   delete_payment,
   record_transfer,
+  set_meters,
+  add_readings,
   delete_subscription,
 } from './subscription-tools.ts';
 import { get_carpool, set_share, save_share_member, remove_share_member, record_receivable } from './share-tools.ts';
@@ -80,6 +82,8 @@ export const CATALOGUE: Tool[] = [
   record_payment,
   delete_payment,
   record_transfer,
+  set_meters,
+  add_readings,
   get_carpool,
   delete_subscription,
   set_share,

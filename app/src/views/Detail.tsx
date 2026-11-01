@@ -36,6 +36,7 @@ import { Summary } from './detail/Summary.tsx';
 import { Notices } from './detail/Notices.tsx';
 import { NoteBlock, ShareCard } from './detail/Summary.tsx';
 import { Charges } from './detail/Ledgers.tsx';
+import { Meters } from './detail/Meters.tsx';
 
 /**
  * 详情顶部的操作按钮。宽屏：常用的带文字（胶囊），次要的只有图标（正圆）；
@@ -231,6 +232,7 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
         <ShareCard sub={sub} state={state} today={today} onCar={() => setCar(true)} onMember={(m) => setMember({ m })} />
         {charges}
         <Transfers sub={sub} state={state} onRow={(index) => setTransfer({ index })} onAdd={() => setTransfer({})} />
+        <Meters key={`m${sub.id}`} sub={sub} state={state} today={today} />
         {events}
         <NoteBlock sub={sub} />
       </div>

@@ -514,6 +514,7 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     PeriodBar: empty,
     Charges: empty,
     Transfers: empty,
+    Meters: empty,
     Outcome: empty,
     Notices: empty,
     ShareCard: empty,

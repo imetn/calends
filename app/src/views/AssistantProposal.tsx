@@ -156,6 +156,28 @@ export function summaryRows(
       add(t('assistant.f.date'), day(a.date) ?? t('assistant.card.today'));
       break;
     }
+    case 'set_meters': {
+      const list = (a.meters as Array<{ name?: string; unit?: string }> | undefined) ?? [];
+      const remove = (a.remove as string[] | undefined) ?? [];
+      if (list.length)
+        add(
+          t('detail.meters.manageTitle'),
+          list.map((m) => (m.unit ? `${m.name ?? ''} (${m.unit})` : (m.name ?? ''))).join('\n'),
+        );
+      if (remove.length) add(t('assistant.f.effect'), t('detail.meters.removeMeters'));
+      break;
+    }
+    case 'add_readings': {
+      const list = (a.readings as Array<{ date?: string }> | undefined) ?? [];
+      const del = (a.delete as string[] | undefined) ?? [];
+      if (list.length) {
+        add(t('detail.meters.title'), t('detail.meters.readingsCount', { n: list.length }));
+        const days = list.map((r) => String(r.date ?? '')).sort();
+        add(t('assistant.f.date'), days.length > 1 ? `${day(days[0])} – ${day(days.at(-1))}` : day(days[0]));
+      }
+      if (del.length) add(t('assistant.f.effect'), t('detail.meters.deleteReadings', { n: del.length }));
+      break;
+    }
     case 'delete_subscription':
       add(t('assistant.f.effect'), t('assistant.v.deleteAll'));
       break;
@@ -220,6 +242,8 @@ export function Proposal(props: {
     part.tool === 'delete_subscription' ||
     part.tool === 'delete_payment' ||
     (part.tool === 'record_transfer' && !!a.delete) ||
+    (part.tool === 'set_meters' && Array.isArray(a.remove) && a.remove.length > 0) ||
+    (part.tool === 'add_readings' && Array.isArray(a.delete) && a.delete.length > 0) ||
     part.tool === 'remove_share_member' ||
     a.action === 'delete' ||
     a.action === 'remove' ||
