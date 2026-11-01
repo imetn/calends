@@ -161,13 +161,6 @@
     },
     "shareStart": "Empezó a compartirse"
   },
-  "upcoming": {
-    "total": {
-      "one": "≈ {amount}\n{count} cargo",
-      "other": "≈ {amount}\n{count} cargos"
-    },
-    "none": "Sin cargos en los próximos 12 meses"
-  },
   "stop": {
     "title": "Cese y reembolso",
     "type": "Tipo de cese",

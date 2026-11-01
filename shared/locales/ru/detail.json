@@ -162,15 +162,6 @@
     "more": "Показать ранние ({count})",
     "shareStart": "Начало совместной подписки"
   },
-  "upcoming": {
-    "total": {
-      "one": "≈ {amount}\n{count} списание",
-      "few": "≈ {amount}\n{count} списания",
-      "many": "≈ {amount}\n{count} списаний",
-      "other": "≈ {amount}\n{count} списания"
-    },
-    "none": "В ближайшие 12 месяцев списаний нет"
-  },
   "stop": {
     "title": "Прекращение и возврат",
     "type": "Тип прекращения",

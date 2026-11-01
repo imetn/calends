@@ -147,12 +147,6 @@
     "more": "이전 {count}건 보기",
     "shareStart": "공유 시작"
   },
-  "upcoming": {
-    "total": {
-      "other": "약 {amount}\n{count}건"
-    },
-    "none": "앞으로 12개월 동안 결제가 없어요"
-  },
   "stop": {
     "title": "종료 및 환불",
     "type": "종료 유형",

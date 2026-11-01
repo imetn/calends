@@ -161,13 +161,6 @@
     },
     "shareStart": "Sharing started"
   },
-  "upcoming": {
-    "total": {
-      "one": "≈ {amount}\n{count} charge",
-      "other": "≈ {amount}\n{count} charges"
-    },
-    "none": "No charges in the next 12 months"
-  },
   "stop": {
     "title": "Stop & refund",
     "type": "Stop type",

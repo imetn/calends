@@ -147,12 +147,6 @@
     "more": "以前の {count} 件を表示",
     "shareStart": "シェア開始"
   },
-  "upcoming": {
-    "total": {
-      "other": "約 {amount}\n{count} 件"
-    },
-    "none": "今後 12 か月は請求がありません"
-  },
   "stop": {
     "title": "停止と返金",
     "type": "停止の種類",

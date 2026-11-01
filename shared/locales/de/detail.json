@@ -161,13 +161,6 @@
     },
     "shareStart": "Teilen begonnen"
   },
-  "upcoming": {
-    "total": {
-      "one": "≈ {amount}\n{count} Abbuchung",
-      "other": "≈ {amount}\n{count} Abbuchungen"
-    },
-    "none": "Keine Abbuchungen in den nächsten 12 Monaten"
-  },
   "stop": {
     "title": "Beendigung & Erstattung",
     "type": "Art der Beendigung",

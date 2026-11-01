@@ -52,7 +52,7 @@ export function barDay(c: Charge, today: string): string {
 
 /**
  * 费用走势的时间范围与横轴：详情页据此同时驱动费用图和用量图，两张图日期对齐、范围同步。
- * 预测长度按周期：月付及更短看半年，更长的看一个周期（至少半年、至多两年）。
+ * 未来只画下一期。
  */
 export function timelineAxis(sub: Subscription, today: string, history: Charge[], picked?: Range) {
   const st = effectiveStatus(sub, today);
@@ -62,10 +62,10 @@ export function timelineAxis(sub: Subscription, today: string, history: Charge[]
   const end = detailHistoryEnd(sub, today);
   const anchor = end.date ?? today;
   const next = live ? detailForecast(sub, today).charges[0] : undefined;
+  // 未来只画下一期：再往后都是同样的柱子，没有信息量；下一笔的金额与日期在顶部「下张账单」卡里
   const days = cycleDays(cur.cycle);
-  let until = live ? addDays(today, days <= 31 ? 183 : Math.min(731, Math.max(183, Math.ceil(days) + 1))) : anchor;
-  if (next && next.date > until) until = next.date;
-  const future = live ? chargesBetween(sub, addDays(today, 1), until, today).filter((c) => !c.kind) : [];
+  const until = next && next.date > today ? next.date : anchor;
+  const future = live && next ? chargesBetween(sub, addDays(today, 1), until, today).filter((c) => !c.kind).slice(0, 1) : [];
 
   // 只有范围内至少三笔、且比全部少时才给这个范围：两年付、年付这类稀疏记录不显示无意义的「1 年 / 6 个月」
   // 范围按归期日筛（后付费归到所属周期），横轴按柱子位置算
@@ -196,7 +196,6 @@ export function Timeline({
   }));
   const chartTotal = (list: Charge[]) =>
     ccy === base ? chargesTotal(state, list, ccy) : sumTotals(list.map((c) => amountTotal(c.amount, c.currency, c.amount)));
-  const planned = chartTotal(each.filter((r) => r.future).map((r) => r.c));
 
   return (
     <Panel
@@ -310,7 +309,6 @@ export function Timeline({
           <span>
             <i className="k-f" />
             {t('detail.timeline.planned')}
-            {copyParts(t('detail.upcoming.total', { count: future.length, amount: formatTotal(planned, ccy, { direction: -1 }) }))}
           </span>
         )}
       </div>

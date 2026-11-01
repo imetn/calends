@@ -152,13 +152,6 @@
     "more": "Önceki {count} kaydı göster",
     "shareStart": "Paylaşım başladı"
   },
-  "upcoming": {
-    "total": {
-      "one": "≈ {amount}\n{count} ödeme",
-      "other": "≈ {amount}\n{count} ödeme"
-    },
-    "none": "Önümüzdeki 12 ayda ödeme yok"
-  },
   "stop": {
     "title": "Sonlandırma ve iade",
     "type": "Sonlandırma türü",

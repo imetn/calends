@@ -693,3 +693,23 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     else assert.ok(!/[$€]\d[\d,]*\.00/.test(text(html.split('class="ld-table')[1] ?? '')));
   }
 });
+
+test('detail timeline forecasts only the next charge, for monthly and yearly plans alike', () => {
+  const file = '../app/src/views/detail/ChargeTimeline.tsx';
+  const url = new URL(file, import.meta.url);
+  const timelineAxis = load(file, 'timelineAxis', `${extractUiFunction(url, 'barDay')}\n${extractUiFunction(url, 'timelineAxis')}`, {
+    ...billing,
+    detailForecast,
+    detailHistoryEnd,
+    regular: (h: billing.Charge[]) => h.filter((c) => !c.kind && c.amount > 0),
+    t: (k: string) => k,
+  });
+  const today = '2026-11-02';
+  const base: Subscription = { id: 'f', name: 'Fictional', category: 'tools', tags: [], price: 10, currency: 'USD', start: '2025-01-05', cycle: { unit: 'month', every: 1 }, status: 'active' };
+  for (const sub of [base, { ...base, cycle: { unit: 'year' as const, every: 1 } }]) {
+    const history = billing.chargesBetween(sub, sub.start, today, today);
+    const ax = timelineAxis(sub, today, history);
+    assert.equal(ax.future.length, 1, sub.cycle.unit);
+    assert.equal(ax.future[0].date, detailForecast(sub, today).charges[0].date);
+  }
+});

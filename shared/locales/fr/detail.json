@@ -161,13 +161,6 @@
     },
     "shareStart": "Partage commencé"
   },
-  "upcoming": {
-    "total": {
-      "one": "≈ {amount}\n{count} prélèvement",
-      "other": "≈ {amount}\n{count} prélèvements"
-    },
-    "none": "Aucun prélèvement dans les 12 prochains mois"
-  },
   "stop": {
     "title": "Arrêt et remboursement",
     "type": "Type d’arrêt",

@@ -137,10 +137,6 @@
     "more": "显示更早的 {count} 条",
     "shareStart": "开始合租"
   },
-  "upcoming": {
-    "total": "约 {amount}\n{count} 笔",
-    "none": "未来 12 个月没有扣款"
-  },
   "stop": {
     "title": "停止与退款",
     "type": "停止类型",

@@ -147,12 +147,6 @@
     "more": "Tampilkan {count} sebelumnya",
     "shareStart": "Mulai patungan"
   },
-  "upcoming": {
-    "total": {
-      "other": "≈ {amount}\n{count} tagihan"
-    },
-    "none": "Tidak ada tagihan dalam 12 bulan ke depan"
-  },
   "stop": {
     "title": "Penghentian dan pengembalian dana",
     "type": "Jenis penghentian",

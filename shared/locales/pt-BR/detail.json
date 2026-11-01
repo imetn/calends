@@ -161,13 +161,6 @@
     },
     "shareStart": "Compartilhamento iniciado"
   },
-  "upcoming": {
-    "total": {
-      "one": "≈ {amount}\n{count} cobrança",
-      "other": "≈ {amount}\n{count} cobranças"
-    },
-    "none": "Nenhuma cobrança nos próximos 12 meses"
-  },
   "stop": {
     "title": "Encerramento e reembolso",
     "type": "Tipo de encerramento",

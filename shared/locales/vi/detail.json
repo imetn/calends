@@ -147,12 +147,6 @@
     "more": "Xem {count} mục trước",
     "shareStart": "Bắt đầu dùng chung"
   },
-  "upcoming": {
-    "total": {
-      "other": "≈ {amount}\n{count} lần"
-    },
-    "none": "Không có khoản trừ nào trong 12 tháng tới"
-  },
   "stop": {
     "title": "Dừng dịch vụ và hoàn tiền",
     "type": "Loại dừng dịch vụ",
