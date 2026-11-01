@@ -1,5 +1,8 @@
-import { currentPhase, effectiveStatus } from './billing.ts';
+import { currentPhase, effectiveStatus, nextCharge } from './billing.ts';
 import type { AppState, Subscription } from './types.ts';
+
+/** Next charge the list shows and sorts by. A charge due today is still the next one, as in MCP and reminders. */
+export const listNextCharge = (s: Subscription, today: string): string | undefined => nextCharge(s, today);
 
 /** Status facet of the subscription list; `live` folds `active` and `ending` like the overview and public counts. */
 export type ListStatus = 'live' | 'upcoming' | 'trial' | 'paused' | 'ended' | 'terminated' | 'lifetime' | 'all';

@@ -5,18 +5,7 @@ import { copyParts } from '../components/copy.tsx';
 import { StopBadge, StopText, stopDescription, stopLabel } from '../components/StopPanel.tsx';
 import { base } from '../base.ts';
 import { useEffect, useState } from 'react';
-import {
-  activePhases,
-  addDays,
-  currentPhase,
-  diffDays,
-  effectiveStatus,
-  monthlyMine,
-  nextCharge,
-  priceAt,
-  upcomingPhase,
-  isStopped,
-} from '../../../shared/billing.ts';
+import { activePhases, currentPhase, diffDays, effectiveStatus, monthlyMine, priceAt, upcomingPhase, isStopped } from '../../../shared/billing.ts';
 import { cnDate, money, relDays } from '../../../shared/format.ts';
 import { toBaseOrNaN } from '../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
@@ -37,7 +26,7 @@ import { usePref } from '../prefs.ts';
 import { scopeReport } from '../../../shared/scope-report.ts';
 import { ScopeReport } from '../components/ScopeReport.tsx';
 import { useTextSearch } from '../use-search.ts';
-import { inListScope, listHaystack, listMethod, listStatus, listWords, type ListFacet, type ListStatus } from '../../../shared/list-scope.ts';
+import { inListScope, listHaystack, listNextCharge, listMethod, listStatus, listWords, type ListFacet, type ListStatus } from '../../../shared/list-scope.ts';
 
 type Filter = ListStatus;
 type Sort = 'next' | 'cost' | 'name' | 'category' | 'method' | 'amount' | 'start';
@@ -162,7 +151,7 @@ export function List({
   // 金额列显示的是「当前阶段、下次扣款日的价格」折算后的值，排序也用同一个数
   const amountOf = (s: Subscription) => {
     const cur = currentPhase(s, today);
-    const n = nextCharge(s, addDays(today, 1));
+    const n = listNextCharge(s, today);
     const price = n && !(cur.end && n >= cur.end) ? priceAt(cur, n) : cur.price;
     return toBase(state, price, cur.currency);
   };
@@ -185,12 +174,12 @@ export function List({
     // 金额按列里显示的那个数（当前阶段、下次扣款日的价格）折算成本位币，跨币种才比得准
     if (sort === 'amount') return n0(amountOf(a)) - n0(amountOf(b));
     if (sort === 'start') return a.start.localeCompare(b.start);
-    return (nextCharge(a, addDays(today, 1)) ?? '').localeCompare(nextCharge(b, addDays(today, 1)) ?? '');
+    return (listNextCharge(a, today) ?? '').localeCompare(listNextCharge(b, today) ?? '');
   };
   const rows = mine.filter(match).sort((a, b) => {
     if (sort === 'next') {
-      const na = nextCharge(a, addDays(today, 1));
-      const nb = nextCharge(b, addDays(today, 1));
+      const na = listNextCharge(a, today);
+      const nb = listNextCharge(b, today);
       if (!na || !nb) return na ? -1 : nb ? 1 : 0;
     }
     return dir === 'asc' ? asc(a, b) : asc(b, a);
@@ -321,7 +310,7 @@ export function List({
           <div className="sgrid">
             {rows.map((s) => {
               const st = effectiveStatus(s, today);
-              const n = nextCharge(s, addDays(today, 1));
+              const n = listNextCharge(s, today);
               const d = n ? diffDays(today, n) : undefined;
               const v = shown(s, n);
               const cur = currentPhase(s, today);
@@ -406,7 +395,7 @@ export function List({
               </div>
               {rows.map((s) => {
                 const st = effectiveStatus(s, today);
-                const n = nextCharge(s, addDays(today, 1));
+                const n = listNextCharge(s, today);
                 const d = n ? diffDays(today, n) : undefined;
                 const cur = currentPhase(s, today);
                 const up = upcomingPhase(s, today);
