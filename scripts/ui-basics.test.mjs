@@ -1382,3 +1382,10 @@ test('行尾删除与弹窗删除共用同一个确认态，紧跟着的双击�
   assert.match(row, /if \(!armed\) return arm\(\);\s*if \(!ready\(\)\) return;/);
   assert.doesNotMatch(row, /useState\(false\);\s*const \[done/);
 });
+
+test('助手页内标题写全称「AI 助手」，与「连接 AI 助手」对应；底栏短名才写「助手」', () => {
+  const locales = new URL('../../shared/locales/', root);
+  const read = (loc, ns) => JSON.parse(readFileSync(new URL(`${loc}/${ns}.json`, locales), 'utf8'));
+  for (const loc of ['zh-CN', 'zh-HK', 'zh-TW', 'ja', 'ko', 'en']) assert.match(read(loc, 'assistant').title, /^AI /, loc);
+  assert.equal(read('zh-CN', 'app').navShort.assistant, '助手');
+});
