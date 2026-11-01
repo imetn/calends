@@ -3,7 +3,7 @@ import { FxAmount } from '../components/FxAmount.tsx';
 import { currentPhase } from '../../../shared/billing.ts';
 import { copyParts } from '../components/copy.tsx';
 import { ShareAvatars } from '../components/ShareAvatars.tsx';
-import { addDays, cycleLabel, effectiveStatus, memberDues, nextCharge, isStopped, collectCurrencyOf } from '../../../shared/billing.ts';
+import { cycleLabel, effectiveStatus, memberDues, nextCharge, isStopped, collectCurrencyOf } from '../../../shared/billing.ts';
 import { toBaseAt } from '../../../shared/fx.ts';
 import { useState } from 'react';
 import { flow, cnDate, money } from '../../../shared/format.ts';
@@ -79,7 +79,7 @@ export function Carpool({ state, today, onOpen }: { state: AppState; today: stri
   const [savedView, setView] = usePref<CarView>('car-view', 'grid', isCarView);
   const phone = usePhone();
   const view = phone ? 'grid' : savedView;
-  const nextBy = new Map(all.map((s) => [s.id, nextCharge(s, addDays(today, 1)) ?? '9999-12-31']));
+  const nextBy = new Map(all.map((s) => [s.id, nextCharge(s, today) ?? '9999-12-31']));
   const nextOf = (s: Subscription) => nextBy.get(s.id)!;
   // 待收合计（本位币）：算不出（缺汇率或缺金额）的一笔让合计为 NaN，只写「待收」，不写成少收的金额。每辆车与顶部合计同一算法
   const owedTotal = (dues: ReturnType<typeof duesOf>) => dues.reduce((a, d) => a + (Number.isFinite(d.owed) ? toBase(state, d.owed, d.currency) : NaN), 0);
@@ -225,7 +225,7 @@ export function Carpool({ state, today, onOpen }: { state: AppState; today: stri
                   const owing = duesOf(s).filter((d) => d.periodsOwed > 0);
                   // 已退出的成员不占座，只在展开的明细里保留
                   const free = carpoolRoster(s, today).vacancies;
-                  const next = nextCharge(s, addDays(today, 1));
+                  const next = nextCharge(s, today);
                   return (
                     // 整张卡片打开合租弹窗；里面的按钮、链接和订阅名各管各的
                     <div

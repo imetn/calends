@@ -1,6 +1,6 @@
 import { dueTotal, formatTotal, sumTotals } from '../../../../shared/fx-total.ts';
 import { ShareAvatars } from '../../components/ShareAvatars.tsx';
-import { addDays, diffDays, convert, type MemberDue, nextCharge } from '../../../../shared/billing.ts';
+import { diffDays, convert, type MemberDue, nextCharge } from '../../../../shared/billing.ts';
 import { cnDate, cnDateFull, money, relDays } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
@@ -67,7 +67,7 @@ export function CarTable({
           const book = books.get(s.id)!;
           const on = live(s);
           const free = carpoolRoster(s, today).vacancies;
-          const next = on ? nextCharge(s, addDays(today, 1)) : undefined;
+          const next = on ? nextCharge(s, today) : undefined;
           const dues = duesOf(s).filter((d) => d.periodsOwed > 0);
           void owedOf;
           const year = years.get(s.id) ?? carYear(state, s, today);

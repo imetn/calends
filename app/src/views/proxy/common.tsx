@@ -1,5 +1,5 @@
 import { formatTotal, scaleTotal, totalNote } from '../../../../shared/fx-total.ts';
-import { addDays, effectiveStatus, nextCharge, isStopped } from '../../../../shared/billing.ts';
+import { effectiveStatus, nextCharge, isStopped } from '../../../../shared/billing.ts';
 import { cnDate } from '../../../../shared/format.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 import { Metric } from '../../components/ui.tsx';
@@ -31,7 +31,7 @@ export function proxySummary(state: AppState, today: string) {
     partial,
     subs,
     live: live.length,
-    next: live.map((s) => nextCharge(s, addDays(today, 1))).reduce<string | undefined>((a, d) => (d && (!a || d < a) ? d : a), undefined),
+    next: live.map((s) => nextCharge(s, today)).reduce<string | undefined>((a, d) => (d && (!a || d < a) ? d : a), undefined),
     lastIn,
     closedCount: done.length,
     count: all.length,

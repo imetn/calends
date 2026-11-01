@@ -4,7 +4,7 @@ import { currentPhase } from '../../../shared/billing.ts';
 import { copyParts } from '../components/copy.tsx';
 import { PersonAvatar, personFor } from '../components/PersonAvatar.tsx';
 import { useState } from 'react';
-import { addDays, cycleLabel, diffDays, effectiveStatus, nextCharge, todayIn, isStopped } from '../../../shared/billing.ts';
+import { cycleLabel, diffDays, effectiveStatus, nextCharge, todayIn, isStopped } from '../../../shared/billing.ts';
 import { flow, cnDate, cnDateFull, money, relDays } from '../../../shared/format.ts';
 import { toBaseAt } from '../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
@@ -36,7 +36,7 @@ export function ProxyCard({ state, s, onOpen }: { state: AppState; s: Subscripti
   const list = rows(state, s, today);
   const ahead = proxyAhead(state, s, today);
   const [ledger, setLedger] = useState(false);
-  const next = nextCharge(s, addDays(today, 1));
+  const next = nextCharge(s, today);
   const method = state.methods.find((m) => m.id === s.methodId);
   const { partial } = proxyTotals(list);
   const st = effectiveStatus(s, today);
@@ -149,7 +149,7 @@ export function useProxySort(state: AppState, today: string, subs: Subscription[
       st,
       stopped,
       ...proxyTotals(list),
-      next: stopped ? undefined : nextCharge(s, addDays(today, 1)),
+      next: stopped ? undefined : nextCharge(s, today),
       priceBase: toBaseAt(state, currentPhase(s, today).price, currentPhase(s, today).currency),
     };
   });

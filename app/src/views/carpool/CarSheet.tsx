@@ -4,7 +4,7 @@ import { CopyImageButton } from '../../components/CopyImageButton.tsx';
 import { DetailHead, DetailSheet, Panel, Prop } from '../../components/DetailKit.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { copyParts } from '../../components/copy.tsx';
-import { addDays, chargesBetween, cycleLabel, effectiveStatus, memberDues, nextCharge, isStopped, collectCurrencyOf } from '../../../../shared/billing.ts';
+import { chargesBetween, cycleLabel, effectiveStatus, memberDues, nextCharge, isStopped, collectCurrencyOf } from '../../../../shared/billing.ts';
 import { useRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { carpoolSnapshot } from '../carpool-snapshot.ts';
@@ -72,7 +72,7 @@ export function CarSheet({
   const sh = s.share!;
   const st = effectiveStatus(s, today);
   const stopped = isStopped(st);
-  const next = nextCharge(s, addDays(today, 1));
+  const next = nextCharge(s, today);
   const roster = carpoolRoster(s, today);
   const dues = memberDues(s, today, collectCurrencyOf(state.settings), state).filter((d) => d.periodsOwed > 0);
   const owe = dues.length;

@@ -618,8 +618,8 @@ test('public rows keep the amount once for an ordinary monthly plan and distingu
   let nodes = render(s, 10);
   const todayNodes = render({ ...s, start: today }, 10);
   assert.ok(
-    todayNodes.some((n) => n.children.includes(`public.row.renews ${format.cnDate('2026-11-22')}`)),
-    'next charge starts after the already-charged day',
+    todayNodes.some((n) => n.children.includes(`public.row.renews ${format.cnDate(today)}`)),
+    'a charge due today is still the next charge',
   );
   assert.equal(nodes.filter((n) => n.children.includes('$10.00')).length, 1);
   assert.equal(

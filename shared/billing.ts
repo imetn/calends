@@ -796,6 +796,7 @@ export function reconcileRenewalRules(previous: Subscription | undefined, next: 
   };
 }
 
+/** 今天及以后的第一次扣款；今天扣款的仍算下次扣款，界面、MCP 与提醒都传今天 */
 export function nextCharge(s: Subscription, today: string): string | undefined {
   if (s.cycle.unit === 'lifetime') return s.start > today ? s.start : undefined;
   // 后付费停止后还有最后一张账单，交给 chargesBetween 判断

@@ -5,18 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ExternalLink, CircleStop, Pause, Pencil, Play, Plus, Settings2, Share } from 'lucide-react';
-import {
-  addDays,
-  chargesBetween,
-  currentPhase,
-  cycleLabel,
-  effectiveStatus,
-  isPostpaid,
-  nextCharge,
-  phaseSubs,
-  priceAt,
-  type Charge,
-} from '../../../shared/billing.ts';
+import { chargesBetween, currentPhase, cycleLabel, effectiveStatus, isPostpaid, nextCharge, phaseSubs, priceAt, type Charge } from '../../../shared/billing.ts';
 import { cnDateFull } from '../../../shared/format.ts';
 import type { AppState, Payment, ShareMember, Subscription } from '../../../shared/types.ts';
 import { CarSheet } from './carpool/CarSheet.tsx';
@@ -102,7 +91,7 @@ export async function detailImage(el: HTMLElement) {
 export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscription; state: AppState; today: string; onEdit: () => void; onClose: () => void }) {
   const pair = useMoneyPair(state);
   const st = effectiveStatus(sub, today);
-  const next = nextCharge(sub, addDays(today, 1));
+  const next = nextCharge(sub, today);
   // 显示今天生效的那一段（换区前仍是旧区的价格与支付方式），未来的变更单独列出
   const cur = currentPhase(sub, today);
   const history = chargesBetween(sub, sub.start, today, today);

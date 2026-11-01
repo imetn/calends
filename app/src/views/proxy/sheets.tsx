@@ -2,7 +2,7 @@ import { formatTotal, scaleTotal, totalNote } from '../../../../shared/fx-total.
 import { copyParts } from '../../components/copy.tsx';
 import { PersonAvatar, personFor } from '../../components/PersonAvatar.tsx';
 import { useRef, useState } from 'react';
-import { addDays, cycleLabel, effectiveStatus, nextCharge, todayIn, isStopped, uid } from '../../../../shared/billing.ts';
+import { cycleLabel, effectiveStatus, nextCharge, todayIn, isStopped, uid } from '../../../../shared/billing.ts';
 import { flow, cnDate, cnDateFull, currencyDecimals, money } from '../../../../shared/format.ts';
 import { toBaseOrNaN } from '../../../../shared/fx.ts';
 import type { AppState, Receipt, Subscription, Waiver } from '../../../../shared/types.ts';
@@ -48,7 +48,7 @@ export function LedgerSheet({ state, s, onClose, onOpen }: { state: AppState; s:
   const px = live.proxy!;
   const st = effectiveStatus(live, today);
   const stopped = isStopped(st);
-  const next = nextCharge(live, addDays(today, 1));
+  const next = nextCharge(live, today);
   const method = state.methods.find((m) => m.id === live.methodId);
   const { done, open, diff, lastIn, partial } = proxyTotals(list);
   // 表格的行：预收的期（还没扣款）在前，然后是已扣款的期，都按日期从新到旧

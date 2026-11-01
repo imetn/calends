@@ -633,7 +633,7 @@ function Row({ s, v, today, ccy, k, fmt }: { s: Subscription; v: number; today: 
   const status = effectiveStatus(s, today);
   const ending = ['ending', 'ended', 'terminated'].includes(status);
   const end = ph.stop?.date ?? ph.end ?? s.stop?.date ?? s.end;
-  const n = ending ? undefined : nextCharge(s, addDays(today, 1));
+  const n = ending ? undefined : nextCharge(s, today);
   const soon = n !== undefined && diffDays(today, n) <= 7;
   const monthly = ph.currency === ccy && ph.cycle.unit === 'month' && ph.cycle.every === 1;
   const repeatsPrice = monthly && Math.abs(v * k - ph.price) < 0.005;

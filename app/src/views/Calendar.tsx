@@ -265,7 +265,7 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                       const sub = state.subscriptions.find((s) => s.id === c.sub.id) ?? c.sub;
                       const cur = currentPhase(sub, today);
                       const status = effectiveStatus(sub, today);
-                      const next = nextCharge(sub, addDays(today, 1));
+                      const next = nextCharge(sub, today);
                       // 后付费账单写它所属的已用服务期；先付费写本期付到哪天
                       const postpaid = isPostpaid(c.sub);
                       const period =
