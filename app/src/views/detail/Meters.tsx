@@ -17,7 +17,7 @@ import { ChargeBars } from '../DetailChart.tsx';
 import { ChargeTip, chargeUsage, unitMoney, withUnit } from './ChargeTip.tsx';
 import { NumInput, Seg, useSubmit } from '../../components/inputs.tsx';
 import { ask, Sheet } from '../../components/overlays.tsx';
-import { Cell, Group, Metric, MetricCards } from '../../components/ui.tsx';
+import { Cell, Group, Metric } from '../../components/ui.tsx';
 import { saveSub } from '../../store.ts';
 import { run } from '../../toast.ts';
 
@@ -29,8 +29,45 @@ const compactQty = (n: number) =>
 const priceText = (r: MeterRow, unit: string) => unitMoney(r.unitPrice!, r.cost!.currency, unit);
 
 /**
+ * 顶部指标的第二行：当前指标的最近一期、平均每期、平均单价、累计（与上面一行同一网格，横竖分隔线）
+ */
+export function usageMetrics(sub: Subscription, cur: Meter, today: string) {
+  const summary = meterSummary(sub, cur, today);
+  const stats = meterStats(summary.rows);
+  const latest = summary.latest;
+  const isReading = cur.kind === 'reading';
+  return [
+    <Metric
+      key="latest"
+      // 多个指标时写明是哪一个（切换在下方用量卡里）
+      label={(sub.meters?.length ?? 0) > 1 ? t('detail.meters.latestOf', { name: cur.name }) : t('detail.meters.latest')}
+      value={latest?.usage != null ? withUnit(latest.usage, cur.unit) : '—'}
+      note={latest && (isReading ? t('detail.meters.readingValue', { v: withUnit(latest.value, cur.unit) }) : cnDateFull(latest.reading.date))}
+    />,
+    <Metric
+      key="average"
+      label={t('detail.meters.average')}
+      value={stats.average != null ? withUnit(stats.average, cur.unit, avgQty) : '—'}
+      note={summary.periods ? t('detail.meters.periods', { n: summary.periods }) : undefined}
+    />,
+    <Metric
+      key="price"
+      label={t('detail.meters.avgPrice')}
+      value={stats.unitPrice ? unitMoney(stats.unitPrice.amount, stats.unitPrice.currency, cur.unit) : '—'}
+      note={summary.latestPriced && t('detail.meters.latestPrice', { v: priceText(summary.latestPriced, cur.unit) })}
+    />,
+    <Metric
+      key="total"
+      label={t('detail.meters.totalLabel')}
+      value={summary.periods ? withUnit(summary.total, cur.unit) : '—'}
+      note={summary.from && t('detail.meters.since', { date: cnDateFull(summary.from) })}
+    />,
+  ];
+}
+
+/**
  * 业务数据：订阅上自定义的指标（电量、里程、流量……）与按日期的记录，和付款分开存。
- * 没有指标时只留一个轻入口；有指标时每个指标一张卡（最近一期用量、累计、最近单价），下面是用量走势，点柱修改那条记录；
+ * 没有指标时只留一个轻入口；有指标时卡片里是用量走势（指标数字在顶部第二行），点柱修改那条记录；
  * 每期用量另在扣款记录里按每笔的服务期列出。
  * 只读（公开页、演示）不显示任何编辑入口
  */
@@ -40,6 +77,8 @@ export function Meters({
   state,
   today,
   history = [],
+  meterId,
+  onMeter,
   axis,
 }: {
   sub: Subscription;
@@ -47,14 +86,17 @@ export function Meters({
   today: string;
   /** 这个订阅的扣款：悬停用量柱时显示它所属那笔扣款的提示框 */
   history?: Charge[];
+  /** 当前看的指标：与顶部用量指标行共用，由详情页持有 */
+  meterId?: string;
+  onMeter?: (id: string) => void;
   axis?: { from: string; to: string; since: string };
 }) {
   const ro = !!state.readonly;
   const meters = sub.meters ?? [];
   const [manage, setManage] = useState(false);
   const [reading, setReading] = useState<{ id?: string } | null>(null);
-  const [picked, setPicked] = useState<string>();
-  const cur = meters.find((m) => m.id === picked) ?? meters[0];
+  const cur = meters.find((m) => m.id === meterId) ?? meters[0];
+  const setPicked = (id: string) => onMeter?.(id);
   const save = (next: Subscription, close: () => void) =>
     run(async () => {
       await saveSub(next);
@@ -90,7 +132,7 @@ export function Meters({
   if (!meters.length) {
     if (ro) return null;
     return (
-      <Panel className="dt-meters">
+      <Panel className="dt-meters-empty">
         <button className="btn plain dt-meters-add" onClick={() => setManage(true)}>
           <Plus size={14} /> {t('detail.meters.add')}
         </button>
@@ -101,8 +143,6 @@ export function Meters({
 
   const summary = meterSummary(sub, cur, today);
   const stats = meterStats(summary.rows);
-  const latest = summary.latest;
-  const isReading = cur.kind === 'reading';
   const base = state.settings.baseCurrency;
   const used = summary.rows.filter((r) => r.usage != null);
   const trend = axis ? used.filter((r) => r.reading.date >= axis.since && r.reading.date >= axis.from && r.reading.date <= axis.to) : used.slice(-24);
@@ -138,7 +178,7 @@ export function Meters({
   };
   return (
     <Panel
-      className="dt-charges dt-meters"
+      className="dt-chart dt-meters"
       title={t('detail.meters.title')}
       aside={
         !ro && (
@@ -163,28 +203,6 @@ export function Meters({
             )}
           </div>
         )}
-        <MetricCards inline>
-          <Metric
-            label={t('detail.meters.latest')}
-            value={latest?.usage != null ? withUnit(latest.usage, cur.unit) : '—'}
-            note={latest && (isReading ? t('detail.meters.readingValue', { v: withUnit(latest.value, cur.unit) }) : cnDateFull(latest.reading.date))}
-          />
-          <Metric
-            label={t('detail.meters.average')}
-            value={stats.average != null ? withUnit(stats.average, cur.unit, avgQty) : '—'}
-            note={summary.periods ? t('detail.meters.periods', { n: summary.periods }) : undefined}
-          />
-          <Metric
-            label={t('detail.meters.avgPrice')}
-            value={stats.unitPrice ? unitMoney(stats.unitPrice.amount, stats.unitPrice.currency, cur.unit) : '—'}
-            note={summary.latestPriced && t('detail.meters.latestPrice', { v: priceText(summary.latestPriced, cur.unit) })}
-          />
-          <Metric
-            label={t('detail.meters.totalLabel')}
-            value={summary.periods ? withUnit(summary.total, cur.unit) : '—'}
-            note={summary.from && t('detail.meters.since', { date: cnDateFull(summary.from) })}
-          />
-        </MetricCards>
         {/* 走势：横线是平均每期。有费用图时与它同一条日期横轴、同一个范围；否则画最近 24 期 */}
         {trend.length > 1 &&
           (axis ? (
@@ -232,6 +250,8 @@ export function Meters({
               onPick={ro ? undefined : (i) => setReading({ id: trend[i].reading.id })}
             />
           ))}
+        {/* 指标在顶部，这里只有走势；画不出时留一句说明，不留空卡 */}
+        {trend.length <= 1 && <p className="muted dt-meters-none">{t('detail.meters.noTrend')}</p>}
       </div>
       {sheets}
     </Panel>

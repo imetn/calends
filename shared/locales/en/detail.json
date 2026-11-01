@@ -126,9 +126,10 @@
     "all": "All",
     "y1": "1Y",
     "m6": "6M",
-    "period": "Billing period",
+    "period": "Period",
     "converted": "Converted",
     "average": "Average",
+    "method": "Payment",
     "bucket": {
       "m1": "Each bar is a monthly total",
       "m3": "Each bar is a quarterly total",
@@ -247,10 +248,12 @@
     "deleteReadings": "Delete {n} records",
     "removeMeters": "Delete meters and their values",
     "latest": "Latest",
+    "latestOf": "{name}, latest",
     "average": "Average per period",
     "avgPrice": "Average unit price",
     "totalLabel": "Total",
     "periods": "{n} periods",
+    "noTrend": "Not enough periods in this range for a trend",
     "latestPrice": "Latest {v}",
     "since": "Since {date}"
   }

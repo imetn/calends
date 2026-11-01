@@ -118,9 +118,10 @@
     "all": "Semua",
     "y1": "1 thn",
     "m6": "6 bln",
-    "period": "Periode tagihan",
+    "period": "Periode",
     "converted": "Setara",
     "average": "Rata-rata",
+    "method": "Bayar",
     "bucket": {
       "m1": "Setiap batang adalah total bulanan",
       "m3": "Setiap batang adalah total kuartalan",
@@ -232,10 +233,12 @@
     "deleteReadings": "Hapus {n} catatan",
     "removeMeters": "Hapus meteran dan nilainya",
     "latest": "Terakhir",
+    "latestOf": "{name}, terakhir",
     "average": "Rata-rata per periode",
     "avgPrice": "Rata-rata harga satuan",
     "totalLabel": "Total",
     "periods": "{n} periode",
+    "noTrend": "Periode belum cukup untuk menampilkan tren",
     "latestPrice": "Terakhir {v}",
     "since": "Sejak {date}"
   }

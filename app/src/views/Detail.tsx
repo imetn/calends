@@ -36,7 +36,7 @@ import { Summary } from './detail/Summary.tsx';
 import { Notices } from './detail/Notices.tsx';
 import { NoteBlock, ShareCard } from './detail/Summary.tsx';
 import { Charges } from './detail/Ledgers.tsx';
-import { Meters } from './detail/Meters.tsx';
+import { Meters, usageMetrics } from './detail/Meters.tsx';
 
 /**
  * 详情顶部的操作按钮。宽屏：常用的带文字（胶囊），次要的只有图标（正圆）；
@@ -137,6 +137,9 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   // 费用图与用量图共用一个范围和横轴；换订阅时回到默认范围
   const [rangePick, setRangePick] = useState<{ id: string; range: Range }>();
   const axis = timelineAxis(sub, today, history, rangePick?.id === sub.id ? rangePick.range : undefined);
+  // 当前看的用量指标：顶部用量行与用量卡共用
+  const [meterPick, setMeterPick] = useState<{ id: string; meter: string }>();
+  const meter = sub.meters?.find((m) => meterPick?.id === sub.id && m.id === meterPick.meter) ?? sub.meters?.[0];
   const charges = (
     <Charges
       sub={sub}
@@ -226,14 +229,25 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
           提醒仍是卡片，其余（走势、记录、合租、详情、历程）用分隔线隔开
         */}
       <div className="dt-body dt-flow">
-        <Kpis sub={sub} state={state} today={today} history={history} />
+        <Kpis sub={sub} state={state} today={today} history={history} usage={meter && usageMetrics(sub, meter, today)} />
         {/* 指标下面：本期进度与属性（不加标题），然后是扣款走势、提醒和记录 */}
         <Summary key={sub.id} sub={sub} state={state} today={today} />
         {!compact && (
           <Timeline sub={sub} state={state} today={today} history={history} range={axis.range} onRange={(range) => setRangePick({ id: sub.id, range })} />
         )}
         {/* 用量紧跟费用走势：横轴日期对齐，切换范围两张图一起变 */}
-        {!!sub.meters?.length && <Meters key={`m${sub.id}`} sub={sub} state={state} today={today} history={history} axis={!compact && axis.drawn ? axis : undefined} />}
+        {!!sub.meters?.length && (
+          <Meters
+            key={`m${sub.id}`}
+            sub={sub}
+            state={state}
+            today={today}
+            history={history}
+            meterId={meter?.id}
+            onMeter={(id) => setMeterPick({ id: sub.id, meter: id })}
+            axis={!compact && axis.drawn ? axis : undefined}
+          />
+        )}
         <Notices sub={sub} state={state} today={today} />
         {/* 合租比扣款记录重要，放在前面 */}
         <ShareCard sub={sub} state={state} today={today} onCar={() => setCar(true)} onMember={(m) => setMember({ m })} />

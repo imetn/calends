@@ -301,6 +301,20 @@
   padding-top: 12px;
   border-top: var(--hairline) solid var(--sep);
 }
+/* 两组并列卡叠在一张卡里：行间横线与竖线相交；第二组是补充信息，数字小一号 */
+.metric-stack > .metric-cards:not(:last-child) .metric-grid > div {
+  padding-bottom: 14px;
+}
+.metric-stack > .metric-cards + .metric-cards {
+  border-top: var(--hairline) solid var(--sep);
+}
+.metric-stack > .metric-cards + .metric-cards .metric-grid > div {
+  padding-top: 14px;
+}
+.metric-stack > .metric-cards + .metric-cards .metric-value {
+  font-size: var(--fs-3);
+  line-height: 24px;
+}
 .metric-top {
   display: flex;
   align-items: center;

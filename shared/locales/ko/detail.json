@@ -118,9 +118,10 @@
     "all": "전체",
     "y1": "1년",
     "m6": "6개월",
-    "period": "청구 기간",
+    "period": "기간",
     "converted": "환산",
     "average": "평균",
+    "method": "결제",
     "bucket": {
       "m1": "막대 하나가 한 달 합계",
       "m3": "막대 하나가 분기 합계",
@@ -232,10 +233,12 @@
     "deleteReadings": "기록 {n}건 삭제",
     "removeMeters": "지표와 기록된 값 삭제",
     "latest": "최근",
+    "latestOf": "{name} 최근",
     "average": "기간당 평균",
     "avgPrice": "평균 단가",
     "totalLabel": "누적",
     "periods": "{n}기",
+    "noTrend": "이 기간에는 추이를 표시할 기록이 부족합니다",
     "latestPrice": "최근 {v}",
     "since": "{date}부터"
   }

@@ -8,6 +8,8 @@ import { flow, cnDateAuto, cnDateFull, relDays } from '../../../../shared/format
 import { netCost, transfersOf } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
+import type { ReactNode } from 'react';
+import { Panel } from '../../components/DetailKit.tsx';
 import { MetricCards, Metric } from '../../components/ui.tsx';
 import { toBase } from '../../derive.ts';
 import { t } from '../../../../shared/i18n.ts';
@@ -28,12 +30,25 @@ export function Trend({ pct }: { pct: number | undefined }) {
 }
 
 /**
- * 顶部四格，内容跟着状态走：
+ * 顶部指标：一张卡里竖线分格，有用量指标时下面再一行用量，行间横线。四格内容跟着状态走：
  * 计费中、试用中是 下次扣款 · 订了多久 · 累计 · 每月；已结束是 结束于 · 订了多久 · 累计 · 每月；
  * 买断、暂停没有下一笔，是 订了多久 · 累计 · 每月。
  * 累计按每笔扣款当天的汇率；合租发起人这里是付出去的全额，成员分摊在「合租」页看。
  */
-export function Kpis({ sub, state, today, history }: { sub: Subscription; state: AppState; today: string; history: Charge[] }) {
+export function Kpis({
+  sub,
+  state,
+  today,
+  history,
+  usage,
+}: {
+  sub: Subscription;
+  state: AppState;
+  today: string;
+  history: Charge[];
+  /** 有用量指标时的第二行（见 usageMetrics） */
+  usage?: ReactNode[];
+}) {
   const base = state.settings.baseCurrency;
   const st = effectiveStatus(sub, today);
   const end = detailHistoryEnd(sub, today);
@@ -104,67 +119,70 @@ export function Kpis({ sub, state, today, history }: { sub: Subscription; state:
   );
 
   return (
-    <MetricCards>
-      {next ? (
-        <Metric
-          label={st === 'trial' ? t('detail.renewal.afterTrial') : isPostpaid(next.sub) ? t('detail.billing.nextBill') : t('detail.ev.next')}
-          value={cnDateAuto(next.date, today)}
-          note={copyParts(
-            [Number.isFinite(nextValue) ? flow(-nextValue, base) : flow(-next.amount, next.currency), relDays(diffDays(today, next.date))].join('\n'),
-          )}
-        />
-      ) : ended ? (
-        <Metric label={t('detail.field.endedOn')} value={cnDateAuto(sub.end!, today)} note={relDays(diffDays(today, sub.end!))} />
-      ) : (
-        durationCell
-      )}
-      {(next || ended) && durationCell}
-      {/* 只有一笔时累计就是那一笔，扣款记录里已有，不再占一格 */}
-      {/* 导入边界之前的历史没有记录：没有一笔时写「—」，小字说明只算导入之后 */}
-      {/* 有转让时是净花费：买入、卖出各自的金额在下方转让卡片，这里只写合计 */}
-      {(history.length !== 1 || transferred) && (
-        <Metric
-          label={transferred ? t(total < 0 ? 'detail.transfer.netGain' : 'detail.transfer.net') : t('detail.stats.spent')}
-          value={sub.estimateFrom && !history.length && !transferred ? '—' : cumulative}
-          note={
-            cost.incomplete
-              ? cost.partial.known
-                ? totalNote(cost.partial)
-                : t('detail.stats.count', { count: history.length })
-              : sub.estimateFrom
-                ? t('settings.import.history')
-                : transferred
-                  ? copyParts([t('detail.stats.count', { count: history.length }), t('detail.transfer.included')].join('\n'))
+    <Panel className="dt-metrics metric-stack">
+      <MetricCards inline>
+        {next ? (
+          <Metric
+            label={st === 'trial' ? t('detail.renewal.afterTrial') : isPostpaid(next.sub) ? t('detail.billing.nextBill') : t('detail.ev.next')}
+            value={cnDateAuto(next.date, today)}
+            note={copyParts(
+              [Number.isFinite(nextValue) ? flow(-nextValue, base) : flow(-next.amount, next.currency), relDays(diffDays(today, next.date))].join('\n'),
+            )}
+          />
+        ) : ended ? (
+          <Metric label={t('detail.field.endedOn')} value={cnDateAuto(sub.end!, today)} note={relDays(diffDays(today, sub.end!))} />
+        ) : (
+          durationCell
+        )}
+        {(next || ended) && durationCell}
+        {/* 只有一笔时累计就是那一笔，扣款记录里已有，不再占一格 */}
+        {/* 导入边界之前的历史没有记录：没有一笔时写「—」，小字说明只算导入之后 */}
+        {/* 有转让时是净花费：买入、卖出各自的金额在下方转让卡片，这里只写合计 */}
+        {(history.length !== 1 || transferred) && (
+          <Metric
+            label={transferred ? t(total < 0 ? 'detail.transfer.netGain' : 'detail.transfer.net') : t('detail.stats.spent')}
+            value={sub.estimateFrom && !history.length && !transferred ? '—' : cumulative}
+            note={
+              cost.incomplete
+                ? cost.partial.known
+                  ? totalNote(cost.partial)
                   : t('detail.stats.count', { count: history.length })
+                : sub.estimateFrom
+                  ? t('settings.import.history')
+                  : transferred
+                    ? copyParts([t('detail.stats.count', { count: history.length }), t('detail.transfer.included')].join('\n'))
+                    : t('detail.stats.count', { count: history.length })
+            }
+          />
+        )}
+        <Metric
+          label={lifetime ? t('detail.kpi.amortizedCost') : young ? t('detail.kpi.expectedMonthly') : t('detail.stats.perMonth')}
+          value={
+            undated || (sub.estimateFrom && lifetime && !history.length)
+              ? '—'
+              : lifetime
+                ? t('detail.kpi.perMonthValue', { amount: monthlyAmount })
+                : monthlyAmount
           }
+          // 与其他格一样三行：折到每天多少；算不出来就不写这一行
+          note={
+            !undated
+              ? monthlyPartial.incomplete
+                ? [
+                    monthlyPartial.known || Object.keys(monthlyPartial.unconverted).length > 1 ? totalNote(monthlyPartial) : '',
+                    t('detail.kpi.perDay', { amount: formatTotal(scaleTotal(monthlyPartial, 1 / DAYS_PER_MONTH), base, { direction: -1, average: true }) }),
+                  ]
+                    .filter(Boolean)
+                    .join('\n')
+                : Number.isFinite(monthly)
+                  ? t('detail.kpi.perDay', { amount: flow(-monthly / DAYS_PER_MONTH, base) })
+                  : undefined
+              : undefined
+          }
+          accessory={!lifetime && !undated && !transferred ? <Trend pct={perTrend} /> : undefined}
         />
-      )}
-      <Metric
-        label={lifetime ? t('detail.kpi.amortizedCost') : young ? t('detail.kpi.expectedMonthly') : t('detail.stats.perMonth')}
-        value={
-          undated || (sub.estimateFrom && lifetime && !history.length)
-            ? '—'
-            : lifetime
-              ? t('detail.kpi.perMonthValue', { amount: monthlyAmount })
-              : monthlyAmount
-        }
-        // 与其他格一样三行：折到每天多少；算不出来就不写这一行
-        note={
-          !undated
-            ? monthlyPartial.incomplete
-              ? [
-                  monthlyPartial.known || Object.keys(monthlyPartial.unconverted).length > 1 ? totalNote(monthlyPartial) : '',
-                  t('detail.kpi.perDay', { amount: formatTotal(scaleTotal(monthlyPartial, 1 / DAYS_PER_MONTH), base, { direction: -1, average: true }) }),
-                ]
-                  .filter(Boolean)
-                  .join('\n')
-              : Number.isFinite(monthly)
-                ? t('detail.kpi.perDay', { amount: flow(-monthly / DAYS_PER_MONTH, base) })
-                : undefined
-            : undefined
-        }
-        accessory={!lifetime && !undated && !transferred ? <Trend pct={perTrend} /> : undefined}
-      />
-    </MetricCards>
+      </MetricCards>
+      {usage && <MetricCards inline>{usage}</MetricCards>}
+    </Panel>
   );
 }

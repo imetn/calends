@@ -108,9 +108,10 @@
     "all": "全部",
     "y1": "1 年",
     "m6": "6 个月",
-    "period": "计费周期",
+    "period": "周期",
     "converted": "折合",
     "average": "平均",
+    "method": "支付",
     "bucket": {
       "m1": "每根柱为一个月合计",
       "m3": "每根柱为一季合计",
@@ -220,10 +221,12 @@
     "deleteReadings": "删除 {n} 条记录",
     "removeMeters": "删除指标及其历史数值",
     "latest": "最近一期",
+    "latestOf": "{name}最近一期",
     "average": "平均每期",
     "avgPrice": "平均单价",
     "totalLabel": "累计",
     "periods": "{n} 期",
+    "noTrend": "这段时间不足两期，暂无走势",
     "latestPrice": "最近 {v}",
     "since": "自 {date}"
   }

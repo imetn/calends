@@ -118,9 +118,10 @@
     "all": "すべて",
     "y1": "1 年",
     "m6": "6 か月",
-    "period": "請求期間",
+    "period": "期間",
     "converted": "換算",
     "average": "平均",
+    "method": "支払い",
     "bucket": {
       "m1": "各棒は1か月の合計",
       "m3": "各棒は四半期の合計",
@@ -232,10 +233,12 @@
     "deleteReadings": "{n} 件の記録を削除",
     "removeMeters": "指標と記録済みの値を削除",
     "latest": "最新",
+    "latestOf": "{name}の最新",
     "average": "1期あたり平均",
     "avgPrice": "平均単価",
     "totalLabel": "累計",
     "periods": "{n} 期",
+    "noTrend": "この期間はデータが2期未満のため推移を表示できません",
     "latestPrice": "最新 {v}",
     "since": "{date} から"
   }

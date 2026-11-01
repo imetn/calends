@@ -1,9 +1,245 @@
 {
   "normal/Kpis": [
     {
+      "type": "[handler]",
+      "props": {
+        "className": "dt-metrics metric-stack"
+      },
+      "children": [
+        {
+          "type": "div",
+          "props": {
+            "className": "metric-cards inline ",
+            "style": {
+              "--metric-columns": 4
+            },
+            "data-count": 4
+          },
+          "children": [
+            {
+              "type": "div",
+              "props": {
+                "className": "metric-grid"
+              },
+              "children": [
+                [
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.ev.next"
+                            ]
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "Nov 1"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          {
+                            "type": "span",
+                            "props": {
+                              "className": "copy-parts"
+                            },
+                            "children": [
+                              [
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 0
+                                  },
+                                  "children": [
+                                    "−$20.00"
+                                  ]
+                                },
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 1
+                                  },
+                                  "children": [
+                                    "in 10 days"
+                                  ]
+                                }
+                              ]
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.stats.subscribed"
+                            ]
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "detail.stats.months"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          "detail.period.since"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.stats.spent"
+                            ]
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "−$200"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          "detail.stats.count"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.stats.perMonth"
+                            ]
+                          },
+                          {
+                            "type": "[handler]",
+                            "props": {
+                              "pct": 0
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "−$20.71"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          "detail.kpi.perDay"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        },
+        null
+      ]
+    },
+    {
       "type": "div",
       "props": {
-        "className": "metric-cards  ",
+        "className": "metric-cards inline ",
         "style": {
           "--metric-columns": 4
         },
@@ -33,7 +269,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.ev.next"]
+                        "children": [
+                          "detail.ev.next"
+                        ]
                       },
                       null
                     ]
@@ -43,7 +281,9 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["Nov 1"]
+                    "children": [
+                      "Nov 1"
+                    ]
                   },
                   {
                     "type": "div",
@@ -63,14 +303,18 @@
                               "props": {
                                 "key": 0
                               },
-                              "children": ["−$20.00"]
+                              "children": [
+                                "−$20.00"
+                              ]
                             },
                             {
                               "type": "span",
                               "props": {
                                 "key": 1
                               },
-                              "children": ["in 10 days"]
+                              "children": [
+                                "in 10 days"
+                              ]
                             }
                           ]
                         ]
@@ -95,7 +339,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.stats.subscribed"]
+                        "children": [
+                          "detail.stats.subscribed"
+                        ]
                       },
                       null
                     ]
@@ -105,14 +351,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["detail.stats.months"]
+                    "children": [
+                      "detail.stats.months"
+                    ]
                   },
                   {
                     "type": "div",
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.period.since"]
+                    "children": [
+                      "detail.period.since"
+                    ]
                   }
                 ]
               },
@@ -132,7 +382,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.stats.spent"]
+                        "children": [
+                          "detail.stats.spent"
+                        ]
                       },
                       null
                     ]
@@ -142,14 +394,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["−$200"]
+                    "children": [
+                      "−$200"
+                    ]
                   },
                   {
                     "type": "div",
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.stats.count"]
+                    "children": [
+                      "detail.stats.count"
+                    ]
                   }
                 ]
               },
@@ -169,7 +425,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.stats.perMonth"]
+                        "children": [
+                          "detail.stats.perMonth"
+                        ]
                       },
                       {
                         "type": "[handler]",
@@ -185,14 +443,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["−$20.71"]
+                    "children": [
+                      "−$20.71"
+                    ]
                   },
                   {
                     "type": "div",
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.kpi.perDay"]
+                    "children": [
+                      "detail.kpi.perDay"
+                    ]
                   }
                 ]
               }
@@ -224,7 +486,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.ev.next"]
+                    "children": [
+                      "detail.ev.next"
+                    ]
                   },
                   null
                 ]
@@ -234,7 +498,9 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["Nov 1"]
+                "children": [
+                  "Nov 1"
+                ]
               },
               {
                 "type": "div",
@@ -254,14 +520,18 @@
                           "props": {
                             "key": 0
                           },
-                          "children": ["−$20.00"]
+                          "children": [
+                            "−$20.00"
+                          ]
                         },
                         {
                           "type": "span",
                           "props": {
                             "key": 1
                           },
-                          "children": ["in 10 days"]
+                          "children": [
+                            "in 10 days"
+                          ]
                         }
                       ]
                     ]
@@ -286,7 +556,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.stats.subscribed"]
+                    "children": [
+                      "detail.stats.subscribed"
+                    ]
                   },
                   null
                 ]
@@ -296,14 +568,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["detail.stats.months"]
+                "children": [
+                  "detail.stats.months"
+                ]
               },
               {
                 "type": "div",
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.period.since"]
+                "children": [
+                  "detail.period.since"
+                ]
               }
             ]
           },
@@ -323,7 +599,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.stats.spent"]
+                    "children": [
+                      "detail.stats.spent"
+                    ]
                   },
                   null
                 ]
@@ -333,14 +611,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["−$200"]
+                "children": [
+                  "−$200"
+                ]
               },
               {
                 "type": "div",
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.stats.count"]
+                "children": [
+                  "detail.stats.count"
+                ]
               }
             ]
           },
@@ -360,7 +642,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.stats.perMonth"]
+                    "children": [
+                      "detail.stats.perMonth"
+                    ]
                   },
                   {
                     "type": "[handler]",
@@ -376,14 +660,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["−$20.71"]
+                "children": [
+                  "−$20.71"
+                ]
               },
               {
                 "type": "div",
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.kpi.perDay"]
+                "children": [
+                  "detail.kpi.perDay"
+                ]
               }
             ]
           }
@@ -406,7 +694,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.ev.next"]
+              "children": [
+                "detail.ev.next"
+              ]
             },
             null
           ]
@@ -416,7 +706,9 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["Nov 1"]
+          "children": [
+            "Nov 1"
+          ]
         },
         {
           "type": "div",
@@ -436,14 +728,18 @@
                     "props": {
                       "key": 0
                     },
-                    "children": ["−$20.00"]
+                    "children": [
+                      "−$20.00"
+                    ]
                   },
                   {
                     "type": "span",
                     "props": {
                       "key": 1
                     },
-                    "children": ["in 10 days"]
+                    "children": [
+                      "in 10 days"
+                    ]
                   }
                 ]
               ]
@@ -461,7 +757,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.ev.next"]
+          "children": [
+            "detail.ev.next"
+          ]
         },
         null
       ]
@@ -469,14 +767,18 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.ev.next"]
+      "children": [
+        "detail.ev.next"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value "
       },
-      "children": ["Nov 1"]
+      "children": [
+        "Nov 1"
+      ]
     },
     {
       "type": "div",
@@ -496,14 +798,18 @@
                 "props": {
                   "key": 0
                 },
-                "children": ["−$20.00"]
+                "children": [
+                  "−$20.00"
+                ]
               },
               {
                 "type": "span",
                 "props": {
                   "key": 1
                 },
-                "children": ["in 10 days"]
+                "children": [
+                  "in 10 days"
+                ]
               }
             ]
           ]
@@ -522,14 +828,18 @@
             "props": {
               "key": 0
             },
-            "children": ["−$20.00"]
+            "children": [
+              "−$20.00"
+            ]
           },
           {
             "type": "span",
             "props": {
               "key": 1
             },
-            "children": ["in 10 days"]
+            "children": [
+              "in 10 days"
+            ]
           }
         ]
       ]
@@ -539,14 +849,18 @@
       "props": {
         "key": 0
       },
-      "children": ["−$20.00"]
+      "children": [
+        "−$20.00"
+      ]
     },
     {
       "type": "span",
       "props": {
         "key": 1
       },
-      "children": ["in 10 days"]
+      "children": [
+        "in 10 days"
+      ]
     },
     {
       "type": "div",
@@ -564,7 +878,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.stats.subscribed"]
+              "children": [
+                "detail.stats.subscribed"
+              ]
             },
             null
           ]
@@ -574,14 +890,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["detail.stats.months"]
+          "children": [
+            "detail.stats.months"
+          ]
         },
         {
           "type": "div",
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.period.since"]
+          "children": [
+            "detail.period.since"
+          ]
         }
       ]
     },
@@ -594,7 +914,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.stats.subscribed"]
+          "children": [
+            "detail.stats.subscribed"
+          ]
         },
         null
       ]
@@ -602,21 +924,27 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.stats.subscribed"]
+      "children": [
+        "detail.stats.subscribed"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value "
       },
-      "children": ["detail.stats.months"]
+      "children": [
+        "detail.stats.months"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-note"
       },
-      "children": ["detail.period.since"]
+      "children": [
+        "detail.period.since"
+      ]
     },
     {
       "type": "div",
@@ -634,7 +962,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.stats.spent"]
+              "children": [
+                "detail.stats.spent"
+              ]
             },
             null
           ]
@@ -644,14 +974,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["−$200"]
+          "children": [
+            "−$200"
+          ]
         },
         {
           "type": "div",
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.stats.count"]
+          "children": [
+            "detail.stats.count"
+          ]
         }
       ]
     },
@@ -664,7 +998,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.stats.spent"]
+          "children": [
+            "detail.stats.spent"
+          ]
         },
         null
       ]
@@ -672,21 +1008,27 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.stats.spent"]
+      "children": [
+        "detail.stats.spent"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value "
       },
-      "children": ["−$200"]
+      "children": [
+        "−$200"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-note"
       },
-      "children": ["detail.stats.count"]
+      "children": [
+        "detail.stats.count"
+      ]
     },
     {
       "type": "div",
@@ -704,7 +1046,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.stats.perMonth"]
+              "children": [
+                "detail.stats.perMonth"
+              ]
             },
             {
               "type": "[handler]",
@@ -720,14 +1064,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["−$20.71"]
+          "children": [
+            "−$20.71"
+          ]
         },
         {
           "type": "div",
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.kpi.perDay"]
+          "children": [
+            "detail.kpi.perDay"
+          ]
         }
       ]
     },
@@ -740,7 +1088,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.stats.perMonth"]
+          "children": [
+            "detail.stats.perMonth"
+          ]
         },
         {
           "type": "[handler]",
@@ -754,7 +1104,9 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.stats.perMonth"]
+      "children": [
+        "detail.stats.perMonth"
+      ]
     },
     {
       "type": "[handler]",
@@ -768,14 +1120,18 @@
       "props": {
         "className": "metric-value "
       },
-      "children": ["−$20.71"]
+      "children": [
+        "−$20.71"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-note"
       },
-      "children": ["detail.kpi.perDay"]
+      "children": [
+        "detail.kpi.perDay"
+      ]
     }
   ],
   "normal/CarFacts": [
@@ -809,12 +1165,16 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["family.facts.yearCost"]
+                        "children": [
+                          "family.facts.yearCost"
+                        ]
                       },
                       {
                         "type": "b",
                         "props": {},
-                        "children": ["−$240"]
+                        "children": [
+                          "−$240"
+                        ]
                       }
                     ]
                   },
@@ -825,14 +1185,18 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["family.facts.yearIncome"]
+                        "children": [
+                          "family.facts.yearIncome"
+                        ]
                       },
                       {
                         "type": "b",
                         "props": {
                           "className": "green"
                         },
-                        "children": ["+$60"]
+                        "children": [
+                          "+$60"
+                        ]
                       }
                     ]
                   },
@@ -843,14 +1207,18 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["family.strip.yearNet"]
+                        "children": [
+                          "family.strip.yearNet"
+                        ]
                       },
                       {
                         "type": "b",
                         "props": {
                           "className": "loss"
                         },
-                        "children": ["−$180"]
+                        "children": [
+                          "−$180"
+                        ]
                       }
                     ]
                   }
@@ -885,12 +1253,16 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["family.facts.yearCost"]
+                    "children": [
+                      "family.facts.yearCost"
+                    ]
                   },
                   {
                     "type": "b",
                     "props": {},
-                    "children": ["−$240"]
+                    "children": [
+                      "−$240"
+                    ]
                   }
                 ]
               },
@@ -901,14 +1273,18 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["family.facts.yearIncome"]
+                    "children": [
+                      "family.facts.yearIncome"
+                    ]
                   },
                   {
                     "type": "b",
                     "props": {
                       "className": "green"
                     },
-                    "children": ["+$60"]
+                    "children": [
+                      "+$60"
+                    ]
                   }
                 ]
               },
@@ -919,14 +1295,18 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["family.strip.yearNet"]
+                    "children": [
+                      "family.strip.yearNet"
+                    ]
                   },
                   {
                     "type": "b",
                     "props": {
                       "className": "loss"
                     },
-                    "children": ["−$180"]
+                    "children": [
+                      "−$180"
+                    ]
                   }
                 ]
               }
@@ -949,12 +1329,16 @@
               {
                 "type": "small",
                 "props": {},
-                "children": ["family.facts.yearCost"]
+                "children": [
+                  "family.facts.yearCost"
+                ]
               },
               {
                 "type": "b",
                 "props": {},
-                "children": ["−$240"]
+                "children": [
+                  "−$240"
+                ]
               }
             ]
           },
@@ -965,14 +1349,18 @@
               {
                 "type": "small",
                 "props": {},
-                "children": ["family.facts.yearIncome"]
+                "children": [
+                  "family.facts.yearIncome"
+                ]
               },
               {
                 "type": "b",
                 "props": {
                   "className": "green"
                 },
-                "children": ["+$60"]
+                "children": [
+                  "+$60"
+                ]
               }
             ]
           },
@@ -983,14 +1371,18 @@
               {
                 "type": "small",
                 "props": {},
-                "children": ["family.strip.yearNet"]
+                "children": [
+                  "family.strip.yearNet"
+                ]
               },
               {
                 "type": "b",
                 "props": {
                   "className": "loss"
                 },
-                "children": ["−$180"]
+                "children": [
+                  "−$180"
+                ]
               }
             ]
           }
@@ -1004,24 +1396,32 @@
         {
           "type": "small",
           "props": {},
-          "children": ["family.facts.yearCost"]
+          "children": [
+            "family.facts.yearCost"
+          ]
         },
         {
           "type": "b",
           "props": {},
-          "children": ["−$240"]
+          "children": [
+            "−$240"
+          ]
         }
       ]
     },
     {
       "type": "small",
       "props": {},
-      "children": ["family.facts.yearCost"]
+      "children": [
+        "family.facts.yearCost"
+      ]
     },
     {
       "type": "b",
       "props": {},
-      "children": ["−$240"]
+      "children": [
+        "−$240"
+      ]
     },
     {
       "type": "div",
@@ -1030,28 +1430,36 @@
         {
           "type": "small",
           "props": {},
-          "children": ["family.facts.yearIncome"]
+          "children": [
+            "family.facts.yearIncome"
+          ]
         },
         {
           "type": "b",
           "props": {
             "className": "green"
           },
-          "children": ["+$60"]
+          "children": [
+            "+$60"
+          ]
         }
       ]
     },
     {
       "type": "small",
       "props": {},
-      "children": ["family.facts.yearIncome"]
+      "children": [
+        "family.facts.yearIncome"
+      ]
     },
     {
       "type": "b",
       "props": {
         "className": "green"
       },
-      "children": ["+$60"]
+      "children": [
+        "+$60"
+      ]
     },
     {
       "type": "div",
@@ -1060,28 +1468,36 @@
         {
           "type": "small",
           "props": {},
-          "children": ["family.strip.yearNet"]
+          "children": [
+            "family.strip.yearNet"
+          ]
         },
         {
           "type": "b",
           "props": {
             "className": "loss"
           },
-          "children": ["−$180"]
+          "children": [
+            "−$180"
+          ]
         }
       ]
     },
     {
       "type": "small",
       "props": {},
-      "children": ["family.strip.yearNet"]
+      "children": [
+        "family.strip.yearNet"
+      ]
     },
     {
       "type": "b",
       "props": {
         "className": "loss"
       },
-      "children": ["−$180"]
+      "children": [
+        "−$180"
+      ]
     }
   ],
   "normal/MemberForm": [
@@ -1113,7 +1529,9 @@
                     "className": "btn",
                     "onClick": "[handler]"
                   },
-                  "children": ["family.member.cancel"]
+                  "children": [
+                    "family.member.cancel"
+                  ]
                 },
                 {
                   "type": "button",
@@ -1122,7 +1540,9 @@
                     "disabled": true,
                     "onClick": "[handler]"
                   },
-                  "children": ["family.member.add"]
+                  "children": [
+                    "family.member.add"
+                  ]
                 }
               ]
             }
@@ -1441,9 +1861,18 @@
                             "value": "follow",
                             "onChange": "[handler]",
                             "options": [
-                              ["follow", "family.rule.follow"],
-                              ["custom", "family.rule.custom"],
-                              ["exempt", "family.member.exempt"]
+                              [
+                                "follow",
+                                "family.rule.follow"
+                              ],
+                              [
+                                "custom",
+                                "family.rule.custom"
+                              ],
+                              [
+                                "exempt",
+                                "family.member.exempt"
+                              ]
                             ]
                           },
                           "children": []
@@ -1466,11 +1895,26 @@
                                 "value": "1",
                                 "onChange": "[handler]",
                                 "options": [
-                                  ["1", "family.member.seg.m1"],
-                                  ["3", "family.member.seg.m3"],
-                                  ["6", "family.member.seg.m6"],
-                                  ["12", "family.member.seg.m12"],
-                                  ["custom", "family.rule.custom"]
+                                  [
+                                    "1",
+                                    "family.member.seg.m1"
+                                  ],
+                                  [
+                                    "3",
+                                    "family.member.seg.m3"
+                                  ],
+                                  [
+                                    "6",
+                                    "family.member.seg.m6"
+                                  ],
+                                  [
+                                    "12",
+                                    "family.member.seg.m12"
+                                  ],
+                                  [
+                                    "custom",
+                                    "family.rule.custom"
+                                  ]
                                 ]
                               },
                               "children": []
@@ -1838,9 +2282,18 @@
                         "value": "follow",
                         "onChange": "[handler]",
                         "options": [
-                          ["follow", "family.rule.follow"],
-                          ["custom", "family.rule.custom"],
-                          ["exempt", "family.member.exempt"]
+                          [
+                            "follow",
+                            "family.rule.follow"
+                          ],
+                          [
+                            "custom",
+                            "family.rule.custom"
+                          ],
+                          [
+                            "exempt",
+                            "family.member.exempt"
+                          ]
                         ]
                       },
                       "children": []
@@ -1863,11 +2316,26 @@
                             "value": "1",
                             "onChange": "[handler]",
                             "options": [
-                              ["1", "family.member.seg.m1"],
-                              ["3", "family.member.seg.m3"],
-                              ["6", "family.member.seg.m6"],
-                              ["12", "family.member.seg.m12"],
-                              ["custom", "family.rule.custom"]
+                              [
+                                "1",
+                                "family.member.seg.m1"
+                              ],
+                              [
+                                "3",
+                                "family.member.seg.m3"
+                              ],
+                              [
+                                "6",
+                                "family.member.seg.m6"
+                              ],
+                              [
+                                "12",
+                                "family.member.seg.m12"
+                              ],
+                              [
+                                "custom",
+                                "family.rule.custom"
+                              ]
                             ]
                           },
                           "children": []
@@ -2224,9 +2692,18 @@
                     "value": "follow",
                     "onChange": "[handler]",
                     "options": [
-                      ["follow", "family.rule.follow"],
-                      ["custom", "family.rule.custom"],
-                      ["exempt", "family.member.exempt"]
+                      [
+                        "follow",
+                        "family.rule.follow"
+                      ],
+                      [
+                        "custom",
+                        "family.rule.custom"
+                      ],
+                      [
+                        "exempt",
+                        "family.member.exempt"
+                      ]
                     ]
                   },
                   "children": []
@@ -2249,11 +2726,26 @@
                         "value": "1",
                         "onChange": "[handler]",
                         "options": [
-                          ["1", "family.member.seg.m1"],
-                          ["3", "family.member.seg.m3"],
-                          ["6", "family.member.seg.m6"],
-                          ["12", "family.member.seg.m12"],
-                          ["custom", "family.rule.custom"]
+                          [
+                            "1",
+                            "family.member.seg.m1"
+                          ],
+                          [
+                            "3",
+                            "family.member.seg.m3"
+                          ],
+                          [
+                            "6",
+                            "family.member.seg.m6"
+                          ],
+                          [
+                            "12",
+                            "family.member.seg.m12"
+                          ],
+                          [
+                            "custom",
+                            "family.rule.custom"
+                          ]
                         ]
                       },
                       "children": []
@@ -3332,9 +3824,18 @@
                 "value": "follow",
                 "onChange": "[handler]",
                 "options": [
-                  ["follow", "family.rule.follow"],
-                  ["custom", "family.rule.custom"],
-                  ["exempt", "family.member.exempt"]
+                  [
+                    "follow",
+                    "family.rule.follow"
+                  ],
+                  [
+                    "custom",
+                    "family.rule.custom"
+                  ],
+                  [
+                    "exempt",
+                    "family.member.exempt"
+                  ]
                 ]
               },
               "children": []
@@ -3357,11 +3858,26 @@
                     "value": "1",
                     "onChange": "[handler]",
                     "options": [
-                      ["1", "family.member.seg.m1"],
-                      ["3", "family.member.seg.m3"],
-                      ["6", "family.member.seg.m6"],
-                      ["12", "family.member.seg.m12"],
-                      ["custom", "family.rule.custom"]
+                      [
+                        "1",
+                        "family.member.seg.m1"
+                      ],
+                      [
+                        "3",
+                        "family.member.seg.m3"
+                      ],
+                      [
+                        "6",
+                        "family.member.seg.m6"
+                      ],
+                      [
+                        "12",
+                        "family.member.seg.m12"
+                      ],
+                      [
+                        "custom",
+                        "family.rule.custom"
+                      ]
                     ]
                   },
                   "children": []
@@ -3422,9 +3938,18 @@
             "value": "follow",
             "onChange": "[handler]",
             "options": [
-              ["follow", "family.rule.follow"],
-              ["custom", "family.rule.custom"],
-              ["exempt", "family.member.exempt"]
+              [
+                "follow",
+                "family.rule.follow"
+              ],
+              [
+                "custom",
+                "family.rule.custom"
+              ],
+              [
+                "exempt",
+                "family.member.exempt"
+              ]
             ]
           },
           "children": []
@@ -3438,9 +3963,18 @@
         "value": "follow",
         "onChange": "[handler]",
         "options": [
-          ["follow", "family.rule.follow"],
-          ["custom", "family.rule.custom"],
-          ["exempt", "family.member.exempt"]
+          [
+            "follow",
+            "family.rule.follow"
+          ],
+          [
+            "custom",
+            "family.rule.custom"
+          ],
+          [
+            "exempt",
+            "family.member.exempt"
+          ]
         ]
       },
       "children": []
@@ -3461,11 +3995,26 @@
                 "value": "1",
                 "onChange": "[handler]",
                 "options": [
-                  ["1", "family.member.seg.m1"],
-                  ["3", "family.member.seg.m3"],
-                  ["6", "family.member.seg.m6"],
-                  ["12", "family.member.seg.m12"],
-                  ["custom", "family.rule.custom"]
+                  [
+                    "1",
+                    "family.member.seg.m1"
+                  ],
+                  [
+                    "3",
+                    "family.member.seg.m3"
+                  ],
+                  [
+                    "6",
+                    "family.member.seg.m6"
+                  ],
+                  [
+                    "12",
+                    "family.member.seg.m12"
+                  ],
+                  [
+                    "custom",
+                    "family.rule.custom"
+                  ]
                 ]
               },
               "children": []
@@ -3523,11 +4072,26 @@
             "value": "1",
             "onChange": "[handler]",
             "options": [
-              ["1", "family.member.seg.m1"],
-              ["3", "family.member.seg.m3"],
-              ["6", "family.member.seg.m6"],
-              ["12", "family.member.seg.m12"],
-              ["custom", "family.rule.custom"]
+              [
+                "1",
+                "family.member.seg.m1"
+              ],
+              [
+                "3",
+                "family.member.seg.m3"
+              ],
+              [
+                "6",
+                "family.member.seg.m6"
+              ],
+              [
+                "12",
+                "family.member.seg.m12"
+              ],
+              [
+                "custom",
+                "family.rule.custom"
+              ]
             ]
           },
           "children": []
@@ -3540,11 +4104,26 @@
         "value": "1",
         "onChange": "[handler]",
         "options": [
-          ["1", "family.member.seg.m1"],
-          ["3", "family.member.seg.m3"],
-          ["6", "family.member.seg.m6"],
-          ["12", "family.member.seg.m12"],
-          ["custom", "family.rule.custom"]
+          [
+            "1",
+            "family.member.seg.m1"
+          ],
+          [
+            "3",
+            "family.member.seg.m3"
+          ],
+          [
+            "6",
+            "family.member.seg.m6"
+          ],
+          [
+            "12",
+            "family.member.seg.m12"
+          ],
+          [
+            "custom",
+            "family.rule.custom"
+          ]
         ]
       },
       "children": []
@@ -3651,7 +4230,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["proxy.owedPeriods"]
+              "children": [
+                "proxy.owedPeriods"
+              ]
             },
             null
           ]
@@ -3661,7 +4242,9 @@
           "props": {
             "className": "metric-value warn"
           },
-          "children": ["≈ $200"]
+          "children": [
+            "≈ $200"
+          ]
         },
         false
       ]
@@ -3675,7 +4258,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["proxy.owedPeriods"]
+          "children": [
+            "proxy.owedPeriods"
+          ]
         },
         null
       ]
@@ -3683,21 +4268,259 @@
     {
       "type": "small",
       "props": {},
-      "children": ["proxy.owedPeriods"]
+      "children": [
+        "proxy.owedPeriods"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value warn"
       },
-      "children": ["≈ $200"]
+      "children": [
+        "≈ $200"
+      ]
     }
   ],
   "zero/Kpis": [
     {
+      "type": "[handler]",
+      "props": {
+        "className": "dt-metrics metric-stack"
+      },
+      "children": [
+        {
+          "type": "div",
+          "props": {
+            "className": "metric-cards inline ",
+            "style": {
+              "--metric-columns": 4
+            },
+            "data-count": 4
+          },
+          "children": [
+            {
+              "type": "div",
+              "props": {
+                "className": "metric-grid"
+              },
+              "children": [
+                [
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.ev.next"
+                            ]
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "Nov 1"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          {
+                            "type": "span",
+                            "props": {
+                              "className": "copy-parts"
+                            },
+                            "children": [
+                              [
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 0
+                                  },
+                                  "children": [
+                                    "$0.00"
+                                  ]
+                                },
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 1
+                                  },
+                                  "children": [
+                                    "in 10 days"
+                                  ]
+                                }
+                              ]
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.stats.subscribed"
+                            ]
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "detail.stats.months"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          "detail.period.since"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.stats.spent"
+                            ]
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "$0"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          "detail.stats.count"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.kpi.expectedMonthly"
+                            ]
+                          },
+                          {
+                            "type": "[handler]",
+                            "props": {},
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "$0"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          "detail.kpi.perDay"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        },
+        null
+      ]
+    },
+    {
       "type": "div",
       "props": {
-        "className": "metric-cards  ",
+        "className": "metric-cards inline ",
         "style": {
           "--metric-columns": 4
         },
@@ -3727,7 +4550,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.ev.next"]
+                        "children": [
+                          "detail.ev.next"
+                        ]
                       },
                       null
                     ]
@@ -3737,7 +4562,9 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["Nov 1"]
+                    "children": [
+                      "Nov 1"
+                    ]
                   },
                   {
                     "type": "div",
@@ -3757,14 +4584,18 @@
                               "props": {
                                 "key": 0
                               },
-                              "children": ["$0.00"]
+                              "children": [
+                                "$0.00"
+                              ]
                             },
                             {
                               "type": "span",
                               "props": {
                                 "key": 1
                               },
-                              "children": ["in 10 days"]
+                              "children": [
+                                "in 10 days"
+                              ]
                             }
                           ]
                         ]
@@ -3789,7 +4620,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.stats.subscribed"]
+                        "children": [
+                          "detail.stats.subscribed"
+                        ]
                       },
                       null
                     ]
@@ -3799,14 +4632,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["detail.stats.months"]
+                    "children": [
+                      "detail.stats.months"
+                    ]
                   },
                   {
                     "type": "div",
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.period.since"]
+                    "children": [
+                      "detail.period.since"
+                    ]
                   }
                 ]
               },
@@ -3826,7 +4663,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.stats.spent"]
+                        "children": [
+                          "detail.stats.spent"
+                        ]
                       },
                       null
                     ]
@@ -3836,14 +4675,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["$0"]
+                    "children": [
+                      "$0"
+                    ]
                   },
                   {
                     "type": "div",
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.stats.count"]
+                    "children": [
+                      "detail.stats.count"
+                    ]
                   }
                 ]
               },
@@ -3863,7 +4706,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.kpi.expectedMonthly"]
+                        "children": [
+                          "detail.kpi.expectedMonthly"
+                        ]
                       },
                       {
                         "type": "[handler]",
@@ -3877,14 +4722,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["$0"]
+                    "children": [
+                      "$0"
+                    ]
                   },
                   {
                     "type": "div",
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.kpi.perDay"]
+                    "children": [
+                      "detail.kpi.perDay"
+                    ]
                   }
                 ]
               }
@@ -3916,7 +4765,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.ev.next"]
+                    "children": [
+                      "detail.ev.next"
+                    ]
                   },
                   null
                 ]
@@ -3926,7 +4777,9 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["Nov 1"]
+                "children": [
+                  "Nov 1"
+                ]
               },
               {
                 "type": "div",
@@ -3946,14 +4799,18 @@
                           "props": {
                             "key": 0
                           },
-                          "children": ["$0.00"]
+                          "children": [
+                            "$0.00"
+                          ]
                         },
                         {
                           "type": "span",
                           "props": {
                             "key": 1
                           },
-                          "children": ["in 10 days"]
+                          "children": [
+                            "in 10 days"
+                          ]
                         }
                       ]
                     ]
@@ -3978,7 +4835,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.stats.subscribed"]
+                    "children": [
+                      "detail.stats.subscribed"
+                    ]
                   },
                   null
                 ]
@@ -3988,14 +4847,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["detail.stats.months"]
+                "children": [
+                  "detail.stats.months"
+                ]
               },
               {
                 "type": "div",
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.period.since"]
+                "children": [
+                  "detail.period.since"
+                ]
               }
             ]
           },
@@ -4015,7 +4878,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.stats.spent"]
+                    "children": [
+                      "detail.stats.spent"
+                    ]
                   },
                   null
                 ]
@@ -4025,14 +4890,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["$0"]
+                "children": [
+                  "$0"
+                ]
               },
               {
                 "type": "div",
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.stats.count"]
+                "children": [
+                  "detail.stats.count"
+                ]
               }
             ]
           },
@@ -4052,7 +4921,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.kpi.expectedMonthly"]
+                    "children": [
+                      "detail.kpi.expectedMonthly"
+                    ]
                   },
                   {
                     "type": "[handler]",
@@ -4066,14 +4937,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["$0"]
+                "children": [
+                  "$0"
+                ]
               },
               {
                 "type": "div",
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.kpi.perDay"]
+                "children": [
+                  "detail.kpi.perDay"
+                ]
               }
             ]
           }
@@ -4096,7 +4971,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.ev.next"]
+              "children": [
+                "detail.ev.next"
+              ]
             },
             null
           ]
@@ -4106,7 +4983,9 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["Nov 1"]
+          "children": [
+            "Nov 1"
+          ]
         },
         {
           "type": "div",
@@ -4126,14 +5005,18 @@
                     "props": {
                       "key": 0
                     },
-                    "children": ["$0.00"]
+                    "children": [
+                      "$0.00"
+                    ]
                   },
                   {
                     "type": "span",
                     "props": {
                       "key": 1
                     },
-                    "children": ["in 10 days"]
+                    "children": [
+                      "in 10 days"
+                    ]
                   }
                 ]
               ]
@@ -4151,7 +5034,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.ev.next"]
+          "children": [
+            "detail.ev.next"
+          ]
         },
         null
       ]
@@ -4159,14 +5044,18 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.ev.next"]
+      "children": [
+        "detail.ev.next"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value "
       },
-      "children": ["Nov 1"]
+      "children": [
+        "Nov 1"
+      ]
     },
     {
       "type": "div",
@@ -4186,14 +5075,18 @@
                 "props": {
                   "key": 0
                 },
-                "children": ["$0.00"]
+                "children": [
+                  "$0.00"
+                ]
               },
               {
                 "type": "span",
                 "props": {
                   "key": 1
                 },
-                "children": ["in 10 days"]
+                "children": [
+                  "in 10 days"
+                ]
               }
             ]
           ]
@@ -4212,14 +5105,18 @@
             "props": {
               "key": 0
             },
-            "children": ["$0.00"]
+            "children": [
+              "$0.00"
+            ]
           },
           {
             "type": "span",
             "props": {
               "key": 1
             },
-            "children": ["in 10 days"]
+            "children": [
+              "in 10 days"
+            ]
           }
         ]
       ]
@@ -4229,14 +5126,18 @@
       "props": {
         "key": 0
       },
-      "children": ["$0.00"]
+      "children": [
+        "$0.00"
+      ]
     },
     {
       "type": "span",
       "props": {
         "key": 1
       },
-      "children": ["in 10 days"]
+      "children": [
+        "in 10 days"
+      ]
     },
     {
       "type": "div",
@@ -4254,7 +5155,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.stats.subscribed"]
+              "children": [
+                "detail.stats.subscribed"
+              ]
             },
             null
           ]
@@ -4264,14 +5167,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["detail.stats.months"]
+          "children": [
+            "detail.stats.months"
+          ]
         },
         {
           "type": "div",
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.period.since"]
+          "children": [
+            "detail.period.since"
+          ]
         }
       ]
     },
@@ -4284,7 +5191,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.stats.subscribed"]
+          "children": [
+            "detail.stats.subscribed"
+          ]
         },
         null
       ]
@@ -4292,21 +5201,27 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.stats.subscribed"]
+      "children": [
+        "detail.stats.subscribed"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value "
       },
-      "children": ["detail.stats.months"]
+      "children": [
+        "detail.stats.months"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-note"
       },
-      "children": ["detail.period.since"]
+      "children": [
+        "detail.period.since"
+      ]
     },
     {
       "type": "div",
@@ -4324,7 +5239,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.stats.spent"]
+              "children": [
+                "detail.stats.spent"
+              ]
             },
             null
           ]
@@ -4334,14 +5251,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["$0"]
+          "children": [
+            "$0"
+          ]
         },
         {
           "type": "div",
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.stats.count"]
+          "children": [
+            "detail.stats.count"
+          ]
         }
       ]
     },
@@ -4354,7 +5275,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.stats.spent"]
+          "children": [
+            "detail.stats.spent"
+          ]
         },
         null
       ]
@@ -4362,21 +5285,27 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.stats.spent"]
+      "children": [
+        "detail.stats.spent"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value "
       },
-      "children": ["$0"]
+      "children": [
+        "$0"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-note"
       },
-      "children": ["detail.stats.count"]
+      "children": [
+        "detail.stats.count"
+      ]
     },
     {
       "type": "div",
@@ -4394,7 +5323,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.kpi.expectedMonthly"]
+              "children": [
+                "detail.kpi.expectedMonthly"
+              ]
             },
             {
               "type": "[handler]",
@@ -4408,14 +5339,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["$0"]
+          "children": [
+            "$0"
+          ]
         },
         {
           "type": "div",
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.kpi.perDay"]
+          "children": [
+            "detail.kpi.perDay"
+          ]
         }
       ]
     },
@@ -4428,7 +5363,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.kpi.expectedMonthly"]
+          "children": [
+            "detail.kpi.expectedMonthly"
+          ]
         },
         {
           "type": "[handler]",
@@ -4440,7 +5377,9 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.kpi.expectedMonthly"]
+      "children": [
+        "detail.kpi.expectedMonthly"
+      ]
     },
     {
       "type": "[handler]",
@@ -4452,14 +5391,18 @@
       "props": {
         "className": "metric-value "
       },
-      "children": ["$0"]
+      "children": [
+        "$0"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-note"
       },
-      "children": ["detail.kpi.perDay"]
+      "children": [
+        "detail.kpi.perDay"
+      ]
     }
   ],
   "zero/CarFacts": [
@@ -4493,12 +5436,16 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["family.facts.yearCost"]
+                        "children": [
+                          "family.facts.yearCost"
+                        ]
                       },
                       {
                         "type": "b",
                         "props": {},
-                        "children": ["$0"]
+                        "children": [
+                          "$0"
+                        ]
                       }
                     ]
                   },
@@ -4509,14 +5456,18 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["family.facts.yearIncome"]
+                        "children": [
+                          "family.facts.yearIncome"
+                        ]
                       },
                       {
                         "type": "b",
                         "props": {
                           "className": "green"
                         },
-                        "children": ["+$60"]
+                        "children": [
+                          "+$60"
+                        ]
                       }
                     ]
                   },
@@ -4527,14 +5478,18 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["family.strip.yearNet"]
+                        "children": [
+                          "family.strip.yearNet"
+                        ]
                       },
                       {
                         "type": "b",
                         "props": {
                           "className": "gain"
                         },
-                        "children": ["+$60"]
+                        "children": [
+                          "+$60"
+                        ]
                       }
                     ]
                   }
@@ -4569,12 +5524,16 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["family.facts.yearCost"]
+                    "children": [
+                      "family.facts.yearCost"
+                    ]
                   },
                   {
                     "type": "b",
                     "props": {},
-                    "children": ["$0"]
+                    "children": [
+                      "$0"
+                    ]
                   }
                 ]
               },
@@ -4585,14 +5544,18 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["family.facts.yearIncome"]
+                    "children": [
+                      "family.facts.yearIncome"
+                    ]
                   },
                   {
                     "type": "b",
                     "props": {
                       "className": "green"
                     },
-                    "children": ["+$60"]
+                    "children": [
+                      "+$60"
+                    ]
                   }
                 ]
               },
@@ -4603,14 +5566,18 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["family.strip.yearNet"]
+                    "children": [
+                      "family.strip.yearNet"
+                    ]
                   },
                   {
                     "type": "b",
                     "props": {
                       "className": "gain"
                     },
-                    "children": ["+$60"]
+                    "children": [
+                      "+$60"
+                    ]
                   }
                 ]
               }
@@ -4633,12 +5600,16 @@
               {
                 "type": "small",
                 "props": {},
-                "children": ["family.facts.yearCost"]
+                "children": [
+                  "family.facts.yearCost"
+                ]
               },
               {
                 "type": "b",
                 "props": {},
-                "children": ["$0"]
+                "children": [
+                  "$0"
+                ]
               }
             ]
           },
@@ -4649,14 +5620,18 @@
               {
                 "type": "small",
                 "props": {},
-                "children": ["family.facts.yearIncome"]
+                "children": [
+                  "family.facts.yearIncome"
+                ]
               },
               {
                 "type": "b",
                 "props": {
                   "className": "green"
                 },
-                "children": ["+$60"]
+                "children": [
+                  "+$60"
+                ]
               }
             ]
           },
@@ -4667,14 +5642,18 @@
               {
                 "type": "small",
                 "props": {},
-                "children": ["family.strip.yearNet"]
+                "children": [
+                  "family.strip.yearNet"
+                ]
               },
               {
                 "type": "b",
                 "props": {
                   "className": "gain"
                 },
-                "children": ["+$60"]
+                "children": [
+                  "+$60"
+                ]
               }
             ]
           }
@@ -4688,24 +5667,32 @@
         {
           "type": "small",
           "props": {},
-          "children": ["family.facts.yearCost"]
+          "children": [
+            "family.facts.yearCost"
+          ]
         },
         {
           "type": "b",
           "props": {},
-          "children": ["$0"]
+          "children": [
+            "$0"
+          ]
         }
       ]
     },
     {
       "type": "small",
       "props": {},
-      "children": ["family.facts.yearCost"]
+      "children": [
+        "family.facts.yearCost"
+      ]
     },
     {
       "type": "b",
       "props": {},
-      "children": ["$0"]
+      "children": [
+        "$0"
+      ]
     },
     {
       "type": "div",
@@ -4714,28 +5701,36 @@
         {
           "type": "small",
           "props": {},
-          "children": ["family.facts.yearIncome"]
+          "children": [
+            "family.facts.yearIncome"
+          ]
         },
         {
           "type": "b",
           "props": {
             "className": "green"
           },
-          "children": ["+$60"]
+          "children": [
+            "+$60"
+          ]
         }
       ]
     },
     {
       "type": "small",
       "props": {},
-      "children": ["family.facts.yearIncome"]
+      "children": [
+        "family.facts.yearIncome"
+      ]
     },
     {
       "type": "b",
       "props": {
         "className": "green"
       },
-      "children": ["+$60"]
+      "children": [
+        "+$60"
+      ]
     },
     {
       "type": "div",
@@ -4744,28 +5739,36 @@
         {
           "type": "small",
           "props": {},
-          "children": ["family.strip.yearNet"]
+          "children": [
+            "family.strip.yearNet"
+          ]
         },
         {
           "type": "b",
           "props": {
             "className": "gain"
           },
-          "children": ["+$60"]
+          "children": [
+            "+$60"
+          ]
         }
       ]
     },
     {
       "type": "small",
       "props": {},
-      "children": ["family.strip.yearNet"]
+      "children": [
+        "family.strip.yearNet"
+      ]
     },
     {
       "type": "b",
       "props": {
         "className": "gain"
       },
-      "children": ["+$60"]
+      "children": [
+        "+$60"
+      ]
     }
   ],
   "zero/MemberForm": [
@@ -4797,7 +5800,9 @@
                     "className": "btn",
                     "onClick": "[handler]"
                   },
-                  "children": ["family.member.cancel"]
+                  "children": [
+                    "family.member.cancel"
+                  ]
                 },
                 {
                   "type": "button",
@@ -4806,7 +5811,9 @@
                     "disabled": true,
                     "onClick": "[handler]"
                   },
-                  "children": ["family.member.add"]
+                  "children": [
+                    "family.member.add"
+                  ]
                 }
               ]
             }
@@ -5125,9 +6132,18 @@
                             "value": "follow",
                             "onChange": "[handler]",
                             "options": [
-                              ["follow", "family.rule.follow"],
-                              ["custom", "family.rule.custom"],
-                              ["exempt", "family.member.exempt"]
+                              [
+                                "follow",
+                                "family.rule.follow"
+                              ],
+                              [
+                                "custom",
+                                "family.rule.custom"
+                              ],
+                              [
+                                "exempt",
+                                "family.member.exempt"
+                              ]
                             ]
                           },
                           "children": []
@@ -5150,11 +6166,26 @@
                                 "value": "1",
                                 "onChange": "[handler]",
                                 "options": [
-                                  ["1", "family.member.seg.m1"],
-                                  ["3", "family.member.seg.m3"],
-                                  ["6", "family.member.seg.m6"],
-                                  ["12", "family.member.seg.m12"],
-                                  ["custom", "family.rule.custom"]
+                                  [
+                                    "1",
+                                    "family.member.seg.m1"
+                                  ],
+                                  [
+                                    "3",
+                                    "family.member.seg.m3"
+                                  ],
+                                  [
+                                    "6",
+                                    "family.member.seg.m6"
+                                  ],
+                                  [
+                                    "12",
+                                    "family.member.seg.m12"
+                                  ],
+                                  [
+                                    "custom",
+                                    "family.rule.custom"
+                                  ]
                                 ]
                               },
                               "children": []
@@ -5522,9 +6553,18 @@
                         "value": "follow",
                         "onChange": "[handler]",
                         "options": [
-                          ["follow", "family.rule.follow"],
-                          ["custom", "family.rule.custom"],
-                          ["exempt", "family.member.exempt"]
+                          [
+                            "follow",
+                            "family.rule.follow"
+                          ],
+                          [
+                            "custom",
+                            "family.rule.custom"
+                          ],
+                          [
+                            "exempt",
+                            "family.member.exempt"
+                          ]
                         ]
                       },
                       "children": []
@@ -5547,11 +6587,26 @@
                             "value": "1",
                             "onChange": "[handler]",
                             "options": [
-                              ["1", "family.member.seg.m1"],
-                              ["3", "family.member.seg.m3"],
-                              ["6", "family.member.seg.m6"],
-                              ["12", "family.member.seg.m12"],
-                              ["custom", "family.rule.custom"]
+                              [
+                                "1",
+                                "family.member.seg.m1"
+                              ],
+                              [
+                                "3",
+                                "family.member.seg.m3"
+                              ],
+                              [
+                                "6",
+                                "family.member.seg.m6"
+                              ],
+                              [
+                                "12",
+                                "family.member.seg.m12"
+                              ],
+                              [
+                                "custom",
+                                "family.rule.custom"
+                              ]
                             ]
                           },
                           "children": []
@@ -5908,9 +6963,18 @@
                     "value": "follow",
                     "onChange": "[handler]",
                     "options": [
-                      ["follow", "family.rule.follow"],
-                      ["custom", "family.rule.custom"],
-                      ["exempt", "family.member.exempt"]
+                      [
+                        "follow",
+                        "family.rule.follow"
+                      ],
+                      [
+                        "custom",
+                        "family.rule.custom"
+                      ],
+                      [
+                        "exempt",
+                        "family.member.exempt"
+                      ]
                     ]
                   },
                   "children": []
@@ -5933,11 +6997,26 @@
                         "value": "1",
                         "onChange": "[handler]",
                         "options": [
-                          ["1", "family.member.seg.m1"],
-                          ["3", "family.member.seg.m3"],
-                          ["6", "family.member.seg.m6"],
-                          ["12", "family.member.seg.m12"],
-                          ["custom", "family.rule.custom"]
+                          [
+                            "1",
+                            "family.member.seg.m1"
+                          ],
+                          [
+                            "3",
+                            "family.member.seg.m3"
+                          ],
+                          [
+                            "6",
+                            "family.member.seg.m6"
+                          ],
+                          [
+                            "12",
+                            "family.member.seg.m12"
+                          ],
+                          [
+                            "custom",
+                            "family.rule.custom"
+                          ]
                         ]
                       },
                       "children": []
@@ -7016,9 +8095,18 @@
                 "value": "follow",
                 "onChange": "[handler]",
                 "options": [
-                  ["follow", "family.rule.follow"],
-                  ["custom", "family.rule.custom"],
-                  ["exempt", "family.member.exempt"]
+                  [
+                    "follow",
+                    "family.rule.follow"
+                  ],
+                  [
+                    "custom",
+                    "family.rule.custom"
+                  ],
+                  [
+                    "exempt",
+                    "family.member.exempt"
+                  ]
                 ]
               },
               "children": []
@@ -7041,11 +8129,26 @@
                     "value": "1",
                     "onChange": "[handler]",
                     "options": [
-                      ["1", "family.member.seg.m1"],
-                      ["3", "family.member.seg.m3"],
-                      ["6", "family.member.seg.m6"],
-                      ["12", "family.member.seg.m12"],
-                      ["custom", "family.rule.custom"]
+                      [
+                        "1",
+                        "family.member.seg.m1"
+                      ],
+                      [
+                        "3",
+                        "family.member.seg.m3"
+                      ],
+                      [
+                        "6",
+                        "family.member.seg.m6"
+                      ],
+                      [
+                        "12",
+                        "family.member.seg.m12"
+                      ],
+                      [
+                        "custom",
+                        "family.rule.custom"
+                      ]
                     ]
                   },
                   "children": []
@@ -7106,9 +8209,18 @@
             "value": "follow",
             "onChange": "[handler]",
             "options": [
-              ["follow", "family.rule.follow"],
-              ["custom", "family.rule.custom"],
-              ["exempt", "family.member.exempt"]
+              [
+                "follow",
+                "family.rule.follow"
+              ],
+              [
+                "custom",
+                "family.rule.custom"
+              ],
+              [
+                "exempt",
+                "family.member.exempt"
+              ]
             ]
           },
           "children": []
@@ -7122,9 +8234,18 @@
         "value": "follow",
         "onChange": "[handler]",
         "options": [
-          ["follow", "family.rule.follow"],
-          ["custom", "family.rule.custom"],
-          ["exempt", "family.member.exempt"]
+          [
+            "follow",
+            "family.rule.follow"
+          ],
+          [
+            "custom",
+            "family.rule.custom"
+          ],
+          [
+            "exempt",
+            "family.member.exempt"
+          ]
         ]
       },
       "children": []
@@ -7145,11 +8266,26 @@
                 "value": "1",
                 "onChange": "[handler]",
                 "options": [
-                  ["1", "family.member.seg.m1"],
-                  ["3", "family.member.seg.m3"],
-                  ["6", "family.member.seg.m6"],
-                  ["12", "family.member.seg.m12"],
-                  ["custom", "family.rule.custom"]
+                  [
+                    "1",
+                    "family.member.seg.m1"
+                  ],
+                  [
+                    "3",
+                    "family.member.seg.m3"
+                  ],
+                  [
+                    "6",
+                    "family.member.seg.m6"
+                  ],
+                  [
+                    "12",
+                    "family.member.seg.m12"
+                  ],
+                  [
+                    "custom",
+                    "family.rule.custom"
+                  ]
                 ]
               },
               "children": []
@@ -7207,11 +8343,26 @@
             "value": "1",
             "onChange": "[handler]",
             "options": [
-              ["1", "family.member.seg.m1"],
-              ["3", "family.member.seg.m3"],
-              ["6", "family.member.seg.m6"],
-              ["12", "family.member.seg.m12"],
-              ["custom", "family.rule.custom"]
+              [
+                "1",
+                "family.member.seg.m1"
+              ],
+              [
+                "3",
+                "family.member.seg.m3"
+              ],
+              [
+                "6",
+                "family.member.seg.m6"
+              ],
+              [
+                "12",
+                "family.member.seg.m12"
+              ],
+              [
+                "custom",
+                "family.rule.custom"
+              ]
             ]
           },
           "children": []
@@ -7224,11 +8375,26 @@
         "value": "1",
         "onChange": "[handler]",
         "options": [
-          ["1", "family.member.seg.m1"],
-          ["3", "family.member.seg.m3"],
-          ["6", "family.member.seg.m6"],
-          ["12", "family.member.seg.m12"],
-          ["custom", "family.rule.custom"]
+          [
+            "1",
+            "family.member.seg.m1"
+          ],
+          [
+            "3",
+            "family.member.seg.m3"
+          ],
+          [
+            "6",
+            "family.member.seg.m6"
+          ],
+          [
+            "12",
+            "family.member.seg.m12"
+          ],
+          [
+            "custom",
+            "family.rule.custom"
+          ]
         ]
       },
       "children": []
@@ -7335,7 +8501,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["proxy.owedPeriods"]
+              "children": [
+                "proxy.owedPeriods"
+              ]
             },
             null
           ]
@@ -7345,7 +8513,9 @@
           "props": {
             "className": "metric-value warn"
           },
-          "children": ["≈ $0"]
+          "children": [
+            "≈ $0"
+          ]
         },
         false
       ]
@@ -7359,7 +8529,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["proxy.owedPeriods"]
+          "children": [
+            "proxy.owedPeriods"
+          ]
         },
         null
       ]
@@ -7367,21 +8539,259 @@
     {
       "type": "small",
       "props": {},
-      "children": ["proxy.owedPeriods"]
+      "children": [
+        "proxy.owedPeriods"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value warn"
       },
-      "children": ["≈ $0"]
+      "children": [
+        "≈ $0"
+      ]
     }
   ],
   "missing-fx/Kpis": [
     {
+      "type": "[handler]",
+      "props": {
+        "className": "dt-metrics metric-stack"
+      },
+      "children": [
+        {
+          "type": "div",
+          "props": {
+            "className": "metric-cards inline ",
+            "style": {
+              "--metric-columns": 4
+            },
+            "data-count": 4
+          },
+          "children": [
+            {
+              "type": "div",
+              "props": {
+                "className": "metric-grid"
+              },
+              "children": [
+                [
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.ev.next"
+                            ]
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "Nov 1"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          {
+                            "type": "span",
+                            "props": {
+                              "className": "copy-parts"
+                            },
+                            "children": [
+                              [
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 0
+                                  },
+                                  "children": [
+                                    "−XCD 20.00"
+                                  ]
+                                },
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 1
+                                  },
+                                  "children": [
+                                    "in 10 days"
+                                  ]
+                                }
+                              ]
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.stats.subscribed"
+                            ]
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "detail.stats.months"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          "detail.period.since"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.stats.spent"
+                            ]
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "−XCD 200"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          "detail.stats.count"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "div",
+                    "props": {
+                      "children": [],
+                      "className": "metric"
+                    },
+                    "children": [
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-top"
+                        },
+                        "children": [
+                          {
+                            "type": "small",
+                            "props": {},
+                            "children": [
+                              "detail.stats.perMonth"
+                            ]
+                          },
+                          {
+                            "type": "[handler]",
+                            "props": {},
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-value "
+                        },
+                        "children": [
+                          "−XCD 20.71"
+                        ]
+                      },
+                      {
+                        "type": "div",
+                        "props": {
+                          "className": "metric-note"
+                        },
+                        "children": [
+                          "detail.kpi.perDay"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        },
+        null
+      ]
+    },
+    {
       "type": "div",
       "props": {
-        "className": "metric-cards  ",
+        "className": "metric-cards inline ",
         "style": {
           "--metric-columns": 4
         },
@@ -7411,7 +8821,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.ev.next"]
+                        "children": [
+                          "detail.ev.next"
+                        ]
                       },
                       null
                     ]
@@ -7421,7 +8833,9 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["Nov 1"]
+                    "children": [
+                      "Nov 1"
+                    ]
                   },
                   {
                     "type": "div",
@@ -7441,14 +8855,18 @@
                               "props": {
                                 "key": 0
                               },
-                              "children": ["−XCD 20.00"]
+                              "children": [
+                                "−XCD 20.00"
+                              ]
                             },
                             {
                               "type": "span",
                               "props": {
                                 "key": 1
                               },
-                              "children": ["in 10 days"]
+                              "children": [
+                                "in 10 days"
+                              ]
                             }
                           ]
                         ]
@@ -7473,7 +8891,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.stats.subscribed"]
+                        "children": [
+                          "detail.stats.subscribed"
+                        ]
                       },
                       null
                     ]
@@ -7483,14 +8903,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["detail.stats.months"]
+                    "children": [
+                      "detail.stats.months"
+                    ]
                   },
                   {
                     "type": "div",
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.period.since"]
+                    "children": [
+                      "detail.period.since"
+                    ]
                   }
                 ]
               },
@@ -7510,7 +8934,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.stats.spent"]
+                        "children": [
+                          "detail.stats.spent"
+                        ]
                       },
                       null
                     ]
@@ -7520,14 +8946,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["−XCD 200"]
+                    "children": [
+                      "−XCD 200"
+                    ]
                   },
                   {
                     "type": "div",
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.stats.count"]
+                    "children": [
+                      "detail.stats.count"
+                    ]
                   }
                 ]
               },
@@ -7547,7 +8977,9 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["detail.stats.perMonth"]
+                        "children": [
+                          "detail.stats.perMonth"
+                        ]
                       },
                       {
                         "type": "[handler]",
@@ -7561,14 +8993,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["−XCD 20.71"]
+                    "children": [
+                      "−XCD 20.71"
+                    ]
                   },
                   {
                     "type": "div",
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.kpi.perDay"]
+                    "children": [
+                      "detail.kpi.perDay"
+                    ]
                   }
                 ]
               }
@@ -7600,7 +9036,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.ev.next"]
+                    "children": [
+                      "detail.ev.next"
+                    ]
                   },
                   null
                 ]
@@ -7610,7 +9048,9 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["Nov 1"]
+                "children": [
+                  "Nov 1"
+                ]
               },
               {
                 "type": "div",
@@ -7630,14 +9070,18 @@
                           "props": {
                             "key": 0
                           },
-                          "children": ["−XCD 20.00"]
+                          "children": [
+                            "−XCD 20.00"
+                          ]
                         },
                         {
                           "type": "span",
                           "props": {
                             "key": 1
                           },
-                          "children": ["in 10 days"]
+                          "children": [
+                            "in 10 days"
+                          ]
                         }
                       ]
                     ]
@@ -7662,7 +9106,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.stats.subscribed"]
+                    "children": [
+                      "detail.stats.subscribed"
+                    ]
                   },
                   null
                 ]
@@ -7672,14 +9118,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["detail.stats.months"]
+                "children": [
+                  "detail.stats.months"
+                ]
               },
               {
                 "type": "div",
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.period.since"]
+                "children": [
+                  "detail.period.since"
+                ]
               }
             ]
           },
@@ -7699,7 +9149,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.stats.spent"]
+                    "children": [
+                      "detail.stats.spent"
+                    ]
                   },
                   null
                 ]
@@ -7709,14 +9161,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["−XCD 200"]
+                "children": [
+                  "−XCD 200"
+                ]
               },
               {
                 "type": "div",
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.stats.count"]
+                "children": [
+                  "detail.stats.count"
+                ]
               }
             ]
           },
@@ -7736,7 +9192,9 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["detail.stats.perMonth"]
+                    "children": [
+                      "detail.stats.perMonth"
+                    ]
                   },
                   {
                     "type": "[handler]",
@@ -7750,14 +9208,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["−XCD 20.71"]
+                "children": [
+                  "−XCD 20.71"
+                ]
               },
               {
                 "type": "div",
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.kpi.perDay"]
+                "children": [
+                  "detail.kpi.perDay"
+                ]
               }
             ]
           }
@@ -7780,7 +9242,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.ev.next"]
+              "children": [
+                "detail.ev.next"
+              ]
             },
             null
           ]
@@ -7790,7 +9254,9 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["Nov 1"]
+          "children": [
+            "Nov 1"
+          ]
         },
         {
           "type": "div",
@@ -7810,14 +9276,18 @@
                     "props": {
                       "key": 0
                     },
-                    "children": ["−XCD 20.00"]
+                    "children": [
+                      "−XCD 20.00"
+                    ]
                   },
                   {
                     "type": "span",
                     "props": {
                       "key": 1
                     },
-                    "children": ["in 10 days"]
+                    "children": [
+                      "in 10 days"
+                    ]
                   }
                 ]
               ]
@@ -7835,7 +9305,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.ev.next"]
+          "children": [
+            "detail.ev.next"
+          ]
         },
         null
       ]
@@ -7843,14 +9315,18 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.ev.next"]
+      "children": [
+        "detail.ev.next"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value "
       },
-      "children": ["Nov 1"]
+      "children": [
+        "Nov 1"
+      ]
     },
     {
       "type": "div",
@@ -7870,14 +9346,18 @@
                 "props": {
                   "key": 0
                 },
-                "children": ["−XCD 20.00"]
+                "children": [
+                  "−XCD 20.00"
+                ]
               },
               {
                 "type": "span",
                 "props": {
                   "key": 1
                 },
-                "children": ["in 10 days"]
+                "children": [
+                  "in 10 days"
+                ]
               }
             ]
           ]
@@ -7896,14 +9376,18 @@
             "props": {
               "key": 0
             },
-            "children": ["−XCD 20.00"]
+            "children": [
+              "−XCD 20.00"
+            ]
           },
           {
             "type": "span",
             "props": {
               "key": 1
             },
-            "children": ["in 10 days"]
+            "children": [
+              "in 10 days"
+            ]
           }
         ]
       ]
@@ -7913,14 +9397,18 @@
       "props": {
         "key": 0
       },
-      "children": ["−XCD 20.00"]
+      "children": [
+        "−XCD 20.00"
+      ]
     },
     {
       "type": "span",
       "props": {
         "key": 1
       },
-      "children": ["in 10 days"]
+      "children": [
+        "in 10 days"
+      ]
     },
     {
       "type": "div",
@@ -7938,7 +9426,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.stats.subscribed"]
+              "children": [
+                "detail.stats.subscribed"
+              ]
             },
             null
           ]
@@ -7948,14 +9438,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["detail.stats.months"]
+          "children": [
+            "detail.stats.months"
+          ]
         },
         {
           "type": "div",
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.period.since"]
+          "children": [
+            "detail.period.since"
+          ]
         }
       ]
     },
@@ -7968,7 +9462,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.stats.subscribed"]
+          "children": [
+            "detail.stats.subscribed"
+          ]
         },
         null
       ]
@@ -7976,21 +9472,27 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.stats.subscribed"]
+      "children": [
+        "detail.stats.subscribed"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value "
       },
-      "children": ["detail.stats.months"]
+      "children": [
+        "detail.stats.months"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-note"
       },
-      "children": ["detail.period.since"]
+      "children": [
+        "detail.period.since"
+      ]
     },
     {
       "type": "div",
@@ -8008,7 +9510,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.stats.spent"]
+              "children": [
+                "detail.stats.spent"
+              ]
             },
             null
           ]
@@ -8018,14 +9522,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["−XCD 200"]
+          "children": [
+            "−XCD 200"
+          ]
         },
         {
           "type": "div",
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.stats.count"]
+          "children": [
+            "detail.stats.count"
+          ]
         }
       ]
     },
@@ -8038,7 +9546,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.stats.spent"]
+          "children": [
+            "detail.stats.spent"
+          ]
         },
         null
       ]
@@ -8046,21 +9556,27 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.stats.spent"]
+      "children": [
+        "detail.stats.spent"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value "
       },
-      "children": ["−XCD 200"]
+      "children": [
+        "−XCD 200"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-note"
       },
-      "children": ["detail.stats.count"]
+      "children": [
+        "detail.stats.count"
+      ]
     },
     {
       "type": "div",
@@ -8078,7 +9594,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["detail.stats.perMonth"]
+              "children": [
+                "detail.stats.perMonth"
+              ]
             },
             {
               "type": "[handler]",
@@ -8092,14 +9610,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["−XCD 20.71"]
+          "children": [
+            "−XCD 20.71"
+          ]
         },
         {
           "type": "div",
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.kpi.perDay"]
+          "children": [
+            "detail.kpi.perDay"
+          ]
         }
       ]
     },
@@ -8112,7 +9634,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["detail.stats.perMonth"]
+          "children": [
+            "detail.stats.perMonth"
+          ]
         },
         {
           "type": "[handler]",
@@ -8124,7 +9648,9 @@
     {
       "type": "small",
       "props": {},
-      "children": ["detail.stats.perMonth"]
+      "children": [
+        "detail.stats.perMonth"
+      ]
     },
     {
       "type": "[handler]",
@@ -8136,14 +9662,18 @@
       "props": {
         "className": "metric-value "
       },
-      "children": ["−XCD 20.71"]
+      "children": [
+        "−XCD 20.71"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-note"
       },
-      "children": ["detail.kpi.perDay"]
+      "children": [
+        "detail.kpi.perDay"
+      ]
     }
   ],
   "missing-fx/CarFacts": [
@@ -8177,12 +9707,16 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["family.facts.yearCost"]
+                        "children": [
+                          "family.facts.yearCost"
+                        ]
                       },
                       {
                         "type": "b",
                         "props": {},
-                        "children": ["−XCD 240"]
+                        "children": [
+                          "−XCD 240"
+                        ]
                       }
                     ]
                   },
@@ -8193,14 +9727,18 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["family.facts.yearIncome"]
+                        "children": [
+                          "family.facts.yearIncome"
+                        ]
                       },
                       {
                         "type": "b",
                         "props": {
                           "className": "green"
                         },
-                        "children": ["+$60"]
+                        "children": [
+                          "+$60"
+                        ]
                       }
                     ]
                   },
@@ -8211,12 +9749,16 @@
                       {
                         "type": "small",
                         "props": {},
-                        "children": ["family.strip.yearNet"]
+                        "children": [
+                          "family.strip.yearNet"
+                        ]
                       },
                       {
                         "type": "b",
                         "props": {},
-                        "children": ["+$60 + −XCD 240"]
+                        "children": [
+                          "+$60 + −XCD 240"
+                        ]
                       }
                     ]
                   }
@@ -8251,12 +9793,16 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["family.facts.yearCost"]
+                    "children": [
+                      "family.facts.yearCost"
+                    ]
                   },
                   {
                     "type": "b",
                     "props": {},
-                    "children": ["−XCD 240"]
+                    "children": [
+                      "−XCD 240"
+                    ]
                   }
                 ]
               },
@@ -8267,14 +9813,18 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["family.facts.yearIncome"]
+                    "children": [
+                      "family.facts.yearIncome"
+                    ]
                   },
                   {
                     "type": "b",
                     "props": {
                       "className": "green"
                     },
-                    "children": ["+$60"]
+                    "children": [
+                      "+$60"
+                    ]
                   }
                 ]
               },
@@ -8285,12 +9835,16 @@
                   {
                     "type": "small",
                     "props": {},
-                    "children": ["family.strip.yearNet"]
+                    "children": [
+                      "family.strip.yearNet"
+                    ]
                   },
                   {
                     "type": "b",
                     "props": {},
-                    "children": ["+$60 + −XCD 240"]
+                    "children": [
+                      "+$60 + −XCD 240"
+                    ]
                   }
                 ]
               }
@@ -8313,12 +9867,16 @@
               {
                 "type": "small",
                 "props": {},
-                "children": ["family.facts.yearCost"]
+                "children": [
+                  "family.facts.yearCost"
+                ]
               },
               {
                 "type": "b",
                 "props": {},
-                "children": ["−XCD 240"]
+                "children": [
+                  "−XCD 240"
+                ]
               }
             ]
           },
@@ -8329,14 +9887,18 @@
               {
                 "type": "small",
                 "props": {},
-                "children": ["family.facts.yearIncome"]
+                "children": [
+                  "family.facts.yearIncome"
+                ]
               },
               {
                 "type": "b",
                 "props": {
                   "className": "green"
                 },
-                "children": ["+$60"]
+                "children": [
+                  "+$60"
+                ]
               }
             ]
           },
@@ -8347,12 +9909,16 @@
               {
                 "type": "small",
                 "props": {},
-                "children": ["family.strip.yearNet"]
+                "children": [
+                  "family.strip.yearNet"
+                ]
               },
               {
                 "type": "b",
                 "props": {},
-                "children": ["+$60 + −XCD 240"]
+                "children": [
+                  "+$60 + −XCD 240"
+                ]
               }
             ]
           }
@@ -8366,24 +9932,32 @@
         {
           "type": "small",
           "props": {},
-          "children": ["family.facts.yearCost"]
+          "children": [
+            "family.facts.yearCost"
+          ]
         },
         {
           "type": "b",
           "props": {},
-          "children": ["−XCD 240"]
+          "children": [
+            "−XCD 240"
+          ]
         }
       ]
     },
     {
       "type": "small",
       "props": {},
-      "children": ["family.facts.yearCost"]
+      "children": [
+        "family.facts.yearCost"
+      ]
     },
     {
       "type": "b",
       "props": {},
-      "children": ["−XCD 240"]
+      "children": [
+        "−XCD 240"
+      ]
     },
     {
       "type": "div",
@@ -8392,28 +9966,36 @@
         {
           "type": "small",
           "props": {},
-          "children": ["family.facts.yearIncome"]
+          "children": [
+            "family.facts.yearIncome"
+          ]
         },
         {
           "type": "b",
           "props": {
             "className": "green"
           },
-          "children": ["+$60"]
+          "children": [
+            "+$60"
+          ]
         }
       ]
     },
     {
       "type": "small",
       "props": {},
-      "children": ["family.facts.yearIncome"]
+      "children": [
+        "family.facts.yearIncome"
+      ]
     },
     {
       "type": "b",
       "props": {
         "className": "green"
       },
-      "children": ["+$60"]
+      "children": [
+        "+$60"
+      ]
     },
     {
       "type": "div",
@@ -8422,24 +10004,32 @@
         {
           "type": "small",
           "props": {},
-          "children": ["family.strip.yearNet"]
+          "children": [
+            "family.strip.yearNet"
+          ]
         },
         {
           "type": "b",
           "props": {},
-          "children": ["+$60 + −XCD 240"]
+          "children": [
+            "+$60 + −XCD 240"
+          ]
         }
       ]
     },
     {
       "type": "small",
       "props": {},
-      "children": ["family.strip.yearNet"]
+      "children": [
+        "family.strip.yearNet"
+      ]
     },
     {
       "type": "b",
       "props": {},
-      "children": ["+$60 + −XCD 240"]
+      "children": [
+        "+$60 + −XCD 240"
+      ]
     }
   ],
   "missing-fx/MemberForm": [
@@ -8471,7 +10061,9 @@
                     "className": "btn",
                     "onClick": "[handler]"
                   },
-                  "children": ["family.member.cancel"]
+                  "children": [
+                    "family.member.cancel"
+                  ]
                 },
                 {
                   "type": "button",
@@ -8480,7 +10072,9 @@
                     "disabled": true,
                     "onClick": "[handler]"
                   },
-                  "children": ["family.member.add"]
+                  "children": [
+                    "family.member.add"
+                  ]
                 }
               ]
             }
@@ -8799,9 +10393,18 @@
                             "value": "follow",
                             "onChange": "[handler]",
                             "options": [
-                              ["follow", "family.rule.follow"],
-                              ["custom", "family.rule.custom"],
-                              ["exempt", "family.member.exempt"]
+                              [
+                                "follow",
+                                "family.rule.follow"
+                              ],
+                              [
+                                "custom",
+                                "family.rule.custom"
+                              ],
+                              [
+                                "exempt",
+                                "family.member.exempt"
+                              ]
                             ]
                           },
                           "children": []
@@ -8824,11 +10427,26 @@
                                 "value": "1",
                                 "onChange": "[handler]",
                                 "options": [
-                                  ["1", "family.member.seg.m1"],
-                                  ["3", "family.member.seg.m3"],
-                                  ["6", "family.member.seg.m6"],
-                                  ["12", "family.member.seg.m12"],
-                                  ["custom", "family.rule.custom"]
+                                  [
+                                    "1",
+                                    "family.member.seg.m1"
+                                  ],
+                                  [
+                                    "3",
+                                    "family.member.seg.m3"
+                                  ],
+                                  [
+                                    "6",
+                                    "family.member.seg.m6"
+                                  ],
+                                  [
+                                    "12",
+                                    "family.member.seg.m12"
+                                  ],
+                                  [
+                                    "custom",
+                                    "family.rule.custom"
+                                  ]
                                 ]
                               },
                               "children": []
@@ -9196,9 +10814,18 @@
                         "value": "follow",
                         "onChange": "[handler]",
                         "options": [
-                          ["follow", "family.rule.follow"],
-                          ["custom", "family.rule.custom"],
-                          ["exempt", "family.member.exempt"]
+                          [
+                            "follow",
+                            "family.rule.follow"
+                          ],
+                          [
+                            "custom",
+                            "family.rule.custom"
+                          ],
+                          [
+                            "exempt",
+                            "family.member.exempt"
+                          ]
                         ]
                       },
                       "children": []
@@ -9221,11 +10848,26 @@
                             "value": "1",
                             "onChange": "[handler]",
                             "options": [
-                              ["1", "family.member.seg.m1"],
-                              ["3", "family.member.seg.m3"],
-                              ["6", "family.member.seg.m6"],
-                              ["12", "family.member.seg.m12"],
-                              ["custom", "family.rule.custom"]
+                              [
+                                "1",
+                                "family.member.seg.m1"
+                              ],
+                              [
+                                "3",
+                                "family.member.seg.m3"
+                              ],
+                              [
+                                "6",
+                                "family.member.seg.m6"
+                              ],
+                              [
+                                "12",
+                                "family.member.seg.m12"
+                              ],
+                              [
+                                "custom",
+                                "family.rule.custom"
+                              ]
                             ]
                           },
                           "children": []
@@ -9582,9 +11224,18 @@
                     "value": "follow",
                     "onChange": "[handler]",
                     "options": [
-                      ["follow", "family.rule.follow"],
-                      ["custom", "family.rule.custom"],
-                      ["exempt", "family.member.exempt"]
+                      [
+                        "follow",
+                        "family.rule.follow"
+                      ],
+                      [
+                        "custom",
+                        "family.rule.custom"
+                      ],
+                      [
+                        "exempt",
+                        "family.member.exempt"
+                      ]
                     ]
                   },
                   "children": []
@@ -9607,11 +11258,26 @@
                         "value": "1",
                         "onChange": "[handler]",
                         "options": [
-                          ["1", "family.member.seg.m1"],
-                          ["3", "family.member.seg.m3"],
-                          ["6", "family.member.seg.m6"],
-                          ["12", "family.member.seg.m12"],
-                          ["custom", "family.rule.custom"]
+                          [
+                            "1",
+                            "family.member.seg.m1"
+                          ],
+                          [
+                            "3",
+                            "family.member.seg.m3"
+                          ],
+                          [
+                            "6",
+                            "family.member.seg.m6"
+                          ],
+                          [
+                            "12",
+                            "family.member.seg.m12"
+                          ],
+                          [
+                            "custom",
+                            "family.rule.custom"
+                          ]
                         ]
                       },
                       "children": []
@@ -10690,9 +12356,18 @@
                 "value": "follow",
                 "onChange": "[handler]",
                 "options": [
-                  ["follow", "family.rule.follow"],
-                  ["custom", "family.rule.custom"],
-                  ["exempt", "family.member.exempt"]
+                  [
+                    "follow",
+                    "family.rule.follow"
+                  ],
+                  [
+                    "custom",
+                    "family.rule.custom"
+                  ],
+                  [
+                    "exempt",
+                    "family.member.exempt"
+                  ]
                 ]
               },
               "children": []
@@ -10715,11 +12390,26 @@
                     "value": "1",
                     "onChange": "[handler]",
                     "options": [
-                      ["1", "family.member.seg.m1"],
-                      ["3", "family.member.seg.m3"],
-                      ["6", "family.member.seg.m6"],
-                      ["12", "family.member.seg.m12"],
-                      ["custom", "family.rule.custom"]
+                      [
+                        "1",
+                        "family.member.seg.m1"
+                      ],
+                      [
+                        "3",
+                        "family.member.seg.m3"
+                      ],
+                      [
+                        "6",
+                        "family.member.seg.m6"
+                      ],
+                      [
+                        "12",
+                        "family.member.seg.m12"
+                      ],
+                      [
+                        "custom",
+                        "family.rule.custom"
+                      ]
                     ]
                   },
                   "children": []
@@ -10780,9 +12470,18 @@
             "value": "follow",
             "onChange": "[handler]",
             "options": [
-              ["follow", "family.rule.follow"],
-              ["custom", "family.rule.custom"],
-              ["exempt", "family.member.exempt"]
+              [
+                "follow",
+                "family.rule.follow"
+              ],
+              [
+                "custom",
+                "family.rule.custom"
+              ],
+              [
+                "exempt",
+                "family.member.exempt"
+              ]
             ]
           },
           "children": []
@@ -10796,9 +12495,18 @@
         "value": "follow",
         "onChange": "[handler]",
         "options": [
-          ["follow", "family.rule.follow"],
-          ["custom", "family.rule.custom"],
-          ["exempt", "family.member.exempt"]
+          [
+            "follow",
+            "family.rule.follow"
+          ],
+          [
+            "custom",
+            "family.rule.custom"
+          ],
+          [
+            "exempt",
+            "family.member.exempt"
+          ]
         ]
       },
       "children": []
@@ -10819,11 +12527,26 @@
                 "value": "1",
                 "onChange": "[handler]",
                 "options": [
-                  ["1", "family.member.seg.m1"],
-                  ["3", "family.member.seg.m3"],
-                  ["6", "family.member.seg.m6"],
-                  ["12", "family.member.seg.m12"],
-                  ["custom", "family.rule.custom"]
+                  [
+                    "1",
+                    "family.member.seg.m1"
+                  ],
+                  [
+                    "3",
+                    "family.member.seg.m3"
+                  ],
+                  [
+                    "6",
+                    "family.member.seg.m6"
+                  ],
+                  [
+                    "12",
+                    "family.member.seg.m12"
+                  ],
+                  [
+                    "custom",
+                    "family.rule.custom"
+                  ]
                 ]
               },
               "children": []
@@ -10881,11 +12604,26 @@
             "value": "1",
             "onChange": "[handler]",
             "options": [
-              ["1", "family.member.seg.m1"],
-              ["3", "family.member.seg.m3"],
-              ["6", "family.member.seg.m6"],
-              ["12", "family.member.seg.m12"],
-              ["custom", "family.rule.custom"]
+              [
+                "1",
+                "family.member.seg.m1"
+              ],
+              [
+                "3",
+                "family.member.seg.m3"
+              ],
+              [
+                "6",
+                "family.member.seg.m6"
+              ],
+              [
+                "12",
+                "family.member.seg.m12"
+              ],
+              [
+                "custom",
+                "family.rule.custom"
+              ]
             ]
           },
           "children": []
@@ -10898,11 +12636,26 @@
         "value": "1",
         "onChange": "[handler]",
         "options": [
-          ["1", "family.member.seg.m1"],
-          ["3", "family.member.seg.m3"],
-          ["6", "family.member.seg.m6"],
-          ["12", "family.member.seg.m12"],
-          ["custom", "family.rule.custom"]
+          [
+            "1",
+            "family.member.seg.m1"
+          ],
+          [
+            "3",
+            "family.member.seg.m3"
+          ],
+          [
+            "6",
+            "family.member.seg.m6"
+          ],
+          [
+            "12",
+            "family.member.seg.m12"
+          ],
+          [
+            "custom",
+            "family.rule.custom"
+          ]
         ]
       },
       "children": []
@@ -11009,7 +12762,9 @@
             {
               "type": "small",
               "props": {},
-              "children": ["proxy.owedPeriods"]
+              "children": [
+                "proxy.owedPeriods"
+              ]
             },
             null
           ]
@@ -11019,14 +12774,18 @@
           "props": {
             "className": "metric-value warn"
           },
-          "children": ["XCD 200"]
+          "children": [
+            "XCD 200"
+          ]
         },
         {
           "type": "div",
           "props": {
             "className": "metric-note"
           },
-          "children": ["core.fxUnconverted"]
+          "children": [
+            "core.fxUnconverted"
+          ]
         }
       ]
     },
@@ -11039,7 +12798,9 @@
         {
           "type": "small",
           "props": {},
-          "children": ["proxy.owedPeriods"]
+          "children": [
+            "proxy.owedPeriods"
+          ]
         },
         null
       ]
@@ -11047,26 +12808,41 @@
     {
       "type": "small",
       "props": {},
-      "children": ["proxy.owedPeriods"]
+      "children": [
+        "proxy.owedPeriods"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-value warn"
       },
-      "children": ["XCD 200"]
+      "children": [
+        "XCD 200"
+      ]
     },
     {
       "type": "div",
       "props": {
         "className": "metric-note"
       },
-      "children": ["core.fxUnconverted"]
+      "children": [
+        "core.fxUnconverted"
+      ]
     }
   ],
   "proposal": [
-    ["category", "Tools"],
-    ["status", "active"],
-    ["price", "20"]
+    [
+      "category",
+      "Tools"
+    ],
+    [
+      "status",
+      "active"
+    ],
+    [
+      "price",
+      "20"
+    ]
   ]
 }

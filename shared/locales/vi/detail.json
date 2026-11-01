@@ -118,9 +118,10 @@
     "all": "Tất cả",
     "y1": "1 năm",
     "m6": "6 tháng",
-    "period": "Kỳ tính phí",
+    "period": "Kỳ",
     "converted": "Quy đổi",
     "average": "Trung bình",
+    "method": "Thanh toán",
     "bucket": {
       "m1": "Mỗi cột là tổng một tháng",
       "m3": "Mỗi cột là tổng một quý",
@@ -232,10 +233,12 @@
     "deleteReadings": "Xóa {n} bản ghi",
     "removeMeters": "Xóa chỉ số và giá trị của chúng",
     "latest": "Gần nhất",
+    "latestOf": "{name} gần nhất",
     "average": "Trung bình mỗi kỳ",
     "avgPrice": "Đơn giá trung bình",
     "totalLabel": "Tổng",
     "periods": "{n} kỳ",
+    "noTrend": "Chưa đủ kỳ để hiển thị xu hướng",
     "latestPrice": "Gần nhất {v}",
     "since": "Từ {date}"
   }

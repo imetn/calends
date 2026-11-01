@@ -108,9 +108,10 @@
     "all": "全部",
     "y1": "1 年",
     "m6": "6 個月",
-    "period": "計費週期",
+    "period": "週期",
     "converted": "約合",
     "average": "平均",
+    "method": "付款",
     "bucket": {
       "m1": "每根柱為一個月合計",
       "m3": "每根柱為一季合計",
@@ -220,10 +221,12 @@
     "deleteReadings": "刪除 {n} 筆紀錄",
     "removeMeters": "刪除指標及其歷史數值",
     "latest": "最近一期",
+    "latestOf": "{name}最近一期",
     "average": "平均每期",
     "avgPrice": "平均單價",
     "totalLabel": "累計",
     "periods": "{n} 期",
+    "noTrend": "這段時間不足兩期，暫無走勢",
     "latestPrice": "最近 {v}",
     "since": "自 {date}"
   }

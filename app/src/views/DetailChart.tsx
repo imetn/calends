@@ -114,8 +114,15 @@ export function ChargeBars({
   useEffect(() => onBucket?.(bucket), [bucket, onBucket]);
   // 柱子放在组内各笔日期的平均位置
   for (const g of groups) g.x = g.idx.reduce((a, i) => a + x(bars[i].date), 0) / g.idx.length;
-  // 柱宽随密度变：密时 3px，稀疏的年付最宽 BAR.max（与全站柱宽一致）
-  const bw = Math.max(3, Math.min(BAR.max, (iw / Math.max(1, groups.length)) * BAR.ratio));
+  // 柱宽随密度变：按相邻柱的典型间距（中位数）算，同一横轴上同样疏密的两张图柱宽一致；密时 3px，稀疏的年付最宽 BAR.max
+  // 同一天的几组间距为 0，不计入
+  const gaps = groups
+    .slice(1)
+    .map((g, i) => g.x - groups[i].x)
+    .filter((d) => d > 0)
+    .sort((a, b) => a - b);
+  const gap = gaps.length ? gaps[Math.floor(gaps.length / 2)] : iw;
+  const bw = Math.max(3, Math.min(BAR.max, gap * BAR.ratio));
   const val = (i: number) => (Number.isFinite(bars[i].v) ? Math.max(0, bars[i].v) : 0);
   const refOf = (g: Group) =>
     g.idx.every((i) => bars[i].ref != null)

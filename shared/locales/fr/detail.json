@@ -126,9 +126,10 @@
     "all": "Tout",
     "y1": "1 an",
     "m6": "6 mois",
-    "period": "Période facturée",
+    "period": "Période",
     "converted": "Converti",
     "average": "Moyenne",
+    "method": "Paiement",
     "bucket": {
       "m1": "Chaque barre est un total mensuel",
       "m3": "Chaque barre est un total trimestriel",
@@ -247,10 +248,12 @@
     "deleteReadings": "Supprimer {n} entrées",
     "removeMeters": "Supprimer les compteurs et leurs valeurs",
     "latest": "Dernier",
+    "latestOf": "{name}, dernier",
     "average": "Moyenne par période",
     "avgPrice": "Prix unitaire moyen",
     "totalLabel": "Total",
     "periods": "{n} périodes",
+    "noTrend": "Pas assez de périodes pour afficher une tendance",
     "latestPrice": "Dernier {v}",
     "since": "Depuis le {date}"
   }

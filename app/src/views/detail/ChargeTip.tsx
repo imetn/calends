@@ -68,7 +68,7 @@ export function ChargeTip({
       {full != null && row(t('detail.chart.regular'), full)}
       {usage != null && meter && row(t('detail.meters.head.usage'), withUnit(usage, meter.unit))}
       {usage != null && meter && usage > 0 && c.amount > 0 && row(t('detail.chart.average'), unitMoney(c.amount / usage, c.currency, meter.unit))}
-      {row(t('detail.field.method'), <PayBadge m={methodOf(state, chargeMethodId(c))} />)}
+      {row(t('detail.chart.method'), <PayBadge m={methodOf(state, chargeMethodId(c))} />)}
       {note && <div className="cc-tip-f">{note}</div>}
     </>
   );

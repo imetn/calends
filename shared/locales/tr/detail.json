@@ -123,9 +123,10 @@
     "all": "Tümü",
     "y1": "1 yıl",
     "m6": "6 ay",
-    "period": "Fatura dönemi",
+    "period": "Dönem",
     "converted": "Karşılığı",
     "average": "Ortalama",
+    "method": "Ödeme",
     "bucket": {
       "m1": "Her çubuk aylık toplamdır",
       "m3": "Her çubuk üç aylık toplamdır",
@@ -238,10 +239,12 @@
     "deleteReadings": "{n} kaydı sil",
     "removeMeters": "Ölçütleri ve değerlerini sil",
     "latest": "Son",
+    "latestOf": "{name}, son",
     "average": "Dönem başına ort.",
     "avgPrice": "Ort. birim fiyat",
     "totalLabel": "Toplam",
     "periods": "{n} dönem",
+    "noTrend": "Bu aralıkta eğilim için yeterli dönem yok",
     "latestPrice": "Son {v}",
     "since": "{date} itibarıyla"
   }

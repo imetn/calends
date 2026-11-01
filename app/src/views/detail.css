@@ -375,20 +375,27 @@
   margin: 0;
 }
 
-/* 业务数据：指标与选择器跟标题左右对齐；没有指标时只有一行轻入口 */
+/* 业务数据：与费用走势同一种图表卡片；没有指标时只有一行轻入口 */
 .dt-meters-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 0 20px 12px;
 }
-.dt-panel.dt-meters:not(.dt-charges) {
+.dt-meters-none {
+  margin: 0;
+  font-size: var(--fs-1);
+}
+.dt-panel.dt-meters-empty {
   padding: 6px 10px;
 }
 
 /* 走势 */
 .dt-chart {
   padding-bottom: 16px;
+}
+/* 图表卡标题行同高：有范围切换（32px）与只有小按钮的卡片，图从同一高度开始 */
+.dt-chart > .dt-ph {
+  min-height: 32px;
 }
 .cc {
   position: relative;
@@ -907,11 +914,15 @@
   gap: 14px 44px;
 }
 /* 没有卡面时（如代付）信息卡独占一行，列数等于指标卡数；在卡面右边时少一列 */
-.dt-body:has(> .metric-cards[data-count='2']) .dt-summary {
+.dt-body:has(> .dt-metrics > .metric-cards:first-child[data-count='2']) .dt-summary {
   --m: 2;
 }
-.dt-body:has(> .metric-cards[data-count='4']) .dt-summary {
+.dt-body:has(> .dt-metrics > .metric-cards:first-child[data-count='4']) .dt-summary {
   --m: 4;
+}
+/* 顶部指标是一张卡，分格与行间线见 ui.css 的 .metric-stack */
+.dt-metrics {
+  padding: 16px 20px;
 }
 .dt-summary .dt-prop {
   flex-direction: column;

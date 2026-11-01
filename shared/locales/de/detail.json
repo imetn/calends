@@ -126,15 +126,16 @@
     "all": "Alle",
     "y1": "1 J.",
     "m6": "6 M.",
-    "period": "Abrechnungszeitraum",
+    "period": "Zeitraum",
     "converted": "Umgerechnet",
     "average": "Durchschnitt",
+    "method": "Zahlung",
     "bucket": {
       "m1": "Jeder Balken ist eine Monatssumme",
       "m3": "Jeder Balken ist eine Quartalssumme",
       "m12": "Jeder Balken ist eine Jahressumme"
     },
-    "regular": "Regulärer Preis",
+    "regular": "Normalpreis",
     "saved": "Einführungsrabatt",
     "unknownEnd": "Enddatum unbekannt; Diagramm auf bekannte Zahlungszeiträume begrenzt"
   },
@@ -247,10 +248,12 @@
     "deleteReadings": "{n} Einträge löschen",
     "removeMeters": "Messgrößen und ihre Werte löschen",
     "latest": "Zuletzt",
+    "latestOf": "{name}, zuletzt",
     "average": "Ø pro Zeitraum",
     "avgPrice": "Ø Stückpreis",
     "totalLabel": "Gesamt",
     "periods": "{n} Zeiträume",
+    "noTrend": "Zu wenige Zeiträume für einen Verlauf",
     "latestPrice": "Zuletzt {v}",
     "since": "Seit {date}"
   }

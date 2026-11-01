@@ -126,9 +126,10 @@
     "all": "Todo",
     "y1": "1 año",
     "m6": "6 meses",
-    "period": "Periodo facturado",
+    "period": "Periodo",
     "converted": "Equivale a",
     "average": "Promedio",
+    "method": "Pago",
     "bucket": {
       "m1": "Cada barra es el total de un mes",
       "m3": "Cada barra es el total de un trimestre",
@@ -247,10 +248,12 @@
     "deleteReadings": "Eliminar {n} registros",
     "removeMeters": "Eliminar medidores y sus valores",
     "latest": "Último",
+    "latestOf": "{name}, último",
     "average": "Promedio por periodo",
     "avgPrice": "Precio unitario medio",
     "totalLabel": "Total",
     "periods": "{n} periodos",
+    "noTrend": "No hay periodos suficientes para mostrar la tendencia",
     "latestPrice": "Último {v}",
     "since": "Desde {date}"
   }
