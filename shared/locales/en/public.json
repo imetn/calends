@@ -75,10 +75,17 @@
     "title": "Subscription timeline"
   },
   "tenure": {
-    "title": "Time subscribed"
+    "title": "Time subscribed",
+    "avg": "Average time held, active subscriptions",
+    "longest": "Held longest"
   },
   "treemap": {
-    "title": "Spending map"
+    "title": "Spending map",
+    "desc": "Current monthly spend, one color per category",
+    "missing": {
+      "one": "{count} subscription has no exchange rate and is not included",
+      "other": "{count} subscriptions have no exchange rate and are not included"
+    }
   },
   "changes": {
     "title": "Changes"
