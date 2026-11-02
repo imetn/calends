@@ -281,6 +281,11 @@ export function newShapeError(previous: Subscription | undefined, next: Subscrip
 
 // ---------- 阶段（换区 / 换套餐 / 断更续订） ----------
 
+/** 暂停从哪天起生效。暂停中停用时记在 stop.pausedAt：暂停期间没发生的扣款不因停用而复活，后面续订也不影响这段 */
+export function pausedFromOf(s: Pick<Subscription, 'status' | 'pausedAt' | 'stop'>): string | undefined {
+  return s.status === 'paused' ? s.pausedAt : s.stop?.pausedAt;
+}
+
 /**
  * 把多阶段订阅展开成若干个单阶段的「虚拟订阅」，id 不变；无阶段时返回自身。
  * 阶段缺省在下一阶段开始前一天结束；显式的 end 可以晚于下一阶段的开始日（换区后旧区域预付到期前仍在跑），两段在时间上并行。
@@ -289,15 +294,16 @@ export function phaseSubs(s: Subscription): Subscription[] {
   if (!s.phases?.length) return [s];
   const sorted = s.phases.slice().sort((a, b) => a.start.localeCompare(b.start));
   // 订阅整体的结束日、暂停日对所有阶段生效：之后才开始的计划阶段作废，跨过它的阶段（包括并行中的旧阶段）在那天截止
-  const pausedAt = s.status === 'paused' ? s.pausedAt : undefined;
+  const pausedAt = pausedFromOf(s);
   const stop = [s.end, pausedAt].filter(Boolean).sort()[0];
-  const kept = stop ? sorted.filter((p, i) => i === 0 || p.start <= stop) : sorted;
+  // 暂停后才开始的阶段作废，但记过实付的留着，账不能丢
+  const kept = stop ? sorted.filter((p, i) => i === 0 || p.start <= stop || (pausedAt && p.payments?.length)) : sorted;
   const lastStart = kept[kept.length - 1].start;
   return kept.map((p, i) => {
     const last = i === kept.length - 1;
     const natural = p.end ?? (last ? undefined : addDays(kept[i + 1].start, -1));
     // 并行中的旧阶段跑过了暂停日：同样在暂停日停下
-    const paused = !last && s.status === 'paused' && !!natural && natural > lastStart && (!s.pausedAt || natural > s.pausedAt);
+    const paused = !last && (s.status === 'paused' || !!pausedAt) && !!natural && natural > lastStart && (!pausedAt || natural > pausedAt);
     // 已退订但没写结束日：与最后一段并行的旧阶段也一并视为退订
     const cancelled = !last && s.status === 'cancelled' && !s.end && !!natural && natural > lastStart;
     return {
@@ -326,7 +332,7 @@ export function phaseSubs(s: Subscription): Subscription[] {
       planned: p.planned,
       trialEnd: i === 0 ? s.trialEnd : undefined,
       status: last ? s.status : paused ? 'paused' : cancelled ? 'cancelled' : 'active',
-      pausedAt: last || paused ? s.pausedAt : undefined,
+      pausedAt: last ? s.pausedAt : paused ? pausedAt : undefined,
     };
   });
 }
@@ -570,7 +576,7 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
   const begin = anchor;
   const original = billingAnchor(s);
   if (cashAnchor) anchor = renewalAnchor(s, anchor);
-  const pausedFrom = s.status === 'paused' ? (s.pausedAt ?? today) : undefined;
+  const pausedFrom = pausedFromOf(s) ?? (s.status === 'paused' ? today : undefined);
   const postpaid = isPostpaid(s);
   // 开始日提前时，沿原计费锚点向前补周期；保留月底日号及之后的续费日期。
   const first = firstCycle(s, anchor);
@@ -851,7 +857,23 @@ export function lastCharge(s: Subscription, today: string): string | undefined {
 /** 停止前原账期。按原始锚点推算，保留月末夹紧、nextDue、实付与赠送期。 */
 export function billingPeriod(s: Subscription, at: string): { from: string; paidThrough: string; paid: number; days: number } {
   if (s.phases?.length) return billingPeriod(currentPhase(s, at), at);
-  const open = { ...s, stop: undefined, end: undefined, status: s.status === 'trial' || (s.stop && s.trialEnd) ? ('trial' as const) : ('active' as const) };
+  const pausedFrom = pausedFromOf(s);
+  if (pausedFrom && at >= pausedFrom) {
+    // 暂停后没有新账期：已付期算到暂停前那期（或暂停后记下的最后一笔实付），停在这之后就没有未用天数
+    const paid = (s.payments ?? [])
+      .filter((p) => !p.kind && p.date >= pausedFrom && p.date <= at)
+      .map((p) => p.date)
+      .sort()
+      .at(-1);
+    const period = billingPeriod({ ...s, pausedAt: undefined, stop: s.stop && { ...s.stop, pausedAt: undefined } }, paid ?? addDays(pausedFrom, -1));
+    return period.paidThrough < at ? { ...period, paidThrough: at } : period;
+  }
+  const open = {
+    ...s,
+    stop: undefined,
+    end: undefined,
+    status: s.status === 'trial' || ((s.stop || s.status === 'paused') && s.trialEnd) ? ('trial' as const) : ('active' as const),
+  };
   if (isPostpaid(s)) {
     // 后付费没有预付：已付 0、不可退款、不浪费，用到哪天算到哪天；from 为 at 所在服务期的起点
     const span = Math.ceil(cycleDays(s.cycle) * 2) + maxChargeLead(s) + 32;
@@ -899,7 +921,7 @@ export function billingPeriod(s: Subscription, at: string): { from: string; paid
 
 /** 在 at 停止时校验用的账期：先付费按今天已付到哪天；后付费随时可停，账期截到 at */
 export function stopBillingPeriod(s: Subscription, at: string, today: string) {
-  return billingPeriod(s, isPostpaid(s) || at < today ? at : today);
+  return billingPeriod(s, isPostpaid(s) || at < today || pausedFromOf(s) ? at : today);
 }
 
 export function stopSummary(s: Subscription, asOf = '9999-12-31') {
@@ -1023,8 +1045,9 @@ export function memberSince(s: Subscription, m: Pick<ShareMember, 'joined'>): st
 }
 
 /** 合租向成员收钱的最后一天：订阅结束日；暂停中的订阅到暂停前一天（与 memberDues 同一口径，暂停期间不生成新的应收期） */
-export function shareLastDay(s: Pick<Subscription, 'end' | 'status' | 'pausedAt'>): string | undefined {
-  const paused = s.status === 'paused' && s.pausedAt ? addDays(s.pausedAt, -1) : undefined;
+export function shareLastDay(s: Pick<Subscription, 'end' | 'status' | 'pausedAt' | 'stop'>): string | undefined {
+  const pausedFrom = pausedFromOf(s);
+  const paused = pausedFrom ? addDays(pausedFrom, -1) : undefined;
   return [s.end, paused].filter((d): d is string => !!d).sort()[0];
 }
 

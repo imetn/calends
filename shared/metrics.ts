@@ -22,6 +22,7 @@ import {
   runwayFor,
   type Charge,
   DAYS_PER_MONTH,
+  pausedFromOf,
 } from './billing.ts';
 import { chargeBaseOrNaN, chargeValue, convertOn, toBaseAt, toBaseOrNaN } from './fx.ts';
 import { cnDateAuto, money } from './format.ts';
@@ -42,6 +43,7 @@ export function contributionOn(state: AppState, s: Subscription, day: string, fx
   if (s.end && s.end < day) return 0;
   if (s.status === 'cancelled' && !s.end) return 0;
   if (s.status === 'paused' && (s.pausedAt ?? day) <= day) return 0;
+  if (s.stop?.pausedAt && s.stop.pausedAt <= day) return 0;
   if (s.status === 'trial' && s.trialEnd && s.trialEnd > day) return 0;
   return toBaseOrNaN(state, monthlyGross(s, day), s.currency, fxDate) * myShareFactor(s, day);
 }
@@ -202,12 +204,16 @@ function eventsOf(state: AppState, s: Subscription, today: string): LedgerEvent[
       date: s.stop.date,
       sub: s,
       kind: s.stop.kind === 'terminate' ? 'terminate' : 'end',
-      delta: -contributionOn(state, { ...s, stop: undefined, status: s.trialEnd && s.trialEnd > s.stop.date ? 'trial' : 'active' }, s.stop.date),
+      // 暂停中停用：这笔在暂停那天已经减掉
+      delta: s.stop.pausedAt
+        ? 0
+        : -contributionOn(state, { ...s, stop: undefined, status: s.trialEnd && s.trialEnd > s.stop.date ? 'trial' : 'active' }, s.stop.date),
       note: s.stop.reason,
     });
   else if (s.end && s.end < today) out.push({ date: addDays(s.end, 1), sub: s, kind: 'end', delta: -contributionOn(state, s, s.end) });
-  if (s.status === 'paused' && s.pausedAt && s.pausedAt <= today)
-    out.push({ date: s.pausedAt, sub: s, kind: 'pause', delta: -contributionOn(state, { ...s, status: 'active' }, s.pausedAt) });
+  const pausedAt = pausedFromOf(s);
+  if (pausedAt && pausedAt <= today)
+    out.push({ date: pausedAt, sub: s, kind: 'pause', delta: -contributionOn(state, { ...s, stop: undefined, status: 'active' }, pausedAt) });
   return out;
 }
 

@@ -16,11 +16,16 @@ import {
   phaseLanes,
   phaseSubs,
   servedTime,
+  shareLastDay,
+  stopSummary,
+  subError,
   totals,
 } from './billing.ts';
+import { applyStopForm, editStop, stopForm, stopPreview } from './stop-form.ts';
 import { contributionOn, events, prepaidValue } from './metrics.ts';
 import {
   affectedPriceCharges,
+  cancelAtEnd,
   changePrice,
   editPhase,
   editPricePoint,
@@ -30,6 +35,8 @@ import {
   deletePayment,
   dropPlan,
   prependPlan,
+  reactivate,
+  resume,
   removePhase,
   savePayment,
   setPhaseEnd,
@@ -516,15 +523,112 @@ test('结束日不撞新开始日：更早的并行段同样往前收一天，�
     [['2026-01-15', '2026-06-15']],
   );
   assert.equal(newShapeError(paused, st), undefined);
-  // 那段已有付款时不悄悄删，留给校验拦下
+  // 那段已有付款时不删：停在这段上，旧段收到前一天
   const paid: Subscription = { ...paused, phases: [paused.phases![0], { ...paused.phases![1], payments: [{ date: '2026-06-15', amount: 100 }] }] };
   const kept = stopSubscription(paid, '2026-06-20', 'cancel', '2026-06-15');
   assert.deepEqual(kept.phases![1].payments, [{ date: '2026-06-15', amount: 100 }]);
-  assert.ok(newShapeError(paid, kept));
+  assert.equal(kept.phases![0].end, '2026-06-14');
+  assert.equal(newShapeError(paid, kept), undefined);
   // 无缝衔接的新段提前多天，上一段一样收到前一天
   const seamless = switchPlan(base(), '2026-03-20', TR);
   assert.equal(movePhaseStart(seamless, '2026-03-20', '2026-03-10').phases![0].end, '2026-03-09');
   // 存量坏数据（结束日已等于下一段开始日）在那天停用，较早那段同样截到前一天
   const bad: Subscription = { ...seamless, phases: [{ ...seamless.phases![0], end: '2026-03-20' }, seamless.phases![1]] };
   assert.equal(stopSubscription(bad, '2026-03-20', 'cancel', '2026-03-20').phases![0].end, '2026-03-19');
+});
+
+test('暂停中停用：暂停期间没发生的扣款不复活，停用日按填的记', () => {
+  const paused = base({ start: '2026-01-15', status: 'paused', pausedAt: '2026-06-01' });
+  const after = (s: Subscription, from = '2026-06-01') => chargesBetween(s, from, '2026-12-31', '2026-12-31').map((c) => c.date);
+  const phased = { ...switchPlan(base({ start: '2026-01-15' }), '2026-06-15', TR), status: 'paused' as const, pausedAt: '2026-06-01' };
+  for (const s of [paused, phased]) {
+    for (const at of ['2026-06-15', '2026-06-20']) {
+      const stopped = stopSubscription(s, '2026-06-20', 'cancel', at);
+      assert.deepEqual(after(stopped), []);
+      assert.equal(stopped.stop!.date, at);
+      assert.equal(stopped.stop!.paidThrough, at);
+      assert.equal(stopSummary(phaseSubs(stopped).at(-1)!)!.unusedDays, 0);
+      assert.equal(subError(stopped), undefined);
+    }
+  }
+  // 不续费同样不复活；预览与实际写入一致
+  const lapsed = cancelAtEnd(paused, '2026-07-14', '2026-06-20');
+  assert.equal(lapsed.end, '2026-07-14');
+  assert.equal(lapsed.stop!.pausedAt, '2026-06-01');
+  assert.deepEqual(after(lapsed), []);
+  assert.equal(subError(lapsed), undefined);
+  const form = { ...stopForm(paused, '2026-06-20'), mode: 'cancel' as const, date: '2026-06-20' };
+  assert.equal(stopPreview(paused, form, '2026-06-20').period.paidThrough, '2026-06-20');
+  const fromForm = applyStopForm(paused, form, '2026-06-20');
+  assert.equal(fromForm.stop!.paidThrough, '2026-06-20');
+  // 改已停用的信息不丢暂停；恢复订阅才清掉
+  const edited = editStop(fromForm, { mode: 'cancel', date: '2026-07-20' }, '2026-07-25');
+  assert.equal(edited.stop!.date, '2026-07-20');
+  assert.deepEqual(after(edited), []);
+  assert.equal(reactivate(fromForm, '2026-06-20').pausedAt, undefined);
+  // 已覆盖期内停用：未用天数照算，暂停不再留
+  const early = stopSubscription(paused, '2026-05-20', 'cancel', '2026-05-20');
+  assert.equal(early.stop!.pausedAt, undefined);
+  assert.equal(early.stop!.paidThrough, '2026-06-14');
+  const inPeriod = stopSubscription(paused, '2026-06-20', 'cancel', '2026-06-10');
+  assert.equal(inPeriod.stop!.paidThrough, '2026-06-14');
+  assert.equal(stopSummary(inPeriod)!.unusedDays, 4);
+  // 暂停正好落在续费日：那天的扣款没发生
+  const onDue = stopSubscription(base({ start: '2026-01-15', status: 'paused', pausedAt: '2026-06-15' }), '2026-06-20', 'cancel', '2026-06-20');
+  assert.deepEqual(after(onDue), []);
+  // 提前扣款：现金日已在暂停前的那期算已付，之后不再扣
+  const lead = stopSubscription(
+    base({ start: '2026-01-15', chargeLeadDays: 3, status: 'paused', pausedAt: '2026-06-13' }),
+    '2026-08-20',
+    'cancel',
+    '2026-08-20',
+  );
+  assert.deepEqual(after(lead, '2026-06-13'), []);
+  assert.equal(lead.stop!.paidThrough, '2026-08-20');
+  // 暂停日正好是新阶段开始日、断更后新段首日：都不复活
+  const boundary = { ...switchPlan(base({ start: '2026-01-15' }), '2026-06-01', TR), status: 'paused' as const, pausedAt: '2026-06-01' };
+  assert.deepEqual(after(stopSubscription(boundary, '2026-06-20', 'cancel', '2026-06-20')), []);
+  // 暂停后记下的实付保留，已付期从它算
+  const recorded = {
+    ...paused,
+    payments: [
+      { date: '2026-06-15', amount: 10 },
+      { date: '2026-07-15', amount: 10 },
+    ],
+  };
+  const kept = stopSubscription(recorded, '2026-07-20', 'cancel', '2026-07-20');
+  assert.deepEqual(after(kept), ['2026-06-15', '2026-07-15']);
+  assert.equal(kept.stop!.paidThrough, '2026-08-14');
+  // 暂停且带结束日、走表单退款：不复活，退款日照填
+  const dated = { ...paused, end: '2026-08-01' };
+  const datedStop = applyStopForm(dated, { ...stopForm(dated, '2026-08-20'), mode: 'cancel', date: '2026-08-01' }, '2026-08-20');
+  assert.deepEqual(after(datedStop), []);
+  // 暂停在开始日：首笔也不复活
+  assert.deepEqual(after(stopSubscription(base({ start: '2026-06-01', status: 'paused', pausedAt: '2026-06-01' }), '2026-06-20', 'cancel', '2026-06-20')), []);
+  // 后付费：暂停前那期照出最后一张账单，之后不再出
+  const bills = stopSubscription(
+    base({ start: '2026-01-15', billing: 'postpaid', status: 'paused', pausedAt: '2026-06-01' }),
+    '2026-06-20',
+    'cancel',
+    '2026-06-20',
+  );
+  assert.deepEqual(after(bills), ['2026-06-15']);
+  // 试用中暂停的单能停
+  const trial = base({ start: '2026-01-15', trialEnd: '2026-02-03', status: 'paused', pausedAt: '2026-06-01' });
+  assert.equal(subError(stopSubscription(trial, '2026-06-20', 'cancel', '2026-06-20')), undefined);
+  // 没在暂停的订阅不受影响
+  const active = stopSubscription(base({ start: '2026-01-15' }), '2026-06-20', 'cancel', '2026-06-20');
+  assert.equal(active.stop!.paidThrough, '2026-07-14');
+  assert.equal(active.stop!.pausedAt, undefined);
+  // 被停用后断更续订：旧段暂停留着，新段照常；成员应收、月度贡献都算到暂停前
+  const stopped = stopSubscription(paused, '2026-06-20', 'terminate', '2026-06-20');
+  const again = resume(stopped, '2026-09-01', TR);
+  assert.equal(subError(again), undefined);
+  assert.deepEqual(after(again).slice(0, 1), ['2026-09-01']);
+  assert.equal(shareLastDay(stopped), '2026-05-31');
+  assert.equal(contributionOn(stateOf([stopped]), stopped, '2026-06-10'), 0);
+  // 暂停后才开始的阶段上记过实付：不丢
+  const later = { ...switchPlan(base({ start: '2026-01-15' }), '2026-06-15', TR), status: 'paused' as const, pausedAt: '2026-06-01' };
+  const paidLater = { ...later, phases: [later.phases![0], { ...later.phases![1], payments: [{ date: '2026-06-15', amount: 100 }] }] };
+  assert.deepEqual(after(stopSubscription(paidLater, '2026-06-20', 'cancel', '2026-06-20')), ['2026-06-15']);
 });

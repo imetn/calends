@@ -540,6 +540,8 @@ export function stopSubscription(s: Subscription, today: string, kind: Stop['kin
   const period = stopBillingPeriod(current, at, today);
   if (at > period.paidThrough) throw new Error(t('mcp.error.stopAfterPaidThrough'));
   const stop: Stop = { kind, date: at, paidThrough: period.paidThrough, reason: kind === 'terminate' ? reason?.trim() || undefined : undefined };
+  // 停在暂停之后：记下暂停日，暂停期间没发生的扣款不复活
+  if (s.status === 'paused' && s.pausedAt && s.pausedAt <= at) stop.pausedAt = s.pausedAt;
   let next: Subscription;
   if (s.phases?.length) {
     // 停用日才开始、又不是当前段的计划（比如暂停中排好的）从未生效，没有付款就撤掉，有付款留给校验报错，不悄悄删；
@@ -629,6 +631,8 @@ export function cancelAtEnd(s: Subscription, at: string, today: string): Subscri
   if (s.stop || isStopped(effectiveStatus(s, today))) throw new Error(t('mcp.error.subscriptionEnded'));
   if (!validDay(at)) throw new Error(t('mcp.error.notDate', { what: 'at' }));
   if (at < s.start) throw new Error(t('mcp.error.stopBeforeStart'));
+  // 暂停到期后不续没有已付期可等，就是在这天停用；要记下暂停日，同 stopSubscription
+  if (s.status === 'paused' && s.pausedAt && s.pausedAt <= at) return stopSubscription(s, today, 'cancel', at);
   let c = s;
   for (const p of (s.phases ?? []).filter((p) => p.start > at).sort((a, b) => b.start.localeCompare(a.start))) c = dropPlan(c, p.start);
   return syncPhase({ ...toEditForm(c, today), status: 'cancelled', end: at, stop: undefined }, today);
