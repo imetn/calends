@@ -296,5 +296,31 @@
       "travel": "Perjalanan",
       "people": "Orang & belajar"
     }
+  },
+  "publicPage": {
+    "title": "Edit halaman publik",
+    "access": "Akses publik",
+    "back": "Kembali ke pengaturan",
+    "reset": "Pulihkan default",
+    "leave": "Ada perubahan yang belum disimpan. Tetap keluar?",
+    "leaveOk": "Keluar",
+    "head": "Header",
+    "browserTitle": "Judul browser",
+    "avatarFollow": "Gunakan avatar global",
+    "avatarLinkHint": "Browser pengunjung langsung meminta alamat ini, sehingga host-nya dapat melihat IP mereka.",
+    "bio": "Teks",
+    "bioPlaceholder": "Tampil di bawah judul. Baris baru dipertahankan; tidak diterjemahkan.",
+    "sections": "Bagian",
+    "sectionsFoot": "Seret untuk mengurutkan. Lebar memakai kisi 12 kolom, dan kartu terakhir di tiap baris mengisi sisanya. Menyembunyikan bagian hanya memengaruhi tampilan; agar langganan benar-benar privat, gunakan Langganan yang ditampilkan.",
+    "heroParts": "Isi kartu utama",
+    "hero": "Kartu utama",
+    "stats": "Ringkasan",
+    "footer": "Footer",
+    "pile": "Tumpukan langganan",
+    "width": "Lebar {name}",
+    "editTab": "Pengaturan",
+    "previewTab": "Pratinjau",
+    "desktop": "Desktop",
+    "phone": "Ponsel"
   }
 }

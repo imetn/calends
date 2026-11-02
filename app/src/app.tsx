@@ -33,6 +33,7 @@ import { List } from './views/List.tsx';
 import { Overview } from './views/Overview.tsx';
 import { Report } from './views/Report.tsx';
 import { IcsSheet, Settings } from './views/Settings.tsx';
+import { PublicPageEditor } from './views/PublicPageEditor.tsx';
 import { currentRoute, go as navigate, href, initRouter, loginNext, onRoute, replaceRoute, sortNav } from './router.ts';
 import { locale, t } from '../../shared/i18n.ts';
 import { initialLocale, loadLocale, preferredLocale } from './i18n.ts';
@@ -336,7 +337,7 @@ function Sidebar({
           <small>{THEME_LABEL[theme]}</small>
         </button>
         {!state.readonly && (
-          <a className={`side-item ${route === 'settings' ? 'active' : ''}`} href={href('settings')} onClick={() => setGear(gear + 1)}>
+          <a className={`side-item ${route === 'settings' || route === 'settings/public' ? 'active' : ''}`} href={href('settings')} onClick={() => setGear(gear + 1)}>
             {/* 每点一下齿轮转一圈：先慢、再快、再慢 */}
             <span className="ico-turn gear" style={{ transform: `rotate(${gear * 360}deg)` }}>
               <Icon name="gear" />
@@ -638,6 +639,9 @@ function App() {
         break;
       case 'settings':
         view = ro ? null : <Settings state={state} today={d} />;
+        break;
+      case 'settings/public':
+        view = ro ? null : <PublicPageEditor state={state} />;
         break;
       case '':
       case 'login':

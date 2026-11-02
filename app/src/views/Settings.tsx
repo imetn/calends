@@ -166,7 +166,6 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
   const unassigned = state.subscriptions.filter((x) => !x.methodId && !x.phases?.length && !x.proxy);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [name, setName] = useState(s.displayName);
-  const [pubTitle, setPubTitle] = useState(s.publicTitle ?? '');
   const [ics, setIcs] = useState(false);
   const [pubSubs, setPubSubs] = useState(false);
   const [importing, setImporting] = useState<ImportSource | null>(null);
@@ -293,7 +292,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
               onBlur={() => name.trim() !== s.displayName && run(() => saveSettings({ displayName: name.trim() }), t('settings.toast.saved'))}
             />
           </Cell>
-          <AvatarField avatar={s.avatar} />
+          <AvatarField avatar={s.avatar} onChange={(v) => run(() => saveSettings({ avatar: v as string | undefined }), t('settings.toast.saved'))} />
           <Cell label={t('settings.general.startPage')}>
             <Picker
               value={s.startPage ?? ''}
@@ -526,17 +525,15 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
           )}
         </Group>
 
-        <Group title={t('settings.open.title')}>
-          <Cell label={t('settings.open.ics')} onClick={() => setIcs(true)}>
-            {s.icsToken ? t('settings.open.on') : t('settings.open.off')}
-          </Cell>
-          <Cell label={t('settings.open.public')} sub={s.publicView ? `${location.origin}${base('/public')}` : undefined}>
+        <Group title={t('settings.open.public')}>
+          <Cell label={t('settings.publicPage.access')} sub={s.publicView ? `${location.origin}${base('/public')}` : undefined}>
             <Toggle
-              label={t('settings.open.public')}
+              label={t('settings.publicPage.access')}
               checked={s.publicView}
               onChange={(v) => run(() => saveSettings({ publicView: v }), v ? t('settings.open.publicOn') : t('settings.open.publicOff'))}
             />
           </Cell>
+          <Cell label={t('settings.publicPage.title')} onClick={() => go('settings/public')} />
           {s.publicView && (
             <Cell label={t('settings.open.publicSubs')} onClick={() => setPubSubs(true)}>
               {(() => {
@@ -547,24 +544,17 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
             </Cell>
           )}
           {s.publicView && (
-            <Cell label={t('settings.open.publicTitle')}>
-              <input
-                value={pubTitle}
-                placeholder={s.displayName.trim() ? t('public.title', { name: s.displayName.trim() }) : t('public.titleAnon')}
-                onChange={(e) => setPubTitle((e.target as HTMLInputElement).value)}
-                onBlur={() =>
-                  pubTitle.trim() !== (s.publicTitle ?? '') &&
-                  run(() => saveSettings({ publicTitle: (pubTitle.trim() || null) as string | undefined }), t('settings.toast.saved'))
-                }
-              />
-            </Cell>
-          )}
-          {s.publicView && (
             <Cell
               label={<span style={{ color: 'var(--accent)' }}>{t('settings.open.previewPublic')}</span>}
               onClick={() => window.open(base('/public'), '_blank')}
             />
           )}
+        </Group>
+
+        <Group title={t('settings.open.title')}>
+          <Cell label={t('settings.open.ics')} onClick={() => setIcs(true)}>
+            {s.icsToken ? t('settings.open.on') : t('settings.open.off')}
+          </Cell>
           <Cell label={t('settings.open.ai')}>
             <Toggle
               label={t('settings.open.ai')}
@@ -667,12 +657,32 @@ function NavRow({ id, label, checked, onToggle }: { id: string; label: string; c
   );
 }
 
-/** 头像：上传图片（裁成正方形缩到 256px）或填图片链接；侧边栏、公开页和合租里的「我」都用它 */
-function AvatarField({ avatar }: { avatar?: string }) {
+/** 头像：上传图片（裁成正方形缩到 256px）或填图片链接；全局头像和公开页单独的头像共用 */
+export function AvatarField({
+  avatar,
+  fallback,
+  defaultLabel = t('settings.general.avatarDefault'),
+  linkHint,
+  onChange,
+}: {
+  avatar?: string;
+  /** 没设头像时预览显示的那张 */
+  fallback?: string;
+  defaultLabel?: string;
+  linkHint?: string;
+  onChange: (v: string | null) => void | Promise<unknown>;
+}) {
   const [link, setLink] = useState(false);
-  const [url, setUrl] = useState(avatar?.startsWith('data:') ? '' : (avatar ?? ''));
+  const linkOf = (v?: string) => (v?.startsWith('data:') ? '' : (v ?? ''));
+  const [url, setUrl] = useState(linkOf(avatar));
+  // 头像被外部改掉（如恢复默认）时跟上，否则失焦会把旧链接写回去
+  const [seen, setSeen] = useState(avatar);
+  if (avatar !== seen) {
+    setSeen(avatar);
+    setUrl(linkOf(avatar));
+  }
   const file = useRef<HTMLInputElement>(null);
-  const set = (v: string | null) => run(() => saveSettings({ avatar: v as string | undefined }), t('settings.toast.saved'));
+  const set = onChange;
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target as HTMLInputElement;
     const fl = input.files?.[0];
@@ -692,7 +702,7 @@ function AvatarField({ avatar }: { avatar?: string }) {
     };
     img.src = URL.createObjectURL(fl);
   };
-  let source = t('settings.general.avatarDefault');
+  let source = defaultLabel;
   if (avatar) source = avatar.startsWith('data:') ? t('wallet.logo.uploaded') : t('wallet.logo.link');
   return (
     <>
@@ -702,7 +712,7 @@ function AvatarField({ avatar }: { avatar?: string }) {
           <small>{source}</small>
         </span>
         <span className="cell-r">
-          <img className="avatar-preview" src={base(avatarOf({ avatar }))} alt="" />
+          <img className="avatar-preview" src={base(avatarOf({ avatar: avatar ?? fallback }))} alt="" />
           <button type="button" className="chip-btn" onClick={() => file.current?.click()}>
             {t('wallet.logo.upload')}
           </button>
@@ -718,7 +728,7 @@ function AvatarField({ avatar }: { avatar?: string }) {
         </span>
       </div>
       {link && (
-        <Cell label={t('wallet.logo.link')}>
+        <Cell label={t('wallet.logo.link')} sub={linkHint}>
           <input
             value={url}
             placeholder="https://…/avatar.png"

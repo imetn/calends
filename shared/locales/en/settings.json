@@ -301,5 +301,31 @@
       "travel": "Travel",
       "people": "People & learning"
     }
+  },
+  "publicPage": {
+    "title": "Edit public page",
+    "access": "Public access",
+    "back": "Back to settings",
+    "reset": "Restore defaults",
+    "leave": "You have unsaved changes. Leave anyway?",
+    "leaveOk": "Leave",
+    "head": "Header",
+    "browserTitle": "Browser title",
+    "avatarFollow": "Use the global avatar",
+    "avatarLinkHint": "Visitors' browsers request this address directly, so its host can see their IP.",
+    "bio": "Text",
+    "bioPlaceholder": "Shown below the title. Line breaks are kept; it isn't translated.",
+    "sections": "Sections",
+    "sectionsFoot": "Drag to reorder. Widths use a 12-column grid, and the last card in a row fills what's left. Hiding a section only affects display; to keep a subscription fully private, use Shown subscriptions.",
+    "heroParts": "Main card contents",
+    "hero": "Main card",
+    "stats": "Overview",
+    "footer": "Footer",
+    "pile": "Subscription pile",
+    "width": "Width of {name}",
+    "editTab": "Settings",
+    "previewTab": "Preview",
+    "desktop": "Desktop",
+    "phone": "Phone"
   }
 }

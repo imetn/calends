@@ -146,3 +146,31 @@
 .public-filter-btn {
   height: var(--ctl-h-sm);
 }
+
+/* 公开页的 12 栏网格：手机单列；--span-md、--span-lg 由 shared/public-layout.ts 算好（每行已补满） */
+.public-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+}
+.public-cell {
+  grid-column: span 12;
+  min-width: 0;
+}
+@media (min-width: 48rem) {
+  .public-cell {
+    grid-column: span var(--span-md);
+  }
+}
+@media (min-width: 64rem) {
+  .public-cell {
+    grid-column: span var(--span-lg);
+  }
+}
+/* 编辑页预览：iframe 里不出现可见滚动条 */
+:root[data-preview] {
+  scrollbar-width: none;
+}
+:root[data-preview]::-webkit-scrollbar {
+  display: none;
+}

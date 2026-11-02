@@ -340,5 +340,31 @@
       "travel": "Voyage",
       "people": "Personnes et études"
     }
+  },
+  "publicPage": {
+    "title": "Modifier la page publique",
+    "access": "Accès public",
+    "back": "Retour aux réglages",
+    "reset": "Rétablir par défaut",
+    "leave": "Des modifications ne sont pas enregistrées. Quitter quand même ?",
+    "leaveOk": "Quitter",
+    "head": "En-tête",
+    "browserTitle": "Titre du navigateur",
+    "avatarFollow": "Utiliser l’avatar global",
+    "avatarLinkHint": "Les navigateurs des visiteurs demandent directement cette adresse : son hôte peut voir leur IP.",
+    "bio": "Texte",
+    "bioPlaceholder": "Affiché sous le titre. Les retours à la ligne sont conservés ; il n’est pas traduit.",
+    "sections": "Sections",
+    "sectionsFoot": "Faites glisser pour réordonner. Les largeurs suivent une grille de 12 colonnes et la dernière carte d’une ligne occupe le reste. Masquer une section ne change que l’affichage ; pour garder un abonnement entièrement privé, utilisez Abonnements affichés.",
+    "heroParts": "Contenu de la carte principale",
+    "hero": "Carte principale",
+    "stats": "Aperçu général",
+    "footer": "Pied de page",
+    "pile": "Pile d’abonnements",
+    "width": "Largeur de {name}",
+    "editTab": "Réglages",
+    "previewTab": "Aperçu",
+    "desktop": "Ordinateur",
+    "phone": "Téléphone"
   }
 }

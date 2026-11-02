@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS, type FxTable, type PaymentMethod, type Person, type S
 import type { Env } from './env.ts';
 import { migrateRenewalRules } from '../shared/billing.ts';
 import { t } from '../shared/i18n.ts';
+import { validPublicPage } from '../shared/public-layout.ts';
 import { getFx, getPeople, getSettings, restoreLedger } from './store.ts';
 
 const BACKUP_FORMAT = 'calends-backup';
@@ -45,6 +46,14 @@ export async function exportAll(env: Env): Promise<Backup> {
   };
 }
 
+/** 备份可能是手改或旧版本写的：公开页配置不合法就回到默认，否则恢复后公开页和编辑页打不开 */
+function restorableSettings(raw: unknown): Settings {
+  const settings = { ...((raw ?? {}) as Settings) };
+  if (settings.publicPage != null && !validPublicPage(settings.publicPage)) delete settings.publicPage;
+  if (settings.publicTitle != null && typeof settings.publicTitle !== 'string') delete settings.publicTitle;
+  return settings;
+}
+
 /** 读取任意版本的备份：v3 带名册，v2 没有；早期导出只有 subscriptions / methods / settings */
 export function parseBackup(raw: unknown): Backup {
   const b = raw as Partial<Backup>;
@@ -61,7 +70,7 @@ export function parseBackup(raw: unknown): Backup {
     subscriptions: b.subscriptions.map(migrateRenewalRules),
     methods: b.methods ?? [],
     people,
-    settings: (b.settings ?? {}) as Settings,
+    settings: restorableSettings(b.settings),
     fx: b.fx as FxTable,
     fxDaily: b.fxDaily ?? [],
   };

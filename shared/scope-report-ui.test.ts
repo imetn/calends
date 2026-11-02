@@ -3606,6 +3606,7 @@ test('annual review new/ended metric keeps counts and its existing note without 
 
 test('public stopped card omits the avoided-renewal total while retaining each old monthly price and stop month', async () => {
   const { maskForPublic } = await import('./mask.ts');
+  const { fillRows, publicGrid, publicParts, tabletSpan } = await import('./public-layout.ts');
   const sub: Subscription = {
     id: 'public-stopped',
     name: 'Fictional stopped',
@@ -3645,6 +3646,10 @@ test('public stopped card omits the avoided-renewal total while retaining each o
     {},
     {
       ...components,
+      fillRows,
+      publicGrid,
+      publicParts,
+      tabletSpan,
       readStored: () => null,
       cn: (...v: string[]) => v.join(' '),
       syncCategories: () => [],
@@ -3660,7 +3665,7 @@ test('public stopped card omits the avoided-renewal total while retaining each o
   assert.equal(d.ended.length, 1);
   assert.equal(d.ended[0].monthly, metrics.cancelSavings(state, today).items[0].monthly);
   assert.equal(d.ended[0].since, sub.end);
-  const nodes = r.render('Ledger', { state });
+  const nodes = r.render('Ledger', { state, view: {} });
   assert.ok(!JSON.stringify(nodes).includes('public.ended.saved'));
   assert.ok(!JSON.stringify(nodes).includes(sub.account!));
   assert.ok(nodes.some((n) => String(n.props.className).includes('line-through') && n.children.includes('public.perMonth')));

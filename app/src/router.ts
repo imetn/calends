@@ -36,10 +36,28 @@ export function replaceRoute(path: string) {
   window.dispatchEvent(new Event(EVENT));
 }
 
+/** 离开当前页前的确认（编辑页有未保存的草稿）：go 和站内链接都经过这里，返回取消函数；浏览器前进后退拦不住 */
+let leaveGuard: (() => Promise<boolean>) | undefined;
+let asking = false;
+export function setLeaveGuard(guard: () => Promise<boolean>) {
+  leaveGuard = guard;
+  return () => {
+    leaveGuard = undefined;
+  };
+}
+
 export function go(path: string) {
   const url = href(path);
-  if (url !== location.pathname) history.pushState(null, '', url);
-  window.dispatchEvent(new Event(EVENT));
+  const move = () => {
+    if (url !== location.pathname) history.pushState(null, '', url);
+    window.dispatchEvent(new Event(EVENT));
+  };
+  if (!leaveGuard || url === location.pathname) return move();
+  if (asking) return;
+  asking = true;
+  void leaveGuard()
+    .then((ok) => ok && move())
+    .finally(() => (asking = false));
 }
 
 /** 监听路由变化：前进后退、go()；返回取消函数 */

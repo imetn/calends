@@ -296,5 +296,31 @@
       "travel": "出行",
       "people": "社交學習"
     }
+  },
+  "publicPage": {
+    "title": "編輯公開頁",
+    "access": "公開存取",
+    "back": "返回設定",
+    "reset": "還原預設",
+    "leave": "有未儲存的變更，確定離開？",
+    "leaveOk": "離開",
+    "head": "頁首",
+    "browserTitle": "瀏覽器標題",
+    "avatarFollow": "跟隨全域頭像",
+    "avatarLinkHint": "訪客瀏覽器會直接請求這個網址，對方能看到訪客的 IP。",
+    "bio": "內文",
+    "bioPlaceholder": "顯示在標題下方，可換行，不隨語言切換",
+    "sections": "元件",
+    "sectionsFoot": "拖動調整順序，闊度按 12 欄計，一行的最後一張卡會佔滿剩餘闊度。隱藏元件只影響顯示；要徹底不公開某個訂閱，請用「展示的訂閱」。",
+    "heroParts": "主卡內容",
+    "hero": "主卡",
+    "stats": "概覽",
+    "footer": "頁尾",
+    "pile": "底部訂閱堆",
+    "width": "{name}的闊度",
+    "editTab": "設定",
+    "previewTab": "預覽",
+    "desktop": "桌面",
+    "phone": "手機"
   }
 }

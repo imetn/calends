@@ -7,6 +7,7 @@ import { channelsOf, DEFAULT_SETTINGS, type AppState, type Payment, type Payment
 import { PREF_KEYS, mergePrefs } from './prefs.ts';
 import { isLocale, t } from './i18n.ts';
 import { objectSchema, textSchema, daySchema, nullable } from './tool-schema.ts';
+import { PUBLIC_TITLE_MAX, validPublicAvatar, validPublicPage } from './public-layout.ts';
 
 const START_PAGE_PATHS = ['overview', 'list', 'calendar', 'report', 'wallet', 'family', 'behalf', 'assistant', 'connect'];
 
@@ -247,6 +248,10 @@ export function checkSettings(st: Pick<AppState, 'fx' | 'methods' | 'subscriptio
   if (added.some((id) => !st.subscriptions.some((s) => s.id === id))) throw new Error(t('mcp.error.invalidTarget'));
   if (next.avatar && changed('avatar') && (!/^(https?:\/\/|data:image\/(png|jpeg|webp|gif|svg\+xml);base64,)/.test(next.avatar) || next.avatar.length > 300000))
     throw new Error(t('server.invalidAvatar'));
+  if (next.publicTitle != null && changed('publicTitle') && (typeof next.publicTitle !== 'string' || next.publicTitle.length > PUBLIC_TITLE_MAX))
+    throw new Error(t('mcp.error.invalidInput', { field: 'publicTitle' }));
+  if (next.publicPage && changed('publicPage') && !validPublicAvatar(next.publicPage.avatar)) throw new Error(t('server.invalidAvatar'));
+  if (next.publicPage && changed('publicPage') && !validPublicPage(next.publicPage)) throw new Error(t('mcp.error.invalidInput', { field: 'publicPage' }));
 }
 export function settingsEdit(
   st: AppState,

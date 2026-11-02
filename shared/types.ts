@@ -414,6 +414,22 @@ export interface Channel {
   config: Record<string, string>;
 }
 
+export interface PublicSectionConfig {
+  id: string;
+  hidden?: boolean;
+  /** 占 12 栏里的几栏；页面底部的组件没有这一项 */
+  span?: number;
+}
+
+export interface PublicPageConfig {
+  browserTitle?: string;
+  bio?: string;
+  /** 公开页单独的头像；缺省用 Settings.avatar */
+  avatar?: string;
+  sections?: PublicSectionConfig[];
+  heroParts?: { stats?: boolean; timeline?: boolean; chart?: boolean };
+}
+
 export interface Settings {
   baseCurrency: string;
   /** 收支金额显示方向符号；缺省开启，不影响标价、余额及对比差额 */
@@ -440,6 +456,8 @@ export interface Settings {
   avatar?: string;
   /** 公开页标题（页头和浏览器页签）；缺省「名字的订阅」 */
   publicTitle?: string;
+  /** 公开页自定义；缺省时页面保持默认样子。规则见 shared/public-layout.ts */
+  publicPage?: PublicPageConfig;
   /** 侧边栏显示「即将扣款」，以及往后看多少天；缺省显示、45 天 */
   sidebarUpcoming?: boolean;
   /** 侧边栏「即将扣款」往后看几天；0 = 看到本月月底 */

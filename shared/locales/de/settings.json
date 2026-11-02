@@ -340,5 +340,31 @@
       "travel": "Reisen",
       "people": "Menschen & Lernen"
     }
+  },
+  "publicPage": {
+    "title": "Öffentliche Seite bearbeiten",
+    "access": "Öffentlicher Zugriff",
+    "back": "Zurück zu den Einstellungen",
+    "reset": "Standard wiederherstellen",
+    "leave": "Es gibt ungespeicherte Änderungen. Trotzdem verlassen?",
+    "leaveOk": "Verlassen",
+    "head": "Kopfbereich",
+    "browserTitle": "Browsertitel",
+    "avatarFollow": "Globalen Avatar verwenden",
+    "avatarLinkHint": "Browser der Besucher rufen diese Adresse direkt auf, der Host sieht also ihre IP.",
+    "bio": "Text",
+    "bioPlaceholder": "Erscheint unter dem Titel. Zeilenumbrüche bleiben erhalten; wird nicht übersetzt.",
+    "sections": "Bereiche",
+    "sectionsFoot": "Zum Sortieren ziehen. Breiten nutzen ein 12-Spalten-Raster, die letzte Karte einer Zeile füllt den Rest. Ausblenden betrifft nur die Anzeige; um ein Abo ganz privat zu halten, nutze „Angezeigte Abos“.",
+    "heroParts": "Inhalt der Hauptkarte",
+    "hero": "Hauptkarte",
+    "stats": "Übersicht",
+    "footer": "Fußzeile",
+    "pile": "Abo-Stapel",
+    "width": "Breite von {name}",
+    "editTab": "Einstellungen",
+    "previewTab": "Vorschau",
+    "desktop": "Desktop",
+    "phone": "Smartphone"
   }
 }

@@ -8,7 +8,8 @@ import { cnDate, flow, moneyTick, money, monthLabel, setSignedAmounts, symbol } 
 import { locale, t, type Params } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue, toBaseAt, toBaseOrNaN } from '../../../shared/fx.ts';
 import { cancelSavings, contributionOn, mrrSeries } from '../../../shared/metrics.ts';
-import { avatarOf, type AppState, type Subscription } from '../../../shared/types.ts';
+import { avatarOf, type AppState, type PublicPageConfig, type Subscription } from '../../../shared/types.ts';
+import { fillRows, PUBLIC_PREVIEW_DATA, PUBLIC_PREVIEW_DRAFT, PUBLIC_PREVIEW_READY, publicGrid, publicParts, tabletSpan, type PublicGridId } from '../../../shared/public-layout.ts';
 import { allCharges, catIcon, periodRange, sumBase, syncCategories, firstStart } from '../derive.ts';
 import { CatGlyph } from '../components/CatGlyph.tsx';
 import { THEME_LABEL, ThemeIcon, useThemeMode } from '../theme.tsx';
@@ -44,6 +45,7 @@ const clean = (name: string) => name.replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, ' ').
 /** 标题：「某某的订阅」；没设名字时用通用标题 */
 let owner = '';
 let custom = '';
+let tabTitle = '';
 const title = () => custom.trim() || (owner.trim() ? t('public.title', { name: owner.trim() }) : t('public.titleAnon'));
 
 /** 文案里嵌元素：先按 params 填文字（含复数），再把 {name} 换成 parts 里的节点 */
@@ -63,26 +65,73 @@ function rich(key: string, params: Params, parts: Record<string, React.ReactNode
 /** 卡片留白：手机 16px，桌面 24px */
 const roomy = 'sm:[--card-spacing:--spacing(6)]';
 
+/** 页头和布局：访客来自账本设置；编辑页预览时由草稿实时覆盖，账本数据不重算 */
+type View = { title?: string; avatar?: string; config?: PublicPageConfig };
+type Draft = Omit<View, 'title'> & { publicTitle?: string; displayName?: string };
+
+/** 被同源页面嵌入的编辑预览：数据由编辑页发来，不请求接口，公开页关闭时也能看 */
+const previewing = new URLSearchParams(location.search).has('preview') && window.parent !== window;
+
+const applyTitle = (name: string | undefined, publicTitle: string | undefined, browserTitle: string | undefined) => {
+  owner = name ?? '';
+  custom = publicTitle ?? '';
+  tabTitle = browserTitle?.trim() ?? '';
+  document.title = tabTitle || title();
+};
+
 /** 对外公开的只读账本：数据已在服务端脱敏 */
 export function PublicPage() {
   const [state, setState] = useState<AppState | null>(null);
+  const [view, setView] = useState<View>({});
   const [err, setErr] = useState<string>();
   useEffect(() => {
     document.title = title();
+    const show = async (body: AppState) => {
+      // 语言包加载失败（发版后旧分包失效、断网）不挡账本：继续用当前语言渲染
+      if (preferredLocale(body.settings.language) !== locale()) await loadLocale(preferredLocale(body.settings.language)).catch(() => undefined);
+      if (body.settings.gainColor === 'red') document.documentElement.dataset.gain = 'red';
+      applyTitle(body.settings.displayName, body.settings.publicTitle, body.settings.publicPage?.browserTitle);
+      setSignedAmounts(body.settings.signedAmounts !== false);
+      setView({ title: title(), avatar: body.settings.avatar, config: body.settings.publicPage });
+      setState(body);
+    };
+    if (previewing) {
+      document.documentElement.dataset.preview = '';
+      let latest: Draft | undefined;
+      const applyDraft = () => {
+        if (!latest) return;
+        applyTitle(latest.displayName, latest.publicTitle, latest.config?.browserTitle);
+        setView({ title: title(), avatar: latest.avatar, config: latest.config });
+      };
+      const onMessage = (e: MessageEvent) => {
+        if (e.origin !== location.origin || e.source !== window.parent) return;
+        const m = e.data as { type?: string; state?: AppState; draft?: Draft };
+        // 账本要先等语言包，草稿可能先到：账本到位后再套一次，不让已保存的布局盖掉草稿
+        if (m?.type === PUBLIC_PREVIEW_DATA && m.state) void show(m.state).then(applyDraft);
+        if (m?.type === PUBLIC_PREVIEW_DRAFT && m.draft) {
+          latest = m.draft;
+          applyDraft();
+        }
+      };
+      // 预览里不跳走：页脚链接点了只会把 iframe 带离编辑页
+      const onClick = (e: MouseEvent) => {
+        if ((e.target as Element).closest?.('a')) e.preventDefault();
+      };
+      window.addEventListener('message', onMessage);
+      document.addEventListener('click', onClick, true);
+      window.parent.postMessage({ type: PUBLIC_PREVIEW_READY }, location.origin);
+      return () => {
+        window.removeEventListener('message', onMessage);
+        document.removeEventListener('click', onClick, true);
+      };
+    }
     fetch(appPath('/api/public'))
       .then(async (r) => {
         // 不是 JSON（代理错误页、静态页顶替）或不是账本：统一显示加载失败，不露出解析异常
         const body = (await r.json().catch(() => null)) as (AppState & { error?: string }) | null;
         if (!r.ok) throw new Error(body?.error ?? t('public.loadFailed'));
         if (!Array.isArray(body?.subscriptions) || !body.settings) throw new Error(t('public.loadFailed'));
-        // 语言包加载失败（发版后旧分包失效、断网）不挡账本：继续用当前语言渲染
-        if (preferredLocale(body.settings.language) !== locale()) await loadLocale(preferredLocale(body.settings.language)).catch(() => undefined);
-        if (body.settings.gainColor === 'red') document.documentElement.dataset.gain = 'red';
-        owner = body.settings.displayName ?? '';
-        custom = body.settings.publicTitle ?? '';
-        document.title = title();
-        setSignedAmounts(body.settings.signedAmounts !== false);
-        setState(body);
+        await show(body);
       })
       .catch((e: Error) => setErr(e.message));
   }, []);
@@ -94,7 +143,7 @@ export function PublicPage() {
             <p className="py-24 text-center text-sm text-muted-foreground">{err}</p>
           </Shell>
         ) : state ? (
-          <Ledger state={state} />
+          <Ledger state={state} view={view} />
         ) : (
           <Shell>
             <Skeleton className="h-[560px] rounded-xl" />
@@ -105,21 +154,24 @@ export function PublicPage() {
   );
 }
 
-function Shell({ children, right, avatar }: { children: React.ReactNode; right?: React.ReactNode; avatar?: string }) {
+/** 没传 head 时不画页头（加载中、出错）：不先闪一下默认标题和头像 */
+function Shell({ children, right, head }: { children: React.ReactNode; right?: React.ReactNode; head?: { title?: string; avatar?: string; bio?: string } }) {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-[max(env(safe-area-inset-top),1.25rem)] pb-12 sm:px-6 sm:pt-10">
-      <header className="mb-5 flex items-center gap-3 sm:mb-6">
-        <img src={appPath(avatarOf({ avatar }))} alt="" className="size-9 rounded-md object-cover" />
-        <h1 className="min-w-0 flex-1 truncate text-[length:var(--fs-2)] font-semibold">{title()}</h1>
-        {right}
-      </header>
+      {head && (
+        <header className="mb-5 sm:mb-6">
+          <div className="flex items-center gap-3">
+            <img src={appPath(avatarOf({ avatar: head.avatar }))} alt="" className="size-9 rounded-md object-cover" />
+            <h1 className="min-w-0 flex-1 truncate text-[length:var(--fs-2)] font-semibold">{head.title}</h1>
+            {right}
+          </div>
+          {head.bio && <p className="mt-3 text-[length:var(--fs-2)] break-words whitespace-pre-line text-muted-foreground">{head.bio}</p>}
+        </header>
+      )}
       {children}
     </div>
   );
 }
-
-/** 卡片外层：允许内容收缩（min-w-0） */
-const Reveal = ({ className, children }: { className?: string; children: React.ReactNode }) => <div className={cn('min-w-0', className)}>{children}</div>;
 
 function ThemeButton() {
   const [mode, cycle] = useThemeMode();
@@ -128,7 +180,8 @@ function ThemeButton() {
       type="button"
       title={t('public.theme.title', { mode: THEME_LABEL[mode] })}
       aria-label={t('public.theme.aria', { mode: THEME_LABEL[mode] })}
-      onClick={cycle}
+      // 预览和主人的应用同源，这里切换会改掉主人本机的主题
+      onClick={previewing ? undefined : cycle}
       className="public-icon-btn"
     >
       <ThemeIcon mode={mode} size={16} />
@@ -136,7 +189,7 @@ function ThemeButton() {
   );
 }
 
-function Ledger({ state }: { state: AppState }) {
+function Ledger({ state, view }: { state: AppState; view: View }) {
   const base = state.settings.baseCurrency;
   const [ccy, setCcy] = useState<Ccy>(() => (base !== 'USD' && readStored('ledger:public-ccy') === 'USD' ? 'USD' : base));
   const today = todayIn(state.settings.timezone);
@@ -173,9 +226,127 @@ function Ledger({ state }: { state: AppState }) {
     [state, today, ccy, k],
   );
 
+  const config = view.config;
+  const parts = publicParts(config);
+  const heroParts = [
+    parts.has('stats') && (
+            <CardContent key="stats" className="flex flex-col gap-6 @[976px]:flex-row @[976px]:items-end @[976px]:justify-between">
+              <div>
+                <div className="text-sm text-muted-foreground">{t('public.hero.monthly')}</div>
+                <Num value={d.mrr * k} ccy={ccy} prefix={sym} className="mt-1 text-5xl font-semibold tracking-tight tnum sm:text-6xl" />
+                <div className="mt-2 text-[length:var(--fs-2)] text-muted-foreground tnum">
+                  {Math.abs(diff) < 1 ? t('public.hero.flat') : t(diff > 0 ? 'public.hero.more' : 'public.hero.less', { amount: fmt(Math.abs(diff)) })}
+                </div>
+              </div>
+              <dl className="grid grid-cols-3 gap-6 sm:gap-10">
+                <Stat label={t('public.hero.yearly')} value={<Num value={d.mrr * 12 * k} ccy={ccy} prefix={sym} />} />
+                {/* 与下方订阅列表「全部」同一组（含试用、暂停），标题也用列表的标题 */}
+                <Stat label={t('public.list.title')} value={<Num value={d.live.length} />} />
+                <Stat label={t('public.hero.paid', { year: d.first.slice(0, 4) })} value={<Num value={ccy === base ? d.paidBase : d.paidUsd} ccy={ccy} prefix={sym} />} />
+              </dl>
+            </CardContent>
+    ),
+    parts.has('timeline') && (
+            <CardContent key="timeline">
+              {/* 手机上标题与「接下来 30 天」上下排，不把说明挤成三行 */}
+              <div className="mb-2 flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:pr-16">
+                <h2 className="font-medium">{t('public.timeline.title')}</h2>
+                <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">
+                  {rich('public.timeline.upcoming', { count: d.upcoming.length }, { amount: <Num value={d.upcoming.reduce((a, c) => a + c.value, 0) * k} ccy={ccy} prefix={sym} className="text-foreground" /> })}
+                </span>
+              </div>
+              <Timeline today={today} load={loadTimeline} start={firstStart(state, today)} />
+            </CardContent>
+    ),
+    parts.has('chart') && (
+            <Tabs key="chart" defaultValue="paid" className="gap-0">
+              <CardHeader>
+                <CardTitle className="text-sm">{t('public.chart.title')}</CardTitle>
+                <CardDescription className="text-[length:var(--fs-2)]">{t('public.chart.desc')}</CardDescription>
+                <CardAction>
+                  <TabsList>
+                    <TabsTrigger value="paid" className="px-2.5 text-xs">
+                      {t('public.chart.paid')}
+                    </TabsTrigger>
+                    <TabsTrigger value="mrr" className="px-2.5 text-xs">
+                      {t('public.chart.mrr')}
+                    </TabsTrigger>
+                  </TabsList>
+                </CardAction>
+              </CardHeader>
+              <TabsContent value="paid" className="mt-4 px-2 sm:px-4">
+                <PaidChart months={ccy === base ? d.monthsBase : d.monthsUsd} cur={today.slice(0, 7)} ccy={ccy} fmt={fmt} />
+              </TabsContent>
+              <TabsContent value="mrr" className="mt-4 px-2 sm:px-4">
+                <MrrChart data={d.mrrTrend.map((p) => ({ ...p, mrr: p.mrr * k }))} ccy={ccy} fmt={fmt} />
+              </TabsContent>
+            </Tabs>
+    ),
+  ].filter(Boolean);
+  // 没有内容的组件（没有退订、没有买断）不占位，同一行的其他卡片自动补满
+  const blocks: Partial<Record<PublicGridId, React.ReactNode>> = {
+    hero: heroParts.length > 0 && (
+      <Card className={cn(roomy, 'h-full')}>
+        {heroParts.map((part, i) => (
+          <Fragment key={i}>
+            {i > 0 && <Separator />}
+            {part}
+          </Fragment>
+        ))}
+      </Card>
+    ),
+    composition: <Composition cats={d.cats} total={d.mrr} k={k} fmt={fmt} />,
+    fx: <Currencies d={d} ccy={ccy} fmt={fmt} />,
+    list: <SubList d={d} today={today} ccy={ccy} k={k} fmt={fmt} />,
+    ended: d.ended.length > 0 && (
+              <Card className={cn(roomy, 'h-full')}>
+                <CardHeader>
+                  <CardTitle>{t('public.ended.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="-my-1.5">
+                    {d.ended.map((x) => (
+                      <li key={x.sub.id} className="flex items-center gap-3 py-1.5">
+                        <AppIcon sub={x.sub} className="size-7 rounded-md opacity-50 grayscale" />
+                        <span className="min-w-0 flex-1 truncate text-muted-foreground">{clean(x.sub.name)}{effectiveStatus(x.sub, today) === 'terminated' && <Badge variant="secondary" className="ml-2">{t('list.status.terminated')}</Badge>}</span>
+                        <span className="text-right tnum">
+                          <span className="text-[length:var(--fs-2)] text-muted-foreground line-through decoration-muted-foreground/50">{t('public.perMonth', { amount: fmt(x.monthly * k) })}</span>
+                          <span className="ml-3 text-[length:var(--fs-2)] text-muted-foreground">{monthLabel(x.since.slice(0, 7))}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+    ),
+    lifetime: d.lifetime.length > 0 && (
+              <Card className={cn(roomy, 'h-full')}>
+                <CardHeader>
+                  <CardTitle>{t('public.lifetime.title')}</CardTitle>
+                  <CardDescription>{t('public.lifetime.desc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="-my-1.5">
+                    {d.lifetime.map((s) => (
+                      <li key={s.id} className="flex items-center gap-3 py-1.5">
+                        <AppIcon sub={s} className="size-7 rounded-md" />
+                        <span className="min-w-0 flex-1 truncate">{clean(s.name)}</span>
+                        <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">{s.start.slice(0, 4)}</span>
+                        <span className="w-20 text-right tnum">{money(s.price, s.currency)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+    ),
+  };
+  const cells = publicGrid(config).filter((s) => !s.hidden && blocks[s.id]);
+  const desktop = fillRows(cells.map((s) => s.span));
+  const tablet = fillRows(cells.map((s) => tabletSpan(s.span)));
+
   return (
     <Shell
-      avatar={state.settings.avatar}
+      head={{ title: view.title, avatar: view.avatar, bio: config?.bio }}
       right={
         <div className="flex items-center gap-1.5">
           {base !== 'USD' && (
@@ -199,129 +370,15 @@ function Ledger({ state }: { state: AppState }) {
         </div>
       }
     >
-      <div className="grid grid-cols-1 gap-4">
-        {/* 主卡：月支出、未来 30 天、每月扣款 */}
-        <Reveal>
-          <Card className={cn(roomy, 'h-full')}>
-            <CardContent className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div className="text-sm text-muted-foreground">{t('public.hero.monthly')}</div>
-                <Num value={d.mrr * k} ccy={ccy} prefix={sym} className="mt-1 text-5xl font-semibold tracking-tight tnum sm:text-6xl" />
-                <div className="mt-2 text-[length:var(--fs-2)] text-muted-foreground tnum">
-                  {Math.abs(diff) < 1 ? t('public.hero.flat') : t(diff > 0 ? 'public.hero.more' : 'public.hero.less', { amount: fmt(Math.abs(diff)) })}
-                </div>
-              </div>
-              <dl className="grid grid-cols-3 gap-6 sm:gap-10">
-                <Stat label={t('public.hero.yearly')} value={<Num value={d.mrr * 12 * k} ccy={ccy} prefix={sym} />} />
-                {/* 与下方订阅列表「全部」同一组（含试用、暂停），标题也用列表的标题 */}
-                <Stat label={t('public.list.title')} value={<Num value={d.live.length} />} />
-                <Stat label={t('public.hero.paid', { year: d.first.slice(0, 4) })} value={<Num value={ccy === base ? d.paidBase : d.paidUsd} ccy={ccy} prefix={sym} />} />
-              </dl>
-            </CardContent>
-
-            <Separator />
-
-            <CardContent>
-              {/* 手机上标题与「接下来 30 天」上下排，不把说明挤成三行 */}
-              <div className="mb-2 flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:pr-16">
-                <h2 className="font-medium">{t('public.timeline.title')}</h2>
-                <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">
-                  {rich('public.timeline.upcoming', { count: d.upcoming.length }, { amount: <Num value={d.upcoming.reduce((a, c) => a + c.value, 0) * k} ccy={ccy} prefix={sym} className="text-foreground" /> })}
-                </span>
-              </div>
-              <Timeline today={today} load={loadTimeline} start={firstStart(state, today)} />
-            </CardContent>
-
-            <Separator />
-
-            <Tabs defaultValue="paid" className="gap-0">
-              <CardHeader>
-                <CardTitle className="text-sm">{t('public.chart.title')}</CardTitle>
-                <CardDescription className="text-[length:var(--fs-2)]">{t('public.chart.desc')}</CardDescription>
-                <CardAction>
-                  <TabsList>
-                    <TabsTrigger value="paid" className="px-2.5 text-xs">
-                      {t('public.chart.paid')}
-                    </TabsTrigger>
-                    <TabsTrigger value="mrr" className="px-2.5 text-xs">
-                      {t('public.chart.mrr')}
-                    </TabsTrigger>
-                  </TabsList>
-                </CardAction>
-              </CardHeader>
-              <TabsContent value="paid" className="mt-4 px-2 sm:px-4">
-                <PaidChart months={ccy === base ? d.monthsBase : d.monthsUsd} cur={today.slice(0, 7)} ccy={ccy} fmt={fmt} />
-              </TabsContent>
-              <TabsContent value="mrr" className="mt-4 px-2 sm:px-4">
-                <MrrChart data={d.mrrTrend.map((p) => ({ ...p, mrr: p.mrr * k }))} ccy={ccy} fmt={fmt} />
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </Reveal>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Reveal className="h-full">
-            <Composition cats={d.cats} total={d.mrr} k={k} fmt={fmt} />
-          </Reveal>
-          <Reveal className="h-full">
-            <Currencies d={d} ccy={ccy} fmt={fmt} />
-          </Reveal>
-        </div>
-
-        <Reveal>
-          <SubList d={d} today={today} ccy={ccy} k={k} fmt={fmt} />
-        </Reveal>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {d.ended.length > 0 && (
-            <Reveal className="h-full">
-              <Card className={cn(roomy, 'h-full')}>
-                <CardHeader>
-                  <CardTitle>{t('public.ended.title')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="-my-1.5">
-                    {d.ended.map((x) => (
-                      <li key={x.sub.id} className="flex items-center gap-3 py-1.5">
-                        <AppIcon sub={x.sub} className="size-7 rounded-md opacity-50 grayscale" />
-                        <span className="min-w-0 flex-1 truncate text-muted-foreground">{clean(x.sub.name)}{effectiveStatus(x.sub, today) === 'terminated' && <Badge variant="secondary" className="ml-2">{t('list.status.terminated')}</Badge>}</span>
-                        <span className="text-right tnum">
-                          <span className="text-[length:var(--fs-2)] text-muted-foreground line-through decoration-muted-foreground/50">{t('public.perMonth', { amount: fmt(x.monthly * k) })}</span>
-                          <span className="ml-3 text-[length:var(--fs-2)] text-muted-foreground">{monthLabel(x.since.slice(0, 7))}</span>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </Reveal>
-          )}
-          {d.lifetime.length > 0 && (
-            <Reveal className="h-full">
-              <Card className={cn(roomy, 'h-full')}>
-                <CardHeader>
-                  <CardTitle>{t('public.lifetime.title')}</CardTitle>
-                  <CardDescription>{t('public.lifetime.desc')}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="-my-1.5">
-                    {d.lifetime.map((s) => (
-                      <li key={s.id} className="flex items-center gap-3 py-1.5">
-                        <AppIcon sub={s} className="size-7 rounded-md" />
-                        <span className="min-w-0 flex-1 truncate">{clean(s.name)}</span>
-                        <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">{s.start.slice(0, 4)}</span>
-                        <span className="w-20 text-right tnum">{money(s.price, s.currency)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </Reveal>
-          )}
-        </div>
+      <div className="public-grid">
+        {cells.map((s, i) => (
+          <div key={s.id} className="public-cell @container" style={{ '--span-md': tablet[i], '--span-lg': desktop[i] } as React.CSSProperties}>
+            {blocks[s.id]}
+          </div>
+        ))}
       </div>
 
-
+      {parts.has('footer') && (
       <footer className="mt-10 flex items-center justify-between border-t-[0.5px] border-border/70 pt-5 text-[length:var(--fs-2)] text-muted-foreground">
         <a href={PROJECT_URL} className="flex items-center gap-2 transition hover:text-foreground">
           <img src={appPath("/icons/logo.svg")} alt="" className="size-5 rounded-md" />
@@ -332,11 +389,14 @@ function Ledger({ state }: { state: AppState }) {
           <GitHubMark className="size-5" />
         </a>
       </footer>
+      )}
       {/* 页脚下面的订阅堆：继续往下滑才会从屏幕顶端落下来；每个正在付费的订阅一个图标，越贵越大 */}
       {/* 抵消外层的底部留白（pb-12），让图标堆贴着页面最底部 */}
-      <div className="mt-6 -mb-12">
-        <IconPile items={d.live.filter((x) => x.v > 0)} />
-      </div>
+      {parts.has('pile') && (
+        <div className="mt-6 -mb-12">
+          <IconPile items={d.live.filter((x) => x.v > 0)} />
+        </div>
+      )}
     </Shell>
   );
 }
@@ -621,7 +681,7 @@ function SubList({ d, today, ccy, k, fmt }: { d: Derived; today: string; ccy: Cc
             ))}
           </div>
         </div>
-        <ul className="grid gap-x-10 md:grid-cols-2">
+        <ul className="grid gap-x-10 @[720px]:grid-cols-2">
           <AnimatePresence initial={false} mode="popLayout">
             {rows.map(({ s, v }) => (
               <motion.li key={s.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }} className="border-b-[0.5px] border-border/60">

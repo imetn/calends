@@ -304,5 +304,31 @@
       "travel": "Viagem",
       "people": "Pessoas e estudo"
     }
+  },
+  "publicPage": {
+    "title": "Editar página pública",
+    "access": "Acesso público",
+    "back": "Voltar às configurações",
+    "reset": "Restaurar padrão",
+    "leave": "Há alterações não salvas. Sair mesmo assim?",
+    "leaveOk": "Sair",
+    "head": "Cabeçalho",
+    "browserTitle": "Título do navegador",
+    "avatarFollow": "Usar o avatar global",
+    "avatarLinkHint": "Os navegadores dos visitantes acessam este endereço diretamente, então o host dele pode ver o IP deles.",
+    "bio": "Texto",
+    "bioPlaceholder": "Aparece abaixo do título. Mantém as quebras de linha; não é traduzido.",
+    "sections": "Seções",
+    "sectionsFoot": "Arraste para reordenar. As larguras usam uma grade de 12 colunas, e o último cartão de cada linha preenche o restante. Ocultar uma seção só afeta a exibição; para manter uma assinatura totalmente privada, use Assinaturas exibidas.",
+    "heroParts": "Conteúdo do cartão principal",
+    "hero": "Cartão principal",
+    "stats": "Visão geral",
+    "footer": "Rodapé",
+    "pile": "Pilha de assinaturas",
+    "width": "Largura de {name}",
+    "editTab": "Configurações",
+    "previewTab": "Prévia",
+    "desktop": "Computador",
+    "phone": "Celular"
   }
 }

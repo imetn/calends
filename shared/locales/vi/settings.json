@@ -296,5 +296,31 @@
       "travel": "Đi lại",
       "people": "Con người & học tập"
     }
+  },
+  "publicPage": {
+    "title": "Sửa trang công khai",
+    "access": "Truy cập công khai",
+    "back": "Quay lại cài đặt",
+    "reset": "Khôi phục mặc định",
+    "leave": "Có thay đổi chưa lưu. Vẫn rời đi?",
+    "leaveOk": "Rời đi",
+    "head": "Phần đầu",
+    "browserTitle": "Tiêu đề trình duyệt",
+    "avatarFollow": "Dùng ảnh đại diện chung",
+    "avatarLinkHint": "Trình duyệt của khách truy cập gọi trực tiếp địa chỉ này nên máy chủ của nó thấy được IP của họ.",
+    "bio": "Nội dung",
+    "bioPlaceholder": "Hiển thị dưới tiêu đề. Giữ xuống dòng; không đổi theo ngôn ngữ.",
+    "sections": "Thành phần",
+    "sectionsFoot": "Kéo để sắp xếp. Độ rộng theo lưới 12 cột, thẻ cuối mỗi hàng lấp phần còn lại. Ẩn chỉ ảnh hưởng đến hiển thị; để giữ kín hoàn toàn một gói đăng ký, hãy dùng Gói hiển thị.",
+    "heroParts": "Nội dung thẻ chính",
+    "hero": "Thẻ chính",
+    "stats": "Tổng quan",
+    "footer": "Chân trang",
+    "pile": "Chồng gói đăng ký",
+    "width": "Độ rộng của {name}",
+    "editTab": "Cài đặt",
+    "previewTab": "Xem trước",
+    "desktop": "Máy tính",
+    "phone": "Điện thoại"
   }
 }

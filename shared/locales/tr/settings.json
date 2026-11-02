@@ -301,5 +301,31 @@
       "travel": "Seyahat",
       "people": "İnsanlar ve eğitim"
     }
+  },
+  "publicPage": {
+    "title": "Herkese açık sayfayı düzenle",
+    "access": "Herkese açık erişim",
+    "back": "Ayarlara dön",
+    "reset": "Varsayılana döndür",
+    "leave": "Kaydedilmemiş değişiklikler var. Yine de çıkılsın mı?",
+    "leaveOk": "Çık",
+    "head": "Üst bölüm",
+    "browserTitle": "Tarayıcı başlığı",
+    "avatarFollow": "Genel avatarı kullan",
+    "avatarLinkHint": "Ziyaretçilerin tarayıcıları bu adrese doğrudan istek gönderir, bu yüzden sunucusu IP'lerini görebilir.",
+    "bio": "Metin",
+    "bioPlaceholder": "Başlığın altında görünür. Satır sonları korunur; çevrilmez.",
+    "sections": "Bölümler",
+    "sectionsFoot": "Sıralamak için sürükleyin. Genişlikler 12 sütunlu ızgarayı kullanır, satırın son kartı kalan alanı doldurur. Gizlemek yalnızca görünümü etkiler; bir aboneliği tamamen gizli tutmak için Gösterilen abonelikler'i kullanın.",
+    "heroParts": "Ana kart içeriği",
+    "hero": "Ana kart",
+    "stats": "Genel bakış",
+    "footer": "Alt bilgi",
+    "pile": "Abonelik yığını",
+    "width": "{name} genişliği",
+    "editTab": "Ayarlar",
+    "previewTab": "Önizleme",
+    "desktop": "Masaüstü",
+    "phone": "Telefon"
   }
 }
