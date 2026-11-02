@@ -13,7 +13,7 @@ import { CopyImageButton } from './CopyImageButton.tsx';
 import { copyParts } from './copy.tsx';
 import { CatIcon, SubIcon } from './marks.tsx';
 import { Seg, useWidth } from './inputs.tsx';
-import { squarify } from './charts.tsx';
+import { squarify } from '../../../shared/treemap.ts';
 import { tipProps } from './overlays.tsx';
 import { catColor, paletteColor, KIND_BG } from '../derive.ts';
 const perMonth = (amount: string) => t('report.perMonth', { amount });

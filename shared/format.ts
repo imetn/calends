@@ -1,3 +1,4 @@
+import { DAYS_PER_MONTH } from './billing.ts';
 import { LIFETIME_BILL_MONTHS } from './types.ts';
 import { intlLocale, t } from './i18n.ts';
 import { dateFormat, numberFormat, relativeFormat } from './intl.ts';
@@ -213,3 +214,12 @@ export function wholeCurrencies(list: Array<{ amount: number; currency: string }
 }
 export const wholeOpts = (v: number, ccy: string, whole?: Set<string>) =>
   whole?.has(ccy) && Number.isInteger(Math.round(v * 100) / 100) ? { decimals: 0 } : {};
+
+/** 时长：满一年写几年几个月，不足一个月写天数；与详情页同一写法 */
+export function servedSpan(days: number): string {
+  const n = days < 30 ? 0 : Math.round(days / DAYS_PER_MONTH);
+  const years = Math.floor(n / 12);
+  const months = n % 12;
+  if (years) return months ? t('detail.stats.yearsMonths', { years, months }) : t('detail.stats.years', { count: years });
+  return months ? t('detail.stats.months', { count: months }) : t('detail.stats.days', { count: Math.round(days) });
+}

@@ -69,10 +69,14 @@
     "title": "订阅年表"
   },
   "tenure": {
-    "title": "订阅时长"
+    "title": "订阅时长",
+    "avg": "在用订阅平均已持有",
+    "longest": "用得最久"
   },
   "treemap": {
-    "title": "开销方块图"
+    "title": "开销方块图",
+    "desc": "当前每月开销，同色为同一分类",
+    "missing": "{count} 个订阅缺汇率，未计入"
   },
   "changes": {
     "title": "变动记录"
