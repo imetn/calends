@@ -48,6 +48,13 @@
   border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
+/* 移除按钮与胶囊同高，贴在胶囊右端：不再画自己的描边，否则与胶囊描边叠成两圈 */
+.pubs-chip:has(> .pubs-x) {
+  padding-right: 0;
+}
+.icon-btn.pubs-x {
+  box-shadow: none;
+}
 .pubs-name {
   min-width: 0;
   overflow: hidden;

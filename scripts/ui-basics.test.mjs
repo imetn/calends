@@ -1401,3 +1401,10 @@ test('phone report years stay at the left edge when touch exposes the copy actio
   assert.match(phone[2], /order:\s*-1/);
   assert.match(phone[2], /margin-right:\s*auto/);
 });
+
+test('展示的订阅：胶囊里的移除按钮不画自己的描边，贴在胶囊右端', () => {
+  const css = readFileSync(new URL('views/public-subs.css', root), 'utf8');
+  const rule = (sel) => cssRules(css).find(([s]) => s.trim() === sel)?.[1] ?? '';
+  assert.match(rule('.icon-btn.pubs-x'), /box-shadow:\s*none/);
+  assert.match(rule('.pubs-chip:has(> .pubs-x)'), /padding-right:\s*0/);
+});
