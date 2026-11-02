@@ -51,11 +51,6 @@
     "new": "新增",
     "search": "搜尋",
     "upcoming": "即將扣款",
-    "today": "今天",
-    "tomorrow": "明天",
-    "inDays": {
-      "other": "{count} 天後"
-    },
     "theme": "主題",
     "themeHint": "點按切換：淺色 → 深色 → 跟隨系統"
   },

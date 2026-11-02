@@ -51,11 +51,6 @@
     "new": "Baru",
     "search": "Cari",
     "upcoming": "Mendatang",
-    "today": "Hari ini",
-    "tomorrow": "Besok",
-    "inDays": {
-      "other": "{count} hari lagi"
-    },
     "theme": "Tema",
     "themeHint": "Klik untuk beralih: Terang → Gelap → Sistem"
   },

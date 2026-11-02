@@ -24,7 +24,7 @@ import {
   DAYS_PER_MONTH,
 } from './billing.ts';
 import { chargeBaseOrNaN, chargeValue, convertOn, toBaseAt, toBaseOrNaN } from './fx.ts';
-import { cnDate, money } from './format.ts';
+import { cnDateAuto, money } from './format.ts';
 import { intlLocale, t } from './i18n.ts';
 import type { AppState, PaymentMethod, Subscription } from './types.ts';
 import { transferRows, transferredStop } from './transfers.ts';
@@ -711,11 +711,11 @@ export function insights(state: AppState, today: string): Insight[] {
       out.push({
         id: `bal-${m.id}`,
         tone: 'warn',
-        title: t('core.insight.balance.title', { name: m.name, date: cnDate(r.shortfall.date) }),
+        title: t('core.insight.balance.title', { name: m.name, date: cnDateAuto(r.shortfall.date, today) }),
         body: t('core.insight.balance.body', {
           sub: r.shortfall.sub.name,
           need: money(r.shortfall.amount, r.shortfall.currency),
-          current: money(r.current, m.currency),
+          current: money(r.current, m.currency, { compact: true }),
         }),
         methods: [m],
         subs: [r.shortfall.sub],

@@ -51,11 +51,6 @@
     "new": "Mới",
     "search": "Tìm kiếm",
     "upcoming": "Sắp tới",
-    "today": "Hôm nay",
-    "tomorrow": "Ngày mai",
-    "inDays": {
-      "other": "{count} ngày nữa"
-    },
     "theme": "Giao diện",
     "themeHint": "Nhấn để chuyển: Sáng → Tối → Hệ thống"
   },

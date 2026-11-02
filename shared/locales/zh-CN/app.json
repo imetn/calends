@@ -51,11 +51,6 @@
     "new": "新建",
     "search": "搜索",
     "upcoming": "即将扣款",
-    "today": "今天",
-    "tomorrow": "明天",
-    "inDays": {
-      "other": "{count} 天后"
-    },
     "theme": "主题",
     "themeHint": "点击切换：亮色 → 暗色 → 跟随系统"
   },
