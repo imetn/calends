@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   amountTotal,
+  averageLine,
   chargesTotal,
   dueTotal,
   convertedTotal,
@@ -198,4 +199,11 @@ test('top-up plans retain unknown native debits and clamp only the known funding
     assert.ok(p.partial.need.unconverted.XCD > 0);
     if (!knownPart) assert.ok(!formatTotal(p.partial.need, 'USD').includes('$0'));
   }
+});
+
+test('图表平均线：缺汇率的不当 0，不足两笔或每笔相同时不画', () => {
+  assert.equal(averageLine([100, 200, NaN]), 150);
+  assert.equal(averageLine([100, NaN]), undefined);
+  assert.equal(averageLine([68, 68, 68]), undefined);
+  assert.equal(averageLine([]), undefined);
 });

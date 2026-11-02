@@ -23,7 +23,7 @@
   },
   "chart": {
     "title": "Monthly charges",
-    "desc": "Past 12 months and next 3; dashed bars are projected",
+    "desc": "Past 12 months and next 3; hatched bars are projected",
     "paid": "Paid",
     "mrr": "Monthly cost",
     "charge": "Charged",

@@ -359,7 +359,7 @@ export function DepartedToggle({ count, expanded, onToggle }: { count: number; e
 /** 车主自己占的那一座：不收费、不可点，只表明席位 */
 /**
  * 车主自己的迷你时间线：订阅本身的每一期（车主实际付给服务方的扣款），
- * 已扣的为实色，下一期预测为虚框；与成员的收款时间线共用同一条时间轴
+ * 已扣的为实色，下一期预测为斜纹；与成员的收款时间线共用同一条时间轴
  */
 export function OwnerTimeline({ state, s, today, win }: { state: AppState; s: Subscription; today: string; win: { start: string; end: string } }) {
   const charges = chargesBetween(s, addMonths(win.start, -24), win.end, today).filter((c) => !c.kind);

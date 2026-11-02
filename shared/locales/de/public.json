@@ -23,7 +23,7 @@
   },
   "chart": {
     "title": "Monatliche Abbuchungen",
-    "desc": "Letzte 12 und nächste 3 Monate; gestrichelte Balken sind Prognosen",
+    "desc": "Letzte 12 und nächste 3 Monate; schraffierte Balken sind Prognosen",
     "paid": "Bezahlt",
     "mrr": "Monatliche Kosten",
     "charge": "Abgebucht",

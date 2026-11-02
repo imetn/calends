@@ -95,7 +95,7 @@ test('all currency display precision follows the shared rule, including negative
       assert.equal(money(0, ccy, opts), `${symbol(ccy)}0`);
       assert.equal(flow(-19.8, ccy, opts), `−${symbol(ccy)}20`);
     }
-    assert.equal(moneyTick(1470.07, ccy), `${symbol(ccy)}1k`);
+    assert.equal(moneyTick(1470.07, ccy), `${symbol(ccy)}1.5k`);
   }
   for (const ccy of ['USD', 'CNY', 'NGN', 'TRY', 'CHF', 'KWD', 'XXX']) {
     assert.equal(currencyDecimals(ccy), 2, ccy);
@@ -179,4 +179,17 @@ test('month axis ticks snap to calendar boundaries and keep January for the year
   assert.deepEqual(monthTicks(six, 5), [0, 2, 4]);
   // 一个也放不下逐月时退到双月，总留一个刻度
   assert.deepEqual(monthTicks(monthsFrom('2026-02', 2), 1), [1]);
+});
+
+test('整千的金额刻度不带多余的 .0', () => {
+  assert.equal(moneyTick(2000, 'USD'), '$2k');
+  assert.equal(moneyTick(1500, 'USD'), '$1.5k');
+  assert.equal(moneyTick(2000.4, 'USD'), '$2k');
+  assert.equal(moneyTick(2500, 'JPY'), `${symbol('JPY')}2.5k`);
+  assert.equal(moneyTick(30_000_000, 'USD'), '$30M');
+  assert.equal(moneyTick(1950, 'USD'), '$2k');
+  assert.equal(moneyTick(9950, 'USD'), '$10k');
+  assert.equal(moneyTick(999_600, 'USD'), '$1M');
+  assert.equal(moneyTick(999_950_000, 'USD'), '$1B');
+  assert.equal(moneyTick(Number.NaN, 'USD'), '—');
 });

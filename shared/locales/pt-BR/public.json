@@ -23,7 +23,7 @@
   },
   "chart": {
     "title": "Cobranças mensais",
-    "desc": "Últimos 12 meses e próximos 3; barras tracejadas são previsões",
+    "desc": "Últimos 12 meses e próximos 3; barras hachuradas são previsões",
     "paid": "Pago",
     "mrr": "Custo mensal",
     "charge": "Cobrado",

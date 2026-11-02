@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/public/components/ui
 import { TooltipProvider } from '@/public/components/ui/tooltip';
 import { cn } from '@/public/lib/utils';
 import { PROJECT_NAME, PROJECT_URL } from '../../../shared/brand.ts';
+import { HatchPattern } from '../components/hatch.tsx';
 import { IconPile } from './components/icon-pile.tsx';
 import { loadLocale, preferredLocale } from '../i18n.ts';
 
@@ -444,9 +445,11 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 
 function PaidChart({ months, cur, ccy, fmt }: { months: Array<{ m: string; v: number }>; cur: string; ccy: string; fmt: (v: number) => string }) {
   const paidConfig = { v: { label: t('public.chart.charge'), color: 'var(--c1)' } } satisfies ChartConfig;
+  // 与 --bar-radius 同一断点：Recharts 的 radius 只收数字
+  const radius = globalThis.matchMedia?.('(max-width: 700px)').matches ? 4 : 6;
   return (
     <ChartContainer config={paidConfig} className="aspect-auto h-52 w-full">
-      <BarChart data={months} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+      <BarChart data={months} barCategoryGap="50%" margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
         <CartesianGrid strokeWidth={0.5} vertical={false} strokeDasharray="2 4" />
         <XAxis dataKey="m" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={6} tickFormatter={(m: string) => monthTick(m, cur)} />
         <YAxis tickLine={false} axisLine={false} width={44} tickCount={4} tickFormatter={(v: number) => moneyTick(v, ccy)} />
@@ -454,14 +457,16 @@ function PaidChart({ months, cur, ccy, fmt }: { months: Array<{ m: string; v: nu
           cursor={false}
           content={<ChartTooltipContent hideIndicator labelFormatter={(m) => (String(m) > cur ? copyParts(t('public.chart.projected', { month: monthFull(String(m)) })) : monthFull(String(m)))} formatter={(v) => <span className="font-medium tnum">{fmt(Number(v))}</span>} />}
         />
-        <Bar dataKey="v" radius={4} maxBarSize={26}>
+        <defs>
+          <HatchPattern id="pub-hatch" />
+        </defs>
+        <Bar dataKey="v" radius={[radius, radius, 0, 0]} maxBarSize={24}>
           {months.map((x) => (
             <Cell
               key={x.m}
-              fill={x.m === cur ? 'var(--color-v)' : x.m > cur ? 'transparent' : 'color-mix(in srgb, var(--color-v) 70%, var(--card))'}
-              stroke={x.m > cur ? 'var(--color-v)' : undefined}
-              strokeWidth={0.5}
-              strokeDasharray={x.m > cur ? '3 3' : undefined}
+              fill={x.m === cur ? 'var(--color-v)' : x.m > cur ? 'url(#pub-hatch)' : 'color-mix(in srgb, var(--color-v) 70%, var(--card))'}
+              stroke={x.m > cur ? 'var(--unpaid-line)' : undefined}
+              strokeWidth={1}
             />
           ))}
         </Bar>

@@ -1,10 +1,11 @@
 import { DAYS_PER_MONTH } from '../../../shared/billing.ts';
 import type { ReactNode } from 'react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { addMonths, diffDays } from '../../../shared/billing.ts';
 import { cnDate, monthLabel } from '../../../shared/format.ts';
 import { useWidth } from '../components/inputs.tsx';
-import { BAR } from '../components/charts.tsx';
+import { BAR, niceTicks } from '../components/charts.tsx';
+import { HatchPattern } from '../components/hatch.tsx';
 
 export interface ChartBar {
   date: string;
@@ -12,11 +13,11 @@ export interface ChartBar {
   v: number;
   /** 今天之后的预测扣款 */
   future?: boolean;
-  /** 参照值（如用量图的平均每期），画成虚线台阶；汇总柱用组内合计 */
+  /** 参照值（如用量图的平均每期），画成虚线；柱子汇总后取各柱合计的均值 */
   ref?: number;
   /** 属于哪一段方案：只有不同方案的扣款挨在一起时才并排，同一方案的相邻扣款各自一根 */
   phase?: string;
-  /** 首期优惠期间这一笔的原价（同单位）：实际扣的是实色，原价比实际多出的部分画成柱顶的虚框 */
+  /** 首期优惠期间这一笔的原价（同单位）：实际扣的是实色，原价比实际多出的部分画成柱顶的斜纹 */
   full?: number;
 }
 
@@ -32,19 +33,29 @@ export interface ChartLane {
   aside?: ReactNode;
 }
 
-/** 没有纵轴刻度，左右留白相同 */
+/** 窄屏没有纵轴刻度，左右留白相同；够宽时左边留出定宽的刻度列，扣款图和用量图的月份才能对齐 */
 const PAD_L = 14;
+const PAD_AXIS = 60;
 const PAD_R = 14;
+/** 图宽到这个值才画纵轴刻度 */
+const AXIS_MIN_W = 560;
 const LANE = 24;
 /** 柱区高度与顶部留白（留给「今天」标签） */
 const H = 150;
 const T = 18;
-/** 最高柱顶上标数值的一行 */
+/** 窄屏最高柱顶上标数值的一行 */
 const PEAK = 14;
+
+/** 柱形：顶部圆角，底边是直角贴着横轴 */
+function barPath(x: number, y: number, w: number, h: number) {
+  // 窄柱不做成半圆头，圆角跟着柱宽收
+  const r = Math.min(BAR.radius, w * 0.35, h);
+  return `M${x},${y + h}V${y + r}A${r},${r} 0 0 1 ${x + r},${y}H${x + w - r}A${r},${r} 0 0 1 ${x + w},${y + r}V${y + h}Z`;
+}
 
 /**
  * 扣款时间轴：横轴是真实日期，每笔扣款一根柱。今天之前是实际扣款，之后是预测，中间一条「今天」虚线；
- * 下面是各段方案的轨道。不画纵轴刻度，只在最高的柱顶标数值。悬停、点按或手指按住左右滑动时高亮最近的一根并出现明细卡片。
+ * 下面是各段方案的轨道。够宽时画纵轴刻度和网格线，窄屏只在最高的柱顶标数值。悬停、点按或手指按住左右滑动时高亮最近的一根并出现明细卡片。
  */
 export function ChargeBars({
   bars,
@@ -53,6 +64,7 @@ export function ChargeBars({
   today,
   todayLabel,
   fmt,
+  tick,
   lanes,
   tip,
   onBucket,
@@ -64,8 +76,10 @@ export function ChargeBars({
   to: string;
   today: string;
   todayLabel: string;
-  /** 最高柱顶的数值标签，带货币符号或单位 */
+  /** 窄屏最高柱顶的数值标签，带货币符号或单位 */
   fmt: (v: number) => string;
+  /** 纵轴刻度标签：要放进定宽的刻度列，比 fmt 更短 */
+  tick: (v: number, ticks: number[]) => string;
   lanes: ChartLane[];
   tip: (indices: number[], summed: boolean) => ReactNode;
   /** 柱子太密改为按月（1）、季（3）、年（12）汇总时，告诉调用方写一句说明 */
@@ -78,9 +92,12 @@ export function ChargeBars({
   const [box, w] = useWidth();
   const [hover, setHover] = useState<number | null>(null);
 
+  const hatch = `cc-hatch-${useId().replace(/[^a-z0-9]/gi, '')}`;
+  const axis = w >= AXIS_MIN_W;
+  const padL = axis ? PAD_AXIS : PAD_L;
   const span = Math.max(1, diffDays(from, to));
-  const iw = Math.max(1, w - PAD_L - PAD_R);
-  const x = (d: string) => PAD_L + (Math.min(span, Math.max(0, diffDays(from, d))) / span) * iw;
+  const iw = Math.max(1, w - padL - PAD_R);
+  const x = (d: string) => padL + (Math.min(span, Math.max(0, diffDays(from, d))) / span) * iw;
   type Group = { x: number; idx: number[]; future: boolean; stack: boolean };
   // 1) 换方案、换卡、并行方案时，不同方案的两笔相隔 10 天以内：并排放在同一位置，悬停时逐笔列出；
   //    同一方案同一天的几笔（同一天记的几条用量）合成一根实心柱，与提示框、扣款记录按期合计一致，不叠画在一起
@@ -129,12 +146,24 @@ export function ChargeBars({
   const gap = gaps.length ? gaps[Math.floor(gaps.length / 2)] : iw;
   const bw = Math.max(3, Math.min(BAR.max, gap * BAR.ratio));
   const val = (i: number) => (Number.isFinite(bars[i].v) ? Math.max(0, bars[i].v) : 0);
-  const refOf = (g: Group) =>
-    g.idx.every((i) => bars[i].ref != null) ? (g.stack ? Math.max(...g.idx.map((i) => bars[i].ref!)) : g.idx.reduce((a, i) => a + bars[i].ref!, 0)) : undefined;
+  const hasRef = (g: Group) => g.idx.every((i) => bars[i].ref != null);
+  // 汇总后柱子是一段时间的合计，平均线取各柱合计的均值，是一条平线；不汇总时就是每笔的均值
+  const totals = bucket
+    ? groups.filter((g) => hasRef(g) && g.idx.every((i) => Number.isFinite(bars[i].v))).map((g) => g.idx.reduce((a, i) => a + val(i), 0))
+    : [];
+  const bucketRef = totals.length ? totals.reduce((a, b) => a + b, 0) / totals.length : undefined;
+  const refOf = (g: Group) => (hasRef(g) ? (bucket ? bucketRef : Math.max(...g.idx.map((i) => bars[i].ref!))) : undefined);
   // 柱高：汇总柱是合计，并排的几笔各自一根，取其中最高的
   const peakOf = (g: Group) => (g.stack ? Math.max(...g.idx.map(val)) : g.idx.reduce((a, i) => a + val(i), 0));
-  const top = Math.max(0, ...groups.map((g) => Math.max(peakOf(g), refOf(g) ?? 0))) || 1;
-  const y = (v: number) => T + PEAK + (1 - v / top) * (H - T - PEAK - 6);
+  // 首期优惠的原价柱也要放得下
+  const fullOf = (g: Group) => (g.idx.length === 1 ? (bars[g.idx[0]].full ?? 0) : 0);
+  const maxV = Math.max(0, ...groups.map((g) => Math.max(peakOf(g), fullOf(g), refOf(g) ?? 0))) || 1;
+  // 有纵轴时顶端取整齐的刻度，最高一条线有数可读
+  // 全是 0 或都缺汇率时不画刻度，不给没有数据的图造一把尺
+  const ticks = axis && groups.some((g) => peakOf(g) > 0) ? niceTicks(maxV, 3) : [];
+  const top = ticks.length ? ticks[ticks.length - 1] : maxV;
+  const headroom = axis ? 0 : PEAK;
+  const y = (v: number) => T + headroom + (1 - v / top) * (H - T - headroom - 6);
   // 只标已发生的最高一根（缺汇率的不算；全是预测时才标预测）；并列时标最早的一根，离「今天」线远，不挤在一起
   let peak = -1;
   const peakFrom = groups.some((g) => !g.future) ? groups.filter((g) => !g.future) : groups;
@@ -221,7 +250,18 @@ export function ChargeBars({
       {w > 0 && (
         <>
           <svg className="cc-plot" width={w} height={H}>
-            <line className="cc-grid" x1={PAD_L} x2={w - PAD_R} y1={y(0)} y2={y(0)} />
+            <defs>
+              <HatchPattern id={hatch} />
+            </defs>
+            {ticks.map((v) => (
+              <g key={v}>
+                {v > 0 && <line className="cc-grid dash" x1={padL} x2={w - PAD_R} y1={y(v)} y2={y(v)} />}
+                <text className="cc-tk" x={padL - 8} y={y(v) + 4} textAnchor="end">
+                  {tick(v, ticks)}
+                </text>
+              </g>
+            ))}
+            <line className="cc-grid" x1={padL} x2={w - PAD_R} y1={y(0)} y2={y(0)} />
             {groups.map((g, gi) => {
               const on = hover === gi ? 'on' : '';
               // 汇总柱：一根实心柱，高度是这段时间的合计；有一笔缺汇率就画成浅色短块
@@ -232,17 +272,14 @@ export function ChargeBars({
                 const full = g.idx.length === 1 ? bars[g.idx[0]].full : undefined;
                 return (
                   <g key={gi}>
-                    {/* 首期优惠：先画一整根原价高度的未扣柱（与预测同一种虚框样式），实际扣的实色柱从底部涨到它的金额为止 */}
+                    {/* 首期优惠：先画一整根原价高度的未扣柱（与预测同一种斜纹），实际扣的实色柱从底部涨到它的金额为止 */}
                     {ok && full != null && full > sum && (
-                      <rect className={`cc-bar future ${on}`} x={g.x - bw / 2} y={y(full)} width={bw} height={y(0) - y(full)} rx={Math.min(3, bw / 2)} />
+                      <path className={`cc-bar future ${on}`} style={{ fill: `url(#${hatch})` }} d={barPath(g.x - bw / 2, y(full), bw, y(0) - y(full))} />
                     )}
-                    <rect
+                    <path
                       className={`cc-bar ${g.future ? 'future' : ''} ${ok ? '' : 'unknown'} ${on}`}
-                      x={g.x - bw / 2}
-                      y={by}
-                      width={bw}
-                      height={y(0) - by}
-                      rx={Math.min(3, bw / 2)}
+                      style={g.future && ok ? { fill: `url(#${hatch})` } : undefined}
+                      d={barPath(g.x - bw / 2, by, bw, y(0) - by)}
                     />
                   </g>
                 );
@@ -254,14 +291,11 @@ export function ChargeBars({
                 const ok = Number.isFinite(bars[i].v);
                 const by = ok ? Math.min(y(val(i)), y(0) - 2) : y(0) - 4;
                 return (
-                  <rect
+                  <path
                     key={i}
                     className={`cc-bar ${g.future ? 'future' : ''} ${ok ? '' : 'unknown'} ${on}`}
-                    x={g.x - bw / 2 + k * (w1 + 1)}
-                    y={by}
-                    width={w1}
-                    height={y(0) - by}
-                    rx={Math.min(2, w1 / 2)}
+                    style={g.future && ok ? { fill: `url(#${hatch})` } : undefined}
+                    d={barPath(g.x - bw / 2 + k * (w1 + 1), by, w1, y(0) - by)}
                   />
                 );
               });
@@ -284,7 +318,7 @@ export function ChargeBars({
               });
               return d && <path className="cc-ref" d={d} />;
             })()}
-            {peak >= 0 && (
+            {!axis && peak >= 0 && (
               <PeakLabel
                 x={groups[peak].x}
                 y={Math.min(y(peakOf(groups[peak])), y(refOf(groups[peak]) ?? 0)) - 5}
@@ -294,21 +328,21 @@ export function ChargeBars({
               />
             )}
             {showToday && (
-              <text className="cc-today-l" x={tx} y={T - 8} textAnchor={tx > w - PAD_R - 24 ? 'end' : tx < PAD_L + 24 ? 'start' : 'middle'}>
+              <text className="cc-today-l" x={tx} y={T - 8} textAnchor={tx > w - PAD_R - 24 ? 'end' : tx < padL + 24 ? 'start' : 'middle'}>
                 {todayLabel}
               </text>
             )}
           </svg>
           {nLanes > 0 && (
-            <div className="cc-lanes" style={{ height: nLanes * LANE + 4, marginLeft: PAD_L, marginRight: PAD_R }}>
+            <div className="cc-lanes" style={{ height: nLanes * LANE + 4, marginLeft: padL, marginRight: PAD_R }}>
               {lanes.map((l) => {
-                const a = Math.max(PAD_L, x(l.from));
+                const a = Math.max(padL, x(l.from));
                 const b = Math.min(w - PAD_R, x(l.to > to ? to : l.to));
                 return (
                   <div
                     key={l.key}
                     className="cc-lane"
-                    style={{ left: a - PAD_L, width: Math.max(6, b - a), top: l.lane * LANE + 4, '--tint': l.color } as Record<string, string | number>}
+                    style={{ left: a - padL, width: Math.max(6, b - a), top: l.lane * LANE + 4, '--tint': l.color } as Record<string, string | number>}
                   >
                     {b - a > 56 && <b>{b - a > 120 ? l.label : (l.short ?? l.label)}</b>}
                     {l.aside && b - a > 260 && <span>{l.aside}</span>}
@@ -319,9 +353,9 @@ export function ChargeBars({
           )}
           {/* 「今天」一条线从柱区贯穿到方案轨道底部，不分 SVG 与轨道两段画 */}
           {showToday && <i className="cc-today" style={{ left: tx, top: T - 4, height: H - T + 4 + (nLanes > 0 ? nLanes * LANE + 4 : 0) }} />}
-          <div className="cc-xt" style={{ marginLeft: PAD_L, marginRight: PAD_R }}>
+          <div className="cc-xt" style={{ marginLeft: padL, marginRight: PAD_R }}>
             {xt.map((t) => (
-              <span key={t.d} style={{ left: x(t.d) - PAD_L }}>
+              <span key={t.d} style={{ left: x(t.d) - padL }}>
                 {t.label}
               </span>
             ))}

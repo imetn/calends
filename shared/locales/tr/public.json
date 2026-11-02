@@ -23,7 +23,7 @@
   },
   "chart": {
     "title": "Aylık ödemeler",
-    "desc": "Son 12 ay ve sonraki 3 ay; kesikli çubuklar tahmindir",
+    "desc": "Son 12 ay ve sonraki 3 ay; taralı çubuklar tahmindir",
     "paid": "Ödenen",
     "mrr": "Aylık maliyet",
     "charge": "Ödenen tutar",

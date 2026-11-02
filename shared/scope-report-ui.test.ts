@@ -1081,6 +1081,50 @@ test('提醒预览按所有者时区分出今天与最近发送，空预览不�
   assert.equal(r.render('ReminderPreview', { preview: null, timezone: 'UTC' }).length, 0);
 });
 
+test('扣款太密汇总成一根时，平均线是一条平线，不把每笔均值累加成台阶', () => {
+  const r = harness(
+    '../app/src/views/DetailChart.tsx',
+    'ChargeBars',
+    {},
+    {
+      useWidth: () => [null, 700],
+      BAR: { ratio: 0.5, max: 24, radius: 6 },
+      niceTicks: (m: number) => [0, m / 2, m],
+      HatchPattern: () => null,
+      diffDays: billing.diffDays,
+    },
+  );
+  // 10 年月付，共 121 笔，每笔 10 元：宽 700 放不下，按季汇总，最后一季只有 1 笔
+  const bars = Array.from({ length: 121 }, (_, i) => ({
+    date: `${2016 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, '0')}-15`,
+    v: 10,
+    ref: 10,
+    phase: 'p',
+  }));
+  const nodes = r.render('ChargeBars', {
+    bars,
+    from: '2016-01-01',
+    to: '2026-02-01',
+    today: '2026-02-01',
+    todayLabel: '',
+    fmt: String,
+    tick: String,
+    lanes: [],
+    tip: () => null,
+  });
+  const d = all(nodes).find((n) => n.props.className === 'cc-ref')?.props.d as string;
+  assert.ok(d);
+  assert.equal(new Set([...d.matchAll(/[ML][\d.]+,([\d.]+)/g)].map((m) => m[1])).size, 1);
+  // 缺汇率的柱不算进平均线：整 10 年每季都是 30，前一半缺汇率，线高度不变，不会被 0 拉低
+  const props = { from: '2016-01-01', to: '2026-02-01', today: '2026-02-01', todayLabel: '', fmt: String, tick: String, lanes: [], tip: () => null };
+  const yOf = (list: typeof bars) => {
+    const path = all(r.render('ChargeBars', { ...props, bars: list })).find((n) => n.props.className === 'cc-ref')?.props.d as string;
+    return Number(/M[\d.]+,([\d.]+)/.exec(path)![1]);
+  };
+  const whole = bars.slice(0, 120);
+  assert.equal(yOf(whole.map((b, i) => (i < 60 ? { ...b, v: Number.NaN } : b))), yOf(whole));
+});
+
 test('公开页时间线的支出和退款使用同一收支格式，关闭符号后同时移除', () => {
   let load: (from: string, to: string) => any[];
   const captured = new Error('timeline captured');
@@ -4019,7 +4063,7 @@ test('report charts: bar tops carry amounts, money gridlines never repeat', () =
   assert.deepEqual(vals(r.render('BarLine', { ...base, bars, future: bars.map(() => false) })), []);
   // 每格放不下时只标最高的一根
   const many = Array.from({ length: 30 }, (_, i) => (i === 7 ? 9000 : 6000));
-  assert.deepEqual(vals(r.render('BarLine', { ...base, bars: many, future: many.map(() => false), fmt })), ['$9.0k']);
+  assert.deepEqual(vals(r.render('BarLine', { ...base, bars: many, future: many.map(() => false), fmt })), ['$9k']);
   // 走势图的金额刻度：全为 0、小额时也不出现重复标签
   const ticks = (values: number[]) =>
     r

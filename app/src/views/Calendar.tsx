@@ -565,12 +565,12 @@ function MiniReport({ report, base, today, onExpand }: { report: ReturnType<type
           >
             <div className={`cal-mini-bars ${report.months.some((m) => m.partial!.paid.value < 0 || m.partial!.pending.value < 0) ? 'signed' : ''}`}>
               <div className="cal-mini-positive">
-                <i style={{ height: `${(Math.max(0, r.partial!.paid.value) / peak) * 100}%` }} />
-                <i className="forecast" style={{ height: `${(Math.max(0, r.partial!.pending.value) / peak) * 100}%` }} />
+                {r.partial!.paid.value > 0 && <i style={{ height: `${(r.partial!.paid.value / peak) * 100}%` }} />}
+                {r.partial!.pending.value > 0 && <i className="forecast" style={{ height: `${(r.partial!.pending.value / peak) * 100}%` }} />}
               </div>
               <div className="cal-mini-negative">
-                <i style={{ height: `${(Math.max(0, -r.partial!.paid.value) / peak) * 100}%` }} />
-                <i className="forecast" style={{ height: `${(Math.max(0, -r.partial!.pending.value) / peak) * 100}%` }} />
+                {r.partial!.paid.value < 0 && <i style={{ height: `${(-r.partial!.paid.value / peak) * 100}%` }} />}
+                {r.partial!.pending.value < 0 && <i className="forecast" style={{ height: `${(-r.partial!.pending.value / peak) * 100}%` }} />}
               </div>
             </div>
             <small>{monthLabel(r.month, { year: false })}</small>

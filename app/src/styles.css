@@ -2282,9 +2282,19 @@ select.btn {
 }
 .bl-col i {
   width: min(var(--bar-ratio), var(--bar-max));
-  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) var(--radius-sm);
+  border-radius: var(--bar-radius) var(--bar-radius) 0 0;
   background: var(--chart-ink-2);
   min-height: 1px;
+}
+/* 窄屏柱子窄，圆角跟着收，不做成半圆头 */
+@media (max-width: 700px) {
+  :root {
+    --bar-radius: 4px;
+  }
+}
+/* 负值柱从横轴向下长：圆角在下 */
+.bl-col i.neg {
+  border-radius: 0 0 var(--bar-radius) var(--bar-radius);
 }
 /* 柱顶金额：居中贴在柱子上方 */
 .bl-val {
@@ -2302,7 +2312,7 @@ select.btn {
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
-/* 报告「现金与真实成本」里未来几个月的应付：同一种「未扣」虚框样式，见下方 .bl-col.future i */
+/* 报告「现金与真实成本」里未来几个月的应付：同一种「预计」斜纹，见下方 .bl-col.future i */
 
 /* 可点的柱子（报告页点进日历）：去掉按钮自带的样式 */
 button.bl-col {
@@ -3219,7 +3229,7 @@ button.bl-col {
   width: min(var(--bar-ratio), var(--bar-max));
   display: flex;
   flex-direction: column-reverse;
-  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) var(--radius-sm);
+  border-radius: var(--bar-radius) var(--bar-radius) 0 0;
   overflow: hidden;
   min-height: 2px;
   transition:
@@ -3230,32 +3240,17 @@ button.bl-col {
   display: block;
   min-height: 2px;
 }
-/*
- * 还没扣的钱（本月待扣的那一截、未来各月）：全站同一种样子，浅底 + 虚线框（--unpaid-dash 遮罩画的虚线，见 design-tokens.css）
- */
+/* 还没扣的钱（本月待扣的那一截、未来各月）：全站同一种斜纹 + 细边框，见 design-tokens.css；一摞里只有最上面一段圆角 */
 .act-stack i.act-pending,
 .act-col.future .act-stack i,
 .bl-col.future i {
   position: relative;
-  background: var(--unpaid-fill) !important;
-  border-radius: var(--radius-sm);
+  background: var(--unpaid-hatch) !important;
+  box-shadow: var(--unpaid-border);
 }
-:is(.act-stack i.act-pending, .act-col.future .act-stack i, .bl-col.future i)::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--unpaid-line);
-  -webkit-mask: var(--unpaid-dash) 0 0 / 100% 100% no-repeat;
-  mask: var(--unpaid-dash) 0 0 / 100% 100% no-repeat;
-  pointer-events: none;
-}
-/* 待扣在已扣上面：只圆上面两角；虚线框向下多伸一点，底边藏在下面的实色段后面 */
-.act-stack i.act-pending:not(:only-child) {
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-}
-.act-stack i.act-pending:not(:only-child)::after {
-  bottom: -4px;
+.act-stack i.act-pending:last-child,
+.act-col.future .act-stack i:last-child {
+  border-radius: var(--bar-radius) var(--bar-radius) 0 0;
 }
 .act-stack i:not(.act-pending) {
   position: relative;
@@ -6878,8 +6873,8 @@ a.car-toggle {
   mask-image: linear-gradient(90deg, var(--black-a12) calc(100% - 24px), transparent);
 }
 .gt-seg.planned {
-  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c) 55%, transparent) 0 5px, color-mix(in srgb, var(--c) 20%, transparent) 5px 10px);
-  box-shadow: inset 0 0 0 var(--hairline) var(--c);
+  background: var(--unpaid-hatch);
+  box-shadow: var(--unpaid-border);
 }
 .gt-seg em {
   display: block;
@@ -6981,8 +6976,8 @@ a.car-toggle {
   border-radius: var(--radius-sm);
 }
 .gt-legend .lg-planned {
-  background: repeating-linear-gradient(135deg, var(--label-3) 0 2px, transparent 2px 4px);
-  box-shadow: inset 0 0 0 var(--hairline) var(--label-3);
+  background: var(--unpaid-hatch);
+  box-shadow: var(--unpaid-border);
 }
 .gt-legend .lg-gap {
   height: 0;
@@ -7101,6 +7096,9 @@ a.car-toggle {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   box-shadow: none;
+}
+.gt-seg.planned.cut {
+  box-shadow: var(--unpaid-border);
 }
 .gt-seg.cont {
   border-top-left-radius: 0;
@@ -7664,9 +7662,9 @@ a.car-toggle {
   gap: 4px;
 }
 .sy-col i {
-  width: 100%;
-  max-width: 44px;
-  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) var(--radius-sm);
+  width: var(--bar-ratio);
+  max-width: var(--bar-max);
+  border-radius: var(--bar-radius) var(--bar-radius) 0 0;
   background: var(--gray-12);
 }
 .sy-col:last-child i {
@@ -9227,15 +9225,19 @@ a.car-toggle {
 .mt-seg.unused {
   background: var(--gray-8);
 }
-/* 放弃不收的期：浅灰斜纹，和已付的绿色、欠款的红色斜纹都区分开 */
+/* 放弃不收的期：浅灰实底，斜纹只表示预计；和已付的绿色、欠款的红色斜纹都区分开 */
 .mt-seg.waived {
-  background: repeating-linear-gradient(135deg, var(--gray-7) 0 2px, transparent 2px 5px);
+  background: var(--gray-7);
 }
 .mt-seg.due {
   background: repeating-linear-gradient(135deg, var(--red) 0 2px, color-mix(in srgb, var(--red) 25%, transparent) 2px 5px);
 }
 .mt-seg.future {
-  background: repeating-linear-gradient(135deg, var(--gray-8) 0 2px, transparent 2px 5px);
+  background: var(--unpaid-hatch);
+  box-shadow:
+    inset -2px 0 0 var(--card),
+    inset -3px 0 0 var(--unpaid-line),
+    var(--unpaid-border);
 }
 .mt-today {
   position: absolute;
@@ -10530,13 +10532,14 @@ img.mm-flag {
 }
 .rv-cell.waived,
 .rv-cell.free {
-  background: repeating-linear-gradient(135deg, var(--gray-7) 0 2px, transparent 2px 5px);
+  background: var(--gray-7);
 }
 .rv-cell.due {
   background: repeating-linear-gradient(135deg, var(--red) 0 2px, color-mix(in srgb, var(--red) 25%, transparent) 2px 5px);
 }
 .rv-cell.upcoming {
-  background: repeating-linear-gradient(135deg, var(--gray-8) 0 2px, transparent 2px 5px);
+  background: var(--unpaid-hatch);
+  box-shadow: var(--unpaid-border);
 }
 .rv-cell:hover,
 .rv-cell.active {

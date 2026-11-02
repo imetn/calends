@@ -422,21 +422,22 @@
   stroke: var(--sep);
   stroke-width: 0.5;
 }
+.cc-grid.dash {
+  stroke-dasharray: 2 4;
+}
 .cc-tk {
   fill: var(--label-3);
   font-family: var(--mono);
   font-size: var(--fs-1);
 }
-/* 柱：实际扣款实色，预测只描边；缺汇率的画成浅色短柱，不当成 0 */
+/* 柱：实际扣款实色，预测斜纹加细边；缺汇率的画成浅色短柱，不当成 0 */
 .cc-bar {
   fill: var(--chart-ink);
 }
-/* 与 HTML 柱的 --unpaid-dash 同一规格：1.5px 线、3px 段 2px 空 */
+/* 斜纹由 HatchPattern 填充，边框与 HTML 柱的 --unpaid-border 同值 */
 .cc-bar.future {
-  fill: var(--unpaid-fill);
   stroke: var(--unpaid-line);
-  stroke-width: 1.5;
-  stroke-dasharray: 3 2;
+  stroke-width: 1;
 }
 .cc-bar.unknown {
   fill: var(--gray-6);
@@ -446,10 +447,10 @@
 .cc-bar.on {
   opacity: 0.7;
 }
-/* 参照线（用量图的平均每期）：细虚线台阶 */
+/* 参照线（平均每期）：中灰在黑柱和底色上都看得见；金额、用量两张图同一种 */
 .cc-ref {
   fill: none;
-  stroke: var(--dt-warn);
+  stroke: var(--gray-9);
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
 }
@@ -552,17 +553,8 @@
   background: var(--chart-ink);
 }
 .cc-tip-r i.k-f {
-  position: relative;
-  background: var(--unpaid-fill);
-}
-.cc-tip-r i.k-f::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--unpaid-line);
-  -webkit-mask: var(--unpaid-dash) 0 0 / 100% 100% no-repeat;
-  mask: var(--unpaid-dash) 0 0 / 100% 100% no-repeat;
+  background: var(--unpaid-hatch);
+  box-shadow: var(--unpaid-border);
 }
 .cc-tip-r > span {
   flex: 1;
@@ -1016,17 +1008,8 @@
   background: var(--chart-ink);
 }
 .dt-legend i.k-f {
-  position: relative;
-  background: var(--unpaid-fill);
-}
-.dt-legend i.k-f::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--unpaid-line);
-  -webkit-mask: var(--unpaid-dash) 0 0 / 100% 100% no-repeat;
-  mask: var(--unpaid-dash) 0 0 / 100% 100% no-repeat;
+  background: var(--unpaid-hatch);
+  box-shadow: var(--unpaid-border);
 }
 
 /*
