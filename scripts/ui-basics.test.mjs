@@ -1556,7 +1556,7 @@ test('换方案时旧方案默认用到下一次扣款的前一天，不在扣�
   assert.match(src, /addDays\(nextCharge\(last, addDays\(at, 2\)\) \?\? addMonths\(at, 1\), -1\)/);
 });
 
-test('#12 涨跌配色：金额语义色走 gain/loss，红涨绿跌时整体对调', () => {
+test('#12 盈亏配色：金额语义色走 gain/loss，红盈绿亏时整体对调', () => {
   const tokens = readFileSync(new URL('../app/src/design-tokens.css', import.meta.url), 'utf8');
   assert.match(tokens, /--gain: var\(--green\);[\s\S]*--loss: var\(--red\);/);
   assert.match(
@@ -1565,7 +1565,7 @@ test('#12 涨跌配色：金额语义色走 gain/loss，红涨绿跌时整体对
   );
   const pub = readFileSync(new URL('../app/src/public/index.css', import.meta.url), 'utf8');
   assert.match(pub, /--up: var\(--loss\);\s*--down: var\(--gain\);/);
-  // 同一行的圆点、进度条、标签要和金额同色，否则红涨绿跌时一行两种颜色
+  // 同一行的圆点、进度条、标签要和金额同色，否则红盈绿亏时一行两种颜色
   const styles = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
   const detail = readFileSync(new URL('../app/src/views/detail.css', import.meta.url), 'utf8');
   for (const [css, rule] of [
@@ -1573,6 +1573,8 @@ test('#12 涨跌配色：金额语义色走 gain/loss，红涨绿跌时整体对
     [styles, /\.log-dot\.down \{\s*background: var\(--gain\)/],
     [styles, /\.stop-bar > i \{[^}]*background: var\(--loss\)/],
     [styles, /\.gt-unused-amount \{[^}]*color: var\(--loss\)/],
+    [styles, /\.topup-rate em\.up \{\s*color: var\(--loss\)/],
+    [styles, /\.topup-rate em\.down \{\s*color: var\(--gain\)/],
     [detail, /\.dt-kind\.refund,\s*\.dt-kind\.sell \{\s*background: var\(--gain-3\);\s*color: var\(--gain\)/],
     [detail, /\.dt-outcome\.lossy \{\s*background: color-mix\(in srgb, var\(--loss\)/],
   ])

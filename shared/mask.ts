@@ -193,7 +193,6 @@ export function maskForPublic(state: AppState, opts: { untrimmed?: boolean } = {
       // 公开页跟主人的界面语言走；主人跟随浏览器时用后台最近实际用的语言
       language: isLocale(state.settings.language) ? state.settings.language : state.settings.languageSeen,
       gainColor: state.settings.gainColor,
-      collectCurrency: state.settings.collectCurrency,
       publicView: true,
       remindDays: 0,
       monthlyDigest: false,

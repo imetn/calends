@@ -83,7 +83,7 @@
   --accent-soft: var(--indigo-3);
   --red: var(--red-11);
   --green: var(--green-11);
-  /* 涨跌配色：收入、盈余、降价用 gain，亏损、涨价用 loss；设置里选红涨绿跌时对调（html[data-gain='red']） */
+  /* 盈亏配色：收入、盈余、降价用 gain，亏损、涨价用 loss；设置里选红盈绿亏时对调（html[data-gain='red']） */
   --gain: var(--green);
   --gain-3: var(--green-3);
   --loss: var(--red);

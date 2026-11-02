@@ -116,7 +116,7 @@ test('settings allowlist rejects nested secrets, omits all credentials and prese
   assert.throws(() => settingsEdit(st, { baseCurrency: 'ZZZ' }));
 });
 
-test('#12 涨跌配色只接受绿涨红跌或红涨绿跌', () => {
+test('#12 盈亏配色只接受绿盈红亏或红盈绿亏', () => {
   const st = fixture();
   assert.equal(settingsEdit(st, { gainColor: 'red' }).settings.gainColor, 'red');
   assert.throws(() => validateToolInput(SETTINGS_FIELDS, { gainColor: 'blue' }));
