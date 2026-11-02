@@ -144,28 +144,6 @@
   width: 30px !important;
   height: 30px !important;
 }
-/* 悬停提示 */
-.tl-icon::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-size: var(--fs-1);
-  line-height: 1.3;
-  padding: 5px 8px;
-  border-radius: var(--radius-sm);
-  background: var(--tl-fg);
-  color: var(--tl-card);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--duration) var(--ease);
-  z-index: 5;
-}
-.tl-icon:hover::after {
-  opacity: 1;
-}
 .tl-more {
   position: absolute;
   transform: translateX(-50%);
@@ -208,7 +186,7 @@
   color: var(--tl-fg);
 }
 
-/* 按日聚合（稠密时）：当天最大一笔的图标，右下角写当天笔数；提示用下面的 .tl-tip，不用 data-tip */
+/* 按日聚合（稠密时）：当天最大一笔的图标，右下角写当天笔数；提示与单笔一样用下面的 .tl-tip */
 .tl-day.on {
   z-index: 3;
   opacity: 1;

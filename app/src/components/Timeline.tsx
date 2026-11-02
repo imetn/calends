@@ -33,6 +33,8 @@ const DAY = 12;
 const ICON = 30;
 const LEVELS = 3; // 同一处最多往上叠三层，再多的折成「+N」
 const AXIS = 140;
+/** 月份标签与「今天」胶囊的最小中心距（两者都居中于刻度，各约 30–50px 宽） */
+const TODAY_GAP = 52;
 /** 右端：今天往后一年（未来的扣款看一年就够） */
 const AHEAD_MONTHS = 12;
 /** 只挂载视口附近的图标：按这个宽度分块，滚过一块才重新挑选；两侧各留一块余量 */
@@ -269,7 +271,8 @@ export function Timeline({
       >
         <div className="tl-track" style={{ width, '--day': `${DAY}px`, '--mon': `${monday * DAY}px` } as Record<string, string | number>}>
           {months
-            .filter((m) => near(m.x))
+            // 离今天太近的月份标签会被「今天」胶囊盖住，让给今天
+            .filter((m) => near(m.x) && Math.abs(m.x - xOf(today)) >= TODAY_GAP)
             .map((m) => (
               <i key={m.x} className="tl-month" style={{ left: m.x }}>
                 <span>{m.label}</span>
@@ -307,15 +310,24 @@ export function Timeline({
                     <span className="tl-count num">{g.items.length}</span>
                   </button>
                 );
+              // 单笔：悬停 / 聚焦时用同一个浮层提示（只读），点按直接打开详情
+              const one = { date, items: [it] };
               return (
                 <button
                   key={it.key}
                   type="button"
                   data-snapshot-keep
-                  className={`tl-icon copy-tooltip ${date < today ? 'past' : ''}`}
+                  className={`tl-icon ${date < today ? 'past' : ''}`}
                   style={style}
-                  data-tip={`${md(date)}\n${it.name}\n${it.amount}`}
-                  onClick={() => it.onClick?.()}
+                  aria-label={`${md(date)}\n${it.name}\n${it.amount}`}
+                  onMouseEnter={(e) => tip?.pinned || showTip(one, e.currentTarget, false)}
+                  onMouseLeave={() => tip?.pinned || setTip(null)}
+                  onFocus={(e) => tip?.pinned || showTip(one, e.currentTarget, false)}
+                  onBlur={() => tip?.pinned || setTip(null)}
+                  onClick={() => {
+                    setTip(null);
+                    it.onClick?.();
+                  }}
                 >
                   {it.icon}
                 </button>
