@@ -280,6 +280,8 @@
     grid-template-columns: auto auto minmax(0, 1fr);
     grid-template-areas: 'back ico id' 'act act act';
   }
+  /* 名称、标签折成多行时图标与关闭、返回一样贴顶，不在整块中间浮着 */
+  .dt-head > .ico,
   .dt-close,
   .dt-back {
     align-self: start;
