@@ -51,7 +51,18 @@ export function Metric({
         {accessory}
       </div>
       <div className={`metric-value ${valueClassName}`} style={valueStyle}>
-        {value}
+        {/* 纯文本数值只在空格处折行：「−¥4,843.18」的符号与数字、「2027年4月10日」都不从中间断开 */}
+        {typeof value === 'string'
+          ? value.split(/( )/).map((part, i) =>
+              part === ' ' || !part ? (
+                part
+              ) : (
+                <span key={i} className="nowrap">
+                  {part}
+                </span>
+              ),
+            )
+          : value}
       </div>
       {note != null && (
         <div className="metric-note" style={noteStyle}>

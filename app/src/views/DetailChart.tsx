@@ -82,13 +82,18 @@ export function ChargeBars({
   const iw = Math.max(1, w - PAD_L - PAD_R);
   const x = (d: string) => PAD_L + (Math.min(span, Math.max(0, diffDays(from, d))) / span) * iw;
   type Group = { x: number; idx: number[]; future: boolean; stack: boolean };
-  // 1) 换方案、换卡、并行方案时，不同方案的两笔相隔 10 天以内：并排放在同一位置，悬停时逐笔列出
+  // 1) 换方案、换卡、并行方案时，不同方案的两笔相隔 10 天以内：并排放在同一位置，悬停时逐笔列出；
+  //    同一方案同一天的几笔（同一天记的几条用量）合成一根实心柱，与提示框、扣款记录按期合计一致，不叠画在一起
   const near: Group[] = [];
   bars.forEach((b, i) => {
     const last = near[near.length - 1];
     const prev = last && bars[last.idx[last.idx.length - 1]];
-    if (last && prev && !!b.future === last.future && prev.phase !== b.phase && diffDays(prev.date, b.date) <= 10) last.idx.push(i);
-    else near.push({ x: 0, idx: [i], future: !!b.future, stack: true });
+    const same = last && prev && !!b.future === last.future;
+    if (same && last.stack && prev.phase !== b.phase && diffDays(prev.date, b.date) <= 10) last.idx.push(i);
+    else if (same && prev.phase === b.phase && prev.date === b.date && (last.idx.length === 1 || !last.stack)) {
+      last.idx.push(i);
+      last.stack = false;
+    } else near.push({ x: 0, idx: [i], future: !!b.future, stack: true });
   });
   // 2) 太密时（柱距不到 7px）按月、季、年汇总成一根实心柱，柱子代表那段时间的合计，不再分段
   const fit = Math.max(4, Math.floor(iw / 7));
@@ -130,10 +135,11 @@ export function ChargeBars({
   const peakOf = (g: Group) => (g.stack ? Math.max(...g.idx.map(val)) : g.idx.reduce((a, i) => a + val(i), 0));
   const top = Math.max(0, ...groups.map((g) => Math.max(peakOf(g), refOf(g) ?? 0))) || 1;
   const y = (v: number) => T + PEAK + (1 - v / top) * (H - T - PEAK - 6);
-  // 只标最高的一根（缺汇率的不算）；并列时标最近的一根
+  // 只标已发生的最高一根（缺汇率的不算；全是预测时才标预测）；并列时标最早的一根，离「今天」线远，不挤在一起
   let peak = -1;
+  const peakFrom = groups.some((g) => !g.future) ? groups.filter((g) => !g.future) : groups;
   groups.forEach((g, gi) => {
-    if (g.idx.every((i) => Number.isFinite(bars[i].v)) && peakOf(g) > 0 && (peak < 0 || peakOf(g) >= peakOf(groups[peak]))) peak = gi;
+    if (peakFrom.includes(g) && g.idx.every((i) => Number.isFinite(bars[i].v)) && peakOf(g) > 0 && (peak < 0 || peakOf(g) > peakOf(groups[peak]))) peak = gi;
   });
   const cx = groups.map((g) => g.x);
 
@@ -148,6 +154,8 @@ export function ChargeBars({
     if (every >= 12 ? m !== 0 || Number(d.slice(0, 4)) % (every / 12) : m % every) continue;
     xt.push({ d, label: m === 0 ? d.slice(0, 4) : monthLabel(d.slice(0, 7), { year: false }) });
   }
+  // 首末两个刻度同名（一年范围两头都是「11月」）时，第一个带上年份
+  if (xt.length > 1 && xt[0].label === xt[xt.length - 1].label) xt[0].label = monthLabel(xt[0].d.slice(0, 7));
   // 范围不到两个月（新订阅的几次读数）时月份标签不够定位，改写首末两根柱的日期，挨得太近只写最后一根
   if (xt.length < 2 && bars.length) {
     xt.length = 0;
@@ -276,7 +284,15 @@ export function ChargeBars({
               });
               return d && <path className="cc-ref" d={d} />;
             })()}
-            {peak >= 0 && <PeakLabel x={groups[peak].x} y={Math.min(y(peakOf(groups[peak])), y(refOf(groups[peak]) ?? 0)) - 5} w={w} text={fmt(peakOf(groups[peak]))} />}
+            {peak >= 0 && (
+              <PeakLabel
+                x={groups[peak].x}
+                y={Math.min(y(peakOf(groups[peak])), y(refOf(groups[peak]) ?? 0)) - 5}
+                w={w}
+                avoid={showToday ? tx : undefined}
+                text={fmt(peakOf(groups[peak]))}
+              />
+            )}
             {showToday && (
               <text className="cc-today-l" x={tx} y={T - 8} textAnchor={tx > w - PAD_R - 24 ? 'end' : tx < PAD_L + 24 ? 'start' : 'middle'}>
                 {todayLabel}
@@ -321,13 +337,16 @@ export function ChargeBars({
   );
 }
 
-/** 最高柱顶的数值：居中在柱子上方，靠边时按实际宽度收回画布内 */
-function PeakLabel({ x, y, w, text }: { x: number; y: number; w: number; text: string }) {
+/** 最高柱顶的数值：居中在柱子上方，靠边时按实际宽度收回画布内；压到「今天」线时挪到线的柱子那一侧 */
+function PeakLabel({ x, y, w, text, avoid }: { x: number; y: number; w: number; text: string; avoid?: number }) {
   const ref = useRef<SVGTextElement>(null);
   const [half, setHalf] = useState(0);
   useLayoutEffect(() => setHalf((ref.current?.getComputedTextLength() ?? 0) / 2), [text]);
+  const clamp = (v: number) => Math.min(w - half, Math.max(half, v));
+  let cx = clamp(x);
+  if (avoid != null && half > 0 && Math.abs(cx - avoid) < half + 4) cx = clamp(x <= avoid ? avoid - 4 - half : avoid + 4 + half);
   return (
-    <text ref={ref} className="cc-tk" x={Math.min(w - half, Math.max(half, x))} y={y} textAnchor="middle">
+    <text ref={ref} className="cc-tk" x={cx} y={y} textAnchor="middle">
       {text}
     </text>
   );

@@ -231,7 +231,6 @@
     "settled": "Cargado en la tarjeta (opcional)",
     "settledCcy": "Moneda de la tarjeta",
     "settledAmount": "Importe en la tarjeta",
-    "blank": "Dejar en blanco",
     "usageFoot": "Se registra en el periodo de facturación {period}",
     "freezeHint": "Los cobros de esta fase se estiman ahora a partir del ciclo de facturación. Al guardar, los {amount} cobros estimados hasta hoy se convertirán en registros; a partir de entonces, los registros serán la referencia. Los cobros futuros no cambian.",
     "method": "Método de pago",

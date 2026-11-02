@@ -222,7 +222,6 @@
     "settled": "Ditagihkan ke kartu (opsional)",
     "settledCcy": "Mata uang kartu",
     "settledAmount": "Jumlah di kartu",
-    "blank": "Kosongkan",
     "usageFoot": "Dicatat untuk periode tagihan {period}",
     "freezeHint": "Tagihan di fase ini saat ini diperkirakan dari siklus tagihan. Saat disimpan, {amount} tagihan perkiraan hingga hari ini akan diubah menjadi catatan; sejak itu, catatanlah yang menjadi acuan. Tagihan mendatang tidak berubah.",
     "method": "Metode pembayaran",

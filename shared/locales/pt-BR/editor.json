@@ -231,7 +231,6 @@
     "settled": "Cobrado no cartão (opcional)",
     "settledCcy": "Moeda do cartão",
     "settledAmount": "Valor no cartão",
-    "blank": "Deixe em branco",
     "usageFoot": "Registrado no período de cobrança {period}",
     "freezeHint": "As cobranças desta fase hoje são estimadas pelo ciclo de cobrança. Ao salvar, as {amount} cobranças estimadas até hoje viram registros; a partir daí, os registros valem. As cobranças futuras não mudam.",
     "method": "Forma de pagamento",

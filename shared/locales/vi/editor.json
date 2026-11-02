@@ -222,7 +222,6 @@
     "settled": "Số tiền trừ trên thẻ (tùy chọn)",
     "settledCcy": "Tiền tệ của thẻ",
     "settledAmount": "Số tiền trên thẻ",
-    "blank": "Để trống",
     "usageFoot": "Ghi vào kỳ thanh toán {period}",
     "freezeHint": "Các khoản phí trong giai đoạn này hiện được ước tính theo chu kỳ thanh toán. Khi lưu, {amount} khoản phí ước tính tính đến hôm nay sẽ được chuyển thành bản ghi; từ đó trở đi, bản ghi là căn cứ chính. Các khoản phí sắp tới không thay đổi.",
     "method": "Phương thức thanh toán",

@@ -231,7 +231,6 @@
     "settled": "Karttan çekilen (isteğe bağlı)",
     "settledCcy": "Kart para birimi",
     "settledAmount": "Kart tutarı",
-    "blank": "Boş bırakın",
     "usageFoot": "{period} fatura dönemine kaydedilir",
     "freezeHint": "Bu dönemdeki ödemeler şu anda ödeme döneminden tahmin ediliyor. Kaydettiğinizde bugüne kadarki tahmini ödemeler ({amount}) önce kayda dönüştürülür; bundan sonra esas alınan kayıtlardır. Gelecek ödemeler değişmez.",
     "method": "Ödeme yöntemi",
