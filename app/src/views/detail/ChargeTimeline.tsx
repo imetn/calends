@@ -173,7 +173,8 @@ export function Timeline({
   const rows = each;
   if (rows.length < 2) return null;
 
-  const fmt = (v: number) => money(v, ccy, { compact: true });
+  // 最高柱顶的金额：与提示框、扣款记录同一种完整写法
+  const fmt = (v: number) => money(v, ccy);
   // 有用量指标时提示框带上这一笔结算期内的用量（第一个指标，与扣款记录的用量列一致）
   const meter = sub.meters?.[0];
   const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(sub, meter, today) : undefined;

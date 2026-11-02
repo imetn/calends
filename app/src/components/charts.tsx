@@ -183,6 +183,17 @@ export function BarLine({
     tipSet?.(null);
     onPick?.(i);
   };
+  // 手指按住左右滑动：浮窗换到手指下的那根（鼠标靠各柱自己的悬停）
+  const slide = (e: { pointerType: string; clientX: number; currentTarget: HTMLElement }) => {
+    if (e.pointerType === 'mouse' || !n) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const i = Math.min(n - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * n)));
+    const c = (e.currentTarget.children[i] as HTMLElement).getBoundingClientRect();
+    tipSet?.({ x: c.left + c.width / 2, top: c.top, bottom: c.bottom, html: tip(i) });
+    // 滑到哪根停下，再点它就算点中
+    if (armed.current !== i) ready.current = false;
+    armed.current = i;
+  };
   const Col = onPick ? 'button' : 'div';
   const step = Math.max(1, Math.ceil(n / Math.min(12, Math.max(2, Math.floor(w / 44) || 12))));
   // 柱顶金额：每格放得下就每根都标，放不下只标最高的一根
@@ -193,7 +204,7 @@ export function BarLine({
   const shown = (i: number) => !!vals[i] && (fits || i === top);
   return (
     <div className="barline" ref={box} style={{ height: height + 22 }}>
-      <div className="bl-bars" style={{ height }}>
+      <div className="bl-bars" style={{ height }} onPointerMove={slide}>
         {bars.map((v, i) => (
           <Col
             key={i}

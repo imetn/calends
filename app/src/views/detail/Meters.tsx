@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Settings2 } from 'lucide-react';
-import { addDays, isPostpaid, midDay, uid, type Charge } from '../../../../shared/billing.ts';
+import { addDays, diffDays, isPostpaid, midDay, uid, type Charge } from '../../../../shared/billing.ts';
 import { chargesTotal, formatTotal } from '../../../../shared/fx-total.ts';
-import { cnDateFull, monthLabel, weekdayOf } from '../../../../shared/format.ts';
+import { cnDateFull, weekdayOf } from '../../../../shared/format.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
 import { numberFormat } from '../../../../shared/intl.ts';
 import { meterStats, meterSuggestions, meterSummary, replaceMeters, type MeterRow } from '../../../../shared/meters.ts';
@@ -12,7 +12,6 @@ import { ConfirmButton } from '../../components/ConfirmButton.tsx';
 import { DatePicker } from '../../components/DatePicker.tsx';
 import { Panel } from '../../components/DetailKit.tsx';
 import { Picker } from '../../components/Picker.tsx';
-import { BarLine } from '../../components/charts.tsx';
 import { ChargeBars } from '../DetailChart.tsx';
 import { ChargeTip, chargeUsage, unitMoney, withUnit } from './ChargeTip.tsx';
 import { NumInput, Seg, useSubmit } from '../../components/inputs.tsx';
@@ -23,12 +22,6 @@ import { run } from '../../toast.ts';
 
 /** 平均值是算出来的，按量级留小数：307.2 度、3.47 GB */
 const avgQty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: Math.abs(n) >= 100 ? 1 : 2 }).format(n);
-/** 刻度标数：轴顶过十万才用紧凑写法（2.5万、1.2亿），同一根轴写法一致，不会出现 5,000 与 1万 混排、两个 2万 */
-const compactQty = (n: number, top = n) =>
-  numberFormat(
-    intlLocale(),
-    top >= 100000 ? { notation: 'compact', maximumFractionDigits: 1 } : { maximumFractionDigits: top >= 100 ? 0 : top >= 10 ? 1 : 2 },
-  ).format(n);
 const priceText = (r: MeterRow, unit: string) => unitMoney(r.unitPrice!, r.cost!.currency, unit);
 
 /**
@@ -160,6 +153,11 @@ export function Meters({
   // 用量柱画在它那一期 (since, date] 的中间，与后付费的费用柱同一位置；按画的位置筛进横轴范围，免得首根柱压在纵轴刻度上
   const barDate = (r: MeterRow) => (r.since ? midDay(addDays(r.since, 1), r.reading.date) : r.reading.date);
   const trend = axis ? used.filter((r) => r.reading.date >= axis.since && barDate(r) >= axis.from && r.reading.date <= axis.to) : used.slice(-24);
+  // 没有费用图时横轴取这些读数自己的日期范围（延到今天），两头各留一点
+  const first = trend.length ? barDate(trend[0]) : today;
+  const last = trend.length && barDate(trend[trend.length - 1]) > today ? barDate(trend[trend.length - 1]) : today;
+  const pad = Math.max(2, Math.round(diffDays(first, last) * 0.04));
+  const range = axis ?? { from: addDays(first, -pad), to: addDays(last, pad) };
   // 提示框与费用走势同一套样式：标题行日期，逐行列用量、费用、单价；平均每期已在指标卡里，不再重复
   const tipOf = (i: number) => {
     const r = trend[i];
@@ -217,17 +215,16 @@ export function Meters({
             )}
           </div>
         )}
-        {/* 走势：横线是平均每期。有费用图时与它同一条日期横轴、同一个范围；否则画最近 24 期 */}
-        {trend.length > 1 &&
-          (axis ? (
+        {/* 走势：虚线是平均每期。有费用图时与它同一条日期横轴、同一个范围；否则画最近 24 期 */}
+        {trend.length > 1 && (
             <ChargeBars
               bars={trend.map((r) => ({ date: barDate(r), v: r.usage!, ref: stats.average }))}
-              from={axis.from}
-              to={axis.to}
+              from={range.from}
+              to={range.to}
               today={today}
               todayLabel={t('calendar.today')}
               midMonth={isPostpaid(sub)}
-              fmt={compactQty}
+              fmt={(v) => withUnit(v, cur.unit)}
               lanes={[]}
               onPick={ro ? undefined : (idx) => idx.length === 1 && setReading({ id: trend[idx[0]].reading.id })}
               tip={(idx, summed) =>
@@ -254,17 +251,7 @@ export function Meters({
                 )
               }
             />
-          ) : (
-            <BarLine
-              bars={trend.map((r) => r.usage!)}
-              line={trend.map(() => stats.average ?? 0)}
-              future={trend.map(() => false)}
-              labels={trend.map((r) => monthLabel(r.reading.date.slice(0, 7), { year: false }))}
-              fmt={(v) => compactQty(v, Math.max(...trend.map((r) => r.usage!)))}
-              tip={tipOf}
-              onPick={ro ? undefined : (i) => setReading({ id: trend[i].reading.id })}
-            />
-          ))}
+        )}
         {/* 指标在顶部，这里只有走势；画不出时留一句说明，不留空卡 */}
         {trend.length <= 1 && <p className="muted dt-meters-none">{t('detail.meters.noTrend')}</p>}
       </div>

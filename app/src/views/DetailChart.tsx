@@ -2,7 +2,7 @@ import { DAYS_PER_MONTH } from '../../../shared/billing.ts';
 import type { ReactNode } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { addMonths, diffDays } from '../../../shared/billing.ts';
-import { monthLabel } from '../../../shared/format.ts';
+import { cnDate, monthLabel } from '../../../shared/format.ts';
 import { useWidth } from '../components/inputs.tsx';
 import { BAR } from '../components/charts.tsx';
 
@@ -32,23 +32,19 @@ export interface ChartLane {
   aside?: ReactNode;
 }
 
-const PAD_L = 44;
+/** 没有纵轴刻度，左右留白相同 */
+const PAD_L = 14;
 const PAD_R = 14;
 const LANE = 24;
 /** 柱区高度与顶部留白（留给「今天」标签） */
 const H = 150;
 const T = 18;
-
-/** 刻度取 1、2、2.5、5 × 10ⁿ，让 4 格左右正好盖住最大值 */
-function niceStep(max: number) {
-  const raw = max / 4;
-  const p = 10 ** Math.floor(Math.log10(raw || 1));
-  return ([1, 2, 2.5, 5, 10].find((m) => m * p >= raw) ?? 10) * p;
-}
+/** 最高柱顶上标数值的一行 */
+const PEAK = 14;
 
 /**
  * 扣款时间轴：横轴是真实日期，每笔扣款一根柱。今天之前是实际扣款，之后是预测，中间一条「今天」虚线；
- * 下面是各段方案的轨道。悬停（或手指按住拖动）时高亮最近的一根并出现明细卡片。
+ * 下面是各段方案的轨道。不画纵轴刻度，只在最高的柱顶标数值。悬停、点按或手指按住左右滑动时高亮最近的一根并出现明细卡片。
  */
 export function ChargeBars({
   bars,
@@ -68,8 +64,8 @@ export function ChargeBars({
   to: string;
   today: string;
   todayLabel: string;
-  /** 刻度标签；第二个参数是轴顶，同一根轴的写法（如要不要用万）按它统一定 */
-  fmt: (v: number, top: number) => string;
+  /** 最高柱顶的数值标签，带货币符号或单位 */
+  fmt: (v: number) => string;
   lanes: ChartLane[];
   tip: (indices: number[], summed: boolean) => ReactNode;
   /** 柱子太密改为按月（1）、季（3）、年（12）汇总时，告诉调用方写一句说明 */
@@ -130,20 +126,15 @@ export function ChargeBars({
   const val = (i: number) => (Number.isFinite(bars[i].v) ? Math.max(0, bars[i].v) : 0);
   const refOf = (g: Group) =>
     g.idx.every((i) => bars[i].ref != null) ? (g.stack ? Math.max(...g.idx.map((i) => bars[i].ref!)) : g.idx.reduce((a, i) => a + bars[i].ref!, 0)) : undefined;
-  const max =
-    Math.max(
-      0,
-      ...groups.map((g) =>
-        Math.max(
-          g.idx.reduce((a, i) => a + val(i), 0),
-          refOf(g) ?? 0,
-        ),
-      ),
-    ) || 1;
-  const step = niceStep(max * 1.08);
-  const top = Math.ceil((max * 1.08) / step) * step;
-  const y = (v: number) => T + (1 - v / top) * (H - T - 6);
-  const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
+  // 柱高：汇总柱是合计，并排的几笔各自一根，取其中最高的
+  const peakOf = (g: Group) => (g.stack ? Math.max(...g.idx.map(val)) : g.idx.reduce((a, i) => a + val(i), 0));
+  const top = Math.max(0, ...groups.map((g) => Math.max(peakOf(g), refOf(g) ?? 0))) || 1;
+  const y = (v: number) => T + PEAK + (1 - v / top) * (H - T - PEAK - 6);
+  // 只标最高的一根（缺汇率的不算）；并列时标最近的一根
+  let peak = -1;
+  groups.forEach((g, gi) => {
+    if (g.idx.every((i) => Number.isFinite(bars[i].v)) && peakOf(g) > 0 && (peak < 0 || peakOf(g) >= peakOf(groups[peak]))) peak = gi;
+  });
   const cx = groups.map((g) => g.x);
 
   // 月份刻度：间隔按宽度挑，最多约每 90px 一个。后付费的柱子画在所属周期中间，标签也写在那个月中间（15 日），
@@ -157,6 +148,14 @@ export function ChargeBars({
     if (every >= 12 ? m !== 0 || Number(d.slice(0, 4)) % (every / 12) : m % every) continue;
     xt.push({ d, label: m === 0 ? d.slice(0, 4) : monthLabel(d.slice(0, 7), { year: false }) });
   }
+  // 范围不到两个月（新订阅的几次读数）时月份标签不够定位，改写首末两根柱的日期，挨得太近只写最后一根
+  if (xt.length < 2 && bars.length) {
+    xt.length = 0;
+    const a = bars[groups[0].idx[0]].date;
+    const b = bars[groups[groups.length - 1].idx[0]].date;
+    if (x(b) - x(a) >= 80) xt.push({ d: a, label: cnDate(a) });
+    xt.push({ d: b, label: cnDate(b) });
+  }
 
   const nLanes = lanes.reduce((m, l) => Math.max(m, l.lane + 1), 0);
   const nearest = (e: React.PointerEvent) => {
@@ -165,8 +164,13 @@ export function ChargeBars({
     for (let i = 1; i < cx.length; i++) if (Math.abs(cx[i] - px) < Math.abs(cx[best] - px)) best = i;
     return best;
   };
+  // 鼠标移动、手指按住左右滑动都换到最近的一根
   const onMove = (e: React.PointerEvent) => {
-    if (bars.length) setHover(nearest(e));
+    if (!bars.length) return;
+    const i = nearest(e);
+    // 滑到别的柱子后抬手不算点那一根
+    if (i !== hover) ready.current = false;
+    setHover(i);
   };
   // 与 BarLine 一致：鼠标点一下就触发；触屏第一下先看浮窗，按住的还是同一根再点才触发
   const ready = useRef(false);
@@ -176,6 +180,15 @@ export function ChargeBars({
     ready.current = e.pointerType === 'mouse' || hover === i;
     setHover(i);
   };
+  // 触屏抬手后浮窗留着，点图表以外的地方才收起
+  useEffect(() => {
+    if (hover == null) return;
+    const off = (e: PointerEvent) => {
+      if (!box.current?.contains(e.target as Node)) setHover(null);
+    };
+    document.addEventListener('pointerdown', off);
+    return () => document.removeEventListener('pointerdown', off);
+  }, [hover != null]);
   const hx = hover != null ? cx[hover] : 0;
   // 提示框放在悬停柱的另一侧；窄屏两侧都放不下时贴着图表边缘，不越出卡片
   const tipRef = useRef<HTMLDivElement>(null);
@@ -194,20 +207,13 @@ export function ChargeBars({
       ref={box}
       onPointerMove={onMove}
       onPointerDown={onDown}
-      onPointerLeave={() => setHover(null)}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && setHover(null)}
       onClick={onPick && (() => ready.current && hover != null && onPick(groups[hover].idx))}
     >
       {w > 0 && (
         <>
           <svg className="cc-plot" width={w} height={H}>
-            {ticks.map((v) => (
-              <g key={v}>
-                <line className="cc-grid" x1={PAD_L} x2={w - PAD_R} y1={y(v)} y2={y(v)} />
-                <text className="cc-tk" x={PAD_L - 8} y={y(v) + 3.5} textAnchor="end">
-                  {fmt(v, top)}
-                </text>
-              </g>
-            ))}
+            <line className="cc-grid" x1={PAD_L} x2={w - PAD_R} y1={y(0)} y2={y(0)} />
             {groups.map((g, gi) => {
               const on = hover === gi ? 'on' : '';
               // 汇总柱：一根实心柱，高度是这段时间的合计；有一笔缺汇率就画成浅色短块
@@ -270,6 +276,7 @@ export function ChargeBars({
               });
               return d && <path className="cc-ref" d={d} />;
             })()}
+            {peak >= 0 && <PeakLabel x={groups[peak].x} y={Math.min(y(peakOf(groups[peak])), y(refOf(groups[peak]) ?? 0)) - 5} w={w} text={fmt(peakOf(groups[peak]))} />}
             {showToday && <line className="cc-today" x1={tx} x2={tx} y1={T - 4} y2={H} />}
             {showToday && (
               <text className="cc-today-l" x={tx} y={T - 8} textAnchor={tx > w - PAD_R - 24 ? 'end' : tx < PAD_L + 24 ? 'start' : 'middle'}>
@@ -311,5 +318,17 @@ export function ChargeBars({
         </>
       )}
     </div>
+  );
+}
+
+/** 最高柱顶的数值：居中在柱子上方，靠边时按实际宽度收回画布内 */
+function PeakLabel({ x, y, w, text }: { x: number; y: number; w: number; text: string }) {
+  const ref = useRef<SVGTextElement>(null);
+  const [half, setHalf] = useState(0);
+  useLayoutEffect(() => setHalf((ref.current?.getComputedTextLength() ?? 0) / 2), [text]);
+  return (
+    <text ref={ref} className="cc-tk" x={Math.min(w - half, Math.max(half, x))} y={y} textAnchor="middle">
+      {text}
+    </text>
   );
 }
