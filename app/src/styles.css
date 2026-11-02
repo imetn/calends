@@ -926,6 +926,7 @@ a {
     height: 24px;
   }
   .cal-icons {
+    justify-content: center;
     justify-content: safe center;
     margin-top: 0;
     max-width: 100%;

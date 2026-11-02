@@ -115,9 +115,7 @@ export function MemberRows({
                 <span className="muted car-member-exempt">{t('family.pool.exempt')}</span>
               ) : d.periodsOwed > 0 ? (
                 // 欠多少写多少（各期合计），与卡片的「N 人待收」和人员页同一口径；不是下一期的金额
-                <b className="car-member-due">
-                  {d.originals ? formatTotal(dueTotal(state, d), state.settings.baseCurrency, { main: true }) : money(d.owed, d.currency)}
-                </b>
+                <b className="car-member-due">{d.originals ? formatTotal(dueTotal(state, d), state.settings.baseCurrency) : money(d.owed, d.currency)}</b>
               ) : (
                 <span className="muted">{t('family.pool.settled')}</span>
               )}

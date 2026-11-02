@@ -1522,3 +1522,23 @@ test('弹窗里的支付方式弹层自己选方向并限高，翻上去也不�
   assert.match(mp, /maxHeight=\{fit\?\.maxHeight\}/);
   assert.match(rulesFor('.pop-shell > .dp-pop.fit:not(.mobile)'), /max-height:\s*inherit/);
 });
+
+test('合租成员行的欠款缺汇率时写出原币部分，不悄悄少算', () => {
+  const src = readFileSync(new URL('views/carpool/Members.tsx', root), 'utf8');
+  assert.match(src, /formatTotal\(dueTotal\(state, d\), state\.settings\.baseCurrency\)/);
+});
+
+test('包在 label 里的日期选择器点空白处只开一次月历', () => {
+  const src = readFileSync(new URL('components/DatePicker.tsx', root), 'utf8');
+  assert.match(src, /if \(e\.target !== e\.currentTarget\) return;\s*\/\/[^\n]*\n\s*e\.preventDefault\(\);\s*toggle\(\);/);
+});
+
+test('扣款图的整价判断看全部扣款，不随所选范围变化', () => {
+  const src = readFileSync(new URL('views/detail/ChargeTimeline.tsx', root), 'utf8');
+  assert.match(src, /wholeCurrencies\(\s*\[\.\.\.reg, \.\.\.future\]/);
+});
+
+test('同一天合成的用量柱点开最后一条读数', () => {
+  const src = readFileSync(new URL('views/detail/Meters.tsx', root), 'utf8');
+  assert.match(src, /new Set\(idx\.map\(\(i\) => barDate\(trend\[i\]\)\)\)\.size === 1/);
+});

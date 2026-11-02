@@ -222,7 +222,12 @@ export function DatePicker({
         <span
           ref={trigger}
           className={`dp-btn ${draft ? '' : 'empty'} ${open ? 'open' : ''} ${error ? 'invalid' : ''}`}
-          onClick={(e) => e.target === e.currentTarget && toggle()}
+          onClick={(e) => {
+            if (e.target !== e.currentTarget) return;
+            // 包在 <label> 里时阻止 label 再把点击转给内层按钮，否则月历开了又立刻关上
+            e.preventDefault();
+            toggle();
+          }}
         >
           <button type="button" className="dp-open" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
             <Icon name="cal" />

@@ -175,7 +175,8 @@ export function Timeline({
 
   // 最高柱顶的金额：与提示框、扣款记录同一种写法（某币种全是整数时不写 .00）
   const whole = wholeCurrencies(history);
-  const wholeChart = wholeCurrencies(each.map((r) => ({ amount: r.v, currency: ccy })));
+  // 整价判断看全部扣款与预测，不随所选范围变化，与扣款记录同一份数据
+  const wholeChart = wholeCurrencies([...reg, ...future].map((c) => ({ amount: ccy === base ? chargeValue(state, c, base) : c.amount, currency: ccy })));
   const fmt = (v: number) => money(v, ccy, wholeOpts(v, ccy, wholeChart));
   const spent = (total: FxTotal) => formatTotal(total, ccy, { direction: -1, ...(wholeChart.has(ccy) ? { decimals: 0 } : {}) });
   // 有用量指标时提示框带上这一笔结算期内的用量（第一个指标，与扣款记录的用量列一致）

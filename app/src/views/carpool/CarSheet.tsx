@@ -164,7 +164,7 @@ export function CarSheet({
               {/* 小字是当年盈亏，与列表的「当年盈亏」同一口径；买断的车也有今年的账 */}
               <span>
                 {tx('family.strip.thisYear', {
-                  amount: <span className="nowrap">{formatTotal(carYear(state, s, today).partial.net, base, { direction: 1, compact: true })}</span>,
+                  amount: <span className="nowrap">{formatTotal(carYear(state, s, today).partial.net, base, { direction: 1 })}</span>,
                 })}
               </span>
             </div>

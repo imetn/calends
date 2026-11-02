@@ -234,7 +234,12 @@ export function Meters({
             midMonth={isPostpaid(sub)}
             fmt={(v) => withUnit(v, cur.unit, q)}
             lanes={[]}
-            onPick={ro ? undefined : (idx) => idx.length === 1 && setReading({ id: trend[idx[0]].reading.id })}
+            onPick={
+              ro
+                ? undefined
+                : // 同一天合成的一根柱打开最后一条读数；按月、季汇总的柱不对应某一条，不打开
+                  (idx) => new Set(idx.map((i) => barDate(trend[i]))).size === 1 && setReading({ id: trend[idx[idx.length - 1]].reading.id })
+            }
             tip={(idx, summed) =>
               summed && idx.length > 1 ? (
                 <>
