@@ -88,10 +88,34 @@
     }
   },
   "changes": {
-    "title": "Changes"
+    "title": "Changes",
+    "more": "Show all ({n})",
+    "less": "Show less",
+    "kind": {
+      "added": "New",
+      "resumed": "Resumed",
+      "buy": "Bought outright",
+      "up": "Price up",
+      "down": "Price down",
+      "switch": "Switched region or plan",
+      "stopped": "Stopped",
+      "paused": "Paused"
+    }
   },
   "waterfall": {
-    "title": "Monthly change"
+    "title": "Monthly change",
+    "prev": "Previous month",
+    "next": "Next month",
+    "from": "Start",
+    "added": "New",
+    "expansion": "Price up",
+    "contraction": "Price down",
+    "churned": "Stopped",
+    "fx": "FX",
+    "to": "Now",
+    "monthEnd": "End",
+    "axisFrom": "Axis starts at {amount}",
+    "incomplete": "Missing exchange rates, can't draw the chart"
   },
   "metric": {
     "monthly": "Monthly spend",
