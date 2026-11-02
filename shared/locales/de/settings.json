@@ -358,6 +358,105 @@
     "editTab": "Einstellungen",
     "previewTab": "Vorschau",
     "desktop": "Desktop",
-    "phone": "Smartphone"
+    "phone": "Smartphone",
+    "library": {
+      "metrics": "Zahlen",
+      "charts": "Diagramme",
+      "lists": "Listen und Zeit",
+      "bottom": "Seitenende"
+    },
+    "hintDrag": "Komponente auf die Seite ziehen oder anklicken, um sie unten einzufügen.",
+    "hintTap": "Tippen, um unten auf der Seite einzufügen.",
+    "backToLibrary": "Zurück zu den Komponenten",
+    "metricCard": "Kennzahlkarte",
+    "template": "Stil",
+    "metricData": "Angezeigte Daten",
+    "addMetric": "Weiteren Wert hinzufügen",
+    "widget": {
+      "stats": {
+        "name": "Übersicht",
+        "desc": "Monatliche Ausgaben und wichtige Zahlen"
+      },
+      "number": {
+        "name": "Zahl",
+        "desc": "Eine Zahl, groß dargestellt"
+      },
+      "trend": {
+        "name": "Trend",
+        "desc": "Eine Zahl mit Sparkline"
+      },
+      "compare": {
+        "name": "Vergleich",
+        "desc": "Gegenüber dem Vorjahreszeitraum"
+      },
+      "share": {
+        "name": "Anteil",
+        "desc": "Anteil an den monatlichen Ausgaben"
+      },
+      "rows": {
+        "name": "Zeilen",
+        "desc": "Bis zu 4 Zahlen zusammen"
+      },
+      "chart": {
+        "name": "Balkendiagramm",
+        "desc": "Monatliche Abbuchungen und Ausgabentrend"
+      },
+      "composition": {
+        "name": "Zusammensetzung",
+        "desc": "Ausgaben nach Kategorie"
+      },
+      "treemap": {
+        "name": "Treemap",
+        "desc": "Die Fläche zeigt die Höhe der Ausgaben"
+      },
+      "waterfall": {
+        "name": "Monatliche Veränderung",
+        "desc": "Was neu, teurer oder gekündigt wurde"
+      },
+      "fx": {
+        "name": "Währungen",
+        "desc": "Währungsanteile und Kursbewegungen"
+      },
+      "timeline": {
+        "name": "Zeitleiste",
+        "desc": "Abbuchungen Tag für Tag"
+      },
+      "calendar": {
+        "name": "Kalender",
+        "desc": "An welchen Tagen abgebucht wird"
+      },
+      "years": {
+        "name": "Abo-Zeitleiste",
+        "desc": "Wann welches Abo lief"
+      },
+      "list": {
+        "name": "Abo-Liste",
+        "desc": "Alles, was in Gebrauch ist"
+      },
+      "tenure": {
+        "name": "Abo-Dauer",
+        "desc": "Durchschnitt und längste Laufzeit"
+      },
+      "changes": {
+        "name": "Änderungen",
+        "desc": "Neu, Preisänderung und beendet"
+      },
+      "ended": {
+        "name": "Gekündigt",
+        "desc": "Was gekündigt wurde und der Preis"
+      },
+      "lifetime": {
+        "name": "Einmalkauf",
+        "desc": "Einmalige Käufe"
+      },
+      "footer": {
+        "name": "Fußzeile",
+        "desc": "Projektname und Version"
+      },
+      "pile": {
+        "name": "Symbolhaufen",
+        "desc": "Symbole, die am Seitenende herabfallen"
+      }
+    }
   }
 }

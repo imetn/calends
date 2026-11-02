@@ -1,18 +1,21 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { cycleLabel, diffDays, durationLabel, priceAt } from '../../../../shared/billing.ts';
 import { cnDate, cnDateFull, money } from '../../../../shared/format.ts';
 import { ganttTicks, yearsTimeline, type YearsBar, type YearsRow } from '../../../../shared/gantt.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
 import { syncCategories } from '../../derive.ts';
 import { AppIcon } from '@/public/components/app-icon';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/public/components/ui/card';
-import { clean, shade, Tip, TipBody, useWidth } from './lib.tsx';
+import { Card, CardContent, CardHeader, CardTitle } from '@/public/components/ui/card';
+import { spendingMap } from '../../../../shared/treemap.ts';
+import { CategoryLegend, clean, shade, Tip, TipBody, useWidth } from './lib.tsx';
 import type { WidgetProps } from './props.ts';
 
-const ROW = 28;
-const BAR = 14;
+const ROW = 26;
+const BAR = 8;
 /** 并行的阶段往下错开一条 */
-const LANE = 18;
+const LANE = 12;
+/** 订阅多时不让年表占满整页：先看用得最久的这些 */
+const FOLDED = 12;
 
 export function YearsCard({ state, today }: WidgetProps) {
   const timeline = useMemo(() => yearsTimeline(state.subscriptions, today), [state.subscriptions, today]);
@@ -21,22 +24,23 @@ export function YearsCard({ state, today }: WidgetProps) {
     <Card className="h-full">
       <CardHeader>
         <CardTitle>{t('public.years.title')}</CardTitle>
-        <CardDescription>{t('public.years.desc')}</CardDescription>
       </CardHeader>
       <CardContent>
-        <Chart timeline={timeline} categories={syncCategories(state).map((c) => c.name)} today={today} />
+        <Chart timeline={timeline} categories={[...new Set([...spendingMap(state, today).groups.map((g) => g.name), ...syncCategories(state).map((c) => c.name)])]} today={today} />
       </CardContent>
     </Card>
   );
 }
 
 function Chart({ timeline, categories, today }: { timeline: ReturnType<typeof yearsTimeline>; categories: string[]; today: string }) {
-  const { rows, start, end, ongoing } = timeline;
+  const { rows: all, start, end, ongoing } = timeline;
+  const [open, setOpen] = useState(false);
+  const rows = open ? all : all.slice(0, FOLDED);
   const [track, width] = useWidth<HTMLDivElement>();
   const days = Math.max(1, diffDays(start, end));
   const pct = (d: string) => `${Math.min(100, Math.max(0, (diffDays(start, d) / days) * 100))}%`;
   const ticks = ganttTicks('all', start, end, width, intlLocale());
-  const used = categories.filter((c) => rows.some((r) => r.s.category === c));
+  const used = categories.filter((c) => all.some((r) => r.s.category === c));
   const colorOf = (category: string) => shade(used.indexOf(category) < 0 ? 99 : used.indexOf(category));
   return (
     <div className="[--lw:1.75rem] @[440px]:[--lw:8rem] @[720px]:[--lw:11rem]">
@@ -72,22 +76,14 @@ function Chart({ timeline, categories, today }: { timeline: ReturnType<typeof ye
           </div>
         </div>
       ))}
-      {used.length > 1 && (
-        <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[length:var(--fs-1)] text-muted-foreground">
-          {used.slice(0, 5).map((c, i) => (
-            <li key={c} className="flex min-w-0 items-center gap-1.5">
-              <i className="size-2.5 shrink-0 rounded-md" style={{ background: shade(i) }} />
-              <span className="truncate">{c}</span>
-            </li>
-          ))}
-          {used.length > 5 && (
-            <li className="flex items-center gap-1.5">
-              <i className="size-2.5 shrink-0 rounded-md" style={{ background: shade(5) }} />
-              {t('public.composition.other')}
-            </li>
-          )}
-        </ul>
-      )}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <CategoryLegend names={used} />
+        {all.length > FOLDED && (
+          <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="rounded-sm text-[length:var(--fs-2)] text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-(--focus-ring)">
+            {open ? t('public.changes.less') : t('public.changes.more', { n: all.length })}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -113,19 +109,19 @@ function Bar({ row, bar, color, left, right }: { row: YearsRow; bar: YearsBar; c
   );
   const aria = `${name} ${lifetime && !span ? cnDateFull(bar.from) : range}`;
   // 点按目标撑到整行高，条本身仍是细的
-  const hit = 'absolute cursor-default transition-opacity outline-none before:absolute before:-inset-y-[7px] before:inset-x-0 hover:opacity-80 focus-visible:ring-2 focus-visible:ring-(--focus-ring)';
+  const hit = 'absolute cursor-default transition-opacity outline-none before:absolute before:-inset-y-[9px] before:inset-x-0 hover:opacity-80 focus-visible:ring-2 focus-visible:ring-(--focus-ring)';
   if (lifetime)
     return (
       <>
         {span > 0 && <i className="pointer-events-none absolute h-0.5 rounded-sm opacity-55" style={{ left, width: extent(left, right), top: top + BAR / 2 - 1, background: color }} />}
         <Tip content={tip}>
-          <button type="button" aria-label={aria} className={`${hit} size-3.5 -translate-x-1/2 rounded-full`} style={{ left, top, background: color }} />
+          <button type="button" aria-label={aria} className={`${hit} size-2 -translate-x-1/2 rounded-full`} style={{ left, top, background: color }} />
         </Tip>
       </>
     );
   return (
     <Tip content={tip}>
-      <button type="button" aria-label={aria} className={`${hit} rounded-full`} style={{ left, width: extent(left, right), minWidth: 6, height: BAR, top, background: color }} />
+      <button type="button" aria-label={aria} className={`${hit} rounded-full`} style={{ left, width: extent(left, right), minWidth: 4, height: BAR, top, background: color }} />
     </Tip>
   );
 }

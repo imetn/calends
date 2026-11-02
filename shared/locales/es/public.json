@@ -67,5 +67,69 @@
   "titleAnon": "Suscripciones",
   "pile": {
     "label": "Tus suscripciones apiladas: cuanto más grande, más cuesta"
+  },
+  "calendar": {
+    "title": "Calendario"
+  },
+  "years": {
+    "title": "Cronología de suscripciones"
+  },
+  "tenure": {
+    "title": "Tiempo suscrito",
+    "avg": "Tiempo medio de las suscripciones activas",
+    "longest": "Más tiempo mantenida"
+  },
+  "treemap": {
+    "title": "Mapa de gasto",
+    "missing": {
+      "one": "{count} suscripción sin tipo de cambio no está incluida",
+      "other": "{count} suscripciones sin tipo de cambio no están incluidas"
+    }
+  },
+  "changes": {
+    "title": "Cambios",
+    "more": "Ver todo ({n})",
+    "less": "Ver menos",
+    "kind": {
+      "added": "Nueva",
+      "resumed": "Reanudada",
+      "buy": "Compra única",
+      "up": "Subida de precio",
+      "down": "Bajada de precio",
+      "switch": "Cambio de región o plan",
+      "stopped": "Detenida",
+      "paused": "En pausa"
+    }
+  },
+  "waterfall": {
+    "title": "Cambio mensual",
+    "prev": "Mes anterior",
+    "next": "Mes siguiente",
+    "from": "Inicio",
+    "added": "Nuevas",
+    "expansion": "Subida de precio",
+    "contraction": "Bajada de precio",
+    "churned": "Detenidas",
+    "fx": "Cambio",
+    "to": "Ahora",
+    "monthEnd": "Fin de mes",
+    "incomplete": "Faltan tipos de cambio, no se puede dibujar el gráfico"
+  },
+  "metric": {
+    "monthly": "Gasto mensual",
+    "yearly": "Al año",
+    "active": "Suscripciones activas",
+    "avgPerSub": "Promedio por suscripción",
+    "paidTotal": "Total pagado",
+    "paidYear": "Pagado este año",
+    "paidMonth": "Pagado este mes",
+    "next30": "Próximos 30 días",
+    "topSub": "La más cara",
+    "topCategory": "Categoría principal",
+    "endedCount": "Canceladas",
+    "lifetimeCount": "Pago único",
+    "fxEffect": "Efecto del tipo de cambio (mensual)",
+    "vsPrev": "vs. año pasado",
+    "shareOf": "Proporción del gasto mensual"
   }
 }

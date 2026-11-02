@@ -67,5 +67,69 @@
   "titleAnon": "Assinaturas",
   "pile": {
     "label": "Suas assinaturas empilhadas — quanto maior, mais custa"
+  },
+  "calendar": {
+    "title": "Calendário"
+  },
+  "years": {
+    "title": "Linha do tempo de assinaturas"
+  },
+  "tenure": {
+    "title": "Tempo de assinatura",
+    "avg": "Tempo médio das assinaturas ativas",
+    "longest": "Mantida por mais tempo"
+  },
+  "treemap": {
+    "title": "Mapa de gastos",
+    "missing": {
+      "one": "{count} assinatura sem taxa de câmbio não foi incluída",
+      "other": "{count} assinaturas sem taxa de câmbio não foram incluídas"
+    }
+  },
+  "changes": {
+    "title": "Alterações",
+    "more": "Mostrar tudo ({n})",
+    "less": "Mostrar menos",
+    "kind": {
+      "added": "Nova",
+      "resumed": "Retomada",
+      "buy": "Compra única",
+      "up": "Aumento de preço",
+      "down": "Redução de preço",
+      "switch": "Troca de região ou plano",
+      "stopped": "Encerrada",
+      "paused": "Pausada"
+    }
+  },
+  "waterfall": {
+    "title": "Variação mensal",
+    "prev": "Mês anterior",
+    "next": "Próximo mês",
+    "from": "Início",
+    "added": "Novas",
+    "expansion": "Aumento de preço",
+    "contraction": "Redução de preço",
+    "churned": "Encerradas",
+    "fx": "Câmbio",
+    "to": "Agora",
+    "monthEnd": "Fim do mês",
+    "incomplete": "Faltam taxas de câmbio, não é possível desenhar o gráfico"
+  },
+  "metric": {
+    "monthly": "Gasto mensal",
+    "yearly": "Por ano",
+    "active": "Assinaturas ativas",
+    "avgPerSub": "Média por assinatura",
+    "paidTotal": "Total pago",
+    "paidYear": "Pago este ano",
+    "paidMonth": "Pago este mês",
+    "next30": "Próximos 30 dias",
+    "topSub": "Mais cara",
+    "topCategory": "Maior categoria",
+    "endedCount": "Canceladas",
+    "lifetimeCount": "Compra única",
+    "fxEffect": "Efeito cambial (mensal)",
+    "vsPrev": "vs. ano passado",
+    "shareOf": "Participação no gasto mensal"
   }
 }

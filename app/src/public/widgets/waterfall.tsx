@@ -1,21 +1,13 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts';
-import { monthLabel, moneyTick } from '../../../../shared/format.ts';
+import { monthLabel } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { signedMoney, stepMonth, waterfallFirstMonth, waterfallMonth, type WaterfallStep } from '../../../../shared/public-changes.ts';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/public/components/ui/card';
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/public/components/ui/chart';
 import { cn } from '@/public/lib/utils';
 import type { WidgetProps } from './props.ts';
 
 const isTotal = (s: WaterfallStep) => s.id === 'from' || s.id === 'to';
-
-const fill = (s: WaterfallStep) => {
-  if (s.id === 'from') return 'color-mix(in srgb, var(--color-range) 70%, var(--card))';
-  if (s.id === 'to') return 'var(--color-range)';
-  return s.value > 0 ? 'var(--up)' : 'var(--down)';
-};
 
 /** 月度变化：上月 → 各项增减 → 期末；增减同时有 + − 号和文字，不只靠颜色 */
 export function WaterfallCard({ state, today, ccy, fmt }: WidgetProps) {
@@ -28,10 +20,13 @@ export function WaterfallCard({ state, today, ccy, fmt }: WidgetProps) {
 
   const name = (s: WaterfallStep) => t(`public.waterfall.${s.id === 'to' && month !== cur ? 'monthEnd' : s.id}`);
   const text = (s: WaterfallStep) => (isTotal(s) ? fmt(s.value) : signedMoney(s.value, ccy));
-  const config = { range: { label: t('public.waterfall.title'), color: 'var(--c1)' } } satisfies ChartConfig;
-  const data = wf.steps.map((s) => ({ step: s, label: name(s), value: text(s), range: [isTotal(s) ? wf.floor : s.low, s.high] }));
-  // 与 PaidChart 同一断点：Recharts 的 radius 只收数字
-  const radius = globalThis.matchMedia?.('(max-width: 700px)').matches ? 4 : 6;
+  // 只画增减：总额写数字，条不用截断纵轴。条按累计走势错开，一眼看出先涨后跌
+  const moves = wf.steps.filter((s) => !isTotal(s));
+  const lo = Math.min(...moves.map((s) => s.low));
+  const peak = Math.max(...wf.steps.map((s) => Math.abs(s.value)));
+  // 分母至少是总额的五分之一：只有一笔小变动时不铺满整行
+  const span = Math.max(Math.max(...moves.map((s) => s.high)) - lo, peak / 5) || 1;
+  const pos = (v: number) => `${((v - lo) / span) * 100}%`;
 
   return (
     <Card className="h-full">
@@ -49,31 +44,18 @@ export function WaterfallCard({ state, today, ccy, fmt }: WidgetProps) {
       </CardHeader>
       <CardContent>
         {wf.complete ? (
-          <ChartContainer config={config} className="aspect-auto h-44 w-full">
-            <BarChart data={data} barCategoryGap="25%" margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
-              <CartesianGrid strokeWidth={0.5} vertical={false} strokeDasharray="2 4" />
-              <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={2} />
-              <YAxis tickLine={false} axisLine={false} width={44} tickCount={4} domain={[wf.floor, 'auto']} tickFormatter={(v: number) => moneyTick(v, ccy)} />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent hideIndicator labelFormatter={(_, p) => p?.[0]?.payload?.label} formatter={(_v, _n, item) => <span className="font-medium tnum">{item.payload.value}</span>} />} />
-              <Bar dataKey="range" radius={[radius, radius, 0, 0]} maxBarSize={40} isAnimationActive={false}>
-                {data.map((d) => (
-                  <Cell key={d.step.id} fill={fill(d.step)} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ChartContainer>
+          <dl className="flex flex-col gap-2">
+            {wf.steps.map((s) => (
+              <div key={s.id} className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 @[420px]:grid-cols-[5rem_minmax(0,1fr)_auto]">
+                <dt className="truncate text-[length:var(--fs-2)] text-muted-foreground">{name(s)}</dt>
+                <div className="relative h-2">{!isTotal(s) && <i className="absolute inset-y-0 min-w-0.5 rounded-sm" style={{ left: pos(s.low), width: `calc(${pos(s.high)} - ${pos(s.low)})`, background: s.value > 0 ? 'var(--up)' : 'var(--down)' }} />}</div>
+                <dd className={cn('text-right tnum', isTotal(s) ? 'font-medium' : s.value > 0 ? 'text-up' : 'text-down')}>{text(s)}</dd>
+              </div>
+            ))}
+          </dl>
         ) : (
-          <p className="flex h-44 items-center justify-center text-center text-[length:var(--fs-2)] text-muted-foreground">{t('public.waterfall.incomplete')}</p>
+          <p className="py-6 text-center text-[length:var(--fs-2)] text-muted-foreground">{t('public.waterfall.incomplete')}</p>
         )}
-        <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--fs-2)]">
-          {wf.steps.map((s) => (
-            <div key={s.id} className="flex items-baseline gap-1.5">
-              <dt className="text-muted-foreground">{name(s)}</dt>
-              <dd className={cn('font-medium tnum', !isTotal(s) && Number.isFinite(s.value) && (s.value > 0 ? 'text-up' : 'text-down'))}>{text(s)}</dd>
-            </div>
-          ))}
-        </dl>
-        {wf.floor > 0 && <p className="mt-1 text-[length:var(--fs-2)] text-muted-foreground tnum">{t('public.waterfall.axisFrom', { amount: moneyTick(wf.floor, ccy) })}</p>}
       </CardContent>
     </Card>
   );

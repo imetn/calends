@@ -59,8 +59,6 @@ export interface WaterfallMonth {
   steps: WaterfallStep[];
   /** 期初、期末、汇率影响都算得出来才画图 */
   complete: boolean;
-  /** 纵轴起点：变化相对总额太小时不从 0 画，否则变化量只剩细线 */
-  floor: number;
 }
 
 /** 最早能翻到的月份；没有周期订阅时为 undefined */
@@ -68,15 +66,6 @@ export function waterfallFirstMonth(state: AppState, today: string): string | un
   const starts = state.subscriptions.filter((s) => !s.proxy && s.cycle.unit !== 'lifetime').flatMap((s) => [s.start, ...(s.phases ?? []).map((p) => p.start)]);
   const first = starts.filter((d) => d <= today).sort()[0];
   return first?.slice(0, 7);
-}
-
-function axisFloor(levels: number[]): number {
-  const lo = Math.min(...levels);
-  const hi = Math.max(...levels);
-  const span = hi - lo;
-  if (span < 1 || lo < hi / 2) return 0;
-  const unit = 10 ** Math.floor(Math.log10(span));
-  return Math.max(0, Math.floor((lo - span / 2) / unit) * unit);
 }
 
 /** 上月末 → 新增 → 涨价 → 降价 → 取消 → 汇率 → 期末；为 0 的项不出现，各项相加等于期末。往月按月末汇率 */
@@ -100,7 +89,7 @@ export function waterfallMonth(state: AppState, month: string, today: string, cc
     level = next;
   }
   steps.push({ id: 'to', value: mv.to, low: 0, high: mv.to });
-  return { month, steps, complete, floor: complete ? axisFloor(steps.flatMap((s) => (s.id === 'from' || s.id === 'to' ? [s.value] : [s.low, s.high]))) : 0 };
+  return { month, steps, complete };
 }
 
 export const stepMonth = (month: string, by: number) => addMonths(`${month}-01`, by).slice(0, 7);

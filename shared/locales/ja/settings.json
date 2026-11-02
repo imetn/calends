@@ -340,6 +340,105 @@
     "editTab": "設定",
     "previewTab": "プレビュー",
     "desktop": "デスクトップ",
-    "phone": "スマホ"
+    "phone": "スマホ",
+    "library": {
+      "metrics": "数値",
+      "charts": "グラフ",
+      "lists": "リストと期間",
+      "bottom": "ページ下部"
+    },
+    "hintDrag": "コンポーネントをページにドラッグするか、クリックして下部に追加します。",
+    "hintTap": "タップしてページ下部に追加します。",
+    "backToLibrary": "コンポーネントに戻る",
+    "metricCard": "指標カード",
+    "template": "スタイル",
+    "metricData": "表示するデータ",
+    "addMetric": "値をもう1つ追加",
+    "widget": {
+      "stats": {
+        "name": "概要",
+        "desc": "毎月の支出と主な数値"
+      },
+      "number": {
+        "name": "数値",
+        "desc": "1つの数値を大きく表示"
+      },
+      "trend": {
+        "name": "推移",
+        "desc": "数値とスパークライン"
+      },
+      "compare": {
+        "name": "比較",
+        "desc": "前年同期との比較"
+      },
+      "share": {
+        "name": "割合",
+        "desc": "毎月の支出に占める割合"
+      },
+      "rows": {
+        "name": "複数行",
+        "desc": "最大4つの数値をまとめて表示"
+      },
+      "chart": {
+        "name": "棒グラフ",
+        "desc": "毎月の請求額と支出の推移"
+      },
+      "composition": {
+        "name": "内訳",
+        "desc": "カテゴリ別の支出"
+      },
+      "treemap": {
+        "name": "ツリーマップ",
+        "desc": "面積で支出額を表示"
+      },
+      "waterfall": {
+        "name": "月ごとの変動",
+        "desc": "追加・値上げ・解約の増減"
+      },
+      "fx": {
+        "name": "通貨",
+        "desc": "通貨の割合とレートの変動"
+      },
+      "timeline": {
+        "name": "タイムライン",
+        "desc": "日ごとの請求"
+      },
+      "calendar": {
+        "name": "カレンダー",
+        "desc": "請求される日"
+      },
+      "years": {
+        "name": "サブスク年表",
+        "desc": "各サブスクの利用期間"
+      },
+      "list": {
+        "name": "サブスク一覧",
+        "desc": "利用中のすべて"
+      },
+      "tenure": {
+        "name": "契約期間",
+        "desc": "平均と最長"
+      },
+      "changes": {
+        "name": "変更履歴",
+        "desc": "追加・値上げ・停止"
+      },
+      "ended": {
+        "name": "解約済み",
+        "desc": "解約したものと元の価格"
+      },
+      "lifetime": {
+        "name": "買い切り",
+        "desc": "一括払いのソフト"
+      },
+      "footer": {
+        "name": "フッター",
+        "desc": "プロジェクト名とバージョン"
+      },
+      "pile": {
+        "name": "アイコンの山",
+        "desc": "ページ下部に落ちるアイコン"
+      }
+    }
   }
 }

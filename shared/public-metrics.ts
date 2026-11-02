@@ -29,6 +29,8 @@ export interface MetricValue {
   prev?: number;
   /** 占比的分母 */
   total?: number;
+  /** 有正负之分的差额：写出 + − 号 */
+  signed?: boolean;
 }
 
 /** 算不出来的（缺汇率）保持 NaN，由界面显示占位，不当成 0 */
@@ -39,7 +41,7 @@ export function metricValues(m: MetricInputs): Record<PublicMetricId, MetricValu
     monthly: money(m.mrr, { series: m.mrrSeries, prev: m.yearAgoMrr }),
     yearly: money(m.mrr * 12, { prev: m.yearAgoMrr * 12 }),
     active: count(m.active),
-    avgPerSub: money(m.active ? m.mrr / m.active : 0),
+    avgPerSub: money(m.active ? m.mrr / m.active : NaN),
     paidTotal: money(m.paidTotal),
     paidYear: money(m.paidYear, { prev: m.paidYearPrev }),
     paidMonth: money(m.paidMonth, { series: m.paidSeries, prev: m.paidMonthPrev }),
@@ -48,6 +50,6 @@ export function metricValues(m: MetricInputs): Record<PublicMetricId, MetricValu
     topCategory: money(m.topCategory?.v ?? 0, { name: m.topCategory?.name, total: m.mrr }),
     endedCount: count(m.ended),
     lifetimeCount: count(m.lifetime),
-    fxEffect: money(m.fxEffect),
+    fxEffect: money(m.fxEffect, { signed: true }),
   };
 }

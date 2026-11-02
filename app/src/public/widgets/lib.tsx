@@ -1,12 +1,28 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { flow } from '../../../../shared/format.ts';
+import { t } from '../../../../shared/i18n.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/public/components/ui/tooltip';
 
-/** 公开页去掉名字里的国旗 emoji，地区另有标签（与 page.tsx 同口径） */
+/** 公开页去掉名字里的国旗 emoji，地区另有标签 */
 export const clean = (name: string) => name.replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, ' ').replace(/\s+/g, ' ').trim();
 
-/** 分类色的固定顺序（与「构成」卡同口径）：第五个之后都是最后一档 */
-export const shade = (i: number) => `var(--c${[1, 4, 5, 6, 7][i] ?? 9})`;
+/** 分类色的固定顺序：前四个各一色，「其他」是中性灰 */
+export const shade = (i: number) => `var(--c${[1, 4, 5, 6][i] ?? 9})`;
+
+export function CategoryLegend({ names }: { names: string[] }) {
+  if (names.length < 2) return null;
+  const items = names.length > 5 ? [...names.slice(0, 4), t('public.composition.other')] : names;
+  return (
+    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[length:var(--fs-1)] text-muted-foreground">
+      {items.map((c, i) => (
+        <li key={c} className="flex min-w-0 items-center gap-1.5">
+          <i className="size-2.5 shrink-0 rounded-md" style={{ background: shade(i) }} />
+          <span className="truncate">{c}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /** 一笔支出：缺汇率时 value 是 NaN，显示「—」；不足 10 的保留分，免得出现 ¥0 */
 export const outflow = (value: number, ccy: string) => flow(-value, ccy, { decimals: Math.abs(value) < 10 ? 2 : 0 });

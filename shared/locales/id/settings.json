@@ -340,6 +340,105 @@
     "editTab": "Pengaturan",
     "previewTab": "Pratinjau",
     "desktop": "Desktop",
-    "phone": "Ponsel"
+    "phone": "Ponsel",
+    "library": {
+      "metrics": "Angka",
+      "charts": "Grafik",
+      "lists": "Daftar dan waktu",
+      "bottom": "Bagian bawah halaman"
+    },
+    "hintDrag": "Seret komponen ke halaman, atau klik untuk menambahkannya di bawah.",
+    "hintTap": "Ketuk untuk menambahkan di bawah halaman.",
+    "backToLibrary": "Kembali ke komponen",
+    "metricCard": "Kartu metrik",
+    "template": "Gaya",
+    "metricData": "Data yang ditampilkan",
+    "addMetric": "Tambah nilai lain",
+    "widget": {
+      "stats": {
+        "name": "Ringkasan",
+        "desc": "Pengeluaran bulanan dan angka utama"
+      },
+      "number": {
+        "name": "Angka",
+        "desc": "Satu angka, tampil besar"
+      },
+      "trend": {
+        "name": "Tren",
+        "desc": "Angka dengan sparkline"
+      },
+      "compare": {
+        "name": "Perbandingan",
+        "desc": "Dibanding periode yang sama tahun lalu"
+      },
+      "share": {
+        "name": "Porsi",
+        "desc": "Porsi dari pengeluaran bulanan"
+      },
+      "rows": {
+        "name": "Baris",
+        "desc": "Hingga 4 angka sekaligus"
+      },
+      "chart": {
+        "name": "Grafik batang",
+        "desc": "Tagihan bulanan dan tren pengeluaran"
+      },
+      "composition": {
+        "name": "Komposisi",
+        "desc": "Pengeluaran per kategori"
+      },
+      "treemap": {
+        "name": "Treemap",
+        "desc": "Luas menunjukkan besar pengeluaran"
+      },
+      "waterfall": {
+        "name": "Perubahan bulanan",
+        "desc": "Yang ditambah, naik harga, atau dibatalkan"
+      },
+      "fx": {
+        "name": "Mata uang",
+        "desc": "Porsi mata uang dan pergerakan kurs"
+      },
+      "timeline": {
+        "name": "Linimasa",
+        "desc": "Tagihan hari demi hari"
+      },
+      "calendar": {
+        "name": "Kalender",
+        "desc": "Hari-hari yang ditagih"
+      },
+      "years": {
+        "name": "Linimasa langganan",
+        "desc": "Kapan setiap langganan berjalan"
+      },
+      "list": {
+        "name": "Daftar langganan",
+        "desc": "Semua yang sedang dipakai"
+      },
+      "tenure": {
+        "name": "Lama berlangganan",
+        "desc": "Rata-rata dan terlama"
+      },
+      "changes": {
+        "name": "Perubahan",
+        "desc": "Ditambah, berubah harga, dan dihentikan"
+      },
+      "ended": {
+        "name": "Dibatalkan",
+        "desc": "Yang dibatalkan dan harganya"
+      },
+      "lifetime": {
+        "name": "Sekali bayar",
+        "desc": "Pembelian sekali bayar"
+      },
+      "footer": {
+        "name": "Footer",
+        "desc": "Nama proyek dan versi"
+      },
+      "pile": {
+        "name": "Tumpukan ikon",
+        "desc": "Ikon berjatuhan di bawah halaman"
+      }
+    }
   }
 }

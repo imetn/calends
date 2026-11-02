@@ -61,5 +61,66 @@
   "titleAnon": "訂閱一覽",
   "pile": {
     "label": "訂閱堆：圖示越大，每月花得越多"
+  },
+  "calendar": {
+    "title": "日曆"
+  },
+  "years": {
+    "title": "訂閱年表"
+  },
+  "tenure": {
+    "title": "訂閱時長",
+    "avg": "在用訂閱平均已持有",
+    "longest": "用得最久"
+  },
+  "treemap": {
+    "title": "開銷分布",
+    "missing": "{count} 個訂閱缺匯率，未計入"
+  },
+  "changes": {
+    "title": "變動記錄",
+    "more": "展開全部（{n}）",
+    "less": "收起",
+    "kind": {
+      "added": "新增",
+      "resumed": "恢復",
+      "buy": "買斷",
+      "up": "漲價",
+      "down": "降價",
+      "switch": "換區或換方案",
+      "stopped": "停用",
+      "paused": "暫停"
+    }
+  },
+  "waterfall": {
+    "title": "月度變化",
+    "prev": "上個月",
+    "next": "下個月",
+    "from": "上月",
+    "added": "新增",
+    "expansion": "漲價",
+    "contraction": "降價",
+    "churned": "取消",
+    "fx": "匯率",
+    "to": "本月",
+    "monthEnd": "月末",
+    "incomplete": "缺少匯率，無法畫圖"
+  },
+  "metric": {
+    "monthly": "每月支出",
+    "yearly": "一年約",
+    "active": "在用訂閱",
+    "avgPerSub": "平均每個訂閱每月",
+    "paidTotal": "累計已付",
+    "paidYear": "今年已付",
+    "paidMonth": "本月已付",
+    "next30": "接下來 30 天",
+    "topSub": "最貴的訂閱",
+    "topCategory": "最大的分類",
+    "endedCount": "已退訂",
+    "lifetimeCount": "買斷",
+    "fxEffect": "匯率影響（每月）",
+    "vsPrev": "較去年同期",
+    "shareOf": "占每月支出的比例"
   }
 }

@@ -66,8 +66,7 @@
     "title": "日历"
   },
   "years": {
-    "title": "订阅年表",
-    "desc": "每个订阅从开始到结束或今天"
+    "title": "订阅年表"
   },
   "tenure": {
     "title": "订阅时长",
@@ -75,8 +74,7 @@
     "longest": "用得最久"
   },
   "treemap": {
-    "title": "开销方块图",
-    "desc": "当前每月开销，同色为同一分类",
+    "title": "开销分布",
     "missing": "{count} 个订阅缺汇率，未计入"
   },
   "changes": {
@@ -106,7 +104,6 @@
     "fx": "汇率",
     "to": "本月",
     "monthEnd": "月末",
-    "axisFrom": "纵轴从 {amount} 起",
     "incomplete": "缺少汇率，无法画图"
   },
   "metric": {

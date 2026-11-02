@@ -340,6 +340,105 @@
     "editTab": "設定",
     "previewTab": "預覽",
     "desktop": "桌面",
-    "phone": "手機"
+    "phone": "手機",
+    "library": {
+      "metrics": "數字",
+      "charts": "圖表",
+      "lists": "清單與時間",
+      "bottom": "頁面底部"
+    },
+    "hintDrag": "把元件拖到頁面上，或點一下放到最下面。",
+    "hintTap": "點一下新增到頁面最下面。",
+    "backToLibrary": "返回元件庫",
+    "metricCard": "指標卡",
+    "template": "樣式",
+    "metricData": "顯示的資料",
+    "addMetric": "再加一個資料",
+    "widget": {
+      "stats": {
+        "name": "概覽",
+        "desc": "每月支出和關鍵數字"
+      },
+      "number": {
+        "name": "數字",
+        "desc": "一個數字，放大顯示"
+      },
+      "trend": {
+        "name": "趨勢",
+        "desc": "數字加迷你走勢"
+      },
+      "compare": {
+        "name": "對比",
+        "desc": "和去年同期比"
+      },
+      "share": {
+        "name": "占比",
+        "desc": "占每月支出多少"
+      },
+      "rows": {
+        "name": "多行",
+        "desc": "最多 4 個數字一起看"
+      },
+      "chart": {
+        "name": "長條圖",
+        "desc": "每月扣款和月度開銷走勢"
+      },
+      "composition": {
+        "name": "構成",
+        "desc": "各分類占多少"
+      },
+      "treemap": {
+        "name": "方塊圖",
+        "desc": "面積表示花多少"
+      },
+      "waterfall": {
+        "name": "月度變化",
+        "desc": "新增、漲價、取消的增減"
+      },
+      "fx": {
+        "name": "幣種與匯率",
+        "desc": "各幣種占比和漲跌"
+      },
+      "timeline": {
+        "name": "時間軸",
+        "desc": "按天排列的扣款"
+      },
+      "calendar": {
+        "name": "日曆",
+        "desc": "一個月裡哪天扣款"
+      },
+      "years": {
+        "name": "訂閱年表",
+        "desc": "每個訂閱從哪年用到哪年"
+      },
+      "list": {
+        "name": "訂閱清單",
+        "desc": "正在用的全部訂閱"
+      },
+      "tenure": {
+        "name": "訂閱時長",
+        "desc": "平均和用得最久的"
+      },
+      "changes": {
+        "name": "變動記錄",
+        "desc": "新增、漲價和停用"
+      },
+      "ended": {
+        "name": "已退訂",
+        "desc": "退訂了什麼、原本多少錢"
+      },
+      "lifetime": {
+        "name": "買斷",
+        "desc": "一次付清的軟體"
+      },
+      "footer": {
+        "name": "頁尾",
+        "desc": "專案名稱和版本"
+      },
+      "pile": {
+        "name": "底部訂閱堆",
+        "desc": "頁面底部落下的圖示"
+      }
+    }
   }
 }

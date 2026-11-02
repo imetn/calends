@@ -22,10 +22,10 @@ export const PUBLIC_GRID_SECTIONS: readonly { id: PublicGridId; x: number; y: nu
   { id: 'lifetime', x: 6, y: 28, w: 6, h: 6, min: 4 },
   { id: 'calendar', x: 0, y: 34, w: 6, h: 12, min: 5, off: true },
   { id: 'years', x: 0, y: 46, w: 12, h: 10, min: 6, off: true },
-  { id: 'tenure', x: 0, y: 56, w: 6, h: 8, min: 4, off: true },
-  { id: 'treemap', x: 0, y: 64, w: 6, h: 8, min: 4, off: true },
-  { id: 'changes', x: 0, y: 72, w: 6, h: 8, min: 4, off: true },
-  { id: 'waterfall', x: 0, y: 80, w: 6, h: 8, min: 5, off: true },
+  { id: 'tenure', x: 0, y: 56, w: 6, h: 13, min: 4, off: true },
+  { id: 'treemap', x: 0, y: 69, w: 6, h: 8, min: 4, off: true },
+  { id: 'changes', x: 0, y: 77, w: 6, h: 13, min: 4, off: true },
+  { id: 'waterfall', x: 0, y: 90, w: 6, h: 6, min: 5, off: true },
 ];
 /** 固定在页面底部的组件：只能隐藏，不参与摆放 */
 export const PUBLIC_BOTTOM_SECTIONS = ['footer', 'pile'] as const;
@@ -310,6 +310,26 @@ export function validPublicPage(cfg: unknown): boolean {
     }
   }
   return true;
+}
+
+/** 恢复旧备份：去掉已不认识的字段和组件，其余（简介、头像、摆放）保留；单项非法只丢这一项，隐藏的组件摆放非法时仍保持隐藏 */
+export function restorablePublicPage(raw: unknown): PublicPageConfig | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const c = raw as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const k of ['browserTitle', 'bio', 'avatar']) if (c[k] !== undefined && validPublicPage({ [k]: c[k] })) out[k] = c[k];
+  if (Array.isArray(c.sections)) {
+    const seen = new Set<string>();
+    let cards = 0;
+    out.sections = (c.sections as PublicSectionConfig[]).flatMap((s) => {
+      if (!s || typeof s !== 'object' || typeof s.id !== 'string' || seen.has(s.id)) return [];
+      const kept = validPublicPage({ sections: [s] }) ? s : s.hidden === true && validPublicPage({ sections: [{ id: s.id, hidden: true }] }) ? { id: s.id, hidden: true } : undefined;
+      if (!kept || (METRIC_ID.test(s.id) && ++cards > PUBLIC_METRIC_CARDS_MAX)) return [];
+      seen.add(s.id);
+      return [kept];
+    });
+  }
+  return validPublicPage(out) ? (out as PublicPageConfig) : undefined;
 }
 
 /** 下发给访客的配置：只留页面需要的字段（头像已合并到 settings.avatar，不重复下发） */

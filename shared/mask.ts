@@ -133,7 +133,7 @@ function publicSub(s: Subscription, cats: Category[]): Subscription {
 
 /** 哪些部分用到哪类数据：相关部分全部隐藏后，这类数据就不下发；只隐藏一部分时仍要下发 */
 const NEEDS_NAMES: PublicPart[] = ['timeline', 'list', 'ended', 'lifetime', 'pile', 'calendar', 'years', 'tenure', 'treemap', 'changes'];
-const NEEDS_HISTORY: PublicPart[] = ['stats', 'timeline', 'chart', 'list', 'calendar', 'years', 'changes', 'waterfall'];
+const NEEDS_HISTORY: PublicPart[] = ['stats', 'timeline', 'chart', 'list', 'calendar', 'years', 'tenure', 'changes', 'waterfall'];
 const NEEDS_ENDED: PublicPart[] = ['stats', 'timeline', 'chart', 'ended', 'calendar', 'years', 'tenure', 'changes', 'waterfall'];
 const NEEDS_CATEGORIES: PublicPart[] = ['composition', 'list', ...NEEDS_NAMES];
 /** 用到金额的部分（订阅堆按金额筛选）：全部隐藏后订阅和付款来源都不下发 */

@@ -65,5 +65,68 @@
   "titleAnon": "Gói đăng ký",
   "pile": {
     "label": "Đống gói đăng ký: biểu tượng càng lớn, mỗi tháng càng tốn"
+  },
+  "calendar": {
+    "title": "Lịch"
+  },
+  "years": {
+    "title": "Dòng thời gian gói đăng ký"
+  },
+  "tenure": {
+    "title": "Thời gian đăng ký",
+    "avg": "Thời gian trung bình của các gói đang dùng",
+    "longest": "Giữ lâu nhất"
+  },
+  "treemap": {
+    "title": "Bản đồ chi tiêu",
+    "missing": {
+      "other": "{count} gói đăng ký chưa có tỷ giá nên không được tính"
+    }
+  },
+  "changes": {
+    "title": "Thay đổi",
+    "more": "Xem tất cả ({n})",
+    "less": "Thu gọn",
+    "kind": {
+      "added": "Mới",
+      "resumed": "Tiếp tục",
+      "buy": "Mua đứt",
+      "up": "Tăng giá",
+      "down": "Giảm giá",
+      "switch": "Đổi khu vực hoặc gói",
+      "stopped": "Đã dừng",
+      "paused": "Tạm dừng"
+    }
+  },
+  "waterfall": {
+    "title": "Biến động theo tháng",
+    "prev": "Tháng trước",
+    "next": "Tháng sau",
+    "from": "Đầu kỳ",
+    "added": "Mới",
+    "expansion": "Tăng giá",
+    "contraction": "Giảm giá",
+    "churned": "Đã dừng",
+    "fx": "Tỷ giá",
+    "to": "Hiện tại",
+    "monthEnd": "Cuối tháng",
+    "incomplete": "Thiếu tỷ giá, không thể vẽ biểu đồ"
+  },
+  "metric": {
+    "monthly": "Chi tiêu hằng tháng",
+    "yearly": "Mỗi năm",
+    "active": "Gói đang dùng",
+    "avgPerSub": "Trung bình mỗi gói",
+    "paidTotal": "Tổng đã trả",
+    "paidYear": "Đã trả năm nay",
+    "paidMonth": "Đã trả tháng này",
+    "next30": "30 ngày tới",
+    "topSub": "Đắt nhất",
+    "topCategory": "Danh mục lớn nhất",
+    "endedCount": "Đã hủy",
+    "lifetimeCount": "Mua đứt",
+    "fxEffect": "Ảnh hưởng tỷ giá (hằng tháng)",
+    "vsPrev": "so với năm ngoái",
+    "shareOf": "Tỷ trọng trong chi tiêu hằng tháng"
   }
 }

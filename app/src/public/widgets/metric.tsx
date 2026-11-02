@@ -1,6 +1,7 @@
 import { Bar, BarChart, Cell } from 'recharts';
 import { addMonths } from '../../../../shared/billing.ts';
 import { t } from '../../../../shared/i18n.ts';
+import { signedMoney } from '../../../../shared/public-changes.ts';
 import type { PublicMetricCard, PublicMetricId } from '../../../../shared/public-layout.ts';
 import type { MetricValue } from '../../../../shared/public-metrics.ts';
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/public/components/ui/chart';
@@ -14,9 +15,8 @@ type Format = { ccy: string; sym: string; fmt: (v: number) => string };
 const label = (id: string) => t(`public.metric.${id}`);
 const sparkConfig = { v: { color: 'var(--c1)' } } satisfies ChartConfig;
 
-/** 缺汇率算不出来时显示占位，不显示 0 */
 function Value({ m, f, className }: { m: MetricValue; f: Format; className?: string }) {
-  if (!Number.isFinite(m.value)) return <span className={className}>—</span>;
+  if (m.signed && Number.isFinite(m.value)) return <span className={className}>{signedMoney(m.value, f.ccy)}</span>;
   return m.kind === 'money' ? <Num value={m.value} ccy={f.ccy} prefix={f.sym} className={className} /> : <Num value={m.value} className={className} />;
 }
 
@@ -24,16 +24,18 @@ function Value({ m, f, className }: { m: MetricValue; f: Format; className?: str
 function Spark({ data, f }: { data: { label: string; v: number }[]; f: Format }) {
   const last = data.length - 1;
   return (
-    <ChartContainer config={sparkConfig} className="mt-1 aspect-auto h-8 w-full">
-      <BarChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} barCategoryGap="20%">
-        <ChartTooltip cursor={false} content={<ChartTooltipContent hideIndicator labelFormatter={(_, p) => p?.[0]?.payload?.label} formatter={(v) => f.fmt(Number(v))} />} />
-        <Bar dataKey="v" radius={[2, 2, 0, 0]} isAnimationActive={false}>
-          {data.map((p, i) => (
-            <Cell key={p.label} fill="var(--color-v)" fillOpacity={i === last ? 1 : 0.28} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ChartContainer>
+    <div className="mt-auto pt-2">
+      <ChartContainer config={sparkConfig} className="aspect-auto h-8 w-full">
+        <BarChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} barCategoryGap="20%">
+          <ChartTooltip cursor={false} content={<ChartTooltipContent hideIndicator labelFormatter={(_, p) => p?.[0]?.payload?.label} formatter={(v) => f.fmt(Number(v))} />} />
+          <Bar dataKey="v" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+            {data.map((p, i) => (
+              <Cell key={p.label} fill="var(--color-v)" fillOpacity={i === last ? 1 : 0.28} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ChartContainer>
+    </div>
   );
 }
 
@@ -42,15 +44,17 @@ const SEGMENTS = 24;
 function Segments({ pct }: { pct: number }) {
   const on = Math.round(pct * SEGMENTS);
   return (
-    <div className="mt-3 flex h-3.5 gap-0.5" aria-hidden="true">
-      {Array.from({ length: SEGMENTS }, (_, i) => (
-        <span key={i} className={cn('min-w-0 flex-1 rounded-[2px]', i >= on && 'bg-muted')} style={i < on ? { background: 'var(--c1)' } : undefined} />
-      ))}
+    <div className="mt-auto pt-3" aria-hidden="true">
+      <div className="flex h-3.5 gap-0.5">
+        {Array.from({ length: SEGMENTS }, (_, i) => (
+          <span key={i} className={cn('min-w-0 flex-1 rounded-[2px]', i >= on && 'bg-muted')} style={i < on ? { background: 'var(--c1)' } : undefined} />
+        ))}
+      </div>
     </div>
   );
 }
 
-const big = 'mt-1 block text-2xl font-semibold tracking-tight tnum';
+const big = 'mt-1 block text-xl font-semibold tracking-tight tnum @[200px]:text-2xl';
 const note = 'truncate text-[length:var(--fs-2)] text-muted-foreground';
 
 /** 和上期差多少：带正负号，不靠颜色 */
@@ -67,7 +71,7 @@ export function MetricCard({ card, values, f }: { card: PublicMetricCard; values
   const head = <div className={note}>{label(ids[0])}</div>;
   return (
     <Card className="h-full">
-      <CardContent>
+      <CardContent className="flex flex-1 flex-col">
         {card.template === 'number' && (
           <>
             {head}
@@ -85,9 +89,11 @@ export function MetricCard({ card, values, f }: { card: PublicMetricCard; values
           <>
             {head}
             <Value m={first} f={f} className={big} />
-            <div className={cn(note, 'mt-1 tnum')}>
-              <span className="font-medium text-foreground">{delta(first, f)}</span> {t('public.metric.vsPrev')}
-            </div>
+            {(first.value !== 0 || !!first.prev) && (
+              <div className={cn(note, 'mt-auto pt-1 tnum')}>
+                <span className="font-medium text-foreground">{delta(first, f)}</span> {t('public.metric.vsPrev')}
+              </div>
+            )}
           </>
         )}
         {card.template === 'share' && <Share id={ids[0]} m={first} f={f} />}
@@ -109,18 +115,20 @@ export function MetricCard({ card, values, f }: { card: PublicMetricCard; values
 }
 
 function Share({ id, m, f }: { id: string; m: MetricValue; f: Format }) {
-  const pct = m.total && Number.isFinite(m.value) ? Math.min(1, Math.max(0, m.value / m.total)) : 0;
+  // 分子或分母缺汇率时占比算不出来：写占位，格子全空，不写 0%
+  const known = Number.isFinite(m.value) && Number.isFinite(m.total);
+  const pct = known && m.total ? Math.min(1, Math.max(0, m.value / m.total)) : 0;
   return (
     <>
       <div className="flex items-baseline justify-between gap-3">
         <span className={note}>{label(id)}</span>
         <span className="shrink-0 text-[length:var(--fs-2)] text-muted-foreground tnum" title={t('public.metric.shareOf')}>
-          {Math.round(pct * 100)}%
+          {m.name != null && (known ? `${Math.round(pct * 100)}%` : '—')}
         </span>
       </div>
       <div className="mt-1 flex items-baseline justify-between gap-3">
         <span className="min-w-0 truncate text-base font-semibold">{m.name ?? '—'}</span>
-        <Value m={m} f={f} className="shrink-0 font-medium tnum" />
+        {m.name != null && <Value m={m} f={f} className="shrink-0 font-medium tnum" />}
       </div>
       <Segments pct={pct} />
     </>

@@ -171,6 +171,12 @@
 .public-grid[data-free] > .public-cell {
   grid-column: 1 / -1;
 }
+/* 手机和平板是单列：窄指标卡一排两张，不把页面拉得很长 */
+@media (max-width: 63.99rem) {
+  .public-grid[data-free] > .public-cell[data-half] {
+    grid-column: span 6;
+  }
+}
 @media (min-width: 64rem) {
   .public-grid[data-free] {
     grid-auto-rows: minmax(1.5rem, auto);
@@ -290,7 +296,7 @@
   justify-content: center;
   min-height: 6rem;
   padding: 1rem;
-  background: var(--muted);
+  border: var(--hairline) dashed var(--border);
   border-radius: var(--radius-md);
   color: var(--muted-foreground);
   font-size: var(--fs-2);

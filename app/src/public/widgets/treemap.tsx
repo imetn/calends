@@ -3,11 +3,8 @@ import { t } from '../../../../shared/i18n.ts';
 import { spendingMap, spendTiles } from '../../../../shared/treemap.ts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/public/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/public/components/ui/tooltip';
-import { clean } from './clean.ts';
+import { CategoryLegend, clean, shade } from './lib.tsx';
 import type { WidgetProps } from './props.ts';
-
-/** 与「构成」同一张色表：前四名各一色，其余都是「其他」那一色 */
-const shade = (rank: number) => `var(--c${[1, 4, 5, 6, 7][Math.min(rank, 4)]})`;
 
 /** 够写名字、够再写金额的最小尺寸（px）；再小的方块不写字，靠悬停看 */
 const NAME_W = 64;
@@ -37,9 +34,9 @@ export function TreemapCard({ state, today, k, fmt }: WidgetProps) {
     <Card className="h-full">
       <CardHeader>
         <CardTitle>{t('public.treemap.title')}</CardTitle>
-        <CardDescription>{map.missing ? t('public.treemap.missing', { count: map.missing }) : t('public.treemap.desc')}</CardDescription>
+        {map.missing > 0 && <CardDescription>{t('public.treemap.missing', { count: map.missing })}</CardDescription>}
       </CardHeader>
-      <CardContent className="flex min-h-52 flex-1 flex-col">
+      <CardContent className="flex min-h-52 flex-1 flex-col gap-3">
         <div ref={box} className="relative min-h-52 flex-1 overflow-hidden">
           {!map.groups.length && <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">—</div>}
           {spendTiles(map.groups, size.w, size.h).map(({ sub, group, x, y, w, h }) => {
@@ -80,6 +77,7 @@ export function TreemapCard({ state, today, k, fmt }: WidgetProps) {
             );
           })}
         </div>
+        <CategoryLegend names={map.groups.map((g) => g.name)} />
       </CardContent>
     </Card>
   );

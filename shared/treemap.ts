@@ -19,7 +19,7 @@ export function squarify(values: number[], x = 0, y = 0, w = 100, h = 100): Rect
   const items = values
     .map((v, i) => ({ v: (v / total) * w * h, i }))
     .filter((t) => t.v > 0)
-    .sort((a, b) => b.v - a.v);
+    .sort(byAmountDesc);
   const out: Rect[] = [];
   const worst = (row: number[], side: number) => {
     const s = row.reduce((a, b) => a + b, 0);
@@ -91,12 +91,15 @@ export interface SpendMap {
   missing: number;
 }
 
+/** 金额从大到小；缺汇率的 NaN 排最后，不打乱其他项的顺序 */
+export const byAmountDesc = (a: { v: number }, b: { v: number }) => (Number.isFinite(b.v) ? b.v : -Infinity) - (Number.isFinite(a.v) ? a.v : -Infinity) || 0;
+
 /** 当前每月开销按分类分组（基准币种）。在用范围、分类顺序和排序与「构成」卡一致，缺汇率的不当成 0，单独计数 */
 export function spendingMap(state: AppState, today: string): SpendMap {
   const live = state.subscriptions
     .map((s) => ({ s, v: contributionOn(state, s, today) }))
     .filter((x) => ['active', 'ending', 'trial', 'paused'].includes(effectiveStatus(x.s, today)))
-    .sort((a, b) => b.v - a.v);
+    .sort(byAmountDesc);
   const cats = new Map<string, { v: number; items: typeof live }>();
   for (const c of categoryList(state.settings, state.subscriptions)) if (live.some((x) => x.s.category === c.name)) cats.set(c.name, { v: 0, items: [] });
   for (const x of live) {
@@ -106,7 +109,7 @@ export function spendingMap(state: AppState, today: string): SpendMap {
     cats.set(x.s.category, c);
   }
   const groups = [...cats.entries()]
-    .sort((a, b) => b[1].v - a[1].v)
+    .sort((a, b) => byAmountDesc(a[1], b[1]))
     .map(([name, c], rank) => {
       const subs = c.items.filter((x) => x.v > 0).map((x) => ({ id: x.s.id, name: x.s.name, v: x.v }));
       return { name, rank, v: subs.reduce((a, x) => a + x.v, 0), subs };

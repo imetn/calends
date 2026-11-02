@@ -358,6 +358,105 @@
     "editTab": "Ayarlar",
     "previewTab": "Önizleme",
     "desktop": "Masaüstü",
-    "phone": "Telefon"
+    "phone": "Telefon",
+    "library": {
+      "metrics": "Sayılar",
+      "charts": "Grafikler",
+      "lists": "Listeler ve zaman",
+      "bottom": "Sayfanın altı"
+    },
+    "hintDrag": "Bir bileşeni sayfaya sürükleyin veya en alta eklemek için tıklayın.",
+    "hintTap": "Sayfanın en altına eklemek için dokunun.",
+    "backToLibrary": "Bileşenlere dön",
+    "metricCard": "Metrik kartı",
+    "template": "Stil",
+    "metricData": "Gösterilen veri",
+    "addMetric": "Bir değer daha ekle",
+    "widget": {
+      "stats": {
+        "name": "Genel bakış",
+        "desc": "Aylık harcama ve temel rakamlar"
+      },
+      "number": {
+        "name": "Sayı",
+        "desc": "Tek bir sayı, büyük gösterilir"
+      },
+      "trend": {
+        "name": "Eğilim",
+        "desc": "Mini grafikli bir sayı"
+      },
+      "compare": {
+        "name": "Karşılaştırma",
+        "desc": "Geçen yılın aynı dönemiyle"
+      },
+      "share": {
+        "name": "Pay",
+        "desc": "Aylık harcamadaki pay"
+      },
+      "rows": {
+        "name": "Satırlar",
+        "desc": "Birlikte en fazla 4 sayı"
+      },
+      "chart": {
+        "name": "Çubuk grafik",
+        "desc": "Aylık ödemeler ve harcama eğilimi"
+      },
+      "composition": {
+        "name": "Dağılım",
+        "desc": "Kategoriye göre harcama"
+      },
+      "treemap": {
+        "name": "Ağaç haritası",
+        "desc": "Alan, ne kadar harcadığınızı gösterir"
+      },
+      "waterfall": {
+        "name": "Aylık değişim",
+        "desc": "Eklenen, zamlanan veya iptal edilenler"
+      },
+      "fx": {
+        "name": "Para birimleri",
+        "desc": "Para birimi payı ve kur hareketleri"
+      },
+      "timeline": {
+        "name": "Zaman çizelgesi",
+        "desc": "Gün gün ödemeler"
+      },
+      "calendar": {
+        "name": "Takvim",
+        "desc": "Hangi günler ödeme alınır"
+      },
+      "years": {
+        "name": "Abonelik zaman çizelgesi",
+        "desc": "Her aboneliğin ne zaman sürdüğü"
+      },
+      "list": {
+        "name": "Abonelik listesi",
+        "desc": "Kullanımdaki her şey"
+      },
+      "tenure": {
+        "name": "Abonelik süresi",
+        "desc": "Ortalama ve en uzun süre"
+      },
+      "changes": {
+        "name": "Değişiklikler",
+        "desc": "Eklenen, fiyatı değişen ve durdurulanlar"
+      },
+      "ended": {
+        "name": "İptal edilenler",
+        "desc": "İptal edilenler ve fiyatı"
+      },
+      "lifetime": {
+        "name": "Tek seferlik",
+        "desc": "Tek seferlik satın alımlar"
+      },
+      "footer": {
+        "name": "Alt bilgi",
+        "desc": "Proje adı ve sürüm"
+      },
+      "pile": {
+        "name": "Simge yığını",
+        "desc": "Sayfanın altına düşen simgeler"
+      }
+    }
   }
 }

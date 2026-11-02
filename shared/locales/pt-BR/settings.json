@@ -358,6 +358,105 @@
     "editTab": "Configurações",
     "previewTab": "Prévia",
     "desktop": "Computador",
-    "phone": "Celular"
+    "phone": "Celular",
+    "library": {
+      "metrics": "Números",
+      "charts": "Gráficos",
+      "lists": "Listas e tempo",
+      "bottom": "Fim da página"
+    },
+    "hintDrag": "Arraste um componente para a página ou clique para adicioná-lo ao final.",
+    "hintTap": "Toque para adicionar ao final da página.",
+    "backToLibrary": "Voltar aos componentes",
+    "metricCard": "Cartão de métrica",
+    "template": "Estilo",
+    "metricData": "Dados exibidos",
+    "addMetric": "Adicionar outro valor",
+    "widget": {
+      "stats": {
+        "name": "Visão geral",
+        "desc": "Gasto mensal e números principais"
+      },
+      "number": {
+        "name": "Número",
+        "desc": "Um número em destaque"
+      },
+      "trend": {
+        "name": "Tendência",
+        "desc": "Um número com minigráfico"
+      },
+      "compare": {
+        "name": "Comparar",
+        "desc": "Com o mesmo período do ano passado"
+      },
+      "share": {
+        "name": "Participação",
+        "desc": "Participação no gasto mensal"
+      },
+      "rows": {
+        "name": "Linhas",
+        "desc": "Até 4 números juntos"
+      },
+      "chart": {
+        "name": "Gráfico de barras",
+        "desc": "Cobranças mensais e tendência de gastos"
+      },
+      "composition": {
+        "name": "Composição",
+        "desc": "Gastos por categoria"
+      },
+      "treemap": {
+        "name": "Treemap",
+        "desc": "A área mostra quanto você gasta"
+      },
+      "waterfall": {
+        "name": "Variação mensal",
+        "desc": "O que foi adicionado, reajustado ou cancelado"
+      },
+      "fx": {
+        "name": "Moedas",
+        "desc": "Participação das moedas e variação das taxas"
+      },
+      "timeline": {
+        "name": "Linha do tempo",
+        "desc": "Cobranças dia a dia"
+      },
+      "calendar": {
+        "name": "Calendário",
+        "desc": "Quais dias têm cobrança"
+      },
+      "years": {
+        "name": "Linha do tempo de assinaturas",
+        "desc": "Quando cada assinatura esteve ativa"
+      },
+      "list": {
+        "name": "Lista de assinaturas",
+        "desc": "Tudo o que está em uso"
+      },
+      "tenure": {
+        "name": "Tempo de assinatura",
+        "desc": "Média e maior tempo mantido"
+      },
+      "changes": {
+        "name": "Alterações",
+        "desc": "Adicionadas, reajustadas e encerradas"
+      },
+      "ended": {
+        "name": "Canceladas",
+        "desc": "O que foi cancelado e o preço"
+      },
+      "lifetime": {
+        "name": "Compra única",
+        "desc": "Compras de pagamento único"
+      },
+      "footer": {
+        "name": "Rodapé",
+        "desc": "Nome do projeto e versão"
+      },
+      "pile": {
+        "name": "Pilha de ícones",
+        "desc": "Ícones caindo no fim da página"
+      }
+    }
   }
 }

@@ -4,8 +4,10 @@ import { readFileSync } from 'node:fs';
 import { effectiveStatus, FALLBACK_FX } from './billing.ts';
 import { maskForPublic } from './mask.ts';
 import { contributionOn } from './metrics.ts';
-import { collapseEmpty, fillRows, fitHeights, flowSpans, gridConfig, gridSections, hideItem, isCustomLayout, isFlowGrid, metricsFor, metricWithTemplate, newMetricItem, placeItem, PUBLIC_GRID_SECTIONS, publicConfigForVisitors, publicGrid, publicParts, setMetric, showItem, tabletSpan, validPublicPage } from './public-layout.ts';
+import { collapseEmpty, restorablePublicPage, fillRows, fitHeights, flowSpans, gridConfig, gridSections, hideItem, isCustomLayout, isFlowGrid, metricsFor, metricWithTemplate, newMetricItem, placeItem, PUBLIC_GRID_SECTIONS, publicConfigForVisitors, publicGrid, publicParts, setMetric, showItem, tabletSpan, validPublicPage } from './public-layout.ts';
 import { checkSettings } from './ledger-edit.ts';
+import { metricValues, type MetricInputs } from './public-metrics.ts';
+import { byAmountDesc } from './treemap.ts';
 import { DEFAULT_SETTINGS, type AppState, type PublicPageConfig, type Subscription } from './types.ts';
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -225,7 +227,7 @@ test('页头：设了标题不下发真实名字，公开页头像合并后不�
 test('预览消息：只接受同源父窗口，发消息限定本站', () => {
   const page = readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8');
   assert.match(page, /e\.origin !== location\.origin \|\| e\.source !== window\.parent/);
-  assert.match(page, /new URLSearchParams\(location\.search\)\.has\('preview'\) && window\.parent !== window/);
+  assert.match(page, /has\('preview'\) \|\| window\.parent === window\) return false/);
   const editor = readFileSync(new URL('../app/src/views/PublicPageEditor.tsx', import.meta.url), 'utf8');
   assert.match(editor, /e\.origin !== location\.origin \|\| e\.source !== frame\.current\?\.contentWindow/);
   assert.match(editor, /postMessage\(message, location\.origin\)/);
@@ -362,4 +364,74 @@ test('日历和订阅年表：默认不上页面；放上去时下发名称、�
     assert.equal(masked.subscriptions[0].priceHistory?.length, 2);
     assert.ok(!JSON.stringify(masked).includes('Fiction note'));
   }
+});
+
+test('默认高度放得下内容：订阅时长和变动记录同排时一样高，缺省位置互不重叠', () => {
+  const by = (id: string) => PUBLIC_GRID_SECTIONS.find((d) => d.id === id)!;
+  assert.equal(by('tenure').h, by('changes').h);
+  const off = PUBLIC_GRID_SECTIONS.filter((d) => d.off).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < off.length; i++) assert.ok(off[i - 1].y + off[i - 1].h <= off[i].y, `${off[i - 1].id} 压住 ${off[i].id}`);
+});
+
+test('空账本的指标卡：没有在用订阅时平均写占位，最贵的订阅没有名字', () => {
+  const zero: MetricInputs = { mrr: 0, yearAgoMrr: 0, mrrSeries: [], active: 0, paidTotal: 0, paidYear: 0, paidYearPrev: 0, paidMonth: 0, paidMonthPrev: 0, paidSeries: [], next30: 0, ended: 0, lifetime: 0, fxEffect: 0 };
+  const v = metricValues(zero);
+  assert.ok(Number.isNaN(v.avgPerSub.value));
+  assert.equal(v.topSub.name, undefined);
+});
+
+test('手机和平板上窄指标卡一排两张，日历星期和日期同一列对齐，变动日期不折行', () => {
+  const css = readFileSync(new URL('../app/src/public/index.css', import.meta.url), 'utf8');
+  assert.match(css, /max-width: 63\.99rem[^}]*data-half[^}]*span 6/s);
+  assert.match(readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8'), /data-half=\{s\.metric && s\.metric\.template !== 'rows' && s\.w <= 4/);
+  assert.match(readFileSync(new URL('../app/src/public/widgets/calendar.tsx', import.meta.url), 'utf8'), /ml-1 w-\[18px\] pb-1/);
+  assert.match(readFileSync(new URL('../app/src/public/widgets/changes.tsx', import.meta.url), 'utf8'), /whitespace-nowrap/);
+});
+
+test('排序：缺汇率的 NaN 排最后，不打乱其他项', () => {
+  const sorted = [{ v: 2 }, { v: NaN }, { v: 9 }, { v: 5 }].sort(byAmountDesc).map((x) => x.v);
+  assert.deepEqual(sorted, [9, 5, 2, NaN]);
+});
+
+test('排序：方块图的分类名次与构成卡同规则，含缺汇率的分类排最后', () => {
+  const src = readFileSync(new URL('./treemap.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /b(\[1\])?\.v - a(\[1\])?\.v/);
+});
+
+test('恢复备份：旧字段和不认识的组件被去掉，简介与摆放保留', () => {
+  const page = restorablePublicPage({ hero: { title: 'x' }, bio: 'hi', sections: [{ id: 'gone', x: 0, y: 0, w: 1, h: 1 }, { id: 'chart', x: 0, y: 0, w: 6, h: 8 }] });
+  assert.deepEqual(page, { bio: 'hi', sections: [{ id: 'chart', x: 0, y: 0, w: 6, h: 8 }] });
+  assert.equal(restorablePublicPage('nope'), undefined);
+  // 重复的 id 和超量的指标卡只丢多余的，简介不受牵连；隐藏的组件摆放非法也保持隐藏，不被默认值翻成公开
+  const metric = (i: number) => ({ id: `metric-${i}`, x: 0, y: i * 4, w: 3, h: 4, metric: { template: 'number', items: ['monthly'] } });
+  const many = restorablePublicPage({ bio: 'hi', sections: [{ id: 'chart', hidden: true, x: 0, y: 0, w: 1, h: 1 }, { id: 'list', hidden: true }, { id: 'list' }, ...Array.from({ length: 30 }, (_, i) => metric(i))] });
+  assert.equal(many?.bio, 'hi');
+  assert.deepEqual(many?.sections?.slice(0, 2), [{ id: 'chart', hidden: true }, { id: 'list', hidden: true }]);
+  assert.equal(many?.sections?.filter((s) => s.id.startsWith('metric-')).length, 24);
+  assert.equal(restorablePublicPage([]), undefined);
+});
+
+test('汇率影响的指标带正负号，其余不带', () => {
+  const v = metricValues({ mrr: 1, yearAgoMrr: 1, mrrSeries: [], active: 1, paidTotal: 1, paidYear: 1, paidYearPrev: 1, paidMonth: 1, paidMonthPrev: 1, paidSeries: [], next30: 1, ended: 0, lifetime: 0, fxEffect: -3 });
+  assert.equal(v.fxEffect.signed, true);
+  assert.equal(v.monthly.signed, undefined);
+});
+
+test('只放订阅时长：扣款历史照常下发，时长不按被裁掉的数据算', () => {
+  const sub = { id: 'a', name: 'A', category: 'x', price: 10, currency: 'USD', cycle: { n: 1, unit: 'month' }, start: '2024-01-01', status: 'cancelled', tags: [], payments: [{ date: '2024-01-01', amount: 10 }] } as unknown as Subscription;
+  const state = { subscriptions: [sub], methods: [], fx: FALLBACK_FX, settings: { ...DEFAULT_SETTINGS, publicPage: { sections: [{ id: 'tenure', x: 0, y: 0, w: 6, h: 8 }, { id: 'stats', hidden: true }, { id: 'timeline', hidden: true }, { id: 'chart', hidden: true }, { id: 'composition', hidden: true }, { id: 'fx', hidden: true }, { id: 'list', hidden: true }, { id: 'ended', hidden: true }, { id: 'lifetime', hidden: true }, { id: 'footer', hidden: true }, { id: 'pile', hidden: true }] } } } as unknown as AppState;
+  assert.ok(maskForPublic(state).subscriptions[0]?.payments?.length);
+});
+
+test('公开页金额：缺汇率显示占位；预览只认同源父窗口；重置清掉选中', () => {
+  const num = readFileSync(new URL('../app/src/public/components/number.tsx', import.meta.url), 'utf8');
+  assert.match(num, /!Number\.isFinite\(value\)\) return <span/);
+  const page = readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8');
+  assert.match(page, /window\.parent\.location\.origin === location\.origin/);
+  assert.match(page, /paidBase: sumBaseOrNaN/);
+  assert.match(page, /const rate = k > 0 \? k : Number\.NaN/);
+  assert.match(page, /const fmt = \(v: number\) => \(Number\.isFinite\(v\)/);
+  assert.doesNotMatch(page, /<Num value=\{d\.mrr[^}]* k\}/);
+  const editor = readFileSync(new URL('../app/src/views/PublicPageEditor.tsx', import.meta.url), 'utf8');
+  assert.match(editor, /setDraft\(draftOf\(undefined, undefined\)\); setSelected\(null\)/);
 });

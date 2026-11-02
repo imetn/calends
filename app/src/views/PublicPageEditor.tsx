@@ -388,7 +388,7 @@ export function PublicPageEditor({ state }: { state: AppState }) {
         }
       >
         {!narrow && deviceSeg}
-        <button type="button" className="btn" disabled={isDefault} onClick={() => setDraft(draftOf(undefined, undefined))}>
+        <button type="button" className="btn" disabled={isDefault} onClick={() => { setDraft(draftOf(undefined, undefined)); setSelected(null); }}>
           {t('settings.publicPage.reset')}
         </button>
         <button type="button" className="btn primary" disabled={!dirty} onClick={() => void save()}>

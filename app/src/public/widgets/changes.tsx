@@ -5,12 +5,10 @@ import { publicChanges, signedMoney, type PublicChange } from '../../../../share
 import { AppIcon } from '@/public/components/app-icon';
 import { Card, CardContent, CardHeader, CardTitle } from '@/public/components/ui/card';
 import { cn } from '@/public/lib/utils';
+import { clean } from './lib.tsx';
 import type { WidgetProps } from './props.ts';
 
 const FOLDED = 8;
-
-/** 与主卡同样去掉名字里的国旗 emoji */
-const clean = (name: string) => name.replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, ' ').replace(/\s+/g, ' ').trim();
 
 function Amount({ c, ccy }: { c: PublicChange; ccy: string }) {
   if (!Number.isFinite(c.delta)) return <>—</>;
@@ -34,7 +32,7 @@ export function ChangesCard({ state, today, ccy }: WidgetProps) {
             const date = cnDateAuto(c.date, today);
             return (
               <li key={`${c.sub.id}-${c.kind}-${c.date}-${i}`} className="flex items-center gap-3 py-1.5">
-                <span className="hidden w-24 shrink-0 text-[length:var(--fs-2)] text-muted-foreground tnum @[420px]:block">{date}</span>
+                <span className="hidden w-[6.5rem] shrink-0 text-[length:var(--fs-2)] whitespace-nowrap text-muted-foreground tnum @[420px]:block">{date}</span>
                 <AppIcon sub={c.sub} className="size-7 rounded-md" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate">{clean(c.sub.name)}</div>

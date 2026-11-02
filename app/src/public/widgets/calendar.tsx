@@ -115,7 +115,9 @@ export function CalendarCard({ state, today, ccy }: WidgetProps) {
 function MonthView({ state, today, ccy, byDay, dows, weekStart, month, sel, onSelect, empty }: Shared & { month: string; sel: string | null; onSelect: (d: string | null) => void; empty: boolean }) {
   // 图标只排一行：按格子实际宽度算能放几个，放不下的换成「+N」，格子高度不变
   const [gridRef, gridW] = useWidth<HTMLDivElement>();
-  const cellW = gridW / 7;
+  // 格子放得下金额时拉开列距，否则金额会贴着下一格的日期
+  const gapX = gridW >= 528 ? 8 : 1;
+  const cellW = (gridW - gapX * 6) / 7;
   const icon = gridW > 0 && cellW < 60 ? 16 : 20;
   const step = Math.round(icon * 0.6);
   const inner = cellW - 8;
@@ -126,9 +128,9 @@ function MonthView({ state, today, ccy, byDay, dows, weekStart, month, sel, onSe
   const selList = (sel && byDay.get(sel)) || [];
   return (
     <>
-      <div ref={gridRef} className="grid grid-cols-7 gap-px">
+      <div ref={gridRef} className="grid grid-cols-7 gap-y-px" style={{ columnGap: gapX }}>
         {dows.map((d, i) => (
-          <div key={i} className="pb-1 text-center text-[length:var(--fs-1)] text-muted-foreground">
+          <div key={i} className="ml-1 w-[18px] pb-1 text-center text-[length:var(--fs-1)] text-muted-foreground">
             {d}
           </div>
         ))}
@@ -213,7 +215,7 @@ function YearHeat({ state, today, ccy, byDay, dows, weekStart, year, onPick }: S
   const net = (list: Charge[]) => Math.abs(list.reduce((a, c) => a + chargeValue(state, c, ccy), 0));
   const peak = Math.max(0, ...[...byDay].filter(([d]) => d.startsWith(year)).map(([, list]) => net(list)));
   return (
-    <div className="grid grid-cols-2 gap-2 @[560px]:grid-cols-3 @[760px]:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 @[400px]:grid-cols-3 @[760px]:grid-cols-4">
       {Array.from({ length: 12 }, (_, i) => {
         const m = `${year}-${String(i + 1).padStart(2, '0')}`;
         // 固定 6 行，让 12 张月卡等高对齐

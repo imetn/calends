@@ -72,8 +72,7 @@
     "title": "Calendar"
   },
   "years": {
-    "title": "Subscription timeline",
-    "desc": "Each subscription from start to end or today"
+    "title": "Subscription timeline"
   },
   "tenure": {
     "title": "Time subscribed",
@@ -82,7 +81,6 @@
   },
   "treemap": {
     "title": "Spending map",
-    "desc": "Current monthly spend, one color per category",
     "missing": {
       "one": "{count} subscription has no exchange rate and is not included",
       "other": "{count} subscriptions have no exchange rate and are not included"
@@ -115,7 +113,6 @@
     "fx": "FX",
     "to": "Now",
     "monthEnd": "End",
-    "axisFrom": "Axis starts at {amount}",
     "incomplete": "Missing exchange rates, can't draw the chart"
   },
   "metric": {
@@ -132,7 +129,7 @@
     "endedCount": "Cancelled",
     "lifetimeCount": "Lifetime",
     "fxEffect": "Exchange-rate effect (monthly)",
-    "vsPrev": "vs same time last year",
+    "vsPrev": "vs last year",
     "shareOf": "Share of monthly spend"
   }
 }

@@ -223,6 +223,9 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     Layers: 'Layers',
     ChevronUp: 'ChevronUp',
     SpendingDelta: 'SpendingDelta',
+    clean: (name: string) => name,
+    byAmountDesc: (a: { v: number }, b: { v: number }) => (Number.isFinite(b.v) ? b.v : -Infinity) - (Number.isFinite(a.v) ? a.v : -Infinity) || 0,
+    shade: (i: number) => `shade-${i}`,
     ...extra,
   };
   const components = { ...deps, ...metricComponents(deps.React) };

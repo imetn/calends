@@ -340,6 +340,105 @@
     "editTab": "설정",
     "previewTab": "미리보기",
     "desktop": "데스크톱",
-    "phone": "휴대폰"
+    "phone": "휴대폰",
+    "library": {
+      "metrics": "숫자",
+      "charts": "차트",
+      "lists": "목록과 기간",
+      "bottom": "페이지 하단"
+    },
+    "hintDrag": "컴포넌트를 페이지로 끌어다 놓거나, 클릭해서 맨 아래에 추가하세요.",
+    "hintTap": "탭하면 페이지 맨 아래에 추가됩니다.",
+    "backToLibrary": "컴포넌트로 돌아가기",
+    "metricCard": "지표 카드",
+    "template": "스타일",
+    "metricData": "표시할 데이터",
+    "addMetric": "값 하나 더 추가",
+    "widget": {
+      "stats": {
+        "name": "개요",
+        "desc": "월 지출과 주요 숫자"
+      },
+      "number": {
+        "name": "숫자",
+        "desc": "숫자 하나를 크게 표시"
+      },
+      "trend": {
+        "name": "추세",
+        "desc": "숫자와 스파크라인"
+      },
+      "compare": {
+        "name": "비교",
+        "desc": "작년 같은 기간과 비교"
+      },
+      "share": {
+        "name": "비중",
+        "desc": "월 지출에서 차지하는 비중"
+      },
+      "rows": {
+        "name": "여러 줄",
+        "desc": "숫자를 최대 4개까지 함께 표시"
+      },
+      "chart": {
+        "name": "막대 차트",
+        "desc": "월별 결제와 지출 추세"
+      },
+      "composition": {
+        "name": "구성",
+        "desc": "카테고리별 지출"
+      },
+      "treemap": {
+        "name": "트리맵",
+        "desc": "면적으로 지출 규모 표시"
+      },
+      "waterfall": {
+        "name": "월별 변동",
+        "desc": "추가, 인상, 해지된 금액"
+      },
+      "fx": {
+        "name": "통화",
+        "desc": "통화 비중과 환율 변동"
+      },
+      "timeline": {
+        "name": "타임라인",
+        "desc": "날짜별 결제"
+      },
+      "calendar": {
+        "name": "캘린더",
+        "desc": "결제가 일어나는 날"
+      },
+      "years": {
+        "name": "구독 연표",
+        "desc": "각 구독의 이용 기간"
+      },
+      "list": {
+        "name": "구독 목록",
+        "desc": "이용 중인 모든 구독"
+      },
+      "tenure": {
+        "name": "구독 기간",
+        "desc": "평균 및 가장 오래된 구독"
+      },
+      "changes": {
+        "name": "변경 내역",
+        "desc": "추가, 가격 변경, 중단"
+      },
+      "ended": {
+        "name": "해지됨",
+        "desc": "해지한 항목과 가격"
+      },
+      "lifetime": {
+        "name": "평생 이용",
+        "desc": "한 번 결제하는 구매"
+      },
+      "footer": {
+        "name": "푸터",
+        "desc": "프로젝트 이름과 버전"
+      },
+      "pile": {
+        "name": "아이콘 더미",
+        "desc": "페이지 하단에 떨어지는 아이콘"
+      }
+    }
   }
 }

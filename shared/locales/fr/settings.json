@@ -358,6 +358,105 @@
     "editTab": "Réglages",
     "previewTab": "Aperçu",
     "desktop": "Ordinateur",
-    "phone": "Téléphone"
+    "phone": "Téléphone",
+    "library": {
+      "metrics": "Chiffres",
+      "charts": "Graphiques",
+      "lists": "Listes et durée",
+      "bottom": "Bas de page"
+    },
+    "hintDrag": "Faites glisser un composant sur la page, ou cliquez pour l'ajouter en bas.",
+    "hintTap": "Touchez pour ajouter en bas de la page.",
+    "backToLibrary": "Retour aux composants",
+    "metricCard": "Carte d'indicateur",
+    "template": "Style",
+    "metricData": "Données affichées",
+    "addMetric": "Ajouter une autre valeur",
+    "widget": {
+      "stats": {
+        "name": "Aperçu",
+        "desc": "Dépenses mensuelles et chiffres clés"
+      },
+      "number": {
+        "name": "Chiffre",
+        "desc": "Un chiffre en grand"
+      },
+      "trend": {
+        "name": "Tendance",
+        "desc": "Un chiffre avec mini-courbe"
+      },
+      "compare": {
+        "name": "Comparaison",
+        "desc": "Par rapport à la même période l'an dernier"
+      },
+      "share": {
+        "name": "Part",
+        "desc": "Part des dépenses mensuelles"
+      },
+      "rows": {
+        "name": "Lignes",
+        "desc": "Jusqu'à 4 chiffres ensemble"
+      },
+      "chart": {
+        "name": "Histogramme",
+        "desc": "Prélèvements mensuels et tendance des dépenses"
+      },
+      "composition": {
+        "name": "Répartition",
+        "desc": "Dépenses par catégorie"
+      },
+      "treemap": {
+        "name": "Treemap",
+        "desc": "La surface indique le montant dépensé"
+      },
+      "waterfall": {
+        "name": "Variation mensuelle",
+        "desc": "Ajouts, hausses et résiliations"
+      },
+      "fx": {
+        "name": "Devises",
+        "desc": "Part des devises et variations des taux"
+      },
+      "timeline": {
+        "name": "Frise",
+        "desc": "Prélèvements jour par jour"
+      },
+      "calendar": {
+        "name": "Calendrier",
+        "desc": "Les jours où l'on est prélevé"
+      },
+      "years": {
+        "name": "Frise des abonnements",
+        "desc": "Période d'activité de chaque abonnement"
+      },
+      "list": {
+        "name": "Liste des abonnements",
+        "desc": "Tout ce qui est utilisé"
+      },
+      "tenure": {
+        "name": "Durée d'abonnement",
+        "desc": "Moyenne et plus longue durée"
+      },
+      "changes": {
+        "name": "Modifications",
+        "desc": "Ajoutés, changements de prix et arrêtés"
+      },
+      "ended": {
+        "name": "Résiliés",
+        "desc": "Ce qui a été résilié et son prix"
+      },
+      "lifetime": {
+        "name": "Achat unique",
+        "desc": "Achats en une fois"
+      },
+      "footer": {
+        "name": "Pied de page",
+        "desc": "Nom du projet et version"
+      },
+      "pile": {
+        "name": "Pile d'icônes",
+        "desc": "Icônes qui tombent en bas de page"
+      }
+    }
   }
 }

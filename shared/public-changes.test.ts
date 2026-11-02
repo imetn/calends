@@ -121,15 +121,6 @@ test('瀑布各项相加等于期末，为 0 的项不出现', () => {
   assert.deepEqual(wf.steps.map((s) => s.id).slice(0, 2), ['from', 'added']);
   const flat = waterfallMonth(ledger(undefined, [sub({})]), '2026-06', TODAY, 'USD');
   assert.deepEqual(flat.steps.map((s) => s.id), ['from', 'to']);
-  assert.equal(flat.floor, 0);
-});
-
-test('纵轴：变化相对总额很小时抬高起点，变化大时从 0 起', () => {
-  const big = sub({ price: 2000, start: '2024-01-01' });
-  const small = waterfallMonth(ledger(undefined, [big, sub({ id: 'b', price: 40, start: '2026-06-02' })]), '2026-06', TODAY, 'USD');
-  assert.ok(small.floor > 0 && small.floor < 2000);
-  const large = waterfallMonth(ledger(undefined, [sub({ price: 10, start: '2024-01-01' }), sub({ id: 'b', price: 100, start: '2026-06-02' })]), '2026-06', TODAY, 'USD');
-  assert.equal(large.floor, 0);
 });
 
 test('没有周期订阅（或还没开始）时没有可翻的月份', () => {
