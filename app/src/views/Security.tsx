@@ -134,7 +134,7 @@ function DeviceCell({ d, tz, onRevoke, onRename }: { d: Device; tz: string; onRe
         </span>
       }
       sub={[
-        d.name ? ua.replaceAll('\n', ' ') : '',
+        d.name ? ua : '',
         where,
         [
           t(d.method === 'passkey' ? 'settings.security.signedInPasskey' : 'settings.security.signedInPassword', { time: localTime(d.createdAt, tz, true) }),
