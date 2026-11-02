@@ -1,7 +1,7 @@
-/* 公开页编辑：左边设置，右边真实预览；手机上切换 */
+/* 公开页编辑：左边组件库和页面信息，右边真实画布；手机上切换 */
 .ppe.page {
   display: grid;
-  grid-template-columns: minmax(340px, 400px) minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
   gap: 24px;
   align-items: start;
   max-width: none;
@@ -42,14 +42,6 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-.ppe .nav-row-name {
-  flex: 1;
-  min-width: 0;
-}
-.ppe .nav-row .cell-r {
-  flex: none;
-  margin-right: 8px;
 }
 @media (max-width: 860px) {
   .ppe.page {

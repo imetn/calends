@@ -3606,7 +3606,7 @@ test('annual review new/ended metric keeps counts and its existing note without 
 
 test('public stopped card omits the avoided-renewal total while retaining each old monthly price and stop month', async () => {
   const { maskForPublic } = await import('./mask.ts');
-  const { fillRows, publicGrid, publicParts, tabletSpan } = await import('./public-layout.ts');
+  const { collapseEmpty, fillRows, flowSpans, PUBLIC_GRID_SECTIONS, isCustomLayout, publicGrid, publicParts, tabletSpan } = await import('./public-layout.ts');
   const sub: Subscription = {
     id: 'public-stopped',
     name: 'Fictional stopped',
@@ -3646,7 +3646,11 @@ test('public stopped card omits the avoided-renewal total while retaining each o
     {},
     {
       ...components,
+      collapseEmpty,
+      flowSpans,
+      PUBLIC_GRID_SECTIONS,
       fillRows,
+      isCustomLayout,
       publicGrid,
       publicParts,
       tabletSpan,

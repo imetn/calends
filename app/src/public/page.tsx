@@ -9,7 +9,7 @@ import { locale, t, type Params } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue, toBaseAt, toBaseOrNaN } from '../../../shared/fx.ts';
 import { cancelSavings, contributionOn, mrrSeries } from '../../../shared/metrics.ts';
 import { avatarOf, type AppState, type PublicPageConfig, type Subscription } from '../../../shared/types.ts';
-import { fillRows, PUBLIC_PREVIEW_DATA, PUBLIC_PREVIEW_DRAFT, PUBLIC_PREVIEW_READY, publicGrid, publicParts, tabletSpan, type PublicGridId } from '../../../shared/public-layout.ts';
+import { collapseEmpty, fillRows, flowSpans, gridSections, PUBLIC_GRID_SECTIONS, isCustomLayout, PUBLIC_PREVIEW_DATA, PUBLIC_PREVIEW_DRAFT, PUBLIC_PREVIEW_LAYOUT, PUBLIC_PREVIEW_READY, publicGrid, publicParts, tabletSpan, type PublicGridId, type PublicGridItem } from '../../../shared/public-layout.ts';
 import { allCharges, catIcon, periodRange, sumBase, syncCategories, firstStart } from '../derive.ts';
 import { CatGlyph } from '../components/CatGlyph.tsx';
 import { THEME_LABEL, ThemeIcon, useThemeMode } from '../theme.tsx';
@@ -26,6 +26,7 @@ import { TooltipProvider } from '@/public/components/ui/tooltip';
 import { cn } from '@/public/lib/utils';
 import { PROJECT_NAME, PROJECT_URL } from '../../../shared/brand.ts';
 import { IconPile } from './components/icon-pile.tsx';
+import { Canvas, CanvasFixed, cellVars, type CanvasText } from './canvas.tsx';
 import { loadLocale, preferredLocale } from '../i18n.ts';
 
 /** 公开页可切换的币种：本位币，和（本位币不是美元时）美元 */
@@ -66,7 +67,7 @@ function rich(key: string, params: Params, parts: Record<string, React.ReactNode
 const roomy = 'sm:[--card-spacing:--spacing(6)]';
 
 /** 页头和布局：访客来自账本设置；编辑页预览时由草稿实时覆盖，账本数据不重算 */
-type View = { title?: string; avatar?: string; config?: PublicPageConfig };
+type View = { title?: string; avatar?: string; config?: PublicPageConfig; canvas?: CanvasText };
 type Draft = Omit<View, 'title'> & { publicTitle?: string; displayName?: string };
 
 /** 被同源页面嵌入的编辑预览：数据由编辑页发来，不请求接口，公开页关闭时也能看 */
@@ -101,7 +102,7 @@ export function PublicPage() {
       const applyDraft = () => {
         if (!latest) return;
         applyTitle(latest.displayName, latest.publicTitle, latest.config?.browserTitle);
-        setView({ title: title(), avatar: latest.avatar, config: latest.config });
+        setView({ title: title(), avatar: latest.avatar, config: latest.config, canvas: latest.canvas });
       };
       const onMessage = (e: MessageEvent) => {
         if (e.origin !== location.origin || e.source !== window.parent) return;
@@ -340,9 +341,20 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
               </Card>
     ),
   };
-  const cells = publicGrid(config).filter((s) => !s.hidden && blocks[s.id]);
-  const desktop = fillRows(cells.map((s) => s.span));
-  const tablet = fillRows(cells.map((s) => tabletSpan(s.span)));
+  const grid = publicGrid(config);
+  const flowCells = grid.filter((s) => !s.hidden && blocks[s.id]);
+  const desktop = flowSpans(flowCells.map((s) => s.id));
+  const tablet = fillRows(flowCells.map((s) => tabletSpan(PUBLIC_GRID_SECTIONS.find((d) => d.id === s.id)!.w)));
+  const canvas = view.canvas;
+  const sendLayout = (message: { sections?: ReturnType<typeof gridSections>; remove?: string }) => window.parent.postMessage({ type: PUBLIC_PREVIEW_LAYOUT, ...message }, location.origin);
+  const fixed = (id: 'footer' | 'pile', node: React.ReactNode) =>
+    canvas ? (
+      <CanvasFixed label={canvas.labels[id]} text={canvas} onRemove={() => sendLayout({ remove: id })}>
+        {node}
+      </CanvasFixed>
+    ) : (
+      node
+    );
 
   return (
     <Shell
@@ -370,33 +382,44 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
         </div>
       }
     >
-      <div className="public-grid">
-        {cells.map((s, i) => (
-          <div key={s.id} className="public-cell @container" style={{ '--span-md': tablet[i], '--span-lg': desktop[i] } as React.CSSProperties}>
-            {blocks[s.id]}
-          </div>
-        ))}
-      </div>
-
-      {parts.has('footer') && (
-      <footer className="mt-10 flex items-center justify-between border-t-[0.5px] border-border/70 pt-5 text-[length:var(--fs-2)] text-muted-foreground">
-        <a href={PROJECT_URL} className="flex items-center gap-2 transition hover:text-foreground">
-          <img src={appPath("/icons/logo.svg")} alt="" className="size-5 rounded-md" />
-          <span className="font-medium text-foreground">{PROJECT_NAME}</span>
-          <span>v{__APP_VERSION__}</span>
-        </a>
-        <a href={PROJECT_URL} className="transition hover:text-foreground" aria-label="GitHub" title="GitHub">
-          <GitHubMark className="size-5" />
-        </a>
-      </footer>
-      )}
-      {/* 页脚下面的订阅堆：继续往下滑才会从屏幕顶端落下来；每个正在付费的订阅一个图标，越贵越大 */}
-      {/* 抵消外层的底部留白（pb-12），让图标堆贴着页面最底部 */}
-      {parts.has('pile') && (
-        <div className="mt-6 -mb-12">
-          <IconPile items={d.live.filter((x) => x.v > 0)} />
+      {canvas ? (
+        <Canvas config={config} blocks={blocks} text={canvas} onCommit={(items: PublicGridItem[]) => sendLayout({ sections: gridSections(items) })} onRemove={(id: string) => sendLayout({ remove: id })} />
+      ) : isCustomLayout(config) ? (
+        <div className="public-grid" data-free="">
+          {collapseEmpty(grid, (id) => !blocks[id]).map((s) => (
+            <div key={s.id} className="public-cell @container" style={cellVars(s)}>
+              {blocks[s.id]}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="public-grid">
+          {flowCells.map((s, i) => (
+            <div key={s.id} className="public-cell @container" style={{ '--span-md': tablet[i], '--span-lg': desktop[i] } as React.CSSProperties}>
+              {blocks[s.id]}
+            </div>
+          ))}
         </div>
       )}
+
+      {parts.has('footer') &&
+        fixed(
+          'footer',
+          <footer className="mt-10 text-[length:var(--fs-2)] text-muted-foreground">
+            <a href={PROJECT_URL} className="transition hover:text-foreground">
+              {PROJECT_NAME} v{__APP_VERSION__}
+            </a>
+          </footer>,
+        )}
+      {/* 页脚下面的订阅堆：继续往下滑才会从屏幕顶端落下来；每个正在付费的订阅一个图标，越贵越大 */}
+      {/* 抵消外层的底部留白（pb-12），让图标堆贴着页面最底部 */}
+      {parts.has('pile') &&
+        fixed(
+          'pile',
+          <div className="mt-6 -mb-12">
+            <IconPile items={d.live.filter((x) => x.v > 0)} />
+          </div>,
+        )}
     </Shell>
   );
 }
@@ -504,9 +527,12 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 
 function PaidChart({ months, cur, ccy, fmt }: { months: Array<{ m: string; v: number }>; cur: string; ccy: string; fmt: (v: number) => string }) {
   const paidConfig = { v: { label: t('public.chart.charge'), color: 'var(--c1)' } } satisfies ChartConfig;
+  // barCategoryGap 是每一侧的留白：25% 正好让柱子占格宽的一半（--bar-ratio），写 50% 柱宽为 0、一根都不显示
+  // 与 --bar-radius 同一断点：Recharts 的 radius 只收数字
+  const radius = globalThis.matchMedia?.('(max-width: 700px)').matches ? 4 : 6;
   return (
     <ChartContainer config={paidConfig} className="aspect-auto h-52 w-full">
-      <BarChart data={months} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+      <BarChart data={months} barCategoryGap="25%" margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
         <CartesianGrid strokeWidth={0.5} vertical={false} strokeDasharray="2 4" />
         <XAxis dataKey="m" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={6} tickFormatter={(m: string) => monthTick(m, cur)} />
         <YAxis tickLine={false} axisLine={false} width={44} tickCount={4} tickFormatter={(v: number) => moneyTick(v, ccy)} />
@@ -514,7 +540,7 @@ function PaidChart({ months, cur, ccy, fmt }: { months: Array<{ m: string; v: nu
           cursor={false}
           content={<ChartTooltipContent hideIndicator labelFormatter={(m) => (String(m) > cur ? copyParts(t('public.chart.projected', { month: monthFull(String(m)) })) : monthFull(String(m)))} formatter={(v) => <span className="font-medium tnum">{fmt(Number(v))}</span>} />}
         />
-        <Bar dataKey="v" radius={4} maxBarSize={26}>
+        <Bar dataKey="v" radius={[radius, radius, 0, 0]} maxBarSize={24}>
           {months.map((x) => (
             <Cell
               key={x.m}
@@ -728,14 +754,5 @@ function Row({ s, v, today, ccy, k, fmt }: { s: Subscription; v: number; today: 
         {!monthly && <div className="text-[length:var(--fs-2)] text-muted-foreground">{t('public.row.perMonthEq')}</div>}
       </div>
     </div>
-  );
-}
-
-/** GitHub 标志（官方 mark） */
-function GitHubMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
-      <path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .32.21.69.82.57A12 12 0 0 0 12 .3" />
-    </svg>
   );
 }

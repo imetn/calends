@@ -1,5 +1,3 @@
-import { closestCenter, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '../../../shared/i18n.ts';
@@ -7,26 +5,30 @@ import { maskForPublic } from '../../../shared/mask.ts';
 import {
   PUBLIC_BIO_MAX,
   PUBLIC_BOTTOM_SECTIONS,
-  PUBLIC_COLUMNS,
+  PUBLIC_GRID_SECTIONS,
   PUBLIC_HERO_PARTS,
   PUBLIC_PREVIEW_DATA,
   PUBLIC_PREVIEW_DRAFT,
+  PUBLIC_PREVIEW_LAYOUT,
   PUBLIC_PREVIEW_READY,
   PUBLIC_TITLE_MAX,
   publicBottomShown,
   publicConfigForVisitors,
   publicGrid,
   publicHeroShown,
+  gridConfig,
+  hideItem,
+  showItem,
+  validPublicPage,
   type PublicBottomId,
   type PublicGridItem,
   type PublicHeroPart,
 } from '../../../shared/public-layout.ts';
-import type { AppState, PublicPageConfig, Settings } from '../../../shared/types.ts';
+import type { AppState, PublicPageConfig, PublicSectionConfig, Settings } from '../../../shared/types.ts';
 import { base } from '../base.ts';
 import { ask } from '../components/overlays.tsx';
-import { Icon } from '../components/icons.tsx';
-import { Seg, Stepper, Toggle, useMedia } from '../components/inputs.tsx';
-import { Cell, Group, IconButton, Toolbar } from '../components/ui.tsx';
+import { Seg, Toggle, useMedia } from '../components/inputs.tsx';
+import { Cell, Group, Toolbar } from '../components/ui.tsx';
 import { href, setLeaveGuard } from '../router.ts';
 import { saveSettings } from '../store.ts';
 import { run } from '../toast.ts';
@@ -53,13 +55,10 @@ const draftOf = (publicTitle: string | undefined, cfg: PublicPageConfig | undefi
   hero: { stats: publicHeroShown(cfg, 'stats'), timeline: publicHeroShown(cfg, 'timeline'), chart: publicHeroShown(cfg, 'chart') },
 });
 
-const defaultGrid = () => JSON.stringify(publicGrid(undefined));
-
 /** 草稿转成要存的配置：和默认一样的部分不存，全部默认时返回 undefined（设置里不留这个字段） */
 function configOf(d: Draft): PublicPageConfig | undefined {
   const hiddenBottom = PUBLIC_BOTTOM_SECTIONS.filter((id) => !d.bottom[id]).map((id) => ({ id: id as string, hidden: true }));
-  const grid = JSON.stringify(d.grid) === defaultGrid() ? [] : d.grid.map((s) => ({ id: s.id as string, span: s.span, ...(s.hidden ? { hidden: true } : {}) }));
-  const sections = [...grid, ...hiddenBottom];
+  const sections = [...gridConfig(d.grid), ...hiddenBottom];
   const heroOff = PUBLIC_HERO_PARTS.filter((p) => !d.hero[p]);
   const cfg: PublicPageConfig = {
     ...(d.browserTitle.trim() ? { browserTitle: d.browserTitle.trim() } : {}),
@@ -70,6 +69,11 @@ function configOf(d: Draft): PublicPageConfig | undefined {
   };
   return Object.keys(cfg).length ? cfg : undefined;
 }
+
+const isBottom = (id: string): id is PublicBottomId => (PUBLIC_BOTTOM_SECTIONS as readonly string[]).includes(id);
+const hideSection = (d: Draft, id: string): Draft =>
+  isBottom(id) ? { ...d, bottom: { ...d.bottom, [id]: false } } : { ...d, grid: hideItem(d.grid, id) };
+const addSection = (d: Draft, id: string): Draft => (isBottom(id) ? { ...d, bottom: { ...d.bottom, [id]: true } } : { ...d, grid: showItem(d.grid, id) });
 
 const sectionLabel: Record<string, () => string> = {
   hero: () => t('settings.publicPage.hero'),
@@ -85,43 +89,6 @@ const sectionLabel: Record<string, () => string> = {
   pile: () => t('settings.publicPage.pile'),
 };
 
-function SectionRow({ item, onChange }: { item: PublicGridItem; onChange: (patch: Partial<PublicGridItem>) => void }) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-  const label = sectionLabel[item.id]();
-  return (
-    <div
-      ref={setNodeRef as (el: HTMLDivElement | null) => void}
-      className={`cell cat-row nav-row ${isDragging ? 'lifted' : ''}`}
-      style={{ transform: transform ? `translate3d(0, ${transform.y}px, 0)` : undefined, transition } as Record<string, string | undefined>}
-    >
-      <IconButton
-        type="button"
-        ref={setActivatorNodeRef as (el: HTMLButtonElement | null) => void}
-        className="cat-grip"
-        aria-label={t('settings.cat.dragHandle')}
-        {...(attributes as unknown as Record<string, unknown>)}
-        {...(listeners as Record<string, unknown>)}
-      >
-        <Icon name="grip" />
-      </IconButton>
-      <span className="nav-row-name">{label}</span>
-      {!item.hidden && (
-        <span className="cell-r">
-          <Stepper
-            value={item.span}
-            min={item.min}
-            max={PUBLIC_COLUMNS}
-            label={t('settings.publicPage.width', { name: label })}
-            unit={() => `/${PUBLIC_COLUMNS}`}
-            onChange={(span) => onChange({ span })}
-          />
-        </span>
-      )}
-      <Toggle label={label} checked={!item.hidden} onChange={(v) => onChange({ hidden: !v })} />
-    </div>
-  );
-}
-
 /** 预览：iframe 按真实页面宽度渲染再等比缩小，不因预览区窄而变成平板布局 */
 function Preview({ device, frame }: { device: 'desktop' | 'phone'; frame: React.RefObject<HTMLIFrameElement | null> }) {
   const box = useRef<HTMLDivElement>(null);
@@ -132,7 +99,7 @@ function Preview({ device, frame }: { device: 'desktop' | 'phone'; frame: React.
     ro.observe(box.current);
     return () => ro.disconnect();
   }, []);
-  const width = device === 'desktop' ? 1200 : 390;
+  const width = device === 'desktop' ? 1040 : 390;
   const scale = size.w ? Math.min(1, size.w / width) : 1;
   return (
     <div ref={box} className="ppe-frame">
@@ -156,6 +123,8 @@ export function PublicPageEditor({ state }: { state: AppState }) {
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [device, setDevice] = useState<'desktop' | 'phone'>('desktop');
   const narrow = useMedia('(max-width: 860px)');
+  // 触屏上手指要用来滚动页面，画布只看不改
+  const touch = useMedia('(pointer: coarse)');
   const up = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
 
   const config = configOf(draft);
@@ -172,15 +141,24 @@ export function PublicPageEditor({ state }: { state: AppState }) {
       displayName: draft.publicTitle.trim() ? '' : s.displayName,
       avatar: config?.avatar ?? s.avatar,
       config: publicConfigForVisitors(config),
+      // 手机宽度、窄屏和触屏上只看效果
+      canvas: narrow || touch || device !== 'desktop' ? undefined : { labels: Object.fromEntries(Object.keys(sectionLabel).map((id) => [id, sectionLabel[id]()])), remove: t('settings.publicPage.remove'), empty: t('settings.publicPage.emptyCard') },
     }),
-    [configKey, draft.publicTitle, s.displayName, s.avatar],
+    [configKey, draft.publicTitle, s.displayName, s.avatar, narrow, touch, device],
   );
   const frame = useRef<HTMLIFrameElement>(null);
   const ready = useRef(false);
   const post = (message: unknown) => frame.current?.contentWindow?.postMessage(message, location.origin);
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
-      if (e.origin !== location.origin || e.source !== frame.current?.contentWindow || e.data?.type !== PUBLIC_PREVIEW_READY) return;
+      if (e.origin !== location.origin || e.source !== frame.current?.contentWindow) return;
+      if (e.data?.type === PUBLIC_PREVIEW_LAYOUT) {
+        const { sections, remove } = e.data as { sections?: PublicSectionConfig[]; remove?: string };
+        if (sections && validPublicPage({ sections })) setDraft((d) => ({ ...d, grid: publicGrid({ sections }) }));
+        if (remove) setDraft((d) => hideSection(d, remove));
+        return;
+      }
+      if (e.data?.type !== PUBLIC_PREVIEW_READY) return;
       ready.current = true;
       post({ type: PUBLIC_PREVIEW_DATA, state: masked });
       post({ type: PUBLIC_PREVIEW_DRAFT, draft: previewDraft });
@@ -207,16 +185,6 @@ export function PublicPageEditor({ state }: { state: AppState }) {
     };
   }, [dirty]);
 
-  const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-  const onDragEnd = (e: DragEndEvent) => {
-    if (!e.over || e.active.id === e.over.id) return;
-    const ids = draft.grid.map((x) => x.id as string);
-    up({ grid: arrayMove(draft.grid, ids.indexOf(String(e.active.id)), ids.indexOf(String(e.over.id))) });
-  };
   const save = () => run(() => saveSettings({ publicTitle: (draft.publicTitle.trim() || null) as string | undefined, publicPage: (config ?? null) as PublicPageConfig | undefined }), t('settings.toast.saved'));
 
   const heroRow = draft.grid.find((x) => x.id === 'hero');
@@ -255,6 +223,27 @@ export function PublicPageEditor({ state }: { state: AppState }) {
           />
         )}
         <div className="ppe-form stack" hidden={!showEdit}>
+          <Group title={t('settings.publicPage.sections')} foot={t('settings.publicPage.sectionsFoot')}>
+            {[...PUBLIC_GRID_SECTIONS.map((x) => x.id as string), ...PUBLIC_BOTTOM_SECTIONS].map((id) => {
+              const on = isBottom(id) ? draft.bottom[id] : !draft.grid.find((x) => x.id === id)?.hidden;
+              return (
+                <Cell key={id} label={sectionLabel[id]()}>
+                  <button type="button" className="btn" onClick={() => setDraft((d) => (on ? hideSection(d, id) : addSection(d, id)))}>
+                    {t(on ? 'settings.publicPage.remove' : 'settings.publicPage.add')}
+                  </button>
+                </Cell>
+              );
+            })}
+          </Group>
+          {heroRow && !heroRow.hidden && (
+            <Group title={t('settings.publicPage.heroParts')}>
+              {PUBLIC_HERO_PARTS.map((part) => (
+                <Cell key={part} label={sectionLabel[part]()}>
+                  <Toggle label={sectionLabel[part]()} checked={draft.hero[part]} onChange={(v) => up({ hero: { ...draft.hero, [part]: v } })} />
+                </Cell>
+              ))}
+            </Group>
+          )}
           <Group title={t('settings.publicPage.head')}>
             <Cell label={t('settings.publicPage.browserTitle')}>
               <input
@@ -293,29 +282,6 @@ export function PublicPageEditor({ state }: { state: AppState }) {
               </span>
             </div>
           </Group>
-          <Group title={t('settings.publicPage.sections')} foot={t('settings.publicPage.sectionsFoot')}>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-              <SortableContext items={draft.grid.map((x) => x.id)} strategy={verticalListSortingStrategy}>
-                {draft.grid.map((item) => (
-                  <SectionRow key={item.id} item={item} onChange={(patch) => up({ grid: draft.grid.map((x) => (x.id === item.id ? { ...x, ...patch } : x)) })} />
-                ))}
-              </SortableContext>
-            </DndContext>
-            {PUBLIC_BOTTOM_SECTIONS.map((id) => (
-              <Cell key={id} label={sectionLabel[id]()}>
-                <Toggle label={sectionLabel[id]()} checked={draft.bottom[id]} onChange={(v) => up({ bottom: { ...draft.bottom, [id]: v } })} />
-              </Cell>
-            ))}
-          </Group>
-          {heroRow && !heroRow.hidden && (
-            <Group title={t('settings.publicPage.heroParts')}>
-              {PUBLIC_HERO_PARTS.map((part) => (
-                <Cell key={part} label={sectionLabel[part]()}>
-                  <Toggle label={sectionLabel[part]()} checked={draft.hero[part]} onChange={(v) => up({ hero: { ...draft.hero, [part]: v } })} />
-                </Cell>
-              ))}
-            </Group>
-          )}
         </div>
         <div className="ppe-preview" hidden={!showPreview}>
           <Seg

@@ -418,7 +418,11 @@ export interface PublicSectionConfig {
   id: string;
   hidden?: boolean;
   /** 占 12 栏里的几栏；页面底部的组件没有这一项 */
-  span?: number;
+  /** 12 栏网格上的位置和大小，四个一起存；高度是下限，内容更高时卡片自动长高 */
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
 }
 
 export interface PublicPageConfig {

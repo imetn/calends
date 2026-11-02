@@ -167,9 +167,138 @@
     grid-column: span var(--span-lg);
   }
 }
-/* 编辑页预览：iframe 里不出现可见滚动条 */
+/* 摆放过的页面：桌面按存下的格子放；行高是下限，内容更高时整行长高，不裁切。窄屏仍是单列，顺序从上到下 */
+.public-grid[data-free] > .public-cell {
+  grid-column: 1 / -1;
+}
+@media (min-width: 64rem) {
+  .public-grid[data-free] {
+    grid-auto-rows: minmax(1.5rem, auto);
+  }
+  .public-grid[data-free] > .public-cell {
+    grid-column: var(--x) / span var(--w);
+    grid-row: var(--y) / span var(--h);
+  }
+  .public-grid[data-free] > .public-cell > :first-child {
+    height: 100%;
+  }
+  .public-grid[data-free] > .public-cell[data-measure] {
+    align-self: start;
+  }
+  .public-grid[data-free] > .public-cell[data-measure] > :first-child {
+    height: auto;
+  }
+}
+/* 画布：卡片内容不响应鼠标，所有操作落在上面这层 */
+.public-grid[data-active] {
+  background-image: linear-gradient(to right, var(--muted) calc(100% - 1rem), transparent 0);
+  background-size: calc((100% + 1rem) / 12) 100%;
+}
+[data-canvas] .public-cell,
+.public-canvas-fixed {
+  position: relative;
+}
+[data-canvas] .public-cell[data-active] {
+  z-index: 1;
+}
+.public-canvas-box {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.public-canvas-box[data-fixed] {
+  cursor: default;
+}
+[data-active] > .public-canvas-box {
+  cursor: grabbing;
+}
+.public-canvas-box:hover,
+[data-active] > .public-canvas-box {
+  box-shadow: 0 0 0 1.5px var(--foreground);
+}
+.public-canvas-name,
+.public-canvas-remove {
+  /* 骑在卡片上边缘，不盖住卡片标题 */
+  position: absolute;
+  top: -12px;
+  display: none;
+  align-items: center;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  background: var(--foreground);
+  color: var(--background);
+  font-size: var(--fs-1);
+}
+.public-canvas-name {
+  left: 8px;
+  padding: 0 8px;
+}
+.public-canvas-remove {
+  right: 8px;
+  justify-content: center;
+  width: 24px;
+  cursor: pointer;
+}
+.public-canvas-box:hover > .public-canvas-name,
+.public-canvas-box:hover > .public-canvas-remove,
+[data-active] > .public-canvas-box > .public-canvas-name {
+  display: inline-flex;
+}
+.public-canvas-handle {
+  position: absolute;
+  touch-action: none;
+}
+.public-canvas-handle[data-edge='e'] {
+  top: 0;
+  right: -6px;
+  bottom: 12px;
+  width: 12px;
+  cursor: ew-resize;
+}
+.public-canvas-handle[data-edge='s'] {
+  right: 12px;
+  bottom: -6px;
+  left: 0;
+  height: 12px;
+  cursor: ns-resize;
+}
+.public-canvas-handle[data-edge='se'] {
+  right: -6px;
+  bottom: -6px;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+}
+.public-canvas-box:hover > .public-canvas-handle[data-edge='se']::after,
+[data-active] > .public-canvas-box > .public-canvas-handle[data-edge='se']::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--foreground);
+}
+.public-canvas-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 6rem;
+  padding: 1rem;
+  background: var(--muted);
+  border-radius: var(--radius-md);
+  color: var(--muted-foreground);
+  font-size: var(--fs-2);
+  text-align: center;
+}
+/* 编辑页预览：iframe 里不出现可见滚动条；按下卡片时高度补齐，不让滚动锚定挪动页面（否则卡片会凭空跳一行） */
 :root[data-preview] {
   scrollbar-width: none;
+  overflow-anchor: none;
 }
 :root[data-preview]::-webkit-scrollbar {
   display: none;
