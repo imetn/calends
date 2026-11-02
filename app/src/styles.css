@@ -3946,6 +3946,9 @@ button.h-price-row:focus-visible {
 .pop-shell > .dp-pop:not(.mobile) {
   position: static;
 }
+.pop-shell > .dp-pop.fit:not(.mobile) {
+  max-height: inherit;
+}
 .dp-pop:focus,
 .dp-pop:focus-visible {
   outline: none;

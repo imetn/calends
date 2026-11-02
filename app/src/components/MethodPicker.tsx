@@ -5,7 +5,7 @@ import { t } from '../../../shared/i18n.ts';
 import { Icon } from './icons.tsx';
 import { touchFirst } from './inputs.tsx';
 import { MethodMark } from './marks.tsx';
-import { Pop } from './Pop.tsx';
+import { fitBelowSheetHead, Pop } from './Pop.tsx';
 import { useTextSearch } from '../use-search.ts';
 
 /**
@@ -14,6 +14,7 @@ import { useTextSearch } from '../use-search.ts';
  */
 export function MethodPicker({ methods, value, onChange }: { methods: PaymentMethod[]; value?: string; onChange: (id: string | undefined) => void }) {
   const [open, setOpen] = useState(false);
+  const [fit, setFit] = useState<ReturnType<typeof fitBelowSheetHead>>();
   const [q, setQ] = useState('');
   const btn = useRef<HTMLButtonElement>(null);
   const cur = methods.find((m) => m.id === value);
@@ -34,13 +35,23 @@ export function MethodPicker({ methods, value, onChange }: { methods: PaymentMet
 
   return (
     <>
-      <button type="button" ref={btn} className={`mp-btn ${cur ? '' : 'empty'}`} onClick={() => setOpen(!open)} aria-haspopup="listbox" aria-expanded={open}>
+      <button
+        type="button"
+        ref={btn}
+        className={`mp-btn ${cur ? '' : 'empty'}`}
+        onClick={() => {
+          if (!open) setFit(fitBelowSheetHead(btn.current, 420));
+          setOpen(!open);
+        }}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
         {cur && <MethodMark m={cur} size={20} />}
         <span>{cur ? cur.name : t('picker.method.none')}</span>
         <Icon name="updown" />
       </button>
       {open && (
-        <Pop triggerRef={btn} onClose={close} label={t('picker.method.label')} className="mp-pop">
+        <Pop triggerRef={btn} onClose={close} label={t('picker.method.label')} className="mp-pop" placement={fit?.placement} maxHeight={fit?.maxHeight}>
           <label className="cp-search">
             <Icon name="search" />
             <input autoFocus={!touchFirst()} value={q} placeholder={t('common.search')} onChange={(e) => setQ(e.target.value)} />

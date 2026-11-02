@@ -1484,3 +1484,13 @@ test('手机上「更多选项」的摘要折行读完，不用省略号截断',
   assert.match(phone, /white-space:\s*normal/);
   assert.match(phone, /text-overflow:\s*clip/);
 });
+
+test('弹窗里的支付方式弹层自己选方向并限高，翻上去也不盖住弹窗标题栏', () => {
+  const pop = readFileSync(new URL('components/Pop.tsx', root), 'utf8');
+  assert.match(pop, /closest\('\.sheet-dlg'\)\?\.querySelector\('\.sheet-head'\)/);
+  assert.match(pop, /shouldFlip=\{!fit\}/);
+  const mp = readFileSync(new URL('components/MethodPicker.tsx', root), 'utf8');
+  assert.match(mp, /setFit\(fitBelowSheetHead\(btn\.current, 420\)\)/);
+  assert.match(mp, /maxHeight=\{fit\?\.maxHeight\}/);
+  assert.match(rulesFor('.pop-shell > .dp-pop.fit:not(.mobile)'), /max-height:\s*inherit/);
+});
