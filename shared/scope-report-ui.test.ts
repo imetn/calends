@@ -1130,6 +1130,17 @@ test('发送记录只在二级面板出现，不占设置页', () => {
   const page = source.slice(source.indexOf('export function Settings('));
   assert.equal(page.match(/<ReminderPreview /g)?.length, 1);
   assert.ok(page.indexOf('<ReminderPreview ') > page.indexOf("<Sheet narrow title={t('settings.remind.log')}"));
+  // 刷新失败：旧记录留着，行上和面板里都写明，没有记录时也能进去重试
+  assert.match(page, /const showLog = failed\.preview \|\|/);
+  assert.match(page, /\{failed\.preview && <span[^>]*>\{t\('ui\.loadFailed'\)\}/);
+  assert.match(page, /\{failed\.preview && \(\s*<Group>\s*<LoadFailed/);
+  assert.match(page, /\{preview && <ReminderPreview /);
+});
+
+test('用量图汇总成月、季、年时写明每根柱是合计，和「平均每期」的差别有说明', () => {
+  const source = readFileSync(new URL('../app/src/views/detail/Meters.tsx', import.meta.url), 'utf8');
+  assert.match(source, /onBucket=\{setBucket\}/);
+  assert.match(source, /bucket > 0 && \(\s*<div className="dt-legend">\s*<span>\{t\(`detail\.chart\.bucket\.m\$\{bucket\}`\)\}/);
 });
 
 test('公开页时间线的支出和退款使用同一收支格式，关闭符号后同时移除', () => {

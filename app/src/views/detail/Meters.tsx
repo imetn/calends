@@ -112,6 +112,7 @@ export function Meters({
   const meters = sub.meters ?? [];
   const [manage, setManage] = useState(false);
   const [reading, setReading] = useState<{ id?: string } | null>(null);
+  const [bucket, setBucket] = useState(0);
   const cur = meters.find((m) => m.id === meterId) ?? meters[0];
   const setPicked = (id: string) => onMeter?.(id);
   const save = (next: Subscription, close: () => void) =>
@@ -244,6 +245,7 @@ export function Meters({
             fmt={(v) => withUnit(v, cur.unit, q)}
             tick={(v, ticks) => usageTick(v, cur.unit, ticks)}
             lanes={[]}
+            onBucket={setBucket}
             onPick={
               ro
                 ? undefined
@@ -278,6 +280,11 @@ export function Meters({
               )
             }
           />
+        )}
+        {trend.length > 1 && bucket > 0 && (
+          <div className="dt-legend">
+            <span>{t(`detail.chart.bucket.m${bucket}`)}</span>
+          </div>
         )}
         {/* 指标在顶部，这里只有走势；画不出时留一句说明，不留空卡 */}
         {trend.length <= 1 && <p className="muted dt-meters-none">{t('detail.meters.noTrend')}</p>}

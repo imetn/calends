@@ -176,7 +176,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
   // 读取失败要显示出来：不能把失败当成「今天没有提醒」「汇率覆盖未知」
   const [failed, setFailed] = useState({ preview: false, fx: false });
   // 重试成功但没有记录时，这一行和面板一起消失，不留空面板
-  const showLog = preview ? preview.digests.length > 0 || preview.log.length > 0 : failed.preview;
+  const showLog = failed.preview || (!!preview && (preview.digests.length > 0 || preview.log.length > 0));
   const loadPreview = () =>
     api<Preview>('/api/notify/preview').then(
       (v) => {
@@ -462,7 +462,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
           {/* 发送记录属于日志，不占设置页：没有记录时不出这一行；读取失败时在行上写明，点进去重试 */}
           {showLog && (
             <Cell label={t('settings.remind.log')} onClick={() => setSendLog(true)}>
-              {!preview && <span style={{ color: 'var(--red)' }}>{t('ui.loadFailed')}</span>}
+              {failed.preview && <span style={{ color: 'var(--red)' }}>{t('ui.loadFailed')}</span>}
             </Cell>
           )}
         </Group>
@@ -639,13 +639,13 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
       {sendLog && showLog && (
         <Sheet narrow title={t('settings.remind.log')} onClose={() => setSendLog(false)}>
           <div className="stack" style={{ gap: 26 }}>
-            {failed.preview && !preview ? (
+            {/* 刷新失败时上次读到的记录还在，留着并写明，不当成最新 */}
+            {failed.preview && (
               <Group>
                 <LoadFailed onRetry={() => void loadPreview()} />
               </Group>
-            ) : (
-              <ReminderPreview preview={preview} timezone={s.timezone} />
             )}
+            {preview && <ReminderPreview preview={preview} timezone={s.timezone} />}
           </div>
         </Sheet>
       )}

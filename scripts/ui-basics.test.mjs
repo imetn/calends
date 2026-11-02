@@ -1635,3 +1635,9 @@ test('bars meet the axis with square bottoms and every forecast area uses the on
   const legend = readFileSync(new URL('views/detail/ChargeTimeline.tsx', root), 'utf8');
   assert.doesNotMatch(legend, /detail\.timeline\.paid/);
 });
+
+test('表单底栏压住内容里抬高的时间线圆点，手机上滚动时不从底栏露出', () => {
+  const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  const layer = (selector) => Number(css.match(new RegExp(`${selector}\\s*\\{[^}]*z-index:\\s*(\\d+)`))?.[1] ?? 0);
+  assert.ok(layer('\\.sheet-foot') > layer('\\.h-phase::before'));
+});

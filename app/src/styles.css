@@ -1622,6 +1622,7 @@ a {
 .sheet-foot {
   position: sticky;
   bottom: 0;
+  z-index: 2;
   padding: 12px 18px calc(12px + var(--safe-b));
   background: color-mix(in srgb, var(--bg) 86%, transparent);
   backdrop-filter: blur(18px);
