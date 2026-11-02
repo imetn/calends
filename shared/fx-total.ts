@@ -56,6 +56,8 @@ export interface TotalFormat {
   main?: boolean;
   /** All-missing multi-currency averages have no common unit. */
   average?: boolean;
+  /** Fixed decimals for the converted value only (e.g. a ledger whose amounts are all whole). */
+  decimals?: number;
 }
 export function formatUnconverted(total: FxTotal, opts: TotalFormat = {}): string {
   const fmt = (v: number, ccy: string) =>
@@ -78,8 +80,8 @@ export function formatTotal(total: FxTotal, currency: string, opts: TotalFormat 
   const original = formatUnconverted(total, opts);
   if (total.incomplete && !total.known) return opts.average && Object.keys(total.unconverted).length > 1 ? '—' : original || '—';
   const base = opts.direction
-    ? flow(total.value * opts.direction, currency, { compact: opts.compact })
-    : money(total.value, currency, { compact: opts.compact });
+    ? flow(total.value * opts.direction, currency, { compact: opts.compact, decimals: opts.decimals })
+    : money(total.value, currency, { compact: opts.compact, decimals: opts.decimals });
   const text = !opts.main && total.incomplete && original ? `${base} + ${original}` : base;
   return opts.approx ? `≈ ${text}` : text;
 }

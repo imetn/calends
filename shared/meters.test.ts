@@ -4,6 +4,7 @@ import { chargeDay, chargeServicePeriod, chargesBetween, FALLBACK_FX, subError }
 import { maskForPublic } from './mask.ts';
 import {
   costBetween,
+  meterDecimals,
   meterError,
   meterRows,
   meterStats,
@@ -243,6 +244,52 @@ test('a usage meter started mid-subscription prices its first reading against on
   assert.equal(row.since, '2025-03-15');
   assert.equal(row.cost?.amount, 100);
   near(row.unitPrice, 2);
+});
+
+// 回归：订阅开始前一天记的本期用量不属于任何计费周期，累计与期数要和扣款记录按服务期的合计一致
+test('a usage reading dated before the subscription start is left out of totals like the charge ledger', () => {
+  const early = vps({
+    readings: [
+      { id: 'pre0', date: '2024-12-20', values: { gb: 7 } },
+      { id: 'pre', date: '2025-01-09', values: { gb: 5 } },
+      { id: 'jan', date: '2025-02-09', values: { gb: 40 } },
+      { id: 'feb', date: '2025-03-09', values: { gb: 2.5 } },
+    ],
+  });
+  const rows = meterRows(early, traffic, today);
+  assert.equal(rows[0].usage, undefined);
+  assert.equal(rows[1].usage, undefined);
+  const sum = meterSummary(early, traffic, today);
+  assert.equal(sum.total, 42.5);
+  assert.equal(sum.periods, 2);
+  assert.equal(sum.from, '2025-02-09');
+  assert.equal(meterStats(rows).average, 21.25);
+  const charged = chargesBetween(early, early.start, today, today).filter((c) => !c.kind);
+  const ledger = charged.reduce((a, c) => {
+    const p = chargeServicePeriod(c.sub, c.date, c.serviceDate);
+    return a + (usageWithin(rows, p.from, p.until) ?? 0);
+  }, 0);
+  assert.equal(ledger, sum.total);
+});
+
+test('two usage readings on the same date both count', () => {
+  const twice = vps({
+    readings: [
+      { id: 'a', date: '2025-02-09', values: { gb: 40 } },
+      { id: 'b', date: '2025-02-09', values: { gb: 2 } },
+    ],
+  });
+  const rows = meterRows(twice, traffic, today);
+  assert.deepEqual(rows.map((r) => r.usage), [40, 2]);
+  assert.equal(meterSummary(twice, traffic, today).total, 42);
+});
+
+test('meter decimals follow the most precise recorded value, capped at three', () => {
+  assert.equal(meterDecimals(vps(), 'gb'), 0);
+  assert.equal(meterDecimals({ readings: [...readings, { id: 'x', date: '2025-05-15', values: { gb: 12.67 } }] }, 'gb'), 2);
+  assert.equal(meterDecimals({ readings: [{ id: 'y', date: '2025-05-15', values: { gb: 0.1 + 0.2 } }] }, 'gb'), 1);
+  assert.equal(meterDecimals({ readings: [{ id: 'z', date: '2025-05-15', values: { gb: 1.23456 } }] }, 'gb'), 3);
+  assert.equal(meterDecimals({}, 'gb'), 0);
 });
 
 // 扣款记录的用量列：每笔按它覆盖的服务期汇总，后付费 10 月 1 日的账单对应 9 月 30 日那条

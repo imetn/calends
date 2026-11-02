@@ -3,25 +3,26 @@ import { createPortal } from 'react-dom';
 import { Plus, Settings2 } from 'lucide-react';
 import { addDays, diffDays, isPostpaid, midDay, uid, type Charge } from '../../../../shared/billing.ts';
 import { chargesTotal, formatTotal } from '../../../../shared/fx-total.ts';
-import { cnDateFull, weekdayOf } from '../../../../shared/format.ts';
+import { cnDateFull, weekdayOf, wholeCurrencies } from '../../../../shared/format.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
 import { numberFormat } from '../../../../shared/intl.ts';
-import { meterStats, meterSuggestions, meterSummary, replaceMeters, type MeterRow } from '../../../../shared/meters.ts';
+import { meterDecimals, meterStats, meterSuggestions, meterSummary, replaceMeters, type MeterRow } from '../../../../shared/meters.ts';
 import type { AppState, Meter, Reading, Subscription } from '../../../../shared/types.ts';
 import { ConfirmButton } from '../../components/ConfirmButton.tsx';
 import { DatePicker } from '../../components/DatePicker.tsx';
 import { Panel } from '../../components/DetailKit.tsx';
 import { Picker } from '../../components/Picker.tsx';
 import { ChargeBars } from '../DetailChart.tsx';
-import { ChargeTip, chargeUsage, unitMoney, withUnit } from './ChargeTip.tsx';
+import { ChargeTip, chargeUsage, fixedQty, unitMoney, withUnit } from './ChargeTip.tsx';
 import { NumInput, Seg, useSubmit } from '../../components/inputs.tsx';
 import { ask, Sheet } from '../../components/overlays.tsx';
 import { Cell, Group, Metric } from '../../components/ui.tsx';
 import { saveSub } from '../../store.ts';
 import { run } from '../../toast.ts';
 
-/** 平均值是算出来的，按量级留小数：307.2 度、3.47 GB */
+/** 平均值是算出来的：记录带小数时与其余数量同一位数；记录全是整数（次数、度数）时按量级留小数：307.2 度、3.47 次 */
 const avgQty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: Math.abs(n) >= 100 ? 1 : 2 }).format(n);
+const avgFmt = (decimals: number) => (decimals ? fixedQty(decimals) : avgQty);
 const priceText = (r: MeterRow, unit: string) => unitMoney(r.unitPrice!, r.cost!.currency, unit);
 
 /**
@@ -32,6 +33,8 @@ export function usageMetrics(sub: Subscription, cur: Meter, today: string) {
   const stats = meterStats(summary.rows);
   const latest = summary.latest;
   const isReading = cur.kind === 'reading';
+  const dec = meterDecimals(sub, cur.id);
+  const q = fixedQty(dec);
   return [
     <Metric
       key="latest"
@@ -46,13 +49,13 @@ export function usageMetrics(sub: Subscription, cur: Meter, today: string) {
           t('detail.meters.latest')
         )
       }
-      value={latest?.usage != null ? withUnit(latest.usage, cur.unit) : '—'}
-      note={latest && (isReading ? t('detail.meters.readingValue', { v: withUnit(latest.value, cur.unit) }) : cnDateFull(latest.reading.date))}
+      value={latest?.usage != null ? withUnit(latest.usage, cur.unit, q) : '—'}
+      note={latest && (isReading ? t('detail.meters.readingValue', { v: withUnit(latest.value, cur.unit, q) }) : cnDateFull(latest.reading.date))}
     />,
     <Metric
       key="average"
       label={t('detail.meters.average')}
-      value={stats.average != null ? withUnit(stats.average, cur.unit, avgQty) : '—'}
+      value={stats.average != null ? withUnit(stats.average, cur.unit, avgFmt(dec)) : '—'}
       note={summary.periods ? t('detail.meters.periods', { n: summary.periods }) : undefined}
     />,
     <Metric
@@ -64,7 +67,7 @@ export function usageMetrics(sub: Subscription, cur: Meter, today: string) {
     <Metric
       key="total"
       label={t('detail.meters.totalLabel')}
-      value={summary.periods ? withUnit(summary.total, cur.unit) : '—'}
+      value={summary.periods ? withUnit(summary.total, cur.unit, q) : '—'}
       note={summary.from && t('detail.meters.since', { date: cnDateFull(summary.from) })}
     />,
   ];
@@ -150,6 +153,8 @@ export function Meters({
   const stats = meterStats(summary.rows);
   const base = state.settings.baseCurrency;
   const used = summary.rows.filter((r) => r.usage != null);
+  const q = fixedQty(meterDecimals(sub, cur.id));
+  const whole = wholeCurrencies(history);
   // 用量柱画在它那一期 (since, date] 的中间，与后付费的费用柱同一位置；按画的位置筛进横轴范围，免得首根柱压在纵轴刻度上
   const barDate = (r: MeterRow) => (r.since ? midDay(addDays(r.since, 1), r.reading.date) : r.reading.date);
   const trend = axis ? used.filter((r) => r.reading.date >= axis.since && barDate(r) >= axis.from && r.reading.date <= axis.to) : used.slice(-24);
@@ -168,9 +173,12 @@ export function Meters({
         <ChargeTip
           c={c}
           state={state}
+          today={today}
+          whole={whole}
           converted={c.currency !== base ? formatTotal(chargesTotal(state, [c], base), base, { direction: -1 }) : undefined}
           usage={chargeUsage(summary.rows, c)}
           meter={cur}
+          decimals={meterDecimals(sub, cur.id)}
           note={r.reading.note}
         />
       );
@@ -182,7 +190,7 @@ export function Meters({
         </div>
         <div className="cc-tip-r">
           <span>{t('detail.meters.head.usage')}</span>
-          <b>{withUnit(r.usage!, cur.unit)}</b>
+          <b>{withUnit(r.usage!, cur.unit, q)}</b>
         </div>
         {r.reading.note && <div className="cc-tip-f">{r.reading.note}</div>}
       </>
@@ -224,15 +232,18 @@ export function Meters({
               today={today}
               todayLabel={t('calendar.today')}
               midMonth={isPostpaid(sub)}
-              fmt={(v) => withUnit(v, cur.unit)}
+              fmt={(v) => withUnit(v, cur.unit, q)}
               lanes={[]}
               onPick={ro ? undefined : (idx) => idx.length === 1 && setReading({ id: trend[idx[0]].reading.id })}
               tip={(idx, summed) =>
                 summed && idx.length > 1 ? (
                   <>
                     <div className="cc-tip-h">
+                      {/* 同一天的几条合成一根柱时只写这一天 */}
                       <b>
-                        {cnDateFull(trend[idx[0]].reading.date)} – {cnDateFull(trend[idx[idx.length - 1]].reading.date)}
+                        {trend[idx[0]].reading.date === trend[idx[idx.length - 1]].reading.date
+                          ? cnDateFull(trend[idx[0]].reading.date)
+                          : `${cnDateFull(trend[idx[0]].reading.date)} – ${cnDateFull(trend[idx[idx.length - 1]].reading.date)}`}
                       </b>
                     </div>
                     <div className="cc-tip-r">
@@ -242,6 +253,7 @@ export function Meters({
                         {withUnit(
                           idx.reduce((a, i) => a + trend[i].usage!, 0),
                           cur.unit,
+                          q,
                         )}
                       </b>
                     </div>

@@ -10,7 +10,7 @@ export interface MeterRow {
   reading: Reading;
   /** 记录里填的数：本期用量型是用量，累计读数型是读数 */
   value: number;
-  /** 本期用量；累计读数型的首条、读数回退时没有 */
+  /** 本期用量；累计读数型的首条、读数回退、本期用量型记在订阅开始之前时没有 */
   usage?: number;
   /** 期间起点（不含）：上一条有该指标数值的记录日；本期用量型的首条为订阅开始前一天，累计读数型的首条没有 */
   since?: string;
@@ -69,6 +69,8 @@ export function meterRows(s: Subscription, meter: Meter, today: string): MeterRo
     }
     // 本期用量型的首条：期间往前推一个周期，最早到订阅开始；中途才开始记录时不把更早的扣款摊进来
     const since = prev?.reading.date ?? (meter.kind === 'reading' ? undefined : firstSince(s, reading.date));
+    // 本期用量型记在订阅开始之前：不属于任何计费周期，与扣款记录按服务期合计的用量一致，不计入累计、平均与走势
+    if (meter.kind !== 'reading' && reading.date < s.start) usage = undefined;
     const cost = since ? costBetween(s, since, reading.date, today) : undefined;
     const row: MeterRow = { reading, value, ...(usage != null ? { usage } : {}), ...(since ? { since } : {}), ...(cost ? { cost } : {}) };
     if (cost && usage != null && usage > 0) row.unitPrice = cost.amount / usage;
@@ -90,8 +92,20 @@ export function meterSummary(s: Subscription, meter: Meter, today: string, from?
     total: Math.round(used.reduce((a, r) => a + r.usage!, 0) * 1e6) / 1e6,
     /** 累计里实际计入的期数 */
     periods: used.length,
-    from: inWindow[0]?.reading.date,
+    /** 累计的起点：累计读数型是首条读数（基数），本期用量型是首条计入的记录（订阅开始前的不算） */
+    from: (meter.kind === 'reading' ? inWindow[0] : used[0])?.reading.date,
   };
+}
+
+/** 一个指标记下的数最多几位小数（至多 3 位）：同一指标的用量、读数、累计按同一位数显示，一列里不混排 24 与 12.67 */
+export function meterDecimals(s: Pick<Subscription, 'readings'>, meterId: string): number {
+  let d = 0;
+  for (const r of s.readings ?? []) {
+    const v = r.values[meterId];
+    if (typeof v !== 'number' || !Number.isFinite(v)) continue;
+    while (d < 3 && Math.abs(Math.round(v * 10 ** d) - v * 10 ** d) > 1e-6) d++;
+  }
+  return d;
 }
 
 /** 记录日落在 [from, until) 内的用量合计，供扣款记录按每笔覆盖的服务期显示用量；没有有用量的记录时返回 undefined */

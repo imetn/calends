@@ -193,3 +193,13 @@ export function localTime(raw: string, timeZone: string, dateOnly = false): stri
   const s = d.toLocaleString('sv-SE', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
   return dateOnly ? s.slice(0, 10) : s.slice(0, 16);
 }
+
+/**
+ * 详情页金额的小数位：某币种的金额全是整数时（如整价扣款）该币种一律不写 .00，省出宽度；
+ * 扣款记录、提示框、柱顶数值用同一套，同一笔不会一处 ¥590、一处 ¥590.00
+ */
+export function wholeCurrencies(list: Array<{ amount: number; currency: string }>): Set<string> {
+  const known = list.filter((r) => Number.isFinite(r.amount));
+  return new Set([...new Set(known.map((r) => r.currency))].filter((ccy) => known.every((r) => r.currency !== ccy || Number.isInteger(Math.round(r.amount * 100) / 100))));
+}
+export const wholeOpts = (v: number, ccy: string, whole?: Set<string>) => (whole?.has(ccy) && Number.isInteger(Math.round(v * 100) / 100) ? { decimals: 0 } : {});

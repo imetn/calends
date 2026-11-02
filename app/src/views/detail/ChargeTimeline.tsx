@@ -1,4 +1,4 @@
-import { amountTotal, chargesTotal, formatTotal, sumTotals } from '../../../../shared/fx-total.ts';
+import { amountTotal, chargesTotal, formatTotal, sumTotals, type FxTotal } from '../../../../shared/fx-total.ts';
 import { copyParts } from '../../components/copy.tsx';
 import { chargeMethodId } from '../../../../shared/billing.ts';
 import { useRef, useState } from 'react';
@@ -21,7 +21,7 @@ import {
   priceAt,
   type Charge,
 } from '../../../../shared/billing.ts';
-import { cnDate, cnDateFull, money } from '../../../../shared/format.ts';
+import { cnDate, cnDateFull, money, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
 import { chargeBaseOrNaN, chargeValue } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 import { Seg } from '../../components/inputs.tsx';
@@ -29,7 +29,7 @@ import { t } from '../../../../shared/i18n.ts';
 import { ChargeBars, type ChartLane } from '../DetailChart.tsx';
 import { detailForecast, detailHistoryEnd } from '../detail-data.ts';
 import { Panel } from '../../components/DetailKit.tsx';
-import { meterRows } from '../../../../shared/meters.ts';
+import { meterDecimals, meterRows } from '../../../../shared/meters.ts';
 import { ChargeTip, chargeUsage } from './ChargeTip.tsx';
 import { LANE_COLORS } from './shared.tsx';
 import { Region } from './shared.tsx';
@@ -173,8 +173,11 @@ export function Timeline({
   const rows = each;
   if (rows.length < 2) return null;
 
-  // 最高柱顶的金额：与提示框、扣款记录同一种完整写法
-  const fmt = (v: number) => money(v, ccy);
+  // 最高柱顶的金额：与提示框、扣款记录同一种写法（某币种全是整数时不写 .00）
+  const whole = wholeCurrencies(history);
+  const wholeChart = wholeCurrencies(each.map((r) => ({ amount: r.v, currency: ccy })));
+  const fmt = (v: number) => money(v, ccy, wholeOpts(v, ccy, wholeChart));
+  const spent = (total: FxTotal) => formatTotal(total, ccy, { direction: -1, ...(wholeChart.has(ccy) ? { decimals: 0 } : {}) });
   // 有用量指标时提示框带上这一笔结算期内的用量（第一个指标，与扣款记录的用量列一致）
   const meter = sub.meters?.[0];
   const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(sub, meter, today) : undefined;
@@ -243,14 +246,17 @@ export function Timeline({
             return (
               <>
                 <div className="cc-tip-h">
+                  {/* 同一天的几笔合成一根柱时只写这一天 */}
                   <b>
-                    {cnDateFull(chargeDay(rows[idx[0]].c))} – {cnDateFull(chargeDay(rows[idx[idx.length - 1]].c))}
+                    {chargeDay(rows[idx[0]].c) === chargeDay(rows[idx[idx.length - 1]].c)
+                      ? cnDateFull(chargeDay(rows[idx[0]].c))
+                      : `${cnDateFull(chargeDay(rows[idx[0]].c))} – ${cnDateFull(chargeDay(rows[idx[idx.length - 1]].c))}`}
                   </b>
                 </div>
                 <div className="cc-tip-r">
                   <i className={rows[idx[0]].future ? 'k-f' : 'k-v'} />
                   <span>{t('detail.stats.count', { count: idx.length })}</span>
-                  <b>{formatTotal(sum, ccy, { direction: -1 })}</b>
+                  <b>{spent(sum)}</b>
                 </div>
               </>
             );
@@ -276,11 +282,11 @@ export function Timeline({
                             .join('\n'),
                         )}
                       </span>
-                      <b>{formatTotal(chartTotal([r.c]), ccy, { direction: -1 })}</b>
+                      <b>{spent(chartTotal([r.c]))}</b>
                     </div>
                   );
                 })}
-                <div className="cc-tip-f">{formatTotal(sum, ccy, { direction: -1 })}</div>
+                <div className="cc-tip-f">{spent(sum)}</div>
               </>
             );
           }
@@ -289,11 +295,14 @@ export function Timeline({
             <ChargeTip
               c={r.c}
               state={state}
+              today={today}
+              whole={whole}
               future={r.future}
-              converted={r.c.currency !== ccy ? formatTotal(chartTotal([r.c]), ccy, { direction: -1 }) : undefined}
+              converted={r.c.currency !== ccy ? spent(chartTotal([r.c])) : undefined}
               full={r.full != null ? money(r.full, ccy) : undefined}
               usage={chargeUsage(readings, r.c)}
               meter={meter}
+              decimals={meter && meterDecimals(sub, meter.id)}
             />
           );
         }}

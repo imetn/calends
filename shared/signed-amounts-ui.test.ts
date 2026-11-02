@@ -9,7 +9,7 @@ import { afterEach, test } from 'node:test';
 import { transformSync } from 'oxc-transform-react';
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { currencyDecimals, moneyDecimals, flow, flowSign, setSignedAmounts, symbol, relDays, money, cnDateAuto, cnDateFull } from './format.ts';
+import { currencyDecimals, moneyDecimals, flow, flowSign, setSignedAmounts, symbol, relDays, money, cnDateAuto, cnDateFull, wholeCurrencies, wholeOpts } from './format.ts';
 import { intlLocale, locale, setLocale } from './i18n.ts';
 import { chargeBaseOrNaN, chargeValue } from './fx.ts';
 import { FALLBACK_FX, addMonths, phaseSubs, diffDays } from './billing.ts';
@@ -192,6 +192,8 @@ test('Detail charge rows and annual totals show expenses/refunds consistently, i
     isPostpaid: billing.isPostpaid,
     chargeDay: billing.chargeDay,
     periodLabel: (p: { from: string }) => p.from,
+    wholeCurrencies,
+    wholeOpts,
     chargeServicePeriod: billing.chargeServicePeriod,
     addDays: billing.addDays,
     cnDate: (d: string) => d,
@@ -237,9 +239,11 @@ test('Detail charge rows and annual totals show expenses/refunds consistently, i
     assert.ok(html.includes('dt-row '));
     assert.ok(html.includes('refund'));
     const content = text(html);
-    assert.ok(content.includes(`${on ? '−' : ''}$20.00`));
-    assert.ok(content.includes(`${on ? '+' : ''}$15.00`));
-    assert.ok(content.includes(`${on ? '+' : ''}$5.00`));
+    // 整价扣款：卡上实扣、当时成本与年小计同一写法，都不写 .00
+    assert.ok(content.includes(`${on ? '−' : ''}$20`));
+    assert.ok(content.includes(`${on ? '+' : ''}$15`));
+    assert.ok(content.includes(`${on ? '+' : ''}$5`));
+    assert.ok(!content.includes('.00'));
     if (!on) assert.ok(!/[+−]/.test(content));
     assert.ok(html.includes('dt-in')); // Net-refund annual subtotal stays green with signs off.
   }
@@ -273,6 +277,8 @@ test('Detail charge history groups every year when one year has multiple rows, a
     isPostpaid: billing.isPostpaid,
     chargeDay: billing.chargeDay,
     periodLabel: (p: { from: string }) => p.from,
+    wholeCurrencies,
+    wholeOpts,
     chargeServicePeriod: billing.chargeServicePeriod,
     addDays: billing.addDays,
     cnDate: (d: string) => d,
@@ -560,6 +566,8 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     currencyTotals,
     ChargeMethods: empty,
     chargeMethodIds: () => [],
+    wholeCurrencies,
+    wholeOpts,
     YearLedger: yearLedger({ useState: React.useState, t: deps.t }),
   });
   const Detail = load(file, 'Detail', extractUiFunction(new URL(file, import.meta.url), 'Detail'), {

@@ -3,9 +3,9 @@ import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { Plus } from 'lucide-react';
 import { chargeDay, chargeServicePeriod, isPostpaid, phaseSubs, type Charge } from '../../../../shared/billing.ts';
-import { meterRows } from '../../../../shared/meters.ts';
-import { chargeUsage, periodLabel, withUnit } from './ChargeTip.tsx';
-import { flow, cnDateFull } from '../../../../shared/format.ts';
+import { meterDecimals, meterRows } from '../../../../shared/meters.ts';
+import { chargeUsage, fixedQty, periodLabel, withUnit } from './ChargeTip.tsx';
+import { flow, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
 import { transfersOf, transferSign, transferValue } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
@@ -92,9 +92,12 @@ export function Charges({
   const multi = phaseSubs(sub).length > 1;
   // 缺汇率的一笔本位币金额为 NaN：行内与年小计显示「—」，不按 0 合计
   const rows = history.map((c) => ({ c, b: chargeBaseOrNaN(state, c, base) })).reverse();
-  // 卡上实扣的原币：这张表里某个币种的金额都是整数（如奈拉、日元整价扣款）就不写 .00，省出宽度
-  const whole = new Set([...new Set(rows.map((r) => r.c.currency))].filter((ccy) => rows.every((r) => r.c.currency !== ccy || Number.isInteger(r.c.amount))));
-  const orig = (v: number, ccy: string) => flow(v, ccy, whole.has(ccy) ? { decimals: 0 } : {});
+  // 卡上实扣的原币：这张表里某个币种的金额都是整数（如奈拉、日元整价扣款）就不写 .00，省出宽度；
+  // 当时成本按同一规则看本位币金额，同一行两列写法一致
+  const whole = wholeCurrencies(history);
+  const orig = (v: number, ccy: string) => flow(v, ccy, wholeOpts(v, ccy, whole));
+  const wholeBase = wholeCurrencies(rows.map((r) => ({ amount: r.b, currency: base })));
+  const cost = (v: number) => flow(v, base, wholeOpts(v, base, wholeBase));
   // 有用量指标时多一列：每笔扣款覆盖的服务期内记下的用量（第一个指标），失败、退款不算；窄屏收起
   const meter = sub.meters?.[0];
   const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(sub, meter, today) : undefined;
@@ -102,7 +105,8 @@ export function Charges({
   const post = (c: Charge) => !c.kind && isPostpaid(c.sub);
   // 表头按行走：周期账单全是后付费时写「周期」，与预付费阶段混在一起时写「日期」
   const regular = rows.filter((r) => !r.c.kind);
-  const usageCell = (v: number | undefined) => (v != null ? withUnit(v, meter!.unit) : '—');
+  const usageFmt = meter && fixedQty(meterDecimals(sub, meter.id));
+  const usageCell = (v: number | undefined) => (v != null ? withUnit(v, meter!.unit, usageFmt) : '—');
   return (
     <Panel
       // 还没有记录时只是一条带「记一笔」的细条，不进列表网格被拉高
@@ -158,7 +162,7 @@ export function Charges({
                   ys.map((r) => r.c),
                 ),
                 base,
-                { direction: -1 },
+                { direction: -1, ...(wholeBase.has(base) ? { decimals: 0 } : {}) },
               ),
               baseClass: total < 0 ? 'dt-in' : undefined,
             };
@@ -166,7 +170,7 @@ export function Charges({
           row={({ c, b }) => ({
             // 日期写全，不再加「几天前」；后付费的周期账单写所属周期，扣款日放进悬停提示，不加第二行撑高行
             date: post(c) ? (
-              <time dateTime={chargeDay(c)}>{periodLabel(chargeServicePeriod(c.sub, c.date, c.serviceDate))}</time>
+              <time dateTime={chargeDay(c)}>{periodLabel(chargeServicePeriod(c.sub, c.date, c.serviceDate), today)}</time>
             ) : (
               <time dateTime={c.date}>{cnDateFull(c.date)}</time>
             ),
@@ -179,7 +183,7 @@ export function Charges({
                 {multi && c.sub.region && !c.kind && <em className="dt-kind">{c.sub.region}</em>}
               </>
             ),
-            base: Number.isFinite(b) ? flow(-b, base) : '—',
+            base: Number.isFinite(b) ? cost(-b) : '—',
             baseClass: b < 0 ? 'dt-in' : undefined,
           })}
           rowKey={({ c }, i) => `${c.date}-${c.sub.start}-${i}`}
