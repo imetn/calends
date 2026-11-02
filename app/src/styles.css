@@ -1406,6 +1406,8 @@ a {
 @media (max-width: 680px) {
   .wallet-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* 卡面自然增高后各行一样高，单独落在末行的新建占位卡也与卡面同高 */
+    grid-auto-rows: 1fr;
     gap: 12px;
   }
 }
@@ -1420,6 +1422,15 @@ a {
     gap: 10px;
     padding: 12px;
     border-radius: 14px;
+  }
+  /* 卡面不再按比例，占位卡也去掉比例，随行拉伸与卡面同高（留着比例会按拉高后的高度反推宽度，撑出列外） */
+  .wallet-add {
+    aspect-ratio: auto;
+    border-radius: 14px;
+  }
+  /* 一张卡都没有时没有卡面可对齐，仍按卡片比例 */
+  .wallet-add:only-child {
+    aspect-ratio: 1.586;
   }
   .pc-id {
     gap: 8px;
