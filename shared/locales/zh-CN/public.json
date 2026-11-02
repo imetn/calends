@@ -75,10 +75,34 @@
     "title": "开销方块图"
   },
   "changes": {
-    "title": "变动记录"
+    "title": "变动记录",
+    "more": "展开全部（{n}）",
+    "less": "收起",
+    "kind": {
+      "added": "新增",
+      "resumed": "恢复",
+      "buy": "买断",
+      "up": "涨价",
+      "down": "降价",
+      "switch": "换区或换套餐",
+      "stopped": "停用",
+      "paused": "暂停"
+    }
   },
   "waterfall": {
-    "title": "月度变化"
+    "title": "月度变化",
+    "prev": "上个月",
+    "next": "下个月",
+    "from": "上月",
+    "added": "新增",
+    "expansion": "涨价",
+    "contraction": "降价",
+    "churned": "取消",
+    "fx": "汇率",
+    "to": "本月",
+    "monthEnd": "月末",
+    "axisFrom": "纵轴从 {amount} 起",
+    "incomplete": "缺少汇率，无法画图"
   },
   "metric": {
     "monthly": "每月支出",
