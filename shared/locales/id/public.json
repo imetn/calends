@@ -12,7 +12,6 @@
     "more": "{amount} lebih banyak dari bulan ini tahun lalu",
     "less": "{amount} lebih sedikit dari bulan ini tahun lalu",
     "yearly": "Per tahun",
-    "live": "Aktif",
     "paid": "Dibayar sejak {year}"
   },
   "timeline": {
@@ -61,8 +60,7 @@
   "row": {
     "ends": "\nBerakhir {date}",
     "renews": "\nDiperpanjang {date}",
-    "monthly": "Bulanan",
-    "perMonthEq": "Per bulan"
+    "perMonthEq": "Setara per bulan"
   },
   "titleAnon": "Langganan",
   "pile": {

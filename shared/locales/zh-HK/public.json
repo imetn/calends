@@ -12,7 +12,6 @@
     "more": "比去年同月多 {amount}",
     "less": "比去年同月少 {amount}",
     "yearly": "一年約",
-    "live": "在付訂閱",
     "paid": "累計已付\n{year} 起"
   },
   "timeline": {
@@ -57,7 +56,6 @@
   "row": {
     "ends": "\n{date}結束",
     "renews": "\n{date}續訂",
-    "monthly": "每月",
     "perMonthEq": "折合每月"
   },
   "titleAnon": "訂閱一覽",

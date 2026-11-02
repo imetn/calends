@@ -12,7 +12,6 @@
     "more": "Nhiều hơn {amount} so với tháng này năm ngoái",
     "less": "Ít hơn {amount} so với tháng này năm ngoái",
     "yearly": "Mỗi năm",
-    "live": "Đang hoạt động",
     "paid": "Đã trả từ {year}"
   },
   "timeline": {
@@ -61,8 +60,7 @@
   "row": {
     "ends": "\nKết thúc {date}",
     "renews": "\nGia hạn {date}",
-    "monthly": "Hằng tháng",
-    "perMonthEq": "Mỗi tháng"
+    "perMonthEq": "Quy đổi mỗi tháng"
   },
   "titleAnon": "Gói đăng ký",
   "pile": {

@@ -12,7 +12,6 @@
     "more": "{amount} a mais que no mesmo mês do ano passado",
     "less": "{amount} a menos que no mesmo mês do ano passado",
     "yearly": "Por ano",
-    "live": "Ativas",
     "paid": "Pago desde {year}"
   },
   "timeline": {
@@ -63,8 +62,7 @@
   "row": {
     "ends": "\nTermina em {date}",
     "renews": "\nRenova em {date}",
-    "monthly": "Mensal",
-    "perMonthEq": "Por mês"
+    "perMonthEq": "Equiv. mensal"
   },
   "titleAnon": "Assinaturas",
   "pile": {

@@ -12,7 +12,6 @@
     "more": "작년 같은 달보다 {amount} 많음",
     "less": "작년 같은 달보다 {amount} 적음",
     "yearly": "연간",
-    "live": "이용 중",
     "paid": "{year}년부터 결제한 금액"
   },
   "timeline": {
@@ -61,7 +60,6 @@
   "row": {
     "ends": "\n{date} 종료",
     "renews": "\n{date} 갱신",
-    "monthly": "월",
     "perMonthEq": "월 환산"
   },
   "titleAnon": "구독 목록",

@@ -12,7 +12,6 @@
     "more": "Geçen yılın aynı ayından {amount} fazla",
     "less": "Geçen yılın aynı ayından {amount} az",
     "yearly": "Yıllık",
-    "live": "Etkin",
     "paid": "{year} yılından beri ödenen"
   },
   "timeline": {
@@ -63,7 +62,6 @@
   "row": {
     "ends": "\nBitiş {date}",
     "renews": "\n{date} yenilenir",
-    "monthly": "Aylık",
     "perMonthEq": "Aylık karşılığı"
   },
   "titleAnon": "Abonelikler",
