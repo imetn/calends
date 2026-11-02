@@ -277,7 +277,6 @@ export function ChargeBars({
               return d && <path className="cc-ref" d={d} />;
             })()}
             {peak >= 0 && <PeakLabel x={groups[peak].x} y={Math.min(y(peakOf(groups[peak])), y(refOf(groups[peak]) ?? 0)) - 5} w={w} text={fmt(peakOf(groups[peak]))} />}
-            {showToday && <line className="cc-today" x1={tx} x2={tx} y1={T - 4} y2={H} />}
             {showToday && (
               <text className="cc-today-l" x={tx} y={T - 8} textAnchor={tx > w - PAD_R - 24 ? 'end' : tx < PAD_L + 24 ? 'start' : 'middle'}>
                 {todayLabel}
@@ -300,9 +299,10 @@ export function ChargeBars({
                   </div>
                 );
               })}
-              {showToday && <i className="cc-today-lane" style={{ left: tx - PAD_L }} />}
             </div>
           )}
+          {/* 「今天」一条线从柱区贯穿到方案轨道底部，不分 SVG 与轨道两段画 */}
+          {showToday && <i className="cc-today" style={{ left: tx, top: T - 4, height: H - T + 4 + (nLanes > 0 ? nLanes * LANE + 4 : 0) }} />}
           <div className="cc-xt" style={{ marginLeft: PAD_L, marginRight: PAD_R }}>
             {xt.map((t) => (
               <span key={t.d} style={{ left: x(t.d) - PAD_L }}>

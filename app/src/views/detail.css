@@ -446,9 +446,9 @@
   stroke-dasharray: 4 3;
 }
 .cc-today {
-  stroke: var(--label-2);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
+  position: absolute;
+  border-left: var(--hairline) dashed var(--label-2);
+  pointer-events: none;
 }
 .cc-today-l {
   fill: var(--label-2);
@@ -485,13 +485,6 @@
   color: var(--label-2);
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.cc-today-lane {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-left: var(--hairline) dashed var(--label-2);
-  pointer-events: none;
 }
 .cc-xt {
   position: relative;
