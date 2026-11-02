@@ -335,3 +335,18 @@ test('指标卡只下发选中的数据要用的部分', () => {
   const parts = publicParts(cfg);
   assert.ok(parts.has('composition') && !parts.has('list'));
 });
+
+test('日历和订阅年表：默认不上页面；放上去时下发名称、扣款历史和已退订，备注仍不下发', () => {
+  for (const [id, min, h] of [['calendar', 5, 12], ['years', 6, 10]] as const) {
+    const def = PUBLIC_GRID_SECTIONS.find((s) => s.id === id)!;
+    assert.deepEqual([def.min, def.h, def.off], [min, h, true]);
+    assert.ok(!publicParts().has(id));
+    const state = ledger({ sections: [...PUBLIC_GRID_SECTIONS.map((s) => ({ id: s.id, hidden: s.id !== id })), { id: 'footer', hidden: true }, { id: 'pile', hidden: true }] });
+    state.subscriptions[0].notes = 'Fiction note';
+    const masked = maskForPublic(state);
+    assert.deepEqual(masked.subscriptions.map((s) => s.name), ['Fiction Music', 'Fiction Ended', 'Fiction Forever']);
+    assert.equal(masked.subscriptions[0].payments?.length, 1);
+    assert.equal(masked.subscriptions[0].priceHistory?.length, 2);
+    assert.ok(!JSON.stringify(masked).includes('Fiction note'));
+  }
+});

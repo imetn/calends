@@ -609,3 +609,55 @@ test('all-history scope distinguishes ended service from future unused paid cove
     end: '2026-10-26',
   });
 });
+
+test('订阅年表：画到结束或今天，未开始的不画，从最早一年的 1 月起', () => {
+  const today = '2026-11-02';
+  const sub = (over: Partial<Subscription>) => ({ id: 'a', name: 'Fiction', category: 'x', tags: [], price: 10, currency: 'USD', cycle: { unit: 'month', every: 1 }, start: '2024-03-10', status: 'active', ...over }) as Subscription;
+  const { rows, start, end, ongoing } = gantt.yearsTimeline(
+    [
+      sub({ id: 'later', start: '2025-01-01' }),
+      sub({ id: 'first' }),
+      sub({ id: 'ended', start: '2024-05-01', end: '2024-09-01', status: 'cancelled' }),
+      sub({ id: 'ending', start: '2024-06-01', end: '2027-01-01' }),
+      sub({ id: 'terminated', start: '2024-07-01', stop: { kind: 'terminate', date: '2025-02-01', paidThrough: '2025-03-01' } }),
+      sub({ id: 'paused', start: '2024-08-01', status: 'paused', pausedAt: '2025-04-01' }),
+      sub({ id: 'future', start: '2027-01-01' }),
+      sub({ id: 'once', start: '2024-10-01', cycle: { unit: 'lifetime', every: 1 } }),
+    ],
+    today,
+  );
+  const at = (id: string) => rows.find((r) => r.s.id === id)!.bars[0];
+  assert.deepEqual(rows.map((r) => r.s.id), ['first', 'ended', 'ending', 'terminated', 'paused', 'once', 'later'], '按开始日排，未开始的不画');
+  assert.equal(start, '2024-01-01');
+  assert.ok(end > today);
+  assert.equal(ongoing, true);
+  assert.deepEqual([at('first').to, at('first').ongoing], [today, true]);
+  assert.deepEqual([at('ended').to, at('ended').ongoing], ['2024-09-01', false]);
+  assert.deepEqual([at('ending').to, at('ending').ongoing], [today, true], '结束日在未来：只画到今天');
+  assert.deepEqual([at('terminated').to, at('terminated').ongoing], ['2025-02-01', false]);
+  assert.deepEqual([at('paused').to, at('paused').ongoing], ['2025-04-01', false]);
+  assert.deepEqual([at('once').from, at('once').to, at('once').ongoing], ['2024-10-01', '2024-10-01', false], '买断是一个购买点');
+  assert.deepEqual(gantt.yearsTimeline([sub({ start: '2027-01-01' })], today).rows, []);
+});
+
+test('订阅年表：同一订阅的断订和并行阶段', () => {
+  const today = '2026-11-02';
+  const phase = (start: string, end?: string) => ({ start, end, price: 10, currency: 'USD', cycle: { unit: 'month', every: 1 } });
+  const row = (phases: unknown[]) => gantt.yearsTimeline([{ id: 'a', name: 'Fiction', category: 'x', tags: [], price: 10, currency: 'USD', cycle: { unit: 'month', every: 1 }, start: '2024-01-01', status: 'active', phases } as unknown as Subscription], today).rows[0];
+  const gap = row([phase('2024-01-01', '2024-06-01'), phase('2025-01-01')]);
+  assert.deepEqual(gap.gaps, [{ from: '2024-06-01', to: '2025-01-01' }]);
+  assert.equal(gap.lanes, 1);
+  const parallel = row([phase('2024-01-01', '2025-06-01'), phase('2025-01-01')]);
+  assert.deepEqual(parallel.gaps, []);
+  assert.equal(parallel.lanes, 2);
+  assert.deepEqual(parallel.bars.map((b) => b.lane), [0, 1]);
+  assert.equal(row([phase('2024-01-01'), phase('2030-01-01')]).bars.length, 1, '还没开始的阶段不画');
+});
+
+test('订阅年表的时间轴至少有一个年份刻度', () => {
+  const today = '2026-11-02';
+  const { start, end } = gantt.yearsTimeline([{ id: 'a', name: 'Fiction', category: 'x', tags: [], price: 10, currency: 'USD', cycle: { unit: 'month', every: 1 }, start: '2026-10-01', status: 'active' } as Subscription], today);
+  setLocale('en', []);
+  const ticks = gantt.ganttTicks('all', start, end, 300, intlLocale());
+  assert.deepEqual(ticks.filter((tk) => tk.label).map((tk) => tk.label), ['2026']);
+});

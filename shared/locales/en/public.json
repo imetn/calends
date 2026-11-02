@@ -72,7 +72,8 @@
     "title": "Calendar"
   },
   "years": {
-    "title": "Subscription timeline"
+    "title": "Subscription timeline",
+    "desc": "Each subscription from start to end or today"
   },
   "tenure": {
     "title": "Time subscribed"
