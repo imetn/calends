@@ -12,7 +12,6 @@
     "more": "昨年の同月より{amount}多い",
     "less": "昨年の同月より{amount}少ない",
     "yearly": "年額",
-    "live": "利用中",
     "paid": "{year}年からの支払い"
   },
   "timeline": {
@@ -61,8 +60,7 @@
   "row": {
     "ends": "\n{date}終了",
     "renews": "\n{date}に更新",
-    "monthly": "月額",
-    "perMonthEq": "月あたり"
+    "perMonthEq": "月換算"
   },
   "titleAnon": "サブスク一覧",
   "pile": {

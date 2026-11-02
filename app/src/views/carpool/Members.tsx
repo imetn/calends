@@ -1,4 +1,5 @@
 import { copyParts } from '../../components/copy.tsx';
+import { dueTotal, formatTotal } from '../../../../shared/fx-total.ts';
 import { PersonAvatar, personFor } from '../../components/PersonAvatar.tsx';
 import {
   addDays,
@@ -113,7 +114,10 @@ export function MemberRows({
               {d.member.exempt ? (
                 <span className="muted car-member-exempt">{t('family.pool.exempt')}</span>
               ) : d.periodsOwed > 0 ? (
-                <b className="car-member-due">{money(collection.amount, collection.currency)}</b>
+                // 欠多少写多少（各期合计），与卡片的「N 人待收」和人员页同一口径；不是下一期的金额
+                <b className="car-member-due">
+                  {d.originals ? formatTotal(dueTotal(state, d), state.settings.baseCurrency, { main: true }) : money(d.owed, d.currency)}
+                </b>
               ) : (
                 <span className="muted">{t('family.pool.settled')}</span>
               )}

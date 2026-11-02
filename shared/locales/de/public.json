@@ -12,7 +12,6 @@
     "more": "{amount} mehr als im selben Monat letztes Jahr",
     "less": "{amount} weniger als im selben Monat letztes Jahr",
     "yearly": "Pro Jahr",
-    "live": "Aktiv",
     "paid": "Bezahlt seit {year}"
   },
   "timeline": {
@@ -63,8 +62,7 @@
   "row": {
     "ends": "\nEndet am {date}",
     "renews": "\nVerlängert sich am {date}",
-    "monthly": "Monatlich",
-    "perMonthEq": "Pro Monat"
+    "perMonthEq": "umgerechnet/Monat"
   },
   "titleAnon": "Abos",
   "pile": {

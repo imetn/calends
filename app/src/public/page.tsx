@@ -209,7 +209,8 @@ function Ledger({ state }: { state: AppState }) {
               </div>
               <dl className="grid grid-cols-3 gap-6 sm:gap-10">
                 <Stat label={t('public.hero.yearly')} value={<Num value={d.mrr * 12 * k} ccy={ccy} prefix={sym} />} />
-                <Stat label={t('public.hero.live')} value={<Num value={d.live.filter((x) => ['active', 'ending'].includes(effectiveStatus(x.s, today))).length} />} />
+                {/* 与下方订阅列表「全部」同一组（含试用、暂停），标题也用列表的标题 */}
+                <Stat label={t('public.list.title')} value={<Num value={d.live.length} />} />
                 <Stat label={t('public.hero.paid', { year: d.first.slice(0, 4) })} value={<Num value={ccy === base ? d.paidBase : d.paidUsd} ccy={ccy} prefix={sym} />} />
               </dl>
             </CardContent>
@@ -217,7 +218,8 @@ function Ledger({ state }: { state: AppState }) {
             <Separator />
 
             <CardContent>
-              <div className="mb-2 flex items-baseline justify-between gap-3 pr-16">
+              {/* 手机上标题与「接下来 30 天」上下排，不把说明挤成三行 */}
+              <div className="mb-2 flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:pr-16">
                 <h2 className="font-medium">{t('public.timeline.title')}</h2>
                 <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">
                   {rich('public.timeline.upcoming', { count: d.upcoming.length }, { amount: <Num value={d.upcoming.reduce((a, c) => a + c.value, 0) * k} ccy={ccy} prefix={sym} className="text-foreground" /> })}
@@ -428,7 +430,8 @@ const monthFull = (m: string) => monthLabel(m);
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="truncate text-[length:var(--fs-2)] text-muted-foreground">{label}</dt>
+      {/* 窄屏放不下时折行，不截成「Paid since 2…」 */}
+      <dt className="text-[length:var(--fs-2)] text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-lg font-semibold tracking-tight tnum">{value}</dd>
     </div>
   );
@@ -657,7 +660,8 @@ function Row({ s, v, today, ccy, k, fmt }: { s: Subscription; v: number; today: 
       </div>
       <div className="text-right tnum">
         <div className="font-medium">{fmt(v * k)}</div>
-        <div className="text-[length:var(--fs-2)] text-muted-foreground">{monthly ? t('public.row.monthly') : t('public.row.perMonthEq')}</div>
+        {/* 每月扣的左边已写「每月」，右边不再重复；其他周期写明是折合每月 */}
+        {!monthly && <div className="text-[length:var(--fs-2)] text-muted-foreground">{t('public.row.perMonthEq')}</div>}
       </div>
     </div>
   );

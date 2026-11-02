@@ -1435,6 +1435,17 @@ a {
   .pc-id {
     gap: 8px;
   }
+  /* 横版 logo 已写明品牌，与名称并排会把名称挤成「By…」：窄卡上 logo 一行、名称一行 */
+  .pc-id:has(.pc-logo.wide) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  /* SIM 卡名称和号码在压痕左侧折行，不省略成「SMART 手…」「+639 195 …」 */
+  .sim-name,
+  .sim-name small {
+    white-space: normal;
+  }
   .pc-logo {
     width: 24px;
     height: 24px;
@@ -8784,19 +8795,22 @@ a.car-toggle {
 .car-sub {
   font-size: var(--fs-1);
 }
+/* 「空 N 位」与「已满」同一种胶囊、同一基线；满车用绿色更醒目 */
 .car-seats {
+  display: inline-flex;
   flex-shrink: 0;
   align-self: flex-start;
-  font-size: var(--fs-1);
-  color: var(--label-2);
-}
-/* 满车是明确的状态：绿色胶囊，比「空 N 位」更醒目 */
-.car-seats.full {
-  display: inline-flex;
   align-items: center;
   height: 24px;
   padding: 0 10px;
   border-radius: var(--radius-pill);
+  background: var(--fill-2);
+  color: var(--label-2);
+  font-size: var(--fs-1);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.car-seats.full {
   background: var(--green-3);
   color: var(--green-11);
   font-weight: 600;
@@ -8959,20 +8973,12 @@ a.car-toggle {
   flex-direction: column;
   container-type: inline-size;
 }
-/* 收付切换按宽度选写法：宽时「n 笔 金额」，窄些只写金额，再窄只写收款 / 付款 */
-.car-ledger .seg :is(.tab-amount, .tab-short) {
+/* 收付切换按宽度选写法：宽时「n 笔 金额」，窄时写收款 / 付款；只写金额分不清是哪一边 */
+.car-ledger .seg .tab-short {
   display: none;
 }
 @container (max-width: 440px) {
   .car-ledger .seg .tab-full {
-    display: none;
-  }
-  .car-ledger .seg .tab-amount {
-    display: inline;
-  }
-}
-@container (max-width: 300px) {
-  .car-ledger .seg .tab-amount {
     display: none;
   }
   .car-ledger .seg .tab-short {

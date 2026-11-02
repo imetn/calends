@@ -58,13 +58,14 @@ export function proxyStatus(st: string, list: Row[], ahead: Row[]): ['stop' | 'o
 /**
  * 第三格：还有没收的期就是待收；全部结清后不再写「已结清」，改为这笔代付最终赚了还是亏了（收回 − 实扣）
  */
-export function OwedOrNet({ list, base, exact = false }: { list: Row[]; base: string; exact?: boolean }) {
+/** exact 是代付页摘要（到分并带说明）；compact 单独控制卡片三格是否一起去掉小数 */
+export function OwedOrNet({ list, base, exact = false, compact = !exact }: { list: Row[]; base: string; exact?: boolean; compact?: boolean }) {
   const { open, diff: net, partial } = proxyTotals(list);
   if (open.length)
     return (
       <Metric
         label={t('proxy.owedPeriods', { count: open.length })}
-        value={formatTotal(partial.owed, base, { compact: !exact, main: true, approx: true })}
+        value={formatTotal(partial.owed, base, { compact, main: true, approx: true })}
         note={totalNote(partial.owed) || (exact ? t('proxy.page.owedRate') : undefined)}
         valueClassName="warn"
       />
@@ -74,7 +75,7 @@ export function OwedOrNet({ list, base, exact = false }: { list: Row[]; base: st
   return (
     <Metric
       label={t('family.strip.profit')}
-      value={even ? t('proxy.table.even') : formatTotal(partial.diff, base, { direction: 1, compact: !exact, main: true })}
+      value={even ? t('proxy.table.even') : formatTotal(partial.diff, base, { direction: 1, compact, main: true })}
       // 持平时不写平均每期（会显示成 −¥0.00）
       note={
         totalNote(partial.diff) ||

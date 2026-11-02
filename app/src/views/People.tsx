@@ -111,11 +111,11 @@ export function PeopleView({ state, today, onOpen }: { state: AppState; today: s
         <MetricCards>
           <Metric
             label={t('people.stat.owed')}
-            value={<Amount plain compact value={owed} ccy={base} />}
+            value={<Amount plain value={owed} ccy={base} />}
             valueStyle={{ color: owed > 0 ? 'var(--orange)' : undefined }}
             note={owing.length ? t('people.stat.owedSub', { count: owing.length }) : Number.isFinite(owed) ? t('people.stat.allSettled') : '—'}
           />
-          <Metric label={t('people.stat.received')} value={<Amount compact value={received} ccy={base} />} note={t('people.stat.receivedSub')} />
+          <Metric label={t('people.stat.received')} value={<Amount value={received} ccy={base} />} note={t('people.stat.receivedSub')} />
           <Metric
             label={t('people.stat.count')}
             value={<span className="amt">{book.length}</span>}
@@ -272,7 +272,7 @@ function NewPersonSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (i
             {t('common.cancel')}
           </button>
           <button className="btn primary" disabled={busy || avatarBusy || !f.name.trim()} onClick={() => void save()}>
-            {t('common.save')}
+            {t('common.add')}
           </button>
         </>
       }

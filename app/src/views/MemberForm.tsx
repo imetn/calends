@@ -370,7 +370,7 @@ export function MemberForm({
                   ccy={first.currency}
                   className="num"
                   value={f.firstAmount}
-                  placeholder={String(first.amount)}
+                  placeholder={money(first.amount, first.currency)}
                   onValue={(n) => up({ firstAmount: n })}
                 />
               </Cell>

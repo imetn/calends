@@ -150,19 +150,17 @@ export function CarSheet({
           <MetricCards>
             <div>
               <small>{t('family.strip.paid')}</small>
-              <b>{formatTotal(book.partial.paid, base, { direction: -1, compact: true, main: true })}</b>
+              <b>{formatTotal(book.partial.paid, base, { direction: -1, main: true })}</b>
               <span aria-hidden={book.partial.paid.incomplete ? undefined : true}>{totalNote(book.partial.paid) || ' '}</span>
             </div>
             <div>
               <small>{t('family.strip.received')}</small>
-              <b className={book.received > 0 ? 'done' : undefined}>{formatTotal(book.partial.received, base, { direction: 1, compact: true, main: true })}</b>
+              <b className={book.received > 0 ? 'done' : undefined}>{formatTotal(book.partial.received, base, { direction: 1, main: true })}</b>
               <span aria-hidden={book.partial.paid.incomplete ? undefined : true}>{totalNote(book.partial.received) || ' '}</span>
             </div>
             <div>
               <small>{t('family.strip.profit')}</small>
-              <b className={actual > 0 ? 'done' : actual < 0 ? 'loss' : undefined}>
-                {formatTotal(book.partial.net, base, { direction: -1, compact: true, main: true })}
-              </b>
+              <b className={actual > 0 ? 'done' : actual < 0 ? 'loss' : undefined}>{formatTotal(book.partial.net, base, { direction: -1, main: true })}</b>
               {/* 小字是当年盈亏，与列表的「当年盈亏」同一口径；买断的车也有今年的账 */}
               <span>
                 {tx('family.strip.thisYear', {
@@ -173,7 +171,7 @@ export function CarSheet({
             {hasPending && (
               <div>
                 <small>{t('family.pool.owed')}</small>
-                <b className="warn">{formatTotal(owePartial, base, { compact: true, main: true })}</b>
+                <b className="warn">{formatTotal(owePartial, base, { main: true })}</b>
                 <span>{totalNote(owePartial) || t('family.pool.owedSub', { count: owe })}</span>
               </div>
             )}
@@ -223,24 +221,14 @@ export function CarSheet({
                   value={tab}
                   onChange={setTab}
                   options={[
-                    // 切换上写明笔数与合计，表里不再加合计行；符号与表中金额一致。放不下时只写金额，再放不下只写收款 / 付款
+                    // 切换上写明笔数与合计，表里不再加合计行；符号与表中金额一致。放不下时只写收款 / 付款（只剩金额分不清收付）
                     [
                       'in',
-                      <TabLabel
-                        key="in"
-                        full={t('family.sheet.tabIn', { count: receipts.length, amount: inTotal })}
-                        amount={inTotal}
-                        short={t('family.sheet.tabInShort')}
-                      />,
+                      <TabLabel key="in" full={t('family.sheet.tabIn', { count: receipts.length, amount: inTotal })} short={t('family.sheet.tabInShort')} />,
                     ],
                     [
                       'out',
-                      <TabLabel
-                        key="out"
-                        full={t('family.sheet.tabOut', { count: outs.length, amount: outTotal })}
-                        amount={outTotal}
-                        short={t('family.sheet.tabOutShort')}
-                      />,
+                      <TabLabel key="out" full={t('family.sheet.tabOut', { count: outs.length, amount: outTotal })} short={t('family.sheet.tabOutShort')} />,
                     ],
                   ]}
                 />
@@ -456,12 +444,11 @@ export function CarRuleSheet({ state, s, today, rule, onClose }: { state: AppSta
   );
 }
 
-/** 收付切换的标签：三种写法都渲染，按卡片宽度只显示放得下的那种（styles.css 的 .car-ledger 容器查询） */
-function TabLabel({ full, amount, short }: { full: string; amount: string; short: string }) {
+/** 收付切换的标签：两种写法都渲染，按卡片宽度只显示放得下的那种（styles.css 的 .car-ledger 容器查询） */
+function TabLabel({ full, short }: { full: string; short: string }) {
   return (
     <>
       <span className="tab-full">{full}</span>
-      <span className="tab-amount">{amount}</span>
       <span className="tab-short">{short}</span>
     </>
   );

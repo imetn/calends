@@ -33,6 +33,7 @@ const DAY = 12;
 const ICON = 30;
 const LEVELS = 3; // 同一处最多往上叠三层，再多的折成「+N」
 const AXIS = 140;
+const TODAY_CLEAR = 56; // 月份文字中心离「今天」标签中心至少这么远才不重叠（较长的语言也够）
 /** 右端：今天往后一年（未来的扣款看一年就够） */
 const AHEAD_MONTHS = 12;
 /** 只挂载视口附近的图标：按这个宽度分块，滚过一块才重新挑选；两侧各留一块余量 */
@@ -272,7 +273,8 @@ export function Timeline({
             .filter((m) => near(m.x))
             .map((m) => (
               <i key={m.x} className="tl-month" style={{ left: m.x }}>
-                <span>{m.label}</span>
+                {/* 「今天」标签与月份写在同一高度：离今天太近的月份只留刻度，不叠字 */}
+                {Math.abs(m.x - xOf(today)) >= TODAY_CLEAR && <span>{m.label}</span>}
               </i>
             ))}
           <div className="tl-today" style={{ left: xOf(today) }}>

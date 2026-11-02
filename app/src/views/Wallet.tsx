@@ -19,7 +19,7 @@ import {
   type Runway,
   isStopped,
 } from '../../../shared/billing.ts';
-import { flow, cnDate, cnDateFull, money, relDays } from '../../../shared/format.ts';
+import { flow, cnDate, cnDateAuto, money, relDays } from '../../../shared/format.ts';
 import { toBaseAt } from '../../../shared/fx.ts';
 import { BALANCE_KINDS, type AppState, type CardNetwork, type MethodKind, type PaymentMethod, type Subscription, type TopUp } from '../../../shared/types.ts';
 import { DatePicker } from '../components/DatePicker.tsx';
@@ -89,7 +89,7 @@ function RunwayCard({ r, today, state, flat, detailsOnly }: { r: Runway; today: 
         ) : r.shortfall && r.coveredCharges === 0 ? (
           <>
             {tx('wallet.runway.shortNow', {
-              date: <b>{cnDate(r.shortfall.date)}</b>,
+              date: <b>{cnDateAuto(r.shortfall.date, today)}</b>,
               rel: relDays(daysLeft),
               name: r.shortfall.sub.name,
               amount: money(r.shortfall.amount, r.shortfall.currency),
@@ -100,7 +100,7 @@ function RunwayCard({ r, today, state, flat, detailsOnly }: { r: Runway; today: 
           <>
             {tx('wallet.runway.shortLater', {
               periods: <b>{t('wallet.runway.periods', { count: r.coveredCharges })}</b>,
-              date: <b>{cnDateFull(r.shortfall.date)}</b>,
+              date: <b>{cnDateAuto(r.shortfall.date, today)}</b>,
               rel: relDays(daysLeft),
               name: r.shortfall.sub.name,
               topup: <b>{money(r.topUp12m, m.currency, { compact: true })}</b>,
@@ -123,6 +123,11 @@ function projRows(r: Runway) {
 function projFoot(r: Runway, m: PaymentMethod): string | undefined {
   if (!r.shortfall) return undefined;
   return t('wallet.runway.projFoot', { amount: money(r.topUp12m, m.currency, { compact: true }) });
+}
+
+/** 这张卡正在付的订阅：按当前阶段归属（换区后新旧两段并行时，两张卡各算各的）；代付的钱不算我的支出。卡面与卡片详情同一口径 */
+function paysWith(s: Subscription, m: PaymentMethod, today: string): boolean {
+  return !s.proxy && [currentPhase(s, today), ...activePhases(s, today)].some((v) => v.methodId === m.id);
 }
 
 /** 卡面右下角的小字：设了余额的说还够扣几期，没设的显示卡号尾号 */
@@ -184,7 +189,6 @@ export function Wallet({ state, today, onOpen }: { state: AppState; today: strin
   const [open, setOpen] = useState<string | null>(null);
   const ro = !!state.readonly;
   const live = liveSubs(state, today);
-  const base = state.settings.baseCurrency;
   const unassigned = live.filter((s) => !s.methodId || !state.methods.some((m) => m.id === s.methodId));
   const sharedCount = state.subscriptions.filter((s) => s.share).length;
   const opened = state.methods.find((m) => m.id === open);
@@ -225,17 +229,17 @@ export function Wallet({ state, today, onOpen }: { state: AppState; today: strin
           <SortableContext items={state.methods.map((m) => m.id)} strategy={rectSortingStrategy} disabled={ro}>
             <div className={`wallet-grid ${dragging ? 'dragging' : ''}`}>
               {state.methods.map((m) => {
-                // 按当前阶段归属支付方式（换区后新旧两段并行时，两张卡各算各的）；代付的钱不算我的支出
-                const liveHere = live.filter((s) => !s.proxy && [currentPhase(s, today), ...activePhases(s, today)].some((v) => v.methodId === m.id));
+                const liveHere = live.filter((s) => paysWith(s, m, today));
                 const r = runwayFor(m, state, today);
-                const monthly = sumTotals(liveHere.map((s) => monthlyTotal(state, s, today, m.id)));
+                // 卡面角上写着卡的币种，没设余额的卡每月支出也按卡的币种写，与设了余额的卡一致
+                const monthly = sumTotals(liveHere.map((s) => monthlyTotal(state, s, today, m.id, false, m.currency)));
                 return (
                   <SortableCard key={m.id} m={m} onOpen={() => setOpen(m.id)}>
                     <CardFace
                       m={m}
                       // 设了余额的账户主数字是余额，右下是每月扣多少、还能扣几期；没有余额的卡主数字是每月支出
                       label={r ? t('wallet.card.balance') : t('wallet.card.monthlySpend')}
-                      value={r ? <FxAmount plain total={r.partial.current} ccy={m.currency} /> : <FxAmount total={monthly} direction={-1} ccy={base} />}
+                      value={r ? <FxAmount plain total={r.partial.current} ccy={m.currency} /> : <FxAmount total={monthly} direction={-1} ccy={m.currency} />}
                       right={
                         r && r.monthlyDrain > 0
                           ? t('wallet.runway.drain', { amount: formatTotal(r.partial.monthlyDrain, m.currency, { direction: -1, compact: true }) })
@@ -412,14 +416,19 @@ function MethodSheet({
                 onClick={() => onOpen(state.subscriptions.find((x) => x.id === c.sub.id) ?? c.sub)}
               >
                 <span className={c.amountInMethod < 0 ? 'green' : undefined}>{formatTotal(c.partial, m.currency, { direction: -1, compact: true })}</span>
+                {/* 两个金额并排时写明右边是扣后余额，手机上也分得清 */}
                 <b style={{ color: c.balanceAfter < 0 ? 'var(--red)' : 'var(--label)', fontWeight: 600, minWidth: 80 }}>
+                  <small className="soft" style={{ fontSize: 'var(--fs-1)', fontWeight: 400 }}>
+                    {t('wallet.card.balance')}
+                  </small>{' '}
                   {formatTotal(c.balancePartial, m.currency, { compact: true })}
                 </b>
               </Cell>
             ))}
           </Group>
         )}
-        <Group title={t('wallet.sheet.linked', { count: subs.length })}>
+        {/* 标题的数与卡面「N 个订阅」同一口径（在付的）；已停的仍按原样淡显排在后面 */}
+        <Group title={t('wallet.sheet.linked', { count: liveSubs(state, today).filter((s) => paysWith(s, m, today)).length })}>
           {subs.length === 0 && <div className="cell muted">{t('wallet.sheet.none')}</div>}
           {subs.map((s) => (
             <Cell
@@ -714,7 +723,8 @@ function MethodEditor({ m, state, onClose }: { m: PaymentMethod; state: AppState
               }, t('wallet.editor.saved'))
             }
           >
-            {t('wallet.editor.done')}
+            {/* 新建写「添加」、编辑写「保存」，与人员、成员表单一致 */}
+            {isNew ? t('common.add') : t('common.save')}
           </button>
         </>
       }
