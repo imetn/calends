@@ -3814,6 +3814,22 @@ button.h-price-row:focus-visible {
 .dp .dp-btn {
   cursor: pointer;
 }
+/* 日期按钮里真正可聚焦的「打开月历」按钮：只承载图标和日期，外观全由外层 .dp-btn 提供 */
+.dp-open {
+  display: inline-flex;
+  align-items: center;
+  gap: inherit;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: inherit;
+  cursor: pointer;
+}
 .dp .dp-btn.editing {
   cursor: text;
   gap: 4px;

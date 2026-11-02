@@ -1434,6 +1434,27 @@ test('图标加文字的标签用共用的 icon-text 居中，不靠行内基线
   assert.deepEqual(failures, []);
 });
 
+test('按钮里不再嵌套按钮：日期选择器的「打开月历」与「手动输入」是并排的两个按钮', () => {
+  const failures = [];
+  for (const [file, ast, source] of sources) {
+    visit(ast, (node) => {
+      if (node.type !== 'JSXElement') return;
+      const open = node.openingElement;
+      if (open.name.name !== 'button' && open.name.name !== 'IconButton') return;
+      visit({ children: node.children }, (inner) => {
+        if (inner.type === 'JSXOpeningElement' && ['button', 'IconButton'].includes(inner.name.name))
+          failures.push(`${file}: ${source.slice(...open.range).slice(0, 60)}`);
+      });
+    });
+  }
+  assert.deepEqual(failures, []);
+  const dp = readFileSync(new URL('components/DatePicker.tsx', root), 'utf8');
+  assert.doesNotMatch(dp, /role="button"/);
+  // 进入输入模式沿用显示时的宽度，不跳宽
+  assert.match(dp, /setEditWidth\(trigger\.current\?\.offsetWidth/);
+  assert.match(dp, /style=\{editWidth \? \{ width: editWidth \} : undefined\}/);
+});
+
 test('修改密码：「至少 8 位」只出现在下方说明里，输入框不放占位提示', () => {
   const src = readFileSync(new URL('views/Security.tsx', root), 'utf8');
   const sheet = src.slice(src.indexOf('function PasswordSheet'));

@@ -78,6 +78,8 @@ export function DatePicker({
   const [draft, setDraft] = useState(value ?? '');
   const [error, setError] = useState<string>();
   const [editing, setEditing] = useState(false);
+  // 进入输入模式时沿用日期按钮当时的宽度，切换前后不跳宽
+  const [editWidth, setEditWidth] = useState<number>();
   const input = useRef<HTMLInputElement>(null);
   const trigger = useRef<HTMLSpanElement>(null);
   const errorId = useId();
@@ -130,6 +132,7 @@ export function DatePicker({
     setOpen(!open);
   };
   const startEditing = () => {
+    setEditWidth(trigger.current?.offsetWidth || undefined);
     setOpen(false);
     setError(undefined);
     setDraft(value ?? '');
@@ -180,7 +183,7 @@ export function DatePicker({
   return (
     <div className="dp">
       {editing ? (
-        <span className={`dp-btn editing ${error ? 'invalid' : ''}`}>
+        <span className={`dp-btn editing ${error ? 'invalid' : ''}`} style={editWidth ? { width: editWidth } : undefined}>
           <input
             ref={input}
             value={draft}
@@ -214,33 +217,19 @@ export function DatePicker({
           </IconButton>
         </span>
       ) : (
+        // 外层只是外观；打开月历的是里面的按钮，手动输入是并排的另一个按钮，不再互相嵌套。
+        // 点外层空白处（内边距、间隙）仍然打开月历，与之前整块可点一致。
         <span
           ref={trigger}
           className={`dp-btn ${draft ? '' : 'empty'} ${open ? 'open' : ''} ${error ? 'invalid' : ''}`}
-          role="button"
-          tabIndex={0}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          onClick={toggle}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              toggle();
-            }
-          }}
+          onClick={(e) => e.target === e.currentTarget && toggle()}
         >
-          <Icon name="cal" />
-          {/* 显示按当前语言写日期（中文「2026年10月25日」）；手动输入时仍可填 2026-10-25 等格式 */}
-          <span className="dp-val">{draft ? (ISO.test(draft) ? (compact ? numericDate(draft) : cnDateFull(draft)) : draft) : placeholder}</span>
-          <IconButton
-            className="dp-edit"
-            aria-label={t('picker.date.type')}
-            tabIndex={-1}
-            onClick={(e) => {
-              e.stopPropagation();
-              startEditing();
-            }}
-          >
+          <button type="button" className="dp-open" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
+            <Icon name="cal" />
+            {/* 显示按当前语言写日期（中文「2026年10月25日」）；手动输入时仍可填 2026-10-25 等格式 */}
+            <span className="dp-val">{draft ? (ISO.test(draft) ? (compact ? numericDate(draft) : cnDateFull(draft)) : draft) : placeholder}</span>
+          </button>
+          <IconButton className="dp-edit" aria-label={t('picker.date.type')} tabIndex={-1} onClick={startEditing}>
             <Icon name="edit" />
           </IconButton>
         </span>
