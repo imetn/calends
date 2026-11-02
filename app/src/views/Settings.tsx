@@ -9,7 +9,7 @@ import type { ImportSource } from '../../../shared/import-ledger.ts';
 import { readImportFile } from '../import-file.ts';
 import { ImportSheet } from './ImportSheet.tsx';
 import { avatarOf, type AppState, type Subscription } from '../../../shared/types.ts';
-import { IconButton, Cell, Group, CardTitle, Toolbar } from '../components/ui.tsx';
+import { IconButton, Cell, Group, Toolbar } from '../components/ui.tsx';
 import { Icon } from '../components/icons.tsx';
 import { LoadFailed, Sheet } from '../components/overlays.tsx';
 import { Toggle } from '../components/inputs.tsx';
@@ -308,26 +308,19 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
               ariaLabel={t('settings.general.baseCurrency')}
             />
           </Cell>
-          <Cell
-            label={
-              <CardTitle as="span" hint={t('settings.general.signedAmountsSub')}>
-                {copyParts(t('settings.general.signedAmounts'))}
-              </CardTitle>
-            }
-          >
+          <Cell label={copyParts(t('settings.general.signedAmounts'))}>
             <Toggle
               label={t('settings.general.signedAmounts')}
               checked={s.signedAmounts !== false}
               onChange={(v) => run(() => saveSettings({ signedAmounts: v }))}
             />
           </Cell>
-          <Cell
-            label={
-              <CardTitle as="span" hint={t('settings.general.gainColorSub')}>
-                {t('settings.general.gainColor')}
-              </CardTitle>
-            }
-          >
+          <Cell label={t('settings.general.gainColor')}>
+            {/* 示例数字跟着当前配色变，选项的意思一眼能看出来 */}
+            <span className="gain-sample tnum" aria-hidden="true">
+              <span className="gain">+12</span>
+              <span className="loss">−12</span>
+            </span>
             <Picker
               value={s.gainColor ?? 'green'}
               onChange={(v) => run(() => saveSettings({ gainColor: v === 'red' ? 'red' : 'green' }))}
