@@ -7247,6 +7247,13 @@ a.car-toggle {
   font-size: var(--fs-1);
   color: var(--label-3);
 }
+/* 手机上摘要放不下一行：折成两行读完，不用省略号截断 */
+@media (max-width: 860px) {
+  .ed-more small {
+    white-space: normal;
+    text-overflow: clip;
+  }
+}
 .ed-more .i {
   transition: none;
   color: var(--label-3);

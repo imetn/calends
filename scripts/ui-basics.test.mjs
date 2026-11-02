@@ -1456,3 +1456,10 @@ test('手机上分组标题旁的文字操作保留点按区，但标题行与�
     /margin-block:\s*calc\(\(1lh - var\(--ctl-h-md\)\) \/ 2\)/,
   );
 });
+
+test('手机上「更多选项」的摘要折行读完，不用省略号截断', () => {
+  const css = readFileSync(new URL('styles.css', root), 'utf8');
+  const phone = mediaRule(css, '@media (max-width: 860px)', '.ed-more small');
+  assert.match(phone, /white-space:\s*normal/);
+  assert.match(phone, /text-overflow:\s*clip/);
+});
