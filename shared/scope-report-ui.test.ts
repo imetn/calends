@@ -1683,6 +1683,27 @@ test('member rows show one dynamic due date instead of claiming no receipts', ()
   assert.ok(!render().includes('family.pool.noPay'));
 });
 
+test('member row amount is everything the member owes, matching the card total and people page, not one period', () => {
+  const sub: Subscription = {
+    id: 'shared-owed',
+    name: 'Shared plan',
+    category: 'Tools',
+    tags: [],
+    price: 10,
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-07-01',
+    status: 'active',
+    share: { role: 'owner', seats: 2, members: [{ id: 'm', name: 'Fictional member', share: 5, joined: '2026-07-01', payments: [] }] },
+  };
+  const state = { ...st, subscriptions: [sub] };
+  const [due] = billing.memberDues(sub, today, billing.collectCurrencyOf(state.settings), state);
+  assert.ok(due.periodsOwed > 1, 'fixture owes several periods');
+  const r = harness('../app/src/views/Carpool.tsx', 'MemberRows', {}, { ...carpool, contactText: () => '', perBill: () => '' });
+  const rendered = JSON.stringify(r.render('MemberRows', { state, s: sub, today, ro: false, onMember() {} }));
+  assert.ok(rendered.includes(JSON.stringify(format.money(due.owed, due.currency))), rendered);
+});
+
 test('calendar lifetime charge has one lifetime label and a purchase date beside recurring coverage', () => {
   const subscriptions: Subscription[] = ['month', 'lifetime'].map((unit, i) => ({
     id: String(i),

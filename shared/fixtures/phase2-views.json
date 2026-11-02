@@ -1600,7 +1600,7 @@
                                   "props": {
                                     "ccy": "USD",
                                     "className": "num",
-                                    "placeholder": "1.61",
+                                    "placeholder": "$1.61",
                                     "onValue": "[handler]"
                                   },
                                   "children": []
@@ -1997,7 +1997,7 @@
                               "props": {
                                 "ccy": "USD",
                                 "className": "num",
-                                "placeholder": "1.61",
+                                "placeholder": "$1.61",
                                 "onValue": "[handler]"
                               },
                               "children": []
@@ -2383,7 +2383,7 @@
                           "props": {
                             "ccy": "USD",
                             "className": "num",
-                            "placeholder": "1.61",
+                            "placeholder": "$1.61",
                             "onValue": "[handler]"
                           },
                           "children": []
@@ -3132,7 +3132,7 @@
                       "props": {
                         "ccy": "USD",
                         "className": "num",
-                        "placeholder": "1.61",
+                        "placeholder": "$1.61",
                         "onValue": "[handler]"
                       },
                       "children": []
@@ -3260,7 +3260,7 @@
                   "props": {
                     "ccy": "USD",
                     "className": "num",
-                    "placeholder": "1.61",
+                    "placeholder": "$1.61",
                     "onValue": "[handler]"
                   },
                   "children": []
@@ -3406,7 +3406,7 @@
               "props": {
                 "ccy": "USD",
                 "className": "num",
-                "placeholder": "1.61",
+                "placeholder": "$1.61",
                 "onValue": "[handler]"
               },
               "children": []
@@ -3479,7 +3479,7 @@
           "props": {
             "ccy": "USD",
             "className": "num",
-            "placeholder": "1.61",
+            "placeholder": "$1.61",
             "onValue": "[handler]"
           },
           "children": []
@@ -3491,7 +3491,7 @@
       "props": {
         "ccy": "USD",
         "className": "num",
-        "placeholder": "1.61",
+        "placeholder": "$1.61",
         "onValue": "[handler]"
       },
       "children": []
@@ -5492,7 +5492,7 @@
                                   "props": {
                                     "ccy": "USD",
                                     "className": "num",
-                                    "placeholder": "1.61",
+                                    "placeholder": "$1.61",
                                     "onValue": "[handler]"
                                   },
                                   "children": []
@@ -5889,7 +5889,7 @@
                               "props": {
                                 "ccy": "USD",
                                 "className": "num",
-                                "placeholder": "1.61",
+                                "placeholder": "$1.61",
                                 "onValue": "[handler]"
                               },
                               "children": []
@@ -6275,7 +6275,7 @@
                           "props": {
                             "ccy": "USD",
                             "className": "num",
-                            "placeholder": "1.61",
+                            "placeholder": "$1.61",
                             "onValue": "[handler]"
                           },
                           "children": []
@@ -7024,7 +7024,7 @@
                       "props": {
                         "ccy": "USD",
                         "className": "num",
-                        "placeholder": "1.61",
+                        "placeholder": "$1.61",
                         "onValue": "[handler]"
                       },
                       "children": []
@@ -7152,7 +7152,7 @@
                   "props": {
                     "ccy": "USD",
                     "className": "num",
-                    "placeholder": "1.61",
+                    "placeholder": "$1.61",
                     "onValue": "[handler]"
                   },
                   "children": []
@@ -7298,7 +7298,7 @@
               "props": {
                 "ccy": "USD",
                 "className": "num",
-                "placeholder": "1.61",
+                "placeholder": "$1.61",
                 "onValue": "[handler]"
               },
               "children": []
@@ -7371,7 +7371,7 @@
           "props": {
             "ccy": "USD",
             "className": "num",
-            "placeholder": "1.61",
+            "placeholder": "$1.61",
             "onValue": "[handler]"
           },
           "children": []
@@ -7383,7 +7383,7 @@
       "props": {
         "ccy": "USD",
         "className": "num",
-        "placeholder": "1.61",
+        "placeholder": "$1.61",
         "onValue": "[handler]"
       },
       "children": []
@@ -9374,7 +9374,7 @@
                                   "props": {
                                     "ccy": "USD",
                                     "className": "num",
-                                    "placeholder": "1.61",
+                                    "placeholder": "$1.61",
                                     "onValue": "[handler]"
                                   },
                                   "children": []
@@ -9771,7 +9771,7 @@
                               "props": {
                                 "ccy": "USD",
                                 "className": "num",
-                                "placeholder": "1.61",
+                                "placeholder": "$1.61",
                                 "onValue": "[handler]"
                               },
                               "children": []
@@ -10157,7 +10157,7 @@
                           "props": {
                             "ccy": "USD",
                             "className": "num",
-                            "placeholder": "1.61",
+                            "placeholder": "$1.61",
                             "onValue": "[handler]"
                           },
                           "children": []
@@ -10906,7 +10906,7 @@
                       "props": {
                         "ccy": "USD",
                         "className": "num",
-                        "placeholder": "1.61",
+                        "placeholder": "$1.61",
                         "onValue": "[handler]"
                       },
                       "children": []
@@ -11034,7 +11034,7 @@
                   "props": {
                     "ccy": "USD",
                     "className": "num",
-                    "placeholder": "1.61",
+                    "placeholder": "$1.61",
                     "onValue": "[handler]"
                   },
                   "children": []
@@ -11180,7 +11180,7 @@
               "props": {
                 "ccy": "USD",
                 "className": "num",
-                "placeholder": "1.61",
+                "placeholder": "$1.61",
                 "onValue": "[handler]"
               },
               "children": []
@@ -11253,7 +11253,7 @@
           "props": {
             "ccy": "USD",
             "className": "num",
-            "placeholder": "1.61",
+            "placeholder": "$1.61",
             "onValue": "[handler]"
           },
           "children": []
@@ -11265,7 +11265,7 @@
       "props": {
         "ccy": "USD",
         "className": "num",
-        "placeholder": "1.61",
+        "placeholder": "$1.61",
         "onValue": "[handler]"
       },
       "children": []

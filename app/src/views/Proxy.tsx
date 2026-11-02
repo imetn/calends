@@ -5,7 +5,7 @@ import { copyParts } from '../components/copy.tsx';
 import { PersonAvatar, personFor } from '../components/PersonAvatar.tsx';
 import { useState } from 'react';
 import { cycleLabel, diffDays, effectiveStatus, nextCharge, todayIn, isStopped } from '../../../shared/billing.ts';
-import { flow, cnDate, cnDateFull, money, relDays } from '../../../shared/format.ts';
+import { flow, cnDate, cnDateFull, money, moneyDecimals, relDays } from '../../../shared/format.ts';
 import { toBaseAt } from '../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { MetricCards, Metric, Group, Toolbar } from '../components/ui.tsx';
@@ -38,7 +38,11 @@ export function ProxyCard({ state, s, onOpen }: { state: AppState; s: Subscripti
   const [ledger, setLedger] = useState(false);
   const next = nextCharge(s, today);
   const method = state.methods.find((m) => m.id === s.methodId);
-  const { partial } = proxyTotals(list);
+  const { partial, open } = proxyTotals(list);
+  // 同一张卡的三格同一精度：有一格要写小数（如盈亏 −¥15.20），三格都写到分
+  const exact = [partial.charged, partial.received, open.length ? partial.owed : partial.diff].some(
+    (x) => Math.abs(x.value) >= 0.5 && moneyDecimals(x.value, base, { compact: true }) > 0,
+  );
   const st = effectiveStatus(s, today);
   const stopped = isStopped(st);
   const [tone, label] = proxyStatus(st, list, ahead);
@@ -81,16 +85,16 @@ export function ProxyCard({ state, s, onOpen }: { state: AppState; s: Subscripti
         <MetricCards inline>
           <Metric
             label={t('proxy.paidPeriods', { count: list.length })}
-            value={formatTotal(partial.charged, base, { direction: -1, compact: true, main: true })}
+            value={formatTotal(partial.charged, base, { direction: -1, compact: !exact, main: true })}
             note={totalNote(partial.charged) || undefined}
           />
           <Metric
             label={t('proxy.received')}
-            value={formatTotal(partial.received, base, { direction: 1, compact: true, main: true })}
+            value={formatTotal(partial.received, base, { direction: 1, compact: !exact, main: true })}
             note={totalNote(partial.received) || undefined}
             valueClassName="green"
           />
-          <OwedOrNet list={list} base={base} />
+          <OwedOrNet list={list} base={base} compact={!exact} />
         </MetricCards>
       </div>
       {/* 弹窗放在卡片外面：卡片的定位与裁切不会影响弹层，也不会把同一行的卡片撑高 */}

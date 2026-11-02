@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { transformSync } from 'oxc-transform-react';
 import { extractUiFunction } from './ui-test-source.ts';
 import { currentPhase } from '../shared/billing.ts';
+import * as formatMod from '../shared/format.ts';
 
 const React = { createElement: (type, props, ...children) => ({ type, props: { ...props, children } }), Fragment: 'fragment' };
 function component(file, name, deps) {
@@ -27,7 +28,13 @@ test('proxy card price stays in the current phase when a future plan is schedule
     proxyAhead: noop,
     nextCharge: noop,
     addDays: noop,
-    proxyTotals: () => ({ charged: 0, received: 0, partial: { charged: fxTotals.emptyTotal(), received: fxTotals.emptyTotal() } }),
+    proxyTotals: () => ({
+      open: [],
+      charged: 0,
+      received: 0,
+      partial: { charged: fxTotals.emptyTotal(), received: fxTotals.emptyTotal(), diff: fxTotals.emptyTotal() },
+    }),
+    moneyDecimals: () => 0,
     effectiveStatus: () => 'active',
     isStopped: () => false,
     proxyStatus: () => ['', ''],
@@ -62,6 +69,60 @@ test('proxy card price stays in the current phase when a future plan is schedule
     },
   });
   assert.deepEqual(amounts, [[10, 'USD']]);
+});
+
+test('proxy card metrics share one precision: a cents-only profit keeps the large totals to the cent too', () => {
+  const noop = () => null;
+  const cny = (v) => fxTotals.amountTotal(v, 'CNY', v);
+  const render = (charged, received) => {
+    const deps = {
+      currentPhase,
+      useState: (v) => [v, noop],
+      todayIn: () => '2026-10-25',
+      rows: () => [],
+      proxyAhead: noop,
+      nextCharge: noop,
+      proxyTotals: () => ({ open: [], partial: { charged: cny(charged), received: cny(received), diff: cny(received - charged) } }),
+      moneyDecimals: formatMod.moneyDecimals,
+      effectiveStatus: () => 'active',
+      isStopped: () => false,
+      proxyStatus: () => ['', ''],
+      money: String,
+      flow: String,
+      cycleLabel: () => '',
+      copyParts: String,
+      cnDate: String,
+      t: String,
+      personFor: noop,
+      contactText: noop,
+    };
+    for (const key of ['SubIcon', 'NameLink', 'StatusPill', 'PersonAvatar', 'PayBadge', 'MetricCards', 'Metric', 'OwedOrNet', 'LedgerSheet']) deps[key] = key;
+    const found = [];
+    const walk = (n) => {
+      if (!n || typeof n !== 'object') return;
+      if (n.type === 'Metric') found.push(n.props.value);
+      if (n.type === 'OwedOrNet') found.push(n.props.compact);
+      (Array.isArray(n) ? n : [].concat(n.props?.children ?? [])).forEach(walk);
+    };
+    walk(
+      component(
+        'Proxy.tsx',
+        'ProxyCard',
+        deps,
+      )({
+        state: { settings: { baseCurrency: 'CNY' }, methods: [] },
+        s: { id: 's', name: 'Fictional', start: '2026-01-01', price: 10, currency: 'CNY', cycle: { unit: 'month', every: 1 }, proxy: {} },
+      }),
+    );
+    return found;
+  };
+  // 盈亏 −¥15.20 要写到分：已代付、已收也写到分，不再是 −¥3,567 / +¥3,552 配 −¥15.20
+  const [charged, received, compact] = render(3567.31, 3552.11);
+  assert.match(charged, /3,567\.31/);
+  assert.match(received, /3,552\.11/);
+  assert.equal(compact, false);
+  // 三格都是整数或都过千且没有零头要写时仍然去掉小数
+  assert.deepEqual(render(20, 20), ['−¥20', '+¥20', true]);
 });
 
 test('card and row badge rules distinguish empty owners, joined members and scheduled starts', () => {

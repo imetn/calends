@@ -8947,20 +8947,12 @@ a.car-toggle {
   flex-direction: column;
   container-type: inline-size;
 }
-/* 收付切换按宽度选写法：宽时「n 笔 金额」，窄些只写金额，再窄只写收款 / 付款 */
-.car-ledger .seg :is(.tab-amount, .tab-short) {
+/* 收付切换按宽度选写法：宽时「n 笔 金额」，窄时写收款 / 付款；只写金额分不清是哪一边 */
+.car-ledger .seg .tab-short {
   display: none;
 }
 @container (max-width: 440px) {
   .car-ledger .seg .tab-full {
-    display: none;
-  }
-  .car-ledger .seg .tab-amount {
-    display: inline;
-  }
-}
-@container (max-width: 300px) {
-  .car-ledger .seg .tab-amount {
     display: none;
   }
   .car-ledger .seg .tab-short {
