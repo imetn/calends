@@ -1408,3 +1408,19 @@ test('展示的订阅：胶囊里的移除按钮不画自己的描边，贴在�
   assert.match(rule('.icon-btn.pubs-x'), /box-shadow:\s*none/);
   assert.match(rule('.pubs-chip:has(> .pubs-x)'), /padding-right:\s*0/);
 });
+
+test('图标加文字的标签用共用的 icon-text 居中，不靠行内基线对齐', () => {
+  const failures = [];
+  for (const [file, ast, source] of sources) {
+    visit(ast, (node) => {
+      if (node.type !== 'JSXElement' || node.openingElement.name.name !== 'span') return;
+      const kids = node.children.filter((c) => !(c.type === 'JSXText' && !c.value.trim()));
+      const hasIcon = kids.some((c) => c.type === 'JSXElement' && c.openingElement.name.name === 'Icon');
+      const hasText = kids.some((c) => c.type === 'JSXExpressionContainer' || (c.type === 'JSXText' && c.value.trim()));
+      const classes = text(attr(node.openingElement, 'className')?.value, source);
+      if (hasIcon && hasText && !/(?<![\w-])(?:icon-text|row)(?![\w-])/.test(classes))
+        failures.push(`${file}:${node.loc?.start.line ?? ''} ${source.slice(...node.range).slice(0, 80)}`);
+    });
+  }
+  assert.deepEqual(failures, []);
+});

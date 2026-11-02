@@ -227,7 +227,7 @@ function Connect({
           <li>
             <b>{t('ai.step.token')}</b>
             {token ? (
-              <span className="ai-step-ok">
+              <span className="ai-step-ok icon-text">
                 <Icon name="check" size={14} /> {t('ai.step.tokenReady', { name: token.item.name })}
               </span>
             ) : onCreate ? (

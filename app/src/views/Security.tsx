@@ -213,7 +213,7 @@ export function SecurityGroup({ state }: { state: AppState }) {
         {supported && (
           <Cell
             label={
-              <span style={{ color: 'var(--accent)' }}>
+              <span className="icon-text" style={{ color: 'var(--accent)' }}>
                 <Icon name="key" /> {t('settings.security.addPasskey')}
               </span>
             }
