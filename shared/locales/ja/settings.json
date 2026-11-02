@@ -267,7 +267,6 @@
     "passwordFoot": "8文字以上。変更すると、このデバイス以外はすべてログアウトされます。",
     "currentPassword": "現在のパスワード",
     "newPassword": "新しいパスワード",
-    "minLength": "8文字以上",
     "confirmPassword": "新しいパスワードを確認"
   },
   "cat": {

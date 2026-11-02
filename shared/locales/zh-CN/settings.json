@@ -241,7 +241,6 @@
     "passwordFoot": "至少 8 位。修改后，除当前设备外的登录都会失效。",
     "currentPassword": "当前密码",
     "newPassword": "新密码",
-    "minLength": "至少 8 位",
     "confirmPassword": "确认新密码"
   },
   "cat": {

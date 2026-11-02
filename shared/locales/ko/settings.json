@@ -267,7 +267,6 @@
     "passwordFoot": "8자 이상. 변경하면 이 기기를 제외한 모든 기기가 로그아웃됩니다.",
     "currentPassword": "현재 비밀번호",
     "newPassword": "새 비밀번호",
-    "minLength": "8자 이상",
     "confirmPassword": "새 비밀번호 확인"
   },
   "cat": {

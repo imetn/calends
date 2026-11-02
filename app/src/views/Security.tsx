@@ -277,8 +277,9 @@ function PasswordSheet({ onClose, onDone }: { onClose: () => void; onDone: () =>
   const [next, setNext] = useState('');
   const [again, setAgain] = useState('');
   const ok = cur && next.length >= 8 && next === again;
-  const input = (value: string, set: (v: string) => void, placeholder: string, auto: string) => (
-    <input type="password" autoComplete={auto} value={value} placeholder={placeholder} onChange={(e) => set((e.target as HTMLInputElement).value)} />
+  // 「至少 8 位」只写在下方说明里，三个输入框都不放占位提示
+  const input = (value: string, set: (v: string) => void, auto: string) => (
+    <input type="password" autoComplete={auto} value={value} onChange={(e) => set((e.target as HTMLInputElement).value)} />
   );
   return (
     <Sheet
@@ -306,9 +307,9 @@ function PasswordSheet({ onClose, onDone }: { onClose: () => void; onDone: () =>
     >
       <div className="stack">
         <Group foot={next && again && next !== again ? t('settings.security.mismatch') : t('settings.security.passwordFoot')}>
-          <Cell label={t('settings.security.currentPassword')}>{input(cur, setCur, '', 'current-password')}</Cell>
-          <Cell label={t('settings.security.newPassword')}>{input(next, setNext, t('settings.security.minLength'), 'new-password')}</Cell>
-          <Cell label={t('settings.security.confirmPassword')}>{input(again, setAgain, '', 'new-password')}</Cell>
+          <Cell label={t('settings.security.currentPassword')}>{input(cur, setCur, 'current-password')}</Cell>
+          <Cell label={t('settings.security.newPassword')}>{input(next, setNext, 'new-password')}</Cell>
+          <Cell label={t('settings.security.confirmPassword')}>{input(again, setAgain, 'new-password')}</Cell>
         </Group>
       </div>
     </Sheet>

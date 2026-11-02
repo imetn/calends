@@ -242,7 +242,6 @@
     "passwordFoot": "En az 8 karakter. Değiştirmek, bu cihaz dışındaki tüm cihazlardan çıkış yapar.",
     "currentPassword": "Mevcut parola",
     "newPassword": "Yeni parola",
-    "minLength": "En az 8 karakter",
     "confirmPassword": "Yeni parolayı onaylayın"
   },
   "cat": {

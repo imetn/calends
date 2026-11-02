@@ -1424,3 +1424,17 @@ test('图标加文字的标签用共用的 icon-text 居中，不靠行内基线
   }
   assert.deepEqual(failures, []);
 });
+
+test('修改密码：「至少 8 位」只出现在下方说明里，输入框不放占位提示', () => {
+  const src = readFileSync(new URL('views/Security.tsx', root), 'utf8');
+  const sheet = src.slice(src.indexOf('function PasswordSheet'));
+  assert.doesNotMatch(sheet, /placeholder/);
+  const locales = new URL('../../shared/locales/', root);
+  for (const loc of readdirSync(locales, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)) {
+    const sec = JSON.parse(readFileSync(new URL(`${loc}/settings.json`, locales), 'utf8')).security;
+    assert.equal(sec.minLength, undefined, loc);
+    assert.match(sec.passwordFoot, /8/, loc);
+  }
+});

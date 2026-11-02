@@ -281,7 +281,6 @@
     "passwordFoot": "8 caractères minimum. Le changer déconnecte tous les appareils sauf celui-ci.",
     "currentPassword": "Mot de passe actuel",
     "newPassword": "Nouveau mot de passe",
-    "minLength": "8 caractères minimum",
     "confirmPassword": "Confirmer le nouveau mot de passe"
   },
   "cat": {

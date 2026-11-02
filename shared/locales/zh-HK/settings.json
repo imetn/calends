@@ -241,7 +241,6 @@
     "passwordFoot": "至少 8 個字元。修改後，除了目前裝置以外的登入都會失效。",
     "currentPassword": "目前密碼",
     "newPassword": "新密碼",
-    "minLength": "至少 8 個字元",
     "confirmPassword": "確認新密碼"
   },
   "cat": {

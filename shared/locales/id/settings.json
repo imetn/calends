@@ -241,7 +241,6 @@
     "passwordFoot": "Minimal 8 karakter. Mengubahnya akan mengeluarkan semua perangkat kecuali yang ini.",
     "currentPassword": "Kata sandi saat ini",
     "newPassword": "Kata sandi baru",
-    "minLength": "Minimal 8 karakter",
     "confirmPassword": "Konfirmasi kata sandi baru"
   },
   "cat": {

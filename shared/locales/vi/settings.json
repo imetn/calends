@@ -241,7 +241,6 @@
     "passwordFoot": "Ít nhất 8 ký tự. Đổi mật khẩu sẽ đăng xuất mọi thiết bị trừ thiết bị này.",
     "currentPassword": "Mật khẩu hiện tại",
     "newPassword": "Mật khẩu mới",
-    "minLength": "Ít nhất 8 ký tự",
     "confirmPassword": "Xác nhận mật khẩu mới"
   },
   "cat": {

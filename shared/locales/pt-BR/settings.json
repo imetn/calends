@@ -245,7 +245,6 @@
     "passwordFoot": "Mínimo de 8 caracteres. Ao alterar, todos os dispositivos exceto este serão desconectados.",
     "currentPassword": "Senha atual",
     "newPassword": "Nova senha",
-    "minLength": "Mínimo de 8 caracteres",
     "confirmPassword": "Confirmar nova senha"
   },
   "cat": {

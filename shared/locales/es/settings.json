@@ -245,7 +245,6 @@
     "passwordFoot": "Mínimo 8 caracteres. Al cambiarla se cierra la sesión en todos los dispositivos excepto en este.",
     "currentPassword": "Contraseña actual",
     "newPassword": "Nueva contraseña",
-    "minLength": "Mínimo 8 caracteres",
     "confirmPassword": "Confirmar nueva contraseña"
   },
   "cat": {

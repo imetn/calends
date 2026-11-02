@@ -281,7 +281,6 @@
     "passwordFoot": "Mindestens 8 Zeichen. Eine Änderung meldet alle Geräte außer diesem ab.",
     "currentPassword": "Aktuelles Passwort",
     "newPassword": "Neues Passwort",
-    "minLength": "Mindestens 8 Zeichen",
     "confirmPassword": "Neues Passwort bestätigen"
   },
   "cat": {

@@ -242,7 +242,6 @@
     "passwordFoot": "At least 8 characters. Changing it signs out all devices except this one.",
     "currentPassword": "Current password",
     "newPassword": "New password",
-    "minLength": "At least 8 characters",
     "confirmPassword": "Confirm new password"
   },
   "cat": {
