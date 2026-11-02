@@ -33,7 +33,7 @@
     "year": "{year}",
     "projected": "\nProjected",
     "inProgress": "\nIn progress",
-    "paid": "\n{amount} paid",
+    "paid": "\n{amount} charged",
     "empty": "No charges in this period"
   },
   "due": {

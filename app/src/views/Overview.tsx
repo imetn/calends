@@ -6,7 +6,7 @@ import { copyParts } from '../components/copy.tsx';
 import { base as appPath } from '../base.ts';
 import { type CSSProperties, Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { addDays, addMonths, cycleLabel, diffDays, perLabel, runwayFor, totals, type Charge, chargeMethodId } from '../../../shared/billing.ts';
-import { moneyTick, flow, cnDate, money, monthLabel, relDays } from '../../../shared/format.ts';
+import { moneyTick, flow, cnDate, cnDateAuto, money, monthLabel, nearDate } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue } from '../../../shared/fx.ts';
 import { contributionOn, insights } from '../../../shared/metrics.ts';
@@ -402,7 +402,7 @@ function DueSoon({ state, today, onOpen }: { state: AppState; today: string; onO
                       <b>{amt.main}</b>
                       {amt.alt && <small>{amt.alt}</small>}
                     </span>
-                    <span className={`pill ${d <= 3 ? 'hot' : ''}`}>{d <= 13 ? relDays(d) : cnDate(c.date)}</span>
+                    <span className={`pill ${d <= 3 ? 'hot' : ''}`}>{nearDate(c.date, today)}</span>
                   </button>
                 );
               })}
@@ -445,8 +445,8 @@ function WalletBrief({ state, today }: { state: AppState; today: string }) {
                           ? totalNote(r.partial.monthlyDrain)
                           : r.shortfall
                             ? r.coveredCharges
-                              ? t('overview.wallet.covered', { count: r.coveredCharges, date: cnDate(r.shortfall.date) })
-                              : t('overview.wallet.mustTopUp', { date: cnDate(r.shortfall.date) })
+                              ? t('overview.wallet.covered', { count: r.coveredCharges, date: cnDateAuto(r.shortfall.date, today) })
+                              : t('overview.wallet.mustTopUp', { date: cnDateAuto(r.shortfall.date, today) })
                             : t('overview.wallet.enough'),
                       }),
                     )}
@@ -618,7 +618,7 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
           <span>{cnDate(month.days[month.days.length - 1].d)}</span>
         </div>
         <MetricCards plain>
-          <Metric label={t('calendar.pending')} value={formatTotal(month.due, base, { direction: -1, compact: true, main: true })} />
+          <Metric label={t('scope.pending')} value={formatTotal(month.due, base, { direction: -1, compact: true, main: true })} />
           <Metric label={t('scope.count')} value={month.count} />
           <Metric
             label={t('overview.stmt.perDay')}

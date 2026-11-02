@@ -33,7 +33,6 @@
     "label": "Gasto anual en suscripciones",
     "tip": "Mes {month}\nAcumulado {total}",
     "tipNow": "Mes {month}, Cargos pendientes {pending}\nAcumulado {total}",
-    "paid": "Pagado",
     "avg": "Media mensual",
     "peak": "Mes pico",
     "peakAt": "Pico en {when}"

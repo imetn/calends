@@ -16,6 +16,7 @@ import { BarLine } from './charts.tsx';
 import { MetricCards, Metric, IconButton, CardTitle } from './ui.tsx';
 import { CatIcon, MethodMark, SubIcon } from './marks.tsx';
 import { Icon } from './icons.tsx';
+import { Amount } from './inputs.tsx';
 import './scope-report.css';
 
 interface Props {
@@ -43,7 +44,7 @@ export function SpendingDelta({ value, base, compact }: { value: Comparison; bas
       {copyParts(
         value.percent != null &&
           Number.isFinite(value.percent) &&
-          `\n${numberFormat(intlLocale(), { style: 'percent', maximumFractionDigits: 1 }).format(Math.abs(value.percent))}`,
+          `\n${numberFormat(intlLocale(), { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(value.percent))}`,
       )}
     </span>
   );
@@ -108,7 +109,7 @@ export function ScopeReport({ report, state, today, onOpen, title, animate, open
   const losses = report.blocks.find((b) => b.type === 'losses');
   const expense = (v: number, part?: FxTotal) => (part ? formatTotal(part, base, { direction: -1 }) : flow(-v, base));
   const income = (v: number, part?: FxTotal) => (part ? formatTotal(part, base, { direction: 1 }) : flow(v, base));
-  const percent = (v: number) => (Number.isFinite(v) ? numberFormat(intlLocale(), { style: 'percent', maximumFractionDigits: 1 }).format(Math.abs(v)) : '—');
+  const percent = (v: number) => (Number.isFinite(v) ? numberFormat(intlLocale(), { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(v)) : '—');
   const delta = (value: Comparison) => <SpendingDelta value={value} base={base} />;
   const fact = (label: string, value: ReactNode, part?: FxTotal, direction: 1 | -1 = -1) => (
     <Metric label={label} value={part ? formatTotal(part, base, { direction, main: true, average: label === t('scope.average') }) : value} />
@@ -126,7 +127,8 @@ export function ScopeReport({ report, state, today, onOpen, title, animate, open
     rows.map((r, i) => (
       <button type="button" className="scope-row scope-tap" data-snapshot-keep key={`${r.sub.id}-${r.date}-${i}`} onClick={() => onOpen(r.sub)}>
         {name(r.sub, cnDateAuto(r.date, today))}
-        <b className="num">{expense(r.amount, r.partial)}</b>
+        {/* 与日历「全部扣款」同一金额样式（小数缩小变淡）；缺汇率时仍写原币合计 */}
+        <b className="num">{r.partial?.incomplete ? expense(r.amount, r.partial) : <Amount value={-r.amount} ccy={base} />}</b>
       </button>
     ));
   const eventLabel = (r: ReportEvent) => t(`scope.event.${r.kind === 'price' || r.kind === 'intro-end' ? (r.delta >= 0 ? 'increase' : 'decrease') : r.kind}`);

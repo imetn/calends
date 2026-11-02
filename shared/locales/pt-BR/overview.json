@@ -33,7 +33,7 @@
     "year": "{year}",
     "projected": "\nPrevisto",
     "inProgress": "\nEm andamento",
-    "paid": "\n{amount} pagos",
+    "paid": "\n{amount} cobrados",
     "empty": "Nenhuma cobrança neste período"
   },
   "due": {

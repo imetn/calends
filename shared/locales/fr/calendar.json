@@ -17,7 +17,6 @@
   "charged": "Prélevé",
   "monthTotal": "Prélèvements de {month}",
   "count": "{count} prélèvements",
-  "pending": "À venir",
   "monthAll": "Tous les prélèvements de {month}",
   "noneMonth": "Aucun prélèvement ce mois-ci",
   "day": "{day}",

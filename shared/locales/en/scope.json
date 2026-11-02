@@ -8,7 +8,7 @@
   "yearTotal": "This year",
   "paidAmount": "Paid {amount}",
   "includedLoss": "Including unrefunded loss",
-  "monthTotal": "Monthly charges",
+  "monthTotal": "Net spend this month",
   "previousMonth": "Vs. previous month",
   "previousYear": "Vs. same month last year",
   "paid": "Charged",

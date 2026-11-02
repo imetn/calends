@@ -33,7 +33,7 @@
     "year": "{year}",
     "projected": "\nTahmini",
     "inProgress": "\nDevam ediyor",
-    "paid": "\n{amount} ödendi",
+    "paid": "\n{amount} çekildi",
     "empty": "Bu dönemde ödeme yok"
   },
   "due": {

@@ -17,7 +17,6 @@
   "charged": "Ödendi",
   "monthTotal": "{month} ödemeleri",
   "count": "{count} ödeme",
-  "pending": "Bekleyen",
   "monthAll": "Tüm ödemeler\n{month}",
   "noneMonth": "Bu ay ödeme yok",
   "day": "{day}",

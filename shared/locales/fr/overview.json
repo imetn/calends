@@ -33,7 +33,7 @@
     "year": "{year}",
     "projected": "\nPrévu",
     "inProgress": "\nEn cours",
-    "paid": "\n{amount} payés",
+    "paid": "\n{amount} prélevés",
     "empty": "Aucun prélèvement sur cette période"
   },
   "due": {

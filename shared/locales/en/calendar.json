@@ -17,7 +17,6 @@
   "charged": "Charged",
   "monthTotal": "{month} charges",
   "count": "{count} charges",
-  "pending": "Upcoming",
   "monthAll": "All charges in {month}",
   "noneMonth": "No charges this month",
   "day": "{day}",

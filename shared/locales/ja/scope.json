@@ -8,7 +8,7 @@
   "yearTotal": "今年",
   "paidAmount": "支払済み {amount}",
   "includedLoss": "うち未返金の損失",
-  "monthTotal": "今月の請求合計",
+  "monthTotal": "今月の純支出",
   "previousMonth": "前月比",
   "previousYear": "前年同月比",
   "paid": "請求済み",

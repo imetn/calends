@@ -33,7 +33,6 @@
     "label": "Pengeluaran langganan setahun",
     "tip": "Bulan {month}\nKumulatif {total}",
     "tipNow": "Bulan {month}, Tagihan mendatang {pending}\nKumulatif {total}",
-    "paid": "Dibayar",
     "avg": "Rata-rata bulanan",
     "peak": "Bulan tertinggi",
     "peakAt": "Tertinggi {when}"

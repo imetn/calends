@@ -30,7 +30,7 @@
     "year": "{year}年",
     "projected": "\n予測",
     "inProgress": "\n進行中",
-    "paid": "\n{amount}支払い済み",
+    "paid": "\n{amount}請求済み",
     "empty": "この期間の請求はありません"
   },
   "due": {

@@ -19,7 +19,6 @@
   "charged": "Списано",
   "monthTotal": "Списания за {month}",
   "count": "{count} списаний",
-  "pending": "Предстоит",
   "monthAll": "Все списания за {month}",
   "noneMonth": "В этом месяце списаний нет",
   "day": "{day}",

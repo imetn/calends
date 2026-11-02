@@ -24,7 +24,7 @@
     "year": "{year}年",
     "projected": "\n预计",
     "inProgress": "\n进行中",
-    "paid": "\n已付 {amount}",
+    "paid": "\n已扣款 {amount}",
     "empty": "这段时间没有扣款"
   },
   "due": {
@@ -39,7 +39,7 @@
     "manage": "管理",
     "balance": "余额 {amount}\n{status}",
     "covered": "还能扣 {count} 期，{date} 前要充值",
-    "mustTopUp": "{date} 前必须充值",
+    "mustTopUp": "{date} 前要充值",
     "enough": "3 年内够用",
     "noBalance": "还没填余额，填了才能算出还能撑多久",
     "others": "另有 {list}"

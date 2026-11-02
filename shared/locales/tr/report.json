@@ -33,7 +33,6 @@
     "label": "Yıllık abonelik harcaması",
     "tip": "Ay {month}\nToplam {total}",
     "tipNow": "Ay {month}, Bekleyen ödemeler {pending}\nToplam {total}",
-    "paid": "Ödenen",
     "avg": "Aylık ortalama",
     "peak": "En yüksek ay",
     "peakAt": "En yüksek {when}"
