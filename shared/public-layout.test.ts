@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { effectiveStatus, FALLBACK_FX } from './billing.ts';
 import { maskForPublic } from './mask.ts';
 import { contributionOn } from './metrics.ts';
-import { collapseEmpty, fillRows, fitHeights, flowSpans, gridConfig, gridSections, hideItem, isCustomLayout, isFlowGrid, placeItem, PUBLIC_GRID_SECTIONS, publicConfigForVisitors, publicGrid, publicParts, showItem, tabletSpan, validPublicPage } from './public-layout.ts';
+import { collapseEmpty, fillRows, fitHeights, flowSpans, gridConfig, gridSections, hideItem, isCustomLayout, isFlowGrid, metricsFor, metricWithTemplate, newMetricItem, placeItem, PUBLIC_GRID_SECTIONS, publicConfigForVisitors, publicGrid, publicParts, setMetric, showItem, tabletSpan, validPublicPage } from './public-layout.ts';
 import { checkSettings } from './ledger-edit.ts';
 import { DEFAULT_SETTINGS, type AppState, type PublicPageConfig, type Subscription } from './types.ts';
 
@@ -28,21 +28,21 @@ const hide = (...ids: string[]) => ids.map((id) => ({ id, hidden: true }));
 test('缺省配置：位置等于现有公开页，全部可见，不算摆放过', () => {
   assert.deepEqual(
     publicGrid().map((s) => [s.id, s.x, s.y, s.w, s.hidden]),
-    PUBLIC_GRID_SECTIONS.map((s) => [s.id, s.x, s.y, s.w, false]),
+    PUBLIC_GRID_SECTIONS.map((s) => [s.id, s.x, s.y, s.w, !!s.off]),
   );
-  assert.equal(publicParts().size, 3 + 5 + 2);
+  assert.equal(publicParts().size, 8 + 2, '可选组件默认不放，也不下发它们要的数据');
   assert.equal(publicConfigForVisitors(undefined), undefined);
   assert.equal(isCustomLayout({ sections: [{ id: 'fx', hidden: true }, { id: 'footer', hidden: true }] }), false);
 });
 
 test('存下的布局：不认识和重复的 id 忽略，新组件放到最下面，越界夹回范围，压住的往下推', () => {
   const rect = { x: 0, y: 0, w: 12, h: 4 };
-  const grid = publicGrid({ sections: [{ id: 'list', ...rect, w: 99 }, { id: 'nope', ...rect }, { id: 'list', ...rect, w: 6 }, { id: 'hero', ...rect, w: 1, x: 11 }] });
+  const grid = publicGrid({ sections: [{ id: 'list', ...rect, w: 99 }, { id: 'nope', ...rect }, { id: 'list', ...rect, w: 6 }, { id: 'stats', ...rect, w: 1, x: 11 }] });
   assert.equal(new Set(grid.map((s) => s.id)).size, PUBLIC_GRID_SECTIONS.length);
   const at = (id: string) => grid.find((s) => s.id === id)!;
   assert.deepEqual([at('list').x, at('list').y, at('list').w], [0, 0, 12], '第一条为准，宽度夹到 12');
-  assert.deepEqual([at('hero').w, at('hero').x, at('hero').y], [8, 4, 4], '宽度夹到最小值并留在栏内，压住 list 就推到下面');
-  assert.ok(at('composition').y >= at('hero').y + at('hero').h, '没存的组件排在已摆放的下面');
+  assert.deepEqual([at('stats').w, at('stats').x, at('stats').y], [5, 7, 4], '宽度夹到最小值并留在栏内，压住 list 就推到下面');
+  assert.ok(at('composition').y >= at('stats').y + at('stats').h, '没存的组件排在已摆放的下面');
 });
 
 test('摆放：放到别的卡片上把它往下推，没压到的不动，拖到别处后恢复从原状算', () => {
@@ -50,41 +50,41 @@ test('摆放：放到别的卡片上把它往下推，没压到的不动，拖�
   const moved = placeItem(base, 'fx', { x: 0, y: 0, w: 6, h: 6 });
   const at = (id: string) => moved.find((s) => s.id === id)!;
   assert.deepEqual([at('fx').x, at('fx').y], [0, 0]);
-  assert.equal(at('hero').y, 6);
-  assert.equal(at('composition').y, 12);
-  assert.equal(at('ended').y, 24);
-  assert.equal(new Set(base.map((s) => s.y)).size, 4, '原数组不变');
-  const blank = placeItem(base, 'hero', { x: 0, y: 40, w: 12, h: 6 });
-  assert.equal(blank.find((s) => s.id === 'composition')!.y, 6, '上面腾出的空位不自动补，保留主人摆的位置');
+  assert.equal(at('stats').y, 6);
+  assert.equal(at('composition').y, 24);
+  assert.equal(at('ended').y, 36);
+  assert.equal(base.find((s) => s.id === 'fx')!.y, 18, '原数组不变');
+  const blank = placeItem(base, 'stats', { x: 0, y: 40, w: 12, h: 6 });
+  assert.equal(blank.find((s) => s.id === 'timeline')!.y, 6, '上面腾出的空位不自动补，保留主人摆的位置');
   assert.equal(placeItem(base, 'fx', { x: 11, y: -3, w: 1, h: 0 }).find((s) => s.id === 'fx')!.x, 7, '越界夹回');
 });
 
 test('补高度：并排同高的卡片一起变，下面的卡片让开', () => {
-  const grid = fitHeights(publicGrid(), { hero: 20, composition: 9, fx: 7 });
+  const grid = fitHeights(publicGrid(), { stats: 20, composition: 9, fx: 7 });
   const at = (id: string) => grid.find((s) => s.id === id)!;
-  assert.equal(at('hero').h, 20);
-  assert.deepEqual([at('composition').h, at('fx').h, at('composition').y, at('fx').y], [9, 9, 20, 20]);
-  assert.equal(at('list').y, 29);
+  assert.equal(at('stats').h, 20);
+  assert.deepEqual([at('composition').h, at('fx').h, at('composition').y, at('fx').y], [9, 9, 32, 32]);
+  assert.equal(at('list').y, 41);
 });
 
 test('添加和隐藏：重新添加放到最下面，隐藏的卡片不占位', () => {
   const hidden = publicGrid({ sections: gridSections(publicGrid()).map((s) => (s.id === 'fx' ? { ...s, hidden: true } : s)) });
   assert.equal(hidden.find((s) => s.id === 'fx')!.hidden, true);
   const shown = showItem(hidden, 'fx');
-  assert.deepEqual([shown.find((s) => s.id === 'fx')!.hidden, shown.find((s) => s.id === 'fx')!.x, shown.find((s) => s.id === 'fx')!.y], [false, 0, 24]);
+  assert.deepEqual([shown.find((s) => s.id === 'fx')!.hidden, shown.find((s) => s.id === 'fx')!.x, shown.find((s) => s.id === 'fx')!.y], [false, 0, 36]);
 });
 
 test('没有内容的卡片：整行都空才收起，旁边还有卡片时那一行留着', () => {
   const grid = publicGrid();
   const noEnded = collapseEmpty(grid, (id) => id === 'ended');
-  assert.deepEqual(noEnded.find((s) => s.id === 'lifetime')!.y, 18, '买断在同一排，位置不变');
+  assert.deepEqual(noEnded.find((s) => s.id === 'lifetime')!.y, 30, '买断在同一排，位置不变');
   const noList = collapseEmpty(grid, (id) => id === 'list');
-  assert.equal(noList.find((s) => s.id === 'ended')!.y, 12, '整排空了，下面的卡片上移');
+  assert.equal(noList.find((s) => s.id === 'ended')!.y, 24, '整排空了，下面的卡片上移');
   assert.ok(!noList.some((s) => s.id === 'list'));
 });
 
 test('写入校验：只放行白名单 id、字段和最小宽度以上的栏数', () => {
-  assert.ok(validPublicPage({ browserTitle: 't', bio: 'b', sections: [{ id: 'fx', x: 7, y: 3, w: 5, h: 2 }, { id: 'hero', hidden: true }, { id: 'footer', hidden: true }], heroParts: { chart: false } }));
+  assert.ok(validPublicPage({ browserTitle: 't', bio: 'b', sections: [{ id: 'fx', x: 7, y: 3, w: 5, h: 2 }, { id: 'stats', hidden: true }, { id: 'footer', hidden: true }] }));
   for (const bad of [
     null,
     [],
@@ -93,8 +93,14 @@ test('写入校验：只放行白名单 id、字段和最小宽度以上的栏�
     { browserTitle: 'x'.repeat(101) },
     { avatar: 'javascript:alert(1)' },
     { avatar: 'data:image/svg+xml;base64,AAAA' },
-    { heroParts: { nope: true } },
-    { heroParts: { chart: 'no' } },
+    { heroParts: { chart: false } },
+    { sections: [{ id: 'hero' }] },
+    { sections: [{ id: 'metric-1', x: 0, y: 0, w: 3, h: 3 }] },
+    { sections: [{ id: 'metric-1', x: 0, y: 0, w: 3, h: 3, metric: { template: 'nope', items: ['active'] } }] },
+    { sections: [{ id: 'metric-1', x: 0, y: 0, w: 3, h: 3, metric: { template: 'number', items: ['nope'] } }] },
+    { sections: [{ id: 'metric-1', x: 0, y: 0, w: 3, h: 3, metric: { template: 'number', items: ['active', 'monthly'] } }] },
+    { sections: [{ id: 'metric-1', x: 0, y: 0, w: 3, h: 3, hidden: true, metric: { template: 'number', items: ['active'] } }] },
+    { sections: [{ id: 'fx', x: 0, y: 0, w: 6, h: 6, metric: { template: 'number', items: ['active'] } }] },
     { sections: [{ id: 'nope' }] },
     { sections: [{ id: 'fx', x: 0, y: 0, w: 4, h: 2 }] },
     { sections: [{ id: 'fx', x: 7, y: 0, w: 6, h: 2 }] },
@@ -102,7 +108,7 @@ test('写入校验：只放行白名单 id、字段和最小宽度以上的栏�
     { sections: [{ id: 'fx', x: 0, y: 0, w: 6 }] },
     { sections: [{ id: 'fx', x: -1, y: 0, w: 6, h: 2 }] },
     { sections: [{ id: 'fx', x: 0, y: 0, w: 6, h: 0 }] },
-    { sections: [{ id: 'fx', x: 0, y: 2201, w: 6, h: 1 }] },
+    { sections: [{ id: 'fx', x: 0, y: 100000, w: 6, h: 1 }] },
     { sections: [{ id: 'fx', x: 0, y: 0, w: 6, h: 201 }] },
     { sections: [{ id: 'footer', x: 0, y: 0, w: 6, h: 2 }] },
     { sections: [{ id: 'fx', span: 6 }] },
@@ -137,7 +143,7 @@ test('缺省配置：脱敏结果不缺数据', () => {
 });
 
 test('隐藏全部用到名字的部分：响应里没有订阅名、ID、已退订订阅', () => {
-  const m = maskForPublic(ledger({ sections: hide('hero', 'list', 'ended', 'lifetime', 'pile') }));
+  const m = maskForPublic(ledger({ sections: hide('stats', 'timeline', 'chart', 'list', 'ended', 'lifetime', 'pile') }));
   const raw = JSON.stringify(m.subscriptions);
   assert.ok(!raw.includes('Fiction'), raw);
   assert.equal(m.subscriptions.length, 2, '已退订不下发；在用的买断计入构成，但匿名');
@@ -152,12 +158,12 @@ test('只隐藏一张卡：别的部分还要用的数据继续下发', () => {
   assert.ok(m.subscriptions[0].payments?.length, '概览和时间线要用扣款');
   // 只隐藏概览：订阅列表的下次扣款仍要用历史
   assert.ok(maskForPublic(ledger(undefined)).subscriptions[0].payments?.length);
-  assert.ok(maskForPublic(ledger({ heroParts: { stats: false, timeline: false, chart: false } })).subscriptions[0].payments?.length);
+  assert.ok(maskForPublic(ledger({ sections: hide('stats', 'timeline', 'chart') })).subscriptions[0].payments?.length);
 });
 
 test('裁掉历史后，留下的组件算出的数字不变', () => {
   const full = maskForPublic(ledger());
-  const cut = maskForPublic(ledger({ sections: hide('hero', 'list') }));
+  const cut = maskForPublic(ledger({ sections: hide('stats', 'timeline', 'chart', 'list') }));
   assert.equal(cut.subscriptions[0].priceHistory, undefined);
   assert.equal(full.subscriptions.length, cut.subscriptions.length);
   full.subscriptions.forEach((s, i) => {
@@ -171,20 +177,20 @@ test('裁掉历史后，留下的组件算出的数字不变', () => {
 test('裁掉历史：买断卡价格不变，已退订按结束日取价', () => {
   const life = sub({ id: 'l', cycle: { unit: 'lifetime', n: 1 }, price: 99, priceHistory: [{ from: '2023-01-15', amount: 50 }, { from: '2999-01-01', amount: 99 }] } as Partial<Subscription>);
   const stopped = sub({ id: 's', price: 40, end: '2999-01-01', stop: { kind: 'terminate', date: '2023-02-01', paidThrough: '2999-01-01' }, priceHistory: [{ from: '2023-01-15', amount: 10 }, { from: '2998-01-01', amount: 40 }] } as unknown as Partial<Subscription>);
-  const out = maskForPublic({ ...ledger({ sections: hide('hero', 'list') }), subscriptions: [life, stopped] });
+  const out = maskForPublic({ ...ledger({ sections: hide('stats', 'timeline', 'chart', 'list') }), subscriptions: [life, stopped] });
   assert.equal(out.subscriptions.find((x) => x.id === 'l')?.price, 99);
   assert.equal(out.subscriptions.find((x) => x.id === 's')?.price, 40);
 });
 
 test('所有用到金额的部分都隐藏：不下发订阅和付款来源', () => {
-  const st = { ...ledger({ sections: hide('hero', 'composition', 'fx', 'list', 'ended', 'lifetime', 'pile') }), methods: [{ id: 'm', name: 'Fiction Card', kind: 'card', currency: 'USD', region: 'TR' }] } as unknown as AppState;
+  const st = { ...ledger({ sections: hide('stats', 'timeline', 'chart', 'composition', 'fx', 'list', 'ended', 'lifetime', 'pile') }), methods: [{ id: 'm', name: 'Fiction Card', kind: 'card', currency: 'USD', region: 'TR' }] } as unknown as AppState;
   const out = maskForPublic(st);
   assert.deepEqual(out.subscriptions, []);
   assert.deepEqual(out.methods, []);
 });
 
 test('不展示名字时，付款来源不带地区和名称', () => {
-  const st = { ...ledger({ sections: hide('hero', 'list', 'ended', 'lifetime', 'pile') }), methods: [{ id: 'm', name: 'Fiction Card', kind: 'card', currency: 'USD', region: 'TR' }] } as unknown as AppState;
+  const st = { ...ledger({ sections: hide('stats', 'timeline', 'chart', 'list', 'ended', 'lifetime', 'pile') }), methods: [{ id: 'm', name: 'Fiction Card', kind: 'card', currency: 'USD', region: 'TR' }] } as unknown as AppState;
   const [m] = maskForPublic(st).methods;
   assert.equal(m.region, undefined);
   assert.equal(m.name, '');
@@ -202,7 +208,7 @@ test('设置校验：标题类型和长度、头像错误单独报', () => {
 });
 
 test('预览用 untrimmed：配置怎么隐藏都拿到全部组件的数据', () => {
-  const m = maskForPublic(ledger({ sections: hide('hero', 'list', 'ended', 'lifetime', 'pile') }), { untrimmed: true });
+  const m = maskForPublic(ledger({ sections: hide('stats', 'timeline', 'chart', 'list', 'ended', 'lifetime', 'pile') }), { untrimmed: true });
   assert.equal(m.subscriptions.length, 3);
   assert.equal(m.subscriptions[0].name, 'Fiction Music');
 });
@@ -238,16 +244,17 @@ test('移除和添加：没摆放过的页面继续流式、补满，不写入�
   assert.deepEqual(gridConfig(flow), [{ id: 'fx', hidden: true }]);
   assert.equal(flow.find((s) => s.id === 'composition')!.w, 12);
   assert.equal(isCustomLayout({ sections: gridConfig(flow) }), false);
-  const noHero = hideItem(publicGrid(undefined), 'hero');
-  assert.equal(noHero.find((s) => s.id === 'composition')!.y, 0);
+  let noTop = publicGrid(undefined);
+  for (const id of ['stats', 'timeline', 'chart']) noTop = hideItem(noTop, id);
+  assert.equal(noTop.find((s) => s.id === 'composition')!.y, 0);
   assert.deepEqual(showItem(flow, 'fx'), publicGrid(undefined));
 });
 
 test('移除：摆放过的页面只收起独占的行，保存再读回和草稿一致', () => {
   const moved = placeItem(publicGrid(undefined), 'list', { x: 0, y: 12, w: 8, h: 6 });
-  const hero = hideItem(moved, 'hero');
-  assert.equal(hero.find((s) => s.id === 'composition')!.y, 0);
-  assert.deepEqual(publicGrid({ sections: gridConfig(hero) }), hero);
+  const noStats = hideItem(moved, 'stats');
+  assert.equal(noStats.find((s) => s.id === 'timeline')!.y, 0);
+  assert.deepEqual(publicGrid({ sections: gridConfig(noStats) }), noStats);
   const fx = hideItem(moved, 'fx');
   assert.equal(fx.find((s) => s.id === 'composition')!.w, 6);
   assert.deepEqual(publicGrid({ sections: gridConfig(fx) }), fx);
@@ -270,10 +277,61 @@ test('摆放过的页面在桌面以下是单列，不会挤成一栏宽', () =>
 test('流式页面：卡片没数据时，其余卡片按默认宽度重新排，能并排的仍并排', () => {
   const grid = publicGrid({ sections: [{ id: 'fx', hidden: true }, { id: 'list', hidden: true }] });
   assert.equal(grid.find((s) => s.id === 'lifetime')!.w, 12);
-  assert.deepEqual(flowSpans(['hero', 'composition', 'lifetime']), [12, 6, 6]);
+  assert.deepEqual(flowSpans(['stats', 'composition', 'lifetime']), [12, 6, 6]);
 });
 
 test('摆放结果恰好等于默认排列时，仍算摆放过，不丢几何', () => {
   const placed = publicGrid({ sections: gridSections(publicGrid(undefined)) });
   assert.equal(isCustomLayout({ sections: gridConfig(placed) }), true);
+});
+
+test('主卡拆成三张：可以只留其中一张，不再有 hero', () => {
+  const ids = publicGrid().map((s) => s.id);
+  assert.ok(!ids.includes('hero'));
+  for (const id of ['stats', 'timeline', 'chart']) assert.ok(ids.includes(id), id);
+  const parts = publicParts({ sections: hide('timeline', 'chart') });
+  assert.ok(parts.has('stats') && !parts.has('timeline') && !parts.has('chart'));
+});
+
+test('可选组件默认不放：放上去才算摆放过，才下发它要的数据', () => {
+  for (const id of ['calendar', 'years', 'tenure', 'treemap', 'changes', 'waterfall']) {
+    assert.equal(publicGrid().find((s) => s.id === id)!.hidden, true, id);
+    assert.ok(!publicParts().has(id as never), id);
+    const shown = showItem(publicGrid(), id);
+    assert.equal(shown.find((s) => s.id === id)!.hidden, false, id);
+    assert.equal(isFlowGrid(shown), false, `${id} 没有默认位置，放上去就是自由摆放`);
+    assert.ok(publicParts({ sections: gridConfig(shown) }).has(id as never), id);
+  }
+});
+
+test('指标卡：可放多张，保存再读回一致，移除后不留痕迹', () => {
+  const one = newMetricItem(publicGrid(), 'trend');
+  const two = newMetricItem([...publicGrid(), one], 'rows');
+  assert.notEqual(one.id, two.id);
+  const items = publicGrid({ sections: gridSections([...publicGrid(), one, two]) });
+  assert.equal(validPublicPage({ sections: gridSections(items) }), true);
+  assert.deepEqual(items.find((s) => s.id === two.id)!.metric, two.metric);
+  const gone = hideItem(items, one.id);
+  assert.ok(!gone.some((s) => s.id === one.id));
+  assert.ok(!JSON.stringify(gridConfig(gone)).includes(one.id));
+});
+
+test('指标卡：改模板只留下新模板能显示的数据，没有就用默认', () => {
+  const rows = { template: 'rows' as const, items: ['monthly', 'active', 'next30'] };
+  assert.deepEqual(metricWithTemplate(rows, 'number').items, ['monthly']);
+  assert.deepEqual(metricWithTemplate(rows, 'trend').items, ['monthly']);
+  const noSeries = metricWithTemplate({ template: 'number', items: ['active'] }, 'trend');
+  assert.ok(metricsFor('trend').some((m) => m.id === noSeries.items[0]));
+  assert.ok(metricsFor('share').every((m) => 'share' in m && m.share));
+  const item = newMetricItem(publicGrid(), 'number');
+  const grid = [...publicGrid(), item];
+  assert.deepEqual(setMetric(grid, item.id, { template: 'number', items: ['active'] }).find((s) => s.id === item.id)!.metric, { template: 'number', items: ['active'] });
+});
+
+test('指标卡只下发选中的数据要用的部分', () => {
+  const metric = newMetricItem(publicGrid(), 'number');
+  const only = [...hide('stats', 'timeline', 'chart', 'composition', 'fx', 'list', 'ended', 'lifetime', 'pile', 'footer')];
+  const cfg = { sections: [...only, ...gridSections([{ ...metric, metric: { template: 'share', items: ['topCategory'] } }])] } as PublicPageConfig;
+  const parts = publicParts(cfg);
+  assert.ok(parts.has('composition') && !parts.has('list'));
 });

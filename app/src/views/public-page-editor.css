@@ -1,13 +1,140 @@
-/* 公开页编辑：左边组件库和页面信息，右边真实画布；手机上切换 */
+/* 公开页编辑：画布占主位，右边一列是组件库；选中指标卡时这一列换成它的设置。窄屏切换 */
 .ppe.page {
   display: grid;
-  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 24px;
   align-items: start;
   max-width: none;
 }
-.ppe-form {
-  gap: 26px;
+.ppe-side {
+  min-width: 0;
+}
+.ppe-side[hidden],
+.ppe-preview[hidden] {
+  display: none;
+}
+.ppe-panel {
+  gap: 16px;
+}
+.ppe-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ppe-panel-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.ppe-hint {
+  margin: 0;
+  color: var(--label-2);
+  font-size: var(--fs-1);
+}
+.ppe-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ppe-group-title {
+  margin: 0 0 4px;
+  color: var(--label-2);
+  font-size: var(--fs-1);
+  font-weight: 500;
+}
+.ppe-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-md);
+}
+.ppe-item:hover {
+  background: var(--gray-3);
+}
+.ppe-item-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  user-select: none;
+  touch-action: pan-y;
+}
+.ppe-item-main[data-drag] {
+  cursor: grab;
+}
+.ppe-item-main:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.ppe-item[data-placed] .ppe-thumb {
+  opacity: 0.5;
+}
+.ppe-thumb {
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--label);
+  box-shadow: 0 0 0 0.5px var(--line);
+}
+.ppe-item-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+.ppe-item-name {
+  font-size: var(--fs-2);
+}
+.ppe-item-desc {
+  color: var(--label-2);
+  font-size: var(--fs-1);
+  line-height: 1.35;
+}
+.ppe-item-add {
+  flex-shrink: 0;
+  color: var(--label-2);
+}
+.ppe-ghost {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.ppe-templates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+}
+.ppe-template {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font-size: var(--fs-1);
+}
+.ppe-template:hover {
+  background: var(--gray-3);
+}
+.ppe-template[data-on] {
+  box-shadow: 0 0 0 1.5px var(--label);
+}
+.ppe-metric-row select {
+  flex: 1;
   min-width: 0;
 }
 .ppe-preview {
@@ -19,10 +146,6 @@
   gap: 12px;
   height: calc(100dvh - 96px);
   min-width: 0;
-}
-.ppe-preview[hidden],
-.ppe-form[hidden] {
-  display: none;
 }
 .ppe-frame {
   flex: 1;

@@ -1,6 +1,8 @@
 {
   "title": "Cài đặt",
-  "days": { "other": "{count} ngày" },
+  "days": {
+    "other": "{count} ngày"
+  },
   "logout": "Đăng xuất",
   "toast": {
     "saved": "Đã lưu",
@@ -53,13 +55,19 @@
   "today": {
     "recent": "Đã gửi gần đây",
     "title": "Hôm nay ({day})",
-    "items": { "other": "{count} mục" }
+    "items": {
+      "other": "{count} mục"
+    }
   },
   "books": {
     "title": "Ghi sổ",
     "defaultMethod": "Phương thức thanh toán mặc định",
-    "unassigned": { "other": "{count} gói đăng ký chưa có phương thức thanh toán" },
-    "assignAllDone": { "other": "Đã đặt {count} gói đăng ký về phương thức thanh toán mặc định" },
+    "unassigned": {
+      "other": "{count} gói đăng ký chưa có phương thức thanh toán"
+    },
+    "assignAllDone": {
+      "other": "Đã đặt {count} gói đăng ký về phương thức thanh toán mặc định"
+    },
     "assignAll": "Dùng mặc định cho tất cả",
     "collectCurrency": "Tiền tệ gói chia sẻ"
   },
@@ -70,7 +78,9 @@
     "updated": "Đã cập nhật tỷ giá",
     "history": "Tỷ giá lịch sử",
     "earliest": "Từ {date}",
-    "coverage": { "other": "{covered} / {count} ngày" },
+    "coverage": {
+      "other": "{covered} / {count} ngày"
+    },
     "fill": "Bổ sung tỷ giá còn thiếu",
     "historyUpdated": "Đã cập nhật tỷ giá lịch sử"
   },
@@ -112,7 +122,9 @@
     "warning": "Sổ hiện tại sẽ bị thay thế hoàn toàn bằng bản sao lưu. Thao tác này không thể hoàn tác — nên xuất một bản sao lưu trước.",
     "subs": "Gói đăng ký",
     "methods": "Phương thức thanh toán",
-    "count": { "other": "{count}" },
+    "count": {
+      "other": "{count}"
+    },
     "time": "Thời điểm sao lưu",
     "format": "Định dạng",
     "legacy": "Bản sao lưu cũ: chỉ có gói đăng ký và phương thức thanh toán"
@@ -140,7 +152,9 @@
     "formats": "CSV, bản sao lưu ZIP hoặc cơ sở dữ liệu SQLite"
   },
   "channels": {
-    "title": { "other": "Kênh thông báo\n{count} đang bật" },
+    "title": {
+      "other": "Kênh thông báo\n{count} đang bật"
+    },
     "empty": "Chưa có kênh nào — nhắc nhở sẽ không được gửi.",
     "test": "Thử",
     "testFailed": "Không gửi được",
@@ -212,9 +226,15 @@
     "unknownBrowser": "Trình duyệt không xác định",
     "ago": {
       "justNow": "Vừa hoạt động",
-      "minutes": { "other": "{count} phút trước" },
-      "hours": { "other": "{count} giờ trước" },
-      "days": { "other": "{count} ngày trước" }
+      "minutes": {
+        "other": "{count} phút trước"
+      },
+      "hours": {
+        "other": "{count} giờ trước"
+      },
+      "days": {
+        "other": "{count} ngày trước"
+      }
     },
     "thisDevice": "Thiết bị này",
     "signedInPasskey": "Đăng nhập bằng passkey lúc {time}",
@@ -230,10 +250,16 @@
     "alreadyBound": "Thiết bị này đã có passkey",
     "changePassword": "Đổi mật khẩu",
     "devices": "Thiết bị đã đăng nhập",
-    "devicesCount": { "other": "Thiết bị đã đăng nhập\n{count}" },
+    "devicesCount": {
+      "other": "Thiết bị đã đăng nhập\n{count}"
+    },
     "maxSessions": "Số thiết bị đăng nhập tối đa",
-    "maxSessionsSaved": { "other": "Tối đa {count} thiết bị" },
-    "deviceCount": { "other": "{count} thiết bị" },
+    "maxSessionsSaved": {
+      "other": "Tối đa {count} thiết bị"
+    },
+    "deviceCount": {
+      "other": "{count} thiết bị"
+    },
     "confirmLogoutOthers": "Đăng xuất tất cả thiết bị khác?",
     "loggedOutOthers": "Đã đăng xuất các thiết bị khác",
     "logoutOthers": "Đăng xuất tất cả thiết bị khác",
@@ -309,13 +335,6 @@
     "bio": "Nội dung",
     "bioPlaceholder": "Hiển thị dưới tiêu đề. Giữ xuống dòng; không đổi theo ngôn ngữ.",
     "sections": "Thành phần",
-    "sectionsFoot": "Kéo thẻ trên canvas để di chuyển, kéo cạnh phải và cạnh dưới để đổi kích thước. Canvas cần cửa sổ rộng như máy tính. Trên màn hình hẹp, khách truy cập thấy một cột từ trên xuống. Gỡ một mục chỉ ảnh hưởng đến hiển thị; để giữ kín hoàn toàn một đăng ký, hãy dùng \"Gói hiển thị\".",
-    "heroParts": "Nội dung thẻ chính",
-    "hero": "Thẻ chính",
-    "stats": "Tổng quan",
-    "footer": "Chân trang",
-    "pile": "Chồng gói đăng ký",
-    "add": "Thêm",
     "remove": "Gỡ",
     "emptyCard": "Chưa có dữ liệu. Khách truy cập sẽ không thấy thẻ này.",
     "editTab": "Cài đặt",

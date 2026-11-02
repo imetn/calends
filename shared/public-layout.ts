@@ -1,5 +1,7 @@
 // 公开页的组件布局：组件白名单、12 栏网格上的摆放规则、可见性。浏览器、Worker 和脱敏共用
-import type { PublicPageConfig, PublicSectionConfig } from './types.ts';
+import type { PublicMetricCard, PublicMetricTemplate, PublicPageConfig, PublicSectionConfig } from './types.ts';
+
+export type { PublicMetricCard, PublicMetricTemplate };
 
 export const PUBLIC_TITLE_MAX = 100;
 export const PUBLIC_BIO_MAX = 200;
@@ -8,25 +10,54 @@ export const PUBLIC_COLUMNS = 12;
 export const PUBLIC_MAX_ROW = 1000;
 export const PUBLIC_MAX_HEIGHT = 200;
 
-/** 网格里的组件：默认位置等于现有公开页的排列，高度取小值让内容撑开；min 是内容不被挤坏的最小栏数 */
-export const PUBLIC_GRID_SECTIONS = [
-  { id: 'hero', x: 0, y: 0, w: 12, h: 6, min: 8 },
-  { id: 'composition', x: 0, y: 6, w: 6, h: 6, min: 4 },
-  { id: 'fx', x: 6, y: 6, w: 6, h: 6, min: 5 },
-  { id: 'list', x: 0, y: 12, w: 12, h: 6, min: 6 },
-  { id: 'ended', x: 0, y: 18, w: 6, h: 6, min: 5 },
-  { id: 'lifetime', x: 6, y: 18, w: 6, h: 6, min: 4 },
-] as const;
+/** 组件注册表：默认位置等于现有公开页的排列，高度取小值让内容撑开；min 是内容不被挤坏的最小栏数；off 的组件默认不上页面，主人拖进来才显示和下发数据 */
+export const PUBLIC_GRID_SECTIONS: readonly { id: PublicGridId; x: number; y: number; w: number; h: number; min: number; off?: boolean }[] = [
+  { id: 'stats', x: 0, y: 0, w: 12, h: 6, min: 5 },
+  { id: 'timeline', x: 0, y: 6, w: 12, h: 6, min: 6 },
+  { id: 'chart', x: 0, y: 12, w: 12, h: 6, min: 6 },
+  { id: 'composition', x: 0, y: 18, w: 6, h: 6, min: 4 },
+  { id: 'fx', x: 6, y: 18, w: 6, h: 6, min: 5 },
+  { id: 'list', x: 0, y: 24, w: 12, h: 6, min: 6 },
+  { id: 'ended', x: 0, y: 30, w: 6, h: 6, min: 5 },
+  { id: 'lifetime', x: 6, y: 30, w: 6, h: 6, min: 4 },
+  { id: 'calendar', x: 0, y: 36, w: 6, h: 12, min: 5, off: true },
+  { id: 'years', x: 0, y: 48, w: 12, h: 10, min: 6, off: true },
+  { id: 'tenure', x: 0, y: 58, w: 6, h: 8, min: 4, off: true },
+  { id: 'treemap', x: 0, y: 66, w: 6, h: 8, min: 4, off: true },
+  { id: 'changes', x: 0, y: 74, w: 6, h: 8, min: 4, off: true },
+  { id: 'waterfall', x: 0, y: 82, w: 6, h: 8, min: 5, off: true },
+];
 /** 固定在页面底部的组件：只能隐藏，不参与摆放 */
 export const PUBLIC_BOTTOM_SECTIONS = ['footer', 'pile'] as const;
-/** 主卡的三部分：可分别隐藏，全部隐藏时主卡不显示 */
-export const PUBLIC_HERO_PARTS = ['stats', 'timeline', 'chart'] as const;
 
-export type PublicGridId = (typeof PUBLIC_GRID_SECTIONS)[number]['id'];
+/** 指标卡的模板：一张卡可以有几个数据、数据需要带什么，由模板决定 */
+export const PUBLIC_METRIC_TEMPLATES = ['number', 'trend', 'compare', 'share', 'rows'] as const;
+/** 指标卡可选的数据。needs 是它和哪个组件用同一类数据，脱敏据此决定下发什么；series、prev、share 表示能配哪种模板 */
+export const PUBLIC_METRICS = [
+  { id: 'monthly', needs: ['stats'], series: true, prev: true },
+  { id: 'yearly', needs: ['stats'], prev: true },
+  { id: 'active', needs: ['stats'] },
+  { id: 'avgPerSub', needs: ['stats'] },
+  { id: 'paidTotal', needs: ['stats'] },
+  { id: 'paidYear', needs: ['stats'], prev: true },
+  { id: 'paidMonth', needs: ['stats'], series: true, prev: true },
+  { id: 'next30', needs: ['stats'] },
+  { id: 'topSub', needs: ['stats', 'list'], share: true },
+  { id: 'topCategory', needs: ['stats', 'composition'], share: true },
+  { id: 'endedCount', needs: ['stats'] },
+  { id: 'lifetimeCount', needs: ['stats'] },
+  { id: 'fxEffect', needs: ['fx'] },
+] as const satisfies readonly { id: string; needs: readonly PublicPart[]; series?: boolean; prev?: boolean; share?: boolean }[];
+/** 一页最多放多少张指标卡 */
+export const PUBLIC_METRIC_CARDS_MAX = 24;
+/** 多指标行模板最多放几个数据 */
+export const PUBLIC_METRIC_ROWS_MAX = 4;
+
+export type PublicGridId = 'stats' | 'timeline' | 'chart' | 'composition' | 'fx' | 'list' | 'ended' | 'lifetime' | 'calendar' | 'years' | 'tenure' | 'treemap' | 'changes' | 'waterfall';
 export type PublicBottomId = (typeof PUBLIC_BOTTOM_SECTIONS)[number];
-export type PublicHeroPart = (typeof PUBLIC_HERO_PARTS)[number];
-/** 决定下发哪些数据的最小单位：主卡按三部分算，其余按组件算 */
-export type PublicPart = Exclude<PublicGridId, 'hero'> | PublicBottomId | PublicHeroPart;
+/** 决定下发哪些数据的最小单位 */
+export type PublicPart = PublicGridId | PublicBottomId;
+export type PublicMetricId = (typeof PUBLIC_METRICS)[number]['id'];
 
 export interface PublicRect {
   x: number;
@@ -35,10 +66,45 @@ export interface PublicRect {
   h: number;
 }
 export interface PublicGridItem extends PublicRect {
-  id: PublicGridId;
+  /** 注册表里的组件 id，或指标卡的 metric-N */
+  id: string;
   min: number;
   hidden: boolean;
+  metric?: PublicMetricCard;
 }
+
+/** 指标卡同一模板可以放多张，每张有自己的 id */
+const METRIC_ID = /^metric-\d{1,6}$/;
+const METRIC_DEF = { w: 3, h: 3, min: 2 };
+const METRIC_ROWS_DEF = { w: 6, h: 4, min: 3 };
+export const metricDef = (template: PublicMetricTemplate) => (template === 'rows' ? METRIC_ROWS_DEF : METRIC_DEF);
+const metricOf = (id: string) => PUBLIC_METRICS.find((m) => m.id === id);
+/** 这个模板能选哪些数据：趋势要有序列，对比要有上期，占比要有总量 */
+export const metricsFor = (template: PublicMetricTemplate) =>
+  PUBLIC_METRICS.filter((m) => (template === 'trend' ? 'series' in m : template === 'compare' ? 'prev' in m : template === 'share' ? 'share' in m : true));
+const DEFAULT_METRIC: Record<PublicMetricTemplate, PublicMetricId[]> = { number: ['monthly'], trend: ['monthly'], compare: ['monthly'], share: ['topCategory'], rows: ['monthly', 'yearly', 'active'] };
+/** 拖进来的新指标卡：id 取现有最大号的下一个 */
+export function newMetricItem(items: PublicGridItem[], template: PublicMetricTemplate): PublicGridItem {
+  const n = items.reduce((max, s) => (METRIC_ID.test(s.id) ? Math.max(max, Number(s.id.slice(7))) : max), 0) + 1;
+  const def = metricDef(template);
+  return { id: `metric-${n}`, x: 0, y: publicGridBottom(items), w: def.w, h: def.h, min: def.min, hidden: false, metric: { template, items: DEFAULT_METRIC[template] } };
+}
+/** 换模板时留下仍能配的数据，都不能配就用模板默认的；单数据模板只留第一个 */
+export function metricWithTemplate(card: PublicMetricCard, template: PublicMetricTemplate): PublicMetricCard {
+  const allowed = new Set<string>(metricsFor(template).map((m) => m.id));
+  const kept = card.items.filter((id) => allowed.has(id)).slice(0, template === 'rows' ? PUBLIC_METRIC_ROWS_MAX : 1);
+  return { template, items: kept.length ? kept : DEFAULT_METRIC[template] };
+}
+const validMetric = (m: unknown): m is PublicMetricCard => {
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return false;
+  const c = m as Record<string, unknown>;
+  if (Object.keys(c).some((k) => k !== 'template' && k !== 'items')) return false;
+  if (!(PUBLIC_METRIC_TEMPLATES as readonly unknown[]).includes(c.template) || !Array.isArray(c.items)) return false;
+  const template = c.template as PublicMetricTemplate;
+  const allowed = new Set<unknown>(metricsFor(template).map((x) => x.id));
+  const max = template === 'rows' ? PUBLIC_METRIC_ROWS_MAX : 1;
+  return c.items.length >= 1 && c.items.length <= max && new Set(c.items).size === c.items.length && c.items.every((x) => allowed.has(x));
+};
 
 const gridDef = (id: string) => PUBLIC_GRID_SECTIONS.find((s) => s.id === id);
 const isBottom = (id: string): id is PublicBottomId => (PUBLIC_BOTTOM_SECTIONS as readonly string[]).includes(id);
@@ -84,7 +150,7 @@ const fitRect = (def: { min: number }, r: PublicRect): PublicRect => {
 };
 
 /** 主人是否摆放过：没摆过的页面按原有的流式排列显示 */
-export const isCustomLayout = (cfg?: PublicPageConfig) => !!cfg?.sections?.some((s) => gridDef(s.id) && hasRect(s));
+export const isCustomLayout = (cfg?: PublicPageConfig) => !!cfg?.sections?.some((s) => (gridDef(s.id) || METRIC_ID.test(s.id)) && hasRect(s));
 
 /** 存下来的配置摊开成完整列表：不认识的 id 忽略，配置里没有的组件（以后新增的）放到最下面，互相压住的往下推 */
 export function publicGrid(cfg?: PublicPageConfig): PublicGridItem[] {
@@ -95,9 +161,13 @@ export function publicGrid(cfg?: PublicPageConfig): PublicGridItem[] {
   const missing: PublicGridItem[] = [];
   for (const def of PUBLIC_GRID_SECTIONS) {
     const s = saved.get(def.id);
-    const hidden = !!s?.hidden;
+    const hidden = s ? !!s.hidden : !!def.off;
     if (hasRect(s)) items.push({ id: def.id, min: def.min, hidden, ...fitRect(def, s) });
     else (custom && !hidden ? missing : items).push({ id: def.id, x: def.x, y: def.y, w: def.w, h: def.h, min: def.min, hidden });
+  }
+  for (const s of saved.values()) {
+    if (!METRIC_ID.test(s.id) || !hasRect(s) || !validMetric(s.metric)) continue;
+    items.push({ id: s.id, min: metricDef(s.metric.template).min, hidden: false, metric: s.metric, ...fitRect(metricDef(s.metric.template), s) });
   }
   let bottom = publicGridBottom(items);
   for (const item of missing) {
@@ -107,7 +177,8 @@ export function publicGrid(cfg?: PublicPageConfig): PublicGridItem[] {
   return settle(custom ? items : flowRects(items));
 }
 
-const flowSections = (items: PublicGridItem[]): PublicSectionConfig[] => items.filter((s) => s.hidden).map((s) => ({ id: s.id, hidden: true }));
+/** 流式页面只记主人隐藏了哪些默认显示的组件；默认不显示的不用记 */
+const flowSections = (items: PublicGridItem[]): PublicSectionConfig[] => items.filter((s) => s.hidden && !gridDef(s.id)?.off).map((s) => ({ id: s.id, hidden: true }));
 /** 主人只隐藏过组件、没动过位置：这种网格不存几何，页面继续按流式排列 */
 export const isFlowGrid = (items: PublicGridItem[]) => JSON.stringify(items) === JSON.stringify(publicGrid({ sections: flowSections(items) }));
 /** 网格转成要存的字段：没动过位置时只存隐藏了哪些 */
@@ -116,23 +187,28 @@ export const gridConfig = (items: PublicGridItem[]): PublicSectionConfig[] => (i
 /** 最下面一张可见卡片的下边缘 */
 export const publicGridBottom = (items: PublicGridItem[]) => items.reduce((max, s) => (s.hidden ? max : Math.max(max, s.y + s.h)), 0);
 
+/** 指标卡配置变了：只换它自己，位置不动 */
+export const setMetric = (items: PublicGridItem[], id: string, metric: PublicMetricCard) => items.map((s) => (s.id === id ? { ...s, metric, min: metricDef(metric.template).min, w: Math.max(s.w, metricDef(metric.template).min) } : s));
+
 /** 把一张卡放到新位置：位置不合规的夹回范围内，被压到的卡片往下推，其余不动 */
 export function placeItem(items: PublicGridItem[], id: string, rect: PublicRect): PublicGridItem[] {
   const item = items.find((s) => s.id === id);
   return item ? settle(items, { ...item, ...fitRect(item, rect) }) : items;
 }
 
-/** 重新添加：没摆放过的页面回到原位，摆放过的放回页面最下面 */
+/** 重新添加：没摆放过的页面回到原位（默认不显示的组件没有原位，放上去就算摆放过）；摆放过的放回页面最下面 */
 export function showItem(items: PublicGridItem[], id: string): PublicGridItem[] {
   const item = items.find((s) => s.id === id);
-  if (item && isFlowGrid(items)) return publicGrid({ sections: flowSections(items.map((s) => (s.id === id ? { ...s, hidden: false } : s))) });
-  return item ? placeItem(items.map((s) => (s.id === id ? { ...s, hidden: false } : s)), id, { ...item, x: 0, y: publicGridBottom(items) }) : items;
+  if (!item) return items;
+  if (isFlowGrid(items) && !gridDef(id)?.off) return publicGrid({ sections: flowSections(items.map((s) => (s.id === id ? { ...s, hidden: false } : s))) });
+  const placed = isFlowGrid(items) ? publicGrid({ sections: gridSections(items) }) : items;
+  return placeItem(placed.map((s) => (s.id === id ? { ...s, hidden: false } : s)), id, { ...item, x: 0, y: publicGridBottom(placed) });
 }
 
-/** 移除：没摆放过的页面重新补满；摆放过的只收起它独占的整行，其余不动 */
+/** 移除：没摆放过的页面重新补满；摆放过的只收起它独占的整行，其余不动。指标卡直接删掉，不留隐藏项 */
 export function hideItem(items: PublicGridItem[], id: string): PublicGridItem[] {
-  const next = items.map((s) => (s.id === id ? { ...s, hidden: true } : s));
-  if (isFlowGrid(items)) return publicGrid({ sections: flowSections(next) });
+  if (isFlowGrid(items)) return publicGrid({ sections: flowSections(items.map((s) => (s.id === id ? { ...s, hidden: true } : s))) });
+  const next = items.map((s) => (s.id === id ? { ...s, hidden: true } : s)).filter((s) => !(s.hidden && s.metric));
   const kept = collapseEmpty(items, (x) => x === id);
   return publicGrid({ sections: gridSections([...kept, ...next.filter((s) => s.hidden)]) });
 }
@@ -144,7 +220,7 @@ export function fitHeights(items: PublicGridItem[], need: Record<string, number>
 }
 
 /** 去掉没有内容的卡片（没有退订、没有买断），只有它们占着的整行一起收起 */
-export function collapseEmpty(items: PublicGridItem[], isEmpty: (id: PublicGridId) => boolean): PublicGridItem[] {
+export function collapseEmpty(items: PublicGridItem[], isEmpty: (id: string) => boolean): PublicGridItem[] {
   const shown = items.filter((s) => !s.hidden);
   const kept = shown.filter((s) => !isEmpty(s.id));
   const freed = new Set<number>();
@@ -153,19 +229,17 @@ export function collapseEmpty(items: PublicGridItem[], isEmpty: (id: PublicGridI
 }
 
 /** 网格转成要存的字段 */
-export const gridSections = (items: PublicGridItem[]): PublicSectionConfig[] => items.map(({ id, x, y, w, h, hidden }) => ({ id, x, y, w, h, ...(hidden ? { hidden: true } : {}) }));
+export const gridSections = (items: PublicGridItem[]): PublicSectionConfig[] => items.map(({ id, x, y, w, h, hidden, metric }) => ({ id, x, y, w, h, ...(hidden ? { hidden: true } : {}), ...(metric ? { metric } : {}) }));
 
 export const publicBottomShown = (cfg: PublicPageConfig | undefined, id: PublicBottomId) => !cfg?.sections?.some((s) => s.id === id && s.hidden);
-export const publicHeroShown = (cfg: PublicPageConfig | undefined, part: PublicHeroPart) => cfg?.heroParts?.[part] !== false;
 
-/** 实际可见的部分。缺省配置时全部可见 */
+/** 实际可见的部分。缺省配置时默认组件可见；指标卡按它选的数据算 */
 export function publicParts(cfg?: PublicPageConfig): Set<PublicPart> {
   const out = new Set<PublicPart>();
   for (const s of publicGrid(cfg)) {
     if (s.hidden) continue;
-    if (s.id === 'hero') {
-      for (const part of PUBLIC_HERO_PARTS) if (publicHeroShown(cfg, part)) out.add(part);
-    } else out.add(s.id);
+    if (s.metric) for (const id of s.metric.items) for (const part of metricOf(id)?.needs ?? []) out.add(part);
+    else out.add(s.id as PublicGridId);
   }
   for (const id of PUBLIC_BOTTOM_SECTIONS) if (publicBottomShown(cfg, id)) out.add(id);
   return out;
@@ -188,7 +262,7 @@ export function fillRows(spans: number[]): number[] {
 }
 
 /** 流式页面实际要显示的卡片（没数据的已去掉）各占几栏：按组件的默认宽度重新补满，网格里的宽度是没去掉时算的 */
-export const flowSpans = (ids: PublicGridId[]) => fillRows(ids.map((id) => gridDef(id)!.w));
+export const flowSpans = (ids: string[]) => fillRows(ids.map((id) => gridDef(id)!.w));
 
 /** 平板只分半宽和全宽 */
 export const tabletSpan = (span: number) => (span <= 6 ? 6 : PUBLIC_COLUMNS);
@@ -200,29 +274,29 @@ export const validPublicAvatar = (v: unknown) => v === undefined || (typeof v ==
 export function validPublicPage(cfg: unknown): boolean {
   if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) return false;
   const c = cfg as Record<string, unknown>;
-  if (Object.keys(c).some((k) => !['browserTitle', 'bio', 'avatar', 'sections', 'heroParts'].includes(k))) return false;
+  if (Object.keys(c).some((k) => !['browserTitle', 'bio', 'avatar', 'sections'].includes(k))) return false;
   const text = (v: unknown, max: number) => v === undefined || (typeof v === 'string' && v.length <= max);
   if (!text(c.browserTitle, PUBLIC_TITLE_MAX) || !text(c.bio, PUBLIC_BIO_MAX)) return false;
   if (!validPublicAvatar(c.avatar)) return false;
-  if (c.heroParts !== undefined) {
-    if (!c.heroParts || typeof c.heroParts !== 'object' || Array.isArray(c.heroParts)) return false;
-    for (const [k, v] of Object.entries(c.heroParts)) if (!(PUBLIC_HERO_PARTS as readonly string[]).includes(k) || typeof v !== 'boolean') return false;
-  }
   if (c.sections !== undefined) {
     if (!Array.isArray(c.sections)) return false;
     const seen = new Set<string>();
+    if ((c.sections as PublicSectionConfig[]).filter((x) => METRIC_ID.test(x?.id)).length > PUBLIC_METRIC_CARDS_MAX) return false;
     for (const raw of c.sections as PublicSectionConfig[]) {
       if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || seen.has(raw.id)) return false;
       seen.add(raw.id);
-      if (Object.keys(raw).some((k) => !['id', 'hidden', 'x', 'y', 'w', 'h'].includes(k))) return false;
+      if (Object.keys(raw).some((k) => !['id', 'hidden', 'x', 'y', 'w', 'h', 'metric'].includes(k))) return false;
       if (raw.hidden !== undefined && typeof raw.hidden !== 'boolean') return false;
-      const def = gridDef(raw.id);
+      const metric = METRIC_ID.test(raw.id);
+      if (metric ? !validMetric(raw.metric) || raw.hidden : raw.metric !== undefined) return false;
+      const def = metric ? metricDef(raw.metric!.template) : gridDef(raw.id);
       if (!def && !isBottom(raw.id)) return false;
       const rect = [raw.x, raw.y, raw.w, raw.h];
-      if (rect.every((v) => v === undefined)) continue;
+      if (rect.every((v) => v === undefined) && !metric) continue;
       if (!def || !rect.every(Number.isInteger)) return false;
       const { x, y, w, h } = raw as PublicRect;
-      if (x < 0 || w < def.min || x + w > PUBLIC_COLUMNS || y < 0 || y > PUBLIC_MAX_ROW + PUBLIC_GRID_SECTIONS.length * PUBLIC_MAX_HEIGHT || h < 1 || h > PUBLIC_MAX_HEIGHT) return false;
+      const maxRow = PUBLIC_MAX_ROW + (PUBLIC_GRID_SECTIONS.length + PUBLIC_METRIC_CARDS_MAX) * PUBLIC_MAX_HEIGHT;
+      if (x < 0 || w < def.min || x + w > PUBLIC_COLUMNS || y < 0 || y > maxRow || h < 1 || h > PUBLIC_MAX_HEIGHT) return false;
     }
   }
   return true;
@@ -232,13 +306,12 @@ export function validPublicPage(cfg: unknown): boolean {
 export function publicConfigForVisitors(cfg?: PublicPageConfig): PublicPageConfig | undefined {
   if (!cfg) return undefined;
   const items = publicGrid(cfg);
-  const grid = isCustomLayout(cfg) ? gridSections(items) : items.filter((s) => s.hidden).map((s) => ({ id: s.id as string, hidden: true }));
+  const grid = isCustomLayout(cfg) ? gridSections(items) : flowSections(items);
   const bottom = PUBLIC_BOTTOM_SECTIONS.filter((id) => !publicBottomShown(cfg, id)).map((id) => ({ id: id as string, hidden: true }));
   return {
     browserTitle: cfg.browserTitle?.trim() || undefined,
     bio: cfg.bio?.trim() || undefined,
     sections: [...grid, ...bottom],
-    heroParts: cfg.heroParts && { ...cfg.heroParts },
   };
 }
 
@@ -246,5 +319,7 @@ export function publicConfigForVisitors(cfg?: PublicPageConfig): PublicPageConfi
 export const PUBLIC_PREVIEW_READY = 'calends:public-preview-ready';
 export const PUBLIC_PREVIEW_DATA = 'calends:public-preview-data';
 export const PUBLIC_PREVIEW_DRAFT = 'calends:public-preview-draft';
-/** 画布（iframe）发回编辑页：摆放结果，或要隐藏的组件 */
+/** 画布（iframe）发回编辑页：摆放结果、要隐藏的组件，或选中的指标卡 */
 export const PUBLIC_PREVIEW_LAYOUT = 'calends:public-preview-layout';
+/** 编辑页发给画布：组件库里拖着的组件走到哪了。指针被编辑页捕获，iframe 收不到指针事件 */
+export const PUBLIC_PREVIEW_DROP = 'calends:public-preview-drop';

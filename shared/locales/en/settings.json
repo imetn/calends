@@ -1,6 +1,9 @@
 {
   "title": "Settings",
-  "days": { "one": "{count} day", "other": "{count} days" },
+  "days": {
+    "one": "{count} day",
+    "other": "{count} days"
+  },
   "logout": "Sign out",
   "toast": {
     "saved": "Saved",
@@ -53,13 +56,22 @@
   "today": {
     "recent": "Recently sent",
     "title": "Today ({day})",
-    "items": { "one": "{count} item", "other": "{count} items" }
+    "items": {
+      "one": "{count} item",
+      "other": "{count} items"
+    }
   },
   "books": {
     "title": "Bookkeeping",
     "defaultMethod": "Default payment method",
-    "unassigned": { "one": "{count} subscription has no payment method", "other": "{count} subscriptions have no payment method" },
-    "assignAllDone": { "one": "Set {count} subscription to the default payment method", "other": "Set {count} subscriptions to the default payment method" },
+    "unassigned": {
+      "one": "{count} subscription has no payment method",
+      "other": "{count} subscriptions have no payment method"
+    },
+    "assignAllDone": {
+      "one": "Set {count} subscription to the default payment method",
+      "other": "Set {count} subscriptions to the default payment method"
+    },
     "assignAll": "Use default for all",
     "collectCurrency": "Shared plan currency"
   },
@@ -70,7 +82,10 @@
     "updated": "Exchange rates updated",
     "history": "Historical rates",
     "earliest": "From {date}",
-    "coverage": { "one": "{covered} / {count} day", "other": "{covered} / {count} days" },
+    "coverage": {
+      "one": "{covered} / {count} day",
+      "other": "{covered} / {count} days"
+    },
     "fill": "Fill in missing rates",
     "historyUpdated": "Historical rates updated"
   },
@@ -112,7 +127,10 @@
     "warning": "Your current ledger will be completely replaced by the backup. This can't be undone — consider exporting a backup first.",
     "subs": "Subscriptions",
     "methods": "Payment methods",
-    "count": { "one": "{count}", "other": "{count}" },
+    "count": {
+      "one": "{count}",
+      "other": "{count}"
+    },
     "time": "Backed up",
     "format": "Format",
     "legacy": "Legacy backup: subscriptions and payment methods only"
@@ -141,7 +159,10 @@
     "formats": "CSV, ZIP backup or SQLite database"
   },
   "channels": {
-    "title": { "one": "Notification channels\n{count} on", "other": "Notification channels\n{count} on" },
+    "title": {
+      "one": "Notification channels\n{count} on",
+      "other": "Notification channels\n{count} on"
+    },
     "empty": "No channels yet — reminders won't be sent.",
     "test": "Test",
     "testFailed": "Couldn't send",
@@ -213,9 +234,18 @@
     "unknownBrowser": "Unknown browser",
     "ago": {
       "justNow": "Active just now",
-      "minutes": { "one": "{count} minute ago", "other": "{count} minutes ago" },
-      "hours": { "one": "{count} hour ago", "other": "{count} hours ago" },
-      "days": { "one": "{count} day ago", "other": "{count} days ago" }
+      "minutes": {
+        "one": "{count} minute ago",
+        "other": "{count} minutes ago"
+      },
+      "hours": {
+        "one": "{count} hour ago",
+        "other": "{count} hours ago"
+      },
+      "days": {
+        "one": "{count} day ago",
+        "other": "{count} days ago"
+      }
     },
     "thisDevice": "This device",
     "signedInPasskey": "Signed in with passkey on {time}",
@@ -231,10 +261,19 @@
     "alreadyBound": "This device already has a passkey",
     "changePassword": "Change password",
     "devices": "Signed-in devices",
-    "devicesCount": { "one": "Signed-in devices\n{count}", "other": "Signed-in devices\n{count}" },
+    "devicesCount": {
+      "one": "Signed-in devices\n{count}",
+      "other": "Signed-in devices\n{count}"
+    },
     "maxSessions": "Max signed-in devices",
-    "maxSessionsSaved": { "one": "Up to {count} device", "other": "Up to {count} devices" },
-    "deviceCount": { "one": "{count} device", "other": "{count} devices" },
+    "maxSessionsSaved": {
+      "one": "Up to {count} device",
+      "other": "Up to {count} devices"
+    },
+    "deviceCount": {
+      "one": "{count} device",
+      "other": "{count} devices"
+    },
     "confirmLogoutOthers": "Sign out all other devices?",
     "loggedOutOthers": "Other devices signed out",
     "logoutOthers": "Sign out all other devices",
@@ -314,18 +353,110 @@
     "bio": "Text",
     "bioPlaceholder": "Shown below the title. Line breaks are kept; it isn't translated.",
     "sections": "Sections",
-    "sectionsFoot": "Drag cards on the canvas to move them, and drag the right and bottom edges to resize. The canvas needs a desktop-width window. On narrow screens visitors see one column, top to bottom. Removing a section only affects display; to keep a subscription fully private, use Shown subscriptions.",
-    "heroParts": "Main card contents",
-    "hero": "Main card",
-    "stats": "Overview",
-    "footer": "Footer",
-    "pile": "Subscription pile",
-    "add": "Add",
     "remove": "Remove",
     "emptyCard": "No data yet. Visitors won't see this card.",
     "editTab": "Settings",
     "previewTab": "Preview",
     "desktop": "Desktop",
-    "phone": "Phone"
+    "phone": "Phone",
+    "library": {
+      "metrics": "Numbers",
+      "charts": "Charts",
+      "lists": "Lists and time",
+      "bottom": "Page bottom"
+    },
+    "hintDrag": "Drag a component onto the page, or click to add it at the bottom. Click a metric card to change its data.",
+    "hintTap": "Tap to add at the bottom of the page. Placing by drag needs a desktop-width window.",
+    "backToLibrary": "Back to components",
+    "metricCard": "Metric card",
+    "template": "Style",
+    "metricData": "Data shown",
+    "addMetric": "Add another value",
+    "widget": {
+      "stats": {
+        "name": "Overview",
+        "desc": "Monthly spend and key numbers"
+      },
+      "number": {
+        "name": "Number",
+        "desc": "One number, shown large"
+      },
+      "trend": {
+        "name": "Trend",
+        "desc": "A number with a sparkline"
+      },
+      "compare": {
+        "name": "Compare",
+        "desc": "Against the same time last year"
+      },
+      "share": {
+        "name": "Share",
+        "desc": "Share of monthly spend"
+      },
+      "rows": {
+        "name": "Rows",
+        "desc": "Up to 4 numbers together"
+      },
+      "chart": {
+        "name": "Bar chart",
+        "desc": "Monthly charges and spend trend"
+      },
+      "composition": {
+        "name": "Composition",
+        "desc": "Spend by category"
+      },
+      "treemap": {
+        "name": "Treemap",
+        "desc": "Area shows how much you spend"
+      },
+      "waterfall": {
+        "name": "Monthly change",
+        "desc": "What was added, raised or cancelled"
+      },
+      "fx": {
+        "name": "Currencies",
+        "desc": "Currency share and rate moves"
+      },
+      "timeline": {
+        "name": "Timeline",
+        "desc": "Charges day by day"
+      },
+      "calendar": {
+        "name": "Calendar",
+        "desc": "Which days get charged"
+      },
+      "years": {
+        "name": "Subscription timeline",
+        "desc": "When each subscription ran"
+      },
+      "list": {
+        "name": "Subscription list",
+        "desc": "Everything in use"
+      },
+      "tenure": {
+        "name": "Time subscribed",
+        "desc": "Average and longest held"
+      },
+      "changes": {
+        "name": "Changes",
+        "desc": "Added, repriced and stopped"
+      },
+      "ended": {
+        "name": "Cancelled",
+        "desc": "What was cancelled and its price"
+      },
+      "lifetime": {
+        "name": "Lifetime",
+        "desc": "One-time purchases"
+      },
+      "footer": {
+        "name": "Footer",
+        "desc": "Project name and version"
+      },
+      "pile": {
+        "name": "Icon pile",
+        "desc": "Icons falling at the page bottom"
+      }
+    }
   }
 }

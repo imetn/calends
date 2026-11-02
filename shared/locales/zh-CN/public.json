@@ -61,5 +61,40 @@
   "titleAnon": "订阅一览",
   "pile": {
     "label": "订阅堆：图标越大，每月花得越多"
+  },
+  "calendar": {
+    "title": "日历"
+  },
+  "years": {
+    "title": "订阅年表"
+  },
+  "tenure": {
+    "title": "订阅时长"
+  },
+  "treemap": {
+    "title": "开销方块图"
+  },
+  "changes": {
+    "title": "变动记录"
+  },
+  "waterfall": {
+    "title": "月度变化"
+  },
+  "metric": {
+    "monthly": "每月支出",
+    "yearly": "一年约",
+    "active": "在用订阅",
+    "avgPerSub": "平均每个订阅每月",
+    "paidTotal": "累计已付",
+    "paidYear": "今年已付",
+    "paidMonth": "本月已付",
+    "next30": "接下来 30 天",
+    "topSub": "最贵的订阅",
+    "topCategory": "最大的分类",
+    "endedCount": "已退订",
+    "lifetimeCount": "买断",
+    "fxEffect": "汇率影响（每月）",
+    "vsPrev": "去年同期 {amount}",
+    "share": "占每月支出 {percent}"
   }
 }

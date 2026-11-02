@@ -19,7 +19,6 @@ import { Num } from '@/public/components/number';
 import { Badge } from '@/public/components/ui/badge';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/public/components/ui/card';
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/public/components/ui/chart';
-import { Separator } from '@/public/components/ui/separator';
 import { Skeleton } from '@/public/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/public/components/ui/tabs';
 import { TooltipProvider } from '@/public/components/ui/tooltip';
@@ -28,6 +27,15 @@ import { PROJECT_NAME, PROJECT_URL } from '../../../shared/brand.ts';
 import { IconPile } from './components/icon-pile.tsx';
 import { Canvas, CanvasFixed, cellVars, type CanvasText } from './canvas.tsx';
 import { loadLocale, preferredLocale } from '../i18n.ts';
+import { metricValues, type MetricInputs } from '../../../shared/public-metrics.ts';
+import { MetricCard, yearBefore } from './widgets/metric.tsx';
+import type { WidgetProps } from './widgets/props.ts';
+import { CalendarCard } from './widgets/calendar.tsx';
+import { YearsCard } from './widgets/years.tsx';
+import { TenureCard } from './widgets/tenure.tsx';
+import { TreemapCard } from './widgets/treemap.tsx';
+import { ChangesCard } from './widgets/changes.tsx';
+import { WaterfallCard } from './widgets/waterfall.tsx';
 
 /** 公开页可切换的币种：本位币，和（本位币不是美元时）美元 */
 type Ccy = string;
@@ -229,71 +237,66 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
 
   const config = view.config;
   const parts = publicParts(config);
-  const heroParts = [
-    parts.has('stats') && (
-            <CardContent key="stats" className="flex flex-col gap-6 @[976px]:flex-row @[976px]:items-end @[976px]:justify-between">
-              <div>
-                <div className="text-sm text-muted-foreground">{t('public.hero.monthly')}</div>
-                <Num value={d.mrr * k} ccy={ccy} prefix={sym} className="mt-1 text-5xl font-semibold tracking-tight tnum sm:text-6xl" />
-                <div className="mt-2 text-[length:var(--fs-2)] text-muted-foreground tnum">
-                  {Math.abs(diff) < 1 ? t('public.hero.flat') : t(diff > 0 ? 'public.hero.more' : 'public.hero.less', { amount: fmt(Math.abs(diff)) })}
-                </div>
-              </div>
-              <dl className="grid grid-cols-3 gap-6 sm:gap-10">
-                <Stat label={t('public.hero.yearly')} value={<Num value={d.mrr * 12 * k} ccy={ccy} prefix={sym} />} />
-                {/* 与下方订阅列表「全部」同一组（含试用、暂停），标题也用列表的标题 */}
-                <Stat label={t('public.list.title')} value={<Num value={d.live.length} />} />
-                <Stat label={t('public.hero.paid', { year: d.first.slice(0, 4) })} value={<Num value={ccy === base ? d.paidBase : d.paidUsd} ccy={ccy} prefix={sym} />} />
-              </dl>
-            </CardContent>
-    ),
-    parts.has('timeline') && (
-            <CardContent key="timeline">
-              {/* 手机上标题与「接下来 30 天」上下排，不把说明挤成三行 */}
-              <div className="mb-2 flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:pr-16">
-                <h2 className="font-medium">{t('public.timeline.title')}</h2>
-                <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">
-                  {rich('public.timeline.upcoming', { count: d.upcoming.length }, { amount: <Num value={d.upcoming.reduce((a, c) => a + c.value, 0) * k} ccy={ccy} prefix={sym} className="text-foreground" /> })}
-                </span>
-              </div>
-              <Timeline today={today} load={loadTimeline} start={firstStart(state, today)} />
-            </CardContent>
-    ),
-    parts.has('chart') && (
-            <Tabs key="chart" defaultValue="paid" className="gap-0">
-              <CardHeader>
-                <CardTitle className="text-sm">{t('public.chart.title')}</CardTitle>
-                <CardDescription className="text-[length:var(--fs-2)]">{t('public.chart.desc')}</CardDescription>
-                <CardAction>
-                  <TabsList>
-                    <TabsTrigger value="paid" className="px-2.5 text-xs">
-                      {t('public.chart.paid')}
-                    </TabsTrigger>
-                    <TabsTrigger value="mrr" className="px-2.5 text-xs">
-                      {t('public.chart.mrr')}
-                    </TabsTrigger>
-                  </TabsList>
-                </CardAction>
-              </CardHeader>
-              <TabsContent value="paid" className="mt-4 px-2 sm:px-4">
-                <PaidChart months={ccy === base ? d.monthsBase : d.monthsUsd} cur={today.slice(0, 7)} ccy={ccy} fmt={fmt} />
-              </TabsContent>
-              <TabsContent value="mrr" className="mt-4 px-2 sm:px-4">
-                <MrrChart data={d.mrrTrend.map((p) => ({ ...p, mrr: p.mrr * k }))} ccy={ccy} fmt={fmt} />
-              </TabsContent>
-            </Tabs>
-    ),
-  ].filter(Boolean);
+  const widget: WidgetProps = { state, today, ccy, base, k, sym, fmt };
   // 没有内容的组件（没有退订、没有买断）不占位，同一行的其他卡片自动补满
   const blocks: Partial<Record<PublicGridId, React.ReactNode>> = {
-    hero: heroParts.length > 0 && (
+    stats: (
       <Card className={cn(roomy, 'h-full')}>
-        {heroParts.map((part, i) => (
-          <Fragment key={i}>
-            {i > 0 && <Separator />}
-            {part}
-          </Fragment>
-        ))}
+        <CardContent className="flex flex-col gap-6 @[976px]:flex-row @[976px]:items-end @[976px]:justify-between">
+          <div>
+            <div className="text-sm text-muted-foreground">{t('public.hero.monthly')}</div>
+            <Num value={d.mrr * k} ccy={ccy} prefix={sym} className="mt-1 text-5xl font-semibold tracking-tight tnum sm:text-6xl" />
+            <div className="mt-2 text-[length:var(--fs-2)] text-muted-foreground tnum">
+              {Math.abs(diff) < 1 ? t('public.hero.flat') : t(diff > 0 ? 'public.hero.more' : 'public.hero.less', { amount: fmt(Math.abs(diff)) })}
+            </div>
+          </div>
+          <dl className="grid grid-cols-3 gap-6 sm:gap-10">
+            <Stat label={t('public.hero.yearly')} value={<Num value={d.mrr * 12 * k} ccy={ccy} prefix={sym} />} />
+            {/* 与下方订阅列表「全部」同一组（含试用、暂停），标题也用列表的标题 */}
+            <Stat label={t('public.list.title')} value={<Num value={d.live.length} />} />
+            <Stat label={t('public.hero.paid', { year: d.first.slice(0, 4) })} value={<Num value={ccy === base ? d.paidBase : d.paidUsd} ccy={ccy} prefix={sym} />} />
+          </dl>
+        </CardContent>
+      </Card>
+    ),
+    timeline: (
+      <Card className={cn(roomy, 'h-full')}>
+        <CardContent>
+          {/* 手机上标题与「接下来 30 天」上下排，不把说明挤成三行 */}
+          <div className="mb-2 flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:pr-16">
+            <h2 className="font-medium">{t('public.timeline.title')}</h2>
+            <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">
+              {rich('public.timeline.upcoming', { count: d.upcoming.length }, { amount: <Num value={d.upcoming.reduce((a, c) => a + c.value, 0) * k} ccy={ccy} prefix={sym} className="text-foreground" /> })}
+            </span>
+          </div>
+          <Timeline today={today} load={loadTimeline} start={firstStart(state, today)} />
+        </CardContent>
+      </Card>
+    ),
+    chart: (
+      <Card className={cn(roomy, 'h-full')}>
+        <Tabs defaultValue="paid" className="gap-0">
+          <CardHeader>
+            <CardTitle className="text-sm">{t('public.chart.title')}</CardTitle>
+            <CardDescription className="text-[length:var(--fs-2)]">{t('public.chart.desc')}</CardDescription>
+            <CardAction>
+              <TabsList>
+                <TabsTrigger value="paid" className="px-2.5 text-xs">
+                  {t('public.chart.paid')}
+                </TabsTrigger>
+                <TabsTrigger value="mrr" className="px-2.5 text-xs">
+                  {t('public.chart.mrr')}
+                </TabsTrigger>
+              </TabsList>
+            </CardAction>
+          </CardHeader>
+          <TabsContent value="paid" className="mt-4 px-2 sm:px-4">
+            <PaidChart months={ccy === base ? d.monthsBase : d.monthsUsd} cur={today.slice(0, 7)} ccy={ccy} fmt={fmt} />
+          </TabsContent>
+          <TabsContent value="mrr" className="mt-4 px-2 sm:px-4">
+            <MrrChart data={d.mrrTrend.map((p) => ({ ...p, mrr: p.mrr * k }))} ccy={ccy} fmt={fmt} />
+          </TabsContent>
+        </Tabs>
       </Card>
     ),
     composition: <Composition cats={d.cats} total={d.mrr} k={k} fmt={fmt} />,
@@ -340,13 +343,23 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
                 </CardContent>
               </Card>
     ),
+    calendar: <CalendarCard {...widget} />,
+    years: <YearsCard {...widget} />,
+    tenure: <TenureCard {...widget} />,
+    treemap: <TreemapCard {...widget} />,
+    changes: <ChangesCard {...widget} />,
+    waterfall: <WaterfallCard {...widget} />,
   };
   const grid = publicGrid(config);
-  const flowCells = grid.filter((s) => !s.hidden && blocks[s.id]);
+  const canvas = view.canvas;
+  // 只有页面上放了指标卡（或画布上可能拖进来）才算
+  const metrics = canvas || grid.some((s) => s.metric) ? metricValues(metricInputs(state, today, d, ccy, k)) : undefined;
+  const blockOf = (s: PublicGridItem): React.ReactNode => (s.metric ? metrics && <MetricCard card={s.metric} values={metrics} f={{ ccy, sym, fmt }} /> : blocks[s.id as PublicGridId]);
+  // 只有没摆放过的页面才流式；放了指标卡或可选组件的一定摆放过
+  const flowCells = canvas || isCustomLayout(config) ? [] : grid.filter((s) => !s.hidden && blockOf(s));
   const desktop = flowSpans(flowCells.map((s) => s.id));
   const tablet = fillRows(flowCells.map((s) => tabletSpan(PUBLIC_GRID_SECTIONS.find((d) => d.id === s.id)!.w)));
-  const canvas = view.canvas;
-  const sendLayout = (message: { sections?: ReturnType<typeof gridSections>; remove?: string }) => window.parent.postMessage({ type: PUBLIC_PREVIEW_LAYOUT, ...message }, location.origin);
+  const sendLayout = (message: { sections?: ReturnType<typeof gridSections>; remove?: string; select?: string }) => window.parent.postMessage({ type: PUBLIC_PREVIEW_LAYOUT, ...message }, location.origin);
   const fixed = (id: 'footer' | 'pile', node: React.ReactNode) =>
     canvas ? (
       <CanvasFixed label={canvas.labels[id]} text={canvas} onRemove={() => sendLayout({ remove: id })}>
@@ -383,12 +396,12 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
       }
     >
       {canvas ? (
-        <Canvas config={config} blocks={blocks} text={canvas} onCommit={(items: PublicGridItem[]) => sendLayout({ sections: gridSections(items) })} onRemove={(id: string) => sendLayout({ remove: id })} />
+        <Canvas config={config} block={blockOf} text={canvas} onCommit={(items: PublicGridItem[]) => sendLayout({ sections: gridSections(items) })} onRemove={(id: string) => sendLayout({ remove: id })} onSelect={(id: string) => sendLayout({ select: id })} />
       ) : isCustomLayout(config) ? (
         <div className="public-grid" data-free="">
-          {collapseEmpty(grid, (id) => !blocks[id]).map((s) => (
+          {collapseEmpty(grid, (id) => !blockOf(grid.find((s) => s.id === id)!)).map((s) => (
             <div key={s.id} className="public-cell @container" style={cellVars(s)}>
-              {blocks[s.id]}
+              {blockOf(s)}
             </div>
           ))}
         </div>
@@ -396,7 +409,7 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
         <div className="public-grid">
           {flowCells.map((s, i) => (
             <div key={s.id} className="public-cell @container" style={{ '--span-md': tablet[i], '--span-lg': desktop[i] } as React.CSSProperties}>
-              {blocks[s.id]}
+              {blockOf(s)}
             </div>
           ))}
         </div>
@@ -427,6 +440,37 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
 // ---------- 数据 ----------
 
 type Derived = ReturnType<typeof derive>;
+
+/** 指标卡要的数：当前值已按显示币种换算；历史扣款按扣款当天汇率单独累计 */
+function metricInputs(state: AppState, today: string, d: Derived, ccy: Ccy, k: number): MetricInputs {
+  const base = state.settings.baseCurrency;
+  const paid = (from: string, to: string) => {
+    const cs = allCharges(state, from, to, today);
+    return ccy === base ? sumBase(state, cs) : sumBase(state, cs, ccy);
+  };
+  const ago = yearBefore(today);
+  const months = ccy === base ? d.monthsBase : d.monthsUsd;
+  const top = d.live[0];
+  const cat = d.cats[0];
+  return {
+    mrr: d.mrr * k,
+    yearAgoMrr: d.yearAgoMrr * k,
+    mrrSeries: d.mrrTrend.slice(-13).map((p) => ({ label: monthFull(p.month), v: p.mrr * k })),
+    active: d.live.length,
+    paidTotal: ccy === base ? d.paidBase : d.paidUsd,
+    paidYear: paid(`${today.slice(0, 4)}-01-01`, today),
+    paidYearPrev: paid(`${ago.slice(0, 4)}-01-01`, ago),
+    paidMonth: paid(`${today.slice(0, 7)}-01`, today),
+    paidMonthPrev: paid(`${ago.slice(0, 7)}-01`, ago),
+    paidSeries: months.filter((x) => x.m <= today.slice(0, 7)).map((x) => ({ label: monthFull(x.m), v: x.v })),
+    next30: d.upcoming.reduce((a, c) => a + c.value, 0) * k,
+    topSub: top && { name: clean(top.s.name), v: top.v * k },
+    topCategory: cat && { name: cat[0], v: cat[1].v * k },
+    ended: d.ended.length,
+    lifetime: d.lifetime.length,
+    fxEffect: d.fx[ccy]?.effect ?? Number.NaN,
+  };
+}
 
 function derive(state: AppState, today: string) {
   syncCategories(state);

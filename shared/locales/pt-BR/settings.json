@@ -1,6 +1,9 @@
 {
   "title": "Ajustes",
-  "days": { "one": "{count} dia", "other": "{count} dias" },
+  "days": {
+    "one": "{count} dia",
+    "other": "{count} dias"
+  },
   "logout": "Sair",
   "toast": {
     "saved": "Salvo",
@@ -53,12 +56,18 @@
   "today": {
     "recent": "Envios recentes",
     "title": "Hoje ({day})",
-    "items": { "one": "{count} item", "other": "{count} itens" }
+    "items": {
+      "one": "{count} item",
+      "other": "{count} itens"
+    }
   },
   "books": {
     "title": "Contabilidade",
     "defaultMethod": "Forma de pagamento padrão",
-    "unassigned": { "one": "{count} assinatura está sem forma de pagamento", "other": "{count} assinaturas estão sem forma de pagamento" },
+    "unassigned": {
+      "one": "{count} assinatura está sem forma de pagamento",
+      "other": "{count} assinaturas estão sem forma de pagamento"
+    },
     "assignAllDone": {
       "one": "{count} assinatura definida com a forma de pagamento padrão",
       "other": "{count} assinaturas definidas com a forma de pagamento padrão"
@@ -73,7 +82,10 @@
     "updated": "Câmbio atualizado",
     "history": "Cotações históricas",
     "earliest": "Desde {date}",
-    "coverage": { "one": "{covered} / {count} dia", "other": "{covered} / {count} dias" },
+    "coverage": {
+      "one": "{covered} / {count} dia",
+      "other": "{covered} / {count} dias"
+    },
     "fill": "Completar cotações ausentes",
     "historyUpdated": "Cotações históricas atualizadas"
   },
@@ -115,7 +127,10 @@
     "warning": "Seus dados atuais serão totalmente substituídos pelo backup. Não é possível desfazer — considere exportar um backup antes.",
     "subs": "Assinaturas",
     "methods": "Formas de pagamento",
-    "count": { "one": "{count}", "other": "{count}" },
+    "count": {
+      "one": "{count}",
+      "other": "{count}"
+    },
     "time": "Backup feito em",
     "format": "Formato",
     "legacy": "Backup antigo: só assinaturas e formas de pagamento"
@@ -144,7 +159,10 @@
     "formats": "CSV, backup ZIP ou banco SQLite"
   },
   "channels": {
-    "title": { "one": "Canais de notificação\n{count} ativo", "other": "Canais de notificação\n{count} ativos" },
+    "title": {
+      "one": "Canais de notificação\n{count} ativo",
+      "other": "Canais de notificação\n{count} ativos"
+    },
     "empty": "Nenhum canal ainda — os lembretes não serão enviados.",
     "test": "Testar",
     "testFailed": "Não foi possível enviar",
@@ -216,9 +234,18 @@
     "unknownBrowser": "Navegador desconhecido",
     "ago": {
       "justNow": "Ativo agora mesmo",
-      "minutes": { "one": "há {count} minuto", "other": "há {count} minutos" },
-      "hours": { "one": "há {count} hora", "other": "há {count} horas" },
-      "days": { "one": "há {count} dia", "other": "há {count} dias" }
+      "minutes": {
+        "one": "há {count} minuto",
+        "other": "há {count} minutos"
+      },
+      "hours": {
+        "one": "há {count} hora",
+        "other": "há {count} horas"
+      },
+      "days": {
+        "one": "há {count} dia",
+        "other": "há {count} dias"
+      }
     },
     "thisDevice": "Este dispositivo",
     "signedInPasskey": "Entrou com chave de acesso em {time}",
@@ -234,10 +261,19 @@
     "alreadyBound": "Este dispositivo já tem uma chave de acesso",
     "changePassword": "Alterar senha",
     "devices": "Dispositivos conectados",
-    "devicesCount": { "one": "Dispositivos conectados\n{count}", "other": "Dispositivos conectados\n{count}" },
+    "devicesCount": {
+      "one": "Dispositivos conectados\n{count}",
+      "other": "Dispositivos conectados\n{count}"
+    },
     "maxSessions": "Máximo de dispositivos conectados",
-    "maxSessionsSaved": { "one": "Até {count} dispositivo", "other": "Até {count} dispositivos" },
-    "deviceCount": { "one": "{count} dispositivo", "other": "{count} dispositivos" },
+    "maxSessionsSaved": {
+      "one": "Até {count} dispositivo",
+      "other": "Até {count} dispositivos"
+    },
+    "deviceCount": {
+      "one": "{count} dispositivo",
+      "other": "{count} dispositivos"
+    },
     "confirmLogoutOthers": "Desconectar todos os outros dispositivos?",
     "loggedOutOthers": "Outros dispositivos desconectados",
     "logoutOthers": "Desconectar todos os outros dispositivos",
@@ -317,13 +353,6 @@
     "bio": "Texto",
     "bioPlaceholder": "Aparece abaixo do título. Mantém as quebras de linha; não é traduzido.",
     "sections": "Seções",
-    "sectionsFoot": "Arraste os cartões na tela para movê-los e arraste as bordas direita e inferior para redimensionar. A tela precisa de uma janela com largura de desktop. Em telas estreitas, os visitantes veem uma coluna, de cima para baixo. Remover uma seção afeta apenas a exibição; para manter uma assinatura totalmente privada, use \"Assinaturas exibidas\".",
-    "heroParts": "Conteúdo do cartão principal",
-    "hero": "Cartão principal",
-    "stats": "Visão geral",
-    "footer": "Rodapé",
-    "pile": "Pilha de assinaturas",
-    "add": "Adicionar",
     "remove": "Remover",
     "emptyCard": "Ainda sem dados. Os visitantes não verão este cartão.",
     "editTab": "Configurações",

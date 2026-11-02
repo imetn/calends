@@ -1,6 +1,8 @@
 {
   "title": "設定",
-  "days": { "other": "{count} 天" },
+  "days": {
+    "other": "{count} 天"
+  },
   "logout": "登出",
   "toast": {
     "saved": "已儲存",
@@ -53,13 +55,19 @@
   "today": {
     "recent": "最近發送",
     "title": "今天（{day}）",
-    "items": { "other": "{count} 項" }
+    "items": {
+      "other": "{count} 項"
+    }
   },
   "books": {
     "title": "記帳",
     "defaultMethod": "預設付款方式",
-    "unassigned": { "other": "{count} 個訂閱未指定付款方式" },
-    "assignAllDone": { "other": "已將 {count} 個訂閱設為預設付款方式" },
+    "unassigned": {
+      "other": "{count} 個訂閱未指定付款方式"
+    },
+    "assignAllDone": {
+      "other": "已將 {count} 個訂閱設為預設付款方式"
+    },
     "assignAll": "全部設為預設",
     "collectCurrency": "共享收款貨幣"
   },
@@ -70,7 +78,9 @@
     "updated": "匯率已更新",
     "history": "歷史匯率覆蓋",
     "earliest": "最早 {date}",
-    "coverage": { "other": "{covered} / {count} 天" },
+    "coverage": {
+      "other": "{covered} / {count} 天"
+    },
     "fill": "補齊缺失的匯率",
     "historyUpdated": "歷史匯率已更新"
   },
@@ -112,7 +122,9 @@
     "warning": "目前帳本會被備份中的內容整體取代，且無法復原；建議先匯出一份目前的備份。",
     "subs": "訂閱",
     "methods": "付款方式",
-    "count": { "other": "{count} 個" },
+    "count": {
+      "other": "{count} 個"
+    },
     "time": "備份時間",
     "format": "格式",
     "legacy": "舊版備份：只含訂閱與付款方式"
@@ -140,7 +152,9 @@
     "formats": "CSV、ZIP 備份或 SQLite 資料庫"
   },
   "channels": {
-    "title": { "other": "通知渠道\n已開啟 {count} 個" },
+    "title": {
+      "other": "通知渠道\n已開啟 {count} 個"
+    },
     "empty": "還沒有通知渠道，提醒不會送出。",
     "test": "測試",
     "testFailed": "傳送失敗",
@@ -212,9 +226,15 @@
     "unknownBrowser": "未知瀏覽器",
     "ago": {
       "justNow": "剛剛活躍",
-      "minutes": { "other": "{count} 分鐘前" },
-      "hours": { "other": "{count} 小時前" },
-      "days": { "other": "{count} 天前" }
+      "minutes": {
+        "other": "{count} 分鐘前"
+      },
+      "hours": {
+        "other": "{count} 小時前"
+      },
+      "days": {
+        "other": "{count} 天前"
+      }
     },
     "thisDevice": "本機",
     "signedInPasskey": "Passkey 登入於 {time}",
@@ -230,10 +250,16 @@
     "alreadyBound": "這台裝置已經綁定過了",
     "changePassword": "修改密碼",
     "devices": "登入裝置",
-    "devicesCount": { "other": "登入裝置\n{count}" },
+    "devicesCount": {
+      "other": "登入裝置\n{count}"
+    },
     "maxSessions": "最多同時登入",
-    "maxSessionsSaved": { "other": "最多 {count} 台裝置" },
-    "deviceCount": { "other": "{count} 台" },
+    "maxSessionsSaved": {
+      "other": "最多 {count} 台裝置"
+    },
+    "deviceCount": {
+      "other": "{count} 台"
+    },
     "confirmLogoutOthers": "登出本機以外的所有裝置？",
     "loggedOutOthers": "其他裝置已登出",
     "logoutOthers": "登出其他所有裝置",
@@ -309,13 +335,6 @@
     "bio": "內文",
     "bioPlaceholder": "顯示在標題下方，可換行，不隨語言切換",
     "sections": "元件",
-    "sectionsFoot": "在右側畫布上拖動卡片換位置，拖右邊和下邊改大小；畫布需要桌面闊度。訪客在窄螢幕上按由上到下單欄顯示。移除組件只影響顯示；要徹底不公開某個訂閱，請用「展示的訂閱」。",
-    "heroParts": "主卡內容",
-    "hero": "主卡",
-    "stats": "概覽",
-    "footer": "頁尾",
-    "pile": "底部訂閱堆",
-    "add": "新增",
     "remove": "移除",
     "emptyCard": "暫無資料，訪客看不到這張卡片",
     "editTab": "設定",

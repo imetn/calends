@@ -67,5 +67,40 @@
   "titleAnon": "Subscriptions",
   "pile": {
     "label": "Your subscriptions, piled up — bigger icons cost more"
+  },
+  "calendar": {
+    "title": "Calendar"
+  },
+  "years": {
+    "title": "Subscription timeline"
+  },
+  "tenure": {
+    "title": "Time subscribed"
+  },
+  "treemap": {
+    "title": "Spending map"
+  },
+  "changes": {
+    "title": "Changes"
+  },
+  "waterfall": {
+    "title": "Monthly change"
+  },
+  "metric": {
+    "monthly": "Monthly spend",
+    "yearly": "Per year",
+    "active": "Active subscriptions",
+    "avgPerSub": "Average per subscription",
+    "paidTotal": "Total paid",
+    "paidYear": "Paid this year",
+    "paidMonth": "Paid this month",
+    "next30": "Next 30 days",
+    "topSub": "Most expensive",
+    "topCategory": "Largest category",
+    "endedCount": "Cancelled",
+    "lifetimeCount": "Lifetime",
+    "fxEffect": "Exchange-rate effect (monthly)",
+    "vsPrev": "Same time last year: {amount}",
+    "share": "{percent} of monthly spend"
   }
 }

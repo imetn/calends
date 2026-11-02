@@ -216,6 +216,7 @@
   cursor: grabbing;
 }
 .public-canvas-box:hover,
+[data-selected] > .public-canvas-box,
 [data-active] > .public-canvas-box {
   box-shadow: 0 0 0 1.5px var(--foreground);
 }

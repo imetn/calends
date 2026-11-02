@@ -417,12 +417,19 @@ export interface Channel {
 export interface PublicSectionConfig {
   id: string;
   hidden?: boolean;
-  /** 占 12 栏里的几栏；页面底部的组件没有这一项 */
   /** 12 栏网格上的位置和大小，四个一起存；高度是下限，内容更高时卡片自动长高 */
   x?: number;
   y?: number;
   w?: number;
   h?: number;
+  /** 只有指标卡有：用哪个模板、显示哪些数据 */
+  metric?: PublicMetricCard;
+}
+
+export type PublicMetricTemplate = 'number' | 'trend' | 'compare' | 'share' | 'rows';
+export interface PublicMetricCard {
+  template: PublicMetricTemplate;
+  items: string[];
 }
 
 export interface PublicPageConfig {
@@ -431,7 +438,6 @@ export interface PublicPageConfig {
   /** 公开页单独的头像；缺省用 Settings.avatar */
   avatar?: string;
   sections?: PublicSectionConfig[];
-  heroParts?: { stats?: boolean; timeline?: boolean; chart?: boolean };
 }
 
 export interface Settings {

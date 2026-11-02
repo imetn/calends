@@ -3646,6 +3646,9 @@ test('public stopped card omits the avoided-renewal total while retaining each o
     {},
     {
       ...components,
+      ...Object.fromEntries(['CalendarCard', 'YearsCard', 'TenureCard', 'TreemapCard', 'ChangesCard', 'WaterfallCard', 'MetricCard'].map((name) => [name, name])),
+      metricValues: () => ({}),
+      yearBefore: (day: string) => day,
       collapseEmpty,
       flowSpans,
       PUBLIC_GRID_SECTIONS,

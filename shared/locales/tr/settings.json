@@ -1,6 +1,9 @@
 {
   "title": "Ayarlar",
-  "days": { "one": "{count} gün", "other": "{count} gün" },
+  "days": {
+    "one": "{count} gün",
+    "other": "{count} gün"
+  },
   "logout": "Çıkış yap",
   "toast": {
     "saved": "Kaydedildi",
@@ -53,13 +56,22 @@
   "today": {
     "recent": "Son gönderimler",
     "title": "Bugün ({day})",
-    "items": { "one": "{count} öğe", "other": "{count} öğe" }
+    "items": {
+      "one": "{count} öğe",
+      "other": "{count} öğe"
+    }
   },
   "books": {
     "title": "Defter",
     "defaultMethod": "Varsayılan ödeme yöntemi",
-    "unassigned": { "one": "{count} aboneliğin ödeme yöntemi yok", "other": "{count} aboneliğin ödeme yöntemi yok" },
-    "assignAllDone": { "one": "{count} aboneliğe varsayılan ödeme yöntemi atandı", "other": "{count} aboneliğe varsayılan ödeme yöntemi atandı" },
+    "unassigned": {
+      "one": "{count} aboneliğin ödeme yöntemi yok",
+      "other": "{count} aboneliğin ödeme yöntemi yok"
+    },
+    "assignAllDone": {
+      "one": "{count} aboneliğe varsayılan ödeme yöntemi atandı",
+      "other": "{count} aboneliğe varsayılan ödeme yöntemi atandı"
+    },
     "assignAll": "Tümüne varsayılanı uygula",
     "collectCurrency": "Ortak plan para birimi"
   },
@@ -70,7 +82,10 @@
     "updated": "Döviz kurları güncellendi",
     "history": "Geçmiş kurlar",
     "earliest": "{date} itibarıyla",
-    "coverage": { "one": "{covered} / {count} gün", "other": "{covered} / {count} gün" },
+    "coverage": {
+      "one": "{covered} / {count} gün",
+      "other": "{covered} / {count} gün"
+    },
     "fill": "Eksik kurları tamamla",
     "historyUpdated": "Geçmiş kurlar güncellendi"
   },
@@ -112,7 +127,10 @@
     "warning": "Mevcut defteriniz tamamen yedekle değiştirilecek. Bu işlem geri alınamaz; önce bir yedek dışa aktarmayı düşünün.",
     "subs": "Abonelikler",
     "methods": "Ödeme yöntemleri",
-    "count": { "one": "{count}", "other": "{count}" },
+    "count": {
+      "one": "{count}",
+      "other": "{count}"
+    },
     "time": "Yedekleme zamanı",
     "format": "Biçim",
     "legacy": "Eski yedek: yalnızca abonelikler ve ödeme yöntemleri"
@@ -141,7 +159,10 @@
     "formats": "CSV, ZIP yedeği veya SQLite veritabanı"
   },
   "channels": {
-    "title": { "one": "Bildirim kanalları\n{count} açık", "other": "Bildirim kanalları\n{count} açık" },
+    "title": {
+      "one": "Bildirim kanalları\n{count} açık",
+      "other": "Bildirim kanalları\n{count} açık"
+    },
     "empty": "Henüz kanal yok; hatırlatmalar gönderilmeyecek.",
     "test": "Test et",
     "testFailed": "Gönderilemedi",
@@ -213,9 +234,18 @@
     "unknownBrowser": "Bilinmeyen tarayıcı",
     "ago": {
       "justNow": "Az önce etkindi",
-      "minutes": { "one": "{count} dakika önce", "other": "{count} dakika önce" },
-      "hours": { "one": "{count} saat önce", "other": "{count} saat önce" },
-      "days": { "one": "{count} gün önce", "other": "{count} gün önce" }
+      "minutes": {
+        "one": "{count} dakika önce",
+        "other": "{count} dakika önce"
+      },
+      "hours": {
+        "one": "{count} saat önce",
+        "other": "{count} saat önce"
+      },
+      "days": {
+        "one": "{count} gün önce",
+        "other": "{count} gün önce"
+      }
     },
     "thisDevice": "Bu cihaz",
     "signedInPasskey": "{time} geçiş anahtarıyla giriş yapıldı",
@@ -231,10 +261,19 @@
     "alreadyBound": "Bu cihazda zaten bir geçiş anahtarı var",
     "changePassword": "Parolayı değiştir",
     "devices": "Giriş yapılmış cihazlar",
-    "devicesCount": { "one": "Giriş yapılmış cihazlar\n{count}", "other": "Giriş yapılmış cihazlar\n{count}" },
+    "devicesCount": {
+      "one": "Giriş yapılmış cihazlar\n{count}",
+      "other": "Giriş yapılmış cihazlar\n{count}"
+    },
     "maxSessions": "En fazla giriş yapılmış cihaz",
-    "maxSessionsSaved": { "one": "En fazla {count} cihaz", "other": "En fazla {count} cihaz" },
-    "deviceCount": { "one": "{count} cihaz", "other": "{count} cihaz" },
+    "maxSessionsSaved": {
+      "one": "En fazla {count} cihaz",
+      "other": "En fazla {count} cihaz"
+    },
+    "deviceCount": {
+      "one": "{count} cihaz",
+      "other": "{count} cihaz"
+    },
     "confirmLogoutOthers": "Diğer tüm cihazlardan çıkış yapılsın mı?",
     "loggedOutOthers": "Diğer cihazlardan çıkış yapıldı",
     "logoutOthers": "Diğer tüm cihazlardan çıkış yap",
@@ -314,13 +353,6 @@
     "bio": "Metin",
     "bioPlaceholder": "Başlığın altında görünür. Satır sonları korunur; çevrilmez.",
     "sections": "Bölümler",
-    "sectionsFoot": "Kartları taşımak için tuvalde sürükleyin, boyutlandırmak için sağ ve alt kenarları sürükleyin. Tuval için masaüstü genişliğinde bir pencere gerekir. Dar ekranlarda ziyaretçiler yukarıdan aşağıya tek sütun görür. Bir bölümü kaldırmak yalnızca görünümü etkiler; bir aboneliği tamamen gizli tutmak için \"Gösterilen abonelikler\" seçeneğini kullanın.",
-    "heroParts": "Ana kart içeriği",
-    "hero": "Ana kart",
-    "stats": "Genel bakış",
-    "footer": "Alt bilgi",
-    "pile": "Abonelik yığını",
-    "add": "Ekle",
     "remove": "Kaldır",
     "emptyCard": "Henüz veri yok. Ziyaretçiler bu kartı görmez.",
     "editTab": "Ayarlar",

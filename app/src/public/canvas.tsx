@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
-import { fitHeights, placeItem, publicGridBottom, publicGrid, PUBLIC_COLUMNS, PUBLIC_GRID_SECTIONS, PUBLIC_MAX_HEIGHT, type PublicGridId, type PublicGridItem, type PublicRect } from '../../../shared/public-layout.ts';
+import { fitHeights, newMetricItem, placeItem, publicGridBottom, publicGrid, PUBLIC_COLUMNS, PUBLIC_MAX_HEIGHT, PUBLIC_METRIC_TEMPLATES, PUBLIC_PREVIEW_DROP, type PublicGridItem, type PublicMetricTemplate, type PublicRect } from '../../../shared/public-layout.ts';
 
 /** 网格一行的高度和间距，和 index.css 的 .public-grid 一致 */
 const ROW = 24;
@@ -13,9 +13,9 @@ const SCROLL_SPEED = 12;
 /** 指针移动超过这么多才算开始拖，之前不自动滚动 */
 const DRAG_START = 3;
 
-export type CanvasText = { labels: Record<string, string>; remove: string; empty: string };
+export type CanvasText = { labels: Record<string, string>; remove: string; empty: string; selected?: string };
 type Mode = 'move' | 'e' | 's' | 'se';
-type Drag = { id: string; mode: Mode; base: PublicGridItem[]; from: PublicGridItem; startX: number; startY: number; x: number; y: number; latest: PublicGridItem[]; frame: number };
+type Drag = { id: string; mode: Mode; base: PublicGridItem[]; from: PublicGridItem; startX: number; startY: number; x: number; y: number; latest: PublicGridItem[]; frame: number; incoming?: boolean; measured?: boolean };
 
 export const cellVars = (s: PublicRect) => ({ '--x': s.x + 1, '--y': s.y + 1, '--w': s.w, '--h': s.h }) as React.CSSProperties;
 
@@ -28,12 +28,13 @@ function naturalRows(cell: HTMLElement): number {
 }
 
 /** 编辑页的画布：真实卡片摆在网格上，拖动换位置，拖边缘改大小。松手才通知编辑页 */
-export function Canvas({ config, blocks, text, onCommit, onRemove }: {
+export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
   config: Parameters<typeof publicGrid>[0];
-  blocks: Partial<Record<PublicGridId, React.ReactNode>>;
+  block: (item: PublicGridItem) => React.ReactNode;
   text: CanvasText;
   onCommit: (items: PublicGridItem[]) => void;
   onRemove: (id: string) => void;
+  onSelect: (id: string) => void;
 }) {
   const grid = publicGrid(config);
   const key = JSON.stringify(grid);
@@ -61,10 +62,17 @@ export function Canvas({ config, blocks, text, onCommit, onRemove }: {
   // 改大小时高度不能小于内容；改窄后内容变高，高度也跟着补上
   useLayoutEffect(() => {
     const d = drag.current;
-    if (!d || d.mode === 'move') return;
+    if (!d || (d.mode === 'move' && (!d.incoming || d.measured))) return;
     const cell = cellOf(d.id);
     const item = items.find((s) => s.id === d.id);
     if (!cell || !item) return;
+    // 刚拖进来的卡片：第一次画出来才知道内容要多高
+    if (d.incoming) {
+      d.measured = true;
+      d.from = { ...d.from, h: Math.min(naturalRows(cell), PUBLIC_MAX_HEIGHT) };
+      apply();
+      return;
+    }
     const need = Math.min(naturalRows(cell), PUBLIC_MAX_HEIGHT);
     if (item.h < need) {
       d.latest = placeItem(d.base, d.id, { ...item, h: need });
@@ -129,12 +137,55 @@ export function Canvas({ config, blocks, text, onCommit, onRemove }: {
     setActive(null);
     // 位置和大小最后没变（只点了一下、拖走又拖回）：不算改动，高度补齐也不留下
     const now = d.latest.find((s) => s.id === d.id)!;
-    const changed = now.x !== d.from.x || now.y !== d.from.y || now.w !== d.from.w || now.h !== d.from.h;
+    const changed = d.incoming || now.x !== d.from.x || now.y !== d.from.y || now.w !== d.from.w || now.h !== d.from.h;
     if (commit && changed) {
       setItems(d.latest);
       onCommit(d.latest);
-    } else setItems(grid);
+    } else {
+      setItems(grid);
+      // 指标卡只点了一下：选中它，在侧栏改数据
+      if (commit && now.metric) onSelect(d.id);
+    }
   };
+
+  /** 从组件库拖进来：卡片的上边中点跟着指针，真实内容随拖随显示 */
+  const incoming = (widget: string, x: number, y: number) => {
+    const d = drag.current;
+    if (d?.incoming) {
+      d.x = x;
+      d.y = y;
+      apply();
+      return;
+    }
+    if (d || !root.current) return;
+    const need: Record<string, number> = {};
+    for (const s of items) {
+      const cell = !s.hidden && cellOf(s.id);
+      if (cell) need[s.id] = naturalRows(cell);
+    }
+    const fitted = fitHeights(items, need);
+    const metric = (PUBLIC_METRIC_TEMPLATES as readonly string[]).includes(widget);
+    const added = metric ? newMetricItem(fitted, widget as PublicMetricTemplate) : fitted.find((s) => s.id === widget);
+    if (!added || (!metric && !added.hidden)) return;
+    const base = metric ? [...fitted, added] : fitted.map((s) => (s.id === widget ? { ...s, hidden: false } : s));
+    const box = root.current.getBoundingClientRect();
+    const column = (root.current.clientWidth + GAP) / PUBLIC_COLUMNS;
+    const from = { ...added, hidden: false, x: (x - box.left) / column - added.w / 2, y: (y - box.top) / STEP };
+    drag.current = { id: added.id, mode: 'move', base, from, startX: x, startY: y + window.scrollY, x, y, latest: base, frame: requestAnimationFrame(scrollWhileDragging), incoming: true };
+    setActive({ id: added.id, mode: 'move' });
+    apply();
+  };
+  // 每次渲染重新订阅：回调要用到最新的 items
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== location.origin || e.source !== window.parent || e.data?.type !== PUBLIC_PREVIEW_DROP) return;
+      const m = e.data as { phase: 'move' | 'end' | 'cancel'; widget: string; x: number; y: number };
+      if (m.phase === 'move') incoming(m.widget, m.x, m.y);
+      else finish(m.phase === 'end');
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  });
   const bind = (id: string, mode: Mode) => ({
     onPointerDown: (e: React.PointerEvent<HTMLElement>) => begin(e, id, mode),
     onPointerMove: onMove,
@@ -142,15 +193,15 @@ export function Canvas({ config, blocks, text, onCommit, onRemove }: {
     onPointerCancel: () => finish(false),
   });
 
-  // DOM 顺序固定：位置全靠 grid 属性，节点一动指针捕获就断了
-  const shown = PUBLIC_GRID_SECTIONS.map((def) => items.find((s) => s.id === def.id)!).filter((s) => !s.hidden);
+  // DOM 顺序固定（按 id）：位置全靠 grid 属性，节点一动指针捕获就断了
+  const shown = items.filter((s) => !s.hidden).sort((a, b) => (a.id < b.id ? -1 : 1));
   return (
     <div ref={root} className="public-grid" data-free="" data-canvas="" data-active={active ? '' : undefined}>
       {shown.map((s) => (
-        <div key={s.id} data-cell={s.id} data-active={active?.id === s.id ? '' : undefined} className="public-cell @container" style={cellVars(s)}>
-          {blocks[s.id] || <div className="public-canvas-empty">{text.empty}</div>}
+        <div key={s.id} data-cell={s.id} data-active={active?.id === s.id ? '' : undefined} data-selected={text.selected === s.id ? '' : undefined} className="public-cell @container" style={cellVars(s)}>
+          {block(s) || <div className="public-canvas-empty">{text.empty}</div>}
           <div className="public-canvas-box" {...bind(s.id, 'move')}>
-            <span className="public-canvas-name">{text.labels[s.id]}</span>
+            <span className="public-canvas-name">{s.metric ? text.labels[s.metric.template] : text.labels[s.id]}</span>
             <RemoveButton label={text.remove} onRemove={() => onRemove(s.id)} />
             <i className="public-canvas-handle" data-edge="e" {...bind(s.id, 'e')} />
             <i className="public-canvas-handle" data-edge="s" {...bind(s.id, 's')} />

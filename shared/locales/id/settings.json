@@ -1,6 +1,8 @@
 {
   "title": "Pengaturan",
-  "days": { "other": "{count} hari" },
+  "days": {
+    "other": "{count} hari"
+  },
   "logout": "Keluar",
   "toast": {
     "saved": "Disimpan",
@@ -53,13 +55,19 @@
   "today": {
     "recent": "Baru dikirim",
     "title": "Hari ini ({day})",
-    "items": { "other": "{count} item" }
+    "items": {
+      "other": "{count} item"
+    }
   },
   "books": {
     "title": "Pembukuan",
     "defaultMethod": "Metode pembayaran default",
-    "unassigned": { "other": "{count} langganan belum punya metode pembayaran" },
-    "assignAllDone": { "other": "{count} langganan diatur ke metode pembayaran default" },
+    "unassigned": {
+      "other": "{count} langganan belum punya metode pembayaran"
+    },
+    "assignAllDone": {
+      "other": "{count} langganan diatur ke metode pembayaran default"
+    },
     "assignAll": "Pakai default untuk semua",
     "collectCurrency": "Mata uang paket bersama"
   },
@@ -70,7 +78,9 @@
     "updated": "Kurs diperbarui",
     "history": "Kurs historis",
     "earliest": "Sejak {date}",
-    "coverage": { "other": "{covered} / {count} hari" },
+    "coverage": {
+      "other": "{covered} / {count} hari"
+    },
     "fill": "Lengkapi kurs yang kosong",
     "historyUpdated": "Kurs historis diperbarui"
   },
@@ -112,7 +122,9 @@
     "warning": "Buku catatan Anda saat ini akan diganti sepenuhnya oleh cadangan. Tindakan ini tidak bisa diurungkan — sebaiknya ekspor cadangan dulu.",
     "subs": "Langganan",
     "methods": "Metode pembayaran",
-    "count": { "other": "{count}" },
+    "count": {
+      "other": "{count}"
+    },
     "time": "Dicadangkan",
     "format": "Format",
     "legacy": "Cadangan lama: hanya langganan dan metode pembayaran"
@@ -140,7 +152,9 @@
     "formats": "CSV, cadangan ZIP, atau basis data SQLite"
   },
   "channels": {
-    "title": { "other": "Saluran notifikasi\n{count} aktif" },
+    "title": {
+      "other": "Saluran notifikasi\n{count} aktif"
+    },
     "empty": "Belum ada saluran — pengingat tidak akan dikirim.",
     "test": "Uji",
     "testFailed": "Gagal mengirim",
@@ -212,9 +226,15 @@
     "unknownBrowser": "Browser tidak dikenal",
     "ago": {
       "justNow": "Aktif baru saja",
-      "minutes": { "other": "{count} menit lalu" },
-      "hours": { "other": "{count} jam lalu" },
-      "days": { "other": "{count} hari lalu" }
+      "minutes": {
+        "other": "{count} menit lalu"
+      },
+      "hours": {
+        "other": "{count} jam lalu"
+      },
+      "days": {
+        "other": "{count} hari lalu"
+      }
     },
     "thisDevice": "Perangkat ini",
     "signedInPasskey": "Masuk dengan passkey pada {time}",
@@ -230,10 +250,16 @@
     "alreadyBound": "Perangkat ini sudah memiliki passkey",
     "changePassword": "Ubah kata sandi",
     "devices": "Perangkat yang masuk",
-    "devicesCount": { "other": "Perangkat yang masuk\n{count}" },
+    "devicesCount": {
+      "other": "Perangkat yang masuk\n{count}"
+    },
     "maxSessions": "Maks. perangkat yang masuk",
-    "maxSessionsSaved": { "other": "Hingga {count} perangkat" },
-    "deviceCount": { "other": "{count} perangkat" },
+    "maxSessionsSaved": {
+      "other": "Hingga {count} perangkat"
+    },
+    "deviceCount": {
+      "other": "{count} perangkat"
+    },
     "confirmLogoutOthers": "Keluarkan semua perangkat lain?",
     "loggedOutOthers": "Perangkat lain telah dikeluarkan",
     "logoutOthers": "Keluarkan semua perangkat lain",
@@ -309,13 +335,6 @@
     "bio": "Teks",
     "bioPlaceholder": "Tampil di bawah judul. Baris baru dipertahankan; tidak diterjemahkan.",
     "sections": "Bagian",
-    "sectionsFoot": "Seret kartu di kanvas untuk memindahkannya, dan seret tepi kanan serta bawah untuk mengubah ukuran. Kanvas memerlukan jendela selebar desktop. Di layar sempit, pengunjung melihat satu kolom dari atas ke bawah. Menghapus bagian hanya memengaruhi tampilan; agar langganan benar-benar privat, gunakan \"Langganan yang ditampilkan\".",
-    "heroParts": "Isi kartu utama",
-    "hero": "Kartu utama",
-    "stats": "Ringkasan",
-    "footer": "Footer",
-    "pile": "Tumpukan langganan",
-    "add": "Tambah",
     "remove": "Hapus",
     "emptyCard": "Belum ada data. Pengunjung tidak akan melihat kartu ini.",
     "editTab": "Pengaturan",

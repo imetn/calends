@@ -1,6 +1,9 @@
 {
   "title": "Ajustes",
-  "days": { "one": "{count} día", "other": "{count} días" },
+  "days": {
+    "one": "{count} día",
+    "other": "{count} días"
+  },
   "logout": "Cerrar sesión",
   "toast": {
     "saved": "Guardado",
@@ -53,12 +56,18 @@
   "today": {
     "recent": "Envíos recientes",
     "title": "Hoy ({day})",
-    "items": { "one": "{count} elemento", "other": "{count} elementos" }
+    "items": {
+      "one": "{count} elemento",
+      "other": "{count} elementos"
+    }
   },
   "books": {
     "title": "Contabilidad",
     "defaultMethod": "Método de pago predeterminado",
-    "unassigned": { "one": "{count} suscripción no tiene método de pago", "other": "{count} suscripciones no tienen método de pago" },
+    "unassigned": {
+      "one": "{count} suscripción no tiene método de pago",
+      "other": "{count} suscripciones no tienen método de pago"
+    },
     "assignAllDone": {
       "one": "Se asignó el método de pago predeterminado a {count} suscripción",
       "other": "Se asignó el método de pago predeterminado a {count} suscripciones"
@@ -73,7 +82,10 @@
     "updated": "Tipos de cambio actualizados",
     "history": "Tipos históricos",
     "earliest": "Desde {date}",
-    "coverage": { "one": "{covered} / {count} día", "other": "{covered} / {count} días" },
+    "coverage": {
+      "one": "{covered} / {count} día",
+      "other": "{covered} / {count} días"
+    },
     "fill": "Completar los tipos que faltan",
     "historyUpdated": "Tipos históricos actualizados"
   },
@@ -115,7 +127,10 @@
     "warning": "Tu registro actual se reemplazará por completo con la copia de seguridad. No se puede deshacer; te recomendamos exportar antes una copia.",
     "subs": "Suscripciones",
     "methods": "Métodos de pago",
-    "count": { "one": "{count}", "other": "{count}" },
+    "count": {
+      "one": "{count}",
+      "other": "{count}"
+    },
     "time": "Copia realizada",
     "format": "Formato",
     "legacy": "Copia antigua: solo suscripciones y métodos de pago"
@@ -144,7 +159,10 @@
     "formats": "CSV, copia ZIP o base SQLite"
   },
   "channels": {
-    "title": { "one": "Canales de notificación\n{count} activo", "other": "Canales de notificación\n{count} activos" },
+    "title": {
+      "one": "Canales de notificación\n{count} activo",
+      "other": "Canales de notificación\n{count} activos"
+    },
     "empty": "Aún no hay canales: no se enviarán recordatorios.",
     "test": "Probar",
     "testFailed": "No se pudo enviar",
@@ -216,9 +234,18 @@
     "unknownBrowser": "Navegador desconocido",
     "ago": {
       "justNow": "Activo ahora mismo",
-      "minutes": { "one": "Hace {count} minuto", "other": "Hace {count} minutos" },
-      "hours": { "one": "Hace {count} hora", "other": "Hace {count} horas" },
-      "days": { "one": "Hace {count} día", "other": "Hace {count} días" }
+      "minutes": {
+        "one": "Hace {count} minuto",
+        "other": "Hace {count} minutos"
+      },
+      "hours": {
+        "one": "Hace {count} hora",
+        "other": "Hace {count} horas"
+      },
+      "days": {
+        "one": "Hace {count} día",
+        "other": "Hace {count} días"
+      }
     },
     "thisDevice": "Este dispositivo",
     "signedInPasskey": "Inició sesión con llave de acceso: {time}",
@@ -234,10 +261,19 @@
     "alreadyBound": "Este dispositivo ya tiene una llave de acceso",
     "changePassword": "Cambiar contraseña",
     "devices": "Dispositivos con sesión iniciada",
-    "devicesCount": { "one": "Dispositivos con sesión iniciada\n{count}", "other": "Dispositivos con sesión iniciada\n{count}" },
+    "devicesCount": {
+      "one": "Dispositivos con sesión iniciada\n{count}",
+      "other": "Dispositivos con sesión iniciada\n{count}"
+    },
     "maxSessions": "Máximo de dispositivos con sesión",
-    "maxSessionsSaved": { "one": "Hasta {count} dispositivo", "other": "Hasta {count} dispositivos" },
-    "deviceCount": { "one": "{count} dispositivo", "other": "{count} dispositivos" },
+    "maxSessionsSaved": {
+      "one": "Hasta {count} dispositivo",
+      "other": "Hasta {count} dispositivos"
+    },
+    "deviceCount": {
+      "one": "{count} dispositivo",
+      "other": "{count} dispositivos"
+    },
     "confirmLogoutOthers": "¿Cerrar sesión en todos los demás dispositivos?",
     "loggedOutOthers": "Sesión cerrada en los demás dispositivos",
     "logoutOthers": "Cerrar sesión en los demás dispositivos",
@@ -317,13 +353,6 @@
     "bio": "Texto",
     "bioPlaceholder": "Aparece bajo el título. Conserva los saltos de línea; no se traduce.",
     "sections": "Secciones",
-    "sectionsFoot": "Arrastra las tarjetas en el lienzo para moverlas y arrastra los bordes derecho e inferior para cambiar su tamaño. El lienzo necesita una ventana de ancho de escritorio. En pantallas estrechas los visitantes ven una columna, de arriba abajo. Quitar una sección solo afecta a la visualización; para mantener privada una suscripción, usa «Suscripciones mostradas».",
-    "heroParts": "Contenido de la tarjeta principal",
-    "hero": "Tarjeta principal",
-    "stats": "Resumen",
-    "footer": "Pie de página",
-    "pile": "Pila de suscripciones",
-    "add": "Añadir",
     "remove": "Quitar",
     "emptyCard": "Aún no hay datos. Los visitantes no verán esta tarjeta.",
     "editTab": "Ajustes",
