@@ -280,7 +280,10 @@ test('two usage readings on the same date both count', () => {
     ],
   });
   const rows = meterRows(twice, traffic, today);
-  assert.deepEqual(rows.map((r) => r.usage), [40, 2]);
+  assert.deepEqual(
+    rows.map((r) => r.usage),
+    [40, 2],
+  );
   assert.equal(meterSummary(twice, traffic, today).total, 42);
 });
 

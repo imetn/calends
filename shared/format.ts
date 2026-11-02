@@ -207,6 +207,9 @@ export function localTime(raw: string, timeZone: string, dateOnly = false): stri
  */
 export function wholeCurrencies(list: Array<{ amount: number; currency: string }>): Set<string> {
   const known = list.filter((r) => Number.isFinite(r.amount));
-  return new Set([...new Set(known.map((r) => r.currency))].filter((ccy) => known.every((r) => r.currency !== ccy || Number.isInteger(Math.round(r.amount * 100) / 100))));
+  return new Set(
+    [...new Set(known.map((r) => r.currency))].filter((ccy) => known.every((r) => r.currency !== ccy || Number.isInteger(Math.round(r.amount * 100) / 100))),
+  );
 }
-export const wholeOpts = (v: number, ccy: string, whole?: Set<string>) => (whole?.has(ccy) && Number.isInteger(Math.round(v * 100) / 100) ? { decimals: 0 } : {});
+export const wholeOpts = (v: number, ccy: string, whole?: Set<string>) =>
+  whole?.has(ccy) && Number.isInteger(Math.round(v * 100) / 100) ? { decimals: 0 } : {};

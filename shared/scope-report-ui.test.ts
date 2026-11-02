@@ -275,7 +275,12 @@ test('narrow calendar cells keep stacked icons plus "+N" inside the cell', () =>
   const sub = { id: 's', name: 'S', category: '', tags: [], price: 1, currency: 'USD', cycle: { unit: 'month' as const, every: 1 }, start: '2026-01-01' };
   const charges = Array.from({ length: 4 }, () => ({ sub, date: today, amount: 1, currency: 'USD', kind: 'charge' }));
   const cell = (width: number) => {
-    const r = harness('../app/src/views/Calendar.tsx', 'Calendar', {}, { useWidth: () => [null, width], allCharges: () => charges, stopLabel: () => '', stopDescription: () => '', StopText: 'StopText' });
+    const r = harness(
+      '../app/src/views/Calendar.tsx',
+      'Calendar',
+      {},
+      { useWidth: () => [null, width], allCharges: () => charges, stopLabel: () => '', stopDescription: () => '', StopText: 'StopText' },
+    );
     const nodes = r.render('Calendar', { state: st, today, onOpen() {}, onIcs() {} });
     const box = nodes.find((n) => n.props.className === 'cal-icons' && all(n).some((c) => c.type === 'SubIcon'))!;
     const more = all(box).find((n) => n.props.className === 'cal-more');

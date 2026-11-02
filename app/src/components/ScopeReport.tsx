@@ -109,7 +109,8 @@ export function ScopeReport({ report, state, today, onOpen, title, animate, open
   const losses = report.blocks.find((b) => b.type === 'losses');
   const expense = (v: number, part?: FxTotal) => (part ? formatTotal(part, base, { direction: -1 }) : flow(-v, base));
   const income = (v: number, part?: FxTotal) => (part ? formatTotal(part, base, { direction: 1 }) : flow(v, base));
-  const percent = (v: number) => (Number.isFinite(v) ? numberFormat(intlLocale(), { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(v)) : '—');
+  const percent = (v: number) =>
+    Number.isFinite(v) ? numberFormat(intlLocale(), { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(v)) : '—';
   const delta = (value: Comparison) => <SpendingDelta value={value} base={base} />;
   const fact = (label: string, value: ReactNode, part?: FxTotal, direction: 1 | -1 = -1) => (
     <Metric label={label} value={part ? formatTotal(part, base, { direction, main: true, average: label === t('scope.average') }) : value} />

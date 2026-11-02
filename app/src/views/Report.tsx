@@ -516,9 +516,7 @@ function Waterfall({ state, today, year, onOpen }: { state: AppState; today: str
       <div className="wf-items">
         {mv.items.length === 0 && (
           <div className="muted" style={{ fontSize: 'var(--fs-2)', padding: '8px 0' }}>
-            {Math.abs(mv.fx) >= 0.5
-              ? t('report.wf.emptyFx', { amount: `${mv.fx > 0 ? '↑' : '↓'} ${money(Math.abs(mv.fx), base)}` })
-              : t('report.wf.empty')}
+            {Math.abs(mv.fx) >= 0.5 ? t('report.wf.emptyFx', { amount: `${mv.fx > 0 ? '↑' : '↓'} ${money(Math.abs(mv.fx), base)}` }) : t('report.wf.empty')}
           </div>
         )}
         {mv.items.slice(0, 4).map((it) => (

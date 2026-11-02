@@ -225,44 +225,44 @@ export function Meters({
         )}
         {/* 走势：虚线是平均每期。有费用图时与它同一条日期横轴、同一个范围；否则画最近 24 期 */}
         {trend.length > 1 && (
-            <ChargeBars
-              bars={trend.map((r) => ({ date: barDate(r), v: r.usage!, ref: stats.average }))}
-              from={range.from}
-              to={range.to}
-              today={today}
-              todayLabel={t('calendar.today')}
-              midMonth={isPostpaid(sub)}
-              fmt={(v) => withUnit(v, cur.unit, q)}
-              lanes={[]}
-              onPick={ro ? undefined : (idx) => idx.length === 1 && setReading({ id: trend[idx[0]].reading.id })}
-              tip={(idx, summed) =>
-                summed && idx.length > 1 ? (
-                  <>
-                    <div className="cc-tip-h">
-                      {/* 同一天的几条合成一根柱时只写这一天 */}
-                      <b>
-                        {trend[idx[0]].reading.date === trend[idx[idx.length - 1]].reading.date
-                          ? cnDateFull(trend[idx[0]].reading.date)
-                          : `${cnDateFull(trend[idx[0]].reading.date)} – ${cnDateFull(trend[idx[idx.length - 1]].reading.date)}`}
-                      </b>
-                    </div>
-                    <div className="cc-tip-r">
-                      <i className="k-v" />
-                      <span>{t('detail.meters.periods', { n: idx.length })}</span>
-                      <b>
-                        {withUnit(
-                          idx.reduce((a, i) => a + trend[i].usage!, 0),
-                          cur.unit,
-                          q,
-                        )}
-                      </b>
-                    </div>
-                  </>
-                ) : (
-                  tipOf(idx[0])
-                )
-              }
-            />
+          <ChargeBars
+            bars={trend.map((r) => ({ date: barDate(r), v: r.usage!, ref: stats.average }))}
+            from={range.from}
+            to={range.to}
+            today={today}
+            todayLabel={t('calendar.today')}
+            midMonth={isPostpaid(sub)}
+            fmt={(v) => withUnit(v, cur.unit, q)}
+            lanes={[]}
+            onPick={ro ? undefined : (idx) => idx.length === 1 && setReading({ id: trend[idx[0]].reading.id })}
+            tip={(idx, summed) =>
+              summed && idx.length > 1 ? (
+                <>
+                  <div className="cc-tip-h">
+                    {/* 同一天的几条合成一根柱时只写这一天 */}
+                    <b>
+                      {trend[idx[0]].reading.date === trend[idx[idx.length - 1]].reading.date
+                        ? cnDateFull(trend[idx[0]].reading.date)
+                        : `${cnDateFull(trend[idx[0]].reading.date)} – ${cnDateFull(trend[idx[idx.length - 1]].reading.date)}`}
+                    </b>
+                  </div>
+                  <div className="cc-tip-r">
+                    <i className="k-v" />
+                    <span>{t('detail.meters.periods', { n: idx.length })}</span>
+                    <b>
+                      {withUnit(
+                        idx.reduce((a, i) => a + trend[i].usage!, 0),
+                        cur.unit,
+                        q,
+                      )}
+                    </b>
+                  </div>
+                </>
+              ) : (
+                tipOf(idx[0])
+              )
+            }
+          />
         )}
         {/* 指标在顶部，这里只有走势；画不出时留一句说明，不留空卡 */}
         {trend.length <= 1 && <p className="muted dt-meters-none">{t('detail.meters.noTrend')}</p>}

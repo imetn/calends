@@ -9,7 +9,20 @@ import { afterEach, test } from 'node:test';
 import { transformSync } from 'oxc-transform-react';
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { currencyDecimals, moneyDecimals, flow, flowSign, setSignedAmounts, symbol, relDays, money, cnDateAuto, cnDateFull, wholeCurrencies, wholeOpts } from './format.ts';
+import {
+  currencyDecimals,
+  moneyDecimals,
+  flow,
+  flowSign,
+  setSignedAmounts,
+  symbol,
+  relDays,
+  money,
+  cnDateAuto,
+  cnDateFull,
+  wholeCurrencies,
+  wholeOpts,
+} from './format.ts';
 import { intlLocale, locale, setLocale } from './i18n.ts';
 import { chargeBaseOrNaN, chargeValue } from './fx.ts';
 import { FALLBACK_FX, addMonths, phaseSubs, diffDays } from './billing.ts';
