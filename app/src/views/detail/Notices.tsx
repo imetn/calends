@@ -43,7 +43,7 @@ export function Outcome({ sub, state, today }: { sub: Subscription; state: AppSt
         // 后付费没有预付期：不写原本付到日；没有退款记录时也不写退款
         const postpaid = isPostpaid(phase);
         return (
-          <section key={phase.start} className={`dt-panel dt-outcome ${sm.kind === 'terminate' ? 'bad' : ''} ${sm.unusedValue > 0 ? 'loss' : ''}`}>
+          <section key={phase.start} className={`dt-panel dt-outcome ${sm.kind === 'terminate' ? 'bad' : ''} ${sm.unusedValue > 0 ? 'lossy' : ''}`}>
             <div className="dt-ph row">
               <CardTitle>{t(sm.kind === 'terminate' ? 'core.stop.terminate' : 'report.stops.cancel')}</CardTitle>
             </div>

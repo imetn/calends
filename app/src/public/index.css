@@ -32,8 +32,9 @@
   --chart-3: var(--gray-9);
   --chart-4: var(--gray-8);
   --chart-5: var(--gray-6);
-  --up: var(--red);
-  --down: var(--green);
+  /* 汇率涨（外币变贵）是亏，跌是赚：跟随涨跌配色设置 */
+  --up: var(--loss);
+  --down: var(--gain);
   --surface: var(--gray-1);
 }
 

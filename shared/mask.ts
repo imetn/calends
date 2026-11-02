@@ -1,7 +1,7 @@
 // 公开页脱敏：服务端只下发这里处理过的数据，浏览器拿不到原始信息
 import { DEFAULT_SETTINGS, type AppState, type Payment, type PaymentMethod, type Phase, type Stop, type Subscription } from './types.ts';
 import { fnv1a, migrateRenewalRules } from './billing.ts';
-import { t } from './i18n.ts';
+import { isLocale, t } from './i18n.ts';
 import { categoryList, isDomainCategory, presetOf, type Category } from './categories.ts';
 
 const DOMAIN = /\b((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+)([a-z]{2,})\b/gi;
@@ -126,25 +126,7 @@ function publicSub(s: Subscription, cats: Category[]): Subscription {
     phases: s.phases?.map(publicPhase),
     payments: s.payments?.filter((pay) => pay.kind !== 'refund').map(publicPayment),
     nextDue: s.nextDue,
-    share: s.share && {
-      role: s.share.role,
-      seats: s.share.seats,
-      members: s.share.members.map((m, i) => ({
-        id: `m${i}`,
-        name: '',
-        share: m.share,
-        ...(m.feeHistory ? { feeHistory: m.feeHistory.map(({ from, fee, currency, billEvery, share }) => ({ from, fee, currency, billEvery, share })) } : {}),
-        restarts: m.restarts,
-        ...(m.anchor ? { anchor: m.anchor } : {}),
-        ...(m.periodDues ? { periodDues: m.periodDues } : {}),
-        // 只留哪几期结清了，金额、日期、备注都去掉
-        receipts: m.receipts?.map((r, j) => ({ id: `r${j}`, date: '', amount: 0, currency: '', periods: r.periods, opening: true })),
-        waivers: m.waivers?.map((w, j) => ({ id: `w${j}`, date: '', periods: w.periods })),
-        exempt: m.exempt,
-        joined: m.joined,
-        left: m.left,
-      })),
-    },
+    // 不带合租：公开页展示订阅本身的价格，成员付满整价时也不显示 0；成员的分摊与收款记录不公开
   };
 }
 
@@ -168,6 +150,9 @@ export function maskForPublic(state: AppState): AppState {
       avatar: state.settings.avatar,
       publicTitle: state.settings.publicTitle,
       weekStart: state.settings.weekStart,
+      // 公开页跟主人的界面语言走；主人跟随浏览器时用后台最近实际用的语言
+      language: isLocale(state.settings.language) ? state.settings.language : state.settings.languageSeen,
+      gainColor: state.settings.gainColor,
       collectCurrency: state.settings.collectCurrency,
       publicView: true,
       remindDays: 0,

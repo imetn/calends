@@ -740,6 +740,11 @@ function Root() {
   const want = state ? preferredLocale(state.settings.language) : loc;
   const signed = state?.settings.signedAmounts !== false;
   setSignedAmounts(signed);
+  const red = state?.settings.gainColor === 'red';
+  useEffect(() => {
+    if (red) document.documentElement.dataset.gain = 'red';
+    else delete document.documentElement.dataset.gain;
+  }, [red]);
   useEffect(() => {
     if (want !== loc) void loadLocale(want).then(() => setLoc(want));
     document.title = t('app.name');

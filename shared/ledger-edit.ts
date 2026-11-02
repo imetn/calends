@@ -38,6 +38,7 @@ export const SETTINGS_FIELDS = objectSchema({
   collectCurrency: nullable(textSchema),
   defaultMethodId: nullable(textSchema),
   signedAmounts: { type: 'boolean' },
+  gainColor: { type: 'string', enum: ['green', 'red'] },
   remindDays: { type: 'integer', minimum: -1, maximum: 365 },
   notifyHour: { type: 'integer', minimum: 0, maximum: 23 },
   timezone: textSchema,
@@ -238,6 +239,8 @@ export function checkSettings(st: Pick<AppState, 'fx' | 'methods' | 'subscriptio
       throw new Error(t('mcp.error.invalidInput', { field: 'timezone' }));
     }
   if (next.language && changed('language') && !isLocale(next.language)) throw new Error(t('mcp.error.invalidInput', { field: 'language' }));
+  if (next.gainColor !== undefined && changed('gainColor') && next.gainColor !== 'green' && next.gainColor !== 'red')
+    throw new Error(t('mcp.error.invalidInput', { field: 'gainColor' }));
   if (next.startPage && changed('startPage') && !START_PAGE_PATHS.includes(next.startPage))
     throw new Error(t('mcp.error.invalidInput', { field: 'startPage' }));
   const added = next.publicHidden?.filter((id) => !prev.publicHidden?.includes(id)) ?? [];

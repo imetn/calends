@@ -418,6 +418,8 @@ export interface Settings {
   baseCurrency: string;
   /** 收支金额显示方向符号；缺省开启，不影响标价、余额及对比差额 */
   signedAmounts?: boolean;
+  /** 涨跌配色：缺省绿涨红跌（收入、盈余、降价为绿）；red 为红涨绿跌 */
+  gainColor?: 'green' | 'red';
   /** 通知渠道；为空时沿用 notifyEmail 作为唯一的邮件渠道 */
   channels?: Channel[];
   /** 合租向成员收款的默认币种；缺省同本位币 */

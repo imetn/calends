@@ -295,10 +295,10 @@ export function ReceivedCell({ r, base, brief }: { r: Row; base: string; brief?:
   return (
     <span className="green">
       <b className="green">{flow(r.share, e.currency)}</b>
-      {lines.length > 0 && <small style={{ color: 'var(--green)' }}>{copyParts(lines.join('\n'))}</small>}
+      {lines.length > 0 && <small style={{ color: 'var(--gain)' }}>{copyParts(lines.join('\n'))}</small>}
       {/* 一笔分几期只在宽屏写；窄屏点开这一期能看到 */}
       {e.periods.length > 1 && (
-        <small className="ld-batch" style={{ color: 'var(--green)' }}>
+        <small className="ld-batch" style={{ color: 'var(--gain)' }}>
           {t('receivable.batch', { amount: money(e.amount, e.currency), count: e.periods.length })}
         </small>
       )}

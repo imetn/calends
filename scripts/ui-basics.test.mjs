@@ -1177,7 +1177,7 @@ test('metric slots retain negative, zero and unavailable amounts, notes and sema
   assert.match(cell, /border-radius:\s*var\(--radius-md\)/);
   assert.match(css, /repeat\(var\(--metric-columns\), minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(css, /margin-inline-start:|inset var\(--hairline\) 0/);
-  assert.match(css, /\.metric-grid > div > b:is\(\.done, \.gain, \.green\)\s*\{\s*color: var\(--green\)/);
+  assert.match(css, /\.metric-grid > div > b:is\(\.done, \.gain, \.green\)\s*\{\s*color: var\(--gain\)/);
   for (const count of [1, 2, 3, 4, 5]) {
     const cards = renderToStaticMarkup(
       React.createElement(
@@ -1554,4 +1554,34 @@ test('时间线提示与柱图、说明提示同一套白底卡片，不再是�
 test('换方案时旧方案默认用到下一次扣款的前一天，不在扣款日再多扣一期', () => {
   const src = readFileSync(new URL('components/ChangePanel.tsx', root), 'utf8');
   assert.match(src, /addDays\(nextCharge\(last, addDays\(at, 2\)\) \?\? addMonths\(at, 1\), -1\)/);
+});
+
+test('#12 涨跌配色：金额语义色走 gain/loss，红涨绿跌时整体对调', () => {
+  const tokens = readFileSync(new URL('../app/src/design-tokens.css', import.meta.url), 'utf8');
+  assert.match(tokens, /--gain: var\(--green\);[\s\S]*--loss: var\(--red\);/);
+  assert.match(
+    tokens,
+    /:root\[data-gain='red'\] \{\s*--gain: var\(--red\);\s*--gain-3: var\(--red-3\);\s*--loss: var\(--green\);\s*--loss-3: var\(--green-3\);/,
+  );
+  const pub = readFileSync(new URL('../app/src/public/index.css', import.meta.url), 'utf8');
+  assert.match(pub, /--up: var\(--loss\);\s*--down: var\(--gain\);/);
+  // 同一行的圆点、进度条、标签要和金额同色，否则红涨绿跌时一行两种颜色
+  const styles = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  const detail = readFileSync(new URL('../app/src/views/detail.css', import.meta.url), 'utf8');
+  for (const [css, rule] of [
+    [styles, /\.log-dot\.up \{\s*background: var\(--loss\)/],
+    [styles, /\.log-dot\.down \{\s*background: var\(--gain\)/],
+    [styles, /\.stop-bar > i \{[^}]*background: var\(--loss\)/],
+    [styles, /\.gt-unused-amount \{[^}]*color: var\(--loss\)/],
+    [detail, /\.dt-kind\.refund,\s*\.dt-kind\.sell \{\s*background: var\(--gain-3\);\s*color: var\(--gain\)/],
+    [detail, /\.dt-outcome\.lossy \{\s*background: color-mix\(in srgb, var\(--loss\)/],
+  ])
+    assert.match(css, rule);
+  // 透支是状态色，不随涨跌配色对调
+  assert.match(readFileSync(new URL('../app/src/views/Wallet.tsx', import.meta.url), 'utf8'), /balanceAfter < 0 \? 'var\(--red\)'/);
+});
+
+test('#12 公开页语言包加载失败仍渲染账本，不把分包错误显示给访客', () => {
+  const page = readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8');
+  assert.match(page, /await loadLocale\(preferredLocale\(body\.settings\.language\)\)\.catch\(\(\) => undefined\)/);
 });

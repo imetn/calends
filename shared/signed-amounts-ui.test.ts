@@ -74,7 +74,7 @@ test('Amount renders directed flows, zero, unavailable values and neutral prices
     const render = (value: number, plain = false) => renderToStaticMarkup(React.createElement(Amount, { value, ccy: 'CNY', plain }));
     assert.equal(text(render(-66.94)), `${on ? '−' : ''}¥66.94`);
     assert.equal(text(render(10)), `${on ? '+' : ''}¥10.00`);
-    assert.ok(render(10).includes('color:var(--green)'));
+    assert.ok(render(10).includes('color:var(--gain)'));
     for (const value of [198.65, -198.65, 0]) {
       assert.match(render(value), /class="amt-fraction" style="color:inherit;opacity:0.72"/);
     }

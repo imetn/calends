@@ -5,7 +5,7 @@ import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts';
 import { addDays, addMonths, currentPhase, cycleLabel, diffDays, effectiveStatus, monthlyGross, myShareFactor, nextCharge, todayIn, isStopped } from '../../../shared/billing.ts';
 import { cnDate, flow, moneyTick, money, monthLabel, setSignedAmounts, symbol } from '../../../shared/format.ts';
-import { t, type Params } from '../../../shared/i18n.ts';
+import { locale, t, type Params } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue, toBaseAt, toBaseOrNaN } from '../../../shared/fx.ts';
 import { cancelSavings, contributionOn, mrrSeries } from '../../../shared/metrics.ts';
 import { avatarOf, type AppState, type Subscription } from '../../../shared/types.ts';
@@ -25,6 +25,7 @@ import { TooltipProvider } from '@/public/components/ui/tooltip';
 import { cn } from '@/public/lib/utils';
 import { PROJECT_NAME, PROJECT_URL } from '../../../shared/brand.ts';
 import { IconPile } from './components/icon-pile.tsx';
+import { loadLocale, preferredLocale } from '../i18n.ts';
 
 /** 公开页可切换的币种：本位币，和（本位币不是美元时）美元 */
 type Ccy = string;
@@ -74,6 +75,9 @@ export function PublicPage() {
         const body = (await r.json().catch(() => null)) as (AppState & { error?: string }) | null;
         if (!r.ok) throw new Error(body?.error ?? t('public.loadFailed'));
         if (!Array.isArray(body?.subscriptions) || !body.settings) throw new Error(t('public.loadFailed'));
+        // 语言包加载失败（发版后旧分包失效、断网）不挡账本：继续用当前语言渲染
+        if (preferredLocale(body.settings.language) !== locale()) await loadLocale(preferredLocale(body.settings.language)).catch(() => undefined);
+        if (body.settings.gainColor === 'red') document.documentElement.dataset.gain = 'red';
         owner = body.settings.displayName ?? '';
         custom = body.settings.publicTitle ?? '';
         document.title = title();

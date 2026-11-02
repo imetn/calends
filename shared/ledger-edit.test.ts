@@ -116,6 +116,14 @@ test('settings allowlist rejects nested secrets, omits all credentials and prese
   assert.throws(() => settingsEdit(st, { baseCurrency: 'ZZZ' }));
 });
 
+test('#12 涨跌配色只接受绿涨红跌或红涨绿跌', () => {
+  const st = fixture();
+  assert.equal(settingsEdit(st, { gainColor: 'red' }).settings.gainColor, 'red');
+  assert.throws(() => validateToolInput(SETTINGS_FIELDS, { gainColor: 'blue' }));
+  // 网页 PUT /api/settings 不走工具 schema，checkSettings 也要拦住
+  assert.throws(() => settingsEdit(st, { gainColor: 'blue' }));
+});
+
 test('indexed history editing rejects missing/stale records and preserves siblings', () => {
   const records = [{ amount: 10 }, { amount: 20 }];
   assert.deepEqual(editRecord(records, 0, { amount: 12 }), [{ amount: 12 }, { amount: 20 }]);

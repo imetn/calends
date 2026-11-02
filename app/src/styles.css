@@ -61,8 +61,12 @@ a {
 .red {
   color: var(--red);
 }
-.green {
-  color: var(--green);
+.green,
+.gain {
+  color: var(--gain);
+}
+.loss {
+  color: var(--loss);
 }
 .num {
   font-variant-numeric: tabular-nums;
@@ -1927,8 +1931,8 @@ select.btn {
   font-variant-numeric: tabular-nums;
 }
 .chip-d.up {
-  background: color-mix(in srgb, var(--red-10) 12%, transparent);
-  color: var(--red);
+  background: color-mix(in srgb, var(--loss) 12%, transparent);
+  color: var(--loss);
 }
 .hero-r {
   min-width: 0;
@@ -2200,7 +2204,7 @@ select.btn {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 2px;
-  background: var(--red);
+  background: var(--loss);
 }
 .stop-amount {
   grid-column: 2;
@@ -2529,10 +2533,10 @@ button.bl-col {
   background: var(--label-3);
 }
 .log-dot.up {
-  background: var(--red-9);
+  background: var(--loss);
 }
 .log-dot.down {
-  background: var(--green-9);
+  background: var(--gain);
 }
 .log-dot.buy {
   background: var(--indigo-9);
@@ -2938,11 +2942,11 @@ button.bl-col {
   font-weight: 600;
 }
 .chip-d.up {
-  background: var(--red-3);
+  background: var(--loss-3);
 }
 .chip-d.down {
-  background: var(--green-3);
-  color: var(--green);
+  background: var(--gain-3);
+  color: var(--gain);
 }
 .log-item b.green {
   color: var(--green);
@@ -3647,10 +3651,10 @@ button.bl-col {
   margin-left: 6px;
 }
 .h-prices em.up {
-  color: var(--red);
+  color: var(--loss);
 }
 .h-prices em.down {
-  color: var(--green);
+  color: var(--gain);
 }
 .h-price-row {
   display: grid;
@@ -4300,12 +4304,12 @@ button.h-price-row:focus-visible {
   color: var(--label);
 }
 .stmt-delta span.up {
-  background: var(--red-3);
-  color: var(--red);
+  background: var(--loss-3);
+  color: var(--loss);
 }
 .stmt-delta span.down {
-  background: var(--green-3);
-  color: var(--green);
+  background: var(--gain-3);
+  color: var(--gain);
 }
 /* 折线吃掉左栏剩余高度：星图撑高时，下方指标与星图底部对齐，不在左下角留空 */
 .stmt-spark {
@@ -5762,10 +5766,10 @@ a.car-toggle {
   color: var(--label-3);
 }
 .ld-row .gain {
-  color: var(--green);
+  color: var(--gain);
 }
 .ld-row .loss {
-  color: var(--red);
+  color: var(--loss);
 }
 .ld-row .muted {
   color: var(--label-3);
@@ -6093,10 +6097,10 @@ a.car-toggle {
 }
 .lt-x .green,
 .lt-x .gain {
-  color: var(--green);
+  color: var(--gain);
 }
 .lt-x .loss {
-  color: var(--red);
+  color: var(--loss);
 }
 @container (max-width: 1100px) {
   .lt-x {
@@ -8648,7 +8652,7 @@ a.car-toggle {
   color: var(--label-3);
 }
 .pp-item-r small.green {
-  color: var(--green);
+  color: var(--gain);
 }
 .pp-item-l {
   display: flex;
@@ -9397,10 +9401,10 @@ img.mm-flag {
   font-variant-numeric: tabular-nums;
 }
 .stop-money.loss {
-  color: var(--red);
+  color: var(--loss);
 }
 .stop-money.gain {
-  color: var(--green);
+  color: var(--gain);
 }
 .stop-badge {
   max-width: 100%;
@@ -9434,7 +9438,7 @@ img.mm-flag {
   font-style: normal;
   font-weight: 600;
   line-height: 22px;
-  color: var(--red);
+  color: var(--loss);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }

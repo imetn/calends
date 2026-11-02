@@ -243,7 +243,7 @@ test('9. 年度回顾、个人 MRR 与现金按我的份额，未来 90 天保�
   assert.equal(cashVsAccrual(st, today, 0, 0)[0].cash, 40);
 });
 
-test('10. 公开数据保留计费字段，成本与后台相等且不泄露成员身份或联系方式', () => {
+test('10. 公开数据保留计费字段，按订阅本身价格计成本，不带合租成员', () => {
   const s = sub({
     bonus: { from: '2026-02-01', until: '2026-03-01' },
     notes: 'private-notes',
@@ -274,13 +274,11 @@ test('10. 公开数据保留计费字段，成本与后台相等且不泄露成�
   const st = state([s]);
   const out = maskForPublic(st);
   assert.ok(!JSON.stringify(out).includes('private-'));
-  assert.deepEqual(
-    Object.keys(out.subscriptions[0].share!.members[0]).sort(),
-    ['id', 'name', 'share', 'restarts', 'receipts', 'waivers', 'exempt', 'joined', 'left'].sort(),
-  );
+  assert.equal(out.subscriptions[0].share, undefined);
+  const gross = state([{ ...s, share: undefined }]);
   for (const day of ['2026-01-31', '2026-02-01', '2026-02-15', '2026-03-01']) {
-    near(totals(out, day).mrr, totals(st, day).mrr);
-    near(contributionOn(out, out.subscriptions[0], day), contributionOn(st, s, day));
+    near(totals(out, day).mrr, totals(gross, day).mrr);
+    near(contributionOn(out, out.subscriptions[0], day), contributionOn(gross, gross.subscriptions[0], day));
   }
   assert.deepEqual(out.subscriptions[0].bonus, s.bonus);
 });

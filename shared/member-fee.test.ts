@@ -100,14 +100,11 @@ test('收费币种变更的多期欠款按币种换算，外币实收仍原样�
   );
 });
 
-test('公开脱敏仅保留收费历史的计算字段，成员身份与额外字段不外泄', async () => {
+test('公开脱敏不带合租：成员身份、分摊、收费历史与结清情况都不外泄', async () => {
   const { maskForPublic } = await import('./mask.ts');
   const m = adjust();
   Object.assign(m.feeHistory![0], { note: 'private extra', contact: 'private@example.test' });
-  const masked = maskForPublic({ ...state, subscriptions: [{ ...sub, share: { ...sub.share!, members: [m] } }] }).subscriptions[0].share!.members[0];
-  assert.equal(masked.name, '');
-  // 只留哪几期结清了，金额、日期都去掉
-  assert.deepEqual(masked.receipts, [{ id: 'r0', date: '', amount: 0, currency: '', periods: ['2025-10-14', '2026-04-14'], opening: true }]);
-  assert.deepEqual(Object.keys(masked.feeHistory![0]).sort(), ['billEvery', 'currency', 'fee', 'from', 'share']);
-  assert.equal(myShareFactor({ ...sub, share: { ...sub.share!, members: [masked] } }, '2026-06-30'), myShareFactor(sub, '2026-06-30'));
+  const masked = maskForPublic({ ...state, subscriptions: [{ ...sub, share: { ...sub.share!, members: [m] } }] }).subscriptions[0];
+  assert.equal(masked.share, undefined);
+  assert.ok(!JSON.stringify(masked).includes('private'));
 });

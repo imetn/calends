@@ -158,13 +158,13 @@ export function Carpool({ state, today, onOpen }: { state: AppState; today: stri
           <Metric
             label={yearNet < 0 ? t('family.pool.netGain') : t('family.pool.netCost')}
             value={<FxAmount total={yearNetPartial} direction={-1} ccy={base} />}
-            valueStyle={{ color: yearNet < 0 ? 'var(--green)' : undefined }}
+            valueStyle={{ color: yearNet < 0 ? 'var(--gain)' : undefined }}
             note={
               yearNetPartial.incomplete
                 ? totalNote(yearNetPartial)
                 : t('family.pool.yearIncome', { amount: formatTotal(yearIncomePartial, base, { direction: 1, compact: true }) })
             }
-            noteStyle={{ color: 'var(--green)' }}
+            noteStyle={{ color: 'var(--gain)' }}
           />
           <Metric
             label={t('family.pool.owed')}

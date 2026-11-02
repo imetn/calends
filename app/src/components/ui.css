@@ -390,11 +390,11 @@
 }
 .metric-value:is(.done, .gain, .green),
 .metric-grid > div > b:is(.done, .gain, .green) {
-  color: var(--green);
+  color: var(--gain);
 }
 .metric-value.loss,
 .metric-grid > div > b.loss {
-  color: var(--red);
+  color: var(--loss);
 }
 .metric-value.warn,
 .metric-grid > div > b.warn {

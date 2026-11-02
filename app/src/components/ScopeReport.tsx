@@ -327,7 +327,7 @@ export function ScopeReport({ report, state, today, onOpen, title, animate, open
                   <div className="mv-bar">
                     <i style={{ width: `${(Math.abs(r.amount) / peak) * 100}%` }} />
                   </div>
-                  <b className={`num ${r.amount > 0 ? 'red' : 'green'}`}>
+                  <b className={`num ${r.amount > 0 ? 'loss' : 'gain'}`}>
                     {r.amount > 0 ? '↑' : '↓'} {money(Math.abs(r.amount), base)}
                   </b>
                 </div>

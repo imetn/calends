@@ -238,7 +238,7 @@ test('同一人的两辆车各有账号，人员同步、合并和公开脱敏�
     ['alex@example.test', '+65 8000 0000'],
   );
   const publicState = maskForPublic(state);
-  for (const s of publicState.subscriptions) assert.ok(!('account' in s.share!.members[0]));
+  for (const s of publicState.subscriptions) assert.equal(s.share, undefined);
   assert.equal(publicState.people, undefined);
 });
 

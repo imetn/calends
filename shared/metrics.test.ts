@@ -266,6 +266,41 @@ test('公开页仅带出所有者收支符号设置，旧设置缺省开启', as
   }
 });
 
+test('#12 公开页带出主人的语言与涨跌配色；未选语言时用后台最近实际用的语言', async () => {
+  const { maskForPublic } = await import('./mask.ts');
+  const st = state([sub({})]);
+  st.settings = { ...st.settings, language: 'zh-CN', languageSeen: 'en', gainColor: 'red' };
+  assert.equal(maskForPublic(st).settings.language, 'zh-CN');
+  assert.equal(maskForPublic(st).settings.gainColor, 'red');
+  st.settings = { ...st.settings, language: undefined, gainColor: undefined };
+  assert.equal(maskForPublic(st).settings.language, 'en');
+  assert.equal(maskForPublic(st).settings.gainColor, undefined);
+  // 脏值不下发，回退到后台最近实际用的语言
+  assert.equal(maskForPublic({ ...st, settings: { ...st.settings, language: '' as never } }).settings.language, st.settings.languageSeen);
+});
+
+test('#12 合租成员付满整价时，公开页仍显示订阅本身的价格而不是 0', async () => {
+  const { maskForPublic } = await import('./mask.ts');
+  const { contributionOn } = await import('./metrics.ts');
+  const s = sub({
+    price: 30,
+    cycle: { unit: 'month', every: 1 },
+    share: {
+      role: 'owner',
+      seats: 4,
+      members: [
+        { id: 'a', name: 'A', share: 20 },
+        { id: 'b', name: 'B', share: 15 },
+      ],
+    },
+  });
+  const st = state([s]);
+  assert.equal(contributionOn(st, s, '2026-06-15'), 0);
+  const pub = maskForPublic(st);
+  assert.equal(pub.subscriptions[0].share, undefined);
+  assert.ok(contributionOn(pub, pub.subscriptions[0], '2026-06-15') > 29);
+});
+
 test('概览与月度变动报告比较上月末时包含相同的汇率影响', () => {
   const st = state([sub({ price: 10, cycle: { unit: 'month', every: 1 } })], {
     settings: { ...DEFAULT_SETTINGS, baseCurrency: 'CNY' },

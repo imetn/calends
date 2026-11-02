@@ -360,13 +360,13 @@ export function ProxyPage({ state, today, onOpen }: { state: AppState; today: st
             <Metric
               label={t('proxy.received')}
               value={<FxAmount total={sum.partial.received} ccy={base} direction={1} />}
-              valueStyle={{ color: 'var(--green)' }}
+              valueStyle={{ color: 'var(--gain)' }}
               note={totalNote(sum.partial.received) || (sum.lastIn ? t('proxy.page.lastIn', { date: cnDateFull(sum.lastIn) }) : t('proxy.page.noneIn'))}
             />
             <Metric
               label={t('family.strip.profit')}
               value={Math.abs(sum.diff) < 0.5 ? t('proxy.table.even') : <FxAmount total={sum.partial.diff} ccy={base} direction={1} />}
-              valueStyle={{ color: sum.partial.diff.incomplete || Math.abs(sum.diff) < 0.5 ? undefined : sum.diff > 0 ? 'var(--green)' : 'var(--red)' }}
+              valueStyle={{ color: sum.partial.diff.incomplete || Math.abs(sum.diff) < 0.5 ? undefined : sum.diff > 0 ? 'var(--gain)' : 'var(--loss)' }}
               note={
                 // 持平时平均每期是 ±0，改写口径说明，不出现 −¥0.00
                 sum.partial.diff.incomplete

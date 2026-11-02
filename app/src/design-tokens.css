@@ -83,6 +83,11 @@
   --accent-soft: var(--indigo-3);
   --red: var(--red-11);
   --green: var(--green-11);
+  /* 涨跌配色：收入、盈余、降价用 gain，亏损、涨价用 loss；设置里选红涨绿跌时对调（html[data-gain='red']） */
+  --gain: var(--green);
+  --gain-3: var(--green-3);
+  --loss: var(--red);
+  --loss-3: var(--red-3);
   --orange: var(--orange-11);
   --focus-ring: var(--indigo-8);
   --glass: color-mix(in srgb, var(--gray-2) 92%, transparent);
@@ -100,6 +105,13 @@
   --c10: var(--gold-9);
   --r: var(--radius-lg);
   color-scheme: light;
+}
+
+:root[data-gain='red'] {
+  --gain: var(--red);
+  --gain-3: var(--red-3);
+  --loss: var(--green);
+  --loss-3: var(--green-3);
 }
 :root[data-theme='dark'] {
   color-scheme: dark;

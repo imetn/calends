@@ -506,7 +506,7 @@ function Waterfall({ state, today, year, onOpen }: { state: AppState; today: str
               <div className="mv-bar">
                 <i style={{ width: `${(Math.abs(x.v) / peak) * 100}%` }} />
               </div>
-              <b className={`num ${x.v > 0 ? 'red' : 'green'}`}>
+              <b className={`num ${x.v > 0 ? 'loss' : 'gain'}`}>
                 {x.v > 0 ? '↑' : '↓'} {money(Math.abs(x.v), base)}
               </b>
             </div>
@@ -845,7 +845,7 @@ function StopsCard({ state, today, year, onOpen }: { state: AppState; today: str
                 </span>
                 <span className="stop-meta">
                   <span>{cnDate(i.date)}</span> <span>{i.kind === 'terminate' ? t('core.stop.terminate') : t('report.stops.cancel')}</span>{' '}
-                  <span style={i.refunded > 0 ? { color: 'var(--green)' } : undefined}>
+                  <span style={i.refunded > 0 ? { color: 'var(--gain)' } : undefined}>
                     {i.refundStatus === 'none' ? t('core.stop.refundNo') : t('core.stop.partial', { money: flow(i.refunded, i.currency) })}
                   </span>{' '}
                   <span className="stop-days">
@@ -857,7 +857,7 @@ function StopsCard({ state, today, year, onOpen }: { state: AppState; today: str
                   </span>
                 </span>
                 <span className="stop-amount">
-                  <b className="red">{flow(-i.lossBase, base)}</b>
+                  <b className="loss">{flow(-i.lossBase, base)}</b>
                   {i.currency !== base && <small>{flow(-i.loss, i.currency)}</small>}
                 </span>
               </button>
@@ -956,9 +956,7 @@ function TopUps({ state, today }: { state: AppState; today: string }) {
               // 缺汇率算不出要充多少：不能说「够用」
               <div className="topup-why soft">{t('core.fxIncomplete')}</div>
             ) : (
-              <div className="green" style={{ fontSize: 'var(--fs-2)', marginTop: 6 }}>
-                {t(`report.topup.enough${months}`)}
-              </div>
+              <div style={{ color: 'var(--green)', fontSize: 'var(--fs-2)', marginTop: 6 }}>{t(`report.topup.enough${months}`)}</div>
             )}
           </div>
           {(p.need > 0 || p.incomplete) && (
@@ -1076,7 +1074,7 @@ function Changelog({ state, today, year, onOpen, base }: { state: AppState; toda
                     {e.note ? ` ${e.note}` : ''}
                   </small>
                 </span>
-                <b className={`num ${tone === 'buy' || neutral ? '' : up ? 'red' : 'green'}`}>
+                <b className={`num ${tone === 'buy' || neutral ? '' : up ? 'loss' : 'gain'}`}>
                   {copyParts(
                     tone === 'buy'
                       ? e.partial

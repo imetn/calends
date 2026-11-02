@@ -319,10 +319,13 @@
 }
 
 /* 停止卡片：侧栏第一块，损失金额最醒目，下面是停止日、原本付到和退款 */
-.dt-outcome.bad,
-.dt-outcome.loss {
+.dt-outcome.bad {
   background: color-mix(in srgb, var(--dt-bad) 5%, var(--dt-panel));
   box-shadow: inset 0 0 0 var(--hairline) color-mix(in srgb, var(--dt-bad) 22%, transparent);
+}
+.dt-outcome.lossy {
+  background: color-mix(in srgb, var(--loss) 5%, var(--dt-panel));
+  box-shadow: inset 0 0 0 var(--hairline) color-mix(in srgb, var(--loss) 22%, transparent);
 }
 .dt-outcome.bad .dt-ph h3 {
   color: var(--dt-bad);
@@ -336,7 +339,7 @@
   line-height: 32px;
   font-weight: 650;
   letter-spacing: -0.02em;
-  color: var(--dt-bad);
+  color: var(--loss);
   font-variant-numeric: tabular-nums;
 }
 .dt-oc-loss small {
@@ -345,7 +348,7 @@
 }
 /* 收回来的钱：正号、绿色 */
 .dt-in {
-  color: var(--dt-ok);
+  color: var(--gain);
 }
 .dt-panel {
   background: var(--dt-panel);
@@ -821,7 +824,7 @@
 }
 .dt-row.refund .o,
 .dt-row.refund .c {
-  color: var(--dt-ok);
+  color: var(--gain);
 }
 .dt-row.failed .o,
 .dt-row.failed .c {
@@ -843,8 +846,8 @@
 }
 .dt-kind.refund,
 .dt-kind.sell {
-  background: var(--dt-ok-soft);
-  color: var(--dt-ok);
+  background: var(--gain-3);
+  color: var(--gain);
 }
 .dt-kind.failed {
   background: var(--dt-bad-soft);

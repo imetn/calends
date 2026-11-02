@@ -66,7 +66,7 @@ export function ScopeLifecycleReport({
             value={data.terminatedCount || data.stoppedCount ? count(data.terminatedCount || data.stoppedCount) : '—'}
             note={
               data.terminatedCount ? (
-                <span className={data.terminationLoss.value > 0 || data.terminationLoss.incomplete ? 'red' : ''}>
+                <span className={data.terminationLoss.value > 0 || data.terminationLoss.incomplete ? 'loss' : ''}>
                   {t('report.stops.loss')} / {amount(data.terminationLoss)}
                 </span>
               ) : undefined

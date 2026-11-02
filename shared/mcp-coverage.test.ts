@@ -903,7 +903,7 @@ test('private person avatar: authenticated API, MCP permissions/preview/removal,
     const publicState = await publicResponse.json();
     assert.equal(publicState.people, undefined);
     assert.equal(publicState.subscriptions.length, 1);
-    assert.equal(publicState.subscriptions[0].share.members.length, 1);
+    assert.equal(publicState.subscriptions[0].share, undefined);
     assert.ok(!JSON.stringify(publicState).includes(avatar));
     assert.ok(!JSON.stringify(publicState).includes('personId'));
     const backup = await (await f.request('backup')).json();
@@ -979,8 +979,7 @@ test('accounts belong to person × plan: API/MCP persistence, independent update
     assert.equal(publicState.subscriptions.length, 2);
     for (const s of publicState.subscriptions) {
       assert.equal(s.account, undefined);
-      assert.equal(s.share.members.length, 1);
-      assert.ok(!('account' in s.share.members[0]));
+      assert.equal(s.share, undefined);
     }
     const serialized = JSON.stringify(publicState);
     for (const secret of ['alex@example.test', '+65 8000 0000', 'user / arbitrary ID #42', 'alex-contact@example.test'])
@@ -1254,7 +1253,7 @@ test('下车退款 MCP：预览无写入、读令牌拒绝写、实际退款保�
     await putKv(f.env, 'settings', { ...(await f.snapshot()).settings, publicView: true });
     const pub = await (await f.request('public', 'GET', undefined, false)).json();
     assert.ok(!JSON.stringify(pub).includes('Private actual settlement'));
-    assert.ok(!('leaveRefund' in pub.subscriptions[0].share.members[0]));
+    assert.equal(pub.subscriptions[0].share, undefined);
     const backup = await (await f.request('backup')).json();
     assert.equal(backup.subscriptions[0].share.members[0].leaveRefund.amount, 12.34);
     assert.equal((await f.request('backup', 'POST', backup)).status, 200);

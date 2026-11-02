@@ -25,7 +25,7 @@ export function Amount({ value, ccy, compact, plain, decimals }: { value: number
   const point = parts.find((p) => p.type === 'decimal')?.value;
   const dec = parts.find((p) => p.type === 'fraction')?.value;
   return (
-    <span className="amt" style={!plain && value > 0 ? { color: 'var(--green)' } : undefined}>
+    <span className="amt" style={!plain && value > 0 ? { color: 'var(--gain)' } : undefined}>
       {plain ? (value < 0 ? '−' : '') : flowSign(value)}
       <span className="cur">{symbol(ccy).trim()}</span>
       {int}

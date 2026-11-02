@@ -322,6 +322,23 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
               onChange={(v) => run(() => saveSettings({ signedAmounts: v }))}
             />
           </Cell>
+          <Cell
+            label={
+              <CardTitle as="span" hint={t('settings.general.gainColorSub')}>
+                {t('settings.general.gainColor')}
+              </CardTitle>
+            }
+          >
+            <Picker
+              value={s.gainColor ?? 'green'}
+              onChange={(v) => run(() => saveSettings({ gainColor: v === 'red' ? 'red' : 'green' }))}
+              options={[
+                { value: 'green', label: t('settings.general.gainGreen') },
+                { value: 'red', label: t('settings.general.gainRed') },
+              ]}
+              ariaLabel={t('settings.general.gainColor')}
+            />
+          </Cell>
           <Cell label={t('settings.general.timezone')}>
             <Picker
               value={s.timezone}
