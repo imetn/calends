@@ -324,6 +324,14 @@ export function detailFixtures(today = todayIn('Asia/Shanghai')) {
   s = switchPlan(s, addMonths(s.start, 104), { price: 42, currency: 'CNY', cycle: cycles.月付, methodId: methodId2 });
   add(40, paid(s), '十年月付约 120 笔：两次调价、第七年换卡；换卡当月两笔相隔一周，检查堆叠柱与按年折叠。');
 
+  s = base('月付 · 导入记录 · 暂无扣款', monthsAgo(8), { estimateFrom: addDays(today, 1) });
+  add(41, s, '导入后尚无已知扣款：提示独占正文，检查左右对齐、底部留白和窄屏换行。');
+  add(
+    41,
+    { ...s, id: id(), name: '月付 · 导入记录 · 已有扣款', payments: [{ date: addDays(today, -5), amount: 36 }] },
+    '导入后已有一笔已知扣款：提示和扣款表同时显示，检查提示内距与表格全宽。',
+  );
+
   const fxDates = new Set(subscriptions.flatMap((s) => chargesBetween(s, s.start, today, today).map((c) => c.date)).concat(today));
   const first = subscriptions.map((s) => s.start).sort()[0];
   for (let d = `${first.slice(0, 7)}-01`; d <= today; d = addMonths(d, 1)) {

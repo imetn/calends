@@ -71,6 +71,9 @@ clipping flags are candidates for visual review, not automatic failures. Inspect
 The generator and its descriptions live in `scripts/detail-fixtures.ts`. Its regression tests also
 exercise leap day and month end. Group 4 has both the four-record roster with a departed member
 and a separate currently-full variant, because a departed member cannot occupy a live seat.
+Group 41 covers imported histories with and without recorded charges in Chinese/English, at desktop
+and 390px widths, in light/dark themes. Text geometry assertions check ledger-note alignment,
+wrapping and bottom spacing without changing the table's edge-to-edge layout.
 
 ## Guidelines
 

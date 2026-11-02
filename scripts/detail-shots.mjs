@@ -21,8 +21,8 @@ for (let i = 0; i < args.length; i++) {
 }
 assert.ok(out, 'Usage: node scripts/detail-shots.mjs --out <directory> [--cases 4,15] [--keep]');
 assert.ok(
-  !selected || (selected.length && selected.every((n) => Number.isInteger(n) && n >= 1 && n <= 40)),
-  'Cases must be 1–40 (38 selects both amount variants)',
+  !selected || (selected.length && selected.every((n) => Number.isInteger(n) && n >= 1 && n <= 41)),
+  'Cases must be 1–41 (38 and 41 select both variants)',
 );
 out = resolve(out);
 await mkdir(out, { recursive: true });
@@ -335,9 +335,10 @@ async function browserRun(input) {
   let zoom = 1;
   let openedCase;
   let openedLanguage;
-  async function openCase(c, language, width, height) {
+  let openedTheme;
+  async function openCase(c, language, width, height, theme = 'light') {
     zoom = await resize(width, height);
-    if (openedCase === c.id && openedLanguage === language) {
+    if (openedCase === c.id && openedLanguage === language && openedTheme === theme) {
       await page.evaluate(() => {
         document.querySelector('.sheet').scrollTop = 0;
         ((s) => {
@@ -354,6 +355,12 @@ async function browserRun(input) {
       body: JSON.stringify({ language }),
     });
     if (!r.ok) throw new Error('Temporary locale change failed');
+    const prefs = await fetch('http://127.0.0.1:8790/api/prefs', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ theme }),
+    });
+    if (!prefs.ok) throw new Error('Temporary theme change failed');
     const proxy = c.case === 37;
     await page.goto(`http://127.0.0.1:5180/${proxy ? 'behalf' : 'list'}`);
     await page.waitForFunction(
@@ -377,6 +384,7 @@ async function browserRun(input) {
     await settle();
     openedCase = c.id;
     openedLanguage = language;
+    openedTheme = theme;
     await page.evaluate(() => {
       ((s) => {
         const b = s.querySelector('.sheet-body');
@@ -388,6 +396,20 @@ async function browserRun(input) {
     return page.evaluate(() => {
       const sheet = document.querySelector('.sheet:has(.dt)');
       const body = ((b) => (b && b.scrollHeight > b.clientHeight + 1 ? b : sheet))(sheet.querySelector('.sheet-body'));
+      // Real text geometry catches unpadded notes in the edge-to-edge ledger card.
+      for (const note of sheet.querySelectorAll('.dt-charges > .dt-import-note')) {
+        const card = note.parentElement.getBoundingClientRect();
+        const heading = note.parentElement.querySelector('h3').getBoundingClientRect();
+        const box = note.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(note);
+        const lines = [...range.getClientRects()].filter((r) => r.width && r.height);
+        const left = Math.min(...lines.map((r) => r.left));
+        const right = Math.max(...lines.map((r) => r.right));
+        const bottom = Math.max(...lines.map((r) => r.bottom));
+        if (Math.abs(left - heading.left) > 1 || right > card.right - (heading.left - card.left) + 1 || box.bottom - bottom < 12)
+          throw new Error('Ledger note must align with its heading, wrap inside the card and retain bottom spacing');
+      }
       const rect = (e) => {
         const r = e.getBoundingClientRect();
         return { x: r.x, y: r.y, width: r.width, height: r.height };
@@ -660,13 +682,23 @@ async function browserRun(input) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const r = { ...c, shots: [], verified: {} };
-        for (const [kind, language, width, height, full] of [
+        for (const [kind, language, width, height, full, theme] of [
           ['zh-desktop', 'zh-CN', 1440, 1800, true],
           ['zh-first', 'zh-CN', 1440, 900, false],
           ['zh-narrow', 'zh-CN', 390, 1800, true],
           ...([23, 34, 35, 39].includes(c.case) ? [['en-desktop', 'en', 1440, 1800, true]] : []),
+          ...(c.case === 41
+            ? [
+                ['en-desktop', 'en', 1440, 1800, true],
+                ['en-narrow', 'en', 390, 1800, true],
+                ['zh-desktop-dark', 'zh-CN', 1440, 1800, true, 'dark'],
+                ['zh-narrow-dark', 'zh-CN', 390, 1800, true, 'dark'],
+                ['en-desktop-dark', 'en', 1440, 1800, true, 'dark'],
+                ['en-narrow-dark', 'en', 390, 1800, true, 'dark'],
+              ]
+            : []),
         ]) {
-          await openCase(c, language, width, height);
+          await openCase(c, language, width, height, theme);
           const file = `${c.id}-${kind}.png`;
           r.shots.push({ kind, file, viewport: { width, height }, ...(await capture(file, full)) });
         }

@@ -782,6 +782,7 @@
 
 /* 扣款表 */
 .dt-panel.dt-charges {
+  --dt-charge-inset: 20px;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -789,7 +790,10 @@
   container: detail-charges / inline-size;
 }
 .dt-charges .dt-ph {
-  padding: 14px 20px 10px;
+  padding: 14px var(--dt-charge-inset) 10px;
+}
+.dt-charges > .dt-import-note {
+  padding: 0 var(--dt-charge-inset) 16px;
 }
 .dt-row {
   border-bottom: var(--hairline) solid var(--sep);
@@ -866,7 +870,10 @@
     padding: 14px 14px 16px;
   }
   .dt-charges .dt-ph {
-    padding: 12px 14px 8px;
+    padding: 12px var(--dt-charge-inset) 8px;
+  }
+  .dt-panel.dt-charges {
+    --dt-charge-inset: 14px;
   }
 }
 
@@ -1030,7 +1037,7 @@
 }
 /* 单列：各区块都是卡片（与上方指标卡一致）；扣款表、收付款表、合租成员表自带描边，放在卡片里时去掉外框，只留卡片一圈 */
 .dt-flow > .dt-charges .dt-ph {
-  padding: 14px 20px 10px;
+  padding: 14px var(--dt-charge-inset) 10px;
 }
 .dt-panel.dt-charges .ld-table,
 .dt-share .car-member-table {
