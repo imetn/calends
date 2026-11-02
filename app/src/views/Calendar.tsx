@@ -12,7 +12,6 @@ import {
   chargeServicePeriod,
   diffDays,
   isPostpaid,
-  parseDay,
   cycleLabel,
   currentPhase,
   effectiveStatus,
@@ -35,21 +34,12 @@ import { useMoneyPair } from '../components/MoneyPair.tsx';
 import { usePref } from '../prefs.ts';
 import { calendarJump } from './calendar-jump.ts';
 import { monthReport } from '../../../shared/scope-report.ts';
+import { monthGrid } from '../../../shared/calendar.ts';
 import { ScopeReport, SpendingDelta } from '../components/ScopeReport.tsx';
 import { StopText, stopDescription, stopLabel } from '../components/StopPanel.tsx';
 
 /** 表头的星期简称，按周起始日排好 */
 const dows = (weekStart: 0 | 1) => Array.from({ length: 7 }, (_, i) => weekdayShort((i + weekStart) % 7, true));
-
-/** weekStart：周起始日，设置里选的，缺省周一 */
-function monthGrid(month: string, weekStart: 0 | 1) {
-  const first = month + '-01';
-  const dow = (new Date(parseDay(first)).getUTCDay() + 7 - weekStart) % 7;
-  const start = addDays(first, -dow);
-  const last = addDays(addMonths(first, 1), -1);
-  const cells = Math.ceil((dow + Number(last.slice(8))) / 7) * 7;
-  return Array.from({ length: cells }, (_, i) => addDays(start, i));
-}
 
 export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; today: string; onOpen: (s: Subscription) => void; onIcs: () => void }) {
   // 大字 / 小字金额跟随显示货币设置

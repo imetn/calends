@@ -348,3 +348,18 @@ test('新指标卡默认选页面上没有的数据：同一个数不放两遍',
   const rows = newMetricItem(items, 'rows');
   assert.equal(new Set(rows.metric!.items).size, 3);
 });
+
+test('日历和订阅年表：默认不上页面；放上去时下发名称、扣款历史和已退订，备注仍不下发', () => {
+  for (const [id, min, h] of [['calendar', 5, 12], ['years', 6, 10]] as const) {
+    const def = PUBLIC_GRID_SECTIONS.find((s) => s.id === id)!;
+    assert.deepEqual([def.min, def.h, def.off], [min, h, true]);
+    assert.ok(!publicParts().has(id));
+    const state = ledger({ sections: [...PUBLIC_GRID_SECTIONS.map((s) => ({ id: s.id, hidden: s.id !== id })), { id: 'footer', hidden: true }, { id: 'pile', hidden: true }] });
+    state.subscriptions[0].notes = 'Fiction note';
+    const masked = maskForPublic(state);
+    assert.deepEqual(masked.subscriptions.map((s) => s.name), ['Fiction Music', 'Fiction Ended', 'Fiction Forever']);
+    assert.equal(masked.subscriptions[0].payments?.length, 1);
+    assert.equal(masked.subscriptions[0].priceHistory?.length, 2);
+    assert.ok(!JSON.stringify(masked).includes('Fiction note'));
+  }
+});

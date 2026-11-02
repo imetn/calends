@@ -25,6 +25,7 @@ import * as periodGrid from './period-grid.ts';
 import * as assistantFields from '../app/src/views/assistant-fields.ts';
 import { detailForecast, detailHistoryEnd } from '../app/src/views/detail-data.ts';
 import { calendarJump } from '../app/src/views/calendar-jump.ts';
+import { monthGrid } from './calendar.ts';
 import { PERSON_COLORS, DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 
 // Execute component event handlers in the existing JSX harness, retaining pure financial builders.
@@ -142,6 +143,7 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     useEffect: (fn: () => unknown) => fn(),
     useLayoutEffect: (fn: () => unknown) => fn(),
     calendarJump,
+    monthGrid,
     location: { search: '', pathname: '/calendar' },
     history: { state: null, replaceState() {} },
     useState(initial: unknown) {

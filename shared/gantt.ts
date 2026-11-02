@@ -1,5 +1,5 @@
 import { DAYS_PER_MONTH } from './billing.ts';
-import { addDays, addMonths, chargeServicePeriod, chargesBetween, cycleDays, diffDays, parseDay } from './billing.ts';
+import { addDays, addMonths, chargeServicePeriod, chargesBetween, coveredUntil, cycleDays, diffDays, effectiveStatus, isStopped, parseDay, phaseLanes, phaseSubs } from './billing.ts';
 import type { Subscription } from './types.ts';
 import { dateFormat } from './intl.ts';
 
@@ -120,4 +120,48 @@ export function ganttTicks(zoom: GanttZoom, start: string, end: string, width: n
     if (fits) labelEnd = labelX + labelWidth / 2;
     return { d, major, label: fits ? text : '', labelX };
   });
+}
+
+export interface YearsBar {
+  v: Subscription;
+  from: string;
+  to: string;
+  /** 还在继续，画到今天 */
+  ongoing: boolean;
+  lane: number;
+}
+export interface YearsRow {
+  s: Subscription;
+  bars: YearsBar[];
+  gaps: Array<{ from: string; to: string }>;
+  lanes: number;
+}
+
+/** 公开页订阅年表：只画到今天，还没开始的阶段不画；从最早一年的 1 月起，保证至少有一个年份刻度 */
+export function yearsTimeline(subs: Subscription[], today: string): { rows: YearsRow[]; start: string; end: string; ongoing: boolean } {
+  const rows = subs.flatMap((s): YearsRow[] => {
+    const parts = phaseSubs(s)
+      .filter((v) => v.start <= today)
+      .map((v) => {
+        const paused = v.status === 'paused' ? v.pausedAt : undefined;
+        const stops = [v.end, v.stop?.date, paused].filter((d): d is string => !!d && d <= today).sort();
+        const to = stops[0] && stops[0] > v.start ? stops[0] : stops[0] ? v.start : today;
+        // 买断没有结束日时只是一个购买点
+        const point = v.cycle.unit === 'lifetime' && !stops[0];
+        return { v, from: v.start, to: point ? v.start : to, ongoing: !point && !stops[0] && !isStopped(effectiveStatus(v, today)) };
+      });
+    if (!parts.length) return [];
+    const spans = parts.map((p) => ({ start: p.from, end: p.ongoing ? undefined : p.to }));
+    const lanes = phaseLanes(spans);
+    const gaps = parts.slice(1).flatMap((p, i) => {
+      const until = coveredUntil(spans, i + 1);
+      return until && until < p.from ? [{ from: until, to: p.from }] : [];
+    });
+    return [{ s, bars: parts.map((p, i) => ({ ...p, lane: lanes[i] })), gaps, lanes: Math.max(...lanes) + 1 }];
+  });
+  rows.sort((a, b) => a.bars[0].from.localeCompare(b.bars[0].from) || a.s.name.localeCompare(b.s.name));
+  const earliest = rows.reduce((m, r) => (r.bars[0].from < m ? r.bars[0].from : m), today);
+  const latest = rows.reduce((m, r) => r.bars.reduce((n, b) => (b.to > n ? b.to : n), m), earliest);
+  const ongoing = rows.some((r) => r.bars.some((b) => b.ongoing));
+  return { rows, ongoing, ...ganttWindow('all', today, `${earliest.slice(0, 4)}-01-01`, latest, ongoing) };
 }
