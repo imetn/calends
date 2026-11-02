@@ -1,12 +1,10 @@
 import { CopyImageButton } from '../components/CopyImageButton.tsx';
 import { isStopped } from '../../../shared/billing.ts';
-import { StopPanel } from '../components/StopPanel.tsx';
 import { createPortal } from 'react-dom';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ExternalLink, CircleStop, Pause, Pencil, Play, Plus, Settings2, Share } from 'lucide-react';
+import { Pause, Pencil, Play, Plus, Settings2, Share } from 'lucide-react';
 import { chargesBetween, currentPhase, cycleLabel, effectiveStatus, isPostpaid, nextCharge, phaseSubs, priceAt, type Charge } from '../../../shared/billing.ts';
-import { cnDateFull } from '../../../shared/format.ts';
 import type { AppState, Payment, ShareMember, Subscription } from '../../../shared/types.ts';
 import { CarSheet } from './carpool/CarSheet.tsx';
 import { carLedger } from '../../../shared/carpool.ts';
@@ -14,7 +12,6 @@ import { MemberSheet } from './Members.tsx';
 import { PaymentSheet } from './PaymentSheet.tsx';
 import { IconButton } from '../components/ui.tsx';
 import { CatChip, RegionTag, subRegion, SubIcon } from '../components/marks.tsx';
-import { Sheet } from '../components/overlays.tsx';
 import { run } from '../toast.ts';
 import { saveSub } from '../store.ts';
 import { snapshot } from '../snapshot.ts';
@@ -96,7 +93,6 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   const cur = currentPhase(sub, today);
   const history = chargesBetween(sub, sub.start, today, today);
   const [pay, setPay] = useState<{ pay?: Payment; index?: number; phase?: string } | null>(null);
-  const [stopping, setStopping] = useState(false);
   const [share, setShare] = useState(false);
   // 合租弹窗：从详情的合租区点进去，看收了多少、付了多少；成员资料再叠一层
   const [car, setCar] = useState(false);
@@ -166,9 +162,6 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
           }
         />
       )}
-      {sub.cycle.unit !== 'lifetime' && !isStopped(st) && (
-        <Act icon={<CircleStop size={15} />} label={t('core.stop.title')} onClick={() => setStopping(true)} />
-      )}
       {sub.stop?.kind === 'cancel' && (
         <Act icon={<Play size={15} />} label={t('core.stop.restore')} onClick={() => run(() => saveSub(reactivate(sub, today)), t('detail.toast.resumed'))} />
       )}
@@ -179,7 +172,6 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   );
   const utilityActions = (
     <>
-      {sub.url && <Act icon={<ExternalLink size={15} />} label={t('detail.action.website')} href={sub.url} round />}
       <CopyImageButton render={() => detailImage(root.current!)} />
       <Act icon={<Share size={15} />} label={t('detail.action.share')} onClick={() => setShare(true)} round />
     </>
@@ -260,25 +252,6 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
       </div>
 
       {/* 挂到 body：详情本身在弹层里，嵌套的弹层放在里面会被裁切 */}
-      {stopping &&
-        createPortal(
-          <Sheet title={t('core.stop.title')} narrow onClose={() => setStopping(false)}>
-            <StopPanel
-              sub={sub}
-              today={today}
-              onApply={(next) =>
-                run(
-                  async () => {
-                    await saveSub(next);
-                    setStopping(false);
-                  },
-                  next.stop ? t('core.stop.stoppedDone') : next.end ? t('core.stop.nonrenewDone', { date: cnDateFull(next.end) }) : t('detail.toast.resumed'),
-                )
-              }
-            />
-          </Sheet>,
-          document.body,
-        )}
       {share && createPortal(<SubShare sub={sub} state={state} today={today} onClose={() => setShare(false)} />, document.body)}
       {car &&
         sub.share?.role === 'owner' &&

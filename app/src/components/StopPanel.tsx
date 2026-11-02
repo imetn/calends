@@ -85,7 +85,7 @@ export function StopBadge({ sub, today }: { sub: Subscription; today: string }) 
   ) : null;
 }
 
-/** Standalone detail action: fields plus an explicit confirmation. */
+/** Standalone proxy action: fields plus an explicit confirmation. */
 export function StopPanel({ sub, today, onApply }: { sub: Subscription; today: string; onApply: (s: Subscription) => unknown }) {
   const [form, setForm] = useState(() => stopForm(sub, today, getState()));
   const ended = isStopped(effectiveStatus(sub, today));

@@ -701,3 +701,17 @@ test('narrow unused service keeps a full 22px display segment behind the termina
     false,
   );
 });
+
+test('订阅详情表头不放官网和停用：停用只走编辑表单，停用后仍可恢复', () => {
+  const detail = readFileSync(new URL('../app/src/views/Detail.tsx', import.meta.url), 'utf8');
+  for (const removed of ['StopPanel', 'CircleStop', 'ExternalLink', 'setStopping', 'detail.action.website', 'core.stop.title']) {
+    assert.equal(detail.includes(removed), false, removed);
+  }
+  assert.equal(detail.includes('sub.url'), false);
+  assert.ok(detail.includes("t('core.stop.restore')"));
+  assert.ok(detail.includes("t('detail.action.edit')"));
+  const editor = readUiSource(new URL('../app/src/views/editor/Sections.tsx', import.meta.url));
+  assert.ok(editor.includes('<StopFields'));
+  // 退款结算币种默认值取自账本设置，编辑器和停用弹窗要一致
+  assert.ok(editor.includes('stopForm(syncPhase(f, today), today, state)'));
+});

@@ -173,7 +173,7 @@ export function BillingFields({ context }: { context: ReturnType<typeof useEdito
 }
 
 export function StatusFields({ context }: { context: ReturnType<typeof useEditorFields> }) {
-  const { stop, setStop, f, up, today } = context;
+  const { stop, setStop, f, up, state, today } = context;
   return (
     <Group title={t('editor.group.status')}>
       <div className="cell">
@@ -182,7 +182,7 @@ export function StatusFields({ context }: { context: ReturnType<typeof useEditor
           disabledKeys={f.stop?.kind === 'terminate' || f.status === 'terminated' ? ['active', 'trial', 'paused'] : undefined}
           onChange={(v) => {
             if (v === 'stop') {
-              setStop(stopForm(syncPhase(f, today), today));
+              setStop(stopForm(syncPhase(f, today), today, state));
             } else {
               const next = reactivate(f, today);
               up({ ...next, status: v as SubStatus, pausedAt: v === 'paused' ? (f.pausedAt ?? today) : undefined });
