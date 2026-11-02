@@ -73,7 +73,6 @@ export function Sheet(props: {
     <ModalOverlay className={`scrim${covered ? ' covered' : ''}`} isOpen isDismissable onOpenChange={(o) => !o && props.onClose()}>
       <Modal className={`sheet ${props.narrow ? 'narrow' : ''} ${props.bare ? 'bare' : ''}`}>
         <Dialog ref={dialog} className="sheet-dlg" aria-label={props.bare ? props.label : undefined}>
-          <div className="grabber" />
           {props.header !== undefined ? (
             props.header
           ) : (

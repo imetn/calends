@@ -420,7 +420,7 @@ test('mobile sheets fit the visible viewport so the header and close button stay
   const css = readFileSync(new URL('styles.css', root), 'utf8');
   const start = css.search(/\.scrim \{\s*align-items: flex-end;/);
   assert.ok(start > 0);
-  const block = css.slice(start, css.indexOf('.grabber', start));
+  const block = css.slice(start, css.indexOf('animation: none;', start));
   // iOS 的 vh 按工具栏收起后的大视口计算；最后生效的 max-height 必须基于 dvh
   const heights = [...block.matchAll(/max-height:\s*([^;]+);/g)].map((m) => m[1]);
   assert.match(heights.at(-1) ?? '', /dvh/);

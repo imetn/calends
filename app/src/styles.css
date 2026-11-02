@@ -1612,9 +1612,6 @@ a {
 .sheet-foot .grow {
   flex: 1;
 }
-.grabber {
-  display: none;
-}
 @media (max-width: 680px) {
   .scrim {
     align-items: flex-end;
@@ -1629,17 +1626,6 @@ a {
     max-height: calc(100dvh - var(--safe-t) - 16px);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     animation: none;
-  }
-  .grabber {
-    display: block;
-    position: sticky;
-    top: 0;
-    z-index: 6;
-    width: 36px;
-    height: 5px;
-    border-radius: var(--radius-sm);
-    background: var(--label-3);
-    margin: 6px auto -11px;
   }
 }
 
