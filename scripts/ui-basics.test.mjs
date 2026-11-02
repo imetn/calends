@@ -648,8 +648,19 @@ test('copy separates facts into elements and preserves punctuation in user names
   assert.match(markup, /<span class="copy-parts"><span>Orbit · Family<\/span><span>\$12\/month<\/span><span>Next charge Oct 28<\/span><\/span>/);
   assert.equal(copyParts(0), 0);
   assert.equal(copyParts(null), null);
-  // Leading/trailing boundaries still need spacing when a conditional fact follows existing text.
-  assert.match(renderToStaticMarkup(copyParts('\nNext charge Oct 28')), /<span><\/span><span>Next charge Oct 28<\/span>/);
+  // Leading/trailing boundaries still need spacing when a conditional fact follows existing text, but the gap
+  // stays outside the wrapping group: a wrapped 「下次 12月1日」 starts flush, never with an empty indented item.
+  assert.equal(
+    renderToStaticMarkup(copyParts('\nNext charge Oct 28')),
+    '<span class="copy-gap" aria-hidden="true"></span><span class="copy-parts"><span>Next charge Oct 28</span></span>',
+  );
+  assert.equal(renderToStaticMarkup(copyParts('\n')), '<span class="copy-gap" aria-hidden="true"></span>');
+  // A leading word space survives (「4 发起」 like 「0 加入」); the trailing newline still separates the next fact.
+  assert.equal(
+    renderToStaticMarkup(copyParts(' 发起\n')),
+    ' <span class="copy-parts"><span>发起</span></span><span class="copy-gap" aria-hidden="true"></span>',
+  );
+  assert.doesNotMatch(renderToStaticMarkup(copyParts('a\n\nb')), /<span><\/span>/);
 });
 
 test('UI copy and locale templates never introduce middle-dot separators', async () => {

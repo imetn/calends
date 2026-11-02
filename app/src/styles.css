@@ -8758,19 +8758,22 @@ a.car-toggle {
 .car-sub {
   font-size: var(--fs-1);
 }
+/* 「空 N 位」与「已满」同一种胶囊、同一基线；满车用绿色更醒目 */
 .car-seats {
+  display: inline-flex;
   flex-shrink: 0;
   align-self: flex-start;
-  font-size: var(--fs-1);
-  color: var(--label-2);
-}
-/* 满车是明确的状态：绿色胶囊，比「空 N 位」更醒目 */
-.car-seats.full {
-  display: inline-flex;
   align-items: center;
   height: 24px;
   padding: 0 10px;
   border-radius: var(--radius-pill);
+  background: var(--fill-2);
+  color: var(--label-2);
+  font-size: var(--fs-1);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.car-seats.full {
   background: var(--green-3);
   color: var(--green-11);
   font-weight: 600;
