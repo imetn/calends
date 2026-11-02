@@ -1402,6 +1402,15 @@ test('phone report years stay at the left edge when touch exposes the copy actio
   assert.match(phone[2], /margin-right:\s*auto/);
 });
 
+// 某个 @media 块里某选择器的规则体（同一媒体条件可能出现多次，全部合并）
+const mediaRule = (css, media, selector) =>
+  cssRules(css)
+    .filter(([sel]) => sel === media)
+    .flatMap(([, body]) => cssRules(body))
+    .filter(([sel]) => sel.split(',').some((s) => s.trim() === selector))
+    .map(([, body]) => body)
+    .join('\n');
+
 test('展示的订阅：胶囊里的移除按钮不画自己的描边，贴在胶囊右端', () => {
   const css = readFileSync(new URL('views/public-subs.css', root), 'utf8');
   const rule = (sel) => cssRules(css).find(([s]) => s.trim() === sel)?.[1] ?? '';
@@ -1437,4 +1446,13 @@ test('修改密码：「至少 8 位」只出现在下方说明里，输入框�
     assert.equal(sec.minLength, undefined, loc);
     assert.match(sec.passwordFoot, /8/, loc);
   }
+});
+
+test('手机上分组标题旁的文字操作保留点按区，但标题行与普通分组标题同高', () => {
+  const css = readFileSync(new URL('styles.css', root), 'utf8');
+  assert.match(rulesFor('.group-title.with-action > .btn.plain'), /height:\s*auto/);
+  assert.match(
+    mediaRule(css, '@media (max-width: 860px)', '.group-title.with-action > .btn.plain'),
+    /margin-block:\s*calc\(\(1lh - var\(--ctl-h-md\)\) \/ 2\)/,
+  );
 });

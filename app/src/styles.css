@@ -9508,6 +9508,12 @@ img.mm-flag {
     min-height: var(--ctl-h-md);
   }
 }
+/* 分组标题旁的文字操作保留 40px 点按区，但上下用负外边距收回，标题行与普通分组标题一样高 */
+@media (max-width: 860px) {
+  .group-title.with-action > .btn.plain {
+    margin-block: calc((1lh - var(--ctl-h-md)) / 2);
+  }
+}
 
 /* 表单单元格里的输入框是无边框行内样式，聚焦靠光标即可，不再套深色粗框；
    搜索框用浅色主题描边提示焦点 */
