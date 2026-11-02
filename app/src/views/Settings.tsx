@@ -483,7 +483,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
 
         <Group title={t('settings.fx.title')}>
           <Cell
-            label={t('settings.fx.current')}
+            label={<span style={{ color: 'var(--accent)' }}>{t('settings.fx.current')}</span>}
             sub={t('settings.fx.updatedAt', { time: localTime(state.fx.fetchedAt, state.settings.timezone) })}
             onClick={() => run(refreshFx, t('settings.fx.updated'))}
           >
