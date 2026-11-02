@@ -1542,3 +1542,11 @@ test('同一天合成的用量柱点开最后一条读数', () => {
   const src = readFileSync(new URL('views/detail/Meters.tsx', root), 'utf8');
   assert.match(src, /new Set\(idx\.map\(\(i\) => barDate\(trend\[i\]\)\)\)\.size === 1/);
 });
+
+test('时间线提示与柱图、说明提示同一套白底卡片，不再是深色块', () => {
+  const css = readFileSync(new URL('components/timeline.css', root), 'utf8');
+  const rule = css.match(/\.tl-tip \{[^}]*\}/)?.[0] ?? '';
+  assert.match(rule, /background: var\(--card\)/);
+  assert.match(rule, /box-shadow: var\(--shadow-lg\)/);
+  assert.doesNotMatch(rule, /background: var\(--label\)/);
+});

@@ -214,20 +214,22 @@
   height: 16px !important;
 }
 
-/* 按日聚合的提示：挂在 body 上，不被时间线的滚动层裁掉；配色与图标提示一致 */
+/* 时间线提示：挂在 body 上，不被时间线的滚动层裁掉；外观与柱图、说明提示同一套白底卡片（.tip / .tip-table） */
 .tl-tip {
   position: fixed;
   z-index: 1000;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 16px;
+  row-gap: 2px;
   max-width: min(320px, calc(100vw - 16px));
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  background: var(--label, var(--foreground));
-  color: var(--card);
+  padding: 8px 11px;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--label);
+  box-shadow: var(--shadow-lg);
   font-size: var(--fs-1);
-  line-height: 1.3;
+  line-height: 1.5;
   pointer-events: none;
 }
 .tl-tip.pinned {
@@ -242,19 +244,19 @@
 }
 .tl-tip-head {
   margin-bottom: 4px;
-  padding-bottom: 4px;
-  border-bottom: var(--hairline) solid color-mix(in srgb, var(--card) 30%, transparent);
+  padding-bottom: 6px;
+  border-bottom: var(--hairline) solid var(--sep);
 }
 .tl-tip-head b {
   font-weight: 600;
+}
+.tl-tip-row > :first-child {
+  color: var(--label-2);
 }
 .tl-tip .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-.tl-tip-row {
-  padding: 1px 0;
 }
 button.tl-tip-row {
   margin: 0 -4px;
@@ -270,5 +272,5 @@ button.tl-tip-row {
 button.tl-tip-row:hover,
 button.tl-tip-row:focus-visible {
   outline: none;
-  background: color-mix(in srgb, var(--card) 16%, transparent);
+  background: var(--fill);
 }
