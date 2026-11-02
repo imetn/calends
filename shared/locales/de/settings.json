@@ -53,7 +53,8 @@
     "channelError": "{channel}: {error}",
     "errorSep": "; ",
     "testSent": "Test-Erinnerung gesendet",
-    "preview": "Heutige Erinnerungen ansehen"
+    "preview": "Heutige Erinnerungen ansehen",
+    "log": "Sendeprotokoll"
   },
   "today": {
     "recent": "Zuletzt gesendet",

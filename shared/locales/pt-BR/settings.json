@@ -50,7 +50,8 @@
     "channelError": "{channel}: {error}",
     "errorSep": "; ",
     "testSent": "Lembrete de teste enviado",
-    "preview": "Ver os lembretes de hoje"
+    "preview": "Ver os lembretes de hoje",
+    "log": "Registro de envios"
   },
   "today": {
     "recent": "Envios recentes",

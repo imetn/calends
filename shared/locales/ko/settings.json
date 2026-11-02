@@ -52,7 +52,8 @@
     "channelError": "{channel}: {error}",
     "errorSep": "; ",
     "testSent": "테스트 알림을 보냈습니다",
-    "preview": "오늘의 알림 미리 보기"
+    "preview": "오늘의 알림 미리 보기",
+    "log": "전송 기록"
   },
   "today": {
     "recent": "최근 전송",

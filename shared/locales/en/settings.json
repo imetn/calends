@@ -50,7 +50,8 @@
     "channelError": "{channel}: {error}",
     "errorSep": "; ",
     "testSent": "Test reminder sent",
-    "preview": "Preview today's reminders"
+    "preview": "Preview today's reminders",
+    "log": "Send log"
   },
   "today": {
     "recent": "Recently sent",

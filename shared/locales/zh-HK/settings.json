@@ -50,7 +50,8 @@
     "channelError": "{channel}：{error}",
     "errorSep": "；",
     "testSent": "測試提醒已送出",
-    "preview": "預覽今天的提醒"
+    "preview": "預覽今天的提醒",
+    "log": "發送記錄"
   },
   "today": {
     "recent": "最近發送",

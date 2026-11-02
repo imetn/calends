@@ -1125,6 +1125,13 @@ test('扣款太密汇总成一根时，平均线是一条平线，不把每笔�
   assert.equal(yOf(whole.map((b, i) => (i < 60 ? { ...b, v: Number.NaN } : b))), yOf(whole));
 });
 
+test('发送记录只在二级面板出现，不占设置页', () => {
+  const source = readFileSync(new URL('../app/src/views/Settings.tsx', import.meta.url), 'utf8');
+  const page = source.slice(source.indexOf('export function Settings('));
+  assert.equal(page.match(/<ReminderPreview /g)?.length, 1);
+  assert.ok(page.indexOf('<ReminderPreview ') > page.indexOf("<Sheet narrow title={t('settings.remind.log')}"));
+});
+
 test('公开页时间线的支出和退款使用同一收支格式，关闭符号后同时移除', () => {
   let load: (from: string, to: string) => any[];
   const captured = new Error('timeline captured');
