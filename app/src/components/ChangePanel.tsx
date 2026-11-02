@@ -122,10 +122,10 @@ export function ChangePanel({
     setPlanned(false);
     setKeep(false);
   };
-  /** 旧的默认用到哪天：切换日之后它的下一次扣款日（已付到那天），没有就一个月后 */
+  /** 旧的默认用到哪天：切换日之后它下一次扣款的前一天（已付到那天；结束日含当天，填扣款日会再扣一期），没有就用满一个月 */
   const paidThrough = (at: string) => {
     const last = phaseSubs(f).pop()!;
-    return nextCharge(last, addDays(at, 1)) ?? addMonths(at, 1);
+    return addDays(nextCharge(last, addDays(at, 2)) ?? addMonths(at, 1), -1);
   };
   const toggleKeep = (on: boolean) => {
     setKeep(on);

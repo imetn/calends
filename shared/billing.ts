@@ -263,6 +263,10 @@ function shapeIssues(s: Subscription): Array<[key: string, error: string]> {
       if (pay?.currency != null && pay.currency !== p.currency)
         add('payment.currency', [pay.date, pay.currency, p.currency], t('core.subError.paymentCurrency'));
   }
+  // 结束日含当天：等于下一段开始日会让两段在那天各扣一次，多半是把「到期日」当成了结束日；真要并行至少多出一天（switchPlan 的 keepUntil 同理）
+  const phases = (Array.isArray(s.phases) ? s.phases : []).filter((p) => p && isDay(p.start));
+  const starts = new Set(phases.map((p) => p.start));
+  for (const p of phases) if (p.end && p.end > p.start && starts.has(p.end)) add('end', [p.start, p.end], t('core.phase.endOnNextStart'));
   return out;
 }
 

@@ -62,7 +62,11 @@ const renewal = {
 const phaseFields = {
   ...renewal,
   start: { ...day, description: 'First service day of this phase, NOT an early payment date.' },
-  end: { ...day, description: 'Last service day, inclusive. Omit when continuing into the next phase or still held.' },
+  end: {
+    ...day,
+    description:
+      'Last service day, inclusive (the day before the renewal/expiry date). Never equal to the next phase start; omit when continuing into the next phase or still held.',
+  },
   billingStart: { ...day, description: 'Original recurring billing anchor when the service start was corrected.' },
   price: positive,
   currency: text,

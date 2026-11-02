@@ -49,6 +49,7 @@
     "priceOutOfRange": "调价日期不在任何阶段内",
     "keepTooEarly": "继续使用的截止日期要晚于生效日期",
     "endTooEarly": "结束日期要晚于这一阶段的开始日期",
+    "endOnNextStart": "结束日期是服务的最后一天，不能和下一阶段的开始日期相同；要接上下一阶段，请留空或填前一天",
     "startOrder": "开始日必须晚于上一段开始日、早于下一段开始日。",
     "priceDuplicate": "该日期已有价格记录",
     "priceInitial": "起始价不可删除"

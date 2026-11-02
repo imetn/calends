@@ -60,10 +60,11 @@
     "switchTooEarly": "Das Gültigkeitsdatum muss nach dem Beginn der aktuellen Phase liegen",
     "resumeTooEarly": "Das Fortsetzungsdatum darf nicht vor dem letzten Enddatum liegen",
     "prependTooLate": "Die frühere Phase muss vor dem Abo-Beginn starten",
-    "prependUntil": "Die frühere Phase muss nach ihrem Beginn und spätestens zum ursprünglichen Startdatum enden",
+    "prependUntil": "Die frühere Phase muss nach ihrem Beginn und vor dem ursprünglichen Startdatum enden",
     "priceOutOfRange": "Das Datum der Preisänderung liegt in keiner Phase",
     "keepTooEarly": "Das Weiterlaufen-bis-Datum muss nach dem Wechseldatum liegen",
     "endTooEarly": "Das Enddatum muss nach dem Beginn dieser Phase liegen",
+    "endOnNextStart": "Das Enddatum ist der letzte Leistungstag und darf nicht auf den Beginn der nächsten Phase fallen; zum nahtlosen Übergang leer lassen oder den Vortag wählen",
     "startOrder": "Der Beginn muss nach dem Beginn der vorherigen und vor dem der nächsten Phase liegen.",
     "priceDuplicate": "An diesem Datum gibt es bereits einen Preis",
     "priceInitial": "Der Anfangspreis kann nicht gelöscht werden"

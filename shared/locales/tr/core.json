@@ -60,10 +60,11 @@
     "switchTooEarly": "Geçerlilik tarihi mevcut dönemin başlangıcından sonra olmalı",
     "resumeTooEarly": "Devam tarihi son bitiş tarihinden önce olamaz",
     "prependTooLate": "Önceki dönem, aboneliğin başlangıcından önce başlamalı",
-    "prependUntil": "Önceki dönem başladıktan sonra ve en geç ilk başlangıç tarihinde bitmeli",
+    "prependUntil": "Önceki dönem başladıktan sonra ve ilk başlangıç tarihinden önce bitmeli",
     "priceOutOfRange": "Fiyat değişikliği tarihi hiçbir dönemin içinde değil",
     "keepTooEarly": "Devam etme tarihi geçiş tarihinden sonra olmalı",
     "endTooEarly": "Bitiş tarihi bu dönemin başlangıcından sonra olmalı",
+    "endOnNextStart": "Bitiş tarihi hizmetin son günüdür ve sonraki dönemin başlangıcıyla aynı olamaz; kesintisiz geçiş için boş bırakın ya da bir önceki günü seçin",
     "startOrder": "Başlangıç tarihi, önceki ve sonraki aşamaların başlangıç tarihleri arasında olmalıdır.",
     "priceDuplicate": "Bu tarihte zaten bir fiyat var",
     "priceInitial": "Başlangıç fiyatı silinemez"

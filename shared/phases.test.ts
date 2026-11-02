@@ -10,6 +10,7 @@ import {
   FALLBACK_FX,
   monthlyGross,
   monthlyMine,
+  newShapeError,
   nextCharge,
   phaseAt,
   phaseLanes,
@@ -23,6 +24,7 @@ import {
   changePrice,
   editPhase,
   editPricePoint,
+  movePhaseStart,
   removePricePoint,
   pricePoints,
   deletePayment,
@@ -31,6 +33,7 @@ import {
   removePhase,
   savePayment,
   setPhaseEnd,
+  stopSubscription,
   switchPlan,
   syncPhase,
   toEditForm,
@@ -450,4 +453,78 @@ test('change_plan 编辑整个价格历史：排序、最新价保持一致，�
     }),
   );
   assert.throws(() => editPhase(s, s.start, { priceHistory: [{ from: '2026-01-15', amount: 10 }] }));
+});
+
+test('上一段结束日等于下一段开始日：新写入拒绝，已存的旧记录仍可保存，真并行和无缝切换照常', () => {
+  // 线上 X：月付 10/13 起、结束日误写成 11/13，年付 11/13 起，结果 11/13 月付与年付各扣一次
+  const seamless = switchPlan(base({ start: '2026-10-13' }), '2026-11-13', { price: 300, currency: 'USD', cycle: { unit: 'year', every: 1 } });
+  const bad: Subscription = { ...seamless, phases: [{ ...seamless.phases![0], end: '2026-11-13' }, seamless.phases![1]] };
+  assert.deepEqual(dates(bad, '2026-11-13', '2026-11-13'), ['2026-11-13 USD', '2026-11-13 USD']);
+  assert.ok(newShapeError(seamless, bad));
+  assert.equal(newShapeError(bad, bad), undefined);
+  assert.equal(newShapeError(undefined, seamless), undefined);
+  assert.equal(newShapeError(undefined, overlap()), undefined);
+  assert.deepEqual(dates(seamless, '2026-11-13', '2026-11-13'), ['2026-11-13 USD']);
+  assert.throws(() => setPhaseEnd(seamless, '2026-10-13', '2026-11-13'));
+  assert.equal(setPhaseEnd(seamless, '2026-10-13', '2026-11-12').phases![0].end, '2026-11-12');
+});
+
+test('结束日不撞下一段开始日：并行时在切换日停用、开始日提前一天、补前段、隔段相撞', () => {
+  // 并行期间恰在新一段开始那天停用：较早那段截到前一天，存得进去
+  const ov = overlap();
+  const st = stopSubscription(ov, '2026-06-01', 'cancel', '2026-06-01');
+  assert.deepEqual(
+    st.phases!.map((p) => [p.start, p.end]),
+    [
+      ['2026-01-15', '2026-05-31'],
+      ['2026-06-01', '2026-06-01'],
+    ],
+  );
+  assert.equal(newShapeError(ov, st), undefined);
+  // 无缝切换后把新段开始日提前一天：上一段结束日跟着挪
+  const seamless = switchPlan(base(), '2026-03-01', TR);
+  const moved = movePhaseStart(seamless, '2026-03-01', '2026-02-28');
+  assert.equal(moved.phases![0].end, '2026-02-27');
+  assert.equal(newShapeError(seamless, moved), undefined);
+  // 补前段的 until 不能等于原第一段开始日
+  assert.throws(() => prependPlan(base(), '2025-06-01', TR, '2026-01-15'));
+  // 并行跨过中间一段、结束日恰好等于再下一段的开始日，同样拦下
+  const three: Subscription = {
+    ...seamless,
+    phases: [{ ...seamless.phases![0], end: '2026-05-01' }, seamless.phases![1], { ...seamless.phases![1], start: '2026-05-01' }],
+  };
+  assert.ok(newShapeError(seamless, three));
+});
+
+test('结束日不撞新开始日：更早的并行段同样往前收一天，暂停中排好的计划在停用日撤掉', () => {
+  const JP = { price: 1000, currency: 'JPY', cycle: { unit: 'month' as const, every: 1 }, region: 'JP' };
+  const ov = overlap();
+  const again = switchPlan(ov, '2026-08-15', JP);
+  assert.deepEqual(
+    again.phases!.map((p) => p.end),
+    ['2026-08-14', '2026-08-14', undefined],
+  );
+  assert.equal(newShapeError(ov, again), undefined);
+  const later = switchPlan(ov, '2026-09-01', JP);
+  const moved = movePhaseStart(later, '2026-09-01', '2026-08-15');
+  assert.equal(moved.phases![0].end, '2026-08-14');
+  assert.equal(newShapeError(later, moved), undefined);
+  const paused: Subscription = { ...switchPlan(base(), '2026-06-15', TR), status: 'paused', pausedAt: '2026-06-01' };
+  const st = stopSubscription(paused, '2026-06-20', 'cancel', '2026-06-15');
+  assert.deepEqual(
+    st.phases!.map((p) => [p.start, p.end]),
+    [['2026-01-15', '2026-06-15']],
+  );
+  assert.equal(newShapeError(paused, st), undefined);
+  // 那段已有付款时不悄悄删，留给校验拦下
+  const paid: Subscription = { ...paused, phases: [paused.phases![0], { ...paused.phases![1], payments: [{ date: '2026-06-15', amount: 100 }] }] };
+  const kept = stopSubscription(paid, '2026-06-20', 'cancel', '2026-06-15');
+  assert.deepEqual(kept.phases![1].payments, [{ date: '2026-06-15', amount: 100 }]);
+  assert.ok(newShapeError(paid, kept));
+  // 无缝衔接的新段提前多天，上一段一样收到前一天
+  const seamless = switchPlan(base(), '2026-03-20', TR);
+  assert.equal(movePhaseStart(seamless, '2026-03-20', '2026-03-10').phases![0].end, '2026-03-09');
+  // 存量坏数据（结束日已等于下一段开始日）在那天停用，较早那段同样截到前一天
+  const bad: Subscription = { ...seamless, phases: [{ ...seamless.phases![0], end: '2026-03-20' }, seamless.phases![1]] };
+  assert.equal(stopSubscription(bad, '2026-03-20', 'cancel', '2026-03-20').phases![0].end, '2026-03-19');
 });

@@ -55,10 +55,11 @@
     "switchTooEarly": "Tanggal berlaku harus setelah fase saat ini dimulai",
     "resumeTooEarly": "Tanggal lanjut tidak boleh sebelum tanggal berakhir terakhir",
     "prependTooLate": "Fase sebelumnya harus dimulai sebelum tanggal mulai langganan",
-    "prependUntil": "Fase sebelumnya harus berakhir setelah dimulai dan paling lambat pada tanggal mulai semula",
+    "prependUntil": "Fase sebelumnya harus berakhir setelah dimulai dan sebelum tanggal mulai semula",
     "priceOutOfRange": "Tanggal perubahan harga tidak berada di fase mana pun",
     "keepTooEarly": "Tanggal tetap berjalan harus setelah tanggal peralihan",
     "endTooEarly": "Tanggal berakhir harus setelah awal fase ini",
+    "endOnNextStart": "Tanggal berakhir adalah hari layanan terakhir dan tidak boleh sama dengan awal fase berikutnya; kosongkan atau pakai sehari sebelumnya untuk melanjutkan",
     "startOrder": "Tanggal mulai harus berada di antara tanggal mulai tahap sebelumnya dan berikutnya.",
     "priceDuplicate": "Harga sudah ada pada tanggal ini",
     "priceInitial": "Harga awal tidak dapat dihapus"

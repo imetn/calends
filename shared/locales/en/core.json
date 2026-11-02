@@ -60,10 +60,11 @@
     "switchTooEarly": "The effective date must be after the current phase starts",
     "resumeTooEarly": "The resume date can't be earlier than the last end date",
     "prependTooLate": "The earlier phase must start before the subscription's start date",
-    "prependUntil": "The earlier phase must end after it starts and no later than the original start date",
+    "prependUntil": "The earlier phase must end after it starts and before the original start date",
     "priceOutOfRange": "The price change date isn't within any phase",
     "keepTooEarly": "The keep-until date must be after the switch date",
     "endTooEarly": "The end date must be after this phase's start date",
+    "endOnNextStart": "The end date is the last day of service and can't be the next phase's start date; leave it empty or use the day before to continue into the next phase",
     "startOrder": "Phase starts must stay strictly between the adjacent phase starts.",
     "priceDuplicate": "A price point already exists on this date",
     "priceInitial": "The initial price cannot be deleted"

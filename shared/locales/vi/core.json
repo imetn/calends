@@ -55,10 +55,11 @@
     "switchTooEarly": "Ngày hiệu lực phải sau ngày bắt đầu giai đoạn hiện tại",
     "resumeTooEarly": "Ngày tiếp tục không được sớm hơn ngày kết thúc gần nhất",
     "prependTooLate": "Giai đoạn trước phải bắt đầu trước ngày bắt đầu gói",
-    "prependUntil": "Giai đoạn trước phải kết thúc sau khi bắt đầu và không muộn hơn ngày bắt đầu ban đầu",
+    "prependUntil": "Giai đoạn trước phải kết thúc sau khi bắt đầu và trước ngày bắt đầu ban đầu",
     "priceOutOfRange": "Ngày đổi giá không thuộc giai đoạn nào",
     "keepTooEarly": "Ngày tiếp tục dùng đến phải sau ngày chuyển",
     "endTooEarly": "Ngày kết thúc phải sau ngày bắt đầu của giai đoạn này",
+    "endOnNextStart": "Ngày kết thúc là ngày dịch vụ cuối cùng, không được trùng ngày bắt đầu của giai đoạn tiếp theo; để trống hoặc chọn ngày trước đó để nối tiếp",
     "startOrder": "Ngày bắt đầu phải nằm giữa ngày bắt đầu của hai giai đoạn liền kề.",
     "priceDuplicate": "Đã có giá vào ngày này",
     "priceInitial": "Không thể xóa giá ban đầu"

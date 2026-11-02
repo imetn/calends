@@ -1550,3 +1550,8 @@ test('时间线提示与柱图、说明提示同一套白底卡片，不再是�
   assert.match(rule, /box-shadow: var\(--shadow-lg\)/);
   assert.doesNotMatch(rule, /background: var\(--label\)/);
 });
+
+test('换方案时旧方案默认用到下一次扣款的前一天，不在扣款日再多扣一期', () => {
+  const src = readFileSync(new URL('components/ChangePanel.tsx', root), 'utf8');
+  assert.match(src, /addDays\(nextCharge\(last, addDays\(at, 2\)\) \?\? addMonths\(at, 1\), -1\)/);
+});

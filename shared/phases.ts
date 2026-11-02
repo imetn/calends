@@ -120,6 +120,15 @@ function endOf(phases: Phase[]): string | undefined {
   return phases.reduce((m, p) => (p.end && p.end > m ? p.end : m), last.end);
 }
 
+/** 结束日含当天：更早的阶段结束日恰好落在 day（另一段的开始日）会让两段那天各扣一次，往前收一天；已停用的不能动，直接报错 */
+function endBefore(phases: Phase[], day: string, skip?: Phase) {
+  phases.forEach((p, i) => {
+    if (p === skip || p.start >= day || p.end !== day) return;
+    if (p.stop) throw new Error(t('core.phase.endOnNextStart'));
+    phases[i] = { ...p, end: addDays(day, -1) };
+  });
+}
+
 /**
  * 从 at 起换区或换套餐：上一阶段默认在 at 前一天结束，新阶段无缝衔接；
  * 给了 keepUntil 时上一阶段继续跑到那天（比如旧区域已预付到月底），两段并行、两边都照常计费
@@ -131,6 +140,7 @@ export function switchPlan(s: Subscription, at: string, next: PlanChange, keepUn
   if (keepUntil && keepUntil <= at) throw new Error(t('core.phase.keepTooEarly'));
   if (last.stop && at <= last.stop.date) throw new Error(t('core.phase.resumeTooEarly'));
   if (!last.stop) last.end = keepUntil ?? addDays(at, -1);
+  endBefore(phases, at, last);
   phases.push({ start: at, ...next });
   return { ...mirror(s, phases), status: 'active', pausedAt: undefined };
 }
@@ -143,7 +153,7 @@ export function prependPlan(s: Subscription, at: string, prev: PlanChange, until
   const phases = phasesOf(s);
   const first = phases[0];
   if (at >= first.start) throw new Error(t('core.phase.prependTooLate'));
-  if (until && (until <= at || until > first.start)) throw new Error(t('core.phase.prependUntil'));
+  if (until && (until <= at || until >= first.start)) throw new Error(t('core.phase.prependUntil'));
   phases.unshift({ start: at, end: until ?? addDays(first.start, -1), ...prev });
   return mirror({ ...s, start: at }, phases);
 }
@@ -327,6 +337,7 @@ export function setPhaseEnd(s: Subscription, start: string, end: string | undefi
   const phases = phasesOf(s);
   const p = phases.find((x) => x.start === start);
   if (!p) throw new Error(t('core.phase.priceOutOfRange'));
+  if (end && phases.some((x) => x.start === end)) throw new Error(t('core.phase.endOnNextStart'));
   p.end = end;
   return mirror(s, phases);
 }
@@ -347,6 +358,9 @@ export function movePhaseStart(s: Subscription, start: string, nextStart: string
   if ((i > 0 && nextStart <= phases[i - 1].start) || (phases[i + 1] && nextStart >= phases[i + 1].start)) throw new Error(t('core.phase.startOrder'));
   const end = phaseSubs(s).find((v) => v.start === start)?.end ?? p.end;
   if (end && nextStart >= end) throw new Error(t('core.phase.endTooEarly'));
+  // 提前开始时，原本无缝接上来的上一段跟着收到新开始日前一天，不留静默并行；往后挪保持原结束日（中间算断档）
+  if (nextStart < start) phases.forEach((x, j) => j < i && !x.stop && x.end === addDays(start, -1) && (phases[j] = { ...x, end: addDays(nextStart, -1) }));
+  endBefore(phases, nextStart, p);
   if (p.stop && nextStart > p.stop.date) throw new Error(t('mcp.error.stopBeforeStart'));
   const v = { ...s, phases: undefined, ...p };
   const hist = p.priceHistory ?? [];
@@ -528,9 +542,12 @@ export function stopSubscription(s: Subscription, today: string, kind: Stop['kin
   const stop: Stop = { kind, date: at, paidThrough: period.paidThrough, reason: kind === 'terminate' ? reason?.trim() || undefined : undefined };
   let next: Subscription;
   if (s.phases?.length) {
-    const phases = phasesOf(s).filter((p) => p.start <= at);
+    // 停用日才开始、又不是当前段的计划（比如暂停中排好的）从未生效，没有付款就撤掉，有付款留给校验报错，不悄悄删；
+    // 目标段恰在停用日开始时，并行的较早阶段截到前一天，免得两段那天各扣一次
+    const phases = phasesOf(s).filter((p) => p.start < at || p.start === current.start || p.payments?.length);
+    const cut = current.start === at ? addDays(at, -1) : at;
     for (const p of phases) {
-      if (!p.end || p.end > at) p.end = at;
+      if (!p.end || p.end > at || (p.end === at && p.start < at)) p.end = p.start < at ? cut : at;
     }
     const target = phases.find((p) => p.start === current.start)!;
     target.stop = stop;

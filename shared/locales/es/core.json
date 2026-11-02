@@ -60,10 +60,11 @@
     "switchTooEarly": "La fecha de entrada en vigor debe ser posterior al inicio de la fase actual",
     "resumeTooEarly": "La fecha de reanudación no puede ser anterior a la última fecha de fin",
     "prependTooLate": "La fase anterior debe empezar antes del inicio de la suscripción",
-    "prependUntil": "La fase anterior debe terminar después de empezar y como tarde en la fecha de inicio original",
+    "prependUntil": "La fase anterior debe terminar después de empezar y antes de la fecha de inicio original",
     "priceOutOfRange": "La fecha del cambio de precio no está dentro de ninguna fase",
     "keepTooEarly": "La fecha hasta la que se mantiene debe ser posterior a la del cambio",
     "endTooEarly": "La fecha de fin debe ser posterior al inicio de esta fase",
+    "endOnNextStart": "La fecha de fin es el último día de servicio y no puede coincidir con el inicio de la siguiente fase; déjala vacía o usa el día anterior para continuar",
     "startOrder": "El inicio debe ser posterior al de la fase anterior y anterior al de la siguiente.",
     "priceDuplicate": "Ya existe un precio en esta fecha",
     "priceInitial": "No se puede eliminar el precio inicial"

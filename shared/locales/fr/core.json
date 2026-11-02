@@ -60,10 +60,11 @@
     "switchTooEarly": "La date d’effet doit être postérieure au début de la phase actuelle",
     "resumeTooEarly": "La date de reprise ne peut pas précéder la dernière date de fin",
     "prependTooLate": "La phase antérieure doit commencer avant le début de l'abonnement",
-    "prependUntil": "La phase antérieure doit se terminer après son début et au plus tard à la date de début d'origine",
+    "prependUntil": "La phase antérieure doit se terminer après son début et avant la date de début d'origine",
     "priceOutOfRange": "La date du changement de prix ne se trouve dans aucune phase",
     "keepTooEarly": "La date de maintien doit être postérieure à la date du changement",
     "endTooEarly": "La date de fin doit être postérieure au début de cette phase",
+    "endOnNextStart": "La date de fin est le dernier jour de service et ne peut pas tomber le jour où commence la phase suivante ; laissez-la vide ou choisissez la veille pour enchaîner",
     "startOrder": "Le début doit rester strictement entre les débuts des phases voisines.",
     "priceDuplicate": "Un prix existe déjà à cette date",
     "priceInitial": "Le prix initial ne peut pas être supprimé"
