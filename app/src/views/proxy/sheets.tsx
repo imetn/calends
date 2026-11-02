@@ -83,7 +83,7 @@ export function LedgerSheet({ state, s, onClose, onOpen }: { state: AppState; s:
           }
           actions={
             <span className="dt-header-tools" data-snapshot-hide>
-              {/* 不用绕回订阅详情：在这里直接停止代付，与订阅详情是同一个停止面板 */}
+              {/* 不用绕回订阅详情：在这里直接停止代付，复用共享的停止面板 */}
               {live.cycle.unit !== 'lifetime' && !stopped && <Act icon={<CircleStop size={15} />} label={t('proxy.stop')} onClick={() => setStopping(true)} />}
               <IconButton
                 aria-label={t(masked ? 'family.sheet.showPersonal' : 'family.sheet.hidePersonal')}
