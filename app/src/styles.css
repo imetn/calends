@@ -7146,10 +7146,10 @@ a.car-toggle {
   font-weight: 600;
 }
 .topup-rate em.up {
-  color: var(--orange);
+  color: var(--loss);
 }
 .topup-rate em.down {
-  color: var(--green);
+  color: var(--gain);
 }
 
 /* ---------------- 订阅编辑表单：单列，按「是什么 → 怎么付 → 状态 → 谁在用 → 更多」排 ---------------- */

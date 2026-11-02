@@ -327,7 +327,7 @@ export function CarSheet({
                     orig: (
                       <>
                         {flow(p.amount, p.currency)}
-                        {p.kind === 'refund' && <em className="dt-kind refund">{t('family.sheet.refund')}</em>}
+                        {p.kind === 'refund' && <em className="dt-kind">{t('family.sheet.refund')}</em>}
                       </>
                     ),
                     base: flow(v, base),

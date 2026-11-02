@@ -330,6 +330,9 @@
 .dt-outcome.bad .dt-ph h3 {
   color: var(--dt-bad);
 }
+.dt-outcome.bad.lossy .dt-ph h3 {
+  color: var(--loss);
+}
 .dt-oc-loss {
   margin: 2px 0 6px;
 }
