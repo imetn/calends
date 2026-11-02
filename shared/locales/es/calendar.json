@@ -17,7 +17,6 @@
   "charged": "Cobrado",
   "monthTotal": "Cargos de {month}",
   "count": "{count} cargos",
-  "pending": "Pendiente",
   "monthAll": "Todos los cobros de {month}",
   "noneMonth": "No hay cobros este mes",
   "day": "{day}",

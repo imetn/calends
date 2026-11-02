@@ -30,7 +30,7 @@
     "year": "{year}",
     "projected": "\nDự kiến",
     "inProgress": "\nĐang diễn ra",
-    "paid": "\nđã trả {amount}",
+    "paid": "\nđã trừ {amount}",
     "empty": "Không có khoản phí trong kỳ này"
   },
   "due": {

@@ -16,7 +16,6 @@
   "charged": "결제됨",
   "monthTotal": "{month} 결제",
   "count": "{count}건",
-  "pending": "예정",
   "monthAll": "{month}의 모든 결제",
   "noneMonth": "이번 달에는 결제가 없습니다",
   "day": "{day}일",

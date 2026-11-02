@@ -17,7 +17,6 @@
   "charged": "Abgebucht",
   "monthTotal": "Abbuchungen im {month}",
   "count": "{count} Abbuchungen",
-  "pending": "Ausstehend",
   "monthAll": "Alle Abbuchungen im {month}",
   "noneMonth": "Keine Abbuchungen in diesem Monat",
   "day": "{day}",

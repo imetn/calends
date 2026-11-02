@@ -8,7 +8,7 @@
   "yearTotal": "Этот год",
   "paidAmount": "Оплачено {amount}",
   "includedLoss": "В том числе невозмещённые потери",
-  "monthTotal": "Списания за месяц",
+  "monthTotal": "Чистые расходы за месяц",
   "previousMonth": "К предыдущему месяцу",
   "previousYear": "К тому же месяцу прошлого года",
   "paid": "Списано",

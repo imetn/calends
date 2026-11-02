@@ -51,11 +51,6 @@
     "new": "새로 만들기",
     "search": "검색",
     "upcoming": "예정된 결제",
-    "today": "오늘",
-    "tomorrow": "내일",
-    "inDays": {
-      "other": "{count}일 후"
-    },
     "theme": "테마",
     "themeHint": "클릭하여 전환: 라이트 → 다크 → 시스템"
   },

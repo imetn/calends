@@ -39,7 +39,7 @@
     "year": "{year}",
     "projected": "\nПрогноз",
     "inProgress": "\nВ процессе",
-    "paid": "\nоплачено {amount}",
+    "paid": "\nсписано {amount}",
     "empty": "За этот период списаний нет"
   },
   "due": {

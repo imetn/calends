@@ -8,7 +8,7 @@
   "yearTotal": "Este ano",
   "paidAmount": "Pago {amount}",
   "includedLoss": "Inclui perdas sem reembolso",
-  "monthTotal": "Cobranças do mês",
+  "monthTotal": "Gasto líquido do mês",
   "previousMonth": "Em relação ao mês anterior",
   "previousYear": "Em relação ao mesmo mês do ano passado",
   "paid": "Cobrado",

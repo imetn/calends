@@ -51,12 +51,6 @@
     "new": "Yeni",
     "search": "Ara",
     "upcoming": "Yaklaşanlar",
-    "today": "Bugün",
-    "tomorrow": "Yarın",
-    "inDays": {
-      "one": "{count} gün sonra",
-      "other": "{count} gün sonra"
-    },
     "theme": "Tema",
     "themeHint": "Değiştirmek için tıklayın: Açık → Koyu → Sistem"
   },

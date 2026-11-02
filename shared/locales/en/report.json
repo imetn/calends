@@ -33,7 +33,6 @@
     "label": "Full-year subscription spend",
     "tip": "Month {month}\nRunning total {total}",
     "tipNow": "Month {month}, Pending charges {pending}\nRunning total {total}",
-    "paid": "Paid",
     "avg": "Monthly avg",
     "peak": "Peak month",
     "peakAt": "Peak in {when}"

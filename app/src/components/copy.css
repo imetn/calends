@@ -12,10 +12,6 @@
   width: 0.65em;
 }
 
-.tl-icon.copy-tooltip::after {
-  white-space: pre-line;
-}
-
 /* Card exports (snapshot iframe): one column, names on one line, amounts never break. */
 .snapshot-more {
   margin: 6px 0 0;

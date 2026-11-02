@@ -1,6 +1,6 @@
 import { afterEach, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { currencyDecimals, monthTicks, moneyTick, symbol, flow, flowSign, money, relDays, setSignedAmounts } from './format.ts';
+import { currencyDecimals, monthTicks, moneyTick, symbol, flow, flowSign, money, nearDate, relDays, setSignedAmounts } from './format.ts';
 import { setLocale } from './i18n.ts';
 import { DEFAULT_SETTINGS } from './types.ts';
 
@@ -130,6 +130,19 @@ test('relative dates use days, then months, then years for long cycles', () => {
   // 两年付的下次扣款说「2 年后」，不说「24 个月后」
   assert.equal(relDays(730), 'in 2 years');
   assert.equal(relDays(-1461), '4 years ago');
+});
+
+test('upcoming dates share one near-day threshold, then fall back to a dated label with the year when needed', () => {
+  setLocale('zh-CN', []);
+  // 侧栏曾写「2 天后」、总览写「2天后」，阈值也不同（7 / 13 / 14 天）；现在统一
+  assert.equal(nearDate('2026-11-02', '2026-11-02'), '今天');
+  assert.equal(nearDate('2026-11-04', '2026-11-02'), relDays(2));
+  assert.equal(nearDate('2026-11-16', '2026-11-02'), relDays(14));
+  assert.equal(nearDate('2026-11-17', '2026-11-02'), '11月17日');
+  assert.equal(nearDate('2027-01-20', '2026-11-02'), '2027年1月20日');
+  // 跨年但在两周内仍说相对天数
+  assert.equal(nearDate('2027-01-03', '2026-12-28'), relDays(6));
+  setLocale('en', []);
 });
 
 const monthsFrom = (start: string, n: number) =>

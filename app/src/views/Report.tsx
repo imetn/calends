@@ -12,6 +12,7 @@ import { t } from '../../../shared/i18n.ts';
 import { tx } from '../i18n.ts';
 import {
   cashVsAccrual,
+  contributionOn,
   events,
   insights,
   monthEnd,
@@ -194,7 +195,7 @@ function Hero({ state, today, year }: { state: AppState; today: string; year: nu
           {/* 往年全已付、明年全待扣，这两格会与大数字重复，只在今年出现 */}
           {year === cur && (
             <>
-              <Metric label={t('report.hero.paid')} value={formatTotal(r.current.partial.paid, base, { direction: -1, compact: true, main: true })} />
+              <Metric label={t('scope.paid')} value={formatTotal(r.current.partial.paid, base, { direction: -1, compact: true, main: true })} />
               <Metric label={t('scope.pending')} value={formatTotal(r.current.partial.pending, base, { direction: -1, compact: true, main: true })} />
             </>
           )}
@@ -445,6 +446,9 @@ function Waterfall({ state, today, year, onOpen }: { state: AppState; today: str
   const month = addMonths(today.slice(0, 8) + '01', offset).slice(0, 7);
   const end = offset === 0 ? today : monthEnd(month);
   const mv = useMemo(() => monthMovement(state, end, offset !== 0), [state, month, end, offset]);
+  // 与 monthMovement 同一区间与汇率：上月最后一天 → 期末（往月按月末汇率）
+  const start = addDays(`${month}-01`, -1);
+  const endFx = offset !== 0 ? end : undefined;
   const steps = [
     { k: t('report.wf.from'), v: mv.from, kind: 'total' },
     { k: t('report.wf.added'), v: mv.added, kind: 'up' },
@@ -460,7 +464,6 @@ function Waterfall({ state, today, year, onOpen }: { state: AppState; today: str
   const peak = Math.max(1, ...drivers.map((x) => Math.abs(x.v)));
   const delta = mv.to - mv.from;
   const singleDriver = drivers.length === 1 && Math.abs(drivers[0].v - delta) < 0.005;
-  const singleItem = Math.abs(delta) >= 0.5 && mv.items.length === 1 && Math.abs(mv.items[0].delta - delta) < 0.005;
   const pct = mv.from > 0 ? delta / mv.from : 0;
   const kindLabel = (k: 'added' | 'expansion' | 'contraction' | 'churned') => t(`report.wf.${k}`);
   return (
@@ -503,8 +506,8 @@ function Waterfall({ state, today, year, onOpen }: { state: AppState; today: str
               <div className="mv-bar">
                 <i style={{ width: `${(Math.abs(x.v) / peak) * 100}%` }} />
               </div>
-              <b className="num">
-                {x.v > 0 ? '↑' : '↓'} {money(Math.abs(x.v), base, { compact: true })}
+              <b className={`num ${x.v > 0 ? 'red' : 'green'}`}>
+                {x.v > 0 ? '↑' : '↓'} {money(Math.abs(x.v), base)}
               </b>
             </div>
           ))}
@@ -514,7 +517,7 @@ function Waterfall({ state, today, year, onOpen }: { state: AppState; today: str
         {mv.items.length === 0 && (
           <div className="muted" style={{ fontSize: 'var(--fs-2)', padding: '8px 0' }}>
             {Math.abs(mv.fx) >= 0.5
-              ? t('report.wf.emptyFx', { amount: `${mv.fx > 0 ? '↑' : '↓'} ${money(Math.abs(mv.fx), base, { compact: true })}` })
+              ? t('report.wf.emptyFx', { amount: `${mv.fx > 0 ? '↑' : '↓'} ${money(Math.abs(mv.fx), base)}` })
               : t('report.wf.empty')}
           </div>
         )}
@@ -523,13 +526,10 @@ function Waterfall({ state, today, year, onOpen }: { state: AppState; today: str
             <SubIcon sub={it.sub} size={24} />
             <span className="wf-name">{it.sub.name}</span>
             <em>{kindLabel(it.kind)}</em>
-            {!singleItem && (
-              // 新增、停用是生命周期事件，只写月额不带涨跌箭头；升降级才有方向
-              <b className="num">
-                {it.kind === 'expansion' ? '↑ ' : it.kind === 'contraction' ? '↓ ' : ''}
-                {money(Math.abs(it.delta), base, { compact: true })}
-              </b>
-            )}
+            {/* 与日历月度变动同一写法：上月末月额 → 期末月额 */}
+            <b className="num wf-amount">
+              {money(contributionOn(state, it.sub, start, endFx), base)} → {money(contributionOn(state, it.sub, end, endFx), base)}
+            </b>
           </button>
         ))}
       </div>
@@ -598,7 +598,8 @@ function YearCard({ state, today, year, onOpen }: { state: AppState; today: stri
   const change = same.change;
   const ok = !!change && Number.isFinite(change.amount);
   const kindLabel = (k: YearDriver['kind']) => t(`report.year.${k}`);
-  const short = (v: number) => money(v, base, { compact: true });
+  // 这张卡的金额一律取整，不出现有的带小数、有的不带
+  const short = (v: number) => money(v, base, { decimals: 0 });
   const arrow = (v: number) => (!Number.isFinite(v) ? '—' : `${v > 0.005 ? '↑' : v < -0.005 ? '↓' : ''} ${short(Math.abs(v))}`.trim());
   // 较去年同期的变化来源按类型汇总：新增、停用、多付、少付，各写差额合计与项数；今年合计与同期差额在顶部大数字区
   const groups = (['added', 'stopped', 'up', 'down'] as const).map((kind) => {
@@ -660,6 +661,7 @@ function YearCard({ state, today, year, onOpen }: { state: AppState; today: stri
               label={kindLabel(g.kind)}
               // 只有一类且就是全部差额时，金额与上方「较去年同期」重复，改写项数
               value={!ok || !g.items.length ? '—' : solo ? t('report.year.count', { count: g.items.length }) : arrow(g.delta)}
+              valueClassName={!ok || !g.items.length || solo || Math.abs(g.delta) <= 0.005 ? '' : g.delta > 0 ? 'loss' : 'gain'}
               note={
                 ok &&
                 g.items.length > 0 &&
@@ -674,7 +676,7 @@ function YearCard({ state, today, year, onOpen }: { state: AppState; today: stri
             <Metric
               key={g.key}
               label={t(`report.year.${g.key}${g.total.incomplete ? 'Net' : Math.abs(g.net) < 0.5 ? 'Even' : g.net > 0 ? 'Gain' : 'Loss'}`)}
-              value={formatTotal(g.total, base, { direction: 1, compact: true })}
+              value={g.total.incomplete ? formatTotal(g.total, base, { direction: 1, compact: true }) : flow(g.total.value, base, { decimals: 0 })}
               valueClassName={g.total.incomplete || Math.abs(g.net) < 0.5 ? '' : g.net > 0 ? 'gain' : 'loss'}
               note={totalNote(g.total) || subsNote(g.lead, g.subs)}
             />

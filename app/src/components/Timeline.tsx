@@ -309,15 +309,24 @@ export function Timeline({
                     <span className="tl-count num">{g.items.length}</span>
                   </button>
                 );
+              // 单笔：悬停 / 聚焦时用同一个浮层提示（只读），点按直接打开详情
+              const one = { date, items: [it] };
               return (
                 <button
                   key={it.key}
                   type="button"
                   data-snapshot-keep
-                  className={`tl-icon copy-tooltip ${date < today ? 'past' : ''}`}
+                  className={`tl-icon ${date < today ? 'past' : ''}`}
                   style={style}
-                  data-tip={`${md(date)}\n${it.name}\n${it.amount}`}
-                  onClick={() => it.onClick?.()}
+                  aria-label={`${md(date)}\n${it.name}\n${it.amount}`}
+                  onMouseEnter={(e) => tip?.pinned || showTip(one, e.currentTarget, false)}
+                  onMouseLeave={() => tip?.pinned || setTip(null)}
+                  onFocus={(e) => tip?.pinned || showTip(one, e.currentTarget, false)}
+                  onBlur={() => tip?.pinned || setTip(null)}
+                  onClick={() => {
+                    setTip(null);
+                    it.onClick?.();
+                  }}
                 >
                   {it.icon}
                 </button>

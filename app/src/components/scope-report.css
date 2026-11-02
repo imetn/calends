@@ -403,3 +403,13 @@
 .scope-lifecycle .scope-headline .metric-grid {
   grid-auto-rows: 1fr;
 }
+/* 月度变动：名称一行省略，「原价 → 现价」不在中间断开 */
+.scope-movements .scope-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scope-movements small .num {
+  white-space: nowrap;
+}

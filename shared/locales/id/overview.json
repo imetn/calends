@@ -30,7 +30,7 @@
     "year": "{year}",
     "projected": "\nPerkiraan",
     "inProgress": "\nBerjalan",
-    "paid": "\n{amount} dibayar",
+    "paid": "\n{amount} sudah ditagih",
     "empty": "Tidak ada tagihan dalam periode ini"
   },
   "due": {

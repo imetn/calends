@@ -33,7 +33,7 @@
     "year": "{year}",
     "projected": "\nPrognose",
     "inProgress": "\nLaufend",
-    "paid": "\n{amount} bezahlt",
+    "paid": "\n{amount} abgebucht",
     "empty": "Keine Abbuchungen in diesem Zeitraum"
   },
   "due": {

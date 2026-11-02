@@ -6,7 +6,7 @@ import { StopBadge, StopText, stopDescription, stopLabel } from '../components/S
 import { base } from '../base.ts';
 import { useEffect, useState } from 'react';
 import { activePhases, currentPhase, diffDays, effectiveStatus, monthlyMine, nextCharge, priceAt, upcomingPhase, isStopped } from '../../../shared/billing.ts';
-import { cnDate, money, relDays } from '../../../shared/format.ts';
+import { cnDate, cnDateAuto, money, nearDate, relDays } from '../../../shared/format.ts';
 import { toBaseOrNaN } from '../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { IconButton, Toolbar } from '../components/ui.tsx';
@@ -358,7 +358,7 @@ export function List({
                   <div className="sc-foot">
                     <span>{v.sub ?? '\u00a0'}</span>
                     <span className={d != null && d <= 3 ? 'soon' : ''}>
-                      {st === 'lifetime' ? s.start.slice(0, 7) : isStopped(st) ? (s.end ?? '') : n ? (d! <= 14 ? relDays(d!) : cnDate(n)) : ''}
+                      {st === 'lifetime' ? s.start.slice(0, 7) : isStopped(st) ? (s.end ? cnDateAuto(s.end, today) : '') : n ? nearDate(n, today) : ''}
                     </span>
                   </div>
                 </button>
@@ -462,7 +462,7 @@ export function List({
                       {st === 'lifetime' ? (
                         t('list.status.lifetime')
                       ) : isStopped(st) ? (
-                        <>{tx('list.endedOn', { date: <small>{s.end ?? '—'}</small> })}</>
+                        <>{tx('list.endedOn', { date: <small>{s.end ? cnDateAuto(s.end, today) : '—'}</small> })}</>
                       ) : n ? (
                         <>
                           {cnDate(n)}
@@ -557,8 +557,7 @@ function readReportPref(pref: string, key: string): { key: string; open: boolean
 
 /** 待生效变更的简短说明（卡片右上角标签）与完整说明（悬停提示），和 ChangeNote 同一口径 */
 function changeSummary(cur: Subscription, up: Subscription, st: string, today: string, state: AppState) {
-  const d = diffDays(today, up.start);
-  const when = d <= 14 ? relDays(d) : cnDate(up.start);
+  const when = nearDate(up.start, today);
   const m = state.methods.find((x) => x.id === up.methodId);
   const short = t(st === 'upcoming' ? 'list.change.starts' : 'list.change.from', { when });
   const parts = [
@@ -584,8 +583,7 @@ function parallelSummary(sub: Subscription, cur: Subscription, today: string): s
 
 /** 待生效变更的一行提示：「10月27日起 🇺🇸 $9.99/月 · 支付方式」，未来才开始的订阅写「10月27日开始」 */
 function ChangeNote({ cur, up, st, today, state }: { cur: Subscription; up: Subscription; st: string; today: string; state: AppState }) {
-  const d = diffDays(today, up.start);
-  const when = d <= 14 ? relDays(d) : cnDate(up.start);
+  const when = nearDate(up.start, today);
   const m = state.methods.find((x) => x.id === up.methodId);
   const parts = [
     up.region && up.region !== cur.region ? up.region : '',

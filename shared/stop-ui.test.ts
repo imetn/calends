@@ -357,7 +357,7 @@ test('概览首卡当月实扣：1 号到月底已扣加待扣，较上月整月
   const cells = withClass(withClass(tree, 'metric-cards')[0], 'metric');
   assert.equal(cells.length, 4);
   const [due, count, perDay] = cells;
-  assert.ok(text(due).includes(t('calendar.pending')) && text(due).includes(format.money(12, 'CNY', { compact: true })));
+  assert.ok(text(due).includes(t('scope.pending')) && text(due).includes(format.money(12, 'CNY', { compact: true })));
   assert.ok(text(count).includes(t('scope.count')) && text(count).includes('2'));
   assert.ok(text(perDay).includes(format.money(42 / 31, 'CNY')));
   assert.equal(text(withClass(tree, 'stmt-cap')[0]).trim(), '');

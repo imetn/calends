@@ -16,7 +16,6 @@
   "charged": "請求済み",
   "monthTotal": "{month}の引き落とし",
   "count": "{count} 件",
-  "pending": "予定",
   "monthAll": "{month}のすべての請求",
   "noneMonth": "今月の請求はありません",
   "day": "{day}日",

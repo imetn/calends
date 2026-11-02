@@ -51,12 +51,6 @@
     "new": "New",
     "search": "Search",
     "upcoming": "Upcoming",
-    "today": "Today",
-    "tomorrow": "Tomorrow",
-    "inDays": {
-      "one": "In {count} day",
-      "other": "In {count} days"
-    },
     "theme": "Theme",
     "themeHint": "Click to switch: Light → Dark → System"
   },

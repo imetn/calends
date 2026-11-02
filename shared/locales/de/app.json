@@ -51,12 +51,6 @@
     "new": "Neu",
     "search": "Suchen",
     "upcoming": "Demnächst",
-    "today": "Heute",
-    "tomorrow": "Morgen",
-    "inDays": {
-      "one": "In {count} Tag",
-      "other": "In {count} Tagen"
-    },
     "theme": "Design",
     "themeHint": "Klicken zum Wechseln: Hell → Dunkel → System"
   },

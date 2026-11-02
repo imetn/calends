@@ -173,6 +173,13 @@ export function relDays(n: number): string {
   return rtf.format(Math.round(n / 365.25), 'year');
 }
 
+/** 下次扣款等未来日期的统一写法：两周内说「今天 / 明天 / 3天后」，再远写日期（不是今年的带年份）。侧栏、总览、列表共用这一个口径 */
+export const NEAR_DAYS = 14;
+export function nearDate(date: string, today: string): string {
+  const n = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
+  return n <= NEAR_DAYS ? relDays(n) : cnDateAuto(date, today);
+}
+
 /** 合租收费周期的文字：按月、按季……不在常用选项里的写成「按 N 个月」 */
 export function billLabel(months?: number): string {
   const m = months ?? 1;

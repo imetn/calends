@@ -8,7 +8,7 @@
   "yearTotal": "Dieses Jahr",
   "paidAmount": "Bezahlt {amount}",
   "includedLoss": "Davon nicht erstattete Verluste",
-  "monthTotal": "Abbuchungen im Monat",
+  "monthTotal": "Nettoausgaben diesen Monat",
   "previousMonth": "Zum Vormonat",
   "previousYear": "Zum Vorjahresmonat",
   "paid": "Abgebucht",

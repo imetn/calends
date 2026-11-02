@@ -271,6 +271,21 @@ test('calendar selects today, toggles off, clears on month navigation, and Today
   assert.equal(render().find((n) => n.props['aria-current'] === 'date')!.props['aria-pressed'], true);
 });
 
+test('narrow calendar cells keep stacked icons plus "+N" inside the cell', () => {
+  const sub = { id: 's', name: 'S', category: '', tags: [], price: 1, currency: 'USD', cycle: { unit: 'month' as const, every: 1 }, start: '2026-01-01' };
+  const charges = Array.from({ length: 4 }, () => ({ sub, date: today, amount: 1, currency: 'USD', kind: 'charge' }));
+  const cell = (width: number) => {
+    const r = harness('../app/src/views/Calendar.tsx', 'Calendar', {}, { useWidth: () => [null, width], allCharges: () => charges, stopLabel: () => '', stopDescription: () => '', StopText: 'StopText' });
+    const nodes = r.render('Calendar', { state: st, today, onOpen() {}, onIcs() {} });
+    const box = nodes.find((n) => n.props.className === 'cal-icons' && all(n).some((c) => c.type === 'SubIcon'))!;
+    const more = all(box).find((n) => n.props.className === 'cal-more');
+    return [all(box).filter((n) => n.type === 'SubIcon').length, more ? more.children.join('') : ''];
+  };
+  // 390 宽手机：格子约 45px，只够一个 17px 图标加「+N」；以前至少放两个，会伸出格子压到旁边
+  assert.deepEqual(cell(358), [1, '+3']);
+  assert.deepEqual(cell(700), [4, '']);
+});
+
 test('calendar full report collapses to persisted mini with day details, expands again, and stays absent in year view', () => {
   const r = harness('../app/src/views/Calendar.tsx', 'Calendar', { 'cal-report-mode': 'full' });
   const render = () => r.render('Calendar', { state: st, today, onOpen() {}, onIcs() {} });
@@ -438,7 +453,7 @@ test('report changes use unsigned spending direction and omit the current total 
     },
   );
   const mixedNodes = mixed.render('Waterfall', { state: st, today, year: Number(today.slice(0, 4)), onOpen() {} });
-  // 分解行不分涨跌颜色，只靠方向符号
+  // 行本身不分涨跌底色；金额与日历月度变动同一写法（红涨绿跌 + 方向符号）
   assert.ok(!mixedNodes.some((n) => /mv-row (up|down)/.test(n.props.className ?? '')));
   const driver = mixedNodes.find((n) => n.props.className === 'mv-row' && all(n).some((c) => c.children.includes('report.wf.churned')))!;
   assert.equal(

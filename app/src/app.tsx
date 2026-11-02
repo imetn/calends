@@ -5,7 +5,7 @@ import { base } from './base.ts';
 import { createRoot } from 'react-dom/client';
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { addDays, diffDays, effectiveStatus, nextCharge, isStopped } from '../../shared/billing.ts';
-import { cnDate, money, setSignedAmounts } from '../../shared/format.ts';
+import { money, nearDate, setSignedAmounts } from '../../shared/format.ts';
 import { avatarOf, type AppState, type Subscription } from '../../shared/types.ts';
 import { IconButton } from './components/ui.tsx';
 import { AiSwitch, Dock, type MobileItem } from './components/MobileNav.tsx';
@@ -323,15 +323,7 @@ function Sidebar({
               <button key={s.id} className={`side-item ${days <= 3 ? 'soon' : ''}`} onClick={() => onOpen(s)}>
                 <SubIcon sub={s} size={18} />
                 <span>{s.name}</span>
-                <small>
-                  {days === 0
-                    ? t('app.sidebar.today')
-                    : days === 1
-                      ? t('app.sidebar.tomorrow')
-                      : days < 7
-                        ? t('app.sidebar.inDays', { count: days })
-                        : cnDate(n!)}
-                </small>
+                <small>{nearDate(n!, d)}</small>
               </button>
             );
           })}
