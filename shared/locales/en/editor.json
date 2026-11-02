@@ -231,7 +231,6 @@
     "settled": "Charged to card (optional)",
     "settledCcy": "Card currency",
     "settledAmount": "Card amount",
-    "blank": "Leave blank",
     "usageFoot": "Recorded for the billing period {period}",
     "freezeHint": "Charges in this phase are currently estimated from the billing cycle. Saving will first turn the estimated {amount} charges up to today into records; from then on, records are the source of truth. Future charges are unchanged.",
     "method": "Payment method",

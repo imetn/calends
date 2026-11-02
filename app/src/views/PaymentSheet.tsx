@@ -293,7 +293,7 @@ export function PaymentSheet({
             <MoneyInput
               ccy={settledCcy}
               className="num"
-              placeholder={t('editor.payment.blank')}
+              placeholder={t('editor.field.optional')}
               value={settled}
               onChange={(e) => setSettled((e.target as HTMLInputElement).value)}
             />

@@ -206,7 +206,6 @@
     "settled": "卡上实扣（可选）",
     "settledCcy": "实扣币种",
     "settledAmount": "实扣金额",
-    "blank": "不填",
     "usageFoot": "记在这笔的计费周期 {period}",
     "freezeHint": "这一段目前按周期推算扣款；保存后会先把到今天为止推算出的 {amount} 各期固化成记录，以后完全以记录为准，未来的扣款照旧。",
     "method": "支付方式",
