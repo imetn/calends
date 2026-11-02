@@ -137,11 +137,14 @@ function ReminderPreview({ preview, timezone }: { preview: Preview | null; timez
         </Group>
       )}
 
+      {/* 最近记录只写「月-日 时:分」：完整年份会挤窄标题列，让标题在字中间断行 */}
       {recentLog.length > 0 && (
         <Group title={t('settings.today.recent')}>
           {recentLog.slice(0, 6).map((l) => (
             <Cell key={l.dedupe_key} label={<span style={{ fontSize: 'var(--fs-2)' }}>{l.subject}</span>}>
-              <span style={{ color: l.status === 'sent' ? undefined : 'var(--red)', fontSize: 'var(--fs-1)' }}>{localTime(l.sent_at, timezone)}</span>
+              <span style={{ color: l.status === 'sent' ? undefined : 'var(--red)', fontSize: 'var(--fs-1)', whiteSpace: 'nowrap' }}>
+                {localTime(l.sent_at, timezone).slice(5)}
+              </span>
             </Cell>
           ))}
         </Group>

@@ -1056,7 +1056,7 @@ test('提醒预览按所有者时区分出今天与最近发送，空预览不�
     [['Sent today']],
   );
   assert.ok(all(groups[0]).some((n) => n.children.includes('02:00')));
-  assert.ok(all(groups[1]).some((n) => n.children.includes('2026-10-21 12:01')));
+  assert.ok(all(groups[1]).some((n) => n.children.includes('10-21 12:01')));
   assert.equal(r.render('ReminderPreview', { preview: { ...preview, log: [] }, timezone: 'UTC' }).filter((n) => n.type === 'Group').length, 0);
   assert.equal(r.render('ReminderPreview', { preview: null, timezone: 'UTC' }).length, 0);
 });
