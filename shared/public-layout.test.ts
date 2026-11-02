@@ -51,11 +51,11 @@ test('摆放：放到别的卡片上把它往下推，没压到的不动，拖�
   const at = (id: string) => moved.find((s) => s.id === id)!;
   assert.deepEqual([at('fx').x, at('fx').y], [0, 0]);
   assert.equal(at('stats').y, 6);
-  assert.equal(at('composition').y, 24);
-  assert.equal(at('ended').y, 36);
-  assert.equal(base.find((s) => s.id === 'fx')!.y, 18, '原数组不变');
+  assert.equal(at('composition').y, 22);
+  assert.equal(at('ended').y, 34);
+  assert.equal(base.find((s) => s.id === 'fx')!.y, 16, '原数组不变');
   const blank = placeItem(base, 'stats', { x: 0, y: 40, w: 12, h: 6 });
-  assert.equal(blank.find((s) => s.id === 'timeline')!.y, 6, '上面腾出的空位不自动补，保留主人摆的位置');
+  assert.equal(blank.find((s) => s.id === 'timeline')!.y, 4, '上面腾出的空位不自动补，保留主人摆的位置');
   assert.equal(placeItem(base, 'fx', { x: 11, y: -3, w: 1, h: 0 }).find((s) => s.id === 'fx')!.x, 7, '越界夹回');
 });
 
@@ -71,15 +71,15 @@ test('添加和隐藏：重新添加放到最下面，隐藏的卡片不占位',
   const hidden = publicGrid({ sections: gridSections(publicGrid()).map((s) => (s.id === 'fx' ? { ...s, hidden: true } : s)) });
   assert.equal(hidden.find((s) => s.id === 'fx')!.hidden, true);
   const shown = showItem(hidden, 'fx');
-  assert.deepEqual([shown.find((s) => s.id === 'fx')!.hidden, shown.find((s) => s.id === 'fx')!.x, shown.find((s) => s.id === 'fx')!.y], [false, 0, 36]);
+  assert.deepEqual([shown.find((s) => s.id === 'fx')!.hidden, shown.find((s) => s.id === 'fx')!.x, shown.find((s) => s.id === 'fx')!.y], [false, 0, 34]);
 });
 
 test('没有内容的卡片：整行都空才收起，旁边还有卡片时那一行留着', () => {
   const grid = publicGrid();
   const noEnded = collapseEmpty(grid, (id) => id === 'ended');
-  assert.deepEqual(noEnded.find((s) => s.id === 'lifetime')!.y, 30, '买断在同一排，位置不变');
+  assert.deepEqual(noEnded.find((s) => s.id === 'lifetime')!.y, 28, '买断在同一排，位置不变');
   const noList = collapseEmpty(grid, (id) => id === 'list');
-  assert.equal(noList.find((s) => s.id === 'ended')!.y, 24, '整排空了，下面的卡片上移');
+  assert.equal(noList.find((s) => s.id === 'ended')!.y, 22, '整排空了，下面的卡片上移');
   assert.ok(!noList.some((s) => s.id === 'list'));
 });
 
@@ -334,4 +334,17 @@ test('指标卡只下发选中的数据要用的部分', () => {
   const cfg = { sections: [...only, ...gridSections([{ ...metric, metric: { template: 'share', items: ['topCategory'] } }])] } as PublicPageConfig;
   const parts = publicParts(cfg);
   assert.ok(parts.has('composition') && !parts.has('list'));
+});
+
+test('新指标卡默认选页面上没有的数据：同一个数不放两遍', () => {
+  let items = publicGrid();
+  const first = newMetricItem(items, 'number');
+  assert.ok(!['monthly', 'yearly', 'active', 'paidTotal'].includes(first.metric!.items[0]), '概览已经显示的不选');
+  items = [...items, first];
+  const second = newMetricItem(items, 'number');
+  assert.notEqual(second.metric!.items[0], first.metric!.items[0]);
+  const trend = newMetricItem(items, 'trend');
+  assert.equal(trend.metric!.items[0], 'paidMonth', '概览有每月支出，趋势换成本月已付');
+  const rows = newMetricItem(items, 'rows');
+  assert.equal(new Set(rows.metric!.items).size, 3);
 });

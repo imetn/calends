@@ -12,20 +12,20 @@ export const PUBLIC_MAX_HEIGHT = 200;
 
 /** 组件注册表：默认位置等于现有公开页的排列，高度取小值让内容撑开；min 是内容不被挤坏的最小栏数；off 的组件默认不上页面，主人拖进来才显示和下发数据 */
 export const PUBLIC_GRID_SECTIONS: readonly { id: PublicGridId; x: number; y: number; w: number; h: number; min: number; off?: boolean }[] = [
-  { id: 'stats', x: 0, y: 0, w: 12, h: 6, min: 5 },
-  { id: 'timeline', x: 0, y: 6, w: 12, h: 6, min: 6 },
-  { id: 'chart', x: 0, y: 12, w: 12, h: 6, min: 6 },
-  { id: 'composition', x: 0, y: 18, w: 6, h: 6, min: 4 },
-  { id: 'fx', x: 6, y: 18, w: 6, h: 6, min: 5 },
-  { id: 'list', x: 0, y: 24, w: 12, h: 6, min: 6 },
-  { id: 'ended', x: 0, y: 30, w: 6, h: 6, min: 5 },
-  { id: 'lifetime', x: 6, y: 30, w: 6, h: 6, min: 4 },
-  { id: 'calendar', x: 0, y: 36, w: 6, h: 12, min: 5, off: true },
-  { id: 'years', x: 0, y: 48, w: 12, h: 10, min: 6, off: true },
-  { id: 'tenure', x: 0, y: 58, w: 6, h: 8, min: 4, off: true },
-  { id: 'treemap', x: 0, y: 66, w: 6, h: 8, min: 4, off: true },
-  { id: 'changes', x: 0, y: 74, w: 6, h: 8, min: 4, off: true },
-  { id: 'waterfall', x: 0, y: 82, w: 6, h: 8, min: 5, off: true },
+  { id: 'stats', x: 0, y: 0, w: 12, h: 4, min: 5 },
+  { id: 'timeline', x: 0, y: 4, w: 12, h: 6, min: 6 },
+  { id: 'chart', x: 0, y: 10, w: 12, h: 6, min: 6 },
+  { id: 'composition', x: 0, y: 16, w: 6, h: 6, min: 4 },
+  { id: 'fx', x: 6, y: 16, w: 6, h: 6, min: 5 },
+  { id: 'list', x: 0, y: 22, w: 12, h: 6, min: 6 },
+  { id: 'ended', x: 0, y: 28, w: 6, h: 6, min: 5 },
+  { id: 'lifetime', x: 6, y: 28, w: 6, h: 6, min: 4 },
+  { id: 'calendar', x: 0, y: 34, w: 6, h: 12, min: 5, off: true },
+  { id: 'years', x: 0, y: 46, w: 12, h: 10, min: 6, off: true },
+  { id: 'tenure', x: 0, y: 56, w: 6, h: 8, min: 4, off: true },
+  { id: 'treemap', x: 0, y: 64, w: 6, h: 8, min: 4, off: true },
+  { id: 'changes', x: 0, y: 72, w: 6, h: 8, min: 4, off: true },
+  { id: 'waterfall', x: 0, y: 80, w: 6, h: 8, min: 5, off: true },
 ];
 /** 固定在页面底部的组件：只能隐藏，不参与摆放 */
 export const PUBLIC_BOTTOM_SECTIONS = ['footer', 'pile'] as const;
@@ -75,7 +75,8 @@ export interface PublicGridItem extends PublicRect {
 
 /** 指标卡同一模板可以放多张，每张有自己的 id */
 const METRIC_ID = /^metric-\d{1,6}$/;
-const METRIC_DEF = { w: 3, h: 3, min: 2 };
+/** 几个模板同高，并排时不会一高一低 */
+const METRIC_DEF = { w: 3, h: 4, min: 3 };
 const METRIC_ROWS_DEF = { w: 6, h: 4, min: 3 };
 export const metricDef = (template: PublicMetricTemplate) => (template === 'rows' ? METRIC_ROWS_DEF : METRIC_DEF);
 const metricOf = (id: string) => PUBLIC_METRICS.find((m) => m.id === id);
@@ -83,11 +84,20 @@ const metricOf = (id: string) => PUBLIC_METRICS.find((m) => m.id === id);
 export const metricsFor = (template: PublicMetricTemplate) =>
   PUBLIC_METRICS.filter((m) => (template === 'trend' ? 'series' in m : template === 'compare' ? 'prev' in m : template === 'share' ? 'share' in m : true));
 const DEFAULT_METRIC: Record<PublicMetricTemplate, PublicMetricId[]> = { number: ['monthly'], trend: ['monthly'], compare: ['monthly'], share: ['topCategory'], rows: ['monthly', 'yearly', 'active'] };
+/** 概览卡已经显示的数，新指标卡默认不再选 */
+const STATS_SHOWS = ['monthly', 'yearly', 'active', 'paidTotal'];
+/** 新指标卡默认选页面上还没出现过的数据，同一个数不在页面上放两遍；都用过了才退回模板默认 */
+function freshMetrics(items: PublicGridItem[], template: PublicMetricTemplate): string[] {
+  const used = new Set(items.flatMap((s) => (s.hidden ? [] : s.metric?.items ?? (s.id === 'stats' ? STATS_SHOWS : []))));
+  const fresh = metricsFor(template).map((m) => m.id as string).filter((id) => !used.has(id));
+  const count = DEFAULT_METRIC[template].length;
+  return fresh.length >= count ? fresh.slice(0, count) : DEFAULT_METRIC[template];
+}
 /** 拖进来的新指标卡：id 取现有最大号的下一个 */
 export function newMetricItem(items: PublicGridItem[], template: PublicMetricTemplate): PublicGridItem {
   const n = items.reduce((max, s) => (METRIC_ID.test(s.id) ? Math.max(max, Number(s.id.slice(7))) : max), 0) + 1;
   const def = metricDef(template);
-  return { id: `metric-${n}`, x: 0, y: publicGridBottom(items), w: def.w, h: def.h, min: def.min, hidden: false, metric: { template, items: DEFAULT_METRIC[template] } };
+  return { id: `metric-${n}`, x: 0, y: publicGridBottom(items), w: def.w, h: def.h, min: def.min, hidden: false, metric: { template, items: freshMetrics(items, template) } };
 }
 /** 换模板时留下仍能配的数据，都不能配就用模板默认的；单数据模板只留第一个 */
 export function metricWithTemplate(card: PublicMetricCard, template: PublicMetricTemplate): PublicMetricCard {

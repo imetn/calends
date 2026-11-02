@@ -25,7 +25,9 @@ const SHAPES: Record<string, React.ReactNode> = {
     <>
       <Bar x={8} y={7} w={18} />
       <Bar x={8} y={13} w={26} h={7} o={0.75} />
-      <path d="M8 36 L18 31 L28 33 L40 26 L56 23" fill="none" stroke={FILL} strokeWidth={1.5} opacity={0.6} />
+      {[4, 7, 5, 9, 6, 8, 12].map((h, i) => (
+        <Bar key={i} x={8 + i * 7} y={38 - h} w={5} h={h} o={i === 6 ? 0.75 : 0.28} />
+      ))}
     </>
   ),
   compare: (
@@ -40,8 +42,9 @@ const SHAPES: Record<string, React.ReactNode> = {
       <Bar x={8} y={8} w={18} />
       <Bar x={8} y={15} w={22} h={4} o={0.6} />
       <Bar x={44} y={15} w={12} h={4} o={0.6} />
-      <Bar x={8} y={25} w={48} h={4} o={0.18} />
-      <Bar x={8} y={25} w={30} h={4} o={0.7} />
+      {Array.from({ length: 12 }, (_, i) => (
+        <Bar key={i} x={8 + i * 4} y={25} w={3} h={6} o={i < 7 ? 0.7 : 0.16} />
+      ))}
     </>
   ),
   rows: (

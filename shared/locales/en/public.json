@@ -100,7 +100,7 @@
     "endedCount": "Cancelled",
     "lifetimeCount": "Lifetime",
     "fxEffect": "Exchange-rate effect (monthly)",
-    "vsPrev": "Same time last year: {amount}",
-    "share": "{percent} of monthly spend"
+    "vsPrev": "vs same time last year",
+    "shareOf": "Share of monthly spend"
   }
 }

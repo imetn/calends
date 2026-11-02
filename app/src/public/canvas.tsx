@@ -66,10 +66,11 @@ export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
     const cell = cellOf(d.id);
     const item = items.find((s) => s.id === d.id);
     if (!cell || !item) return;
-    // 刚拖进来的卡片：第一次画出来才知道内容要多高
+    // 刚拖进来的卡片：第一次画出来才知道内容要多高；指标卡保持统一高度，内容放不下才加高
     if (d.incoming) {
       d.measured = true;
-      d.from = { ...d.from, h: Math.min(naturalRows(cell), PUBLIC_MAX_HEIGHT) };
+      const need = Math.min(naturalRows(cell), PUBLIC_MAX_HEIGHT);
+      d.from = { ...d.from, h: d.from.metric ? Math.max(need, d.from.h) : need };
       apply();
       return;
     }

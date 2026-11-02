@@ -100,6 +100,15 @@
 }
 .ppe-item-add {
   flex-shrink: 0;
+  margin-right: 6px;
+  color: var(--label-2);
+}
+/* 移除和添加同一个分量：列表里不要一排圆圈 */
+.ppe-item .icon-btn {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   color: var(--label-2);
 }
 .ppe-ghost {

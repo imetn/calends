@@ -365,8 +365,8 @@
       "lists": "Lists and time",
       "bottom": "Page bottom"
     },
-    "hintDrag": "Drag a component onto the page, or click to add it at the bottom. Click a metric card to change its data.",
-    "hintTap": "Tap to add at the bottom of the page. Placing by drag needs a desktop-width window.",
+    "hintDrag": "Drag a component onto the page, or click to add it at the bottom.",
+    "hintTap": "Tap to add at the bottom of the page.",
     "backToLibrary": "Back to components",
     "metricCard": "Metric card",
     "template": "Style",

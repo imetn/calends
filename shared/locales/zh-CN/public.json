@@ -94,7 +94,7 @@
     "endedCount": "已退订",
     "lifetimeCount": "买断",
     "fxEffect": "汇率影响（每月）",
-    "vsPrev": "去年同期 {amount}",
-    "share": "占每月支出 {percent}"
+    "vsPrev": "较去年同期",
+    "shareOf": "占每月支出的比例"
   }
 }
