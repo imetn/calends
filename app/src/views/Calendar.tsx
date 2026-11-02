@@ -104,9 +104,11 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
   const step = Math.round(icon * 0.6);
   const inner = gridW / 7 - (narrow ? 6 : 14);
   const MORE_W = 20;
-  const iconCap = gridW ? Math.max(2, Math.floor((inner - icon - MORE_W) / step) + 1) : 4;
-  /** 不叠也放得下（间隔 3px）就平铺，放不下才叠 */
-  const fits = (n: number) => icon * n + 3 * (n - 1) <= inner;
+  /** 全部叠放能放下几个（不需要「+N」时）；放不下时给「+N」留出位置，至少留一个图标 */
+  const allCap = gridW ? Math.max(1, Math.floor((inner - icon) / step) + 1) : 4;
+  const iconCap = gridW ? Math.max(1, Math.floor((inner - icon - MORE_W) / step) + 1) : 4;
+  /** 不叠也放得下（间隔 3px，含「+N」）就平铺，放不下才叠 */
+  const fits = (n: number, more: boolean) => icon * n + 3 * (n - 1) + (more ? MORE_W : 0) <= inner;
   const byDay = new Map<string, Charge[]>();
   for (const c of charges) byDay.set(c.date, [...(byDay.get(c.date) ?? []), c]);
   // 显示用合计：有一笔缺汇率就显示「—」，不按 0 算
@@ -216,7 +218,7 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                   ))}
                   {grid.map((d) => {
                     const items = byDay.get(d) ?? [];
-                    const shown = items.length > iconCap ? items.slice(0, iconCap) : items;
+                    const shown = items.length > allCap ? items.slice(0, iconCap) : items;
                     return (
                       <button
                         key={d}
@@ -234,7 +236,7 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                             </span>
                           )}
                         </div>
-                        <div className="cal-icons" style={{ '--m0': `${fits(shown.length) ? 3 : step - icon}px` } as Record<string, string>}>
+                        <div className="cal-icons" style={{ '--m0': `${fits(shown.length, items.length > shown.length) ? 3 : step - icon}px` } as Record<string, string>}>
                           {shown.map((c, i) => (
                             <span
                               // 同一订阅同一天可能既扣款又返佣，订阅 ID 会重复

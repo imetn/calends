@@ -1,5 +1,5 @@
 import { useSnapshotRender } from '../snapshot-render.tsx';
-import { useRef, type ReactNode as ComponentChildren } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode as ComponentChildren } from 'react';
 import { tipProps, tipSet } from './overlays.tsx';
 import { useWidth } from './inputs.tsx';
 import { monthTicks } from '../../../shared/format.ts';
@@ -362,6 +362,17 @@ export function Activity({
 }) {
   const ticks = niceTicks(Math.max(1, ...buckets.map((b) => b.total)));
   const top = ticks[ticks.length - 1];
+  // 横轴标签按实测宽度隔几个显示一个，窄屏也不互相压住；当月始终显示，它两侧让开一个步长
+  const [bars, bw] = useWidth();
+  const [lw, setLw] = useState(0);
+  useLayoutEffect(() => {
+    const labels = bars.current?.querySelectorAll<HTMLElement>('.act-label');
+    if (labels) setLw(Math.max(0, ...Array.from(labels, (l) => l.offsetWidth)));
+  }, [buckets, bw]);
+  const pitch = buckets.length ? bw / buckets.length : 0;
+  const stride = pitch > 0 && lw > 0 ? Math.max(1, Math.ceil((lw + 6) / pitch)) : 1;
+  const ci = buckets.findIndex((b) => b.current);
+  const showLabel = (i: number) => buckets[i].current || ((buckets.length - 1 - i) % stride === 0 && (ci < 0 || Math.abs(i - ci) >= stride));
   return (
     <div className="act" style={{ '--h': `${height}px` } as Record<string, string>}>
       <div className="act-grid">
@@ -371,12 +382,12 @@ export function Activity({
           </div>
         ))}
       </div>
-      <div className="act-bars">
+      <div className="act-bars" ref={bars}>
         {buckets.map((b, i) => (
           <button
             key={b.key}
             data-snapshot-keep
-            className={`act-col ${(buckets.length - 1 - i) % 2 ? 'odd' : ''} ${b.future ? 'future' : ''} ${b.current ? 'current' : ''} ${(selected ?? current) === b.key ? 'sel' : ''} ${selected && selected !== b.key ? 'dim' : ''}`}
+            className={`act-col ${showLabel(i) ? '' : 'odd'} ${b.future ? 'future' : ''} ${b.current ? 'current' : ''} ${(selected ?? current) === b.key ? 'sel' : ''} ${selected && selected !== b.key ? 'dim' : ''}`}
             onClick={() => onSelect(b.key)}
             aria-label={`${b.label} ${fmt(b.total)}`}
             {...(tip && b.total > 0 ? tipProps(() => tip(b)) : {})}

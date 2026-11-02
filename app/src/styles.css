@@ -926,8 +926,10 @@ a {
     height: 24px;
   }
   .cal-icons {
-    justify-content: center;
+    justify-content: safe center;
     margin-top: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
   .cal-cell::after {
     display: none;
@@ -2049,6 +2051,10 @@ select.btn {
 .wf-item em {
   background: var(--fill-2);
   color: var(--label-2);
+}
+.wf-item .wf-amount {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* 体检 */
@@ -3274,9 +3280,10 @@ button.bl-col {
   .act-label {
     font-size: var(--fs-1);
   }
-  .act-col.odd:not(.current) .act-label {
-    display: none;
-  }
+}
+/* 放不下的横轴标签（Activity 按实测宽度挑出来的）：保留占位用于测量，只是不显示 */
+.act-col.odd .act-label {
+  visibility: hidden;
 }
 
 .legend-chips {
@@ -4481,6 +4488,15 @@ button.h-price-row:focus-visible {
   line-height: 14px;
   text-align: center;
   box-shadow: 0 0 0 var(--hairline) var(--card);
+}
+/* 窄屏年视图格子只有二十来像素：笔数角标缩小、贴住右上角，不盖住图标也不伸出格子 */
+@media (max-width: 680px) {
+  .hd-more {
+    top: -3px;
+    right: -3px;
+    transform: scale(0.72);
+    transform-origin: top right;
+  }
 }
 .heat-g .hd.has.gone .hd-stack {
   opacity: 0.5;
@@ -5861,15 +5877,38 @@ a.car-toggle {
 }
 .lt-title .nm {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 2px 6px;
   min-width: 0;
 }
+/* 名称优先：先完整显示名称（太长才省略），地区与徽标放不下就换到下一行，不再把名称挤成「X …」 */
 .lt-title .nm b {
+  flex-shrink: 0;
+  max-width: 100%;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.lt-title .nm .region-tag {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.lt-title .nm .region-tag span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 680px) {
+  /* 窄屏地区只留国旗 */
+  .lt-title .nm .region-tag {
+    padding: 0 7px;
+  }
+  .lt-title .nm .region-tag span {
+    display: none;
+  }
 }
 .lt-title .badge {
   flex-shrink: 0;
