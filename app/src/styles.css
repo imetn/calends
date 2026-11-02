@@ -1435,6 +1435,17 @@ a {
   .pc-id {
     gap: 8px;
   }
+  /* 横版 logo 已写明品牌，与名称并排会把名称挤成「By…」：窄卡上 logo 一行、名称一行 */
+  .pc-id:has(.pc-logo.wide) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  /* SIM 卡名称和号码在压痕左侧折行，不省略成「SMART 手…」「+639 195 …」 */
+  .sim-name,
+  .sim-name small {
+    white-space: normal;
+  }
   .pc-logo {
     width: 24px;
     height: 24px;

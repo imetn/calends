@@ -663,6 +663,15 @@ test('copy separates facts into elements and preserves punctuation in user names
   assert.doesNotMatch(renderToStaticMarkup(copyParts('a\n\nb')), /<span><\/span>/);
 });
 
+test('wallet card face and card sheet count the same live subscriptions', () => {
+  const [, , source] = sources.find(([file]) => file === 'views/Wallet.tsx');
+  // 卡面「N 个订阅」与详情「关联订阅 N」同一口径：都只数这张卡正在付的
+  assert.match(source, /const liveHere = live\.filter\(\(s\) => paysWith\(s, m, today\)\)/);
+  assert.match(source, /t\('wallet\.sheet\.linked', \{ count: liveSubs\(state, today\)\.filter\(\(s\) => paysWith\(s, m, today\)\)\.length \}\)/);
+  // 没设余额的卡也按卡的币种写每月支出，与角上的币种一致
+  assert.match(source, /<FxAmount total=\{monthly\} direction=\{-1\} ccy=\{m\.currency\} \/>/);
+});
+
 test('UI copy and locale templates never introduce middle-dot separators', async () => {
   const failures = [];
   for (const file of readdirSync(root, { recursive: true }).filter((file) => file.endsWith('.tsx'))) {
