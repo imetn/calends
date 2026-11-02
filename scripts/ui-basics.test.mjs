@@ -1174,6 +1174,14 @@ test('metric slots retain negative, zero and unavailable amounts, notes and sema
 
   assert.match(css, /@container \(max-width: 520px\)[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /@container \(max-width: 300px\)[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
+
+  // 回归：数值只在空格处折行，「− / ¥4,843.18」「2027年4月10 / 日」这类从符号、末字中间断开的写法不再出现
+  const tokens = renderToStaticMarkup(React.createElement(Metric, { label: 'Pending', value: '−¥4,843.18 2027年4月10日' }));
+  assert.match(tokens, /<span class="nowrap">−¥4,843\.18<\/span> <span class="nowrap">2027年4月10日<\/span>/);
+  const value = rules.find(([selector]) => selector === '.metric-value,\n.metric-grid > div > b')[1];
+  assert.match(value, /overflow-wrap:\s*normal/);
+  assert.match(value, /word-break:\s*keep-all/);
+  assert.match(css, /\.metric-value \.amt,[^{]*\{\s*white-space:\s*nowrap/);
 });
 
 // Adjacent full-size action buttons differ from field controls, pickers, table rows

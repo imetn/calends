@@ -49,7 +49,27 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["Nov 1"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["Nov"]
+                            },
+                            " ",
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 2,
+                                "className": "nowrap"
+                              },
+                              "children": ["1"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -111,7 +131,18 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["detail.stats.months"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["detail.stats.months"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -148,7 +179,18 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["−$200"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["−$200"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -191,7 +233,18 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["−$20.71"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["−$20.71"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -253,7 +306,27 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["Nov 1"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["Nov"]
+                        },
+                        " ",
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 2,
+                            "className": "nowrap"
+                          },
+                          "children": ["1"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -315,7 +388,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["detail.stats.months"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["detail.stats.months"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -352,7 +436,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["−$200"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["−$200"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -395,7 +490,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["−$20.71"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["−$20.71"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -444,7 +550,27 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["Nov 1"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["Nov"]
+                    },
+                    " ",
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 2,
+                        "className": "nowrap"
+                      },
+                      "children": ["1"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -506,7 +632,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["detail.stats.months"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["detail.stats.months"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -543,7 +680,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["−$200"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["−$200"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -586,7 +734,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["−$20.71"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["−$20.71"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -626,7 +785,27 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["Nov 1"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["Nov"]
+              },
+              " ",
+              {
+                "type": "span",
+                "props": {
+                  "key": 2,
+                  "className": "nowrap"
+                },
+                "children": ["1"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -686,7 +865,43 @@
       "props": {
         "className": "metric-value "
       },
-      "children": ["Nov 1"]
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["Nov"]
+          },
+          " ",
+          {
+            "type": "span",
+            "props": {
+              "key": 2,
+              "className": "nowrap"
+            },
+            "children": ["1"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
+      },
+      "children": ["Nov"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 2,
+        "className": "nowrap"
+      },
+      "children": ["1"]
     },
     {
       "type": "div",
@@ -784,7 +999,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["detail.stats.months"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["detail.stats.months"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -818,6 +1044,25 @@
       "type": "div",
       "props": {
         "className": "metric-value "
+      },
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["detail.stats.months"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
       },
       "children": ["detail.stats.months"]
     },
@@ -854,7 +1099,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["−$200"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["−$200"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -888,6 +1144,25 @@
       "type": "div",
       "props": {
         "className": "metric-value "
+      },
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["−$200"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
       },
       "children": ["−$200"]
     },
@@ -930,7 +1205,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["−$20.71"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["−$20.71"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -977,6 +1263,25 @@
       "type": "div",
       "props": {
         "className": "metric-value "
+      },
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["−$20.71"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
       },
       "children": ["−$20.71"]
     },
@@ -3871,7 +4176,27 @@
           "props": {
             "className": "metric-value warn"
           },
-          "children": ["≈ $200"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["≈"]
+              },
+              " ",
+              {
+                "type": "span",
+                "props": {
+                  "key": 2,
+                  "className": "nowrap"
+                },
+                "children": ["$200"]
+              }
+            ]
+          ]
         },
         false
       ]
@@ -3900,7 +4225,43 @@
       "props": {
         "className": "metric-value warn"
       },
-      "children": ["≈ $200"]
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["≈"]
+          },
+          " ",
+          {
+            "type": "span",
+            "props": {
+              "key": 2,
+              "className": "nowrap"
+            },
+            "children": ["$200"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
+      },
+      "children": ["≈"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 2,
+        "className": "nowrap"
+      },
+      "children": ["$200"]
     }
   ],
   "zero/Kpis": [
@@ -3953,7 +4314,27 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["Nov 1"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["Nov"]
+                            },
+                            " ",
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 2,
+                                "className": "nowrap"
+                              },
+                              "children": ["1"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -4015,7 +4396,18 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["detail.stats.months"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["detail.stats.months"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -4052,7 +4444,18 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["$0"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["$0"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -4093,7 +4496,18 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["$0"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["$0"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -4155,7 +4569,27 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["Nov 1"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["Nov"]
+                        },
+                        " ",
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 2,
+                            "className": "nowrap"
+                          },
+                          "children": ["1"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -4217,7 +4651,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["detail.stats.months"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["detail.stats.months"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -4254,7 +4699,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["$0"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["$0"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -4295,7 +4751,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["$0"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["$0"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -4344,7 +4811,27 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["Nov 1"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["Nov"]
+                    },
+                    " ",
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 2,
+                        "className": "nowrap"
+                      },
+                      "children": ["1"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -4406,7 +4893,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["detail.stats.months"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["detail.stats.months"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -4443,7 +4941,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["$0"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["$0"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -4484,7 +4993,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["$0"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["$0"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -4524,7 +5044,27 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["Nov 1"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["Nov"]
+              },
+              " ",
+              {
+                "type": "span",
+                "props": {
+                  "key": 2,
+                  "className": "nowrap"
+                },
+                "children": ["1"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -4584,7 +5124,43 @@
       "props": {
         "className": "metric-value "
       },
-      "children": ["Nov 1"]
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["Nov"]
+          },
+          " ",
+          {
+            "type": "span",
+            "props": {
+              "key": 2,
+              "className": "nowrap"
+            },
+            "children": ["1"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
+      },
+      "children": ["Nov"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 2,
+        "className": "nowrap"
+      },
+      "children": ["1"]
     },
     {
       "type": "div",
@@ -4682,7 +5258,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["detail.stats.months"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["detail.stats.months"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -4716,6 +5303,25 @@
       "type": "div",
       "props": {
         "className": "metric-value "
+      },
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["detail.stats.months"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
       },
       "children": ["detail.stats.months"]
     },
@@ -4752,7 +5358,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["$0"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["$0"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -4786,6 +5403,25 @@
       "type": "div",
       "props": {
         "className": "metric-value "
+      },
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["$0"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
       },
       "children": ["$0"]
     },
@@ -4826,7 +5462,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["$0"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["$0"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -4869,6 +5516,25 @@
       "type": "div",
       "props": {
         "className": "metric-value "
+      },
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["$0"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
       },
       "children": ["$0"]
     },
@@ -7763,7 +8429,27 @@
           "props": {
             "className": "metric-value warn"
           },
-          "children": ["≈ $0"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["≈"]
+              },
+              " ",
+              {
+                "type": "span",
+                "props": {
+                  "key": 2,
+                  "className": "nowrap"
+                },
+                "children": ["$0"]
+              }
+            ]
+          ]
         },
         false
       ]
@@ -7792,7 +8478,43 @@
       "props": {
         "className": "metric-value warn"
       },
-      "children": ["≈ $0"]
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["≈"]
+          },
+          " ",
+          {
+            "type": "span",
+            "props": {
+              "key": 2,
+              "className": "nowrap"
+            },
+            "children": ["$0"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
+      },
+      "children": ["≈"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 2,
+        "className": "nowrap"
+      },
+      "children": ["$0"]
     }
   ],
   "missing-fx/Kpis": [
@@ -7845,7 +8567,27 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["Nov 1"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["Nov"]
+                            },
+                            " ",
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 2,
+                                "className": "nowrap"
+                              },
+                              "children": ["1"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -7907,7 +8649,18 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["detail.stats.months"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["detail.stats.months"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -7944,7 +8697,27 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["−XCD 200"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["−XCD"]
+                            },
+                            " ",
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 2,
+                                "className": "nowrap"
+                              },
+                              "children": ["200"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -7985,7 +8758,27 @@
                         "props": {
                           "className": "metric-value "
                         },
-                        "children": ["−XCD 20.71"]
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0,
+                                "className": "nowrap"
+                              },
+                              "children": ["−XCD"]
+                            },
+                            " ",
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 2,
+                                "className": "nowrap"
+                              },
+                              "children": ["20.71"]
+                            }
+                          ]
+                        ]
                       },
                       {
                         "type": "div",
@@ -8047,7 +8840,27 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["Nov 1"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["Nov"]
+                        },
+                        " ",
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 2,
+                            "className": "nowrap"
+                          },
+                          "children": ["1"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -8109,7 +8922,18 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["detail.stats.months"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["detail.stats.months"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -8146,7 +8970,27 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["−XCD 200"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["−XCD"]
+                        },
+                        " ",
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 2,
+                            "className": "nowrap"
+                          },
+                          "children": ["200"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -8187,7 +9031,27 @@
                     "props": {
                       "className": "metric-value "
                     },
-                    "children": ["−XCD 20.71"]
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0,
+                            "className": "nowrap"
+                          },
+                          "children": ["−XCD"]
+                        },
+                        " ",
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 2,
+                            "className": "nowrap"
+                          },
+                          "children": ["20.71"]
+                        }
+                      ]
+                    ]
                   },
                   {
                     "type": "div",
@@ -8236,7 +9100,27 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["Nov 1"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["Nov"]
+                    },
+                    " ",
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 2,
+                        "className": "nowrap"
+                      },
+                      "children": ["1"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -8298,7 +9182,18 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["detail.stats.months"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["detail.stats.months"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -8335,7 +9230,27 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["−XCD 200"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["−XCD"]
+                    },
+                    " ",
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 2,
+                        "className": "nowrap"
+                      },
+                      "children": ["200"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -8376,7 +9291,27 @@
                 "props": {
                   "className": "metric-value "
                 },
-                "children": ["−XCD 20.71"]
+                "children": [
+                  [
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 0,
+                        "className": "nowrap"
+                      },
+                      "children": ["−XCD"]
+                    },
+                    " ",
+                    {
+                      "type": "span",
+                      "props": {
+                        "key": 2,
+                        "className": "nowrap"
+                      },
+                      "children": ["20.71"]
+                    }
+                  ]
+                ]
               },
               {
                 "type": "div",
@@ -8416,7 +9351,27 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["Nov 1"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["Nov"]
+              },
+              " ",
+              {
+                "type": "span",
+                "props": {
+                  "key": 2,
+                  "className": "nowrap"
+                },
+                "children": ["1"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -8476,7 +9431,43 @@
       "props": {
         "className": "metric-value "
       },
-      "children": ["Nov 1"]
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["Nov"]
+          },
+          " ",
+          {
+            "type": "span",
+            "props": {
+              "key": 2,
+              "className": "nowrap"
+            },
+            "children": ["1"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
+      },
+      "children": ["Nov"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 2,
+        "className": "nowrap"
+      },
+      "children": ["1"]
     },
     {
       "type": "div",
@@ -8574,7 +9565,18 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["detail.stats.months"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["detail.stats.months"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -8608,6 +9610,25 @@
       "type": "div",
       "props": {
         "className": "metric-value "
+      },
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["detail.stats.months"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
       },
       "children": ["detail.stats.months"]
     },
@@ -8644,7 +9665,27 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["−XCD 200"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["−XCD"]
+              },
+              " ",
+              {
+                "type": "span",
+                "props": {
+                  "key": 2,
+                  "className": "nowrap"
+                },
+                "children": ["200"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -8679,7 +9720,43 @@
       "props": {
         "className": "metric-value "
       },
-      "children": ["−XCD 200"]
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["−XCD"]
+          },
+          " ",
+          {
+            "type": "span",
+            "props": {
+              "key": 2,
+              "className": "nowrap"
+            },
+            "children": ["200"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
+      },
+      "children": ["−XCD"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 2,
+        "className": "nowrap"
+      },
+      "children": ["200"]
     },
     {
       "type": "div",
@@ -8718,7 +9795,27 @@
           "props": {
             "className": "metric-value "
           },
-          "children": ["−XCD 20.71"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["−XCD"]
+              },
+              " ",
+              {
+                "type": "span",
+                "props": {
+                  "key": 2,
+                  "className": "nowrap"
+                },
+                "children": ["20.71"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -8762,7 +9859,43 @@
       "props": {
         "className": "metric-value "
       },
-      "children": ["−XCD 20.71"]
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["−XCD"]
+          },
+          " ",
+          {
+            "type": "span",
+            "props": {
+              "key": 2,
+              "className": "nowrap"
+            },
+            "children": ["20.71"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
+      },
+      "children": ["−XCD"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 2,
+        "className": "nowrap"
+      },
+      "children": ["20.71"]
     },
     {
       "type": "div",
@@ -11645,7 +12778,27 @@
           "props": {
             "className": "metric-value warn"
           },
-          "children": ["XCD 200"]
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0,
+                  "className": "nowrap"
+                },
+                "children": ["XCD"]
+              },
+              " ",
+              {
+                "type": "span",
+                "props": {
+                  "key": 2,
+                  "className": "nowrap"
+                },
+                "children": ["200"]
+              }
+            ]
+          ]
         },
         {
           "type": "div",
@@ -11680,7 +12833,43 @@
       "props": {
         "className": "metric-value warn"
       },
-      "children": ["XCD 200"]
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0,
+              "className": "nowrap"
+            },
+            "children": ["XCD"]
+          },
+          " ",
+          {
+            "type": "span",
+            "props": {
+              "key": 2,
+              "className": "nowrap"
+            },
+            "children": ["200"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0,
+        "className": "nowrap"
+      },
+      "children": ["XCD"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 2,
+        "className": "nowrap"
+      },
+      "children": ["200"]
     },
     {
       "type": "div",

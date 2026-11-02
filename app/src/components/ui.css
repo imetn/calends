@@ -344,6 +344,9 @@
   letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
   line-height: 30px;
+  /* 数值只在空格处折行：日期、金额不从中间断开（不出现「2027年4月10 / 日」「− / ¥4,843.18」），放不下时保持一行 */
+  overflow-wrap: normal;
+  word-break: keep-all;
 }
 .metric-value .amt,
 .metric-value .amt .cur,
@@ -352,6 +355,11 @@
   font-size: var(--fs-3);
   font-weight: 650;
   white-space: normal;
+}
+.metric-value .amt,
+.metric-value .amt .cur,
+.metric-value .amt .dec {
+  white-space: nowrap;
 }
 /* 桌面端主数字再大一号，手机沿用 --fs-3 */
 @media (min-width: 681px) {
