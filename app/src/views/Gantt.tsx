@@ -721,10 +721,11 @@ export function Gantt({
                               className="gt-stop"
                               role="img"
                               aria-label={t('core.stop.terminate')}
+                              // SVG 类型里没有 title；提示由全站 title 接管
+                              {...{ title: state.readonly ? t('core.stop.terminate') : stopDescription(g.v, today) }}
                               style={{ left: x(stopped.date) - STOP_CAP / 2, top }}
                               viewBox="0 0 20 20"
                             >
-                              <title>{state.readonly ? t('core.stop.terminate') : stopDescription(g.v, today)}</title>
                               <circle cx="10" cy="10" r="8.75" />
                               <path d="M4.7 15.3 15.3 4.7" />
                             </svg>

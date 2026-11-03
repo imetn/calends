@@ -39,6 +39,7 @@ import { locale, t } from '../../shared/i18n.ts';
 import { initialLocale, loadLocale, preferredLocale } from './i18n.ts';
 import { monthEnd } from '../../shared/metrics.ts';
 import { useTextSearch } from './use-search.ts';
+import { installTitleTips } from './components/title-tips.ts';
 
 // AI 助手页带着 Markdown 渲染器（Streamdown），按需加载，不拖慢其他页面的首屏
 const loadAssistant = () => import('./views/Assistant.tsx');
@@ -776,6 +777,7 @@ function Root() {
 
 initRouter();
 void loadLocale(initialLocale()).then(() => {
+  installTitleTips();
   createRoot(document.getElementById('app')!).render(<Root />);
   boot();
 });

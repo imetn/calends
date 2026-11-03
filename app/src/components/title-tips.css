@@ -1,0 +1,24 @@
+/* 说明浮层：Hint 与全站 title 共用，公开页也会加载 */
+.info-tip {
+  z-index: 100;
+  max-width: min(320px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  padding: 8px 11px;
+  border: var(--hairline) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--label);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--fs-1);
+  font-weight: 400;
+  line-height: 1.5;
+}
+/* 比弹窗更高，不挡指针 */
+.title-tip {
+  position: fixed;
+  z-index: 100000;
+  pointer-events: none;
+  white-space: pre-line;
+}

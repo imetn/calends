@@ -1,6 +1,7 @@
 import { submitSheet } from '../keyboard.ts';
 import { copyParts } from './copy.tsx';
 import './ui.css';
+import './title-tips.css';
 import { createPortal } from 'react-dom';
 import { tooltipPosition } from './tooltip-position.ts';
 import type { ReactNode as ComponentChildren } from 'react';

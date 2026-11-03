@@ -34,7 +34,6 @@ body {
 }
 button,
 input,
-select,
 textarea {
   font: inherit;
   color: inherit;
@@ -674,7 +673,6 @@ a {
   font-variant-numeric: tabular-nums;
 }
 .cell-r input:not([type='checkbox']),
-.cell-r select,
 .cell-r textarea {
   border: 0;
   outline: 0;
@@ -686,22 +684,9 @@ a {
   font-size: var(--fs-2);
   padding: 4px 0;
 }
-.cell-r select {
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-  color: var(--accent);
-  width: auto;
-  max-width: 100%;
-  text-align-last: right;
-}
 .cell-r input::placeholder,
 .cell-r textarea::placeholder {
   color: var(--label-3);
-}
-.cell-r input[type='date'] {
-  width: auto;
-  color: var(--accent);
 }
 .cell textarea {
   text-align: left !important;
@@ -1873,15 +1858,6 @@ a {
   .main {
     margin: 0;
   }
-}
-
-select.btn {
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 28px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='3'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 11px center;
 }
 
 @media (max-width: 860px) {
@@ -3788,8 +3764,7 @@ button.h-price-row:focus-visible {
   font-size: var(--fs-1);
   color: var(--label-2);
 }
-.change-form input,
-.change-form select {
+.change-form input {
   height: var(--ctl-h-md);
   border-radius: var(--radius-sm);
   border: 0;
@@ -3800,8 +3775,7 @@ button.h-price-row:focus-visible {
   color: var(--label);
   outline: 0;
 }
-.change-form input:focus,
-.change-form select:focus {
+.change-form input:focus {
   box-shadow: none;
   outline: var(--hairline) solid var(--focus-ring);
   outline-offset: 2px;
@@ -4658,7 +4632,6 @@ button.h-price-row:focus-visible {
     padding-right: 8px;
   }
   input,
-  select,
   textarea {
     font-size: var(--fs-3) !important;
   }
@@ -5414,10 +5387,6 @@ button.h-price-row:focus-visible {
   gap: 8px;
   min-width: 0;
   width: 100%;
-}
-.contact-field select {
-  flex-shrink: 0;
-  width: auto;
 }
 .contact-field input {
   flex: 1;
@@ -8724,7 +8693,7 @@ a.car-toggle {
 .pp-dot:active {
   transform: scale(0.9);
 }
-/* 自选色：没选过是虚线圈加号，选过填那个颜色；原生色盘输入铺满、透明 */
+/* 自选色：没选过是虚线圈加号，选过填那个颜色； */
 .pp-dot.custom {
   position: relative;
   display: inline-flex;
@@ -8741,14 +8710,6 @@ a.car-toggle {
 }
 .pp-dot.custom.on {
   background: var(--pc);
-}
-.pp-dot.custom input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
 }
 
 /* 时间线左右平移：范围标签在中间，点它回到当前；拖动时显示抓手 */
@@ -9670,8 +9631,7 @@ img.mm-flag {
 }
 
 /* Form/action rows share the same outer box as their neighboring pickers. */
-.cell-r input:not([type='checkbox']),
-.cell-r select {
+.cell-r input:not([type='checkbox']) {
   box-sizing: border-box;
   height: var(--ctl-h-md);
 }

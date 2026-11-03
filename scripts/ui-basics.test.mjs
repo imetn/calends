@@ -196,8 +196,6 @@ test('app title hints go through CardTitle so text and trigger share an alignmen
 test('native system controls stay out of the UI', async () => {
   const types = 'date|time|datetime-local|month|week|number|range|radio|color';
   const bannedType = new RegExp(`['"](?:${types})['"]`);
-  // 自选色仍开系统色盘，是待决的已知例外；People 的源码里拼入了 PersonProfile
-  const known = { 'views/PersonProfile.tsx': 1, 'views/People.tsx': 1 };
   const publicFiles = readdirSync(new URL('public/', root), { recursive: true }).filter((file) => file.endsWith('.tsx'));
   const publicSources = [];
   for (const file of publicFiles) {
@@ -206,20 +204,34 @@ test('native system controls stay out of the UI', async () => {
   }
   const failures = [];
   for (const [file, ast, source] of [...sources, ...publicSources]) {
-    let colors = 0;
     visit(ast, (node) => {
       if (node.type !== 'JSXOpeningElement') return;
       const name = node.name.name;
-      if (['select', 'option', 'optgroup', 'datalist', 'progress', 'meter', 'dialog'].includes(name)) failures.push(`${file}: <${name}>`);
+      if (['select', 'option', 'optgroup', 'datalist', 'progress', 'meter', 'dialog', 'title'].includes(name)) failures.push(`${file}: <${name}>`);
       // NumInput 等会把 type 透传给 input，所以不只查 input 标签；三元、字面量表达式也算
       const type = text(attr(node, 'type')?.value, source);
-      if (!bannedType.test(type)) return;
-      if (type.includes('color')) colors++;
-      else failures.push(`${file}: ${name} type=${type}`);
+      if (bannedType.test(type)) failures.push(`${file}: ${name} type=${type}`);
     });
-    if (colors > (known[file] ?? 0)) failures.push(`${file}: ${colors} color inputs`);
   }
   assert.deepEqual(failures, []);
+});
+
+test('title attributes render through the shared tip in both bundles', () => {
+  for (const entry of ['app.tsx', 'public/main.tsx']) assert.match(readFileSync(new URL(entry, root), 'utf8'), /^\s*installTitleTips\(\);/m);
+  const source = readFileSync(new URL('components/title-tips.ts', root), 'utf8');
+  // 置空而不是摘掉：空 title 同时挡住外层元素的 title，组件之后改或删属性也都能观察到
+  assert.match(source, /setAttribute\('title', ''\)/);
+  assert.doesNotMatch(source, /removeAttribute\('title'\)/);
+  // title 空着时读屏靠它；元素被卸载时提示也要收起
+  assert.match(source, /setAttribute\('aria-description', text\)/);
+  assert.match(source, /childList: true/);
+});
+
+test('stylesheets keep no selector list left dangling by a deleted rule', () => {
+  // 删规则时留下逗号，选择器会并入下一条规则，语法上仍然合法
+  for (const file of ['styles.css', 'components/ui.css', 'public/index.css', 'views/public-page-editor.css']) {
+    assert.doesNotMatch(readFileSync(new URL(file, root), 'utf8'), /,[ \t]*\n[ \t]*(\n|\/\*)/, file);
+  }
 });
 
 test('import preview never hands an unrecognized source date to the calendar', () => {

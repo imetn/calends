@@ -9,6 +9,7 @@ import { PERSON_COLORS, type AppState, type Person, type ShareMember, type Subsc
 import { Picker } from '../components/Picker.tsx';
 import { Cell, Group } from '../components/ui.tsx';
 import { ask, Sheet } from '../components/overlays.tsx';
+import { ColorPop } from '../components/ColorPop.tsx';
 import { Icon } from '../components/icons.tsx';
 import { SubIcon } from '../components/marks.tsx';
 import { toast, run } from '../toast.ts';
@@ -249,6 +250,8 @@ export function ProfileFields({
   setBusy: (busy: boolean) => void;
   autoFocus?: boolean;
 }) {
+  const customDot = useRef<HTMLButtonElement>(null);
+  const [picking, setPicking] = useState(false);
   const up = (p: Partial<Person>) => setF((current) => ({ ...current, ...p }));
   const via = f.contactVia ?? 'Telegram';
   const fileInput = useRef<HTMLInputElement>(null);
@@ -337,23 +340,30 @@ export function ProfileFields({
               onClick={() => up({ color: c })}
             />
           ))}
-          {/* 最后一个点打开色盘：选过自选色就显示那个颜色，没选过是虚线圈加号 */}
-          <label
+          {/* 最后一个点打开取色面板：选过自选色就显示那个颜色，没选过是虚线圈加号 */}
+          <button
+            ref={customDot}
+            type="button"
+            role="radio"
+            aria-checked={isCustomColor(f.color)}
+            aria-label={t('people.sheet.customColor')}
+            title={t('people.sheet.customColor')}
             className={`pp-dot custom ${isCustomColor(f.color) ? 'on' : ''}`}
             style={isCustomColor(f.color) ? ({ '--pc': f.color } as CSSProperties) : undefined}
-            title={t('people.sheet.customColor')}
+            disabled={ro}
+            onClick={() => setPicking(true)}
           >
             {!isCustomColor(f.color) && <Icon name="plus" />}
-            <input
-              type="color"
-              role="radio"
-              aria-checked={isCustomColor(f.color)}
-              aria-label={t('people.sheet.customColor')}
-              disabled={ro}
+          </button>
+          {picking && (
+            <ColorPop
+              triggerRef={customDot}
               value={isCustomColor(f.color) ? f.color : '#5b8def'}
-              onChange={(e) => up({ color: personColor(e.target.value) })}
+              label={t('people.sheet.customColor')}
+              onChange={(hex) => up({ color: personColor(hex) })}
+              onClose={() => setPicking(false)}
             />
-          </label>
+          )}
         </span>
       </Cell>
     </>

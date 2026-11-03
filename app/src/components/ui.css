@@ -124,22 +124,6 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
-.info-tip {
-  z-index: 100;
-  max-width: min(320px, calc(100vw - 16px));
-  max-height: calc(100dvh - 16px);
-  overflow-y: auto;
-  overflow-wrap: anywhere;
-  padding: 8px 11px;
-  border: var(--hairline) solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--card);
-  color: var(--label);
-  box-shadow: var(--shadow-lg);
-  font-size: var(--fs-1);
-  font-weight: 400;
-  line-height: 1.5;
-}
 
 /* 行尾「编辑 + 删除」：删除第一次点击向左伸展成长条（宽度 = 两个按钮 + 间距），显示「确认 ✓」；再点才删除 */
 .row-actions {
@@ -667,4 +651,39 @@ details[open] > summary::before {
   summary::before {
     transition: none;
   }
+}
+
+/* 取色面板 */
+.color-pop {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.color-area {
+  aspect-ratio: auto;
+  max-width: none;
+  border-radius: var(--radius-md);
+}
+.color-hue-track {
+  width: 100%;
+  height: 14px;
+  border-radius: var(--radius-pill);
+}
+.color-thumb {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow:
+    0 0 0 2px var(--white-a12),
+    var(--shadow-lg);
+}
+.color-hex input {
+  width: 100%;
+  height: var(--ctl-h-md);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  text-align: center;
+  text-transform: uppercase;
 }
