@@ -391,7 +391,7 @@ test('自动吸附：画布按开关选摆放方式，编辑页改区块都经�
   const editor = readFileSync(new URL('../app/src/views/PublicPageEditor.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(editor, /setDraft\(\(d\) => (hideSection|addWidget)/);
   assert.match(editor, /editGrid\(\(d\) => \{\s*\/\/ 刚拖进来/);
-  assert.match(editor, /\{canvasOn && \(\s*<span className="ppe-snap"/);
+  assert.match(editor, /\{canvasOn && \(\s*<Seg\s+small\s+value=\{draft\.snap \? 'snap' : 'free'\}/);
 });
 
 test('预览消息：只接受同源父窗口，发消息限定本站', () => {

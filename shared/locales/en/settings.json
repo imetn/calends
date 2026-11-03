@@ -371,7 +371,7 @@
     "backToLibrary": "Back to components",
     "headHint": "Click the title, text or avatar on the page to edit them. Click the theme button to hide or show it.",
     "autoSnap": "Auto-snap",
-    "autoSnapHint": "Blocks move up automatically so no empty rows are left.",
+    "freePlace": "Free placement",
     "themeButton": "Theme button",
     "themeHide": "Hide theme button",
     "themeShow": "Show theme button (hidden from visitors)",

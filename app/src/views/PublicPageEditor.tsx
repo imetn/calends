@@ -472,14 +472,15 @@ export function PublicPageEditor({ state }: { state: AppState }) {
       >
         {!narrow && deviceSeg}
         {canvasOn && (
-          <span className="ppe-snap" title={t('settings.publicPage.autoSnapHint')}>
-            {t('settings.publicPage.autoSnap')}
-            <Toggle
-              label={t('settings.publicPage.autoSnap')}
-              checked={draft.snap}
-              onChange={(snap) => setDraft((d) => ({ ...d, snap, grid: snap ? compactGrid(d.grid) : d.grid }))}
-            />
-          </span>
+          <Seg
+            small
+            value={draft.snap ? 'snap' : 'free'}
+            onChange={(v) => setDraft((d) => ({ ...d, snap: v === 'snap', grid: v === 'snap' ? compactGrid(d.grid) : d.grid }))}
+            options={[
+              ['snap', t('settings.publicPage.autoSnap')],
+              ['free', t('settings.publicPage.freePlace')],
+            ]}
+          />
         )}
         <button
           type="button"

@@ -171,12 +171,6 @@
   border: 0;
   transform-origin: top left;
 }
-.ppe-snap {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
 .ppe-title {
   display: inline-flex;
   align-items: center;

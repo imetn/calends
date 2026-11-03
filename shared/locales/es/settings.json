@@ -371,7 +371,7 @@
     "backToLibrary": "Volver a los componentes",
     "headHint": "Haz clic en el título, el texto o el avatar de la página para editarlos. Haz clic en el botón de tema para ocultarlo o mostrarlo.",
     "autoSnap": "Ajuste automático",
-    "autoSnapHint": "Los bloques suben automáticamente para no dejar filas vacías.",
+    "freePlace": "Colocación libre",
     "themeButton": "Botón de tema",
     "themeHide": "Ocultar botón de tema",
     "themeShow": "Mostrar botón de tema (oculto para visitantes)",

@@ -371,7 +371,7 @@
     "backToLibrary": "Retour aux composants",
     "headHint": "Cliquez sur le titre, le texte ou l’avatar de la page pour les modifier. Cliquez sur le bouton de thème pour le masquer ou l’afficher.",
     "autoSnap": "Alignement auto",
-    "autoSnapHint": "Les blocs remontent automatiquement pour ne laisser aucune ligne vide.",
+    "freePlace": "Placement libre",
     "themeButton": "Bouton de thème",
     "themeHide": "Masquer le bouton de thème",
     "themeShow": "Afficher le bouton de thème (masqué aux visiteurs)",

@@ -371,7 +371,7 @@
     "backToLibrary": "Zurück zu den Komponenten",
     "headHint": "Klicke auf der Seite auf Titel, Text oder Avatar, um sie zu bearbeiten. Ein Klick auf die Design-Schaltfläche blendet sie aus oder ein.",
     "autoSnap": "Automatisch andocken",
-    "autoSnapHint": "Blöcke rücken automatisch nach oben, ohne leere Zeilen.",
+    "freePlace": "Frei platzieren",
     "themeButton": "Design-Schaltfläche",
     "themeHide": "Design-Schaltfläche ausblenden",
     "themeShow": "Design-Schaltfläche einblenden (für Besucher ausgeblendet)",
