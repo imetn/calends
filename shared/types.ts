@@ -36,6 +36,8 @@ export interface Payment {
   methodId?: string;
   /** 资金拆分：一笔订单由多个来源合付（PayPal 168.05 + 余额 10.75）；金额为订阅币种，合计等于 amount；有它时不填 methodId */
   funding?: FundingPart[];
+  /** 提前续费结清的那一期原到期日：下次扣款日因此顺延一期，删除这笔时据此恢复；记账时自动写入 */
+  serviceDate?: string;
 }
 
 export interface FundingPart {

@@ -141,6 +141,6 @@ test('editing an early payment keeps its owning phase unassigned and saves witho
   assert.equal(saved.phases[0].methodId, 'previous-card');
   assert.equal(saved.phases[1].methodId, undefined);
   assert.equal(saved.phases[1].payments.length, 1);
-  assert.deepEqual(JSON.parse(JSON.stringify(saved.phases[1].payments[0])), { ...pay, currency: 'USD' });
+  assert.deepEqual(JSON.parse(JSON.stringify(saved.phases[1].payments[0])), { ...pay, currency: 'USD', serviceDate: '2026-10-01' });
   assert.deepEqual(sub.phases[1].payments, [pay], 'input records remain unchanged');
 });

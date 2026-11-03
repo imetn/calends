@@ -4,7 +4,11 @@ import {
   chargesBetween,
   collectionAnchor,
   currentPhase,
+  chargeBefore,
+  chargeOfService,
+  cycleDays,
   effectiveStatus,
+  isPostpaid,
   isStopped,
   phaseSubs,
   priceAt,
@@ -425,6 +429,11 @@ function phaseIndexAt(phases: Phase[], date: string, sub?: Subscription, phase?:
       );
     if (has != null) return has;
   }
+  // 改动提前付的下一段首期：这笔记在尚未开始的那一段里
+  if (existing && !live.some((k) => phases[k].payments?.some((x) => x.date === date))) {
+    const owner = phases.findIndex((p) => p.start > date && p.payments?.some((x) => x.date === date));
+    if (owner >= 0) return owner;
+  }
   if (live.length) return live[live.length - 1];
   const before = phases.map((p, k) => [p.start, k] as const).filter(([d]) => d <= date);
   return before.length ? before[before.length - 1][1] : 0;
@@ -445,8 +454,83 @@ function materialize(p: Phase, sub: Subscription, today: string, target?: string
   // 要改的是记录之后推算出的扣款（如结束日当天的一期）：把推算的过去扣款补成记录，这一行才能修改或删除
   const inferred = past.filter((c) => !c.kind && !recorded.some((r) => r.date === c.date));
   const payments = [...recorded, ...inferred.map((c) => ({ date: c.date, amount: c.amount }))].sort((a, b) => a.date.localeCompare(b.date));
-  // 到期前不会再扣（比如并行中快到期的旧段）：下次扣款记为结束日，删掉最后一笔也不会被重新推算出来
-  return { ...p, payments, nextDue: p.nextDue ?? next ?? p.end };
+  // 到期前不会再扣（比如并行中快到期的旧段）：下次扣款记到结束日之后，既不多出一笔，删掉最后一笔也不会被重新推算出来
+  return { ...p, payments, nextDue: p.nextDue ?? next ?? (p.end && addDays(p.end, 1)) };
+}
+
+/** 这一段的计费视图：没写结束日时到下一段开始前为止 */
+function phaseView(phases: Phase[], k: number, sub: Subscription): Subscription {
+  const p = phases[k];
+  return { ...sub, phases: undefined, ...p, end: p.end ?? (k + 1 < phases.length ? addDays(phases[k + 1].start, -1) : undefined) };
+}
+
+/** 只有计费中的预付订阅才有「提前结清」；试用、暂停、停止、后付费、买断不动 */
+function settles(v: Subscription, pay: Payment): boolean {
+  return !pay.kind && v.cycle.unit !== 'lifetime' && !isPostpaid(v) && !v.stop && !v.pausedAt && v.status === 'active';
+}
+
+const renewalsOf = (p: Phase) => (p.payments ?? []).filter((x) => !x.kind);
+const latest = (days: string[]) => days.reduce((m, d) => (d > m ? d : m), '');
+
+/** 最后一笔续费之后的第一个待付期；pay 用来放宽查找窗口，覆盖导入边界和赠送期之后才恢复的扣款 */
+function pendingCharge(v: Subscription, p: Phase, pay: Payment, today: string) {
+  const last = latest(renewalsOf(p).map((x) => x.date));
+  const from = last ? addDays(last, 1) : p.start;
+  const span = Math.ceil(cycleDays(p.cycle) * 2) + 32 + (p.chargeLeadDays ?? 0);
+  return chargesBetween(v, from, addDays(pay.date > from ? pay.date : from, span), today).find((c) => !c.kind);
+}
+
+/**
+ * 正常续费归入当期：早于下次扣款日、上一期已结清的算提前结清这一期，下次扣款日顺延一期，到期日不随付款日漂移；
+ * 逾期付款同样按原计费日继续；上一期没结清时这笔归上一期，不顺延。
+ */
+function settleRenewal(phases: Phase[], k: number, sub: Subscription, pay: Payment, today: string): { phase: Phase; pay: Payment } {
+  const p = phases[k];
+  const same = { phase: p, pay };
+  const v = phaseView(phases, k, sub);
+  if (!settles(v, pay) || pay.date <= latest(renewalsOf(p).map((x) => x.date))) return same;
+  const charge = pendingCharge(v, p, pay, today);
+  if (!charge) return same;
+  const due = charge.date;
+  if (pay.date >= due) return p.nextDue ? same : { phase: { ...p, nextDue: due }, pay };
+  const prior = chargeBefore(v, due);
+  const billed = prior >= p.start && prior >= (v.estimateFrom ?? '') && !(v.bonus && prior >= v.bonus.from && prior < v.bonus.until);
+  if (billed && latest(renewalsOf(p).map((x) => x.serviceDate ?? x.date)) < prior) return same;
+  const span = Math.ceil(cycleDays(p.cycle) * 2) + 32 + (p.chargeLeadDays ?? 0);
+  const next = chargesBetween(v, addDays(due, 1), addDays(due, span), today).find((c) => !c.kind)?.date ?? (v.end && addDays(v.end, 1));
+  return next ? { phase: { ...p, nextDue: next }, pay: { ...pay, serviceDate: charge.serviceDate ?? due } } : same;
+}
+
+/**
+ * 去掉一笔提前续费：它之后的提前续费依次前移一期，下次扣款日回退一期，删除顺序不影响结果。
+ * 之后已有准时的续费时，那一期算漏记，下次扣款日不动。
+ */
+function unsettleRenewal(p: Phase, v: Subscription, removed: Payment): Phase {
+  if (!removed.serviceDate) return p;
+  const later = renewalsOf(p)
+    .filter((x) => x.date >= removed.date)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (later.some((x) => !x.serviceDate)) return p;
+  let free = removed.serviceDate;
+  const moved = new Map<Payment, Payment>();
+  for (const x of later) {
+    moved.set(x, { ...x, serviceDate: free });
+    free = x.serviceDate!;
+  }
+  return { ...p, payments: p.payments?.map((x) => moved.get(x) ?? x), nextDue: chargeOfService(v, free) };
+}
+
+/**
+ * 没有记录时事后补记：这一笔替换同一天的推算；不在推算日上时结清它之后的第一期，只去掉那一期，
+ * 其余推算照常固化。下次扣款日已由固化算好，不再顺延。
+ */
+function dropSettledEstimate(p: Phase, v: Subscription, pay: Payment, today: string): { phase: Phase; service?: string } {
+  const payments = p.payments ?? [];
+  if (payments.some((x) => x.date === pay.date)) return { phase: { ...p, payments: payments.filter((x) => x.date !== pay.date) } };
+  const settled = payments.find((x) => x.date > pay.date);
+  if (!settled) return { phase: p };
+  const charge = chargesBetween(v, settled.date, settled.date, today).find((c) => !c.kind);
+  return { phase: { ...p, payments: payments.filter((x) => x !== settled) }, service: charge?.serviceDate ?? settled.date };
 }
 
 /** 新增或修改一笔扣款记录；old 为原记录的日期与序号（修改时） */
@@ -454,6 +538,8 @@ export function savePayment(s: Subscription, today: string, pay: Payment, old?: 
   const phases = phasesOf(s);
   // 改写一笔时没有带 methodId 这个键（如 MCP 只改金额），沿用原来那一笔单独记的支付方式；明确传 undefined 才清除
   let originalPhase: number | undefined;
+  let keptService: string | undefined;
+  let sameDay = false;
   if (old) {
     const oi = phaseIndexAt(phases, old.date, s, phase, true);
     phases[oi] = materialize(phases[oi], s, today, old.date);
@@ -464,20 +550,47 @@ export function savePayment(s: Subscription, today: string, pay: Payment, old?: 
     // 资金拆分同理：两个键都没带时沿用原来的拆分；带了拆分就不再沿用单独的支付方式
     if (!('methodId' in pay) && !('funding' in pay) && target.funding?.length) pay = { ...pay, funding: target.funding };
     else if (!('methodId' in pay) && !pay.funding?.length && target.methodId) pay = { ...pay, methodId: target.methodId };
-    phases[oi] = { ...phases[oi], payments: (phases[oi].payments ?? []).filter((x) => x !== target) };
+    const kept = { ...phases[oi], payments: (phases[oi].payments ?? []).filter((x) => x !== target) };
+    // 改金额、改支付方式，或日期仍早于到期日：仍结清原来那一期，留在原段
+    if (target.serviceDate && !pay.kind && pay.date < chargeOfService(phaseView(phases, oi, s), target.serviceDate)) keptService = target.serviceDate;
+    sameDay = pay.date === target.date;
+    phases[oi] = keptService ? kept : unsettleRenewal(kept, phaseView(phases, oi, s), target);
   }
+  if (pay.serviceDate !== keptService) pay = { ...pay, serviceDate: keptService };
   if (pay.funding && !pay.funding.length) pay = { ...pay, funding: undefined };
   // 原日期不变的编辑始终留在原阶段（修正开始日后可能在服务期外）；改日期或新记录仍按覆盖范围归段
+  // 指定了尚未开始的一段：是提前付那一段的首期
   const keep = phase
     ? phases.findIndex(
-        (p, k) => p.start === phase && (old?.date === pay.date || (p.start <= pay.date && (pay.kind === 'refund' || pay.date < endAt(phases, k)))),
+        (p, k) =>
+          p.start === phase && (old?.date === pay.date || (p.start <= pay.date ? pay.kind === 'refund' || pay.date < endAt(phases, k) : !old && !pay.kind)),
       )
     : -1;
-  const i = keep >= 0 ? keep : phaseIndexAt(phases, pay.date);
+  let i = keptService || (sameDay && !phase) ? originalPhase! : keep >= 0 ? keep : phaseIndexAt(phases, pay.date);
   // The original phase was already materialized before removal. Repeating it after
   // removing its sole payment would recreate the estimate being replaced.
-  if (i !== originalPhase) phases[i] = materialize(phases[i], s, today);
-  phases[i] = { ...phases[i], payments: [...(phases[i].payments ?? []), pay].sort((a, b) => a.date.localeCompare(b.date)) };
+  const fresh = i !== originalPhase;
+  const prepare = (k: number) => {
+    const bare = !phases[k].payments?.length;
+    const p = materialize(phases[k], s, today);
+    const v = phaseView(phases, k, s);
+    return bare && settles(v, pay) ? dropSettledEstimate(p, v, pay, today) : { phase: p };
+  };
+  // 当前一段已经没有待付期、下一段还没开始：这笔是提前付下一段的首期
+  if (!old && keep < 0 && i + 1 < phases.length && phases[i + 1].start > pay.date && settles(phaseView(phases, i, s), pay)) {
+    const current = prepare(i).phase;
+    if (pay.date > latest(renewalsOf(current).map((x) => x.date)) && !pendingCharge(phaseView(phases, i, s), current, pay, today)) i += 1;
+  }
+  if (fresh) {
+    const prepared = prepare(i);
+    phases[i] = prepared.phase;
+    if (prepared.service) {
+      keptService = prepared.service;
+      pay = { ...pay, serviceDate: keptService };
+    }
+  }
+  const settled = keptService ? { phase: phases[i], pay } : settleRenewal(phases, i, s, pay, today);
+  phases[i] = { ...settled.phase, payments: [...(settled.phase.payments ?? []), settled.pay].sort((a, b) => a.date.localeCompare(b.date)) };
   const next = fromPhases(s, phases);
   const error = subError(next);
   if (error) throw new Error(error);
@@ -510,7 +623,7 @@ export function deletePayment(s: Subscription, today: string, date: string, inde
   // 删掉已结束阶段的最后一笔：这笔本就不该有，下次扣款推到结束日之后，不再被推算回来
   const end = phases[i].end;
   const last = end && !payments.some((x) => x.date >= date);
-  phases[i] = { ...phases[i], payments, ...(last ? { nextDue: addDays(end, 1) } : {}) };
+  phases[i] = { ...unsettleRenewal({ ...phases[i], payments }, phaseView(phases, i, s), target), ...(last ? { nextDue: addDays(end, 1) } : {}) };
   return fromPhases(s, phases);
 }
 
