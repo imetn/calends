@@ -435,3 +435,24 @@ test('公开页金额：缺汇率显示占位；预览只认同源父窗口；�
   const editor = readFileSync(new URL('../app/src/views/PublicPageEditor.tsx', import.meta.url), 'utf8');
   assert.match(editor, /setDraft\(draftOf\(undefined, undefined\)\); setSelected\(null\)/);
 });
+
+// 单列也写 grid-cols-1：不写时隐式 auto 列会被 truncate 的长名字撑破卡片
+test('宽卡片的列表自动分两列，字段多的卡片晚一点分', () => {
+  const read = (f: string) => readFileSync(new URL(`../app/src/public/${f}`, import.meta.url), 'utf8');
+  const page = read('page.tsx');
+  assert.match(page, /grid grid-cols-1 gap-x-10 gap-y-2\.5 @\[720px\]:grid-cols-2">\n\s*\{top\.map/);
+  assert.match(page, /grid grid-cols-1 gap-x-10 gap-y-2\.5 @\[880px\]:grid-cols-2">\n\s*\{rows\.map/);
+  assert.match(page, /grid grid-cols-1 gap-x-10 @\[720px\]:grid-cols-2">\n\s*\{d\.ended\.map/);
+  assert.match(page, /grid grid-cols-1 gap-x-10 @\[720px\]:grid-cols-2">\n\s*\{d\.lifetime\.map/);
+  assert.match(read('widgets/changes.tsx'), /grid-cols-1 gap-x-10 @\[880px\]:grid-cols-2/);
+  assert.match(read('widgets/tenure.tsx'), /grid-cols-1 gap-x-10 gap-y-2\.5 @\[720px\]:grid-cols-2/);
+});
+
+test('订阅堆落地后页面高度变化，图标层跟着落地区移动，不压住内容', () => {
+  const pile = readFileSync(new URL('../app/src/public/components/icon-pile.tsx', import.meta.url), 'utf8');
+  assert.match(pile, /new ResizeObserver\(follow\)/);
+  assert.match(pile, /now\.bottom \+ scrollY - floor/);
+  assert.match(pile, /page\.disconnect\(\)/);
+  const page = readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8');
+  assert.match(page, /canvas \? <div style=\{\{ height: PILE_HEIGHT \}\} \/> : <IconPile/);
+});

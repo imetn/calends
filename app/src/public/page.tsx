@@ -25,7 +25,7 @@ import { TooltipProvider } from '@/public/components/ui/tooltip';
 import { cn } from '@/public/lib/utils';
 import { PROJECT_NAME, PROJECT_URL } from '../../../shared/brand.ts';
 import { HatchPattern } from '../components/hatch.tsx';
-import { IconPile } from './components/icon-pile.tsx';
+import { IconPile, PILE_HEIGHT } from './components/icon-pile.tsx';
 import { Canvas, CanvasFixed, cellVars, type CanvasText } from './canvas.tsx';
 import { loadLocale, preferredLocale } from '../i18n.ts';
 import { metricValues, type MetricInputs } from '../../../shared/public-metrics.ts';
@@ -324,7 +324,7 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
                   <CardTitle>{t('public.ended.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="-my-1.5">
+                  <ul className="-my-1.5 grid grid-cols-1 gap-x-10 @[720px]:grid-cols-2">
                     {d.ended.map((x) => (
                       <li key={x.sub.id} className="flex items-center gap-3 py-1.5">
                         <AppIcon sub={x.sub} className="size-7 rounded-md opacity-50 grayscale" />
@@ -346,7 +346,7 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
                   <CardDescription>{t('public.lifetime.desc')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ul className="-my-1.5">
+                  <ul className="-my-1.5 grid grid-cols-1 gap-x-10 @[720px]:grid-cols-2">
                     {d.lifetime.map((s) => (
                       <li key={s.id} className="flex items-center gap-3 py-1.5">
                         <AppIcon sub={s} className="size-7 rounded-md" />
@@ -446,7 +446,8 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
         fixed(
           'pile',
           <div className="mt-6 -mb-12">
-            <IconPile items={d.live.filter((x) => x.v > 0)} />
+            {/* 编辑时只占位：图标层盖在所有内容之上，落下来会挡住画布 */}
+            {canvas ? <div style={{ height: PILE_HEIGHT }} /> : <IconPile items={d.live.filter((x) => x.v > 0)} />}
           </div>,
         )}
     </Shell>
@@ -668,7 +669,7 @@ function Composition({ cats, total, k, fmt }: { cats: Derived['cats']; total: nu
             />
           ))}
         </div>
-        <ul className="mt-5 space-y-2.5">
+        <ul className="mt-5 grid grid-cols-1 gap-x-10 gap-y-2.5 @[720px]:grid-cols-2">
           {top.map((x, i) => (
             <li key={x.name} className="flex items-center gap-2.5">
               <i className="size-2.5 rounded-md" style={{ background: shade(i) }} />
@@ -719,7 +720,8 @@ function Currencies({ d, ccy, fmt }: { d: Derived; ccy: Ccy; fmt: (v: number) =>
             />
           ))}
         </div>
-        <ul className="mt-5 space-y-2.5">
+        {/* 这张卡一行字段多，比其他卡晚一点分列 */}
+        <ul className="mt-5 grid grid-cols-1 gap-x-10 gap-y-2.5 @[880px]:grid-cols-2">
           {rows.map(({ now, ...f }, i) => {
             return (
               <li key={f.c} className="flex items-center gap-2.5">
@@ -774,7 +776,7 @@ function SubList({ d, today, ccy, k, fmt }: { d: Derived; today: string; ccy: Cc
             ))}
           </div>
         </div>
-        <ul className="grid gap-x-10 @[720px]:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-x-10 @[720px]:grid-cols-2">
           <AnimatePresence initial={false} mode="popLayout">
             {rows.map(({ s, v }) => (
               <motion.li key={s.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }} className="border-b-[0.5px] border-border/60">

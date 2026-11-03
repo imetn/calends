@@ -16,6 +16,8 @@ const MIN = 36;
 const MAX = 150;
 /** 图标总面积占落地区域的比例：约六成，能堆两三层又不至于溢出 */
 const FILL = 0.6;
+/** 落地区高度 */
+export const PILE_HEIGHT = 300;
 
 /** 按每月花费占比定边长：面积与金额成正比，总面积按落地区域大小缩放，再夹在 MIN～MAX 之间 */
 function sizes(items: PileItem[], width: number, height: number): number[] {
@@ -30,7 +32,7 @@ function sizes(items: PileItem[], width: number, height: number): number[] {
  * 访客滚到页面最底、继续往下滑让这块落地区露出来时，图标才从屏幕顶端落下，越过页面内容（最上层），按真实物理堆在页脚下面。
  * 点一下消失一个；想让它们重新落下，刷新页面即可。物理引擎（matter-js）到这时才加载；系统开启「减少动态效果」时直接显示堆好的样子。
  */
-export function IconPile({ items, height = 300 }: { items: PileItem[]; height?: number }) {
+export function IconPile({ items, height = PILE_HEIGHT }: { items: PileItem[]; height?: number }) {
   const zone = useRef<HTMLDivElement>(null);
   const [armed, setArmed] = useState(false);
   // 预热时就量好落地区、算好每个图标的边长并渲染出来（先隐藏），开始落下时只剩物理计算，不再整体重排
@@ -83,6 +85,7 @@ function PileStage({
   zone: { current: HTMLDivElement | null };
 }) {
   const nodes = useRef<Array<HTMLDivElement | null>>([]);
+  const layer = useRef<HTMLDivElement>(null);
   const removeRef = useRef<(i: number) => void>(() => {});
 
   useEffect(() => {
@@ -99,6 +102,15 @@ function PileStage({
       const W = r.width;
       const floor = r.bottom + scrollY;
       const sz = side;
+
+      // 物理世界的坐标落地时就定了；之后页面变高变矮（展开列表、切换组件），整层跟着落地区移动，不留在原地压住内容；宽度变化不重排
+      const follow = () => {
+        const now = zone.current?.getBoundingClientRect();
+        if (now && layer.current) layer.current.style.transform = `translate(${now.left + scrollX - left}px, ${now.bottom + scrollY - floor}px)`;
+      };
+      const page = new ResizeObserver(follow);
+      page.observe(document.documentElement);
+      page.observe(document.body);
 
       const engine = Engine.create({ gravity: { x: 0, y: 1.2 } });
       const wall = { isStatic: true, friction: 0.6 };
@@ -172,6 +184,7 @@ function PileStage({
       };
       raf = requestAnimationFrame(tick);
       cleanup = () => {
+        page.disconnect();
         Composite.clear(engine.world, false);
         Engine.clear(engine);
       };
@@ -190,7 +203,7 @@ function PileStage({
 
   // 图标层挂在 body 上、按文档坐标定位、盖在所有内容之上；层本身不挡点击，只有图标可以点
   return createPortal(
-    <div className="pointer-events-none absolute top-0 left-0 z-[60] w-0">
+    <div ref={layer} className="pointer-events-none absolute top-0 left-0 z-[60] w-0">
       {items.map((x, i) => (
         <div
           key={x.s.id}

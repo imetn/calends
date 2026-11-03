@@ -27,7 +27,7 @@ export function TenureCard({ state, today }: WidgetProps) {
         </div>
         <div>
           <div className={label}>{t('public.tenure.longest')}</div>
-          <ul className="mt-2 flex flex-col gap-2.5">
+          <ul className="mt-2 grid grid-cols-1 gap-x-10 gap-y-2.5 @[720px]:grid-cols-2">
             {top.map((x) => (
               <li key={x.sub.id}>
                 <div className="flex items-baseline justify-between gap-3">

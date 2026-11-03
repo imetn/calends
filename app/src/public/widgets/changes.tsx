@@ -27,7 +27,7 @@ export function ChangesCard({ state, today, ccy }: WidgetProps) {
         <CardTitle>{t('public.changes.title')}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="-my-1.5">
+        <ul className="-my-1.5 grid grid-cols-1 gap-x-10 @[880px]:grid-cols-2">
           {(all ? rows : rows.slice(0, FOLDED)).map((c, i) => {
             const date = cnDateAuto(c.date, today);
             return (
