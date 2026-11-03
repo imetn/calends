@@ -370,6 +370,8 @@
     "hintTap": "Toque para adicionar ao final da página.",
     "backToLibrary": "Voltar aos componentes",
     "headHint": "Clique no título, no texto ou no avatar da página para editar. Clique no botão de tema para ocultá-lo ou mostrá-lo.",
+    "autoSnap": "Encaixe automático",
+    "autoSnapHint": "Os blocos sobem automaticamente para não deixar linhas vazias.",
     "themeButton": "Botão de tema",
     "themeHide": "Ocultar botão de tema",
     "themeShow": "Mostrar botão de tema (oculto para visitantes)",

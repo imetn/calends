@@ -352,6 +352,8 @@
     "hintTap": "点一下添加到页面最下面。",
     "backToLibrary": "返回组件库",
     "headHint": "点击页面上的标题、正文或头像即可修改，点主题按钮可隐藏或显示。",
+    "autoSnap": "自动吸附",
+    "autoSnapHint": "区块自动向上靠拢，不留空行。",
     "themeButton": "主题按钮",
     "themeHide": "隐藏主题按钮",
     "themeShow": "显示主题按钮（访客现在看不到）",

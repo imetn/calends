@@ -5,7 +5,10 @@ import { effectiveStatus, FALLBACK_FX } from './billing.ts';
 import { maskForPublic } from './mask.ts';
 import { contributionOn } from './metrics.ts';
 import {
+  type PublicGridItem,
   collapseEmpty,
+  compactGrid,
+  placeSnapped,
   restorablePublicPage,
   fillRows,
   fitHeights,
@@ -337,6 +340,58 @@ test('页头：画布上直接改，只有没画布时才留在侧栏；隐藏�
   // 编辑态的标题不能裁切，否则输入框外框看不到
   assert.match(page, /\$\{edit \? '' : 'truncate'\}/);
   assert.doesNotMatch(page, /aria-pressed=\{shown\}/);
+});
+
+test('自动吸附：区块向上靠拢不留空行，只在编辑时生效，不下发给访客', () => {
+  const item = (id: string, x: number, y: number, w: number, h: number) => ({ id, x, y, w, h, min: 1, hidden: false }) as PublicGridItem;
+  const yOf = (items: PublicGridItem[]) => Object.fromEntries(items.map((s) => [s.id, s.y]));
+  // 两个全宽区块中间隔着空行：贴上去；半宽的靠到自己那一列，横向不变
+  const gaps = [item('stats', 0, 2, 12, 4), item('chart', 0, 10, 12, 6), item('fx', 6, 30, 6, 4), { ...item('list', 0, 0, 12, 6), hidden: true }];
+  const packed = compactGrid(gaps);
+  assert.deepEqual(yOf(packed), { stats: 0, chart: 4, fx: 10, list: 0 });
+  assert.equal(packed.find((s) => s.id === 'fx')!.x, 6);
+  assert.equal(packed.find((s) => s.id === 'list')!.hidden, true, '隐藏的不参与');
+  assert.deepEqual(compactGrid(packed), packed, '再吸附一次不变');
+  // 左高右矮：全宽的排在高的下面，半宽的补到矮的下面
+  const uneven = compactGrid([item('stats', 0, 0, 6, 6), item('fx', 6, 0, 6, 2), item('chart', 0, 9, 12, 4), item('years', 6, 3, 6, 2)]);
+  assert.deepEqual(yOf(uneven), { stats: 0, fx: 0, years: 2, chart: 6 });
+  // 拖动：领先的边越过中线才换位，松手的位置就是预览的位置
+  const two = [item('stats', 0, 0, 12, 12), item('chart', 0, 12, 12, 2)];
+  assert.deepEqual(yOf(placeSnapped(two, 'stats', { x: 0, y: 1, w: 12, h: 12 })), { stats: 0, chart: 12 }, '没过中线，弹回原位');
+  assert.deepEqual(yOf(placeSnapped(two, 'stats', { x: 0, y: 2, w: 12, h: 12 })), { chart: 0, stats: 2 }, '下边过了中线');
+  assert.deepEqual(yOf(placeSnapped(two, 'chart', { x: 0, y: 0, w: 12, h: 2 })), { chart: 0, stats: 2 }, '拖到最上面，高卡片也能越过');
+  assert.deepEqual(yOf(placeSnapped(two, 'chart', { x: 0, y: 6, w: 12, h: 2 })), { chart: 0, stats: 2 }, '上边刚到中线');
+  assert.deepEqual(yOf(placeSnapped(two, 'chart', { x: 0, y: 7, w: 12, h: 2 })), { stats: 0, chart: 12 }, '上边没到中线');
+  assert.deepEqual(yOf(placeSnapped(two, 'stats', { x: 0, y: 0, w: 12, h: 6 })), { stats: 0, chart: 6 }, '改矮后下面跟上');
+  // 同一行横着拖到别的卡片上：两个方向都占到这一行，对方往下让
+  const row = [item('stats', 0, 0, 6, 4), item('fx', 6, 0, 6, 4)];
+  assert.deepEqual(yOf(placeSnapped(row, 'fx', { x: 0, y: 0, w: 6, h: 4 })), { fx: 0, stats: 4 });
+  assert.deepEqual(yOf(placeSnapped(row, 'stats', { x: 6, y: 0, w: 6, h: 4 })), { stats: 0, fx: 4 });
+  // 只动了一下没换位：从吸附好的状态开始拖，位置不变（画布据此判断没有改动）
+  const held = compactGrid([item('stats', 0, 0, 12, 4), item('chart', 0, 10, 12, 6)]);
+  assert.equal(samePlacement(placeSnapped(held, 'chart', { x: 0.1, y: 4.1, w: 12, h: 6 }), held), true);
+  // 没摆放过的页面不存几何，吸附不能把它变成摆放过
+  const flow = publicGrid(undefined);
+  assert.equal(compactGrid(flow), flow);
+  // 配置：只存 false，访客拿不到，备份保留
+  assert.equal(validPublicPage({ autoSnap: false }), true);
+  assert.equal(validPublicPage({ autoSnap: true }), false);
+  assert.equal('autoSnap' in publicConfigForVisitors({ autoSnap: false })!, false);
+  assert.equal(restorablePublicPage({ autoSnap: false, bio: 'hello' })?.autoSnap, false);
+  assert.equal(restorablePublicPage({ autoSnap: true, bio: 'hello' })?.autoSnap, undefined);
+});
+
+test('自动吸附：画布按开关选摆放方式，编辑页改区块都经过吸附', () => {
+  const canvas = readFileSync(new URL('../app/src/public/canvas.tsx', import.meta.url), 'utf8');
+  assert.match(canvas, /const place = text\.snap \? placeSnapped : placeItem;/);
+  assert.doesNotMatch(canvas, /= placeItem\(d\.base/);
+  // 只点一下不算改动；拖入的组件不受隐藏前旧位置影响
+  assert.match(canvas, /text\.snap \? compactGrid\(fitHeights\(items, need\)\)/);
+  assert.match(canvas, /hidden: false, y: publicGridBottom\(current\)/);
+  const editor = readFileSync(new URL('../app/src/views/PublicPageEditor.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(editor, /setDraft\(\(d\) => (hideSection|addWidget)/);
+  assert.match(editor, /editGrid\(\(d\) => \{\s*\/\/ 刚拖进来/);
+  assert.match(editor, /\{canvasOn && \(\s*<span className="ppe-snap"/);
 });
 
 test('预览消息：只接受同源父窗口，发消息限定本站', () => {

@@ -4,6 +4,7 @@ import { t } from '../../../shared/i18n.ts';
 import { maskForPublic } from '../../../shared/mask.ts';
 import { Picker } from '../components/Picker.tsx';
 import {
+  compactGrid,
   metricsFor,
   metricWithTemplate,
   newMetricItem,
@@ -51,6 +52,7 @@ interface Draft {
   bio: string;
   avatar?: string;
   themeButton: boolean;
+  snap: boolean;
   grid: PublicGridItem[];
   bottom: Record<PublicBottomId, boolean>;
 }
@@ -61,6 +63,7 @@ const draftOf = (publicTitle: string | undefined, cfg: PublicPageConfig | undefi
   bio: cfg?.bio ?? '',
   avatar: cfg?.avatar,
   themeButton: cfg?.themeButton !== false,
+  snap: cfg?.autoSnap !== false,
   grid: publicGrid(cfg),
   bottom: { footer: publicBottomShown(cfg, 'footer'), pile: publicBottomShown(cfg, 'pile') },
 });
@@ -74,6 +77,7 @@ function configOf(d: Draft): PublicPageConfig | undefined {
     ...(d.bio.trim() ? { bio: d.bio.trim() } : {}),
     ...(d.avatar ? { avatar: d.avatar } : {}),
     ...(d.themeButton ? {} : { themeButton: false as const }),
+    ...(d.snap ? {} : { autoSnap: false as const }),
     ...(sections.length ? { sections } : {}),
   };
   return Object.keys(cfg).length ? cfg : undefined;
@@ -298,6 +302,12 @@ export function PublicPageEditor({ state }: { state: AppState }) {
   // 触屏上手指要用来滚动页面，画布只看不改
   const touch = useMedia('(pointer: coarse)');
   const up = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
+  /** 改动区块的操作都走这里：开着自动吸附就顺手靠拢 */
+  const editGrid = (change: (d: Draft) => Draft) =>
+    setDraft((d) => {
+      const next = change(d);
+      return next.snap && next.grid !== d.grid ? { ...next, grid: compactGrid(next.grid) } : next;
+    });
   const canvasOn = !narrow && !touch && device === 'desktop';
 
   const config = configOf(draft);
@@ -322,6 +332,7 @@ export function PublicPageEditor({ state }: { state: AppState }) {
             remove: t('settings.publicPage.remove'),
             empty: t('settings.publicPage.emptyCard'),
             selected: selected ?? undefined,
+            snap: draft.snap,
             head: {
               title: draft.publicTitle.trim(),
               titleLabel: t('settings.open.publicTitle'),
@@ -335,7 +346,7 @@ export function PublicPageEditor({ state }: { state: AppState }) {
           }
         : undefined,
     }),
-    [configKey, draft.publicTitle, s.displayName, s.avatar, canvasOn, selected],
+    [configKey, draft.publicTitle, draft.snap, s.displayName, s.avatar, canvasOn, selected],
   );
   const frame = useRef<HTMLIFrameElement>(null);
   const ready = useRef(false);
@@ -356,7 +367,7 @@ export function PublicPageEditor({ state }: { state: AppState }) {
           if (typeof head.themeButton === 'boolean') up({ themeButton: head.themeButton });
         }
         if (sections && validPublicPage({ sections })) {
-          setDraft((d) => {
+          editGrid((d) => {
             // 刚拖进来的指标卡直接选中，接着选数据
             const added = publicGrid({ sections }).find((x) => x.metric && !d.grid.some((o) => o.id === x.id));
             if (added) setSelected(added.id);
@@ -364,7 +375,7 @@ export function PublicPageEditor({ state }: { state: AppState }) {
           });
         }
         if (remove) {
-          setDraft((d) => hideSection(d, remove));
+          editGrid((d) => hideSection(d, remove));
           setSelected((cur) => (cur === remove ? null : cur));
         }
         if (select) setSelected(select);
@@ -411,7 +422,7 @@ export function PublicPageEditor({ state }: { state: AppState }) {
     const box = el.getBoundingClientRect();
     const over = phase !== 'cancel' && x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
     if (isBottom(id)) {
-      if (phase === 'end' && over) setDraft((d) => addWidget(d, id));
+      if (phase === 'end' && over) editGrid((d) => addWidget(d, id));
       return false;
     }
     const scale = box.width / el.offsetWidth;
@@ -460,6 +471,16 @@ export function PublicPageEditor({ state }: { state: AppState }) {
         }
       >
         {!narrow && deviceSeg}
+        {canvasOn && (
+          <span className="ppe-snap" title={t('settings.publicPage.autoSnapHint')}>
+            {t('settings.publicPage.autoSnap')}
+            <Toggle
+              label={t('settings.publicPage.autoSnap')}
+              checked={draft.snap}
+              onChange={(snap) => setDraft((d) => ({ ...d, snap, grid: snap ? compactGrid(d.grid) : d.grid }))}
+            />
+          </span>
+        )}
         <button
           type="button"
           className="btn"
@@ -508,10 +529,10 @@ export function PublicPageEditor({ state }: { state: AppState }) {
           ) : current?.metric ? (
             <MetricInspector
               card={current.metric}
-              onChange={(metric) => setDraft((d) => ({ ...d, grid: setMetric(d.grid, current.id, metric) }))}
+              onChange={(metric) => editGrid((d) => ({ ...d, grid: setMetric(d.grid, current.id, metric) }))}
               onClose={() => setSelected(null)}
               onRemove={() => {
-                setDraft((d) => hideSection(d, current.id));
+                editGrid((d) => hideSection(d, current.id));
                 setSelected(null);
               }}
             />
@@ -538,8 +559,8 @@ export function PublicPageEditor({ state }: { state: AppState }) {
                           placed={placedOf(id)}
                           disabled={isTemplate(id) && full}
                           draggable={canvasOn}
-                          onAdd={() => setDraft((d) => addWidget(d, id))}
-                          onRemove={() => setDraft((d) => hideSection(d, id))}
+                          onAdd={() => editGrid((d) => addWidget(d, id))}
+                          onRemove={() => editGrid((d) => hideSection(d, id))}
                           onDrag={(phase, x, y) => dragWidget(id, phase, x, y)}
                         />
                       ))}

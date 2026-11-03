@@ -141,6 +141,7 @@ const hasRect = (s?: PublicSectionConfig): s is PublicSectionConfig & PublicRect
   !!s && [s.x, s.y, s.w, s.h].every((v) => typeof v === 'number' && Number.isFinite(v));
 const overlaps = (a: PublicRect, b: PublicRect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 const byPosition = (a: PublicRect, b: PublicRect) => a.y - b.y || a.x - b.x;
+const sharesColumn = (a: PublicRect, b: PublicRect) => a.x < b.x + b.w && b.x < a.x + a.w;
 
 /** 没摆放过的页面：按组件顺序排，每行补满，和访客看到的流式排列一致 */
 function flowRects(items: PublicGridItem[]): PublicGridItem[] {
@@ -225,6 +226,45 @@ export const setMetric = (items: PublicGridItem[], id: string, metric: PublicMet
 export function placeItem(items: PublicGridItem[], id: string, rect: PublicRect): PublicGridItem[] {
   const item = items.find((s) => s.id === id);
   return item ? settle(items, { ...item, ...fitRect(item, rect) }) : items;
+}
+
+/** 按顺序从上往下码：每张卡片靠到它占的列里已码好的最低处，不留空行 */
+function stacked(order: PublicGridItem[], hidden: PublicGridItem[]): PublicGridItem[] {
+  const done: PublicGridItem[] = [];
+  for (const item of order) {
+    const y = Math.max(0, ...done.filter((d) => sharesColumn(d, item)).map((d) => d.y + d.h));
+    done.push({ ...item, y });
+  }
+  return [...done.sort(byPosition), ...hidden];
+}
+
+/** 自动吸附：所有卡片向上靠拢，横向位置和上下顺序不变。没摆放过的页面本来就是排满的，不动 */
+export function compactGrid(items: PublicGridItem[]): PublicGridItem[] {
+  if (isFlowGrid(items)) return items;
+  return stacked(
+    items.filter((s) => !s.hidden).sort(byPosition),
+    items.filter((s) => s.hidden),
+  );
+}
+
+/** 自动吸附时摆一张卡：拖动方向上领先的那条边越过别的卡片中线就换位，其余向上靠拢 */
+export function placeSnapped(items: PublicGridItem[], id: string, rect: PublicRect): PublicGridItem[] {
+  const item = items.find((s) => s.id === id);
+  if (!item) return items;
+  const next = { ...item, ...fitRect(item, rect) };
+  const others = items.filter((s) => !s.hidden && s.id !== id).sort(byPosition);
+  const before = (o: PublicGridItem) => {
+    const middle = o.y + o.h / 2;
+    if (next.y > item.y) return next.y + next.h > middle;
+    if (next.y < item.y) return next.y > middle;
+    // 上下没动（横着拖、改宽）：这一行归被拖的卡片，同一行的往下让
+    return o.y < item.y;
+  };
+  const at = others.findLastIndex((o) => sharesColumn(o, next) && before(o)) + 1;
+  return stacked(
+    [...others.slice(0, at), next, ...others.slice(at)],
+    items.filter((s) => s.hidden && s.id !== id),
+  );
 }
 
 /** 两次摆放是否一样：指针还在同一格时不用重画 */
@@ -319,11 +359,12 @@ export const validPublicAvatar = (v: unknown) => v === undefined || (typeof v ==
 export function validPublicPage(cfg: unknown): boolean {
   if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) return false;
   const c = cfg as Record<string, unknown>;
-  if (Object.keys(c).some((k) => !['browserTitle', 'bio', 'avatar', 'themeButton', 'sections'].includes(k))) return false;
+  if (Object.keys(c).some((k) => !['browserTitle', 'bio', 'avatar', 'themeButton', 'autoSnap', 'sections'].includes(k))) return false;
   const text = (v: unknown, max: number) => v === undefined || (typeof v === 'string' && v.length <= max);
   if (!text(c.browserTitle, PUBLIC_TITLE_MAX) || !text(c.bio, PUBLIC_BIO_MAX)) return false;
   if (!validPublicAvatar(c.avatar)) return false;
   if (c.themeButton !== undefined && c.themeButton !== false) return false;
+  if (c.autoSnap !== undefined && c.autoSnap !== false) return false;
   if (c.sections !== undefined) {
     if (!Array.isArray(c.sections)) return false;
     const seen = new Set<string>();
@@ -353,7 +394,7 @@ export function restorablePublicPage(raw: unknown): PublicPageConfig | undefined
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const c = raw as Record<string, unknown>;
   const out: Record<string, unknown> = {};
-  for (const k of ['browserTitle', 'bio', 'avatar', 'themeButton']) if (c[k] !== undefined && validPublicPage({ [k]: c[k] })) out[k] = c[k];
+  for (const k of ['browserTitle', 'bio', 'avatar', 'themeButton', 'autoSnap']) if (c[k] !== undefined && validPublicPage({ [k]: c[k] })) out[k] = c[k];
   if (Array.isArray(c.sections)) {
     const seen = new Set<string>();
     let cards = 0;

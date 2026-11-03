@@ -352,6 +352,8 @@
     "hintTap": "Chạm để thêm xuống cuối trang.",
     "backToLibrary": "Quay lại thành phần",
     "headHint": "Nhấp vào tiêu đề, nội dung hoặc ảnh đại diện trên trang để sửa. Nhấp vào nút giao diện để ẩn hoặc hiện nút.",
+    "autoSnap": "Tự động căn sát",
+    "autoSnapHint": "Các khối tự động dồn lên trên, không để lại hàng trống.",
     "themeButton": "Nút giao diện",
     "themeHide": "Ẩn nút giao diện",
     "themeShow": "Hiện nút giao diện (đang ẩn với khách)",

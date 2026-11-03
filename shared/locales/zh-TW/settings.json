@@ -352,6 +352,8 @@
     "hintTap": "點一下新增到頁面最下面。",
     "backToLibrary": "返回元件庫",
     "headHint": "點擊頁面上的標題、內文或頭像即可修改，點主題按鈕可隱藏或顯示。",
+    "autoSnap": "自動吸附",
+    "autoSnapHint": "區塊自動向上靠攏，不留空行。",
     "themeButton": "主題按鈕",
     "themeHide": "隱藏主題按鈕",
     "themeShow": "顯示主題按鈕（訪客現在看不到）",

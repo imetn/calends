@@ -447,6 +447,8 @@ export interface PublicPageConfig {
   avatar?: string;
   /** false：访客页不显示主题按钮；缺省显示 */
   themeButton?: false;
+  /** false：画布上自由摆放，可以留空；缺省自动吸附。只影响编辑，不下发给访客 */
+  autoSnap?: false;
   sections?: PublicSectionConfig[];
 }
 

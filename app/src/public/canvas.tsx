@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
-import { fitHeights, newMetricItem, placeItem, publicGridBottom, publicGrid, PUBLIC_COLUMNS, PUBLIC_MAX_HEIGHT, PUBLIC_METRIC_TEMPLATES, PUBLIC_PREVIEW_DROP, samePlacement, type PublicGridItem, type PublicMetricTemplate, type PublicRect } from '../../../shared/public-layout.ts';
+import { compactGrid, fitHeights, newMetricItem, placeItem, placeSnapped, publicGridBottom, publicGrid, PUBLIC_COLUMNS, PUBLIC_MAX_HEIGHT, PUBLIC_METRIC_TEMPLATES, PUBLIC_PREVIEW_DROP, samePlacement, type PublicGridItem, type PublicMetricTemplate, type PublicRect } from '../../../shared/public-layout.ts';
 
 /** 网格一行的高度和间距，和 index.css 的 .public-grid 一致 */
 const ROW = 24;
@@ -14,7 +14,7 @@ const SCROLL_SPEED = 12;
 const DRAG_START = 3;
 
 export type CanvasHead = { title: string; titleLabel: string; titlePlaceholder: string; bioLabel: string; bioPlaceholder: string; avatarLabel: string; themeHide: string; themeShow: string };
-export type CanvasText = { labels: Record<string, string>; remove: string; empty: string; selected?: string; head: CanvasHead };
+export type CanvasText = { labels: Record<string, string>; remove: string; empty: string; selected?: string; snap: boolean; head: CanvasHead };
 type Mode = 'move' | 'e' | 's' | 'se';
 type Drag = { id: string; mode: Mode; base: PublicGridItem[]; from: PublicGridItem; startX: number; startY: number; x: number; y: number; latest: PublicGridItem[]; frame: number; incoming?: boolean; measured?: boolean; fit?: { w: number; rows: number } };
 
@@ -50,6 +50,9 @@ export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
     setItems(grid);
   }
 
+  const place = text.snap ? placeSnapped : placeItem;
+  // 从吸附好的状态开始拖：只点一下时卡片位置不变，不算改动
+  const fitted = (need: Record<string, number>) => (text.snap ? compactGrid(fitHeights(items, need)) : fitHeights(items, need));
   const cellOf = (id: string) => root.current?.querySelector<HTMLElement>(`[data-cell="${id}"]`);
 
   // 新添加的卡片在页面最下面，滚过去让主人看到
@@ -79,7 +82,7 @@ export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
     if (d.fit?.w !== item.w) d.fit = { w: item.w, rows: naturalRows(cell) };
     const need = Math.min(d.fit.rows, PUBLIC_MAX_HEIGHT);
     if (item.h < need) {
-      d.latest = placeItem(d.base, d.id, { ...item, h: need });
+      d.latest = place(d.base, d.id, { ...item, h: need });
       setItems(d.latest);
     }
   }, [items]);
@@ -96,7 +99,7 @@ export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
         : { x, y, w: d.mode === 's' ? w : Math.min(w + dx, PUBLIC_COLUMNS - x), h: d.mode === 'e' ? h : h + dy };
     // 宽度没变时直接按量好的高度封底，往上拖过头不用先画矮再补回来
     if (d.fit?.w === Math.max(d.from.min, Math.round(rect.w))) rect.h = Math.max(rect.h, Math.min(d.fit.rows, PUBLIC_MAX_HEIGHT));
-    const next = placeItem(d.base, d.id, rect);
+    const next = place(d.base, d.id, rect);
     if (samePlacement(next, d.latest)) return;
     d.latest = next;
     setItems(next);
@@ -124,7 +127,7 @@ export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
       const cell = !s.hidden && cellOf(s.id);
       if (cell) need[s.id] = naturalRows(cell);
     }
-    const base = fitHeights(items, need);
+    const base = fitted(need);
     const from = base.find((s) => s.id === id)!;
     drag.current = { id, mode, base, from, startX: e.clientX, startY: e.clientY + window.scrollY, x: e.clientX, y: e.clientY, latest: base, frame: 0, fit: { w: from.w, rows: need[id] } };
     setActive({ id, mode });
@@ -172,11 +175,12 @@ export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
       const cell = !s.hidden && cellOf(s.id);
       if (cell) need[s.id] = naturalRows(cell);
     }
-    const fitted = fitHeights(items, need);
+    const current = fitted(need);
     const metric = (PUBLIC_METRIC_TEMPLATES as readonly string[]).includes(widget);
-    const added = metric ? newMetricItem(fitted, widget as PublicMetricTemplate) : fitted.find((s) => s.id === widget);
+    const added = metric ? newMetricItem(current, widget as PublicMetricTemplate) : current.find((s) => s.id === widget);
     if (!added || (!metric && !added.hidden)) return;
-    const base = metric ? [...fitted, added] : fitted.map((s) => (s.id === widget ? { ...s, hidden: false } : s));
+    // 新来的都从页面最下面算起：隐藏前的旧位置不能影响换位方向
+    const base = metric ? [...current, added] : current.map((s) => (s.id === widget ? { ...s, hidden: false, y: publicGridBottom(current) } : s));
     const box = root.current.getBoundingClientRect();
     const column = (root.current.clientWidth + GAP) / PUBLIC_COLUMNS;
     const from = { ...added, hidden: false, x: (x - box.left) / column - added.w / 2, y: (y - box.top) / STEP };
