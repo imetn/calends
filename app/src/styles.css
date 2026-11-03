@@ -613,6 +613,11 @@ a {
   line-height: 1.5;
   white-space: pre-line;
 }
+.group-foot .as-link {
+  color: var(--label);
+  font: inherit;
+  text-decoration-color: currentColor;
+}
 .cell {
   display: flex;
   align-items: center;

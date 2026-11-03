@@ -232,6 +232,8 @@
     "settledCcy": "Kartenwährung",
     "settledAmount": "Kartenbetrag",
     "usageFoot": "Wird dem Abrechnungszeitraum {period} zugeordnet",
+    "earlyHint": "Zählt als vorzeitige Verlängerung: begleicht die Periode vom {settles}, die nächste ist am {next}.",
+    "earlyExtra": "Das ist eine Zusatzgebühr",
     "freezeHint": "Abbuchungen in dieser Phase werden derzeit aus dem Abrechnungszeitraum geschätzt. Beim Sichern werden die geschätzten Abbuchungen von {amount} bis heute zuerst in Einträge umgewandelt; danach sind die Einträge maßgeblich. Künftige Abbuchungen bleiben unverändert.",
     "method": "Zahlungsmethode",
     "scopeOne": "Nur diese Abbuchung",

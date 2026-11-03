@@ -232,6 +232,8 @@
     "settledCcy": "Kart para birimi",
     "settledAmount": "Kart tutarı",
     "usageFoot": "{period} fatura dönemine kaydedilir",
+    "earlyHint": "Erken yenileme sayılır: {settles} dönemini kapatır, sonraki dönem {next}.",
+    "earlyExtra": "Bu ek bir ücret",
     "freezeHint": "Bu dönemdeki ödemeler şu anda ödeme döneminden tahmin ediliyor. Kaydettiğinizde bugüne kadarki tahmini ödemeler ({amount}) önce kayda dönüştürülür; bundan sonra esas alınan kayıtlardır. Gelecek ödemeler değişmez.",
     "method": "Ödeme yöntemi",
     "scopeOne": "Yalnızca bu ödeme",

@@ -491,3 +491,264 @@ test('issue #11 三审：补记旧账后再记账不丢历史推算', async () =
   assert.equal(total(savePayment(ended, today, { date: '2023-06-01', amount: 10 }, { date: '2023-06-01', index: 0 })), total(ended));
   assert.equal(total(savePayment(ended, today, { date: '2023-06-15', amount: 10 })), total(ended));
 });
+
+test('issue #11：旧版提前记账不改数据也按提前续费算', async () => {
+  const { savePayment, deletePayment, earlyRenewalEffect, stopSubscription } = await import('./phases.ts');
+  const { billingPeriod, settleLegacyEarly, subError } = await import('./billing.ts');
+  const sub = base({
+    start: '2026-08-02',
+    nextDue: '2026-11-02',
+    payments: [
+      { date: '2026-09-02', amount: 10 },
+      { date: '2026-10-02', amount: 10 },
+      { date: '2026-10-28', amount: 10 },
+    ],
+  });
+  assert.equal(nextCharge(sub, '2026-10-30'), '2026-12-02');
+  assert.deepEqual(billingPeriod(sub, '2026-11-15').from, '2026-11-02');
+  assert.equal(sub.nextDue, '2026-11-02');
+  assert.equal(sub.payments?.[2].serviceDate, undefined);
+  // 保存时才落成记录；删掉这一笔恢复原到期日
+  const saved = savePayment(sub, '2026-10-30', { date: '2026-10-02', amount: 12 }, { date: '2026-10-02', index: 0 });
+  assert.equal(saved.nextDue, '2026-12-02');
+  assert.equal(saved.payments?.at(-1)?.serviceDate, '2026-11-02');
+  assert.equal(nextCharge(deletePayment(sub, '2026-10-30', '2026-10-28', 0), '2026-10-30'), '2026-11-02');
+  // 连续提前的旧记录
+  const chain = base({
+    start: '2026-08-02',
+    nextDue: '2026-11-02',
+    payments: [
+      { date: '2026-10-02', amount: 10 },
+      { date: '2026-10-28', amount: 10 },
+      { date: '2026-11-28', amount: 10 },
+    ],
+  });
+  assert.equal(nextCharge(chain, '2026-11-29'), '2027-01-02');
+
+  // 不算提前：晚两天付、准时付、上一期没结清、付得太早
+  const late = base({
+    start: '2026-08-01',
+    nextDue: '2026-11-01',
+    payments: [
+      { date: '2026-09-03', amount: 10 },
+      { date: '2026-10-03', amount: 10 },
+    ],
+  });
+  assert.equal(nextCharge(late, '2026-10-30'), '2026-11-01');
+  const onTime = base({
+    start: '2026-08-01',
+    nextDue: '2026-11-01',
+    payments: [
+      { date: '2026-09-01', amount: 10 },
+      { date: '2026-10-01', amount: 10 },
+    ],
+  });
+  assert.equal(nextCharge(onTime, '2026-10-30'), '2026-11-01');
+  const unsettled = base({
+    start: '2026-08-02',
+    nextDue: '2026-11-02',
+    payments: [
+      { date: '2026-08-02', amount: 10 },
+      { date: '2026-10-28', amount: 10 },
+    ],
+  });
+  assert.equal(nextCharge(unsettled, '2026-10-30'), '2026-11-02');
+  const tooEarly = base({
+    start: '2026-08-02',
+    nextDue: '2026-11-02',
+    payments: [
+      { date: '2026-10-02', amount: 10 },
+      { date: '2026-10-10', amount: 10 },
+    ],
+  });
+  assert.equal(nextCharge(tooEarly, '2026-10-30'), '2026-11-02');
+
+  // 表单提示：只在真的顺延时出现，额外费用不顺延
+  const live = base({ start: '2026-08-02', nextDue: '2026-11-02', payments: [{ date: '2026-10-02', amount: 10 }] });
+  assert.deepEqual(earlyRenewalEffect(live, '2026-10-28', { date: '2026-10-28', amount: 10 }), { settles: '2026-11-02', next: '2026-12-02' });
+  assert.equal(earlyRenewalEffect(live, '2026-10-28', { date: '2026-10-28', amount: 10, kind: 'adjust' }), undefined);
+  assert.equal(earlyRenewalEffect(live, '2026-11-02', { date: '2026-11-02', amount: 10 }), undefined);
+  assert.equal(nextCharge(savePayment(live, '2026-10-28', { date: '2026-10-28', amount: 3, kind: 'adjust' }), '2026-10-29'), '2026-11-02');
+
+  // 审查：迟付超过半周期不算提前，新代码写入的不会被重新解释
+  const never = base({ start: '2026-08-01' });
+  const paid = ['2026-08-01', '2026-09-20', '2026-10-20', '2026-11-20'].reduce((x, date) => savePayment(x, date, { date, amount: 10 }), never);
+  assert.equal(nextCharge(paid, '2026-11-21'), '2026-12-01');
+  assert.equal(
+    paid.payments?.some((p) => p.serviceDate),
+    false,
+  );
+  // 审查：账单日改到付款之后不吞掉那一期
+  const moved = base({
+    start: '2026-08-10',
+    nextDue: '2026-11-20',
+    payments: [
+      { date: '2026-10-10', amount: 10 },
+      { date: '2026-11-10', amount: 10 },
+    ],
+  });
+  assert.equal(nextCharge(moved, '2026-11-11'), '2026-11-20');
+  // 审查：连续提前删中间一笔只退一期
+  assert.equal(nextCharge(deletePayment(chain, '2026-11-29', '2026-10-28', 0), '2026-11-29'), '2026-12-02');
+  // 审查：停用、暂停后已结清的一期不再冒出来
+  const days = (x: Subscription) => chargesBetween(x, '2026-10-01', '2026-11-30', '2026-11-30').map((c) => c.date);
+  assert.deepEqual(days(sub), ['2026-10-02', '2026-10-28']);
+  assert.deepEqual(days({ ...sub, status: 'cancelled', end: '2026-11-15' }), ['2026-10-02', '2026-10-28']);
+  assert.deepEqual(days({ ...sub, status: 'paused', pausedAt: '2026-11-15' }), ['2026-10-02', '2026-10-28']);
+  // 审查：提示只看写入的那一段；长周期也提示
+  const a = {
+    start: '2026-01-02',
+    end: '2026-12-31',
+    price: 10,
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+    nextDue: '2026-11-02',
+    payments: [{ date: '2026-10-02', amount: 10 }],
+  };
+  const b = {
+    start: '2026-01-20',
+    price: 20,
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+    nextDue: '2026-11-20',
+    payments: [{ date: '2026-10-20', amount: 20 }],
+  };
+  const both = base({ start: '2026-01-02', phases: [a, b] as Subscription['phases'] });
+  assert.deepEqual(earlyRenewalEffect(both, '2026-10-28', { date: '2026-10-28', amount: 10 }, undefined, a.start), {
+    settles: '2026-11-02',
+    next: '2026-12-02',
+  });
+  assert.deepEqual(earlyRenewalEffect(both, '2026-10-28', { date: '2026-10-28', amount: 10 }), { settles: '2026-11-20', next: '2026-12-20' });
+  const long = base({ start: '2024-01-10', cycle: { unit: 'year', every: 3 }, nextDue: '2027-01-10', payments: [{ date: '2024-01-10', amount: 10 }] });
+  assert.deepEqual(earlyRenewalEffect(long, '2026-12-20', { date: '2026-12-20', amount: 10 }), { settles: '2027-01-10', next: '2030-01-10' });
+
+  // 二审：存储的 nextDue 落后是旧数据的常态
+  const stale = base({
+    start: '2026-08-02',
+    nextDue: '2026-10-02',
+    payments: [
+      { date: '2026-09-02', amount: 10 },
+      { date: '2026-10-02', amount: 10 },
+      { date: '2026-10-28', amount: 10 },
+    ],
+  });
+  assert.equal(nextCharge(stale, '2026-10-29'), '2026-12-02');
+  // 提前一笔之后又准时扣了：那一笔是额外费用，不顺延
+  const extra = base({
+    start: '2026-08-02',
+    nextDue: '2026-10-02',
+    payments: [
+      { date: '2026-10-02', amount: 10 },
+      { date: '2026-10-28', amount: 10 },
+      { date: '2026-11-02', amount: 10 },
+    ],
+  });
+  assert.equal(nextCharge(extra, '2026-11-03'), '2026-12-02');
+  // 二审：那一期在结束日、停止日、暂停日之后就不用结清
+  const legacy = { start: '2026-08-02', nextDue: '2026-11-02', payments: sub.payments };
+  const ending = base({
+    start: '2026-08-08',
+    end: '2026-11-05',
+    chargeLeadDays: 5,
+    nextDue: '2026-11-03',
+    payments: [
+      { date: '2026-09-03', amount: 10 },
+      { date: '2026-10-03', amount: 10 },
+      { date: '2026-10-30', amount: 10 },
+    ],
+  });
+  assert.equal(settleLegacyEarly(ending), ending);
+  const beforeDue = { date: '2026-10-30', kind: 'terminate', paidThrough: '2026-11-01' } as Subscription['stop'];
+  for (const x of [
+    base({ ...legacy, stop: beforeDue }),
+    base({ ...legacy, status: 'paused', pausedAt: '2026-10-30' }),
+    base({ ...legacy, status: 'paused' }),
+    base({ ...legacy, status: 'cancelled' }),
+  ])
+    assert.equal(settleLegacyEarly(x), x);
+  // 二审：同一天再记一笔不提示
+  const once = savePayment(live, '2026-10-28', { date: '2026-10-28', amount: 10 });
+  assert.equal(earlyRenewalEffect(once, '2026-10-28', { date: '2026-10-28', amount: 5 }), undefined);
+
+  // 三审：已停用的旧账不被账期计算绕过判断，写入不报错
+  const record = { start: '2026-08-02', nextDue: '2026-10-02', payments: sub.payments };
+  const stoppedOld = base({ ...record, status: 'terminated', end: '2026-10-30', stop: { kind: 'terminate', date: '2026-10-30', paidThrough: '2026-11-01' } });
+  assert.equal(subError(stoppedOld), undefined);
+  assert.equal(billingPeriod(base({ ...record, status: 'paused', pausedAt: '2026-10-30' }), '2026-11-20').paidThrough, '2026-11-20');
+  assert.equal(billingPeriod(base({ ...record, status: 'cancelled' }), '2026-10-30').paidThrough, '2026-11-01');
+  // 暂停在扣款当天：那一笔不会发生，不用结清
+  const pausedOnDue = base({ ...record, status: 'paused', pausedAt: '2026-11-02' });
+  assert.equal(settleLegacyEarly(pausedOnDue), pausedOnDue);
+  // 三审：活跃的旧账当天停用，已付账期算到提前结清的那一期，写入记录
+  const stoppedNow = stopSubscription(base(record), '2026-10-30', 'terminate', '2026-10-30');
+  assert.equal(stoppedNow.stop?.paidThrough, '2026-12-01');
+  assert.equal(stoppedNow.payments?.at(-1)?.serviceDate, '2026-11-02');
+  assert.equal(subError(stoppedNow), undefined);
+  // 停在最后一笔之前：这笔不算提前续费
+  const stoppedBefore = stopSubscription(base(record), '2026-10-30', 'terminate', '2026-10-20');
+  assert.equal(stoppedBefore.payments?.at(-1)?.serviceDate, undefined);
+  assert.equal(subError(stoppedBefore), undefined);
+  // 三审：未来才结束时提示照常；同一天另一段已有提前续费不影响这一段
+  assert.deepEqual(
+    earlyRenewalEffect(
+      base({ start: '2026-08-02', nextDue: '2026-10-02', status: 'cancelled', end: '2026-12-20', payments: sub.payments?.slice(0, 2) }),
+      '2026-10-28',
+      { date: '2026-10-28', amount: 10 },
+    ),
+    { settles: '2026-11-02', next: '2026-12-02' },
+  );
+  const parallel = base({
+    start: '2026-08-02',
+    nextDue: '2026-11-02',
+    phases: [
+      {
+        start: '2026-08-02',
+        end: '2026-12-31',
+        price: 10,
+        currency: 'USD',
+        cycle: { unit: 'month', every: 1 },
+        nextDue: '2026-12-02',
+        payments: [
+          { date: '2026-10-02', amount: 10 },
+          { date: '2026-10-28', amount: 10, serviceDate: '2026-11-02' },
+        ],
+      },
+      {
+        start: '2026-09-02',
+        price: 10,
+        currency: 'USD',
+        cycle: { unit: 'month', every: 1 },
+        nextDue: '2026-11-02',
+        payments: [{ date: '2026-10-02', amount: 10 }],
+      },
+    ],
+  } as Partial<Subscription>);
+  assert.deepEqual(earlyRenewalEffect(parallel, '2026-10-28', { date: '2026-10-28', amount: 10 }, undefined, '2026-09-02'), {
+    settles: '2026-11-02',
+    next: '2026-12-02',
+  });
+  // 三审：记完又退款的是冲销
+  const refundedOld = base({ ...record, payments: [...(sub.payments ?? []), { date: '2026-10-29', amount: -10, kind: 'refund' }] });
+  assert.equal(nextCharge(refundedOld, '2026-10-30'), '2026-11-02');
+  // 三审：月底日号不被夹短，连续提前也能接上
+  const monthEnd = { start: '2026-01-15', nextDue: '2026-01-31' };
+  assert.equal(
+    nextCharge(base({ ...monthEnd, payments: ['01-15', '01-31', '02-28', '03-31', '04-20'].map((d) => ({ date: `2026-${d}`, amount: 10 })) }), '2026-04-21'),
+    '2026-05-31',
+  );
+  assert.equal(
+    nextCharge(
+      base({ ...monthEnd, payments: ['01-15', '01-31', '02-28', '03-20', '04-20', '05-20'].map((d) => ({ date: `2026-${d}`, amount: 10 })) }),
+      '2026-05-21',
+    ),
+    '2026-06-30',
+  );
+  // 三审：赠送期后按赠送结束日算，准时扣款不算提前
+  const afterBonus = base({
+    start: '2026-08-02',
+    nextDue: '2026-09-02',
+    bonus: { from: '2026-09-10', until: '2026-09-20' },
+    payments: ['08-02', '09-02', '09-20', '10-20', '11-20'].map((d) => ({ date: `2026-${d}`, amount: 10 })),
+  });
+  assert.equal(settleLegacyEarly(afterBonus), afterBonus);
+});
