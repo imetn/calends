@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
-import { fitHeights, newMetricItem, placeItem, publicGridBottom, publicGrid, PUBLIC_COLUMNS, PUBLIC_MAX_HEIGHT, PUBLIC_METRIC_TEMPLATES, PUBLIC_PREVIEW_DROP, type PublicGridItem, type PublicMetricTemplate, type PublicRect } from '../../../shared/public-layout.ts';
+import { fitHeights, newMetricItem, placeItem, publicGridBottom, publicGrid, PUBLIC_COLUMNS, PUBLIC_MAX_HEIGHT, PUBLIC_METRIC_TEMPLATES, PUBLIC_PREVIEW_DROP, samePlacement, type PublicGridItem, type PublicMetricTemplate, type PublicRect } from '../../../shared/public-layout.ts';
 
 /** 网格一行的高度和间距，和 index.css 的 .public-grid 一致 */
 const ROW = 24;
@@ -15,7 +15,7 @@ const DRAG_START = 3;
 
 export type CanvasText = { labels: Record<string, string>; remove: string; empty: string; selected?: string };
 type Mode = 'move' | 'e' | 's' | 'se';
-type Drag = { id: string; mode: Mode; base: PublicGridItem[]; from: PublicGridItem; startX: number; startY: number; x: number; y: number; latest: PublicGridItem[]; frame: number; incoming?: boolean; measured?: boolean };
+type Drag = { id: string; mode: Mode; base: PublicGridItem[]; from: PublicGridItem; startX: number; startY: number; x: number; y: number; latest: PublicGridItem[]; frame: number; incoming?: boolean; measured?: boolean; fit?: { w: number; rows: number } };
 
 export const cellVars = (s: PublicRect) => ({ '--x': s.x + 1, '--y': s.y + 1, '--w': s.w, '--h': s.h }) as React.CSSProperties;
 
@@ -74,7 +74,9 @@ export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
       apply();
       return;
     }
-    const need = Math.min(naturalRows(cell), PUBLIC_MAX_HEIGHT);
+    // 内容高度只随宽度变，宽度没变就用上次量的，不强制重排
+    if (d.fit?.w !== item.w) d.fit = { w: item.w, rows: naturalRows(cell) };
+    const need = Math.min(d.fit.rows, PUBLIC_MAX_HEIGHT);
     if (item.h < need) {
       d.latest = placeItem(d.base, d.id, { ...item, h: need });
       setItems(d.latest);
@@ -91,8 +93,12 @@ export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
       d.mode === 'move'
         ? { x: x + dx, y: y + dy, w, h }
         : { x, y, w: d.mode === 's' ? w : Math.min(w + dx, PUBLIC_COLUMNS - x), h: d.mode === 'e' ? h : h + dy };
-    d.latest = placeItem(d.base, d.id, rect);
-    setItems(d.latest);
+    // 宽度没变时直接按量好的高度封底，往上拖过头不用先画矮再补回来
+    if (d.fit?.w === Math.max(d.from.min, Math.round(rect.w))) rect.h = Math.max(rect.h, Math.min(d.fit.rows, PUBLIC_MAX_HEIGHT));
+    const next = placeItem(d.base, d.id, rect);
+    if (samePlacement(next, d.latest)) return;
+    d.latest = next;
+    setItems(next);
   };
 
   const scrollWhileDragging = () => {
@@ -118,7 +124,8 @@ export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
       if (cell) need[s.id] = naturalRows(cell);
     }
     const base = fitHeights(items, need);
-    drag.current = { id, mode, base, from: base.find((s) => s.id === id)!, startX: e.clientX, startY: e.clientY + window.scrollY, x: e.clientX, y: e.clientY, latest: base, frame: 0 };
+    const from = base.find((s) => s.id === id)!;
+    drag.current = { id, mode, base, from, startX: e.clientX, startY: e.clientY + window.scrollY, x: e.clientX, y: e.clientY, latest: base, frame: 0, fit: { w: from.w, rows: need[id] } };
     setActive({ id, mode });
     setItems(base);
   };
@@ -174,6 +181,7 @@ export function Canvas({ config, block, text, onCommit, onRemove, onSelect }: {
     const from = { ...added, hidden: false, x: (x - box.left) / column - added.w / 2, y: (y - box.top) / STEP };
     drag.current = { id: added.id, mode: 'move', base, from, startX: x, startY: y + window.scrollY, x, y, latest: base, frame: requestAnimationFrame(scrollWhileDragging), incoming: true };
     setActive({ id: added.id, mode: 'move' });
+    setItems(base);
     apply();
   };
   // 每次渲染重新订阅：回调要用到最新的 items

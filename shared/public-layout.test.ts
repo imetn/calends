@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { effectiveStatus, FALLBACK_FX } from './billing.ts';
 import { maskForPublic } from './mask.ts';
 import { contributionOn } from './metrics.ts';
-import { collapseEmpty, restorablePublicPage, fillRows, fitHeights, flowSpans, gridConfig, gridSections, hideItem, isCustomLayout, isFlowGrid, metricsFor, metricWithTemplate, newMetricItem, placeItem, PUBLIC_GRID_SECTIONS, publicConfigForVisitors, publicGrid, publicParts, setMetric, showItem, tabletSpan, validPublicPage } from './public-layout.ts';
+import { collapseEmpty, restorablePublicPage, fillRows, fitHeights, flowSpans, gridConfig, gridSections, hideItem, isCustomLayout, isFlowGrid, metricsFor, metricWithTemplate, newMetricItem, placeItem, samePlacement, PUBLIC_GRID_SECTIONS, publicConfigForVisitors, publicGrid, publicParts, setMetric, showItem, tabletSpan, validPublicPage } from './public-layout.ts';
 import { checkSettings } from './ledger-edit.ts';
 import { metricValues, type MetricInputs } from './public-metrics.ts';
 import { byAmountDesc } from './treemap.ts';
@@ -455,4 +455,20 @@ test('订阅堆落地后页面高度变化，图标层跟着落地区移动，�
   assert.match(pile, /page\.disconnect\(\)/);
   const page = readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8');
   assert.match(page, /canvas \? <div style=\{\{ height: PILE_HEIGHT \}\} \/> : <IconPile/);
+});
+
+test('画布拖动：格子变量不继承，同一格不重画，宽度没变不重测高度', () => {
+  const css = readFileSync(new URL('../app/src/public/index.css', import.meta.url), 'utf8');
+  for (const name of ['x', 'y', 'w', 'h']) assert.match(css, new RegExp(`@property --${name} \\{\\s*syntax: '\\*';\\s*inherits: false;`));
+  const canvas = readFileSync(new URL('../app/src/public/canvas.tsx', import.meta.url), 'utf8');
+  assert.match(canvas, /if \(samePlacement\(next, d\.latest\)\) return;/);
+  assert.match(canvas, /if \(d\.fit\?\.w !== item\.w\) d\.fit = /);
+  assert.match(canvas, /if \(d\.fit\?\.w === Math\.max\(d\.from\.min, Math\.round\(rect\.w\)\)\) rect\.h = /);
+
+  const items = publicGrid({ sections: [{ id: 'chart', x: 0, y: 0, w: 12, h: 6 }, { id: 'list', x: 0, y: 6, w: 12, h: 6 }] });
+  assert.equal(samePlacement(items, items.map((s) => ({ ...s }))), true);
+  // 指针在格内移动不到半格：摆放不变
+  assert.equal(samePlacement(placeItem(items, 'chart', { x: 0.2, y: 0.3, w: 12, h: 6 }), items), true);
+  assert.equal(samePlacement(placeItem(items, 'chart', { x: 0, y: 3, w: 12, h: 6 }), items), false);
+  assert.equal(samePlacement(items, items.map((s) => (s.id === 'list' ? { ...s, hidden: true } : s))), false);
 });

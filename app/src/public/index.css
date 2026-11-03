@@ -147,6 +147,23 @@
   height: var(--ctl-h-sm);
 }
 
+/* 卡片位置只有格子自己用：不继承，否则换一次位置，卡片里每个节点都要重算样式 */
+@property --x {
+  syntax: '*';
+  inherits: false;
+}
+@property --y {
+  syntax: '*';
+  inherits: false;
+}
+@property --w {
+  syntax: '*';
+  inherits: false;
+}
+@property --h {
+  syntax: '*';
+  inherits: false;
+}
 /* 公开页的 12 栏网格：手机单列；--span-md、--span-lg 由 shared/public-layout.ts 算好（每行已补满） */
 .public-grid {
   display: grid;

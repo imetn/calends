@@ -206,6 +206,10 @@ export function placeItem(items: PublicGridItem[], id: string, rect: PublicRect)
   return item ? settle(items, { ...item, ...fitRect(item, rect) }) : items;
 }
 
+/** 两次摆放是否一样：指针还在同一格时不用重画 */
+export const samePlacement = (a: PublicGridItem[], b: PublicGridItem[]) =>
+  a.length === b.length && a.every((s, i) => s.id === b[i].id && s.x === b[i].x && s.y === b[i].y && s.w === b[i].w && s.h === b[i].h && !s.hidden === !b[i].hidden);
+
 /** 重新添加：没摆放过的页面回到原位（默认不显示的组件没有原位，放上去就算摆放过）；摆放过的放回页面最下面 */
 export function showItem(items: PublicGridItem[], id: string): PublicGridItem[] {
   const item = items.find((s) => s.id === id);
