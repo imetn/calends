@@ -232,6 +232,8 @@ function shapeIssues(s: Subscription): Array<[key: string, error: string]> {
   };
   day('trialEnd', s.trialEnd);
   day('pausedAt', s.pausedAt);
+  if (s.pauses != null && !(Array.isArray(s.pauses) && s.pauses.every((p) => p && isDay(p.from) && isDay(p.to) && p.from < p.to)))
+    add('pauses', s.pauses, t('mcp.error.invalidInput', { field: 'pauses' }));
   if (!Array.isArray(s.tags) || s.tags.some((x) => typeof x !== 'string')) add('tags', s.tags, t('mcp.error.invalidInput', { field: 'tags' }));
   for (const p of [s, ...(Array.isArray(s.phases) ? s.phases : [])]) {
     if (!p || typeof p !== 'object') {
@@ -284,6 +286,11 @@ export function newShapeError(previous: Subscription | undefined, next: Subscrip
 /** 暂停从哪天起生效。暂停中停用时记在 stop.pausedAt：暂停期间没发生的扣款不因停用而复活，后面续订也不影响这段 */
 export function pausedFromOf(s: Pick<Subscription, 'status' | 'pausedAt' | 'stop'>): string | undefined {
   return s.status === 'paused' ? s.pausedAt : s.stop?.pausedAt;
+}
+
+/** day 是否落在已结束的暂停里：这段时间没发生的扣款，恢复后不再推算 */
+function pausedOn(s: Pick<Subscription, 'pauses'>, day: string): boolean {
+  return !!s.pauses?.some((p) => p.from <= day && day < p.to);
 }
 
 /**
@@ -603,7 +610,7 @@ export function settleLegacyEarly(s: Subscription): Subscription {
   // 没写日期的暂停、退订算不出账期，不动
   if (!stopped && (s.status === 'paused' || (s.status === 'cancelled' && !s.end))) return s;
   // 按没有停止、暂停和结束日的账期走：停用后已结清的一期也不能再冒出来
-  const open: Subscription = { ...s, stop: undefined, end: undefined, pausedAt: undefined, status: 'active' };
+  const open: Subscription = { ...s, stop: undefined, end: undefined, pausedAt: undefined, pauses: undefined, status: 'active' };
   const half = cycleDays(s.cycle) / 2;
   const span = Math.ceil(cycleDays(s.cycle) * 2) + 32 + maxChargeLead(s);
   // 赠送期之后账期从赠送结束日重新算；月底日号要从 nextDue 起算才不被夹短
@@ -669,7 +676,11 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
       // 金额按所用那一期的价格（首期优惠、调价都看服务期起点）；结束日（含）在期中时只收用到的天数，换方案不重复计费
       const full = priceAt(s, serviceDate);
       const cut = s.end && s.end < addDays(boundary, -1) ? addDays(s.end, 1) : undefined;
-      const amount = cut ? Math.round(((full * diffDays(serviceDate, cut)) / diffDays(serviceDate, boundary)) * 100) / 100 : full;
+      // 服务期从暂停里开始：只收恢复之后用到的天数，整期都在暂停里就没有账单；暂停前开始的那期金额不变
+      const resumed = s.pauses?.find((p) => p.from <= serviceDate && serviceDate < p.to)?.to;
+      if (resumed && (cut ?? boundary) <= resumed) continue;
+      const amount =
+        cut || resumed ? Math.round(((full * diffDays(resumed ?? serviceDate, cut ?? boundary)) / diffDays(serviceDate, boundary)) * 100) / 100 : full;
       out.push({ sub: s, date: d, serviceDate, amount, currency: s.currency, projected: d > today });
       continue;
     }
@@ -684,6 +695,7 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
     if (serviceDate < s.start || d < s.start || d < from || d <= after || (cashAnchor && d < begin)) continue;
     if (s.status === 'trial' && s.trialEnd && d < s.trialEnd) continue;
     if (pausedFrom && d >= pausedFrom) break;
+    if (pausedOn(s, d)) continue;
     out.push({ sub: s, date: d, serviceDate, amount: priceAt(s, d), currency: s.currency, projected: d > today });
   }
   return out;
@@ -950,7 +962,7 @@ export function billingPeriod(s: Subscription, at: string): { from: string; paid
 }
 
 function periodAsRecorded(s: Subscription, at: string): { from: string; paidThrough: string; paid: number; days: number } {
-  const pausedFrom = pausedFromOf(s);
+  const pausedFrom = s.pauses?.find((p) => p.from <= at && at < p.to)?.from ?? pausedFromOf(s);
   if (pausedFrom && at >= pausedFrom) {
     // 暂停后没有新账期：已付期算到暂停前那期（或暂停后记下的最后一笔实付），停在这之后就没有未用天数
     const paid = (s.payments ?? [])
@@ -958,13 +970,19 @@ function periodAsRecorded(s: Subscription, at: string): { from: string; paidThro
       .map((p) => p.date)
       .sort()
       .at(-1);
-    const period = periodAsRecorded({ ...s, pausedAt: undefined, stop: s.stop && { ...s.stop, pausedAt: undefined } }, paid ?? addDays(pausedFrom, -1));
+    const before = s.pauses?.filter((p) => p.to <= pausedFrom);
+    const period = periodAsRecorded(
+      { ...s, pausedAt: undefined, pauses: before, stop: s.stop && { ...s.stop, pausedAt: undefined } },
+      paid ?? addDays(pausedFrom, -1),
+    );
     return period.paidThrough < at ? { ...period, paidThrough: at } : period;
   }
   const open = {
     ...s,
     stop: undefined,
     end: undefined,
+    // 还没开始的暂停不影响 at 所在的账期
+    pauses: s.pauses?.filter((p) => p.from <= at),
     status: s.status === 'trial' || ((s.stop || s.status === 'paused') && s.trialEnd) ? ('trial' as const) : ('active' as const),
   };
   if (isPostpaid(s)) {
@@ -984,8 +1002,19 @@ function periodAsRecorded(s: Subscription, at: string): { from: string; paidThro
   const paidOpen = { ...open, start: paidFrom, estimateFrom: undefined };
   const past = chargesAsRecorded(paidOpen, paidFrom, at, at).filter((c) => !c.kind);
   const last = past.at(-1);
+  // 恢复后还在被暂停跳过的那一期里：账期按原节奏算，但这期没付过钱
+  const natural = open.pauses?.length
+    ? chargesAsRecorded({ ...paidOpen, pauses: undefined }, paidFrom, at, at)
+        .filter((c) => !c.kind)
+        .at(-1)
+    : last;
+  const skipped = !!natural && (!last || natural.date > last.date);
+  const current = skipped ? natural : last;
+  // 这期没有扣款，账期从恢复日算，不显示一个不存在的扣款日
+  const resumedAt = skipped ? open.pauses?.at(-1)?.to : undefined;
+  const sinceResume = (day: string) => (resumedAt && resumedAt > day ? resumedAt : day);
   // 提前续费：现金日早于服务日，服务开始后账期从服务日算
-  const from = last?.serviceDate && last.serviceDate <= at ? last.serviceDate : (last?.date ?? s.start);
+  const from = sinceResume(current?.serviceDate && current.serviceDate <= at ? current.serviceDate : (current?.date ?? s.start));
   // 下一账期开始日：实付的提前续费按它结清的那一期算
   const nextPaid = (day?: string) => s.payments?.find((p) => p.date === day && p.serviceDate)?.serviceDate ?? day;
   const horizon = addDays(at, Math.ceil(cycleDays(s.cycle) === Infinity ? 366 : cycleDays(s.cycle) * 2) + 32);
@@ -994,24 +1023,27 @@ function periodAsRecorded(s: Subscription, at: string): { from: string; paidThro
       ? addDays(at, 1)
       : (nextPaid(chargesAsRecorded(paidOpen, addDays(at, 1), horizon, at).find((c) => !c.kind)?.date) ?? nthCharge(from, s.cycle, 1));
   if ((s.chargeLeadDays ?? 0) > 0 || s.renewalHistory?.length) {
-    const service = last ? chargeServicePeriod(s, last.date, last.serviceDate) : { from: s.start, until: next };
+    const service = current ? chargeServicePeriod(s, current.date, current.serviceDate) : { from: s.start, until: next };
+    const serviceFrom = sinceResume(service.from);
     return {
-      from: service.from,
+      from: serviceFrom,
       paidThrough: addDays(service.until, -1),
-      paid: last
-        ? chargesAsRecorded(paidOpen, last.date, at, at)
-            .filter((c) => c.amount > 0 && c.kind !== 'failed')
-            .reduce((sum, c) => sum + c.amount, 0)
-        : 0,
-      days: Math.max(1, diffDays(service.from, service.until)),
+      paid:
+        last && !skipped
+          ? chargesAsRecorded(paidOpen, last.date, at, at)
+              .filter((c) => c.amount > 0 && c.kind !== 'failed')
+              .reduce((sum, c) => sum + c.amount, 0)
+          : 0,
+      days: Math.max(1, diffDays(serviceFrom, service.until)),
     };
   }
   const paidThrough = addDays(next, -1);
-  const paid = last
-    ? chargesAsRecorded(paidOpen, last.date, at, at)
-        .filter((c) => c.amount > 0 && c.kind !== 'failed')
-        .reduce((a, c) => a + c.amount, 0)
-    : 0;
+  const paid =
+    last && !skipped
+      ? chargesAsRecorded(paidOpen, last.date, at, at)
+          .filter((c) => c.amount > 0 && c.kind !== 'failed')
+          .reduce((a, c) => a + c.amount, 0)
+      : 0;
   return { from, paidThrough, paid, days: Math.max(1, diffDays(from, next)) };
 }
 
@@ -1022,6 +1054,15 @@ export function stopBillingPeriod(s: Subscription, at: string, today: string) {
   return s.payments?.some((p) => !p.kind && p.date >= at) ? periodAsRecorded(s, day) : billingPeriod(s, day);
 }
 
+/** 退款的已付基数：恢复后被跳过的那一期已付为 0，退的是暂停前最后一笔 */
+function refundablePaid(s: Subscription, paid: number, at: string): number {
+  const paidOn = !paid && s.pauses?.length ? lastCharge(s, at) : undefined;
+  if (!paidOn) return paid;
+  return chargesBetween(s, paidOn, at, at)
+    .filter((c) => c.amount > 0 && c.kind !== 'failed')
+    .reduce((a, c) => a + c.amount, 0);
+}
+
 export function stopSummary(s: Subscription, asOf = '9999-12-31') {
   if (!s.stop) return undefined;
   const period = billingPeriod(s, s.stop.date);
@@ -1029,7 +1070,9 @@ export function stopSummary(s: Subscription, asOf = '9999-12-31') {
   const prorated = (period.paid * unusedDays) / period.days;
   const refunded = (s.payments ?? []).filter((p) => p.kind === 'refund' && p.date >= s.stop!.date && p.date <= asOf).reduce((a, p) => a - p.amount, 0);
   // 商家通常按天退剩余部分：退回金额达到按天折算额即视为全额退款
-  const refundStatus: 'none' | 'full' | 'partial' = refunded < 0.005 ? 'none' : refunded + 0.005 >= Math.min(prorated, period.paid) ? 'full' : 'partial';
+  const paid = refundablePaid(s, period.paid, s.stop.date);
+  const refundStatus: 'none' | 'full' | 'partial' =
+    refunded < 0.005 ? 'none' : refunded + 0.005 >= (period.paid ? Math.min(prorated, paid) : paid) ? 'full' : 'partial';
   const unusedValue = refundStatus === 'full' ? 0 : Math.max(0, prorated - refunded);
   return {
     ...s.stop,
@@ -1040,7 +1083,7 @@ export function stopSummary(s: Subscription, asOf = '9999-12-31') {
     /** 真正浪费的天数：没退回的钱按日价折算，部分退款时短于 unusedDays */
     wastedDays: prorated > 0 ? Math.round((unusedDays * unusedValue) / prorated) : 0,
     suggestedRefund: Math.round(prorated * 100) / 100,
-    paid: period.paid,
+    paid,
   };
 }
 
@@ -1089,7 +1132,7 @@ export function paymentError(s: Subscription): string | undefined {
     const refunded = -(s.payments ?? [])
       .filter((r) => r.kind === 'refund' && r.date >= refundFrom && (stopPeriod || r.date <= period.paidThrough))
       .reduce((a, r) => a + r.amount, 0);
-    if (refunded > period.paid + 0.005) return t('mcp.error.refundExceedsPaid');
+    if (refunded > refundablePaid(s, period.paid, p.date) + 0.005) return t('mcp.error.refundExceedsPaid');
   }
   return undefined;
 }

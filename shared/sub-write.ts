@@ -4,7 +4,7 @@ import { updateMemberLeave } from './carpool.ts';
 import { t } from './i18n.ts';
 import { subRefsError } from './ledger-edit.ts';
 import { meterLinkError } from './meters.ts';
-import { statusChangeError } from './phases.ts';
+import { closePause, statusChangeError } from './phases.ts';
 import type { AppState, Subscription } from './types.ts';
 
 export function validSub(s: Subscription): string | undefined {
@@ -14,7 +14,7 @@ export function validSub(s: Subscription): string | undefined {
 
 /**
  * 以 previous（库里现有记录，新建时为空）为基准准备一条完整替换的订阅：
- * 续费规则改动按生效日记入历史；成员的退出日被清掉时一并清掉退款；最后做完整校验、引用校验（支付方式、币种，见 subRefsError）、状态迁移约束和指标关联校验（meterLinkError，看整个账本）。
+ * 暂停结束时记下暂停区间；续费规则改动按生效日记入历史；成员的退出日被清掉时一并清掉退款；最后做完整校验、引用校验（支付方式、币种，见 subRefsError）、状态迁移约束和指标关联校验（meterLinkError，看整个账本）。
  */
 export function prepareSubWrite(
   previous: Subscription | undefined,
@@ -22,7 +22,7 @@ export function prepareSubWrite(
   today: string,
   refs: Pick<AppState, 'fx' | 'methods' | 'subscriptions'>,
 ): { sub: Subscription; error?: undefined } | { error: string } {
-  let sub = reconcileRenewalRules(previous, next, today);
+  let sub = reconcileRenewalRules(previous, closePause(previous, next, today), today);
   if (sub.tags == null) sub = { ...sub, tags: [] };
   // Clearing an existing exit also clears its settlement. New orphan refunds fail validation.
   if (sub.share)

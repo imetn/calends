@@ -10,6 +10,7 @@ import {
   effectiveStatus,
   isPostpaid,
   isStopped,
+  pausedFromOf,
   phaseSubs,
   settleLegacyEarly,
   priceAt,
@@ -749,6 +750,29 @@ export function stopSubscription(s: Subscription, today: string, kind: Stop['kin
   const error = subError(next);
   if (error) throw new Error(error);
   return next;
+}
+
+/**
+ * 暂停结束时记下这段区间（暂停日清掉后，扣款推算只能靠它跳过）。已有记录的 pauses 只由这里追加，整条替换带来的值不生效。
+ * 补录的新阶段早于今天时算到新阶段开始；这段本来就没有阶段在跑（断更后续订）就不用记。
+ */
+export function closePause(previous: Subscription | undefined, next: Subscription, today: string): Subscription {
+  const pauses = previous ? previous.pauses : next.pauses;
+  const base = pauses === next.pauses ? next : { ...next, pauses };
+  const from = previous && pausedFromOf(previous);
+  if (!from || next.phases?.some((p) => p.stop?.pausedAt === from)) return base;
+  // 还在暂停：只有暂停中停用后又改回暂停（暂停日晚于原来）才算前一段结束，改暂停日不算
+  const again = next.status === 'paused' ? (next.pausedAt ?? today) : pausedFromOf(next);
+  if (again && (previous.status === 'paused' || again <= from)) return base;
+  const known = new Set(previous.phases?.map((p) => p.start));
+  const resumed = next.phases
+    ?.map((p) => p.start)
+    .filter((d) => d > from && !known.has(d))
+    .sort()[0];
+  const until = again && again < today ? again : today;
+  const to = resumed && resumed < until ? resumed : until;
+  if (from >= to || !phaseSubs(next).some((v) => v.start < to && (!v.end || v.end >= from))) return base;
+  return { ...base, pauses: [...(pauses ?? []), { from, to }].sort((a, b) => a.from.localeCompare(b.from)) };
 }
 
 /** 清掉停用、暂停与结束日（最后一段同样），不做任何状态约束；对外用 reactivate */

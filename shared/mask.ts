@@ -118,6 +118,7 @@ function publicSub(s: Subscription, cats: Category[]): Subscription {
     stop: publicStop(s.stop),
     trialEnd: s.trialEnd,
     pausedAt: s.pausedAt,
+    pauses: s.pauses,
     methodId: s.methodId,
     region: s.region,
     intro: s.intro,

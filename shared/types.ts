@@ -311,6 +311,8 @@ export interface Subscription extends RenewalRules {
   /** 首个付费日；前一天为试用最后一天 */
   trialEnd?: string;
   pausedAt?: string;
+  /** 已结束的暂停：from（暂停日）起、to（恢复日）前不推算扣款；实际扣款记录不受影响 */
+  pauses?: Array<{ from: string; to: string }>;
   methodId?: string;
   /** App Store 区域等，例如 TR、NG */
   region?: string;

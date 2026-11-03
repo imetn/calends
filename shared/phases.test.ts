@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   activePhases,
+  billingPeriod,
   chargesBetween,
   convert,
   currentPhase,
@@ -45,6 +46,7 @@ import {
   syncPhase,
   toEditForm,
 } from './phases.ts';
+import { prepareSubWrite } from './sub-write.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 
 const base = (o: Partial<Subscription> = {}): Subscription => ({
@@ -631,4 +633,164 @@ test('暂停中停用：暂停期间没发生的扣款不复活，停用日按�
   const later = { ...switchPlan(base({ start: '2026-01-15' }), '2026-06-15', TR), status: 'paused' as const, pausedAt: '2026-06-01' };
   const paidLater = { ...later, phases: [later.phases![0], { ...later.phases![1], payments: [{ date: '2026-06-15', amount: 100 }] }] };
   assert.deepEqual(after(stopSubscription(paidLater, '2026-06-20', 'cancel', '2026-06-20')), ['2026-06-15']);
+});
+
+// 恢复暂停：暂停期间没发生的扣款不复活，阶段、价格和实际扣款都不动
+const paused = (o: Partial<Subscription> = {}): Subscription =>
+  ({ ...base(), start: '2026-01-10', status: 'paused', pausedAt: '2026-07-15', ...o }) as Subscription;
+const resumeRefs = { fx: { base: 'USD', rates: { USD: 1 } }, methods: [], subscriptions: [] } as unknown as Pick<AppState, 'fx' | 'methods' | 'subscriptions'>;
+const write = (previous: Subscription, next: Subscription, today: string) => {
+  const r = prepareSubWrite(previous, next, today, resumeRefs);
+  if (r.error !== undefined) throw new Error(r.error);
+  return r.sub;
+};
+const running = (s: Subscription): Subscription => ({ ...s, status: 'active', pausedAt: undefined });
+const days = (s: Subscription, today: string) =>
+  chargesBetween(s, '2026-06-01', '2026-12-31', today)
+    .filter((c) => !c.projected)
+    .map((c) => c.date);
+
+test('恢复暂停：暂停期间的扣款不复活，下一笔是恢复后的自然扣款日', () => {
+  const s = write(paused(), running(paused()), '2026-09-20');
+  assert.deepEqual(s.pauses, [{ from: '2026-07-15', to: '2026-09-20' }]);
+  assert.deepEqual(days(s, '2026-09-20'), ['2026-06-10', '2026-07-10']);
+  assert.equal(nextCharge(s, '2026-09-20'), '2026-10-10');
+  assert.equal(s.phases, undefined);
+  assert.equal(s.price, paused().price);
+});
+
+test('恢复暂停：已付期内恢复不影响下一笔；恢复当天正好是扣款日照常扣', () => {
+  assert.equal(nextCharge(write(paused(), running(paused()), '2026-07-20'), '2026-07-20'), '2026-08-10');
+  assert.equal(nextCharge(write(paused(), running(paused()), '2026-08-10'), '2026-08-10'), '2026-08-10');
+});
+
+test('恢复暂停：当天暂停当天恢复、未来的暂停、未暂停的保存都不记区间', () => {
+  assert.equal(write(paused({ pausedAt: '2026-09-20' }), running(paused()), '2026-09-20').pauses, undefined);
+  assert.equal(write(paused({ pausedAt: '2026-10-01' }), running(paused()), '2026-09-20').pauses, undefined);
+  assert.equal(write(running(paused()), running(paused()), '2026-09-20').pauses, undefined);
+  assert.equal(write(paused(), paused({ pausedAt: '2026-07-20' }), '2026-09-20').pauses, undefined);
+});
+
+test('恢复暂停：同一次保存记的实付和暂停期内补记的实付都保留', () => {
+  const pay = { date: '2026-08-10', amount: 9 };
+  const s = write(paused(), running(paused({ payments: [pay] })), '2026-09-20');
+  assert.ok(days(s, '2026-09-20').includes('2026-08-10'));
+});
+
+test('恢复暂停：之后的整条保存改不动区间，新建时的非法区间被拒绝', () => {
+  const s = write(paused(), running(paused()), '2026-09-20');
+  const { pauses: _drop, ...stale } = s;
+  assert.deepEqual(write(s, stale as Subscription, '2026-09-25').pauses, s.pauses);
+  assert.deepEqual(write(s, { ...s, pauses: [] }, '2026-09-25').pauses, s.pauses);
+  assert.ok(newShapeError(s, { ...s, pauses: [{ from: '2026-09-20', to: '2026-07-15' }] }));
+});
+
+test('恢复暂停：暂停中停用后重新激活同样不复活', () => {
+  const stopped = paused({
+    status: 'cancelled',
+    pausedAt: undefined,
+    end: '2026-08-01',
+    stop: { kind: 'cancel', date: '2026-08-01', paidThrough: '2026-08-09', pausedAt: '2026-07-15' },
+  });
+  const s = write(stopped, reactivate(stopped, '2026-09-20'), '2026-09-20');
+  assert.deepEqual(s.pauses, [{ from: '2026-07-15', to: '2026-09-20' }]);
+  assert.equal(nextCharge(s, '2026-09-20'), '2026-10-10');
+});
+
+test('恢复暂停：多阶段的旧阶段不改，补录的新阶段扣款保留', () => {
+  const plan = { price: 20, currency: 'USD', cycle: { every: 1, unit: 'month' as const } };
+  const switched = write(paused(), switchPlan(paused(), '2026-08-01', plan), '2026-09-20');
+  assert.deepEqual(switched.pauses, [{ from: '2026-07-15', to: '2026-08-01' }]);
+  assert.deepEqual(days(switched, '2026-09-20'), ['2026-06-10', '2026-07-10', '2026-08-01', '2026-09-01']);
+  const resumed = write(paused(), resume(paused(), '2026-08-01', plan), '2026-09-20');
+  assert.equal(resumed.pauses, undefined);
+  assert.deepEqual(days(resumed, '2026-09-20'), ['2026-06-10', '2026-07-10', '2026-08-01', '2026-09-01']);
+});
+
+test('恢复暂停：买断的一次性扣款不变', () => {
+  const s = write(paused({ cycle: { every: 1, unit: 'lifetime' } }), running(paused({ cycle: { every: 1, unit: 'lifetime' } })), '2026-09-20');
+  assert.deepEqual(
+    chargesBetween(s, '2026-01-01', '2026-12-31', '2026-09-20').map((c) => c.date),
+    ['2026-01-10'],
+  );
+});
+
+test('恢复暂停：后付费历史账单不变，跨恢复日的一期只收恢复后的天数', () => {
+  const p = paused({ billing: 'postpaid', price: 31 });
+  const bills = (s: Subscription) => chargesBetween(s, '2026-06-01', '2026-10-31', '2026-10-31').map((c) => [c.date, c.amount]);
+  const s = write(p, running(p), '2026-08-20');
+  // 07-10 开始的那期在暂停前开始，账单不变；08-10 ~ 09-10 这期 31 天，08-20 恢复后用了 21 天
+  assert.deepEqual(
+    bills(s).slice(0, 3),
+    bills(running(p))
+      .slice(0, 2)
+      .concat([['2026-08-10', 31]]),
+  );
+  assert.deepEqual(
+    bills(s).find(([d]) => d === '2026-09-10'),
+    ['2026-09-10', 21],
+  );
+  assert.deepEqual(
+    bills(s).find(([d]) => d === '2026-10-10'),
+    ['2026-10-10', 31],
+  );
+  // 整期都在暂停里的没有账单
+  const long = write(p, running(p), '2026-09-20');
+  assert.ok(!bills(long).some(([d]) => d === '2026-09-10'));
+});
+
+test('恢复暂停：账期按原节奏，被跳过的那期已付为 0', () => {
+  const s = write(paused({ price: 30 }), running(paused({ price: 30 })), '2026-09-20');
+  const before = billingPeriod(s, '2026-07-12');
+  assert.equal(before.paidThrough, '2026-08-09');
+  assert.equal(before.paid, 30);
+  const during = billingPeriod(s, '2026-08-20');
+  assert.equal(during.from, '2026-07-10');
+  assert.equal(during.paidThrough, '2026-08-20');
+  const after = billingPeriod(s, '2026-09-25');
+  assert.equal(after.from, '2026-09-20');
+  assert.equal(after.paidThrough, '2026-10-09');
+  assert.equal(after.paid, 0);
+  assert.equal(billingPeriod(s, '2026-07-20').paid, 30);
+});
+
+test('恢复暂停：恢复后的退款以暂停前最后一笔为上限', () => {
+  const pays = [
+    { date: '2026-06-10', amount: 30 },
+    { date: '2026-07-10', amount: 30 },
+  ];
+  const s = write(paused({ price: 30, payments: pays }), running(paused({ price: 30, payments: pays })), '2026-09-20');
+  const refund = (amount: number) => ({ ...s, payments: [...pays, { date: '2026-09-25', amount: -amount, kind: 'refund' as const }] });
+  assert.equal(subError(refund(10)), undefined);
+  assert.ok(subError(refund(31)));
+});
+
+test('恢复暂停：暂停中停用后改回暂停，前一段照样记下', () => {
+  const stopped = paused({
+    status: 'cancelled',
+    pausedAt: undefined,
+    end: '2026-08-01',
+    stop: { kind: 'cancel', date: '2026-08-01', paidThrough: '2026-08-09', pausedAt: '2026-07-15' },
+  });
+  const again = write(stopped, { ...reactivate(stopped, '2026-09-20'), status: 'paused', pausedAt: '2026-09-20' }, '2026-09-20');
+  assert.deepEqual(again.pauses, [{ from: '2026-07-15', to: '2026-09-20' }]);
+  const s = write(again, running(again), '2026-10-20');
+  assert.deepEqual(days(s, '2026-10-20'), ['2026-06-10', '2026-07-10']);
+  assert.equal(nextCharge(s, '2026-10-20'), '2026-11-10');
+});
+
+test('恢复暂停：恢复后停用只退一部分不算全额退款', () => {
+  const pays = [{ date: '2026-07-10', amount: 30 }];
+  const s = write(paused({ price: 30, payments: pays }), running(paused({ price: 30, payments: pays })), '2026-09-20');
+  const stopped = (amount: number) =>
+    stopSummary({
+      ...s,
+      status: 'cancelled',
+      end: '2026-09-25',
+      stop: { kind: 'cancel', date: '2026-09-25', paidThrough: '2026-10-09' },
+      payments: [...pays, { date: '2026-09-25', amount: -amount, kind: 'refund' }],
+    })!;
+  assert.equal(stopped(10).refundStatus, 'partial');
+  assert.equal(stopped(10).paid, 30);
+  assert.equal(stopped(30).refundStatus, 'full');
 });
