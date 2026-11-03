@@ -4,7 +4,31 @@ import { readFileSync } from 'node:fs';
 import { effectiveStatus, FALLBACK_FX } from './billing.ts';
 import { maskForPublic } from './mask.ts';
 import { contributionOn } from './metrics.ts';
-import { collapseEmpty, restorablePublicPage, fillRows, fitHeights, flowSpans, gridConfig, gridSections, hideItem, isCustomLayout, isFlowGrid, metricsFor, metricWithTemplate, newMetricItem, placeItem, samePlacement, PUBLIC_GRID_SECTIONS, publicConfigForVisitors, publicGrid, publicParts, setMetric, showItem, tabletSpan, validPublicPage } from './public-layout.ts';
+import {
+  collapseEmpty,
+  restorablePublicPage,
+  fillRows,
+  fitHeights,
+  flowSpans,
+  gridConfig,
+  gridSections,
+  hideItem,
+  isCustomLayout,
+  isFlowGrid,
+  metricsFor,
+  metricWithTemplate,
+  newMetricItem,
+  placeItem,
+  samePlacement,
+  PUBLIC_GRID_SECTIONS,
+  publicConfigForVisitors,
+  publicGrid,
+  publicParts,
+  setMetric,
+  showItem,
+  tabletSpan,
+  validPublicPage,
+} from './public-layout.ts';
 import { checkSettings } from './ledger-edit.ts';
 import { metricValues, type MetricInputs } from './public-metrics.ts';
 import { byAmountDesc } from './treemap.ts';
@@ -12,7 +36,18 @@ import { DEFAULT_SETTINGS, type AppState, type PublicPageConfig, type Subscripti
 
 const TODAY = new Date().toISOString().slice(0, 10);
 const sub = (over: Partial<Subscription>): Subscription =>
-  ({ id: 'a', name: 'Fiction Music', category: '影音', tags: [], price: 10, currency: 'USD', cycle: { unit: 'month', n: 1 }, start: '2023-01-15', status: 'active', ...over }) as Subscription;
+  ({
+    id: 'a',
+    name: 'Fiction Music',
+    category: '影音',
+    tags: [],
+    price: 10,
+    currency: 'USD',
+    cycle: { unit: 'month', n: 1 },
+    start: '2023-01-15',
+    status: 'active',
+    ...over,
+  }) as Subscription;
 const ledger = (publicPage?: PublicPageConfig, more: Partial<AppState['settings']> = {}): AppState =>
   ({
     fx: FALLBACK_FX,
@@ -20,7 +55,13 @@ const ledger = (publicPage?: PublicPageConfig, more: Partial<AppState['settings'
     methods: [],
     settings: { ...DEFAULT_SETTINGS, displayName: 'Fiction Owner', timezone: 'UTC', publicPage, ...more },
     subscriptions: [
-      sub({ priceHistory: [{ from: '2023-01-15', amount: 6 }, { from: '2024-06-01', amount: 12 }], payments: [{ date: '2023-02-15', amount: 6 }] } as Partial<Subscription>),
+      sub({
+        priceHistory: [
+          { from: '2023-01-15', amount: 6 },
+          { from: '2024-06-01', amount: 12 },
+        ],
+        payments: [{ date: '2023-02-15', amount: 6 }],
+      } as Partial<Subscription>),
       sub({ id: 'b', name: 'Fiction Ended', start: '2022-01-01', end: '2023-05-01', status: 'cancelled', price: 20 } as Partial<Subscription>),
       sub({ id: 'c', name: 'Fiction Forever', cycle: { unit: 'lifetime', n: 1 }, price: 99 } as Partial<Subscription>),
     ],
@@ -34,12 +75,27 @@ test('缺省配置：位置等于现有公开页，全部可见，不算摆放�
   );
   assert.equal(publicParts().size, 8 + 2, '可选组件默认不放，也不下发它们要的数据');
   assert.equal(publicConfigForVisitors(undefined), undefined);
-  assert.equal(isCustomLayout({ sections: [{ id: 'fx', hidden: true }, { id: 'footer', hidden: true }] }), false);
+  assert.equal(
+    isCustomLayout({
+      sections: [
+        { id: 'fx', hidden: true },
+        { id: 'footer', hidden: true },
+      ],
+    }),
+    false,
+  );
 });
 
 test('存下的布局：不认识和重复的 id 忽略，新组件放到最下面，越界夹回范围，压住的往下推', () => {
   const rect = { x: 0, y: 0, w: 12, h: 4 };
-  const grid = publicGrid({ sections: [{ id: 'list', ...rect, w: 99 }, { id: 'nope', ...rect }, { id: 'list', ...rect, w: 6 }, { id: 'stats', ...rect, w: 1, x: 11 }] });
+  const grid = publicGrid({
+    sections: [
+      { id: 'list', ...rect, w: 99 },
+      { id: 'nope', ...rect },
+      { id: 'list', ...rect, w: 6 },
+      { id: 'stats', ...rect, w: 1, x: 11 },
+    ],
+  });
   assert.equal(new Set(grid.map((s) => s.id)).size, PUBLIC_GRID_SECTIONS.length);
   const at = (id: string) => grid.find((s) => s.id === id)!;
   assert.deepEqual([at('list').x, at('list').y, at('list').w], [0, 0, 12], '第一条为准，宽度夹到 12');
@@ -86,7 +142,17 @@ test('没有内容的卡片：整行都空才收起，旁边还有卡片时那�
 });
 
 test('写入校验：只放行白名单 id、字段和最小宽度以上的栏数', () => {
-  assert.ok(validPublicPage({ browserTitle: 't', bio: 'b', sections: [{ id: 'fx', x: 7, y: 3, w: 5, h: 2 }, { id: 'stats', hidden: true }, { id: 'footer', hidden: true }] }));
+  assert.ok(
+    validPublicPage({
+      browserTitle: 't',
+      bio: 'b',
+      sections: [
+        { id: 'fx', x: 7, y: 3, w: 5, h: 2 },
+        { id: 'stats', hidden: true },
+        { id: 'footer', hidden: true },
+      ],
+    }),
+  );
   for (const bad of [
     null,
     [],
@@ -177,22 +243,45 @@ test('裁掉历史后，留下的组件算出的数字不变', () => {
 });
 
 test('裁掉历史：买断卡价格不变，已退订按结束日取价', () => {
-  const life = sub({ id: 'l', cycle: { unit: 'lifetime', n: 1 }, price: 99, priceHistory: [{ from: '2023-01-15', amount: 50 }, { from: '2999-01-01', amount: 99 }] } as Partial<Subscription>);
-  const stopped = sub({ id: 's', price: 40, end: '2999-01-01', stop: { kind: 'terminate', date: '2023-02-01', paidThrough: '2999-01-01' }, priceHistory: [{ from: '2023-01-15', amount: 10 }, { from: '2998-01-01', amount: 40 }] } as unknown as Partial<Subscription>);
+  const life = sub({
+    id: 'l',
+    cycle: { unit: 'lifetime', n: 1 },
+    price: 99,
+    priceHistory: [
+      { from: '2023-01-15', amount: 50 },
+      { from: '2999-01-01', amount: 99 },
+    ],
+  } as Partial<Subscription>);
+  const stopped = sub({
+    id: 's',
+    price: 40,
+    end: '2999-01-01',
+    stop: { kind: 'terminate', date: '2023-02-01', paidThrough: '2999-01-01' },
+    priceHistory: [
+      { from: '2023-01-15', amount: 10 },
+      { from: '2998-01-01', amount: 40 },
+    ],
+  } as unknown as Partial<Subscription>);
   const out = maskForPublic({ ...ledger({ sections: hide('stats', 'timeline', 'chart', 'list') }), subscriptions: [life, stopped] });
   assert.equal(out.subscriptions.find((x) => x.id === 'l')?.price, 99);
   assert.equal(out.subscriptions.find((x) => x.id === 's')?.price, 40);
 });
 
 test('所有用到金额的部分都隐藏：不下发订阅和付款来源', () => {
-  const st = { ...ledger({ sections: hide('stats', 'timeline', 'chart', 'composition', 'fx', 'list', 'ended', 'lifetime', 'pile') }), methods: [{ id: 'm', name: 'Fiction Card', kind: 'card', currency: 'USD', region: 'TR' }] } as unknown as AppState;
+  const st = {
+    ...ledger({ sections: hide('stats', 'timeline', 'chart', 'composition', 'fx', 'list', 'ended', 'lifetime', 'pile') }),
+    methods: [{ id: 'm', name: 'Fiction Card', kind: 'card', currency: 'USD', region: 'TR' }],
+  } as unknown as AppState;
   const out = maskForPublic(st);
   assert.deepEqual(out.subscriptions, []);
   assert.deepEqual(out.methods, []);
 });
 
 test('不展示名字时，付款来源不带地区和名称', () => {
-  const st = { ...ledger({ sections: hide('stats', 'timeline', 'chart', 'list', 'ended', 'lifetime', 'pile') }), methods: [{ id: 'm', name: 'Fiction Card', kind: 'card', currency: 'USD', region: 'TR' }] } as unknown as AppState;
+  const st = {
+    ...ledger({ sections: hide('stats', 'timeline', 'chart', 'list', 'ended', 'lifetime', 'pile') }),
+    methods: [{ id: 'm', name: 'Fiction Card', kind: 'card', currency: 'USD', region: 'TR' }],
+  } as unknown as AppState;
   const [m] = maskForPublic(st).methods;
   assert.equal(m.region, undefined);
   assert.equal(m.name, '');
@@ -216,7 +305,9 @@ test('预览用 untrimmed：配置怎么隐藏都拿到全部组件的数据', (
 });
 
 test('页头：设了标题不下发真实名字，公开页头像合并后不重复下发', () => {
-  const m = maskForPublic(ledger({ avatar: 'https://example.test/a.png', bio: 'hello' }, { publicTitle: 'My stack', avatar: 'https://example.test/global.png' }));
+  const m = maskForPublic(
+    ledger({ avatar: 'https://example.test/a.png', bio: 'hello' }, { publicTitle: 'My stack', avatar: 'https://example.test/global.png' }),
+  );
   assert.equal(m.settings.displayName, '');
   assert.equal(m.settings.avatar, 'https://example.test/a.png');
   assert.equal(m.settings.publicPage?.avatar, undefined);
@@ -277,7 +368,12 @@ test('摆放过的页面在桌面以下是单列，不会挤成一栏宽', () =>
 });
 
 test('流式页面：卡片没数据时，其余卡片按默认宽度重新排，能并排的仍并排', () => {
-  const grid = publicGrid({ sections: [{ id: 'fx', hidden: true }, { id: 'list', hidden: true }] });
+  const grid = publicGrid({
+    sections: [
+      { id: 'fx', hidden: true },
+      { id: 'list', hidden: true },
+    ],
+  });
   assert.equal(grid.find((s) => s.id === 'lifetime')!.w, 12);
   assert.deepEqual(flowSpans(['stats', 'composition', 'lifetime']), [12, 6, 6]);
 });
@@ -327,7 +423,10 @@ test('指标卡：改模板只留下新模板能显示的数据，没有就用�
   assert.ok(metricsFor('share').every((m) => 'share' in m && m.share));
   const item = newMetricItem(publicGrid(), 'number');
   const grid = [...publicGrid(), item];
-  assert.deepEqual(setMetric(grid, item.id, { template: 'number', items: ['active'] }).find((s) => s.id === item.id)!.metric, { template: 'number', items: ['active'] });
+  assert.deepEqual(setMetric(grid, item.id, { template: 'number', items: ['active'] }).find((s) => s.id === item.id)!.metric, {
+    template: 'number',
+    items: ['active'],
+  });
 });
 
 test('指标卡只下发选中的数据要用的部分', () => {
@@ -352,14 +451,22 @@ test('新指标卡默认选页面上没有的数据：同一个数不放两遍',
 });
 
 test('日历和订阅年表：默认不上页面；放上去时下发名称、扣款历史和已退订，备注仍不下发', () => {
-  for (const [id, min, h] of [['calendar', 5, 12], ['years', 6, 10]] as const) {
+  for (const [id, min, h] of [
+    ['calendar', 5, 12],
+    ['years', 6, 10],
+  ] as const) {
     const def = PUBLIC_GRID_SECTIONS.find((s) => s.id === id)!;
     assert.deepEqual([def.min, def.h, def.off], [min, h, true]);
     assert.ok(!publicParts().has(id));
-    const state = ledger({ sections: [...PUBLIC_GRID_SECTIONS.map((s) => ({ id: s.id, hidden: s.id !== id })), { id: 'footer', hidden: true }, { id: 'pile', hidden: true }] });
+    const state = ledger({
+      sections: [...PUBLIC_GRID_SECTIONS.map((s) => ({ id: s.id, hidden: s.id !== id })), { id: 'footer', hidden: true }, { id: 'pile', hidden: true }],
+    });
     state.subscriptions[0].notes = 'Fiction note';
     const masked = maskForPublic(state);
-    assert.deepEqual(masked.subscriptions.map((s) => s.name), ['Fiction Music', 'Fiction Ended', 'Fiction Forever']);
+    assert.deepEqual(
+      masked.subscriptions.map((s) => s.name),
+      ['Fiction Music', 'Fiction Ended', 'Fiction Forever'],
+    );
     assert.equal(masked.subscriptions[0].payments?.length, 1);
     assert.equal(masked.subscriptions[0].priceHistory?.length, 2);
     assert.ok(!JSON.stringify(masked).includes('Fiction note'));
@@ -374,7 +481,22 @@ test('默认高度放得下内容：订阅时长和变动记录同排时一样�
 });
 
 test('空账本的指标卡：没有在用订阅时平均写占位，最贵的订阅没有名字', () => {
-  const zero: MetricInputs = { mrr: 0, yearAgoMrr: 0, mrrSeries: [], active: 0, paidTotal: 0, paidYear: 0, paidYearPrev: 0, paidMonth: 0, paidMonthPrev: 0, paidSeries: [], next30: 0, ended: 0, lifetime: 0, fxEffect: 0 };
+  const zero: MetricInputs = {
+    mrr: 0,
+    yearAgoMrr: 0,
+    mrrSeries: [],
+    active: 0,
+    paidTotal: 0,
+    paidYear: 0,
+    paidYearPrev: 0,
+    paidMonth: 0,
+    paidMonthPrev: 0,
+    paidSeries: [],
+    next30: 0,
+    ended: 0,
+    lifetime: 0,
+    fxEffect: 0,
+  };
   const v = metricValues(zero);
   assert.ok(Number.isNaN(v.avgPerSub.value));
   assert.equal(v.topSub.name, undefined);
@@ -383,7 +505,10 @@ test('空账本的指标卡：没有在用订阅时平均写占位，最贵的�
 test('手机和平板上窄指标卡一排两张，日历星期和日期同一列对齐，变动日期不折行', () => {
   const css = readFileSync(new URL('../app/src/public/index.css', import.meta.url), 'utf8');
   assert.match(css, /max-width: 63\.99rem[^}]*data-half[^}]*span 6/s);
-  assert.match(readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8'), /data-half=\{s\.metric && s\.metric\.template !== 'rows' && s\.w <= 4/);
+  assert.match(
+    readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8'),
+    /data-half=\{s\.metric && s\.metric\.template !== 'rows' && s\.w <= 4/,
+  );
   assert.match(readFileSync(new URL('../app/src/public/widgets/calendar.tsx', import.meta.url), 'utf8'), /ml-1 w-\[18px\] pb-1/);
   assert.match(readFileSync(new URL('../app/src/public/widgets/changes.tsx', import.meta.url), 'utf8'), /whitespace-nowrap/);
 });
@@ -399,27 +524,93 @@ test('排序：方块图的分类名次与构成卡同规则，含缺汇率的�
 });
 
 test('恢复备份：旧字段和不认识的组件被去掉，简介与摆放保留', () => {
-  const page = restorablePublicPage({ hero: { title: 'x' }, bio: 'hi', sections: [{ id: 'gone', x: 0, y: 0, w: 1, h: 1 }, { id: 'chart', x: 0, y: 0, w: 6, h: 8 }] });
+  const page = restorablePublicPage({
+    hero: { title: 'x' },
+    bio: 'hi',
+    sections: [
+      { id: 'gone', x: 0, y: 0, w: 1, h: 1 },
+      { id: 'chart', x: 0, y: 0, w: 6, h: 8 },
+    ],
+  });
   assert.deepEqual(page, { bio: 'hi', sections: [{ id: 'chart', x: 0, y: 0, w: 6, h: 8 }] });
   assert.equal(restorablePublicPage('nope'), undefined);
   // 重复的 id 和超量的指标卡只丢多余的，简介不受牵连；隐藏的组件摆放非法也保持隐藏，不被默认值翻成公开
   const metric = (i: number) => ({ id: `metric-${i}`, x: 0, y: i * 4, w: 3, h: 4, metric: { template: 'number', items: ['monthly'] } });
-  const many = restorablePublicPage({ bio: 'hi', sections: [{ id: 'chart', hidden: true, x: 0, y: 0, w: 1, h: 1 }, { id: 'list', hidden: true }, { id: 'list' }, ...Array.from({ length: 30 }, (_, i) => metric(i))] });
+  const many = restorablePublicPage({
+    bio: 'hi',
+    sections: [
+      { id: 'chart', hidden: true, x: 0, y: 0, w: 1, h: 1 },
+      { id: 'list', hidden: true },
+      { id: 'list' },
+      ...Array.from({ length: 30 }, (_, i) => metric(i)),
+    ],
+  });
   assert.equal(many?.bio, 'hi');
-  assert.deepEqual(many?.sections?.slice(0, 2), [{ id: 'chart', hidden: true }, { id: 'list', hidden: true }]);
+  assert.deepEqual(many?.sections?.slice(0, 2), [
+    { id: 'chart', hidden: true },
+    { id: 'list', hidden: true },
+  ]);
   assert.equal(many?.sections?.filter((s) => s.id.startsWith('metric-')).length, 24);
   assert.equal(restorablePublicPage([]), undefined);
 });
 
 test('汇率影响的指标带正负号，其余不带', () => {
-  const v = metricValues({ mrr: 1, yearAgoMrr: 1, mrrSeries: [], active: 1, paidTotal: 1, paidYear: 1, paidYearPrev: 1, paidMonth: 1, paidMonthPrev: 1, paidSeries: [], next30: 1, ended: 0, lifetime: 0, fxEffect: -3 });
+  const v = metricValues({
+    mrr: 1,
+    yearAgoMrr: 1,
+    mrrSeries: [],
+    active: 1,
+    paidTotal: 1,
+    paidYear: 1,
+    paidYearPrev: 1,
+    paidMonth: 1,
+    paidMonthPrev: 1,
+    paidSeries: [],
+    next30: 1,
+    ended: 0,
+    lifetime: 0,
+    fxEffect: -3,
+  });
   assert.equal(v.fxEffect.signed, true);
   assert.equal(v.monthly.signed, undefined);
 });
 
 test('只放订阅时长：扣款历史照常下发，时长不按被裁掉的数据算', () => {
-  const sub = { id: 'a', name: 'A', category: 'x', price: 10, currency: 'USD', cycle: { n: 1, unit: 'month' }, start: '2024-01-01', status: 'cancelled', tags: [], payments: [{ date: '2024-01-01', amount: 10 }] } as unknown as Subscription;
-  const state = { subscriptions: [sub], methods: [], fx: FALLBACK_FX, settings: { ...DEFAULT_SETTINGS, publicPage: { sections: [{ id: 'tenure', x: 0, y: 0, w: 6, h: 8 }, { id: 'stats', hidden: true }, { id: 'timeline', hidden: true }, { id: 'chart', hidden: true }, { id: 'composition', hidden: true }, { id: 'fx', hidden: true }, { id: 'list', hidden: true }, { id: 'ended', hidden: true }, { id: 'lifetime', hidden: true }, { id: 'footer', hidden: true }, { id: 'pile', hidden: true }] } } } as unknown as AppState;
+  const sub = {
+    id: 'a',
+    name: 'A',
+    category: 'x',
+    price: 10,
+    currency: 'USD',
+    cycle: { n: 1, unit: 'month' },
+    start: '2024-01-01',
+    status: 'cancelled',
+    tags: [],
+    payments: [{ date: '2024-01-01', amount: 10 }],
+  } as unknown as Subscription;
+  const state = {
+    subscriptions: [sub],
+    methods: [],
+    fx: FALLBACK_FX,
+    settings: {
+      ...DEFAULT_SETTINGS,
+      publicPage: {
+        sections: [
+          { id: 'tenure', x: 0, y: 0, w: 6, h: 8 },
+          { id: 'stats', hidden: true },
+          { id: 'timeline', hidden: true },
+          { id: 'chart', hidden: true },
+          { id: 'composition', hidden: true },
+          { id: 'fx', hidden: true },
+          { id: 'list', hidden: true },
+          { id: 'ended', hidden: true },
+          { id: 'lifetime', hidden: true },
+          { id: 'footer', hidden: true },
+          { id: 'pile', hidden: true },
+        ],
+      },
+    },
+  } as unknown as AppState;
   assert.ok(maskForPublic(state).subscriptions[0]?.payments?.length);
 });
 
@@ -433,7 +624,7 @@ test('公开页金额：缺汇率显示占位；预览只认同源父窗口；�
   assert.match(page, /const fmt = \(v: number\) => \(Number\.isFinite\(v\)/);
   assert.doesNotMatch(page, /<Num value=\{d\.mrr[^}]* k\}/);
   const editor = readFileSync(new URL('../app/src/views/PublicPageEditor.tsx', import.meta.url), 'utf8');
-  assert.match(editor, /setDraft\(draftOf\(undefined, undefined\)\); setSelected\(null\)/);
+  assert.match(editor, /setDraft\(draftOf\(undefined, undefined\)\);\s*setSelected\(null\)/);
 });
 
 // 单列也写 grid-cols-1：不写时隐式 auto 列会被 truncate 的长名字撑破卡片
@@ -465,10 +656,27 @@ test('画布拖动：格子变量不继承，同一格不重画，宽度没变�
   assert.match(canvas, /if \(d\.fit\?\.w !== item\.w\) d\.fit = /);
   assert.match(canvas, /if \(d\.fit\?\.w === Math\.max\(d\.from\.min, Math\.round\(rect\.w\)\)\) rect\.h = /);
 
-  const items = publicGrid({ sections: [{ id: 'chart', x: 0, y: 0, w: 12, h: 6 }, { id: 'list', x: 0, y: 6, w: 12, h: 6 }] });
-  assert.equal(samePlacement(items, items.map((s) => ({ ...s }))), true);
+  const items = publicGrid({
+    sections: [
+      { id: 'chart', x: 0, y: 0, w: 12, h: 6 },
+      { id: 'list', x: 0, y: 6, w: 12, h: 6 },
+    ],
+  });
+  assert.equal(
+    samePlacement(
+      items,
+      items.map((s) => ({ ...s })),
+    ),
+    true,
+  );
   // 指针在格内移动不到半格：摆放不变
   assert.equal(samePlacement(placeItem(items, 'chart', { x: 0.2, y: 0.3, w: 12, h: 6 }), items), true);
   assert.equal(samePlacement(placeItem(items, 'chart', { x: 0, y: 3, w: 12, h: 6 }), items), false);
-  assert.equal(samePlacement(items, items.map((s) => (s.id === 'list' ? { ...s, hidden: true } : s))), false);
+  assert.equal(
+    samePlacement(
+      items,
+      items.map((s) => (s.id === 'list' ? { ...s, hidden: true } : s)),
+    ),
+    false,
+  );
 });

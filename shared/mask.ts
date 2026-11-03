@@ -137,7 +137,23 @@ const NEEDS_HISTORY: PublicPart[] = ['stats', 'timeline', 'chart', 'list', 'cale
 const NEEDS_ENDED: PublicPart[] = ['stats', 'timeline', 'chart', 'ended', 'calendar', 'years', 'tenure', 'changes', 'waterfall'];
 const NEEDS_CATEGORIES: PublicPart[] = ['composition', 'list', ...NEEDS_NAMES];
 /** 用到金额的部分（订阅堆按金额筛选）：全部隐藏后订阅和付款来源都不下发 */
-const NEEDS_AMOUNTS: PublicPart[] = ['stats', 'timeline', 'chart', 'composition', 'fx', 'list', 'ended', 'lifetime', 'pile', 'calendar', 'years', 'tenure', 'treemap', 'changes', 'waterfall'];
+const NEEDS_AMOUNTS: PublicPart[] = [
+  'stats',
+  'timeline',
+  'chart',
+  'composition',
+  'fx',
+  'list',
+  'ended',
+  'lifetime',
+  'pile',
+  'calendar',
+  'years',
+  'tenure',
+  'treemap',
+  'changes',
+  'waterfall',
+];
 
 /** 去掉扣款和价格历史，只留算出 day 当天价格所需的一条 */
 function withoutHistory<T extends Phase>(p: T, day: string): T {
@@ -158,7 +174,8 @@ export function maskForPublic(state: AppState, opts: { untrimmed?: boolean } = {
   const keepLifetime = needs(['lifetime']);
   const keepAmounts = needs(NEEDS_AMOUNTS);
   const subs = state.subscriptions.filter(
-    (s) => keepAmounts && !s.proxy && !hidden.has(s.id) && (keepEnded || !isStopped(effectiveStatus(s, today)) || (keepLifetime && s.cycle.unit === 'lifetime')),
+    (s) =>
+      keepAmounts && !s.proxy && !hidden.has(s.id) && (keepEnded || !isStopped(effectiveStatus(s, today)) || (keepLifetime && s.cycle.unit === 'lifetime')),
   );
   const keepCategories = needs(NEEDS_CATEGORIES);
   const used = new Set(keepCategories ? subs.map((s) => s.category) : []);
@@ -167,10 +184,14 @@ export function maskForPublic(state: AppState, opts: { untrimmed?: boolean } = {
   const trimSub = (s: Subscription, i: number): Subscription => {
     // 已结束的订阅按结束那天的价格算「原来每月多少」，结束日在未来也一样（已付至未来）
     const day = isStopped(effectiveStatus(s, today)) ? (s.end ?? today) : today;
-    const flat = keepHistory ? s : { ...withoutHistory(s, day), ...(s.cycle.unit === 'lifetime' ? { price: s.price } : {}), phases: s.phases?.map((p) => withoutHistory(p, day)) };
+    const flat = keepHistory
+      ? s
+      : { ...withoutHistory(s, day), ...(s.cycle.unit === 'lifetime' ? { price: s.price } : {}), phases: s.phases?.map((p) => withoutHistory(p, day)) };
     return {
       ...flat,
-      ...(keepNames ? {} : { id: `s${i}`, name: '', icon: undefined, url: undefined, region: undefined, phases: flat.phases?.map((p) => ({ ...p, region: undefined })) }),
+      ...(keepNames
+        ? {}
+        : { id: `s${i}`, name: '', icon: undefined, url: undefined, region: undefined, phases: flat.phases?.map((p) => ({ ...p, region: undefined })) }),
       ...(keepCategories ? {} : { category: '' }),
     };
   };

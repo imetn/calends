@@ -337,7 +337,11 @@ function Sidebar({
           <small>{THEME_LABEL[theme]}</small>
         </button>
         {!state.readonly && (
-          <a className={`side-item ${route === 'settings' || route === 'settings/public' ? 'active' : ''}`} href={href('settings')} onClick={() => setGear(gear + 1)}>
+          <a
+            className={`side-item ${route === 'settings' || route === 'settings/public' ? 'active' : ''}`}
+            href={href('settings')}
+            onClick={() => setGear(gear + 1)}
+          >
             {/* 每点一下齿轮转一圈：先慢、再快、再慢 */}
             <span className="ico-turn gear" style={{ transform: `rotate(${gear * 360}deg)` }}>
               <Icon name="gear" />

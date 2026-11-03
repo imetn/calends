@@ -5,7 +5,8 @@ import { toBaseOrNaN } from './fx.ts';
 import { events, monthEnd, monthMovement, type LedgerEvent } from './metrics.ts';
 import type { AppState, Subscription } from './types.ts';
 
-const inCcy = (state: AppState, ccy: string): AppState => (ccy === state.settings.baseCurrency ? state : { ...state, settings: { ...state.settings, baseCurrency: ccy } });
+const inCcy = (state: AppState, ccy: string): AppState =>
+  ccy === state.settings.baseCurrency ? state : { ...state, settings: { ...state.settings, baseCurrency: ccy } };
 
 /** 带 + − 号的差额，不受「收支正负号」设置影响；不足 10 的保留分 */
 export const signedMoney = (v: number, ccy: string) => money(v, ccy, { sign: true, decimals: Math.abs(v) < 10 ? 2 : 0 });

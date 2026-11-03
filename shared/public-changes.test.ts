@@ -10,11 +10,35 @@ import { DEFAULT_SETTINGS, type AppState, type PublicPageConfig, type Subscripti
 const TODAY = '2026-06-15';
 const SECRET = 'private-stop-reason';
 const sub = (over: Partial<Subscription>): Subscription =>
-  ({ id: 'a', name: 'Fiction Music', category: '影音', tags: [], price: 12, currency: 'USD', cycle: { unit: 'month', every: 1 }, start: '2024-01-15', status: 'active', ...over }) as Subscription;
+  ({
+    id: 'a',
+    name: 'Fiction Music',
+    category: '影音',
+    tags: [],
+    price: 12,
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+    start: '2024-01-15',
+    status: 'active',
+    ...over,
+  }) as Subscription;
 const subs = () => [
-  sub({ priceHistory: [{ from: '2024-01-15', amount: 6 }, { from: '2026-06-01', amount: 12 }] } as Partial<Subscription>),
+  sub({
+    priceHistory: [
+      { from: '2024-01-15', amount: 6 },
+      { from: '2026-06-01', amount: 12 },
+    ],
+  } as Partial<Subscription>),
   sub({ id: 'b', name: 'Fiction Cloud', price: 30, start: '2026-06-03', currency: 'EUR' }),
-  sub({ id: 'c', name: 'Fiction Ended', price: 20, start: '2024-02-01', status: 'cancelled', notes: 'private-note', stop: { kind: 'cancel', date: '2026-06-05', reason: SECRET } } as unknown as Partial<Subscription>),
+  sub({
+    id: 'c',
+    name: 'Fiction Ended',
+    price: 20,
+    start: '2024-02-01',
+    status: 'cancelled',
+    notes: 'private-note',
+    stop: { kind: 'cancel', date: '2026-06-05', reason: SECRET },
+  } as unknown as Partial<Subscription>),
   sub({ id: 'd', name: 'Fiction Forever', price: 99, start: '2025-03-01', cycle: { unit: 'lifetime', every: 1 } }),
   sub({
     id: 'e',
@@ -42,9 +66,14 @@ const numbers = (rows: ReturnType<typeof publicChanges>) => rows.map((c) => [c.d
 
 test('events 的 note 带停用原因、地区和原价，公开页的变动记录一律丢弃', () => {
   const raw = ledger();
-  const notes = events(raw, TODAY).map((e) => e.note).filter(Boolean);
+  const notes = events(raw, TODAY)
+    .map((e) => e.note)
+    .filter(Boolean);
   assert.ok(notes.includes(SECRET), '原始账本的 note 确实带停用原因');
-  assert.ok(events(raw, TODAY).some((e) => e.kind === 'switch' && e.note), '换区也有 note（正文含地区和原价）');
+  assert.ok(
+    events(raw, TODAY).some((e) => e.kind === 'switch' && e.note),
+    '换区也有 note（正文含地区和原价）',
+  );
   const rows = publicChanges(raw, TODAY, 'USD');
   for (const row of rows) assert.deepEqual(Object.keys(row).sort(), ['date', 'delta', 'kind', 'sub']);
   for (const row of rows) assert.deepEqual(Object.keys(row.sub).sort(), ['category', 'icon', 'id', 'name', 'url']);
@@ -62,7 +91,10 @@ test('只放变动记录时，脱敏后的数据足够：输出与原始账本�
   const raw = ledger();
   const masked = maskForPublic(ledger(only('changes')));
   assert.deepEqual(numbers(publicChanges(masked, TODAY, 'USD')), numbers(publicChanges(raw, TODAY, 'USD')));
-  assert.deepEqual(publicChanges(masked, TODAY, 'USD').map((c) => c.sub.name), publicChanges(raw, TODAY, 'USD').map((c) => c.sub.name));
+  assert.deepEqual(
+    publicChanges(masked, TODAY, 'USD').map((c) => c.sub.name),
+    publicChanges(raw, TODAY, 'USD').map((c) => c.sub.name),
+  );
   assert.deepEqual(numbers(publicChanges(masked, TODAY, 'CNY')), numbers(publicChanges(raw, TODAY, 'CNY')));
 });
 
@@ -70,7 +102,8 @@ test('只放月度变化时，脱敏后的数据足够：每个月都与原始�
   const raw = ledger();
   const masked = maskForPublic(ledger(only('waterfall')));
   assert.equal(waterfallFirstMonth(masked, TODAY), waterfallFirstMonth(raw, TODAY));
-  for (const month of ['2024-01', '2026-05', '2026-06']) assert.deepEqual(waterfallMonth(masked, month, TODAY, 'USD'), waterfallMonth(raw, month, TODAY, 'USD'), month);
+  for (const month of ['2024-01', '2026-05', '2026-06'])
+    assert.deepEqual(waterfallMonth(masked, month, TODAY, 'USD'), waterfallMonth(raw, month, TODAY, 'USD'), month);
 });
 
 test('组件不在页面上时价格历史照旧裁掉，放上去才下发', () => {
@@ -81,13 +114,32 @@ test('组件不在页面上时价格历史照旧裁掉，放上去才下发', ()
 
 test('变动种类：新增、涨价、降价、停用、买断、换区，时间倒序', () => {
   const rows = publicChanges(ledger(), TODAY, 'USD');
-  assert.deepEqual(rows.map((c) => c.date), rows.map((c) => c.date).slice().sort().reverse());
+  assert.deepEqual(
+    rows.map((c) => c.date),
+    rows
+      .map((c) => c.date)
+      .slice()
+      .sort()
+      .reverse(),
+  );
   const of = (id: string, kind: string) => rows.find((c) => c.sub.id === id && c.kind === kind);
   assert.ok(of('b', 'added'));
   assert.ok(Math.abs(of('a', 'up')!.delta - 6) < 1);
   assert.ok(of('c', 'stopped')!.delta < 0);
   assert.ok(of('e', 'switch')!.delta > 0);
-  const down = publicChanges(ledger(undefined, [sub({ priceHistory: [{ from: '2024-01-15', amount: 12 }, { from: '2026-06-01', amount: 6 }], price: 6 } as Partial<Subscription>)]), TODAY, 'USD');
+  const down = publicChanges(
+    ledger(undefined, [
+      sub({
+        priceHistory: [
+          { from: '2024-01-15', amount: 12 },
+          { from: '2026-06-01', amount: 6 },
+        ],
+        price: 6,
+      } as Partial<Subscription>),
+    ]),
+    TODAY,
+    'USD',
+  );
   assert.ok(down.some((c) => c.kind === 'down' && c.delta < 0));
 });
 
@@ -101,7 +153,14 @@ test('买断按买入当天汇率，月额按当前汇率', () => {
 
 test('缺汇率：金额是 NaN，不变成 0；涨跌方向仍然看原币', () => {
   const state = ledger(undefined, [
-    sub({ currency: 'XXX', price: 6, priceHistory: [{ from: '2024-01-15', amount: 12 }, { from: '2026-06-01', amount: 6 }] } as Partial<Subscription>),
+    sub({
+      currency: 'XXX',
+      price: 6,
+      priceHistory: [
+        { from: '2024-01-15', amount: 12 },
+        { from: '2026-06-01', amount: 6 },
+      ],
+    } as Partial<Subscription>),
     sub({ id: 'b', price: 10, start: '2024-01-01' }),
   ]);
   const down = publicChanges(state, TODAY, 'USD').find((c) => c.sub.id === 'a' && c.kind === 'down');
@@ -120,7 +179,10 @@ test('瀑布各项相加等于期末，为 0 的项不出现', () => {
   assert.ok(Math.abs(sum - wf.steps.at(-1)!.value) < 1e-6);
   assert.deepEqual(wf.steps.map((s) => s.id).slice(0, 2), ['from', 'added']);
   const flat = waterfallMonth(ledger(undefined, [sub({})]), '2026-06', TODAY, 'USD');
-  assert.deepEqual(flat.steps.map((s) => s.id), ['from', 'to']);
+  assert.deepEqual(
+    flat.steps.map((s) => s.id),
+    ['from', 'to'],
+  );
 });
 
 test('没有周期订阅（或还没开始）时没有可翻的月份', () => {

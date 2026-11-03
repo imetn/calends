@@ -53,7 +53,8 @@ export const PUBLIC_METRIC_CARDS_MAX = 24;
 /** 多指标行模板最多放几个数据 */
 export const PUBLIC_METRIC_ROWS_MAX = 4;
 
-export type PublicGridId = 'stats' | 'timeline' | 'chart' | 'composition' | 'fx' | 'list' | 'ended' | 'lifetime' | 'calendar' | 'years' | 'tenure' | 'treemap' | 'changes' | 'waterfall';
+export type PublicGridId =
+  'stats' | 'timeline' | 'chart' | 'composition' | 'fx' | 'list' | 'ended' | 'lifetime' | 'calendar' | 'years' | 'tenure' | 'treemap' | 'changes' | 'waterfall';
 export type PublicBottomId = (typeof PUBLIC_BOTTOM_SECTIONS)[number];
 /** 决定下发哪些数据的最小单位 */
 export type PublicPart = PublicGridId | PublicBottomId;
@@ -83,13 +84,21 @@ const metricOf = (id: string) => PUBLIC_METRICS.find((m) => m.id === id);
 /** 这个模板能选哪些数据：趋势要有序列，对比要有上期，占比要有总量 */
 export const metricsFor = (template: PublicMetricTemplate) =>
   PUBLIC_METRICS.filter((m) => (template === 'trend' ? 'series' in m : template === 'compare' ? 'prev' in m : template === 'share' ? 'share' in m : true));
-const DEFAULT_METRIC: Record<PublicMetricTemplate, PublicMetricId[]> = { number: ['monthly'], trend: ['monthly'], compare: ['monthly'], share: ['topCategory'], rows: ['monthly', 'yearly', 'active'] };
+const DEFAULT_METRIC: Record<PublicMetricTemplate, PublicMetricId[]> = {
+  number: ['monthly'],
+  trend: ['monthly'],
+  compare: ['monthly'],
+  share: ['topCategory'],
+  rows: ['monthly', 'yearly', 'active'],
+};
 /** 概览卡已经显示的数，新指标卡默认不再选 */
 const STATS_SHOWS = ['monthly', 'yearly', 'active', 'paidTotal'];
 /** 新指标卡默认选页面上还没出现过的数据，同一个数不在页面上放两遍；都用过了才退回模板默认 */
 function freshMetrics(items: PublicGridItem[], template: PublicMetricTemplate): string[] {
-  const used = new Set(items.flatMap((s) => (s.hidden ? [] : s.metric?.items ?? (s.id === 'stats' ? STATS_SHOWS : []))));
-  const fresh = metricsFor(template).map((m) => m.id as string).filter((id) => !used.has(id));
+  const used = new Set(items.flatMap((s) => (s.hidden ? [] : (s.metric?.items ?? (s.id === 'stats' ? STATS_SHOWS : [])))));
+  const fresh = metricsFor(template)
+    .map((m) => m.id as string)
+    .filter((id) => !used.has(id));
   const count = DEFAULT_METRIC[template].length;
   return fresh.length >= count ? fresh.slice(0, count) : DEFAULT_METRIC[template];
 }
@@ -97,7 +106,16 @@ function freshMetrics(items: PublicGridItem[], template: PublicMetricTemplate): 
 export function newMetricItem(items: PublicGridItem[], template: PublicMetricTemplate): PublicGridItem {
   const n = items.reduce((max, s) => (METRIC_ID.test(s.id) ? Math.max(max, Number(s.id.slice(7))) : max), 0) + 1;
   const def = metricDef(template);
-  return { id: `metric-${n}`, x: 0, y: publicGridBottom(items), w: def.w, h: def.h, min: def.min, hidden: false, metric: { template, items: freshMetrics(items, template) } };
+  return {
+    id: `metric-${n}`,
+    x: 0,
+    y: publicGridBottom(items),
+    w: def.w,
+    h: def.h,
+    min: def.min,
+    hidden: false,
+    metric: { template, items: freshMetrics(items, template) },
+  };
 }
 /** 换模板时留下仍能配的数据，都不能配就用模板默认的；单数据模板只留第一个 */
 export function metricWithTemplate(card: PublicMetricCard, template: PublicMetricTemplate): PublicMetricCard {
@@ -119,7 +137,8 @@ const validMetric = (m: unknown): m is PublicMetricCard => {
 const gridDef = (id: string) => PUBLIC_GRID_SECTIONS.find((s) => s.id === id);
 const isBottom = (id: string): id is PublicBottomId => (PUBLIC_BOTTOM_SECTIONS as readonly string[]).includes(id);
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round(v)));
-const hasRect = (s?: PublicSectionConfig): s is PublicSectionConfig & PublicRect => !!s && [s.x, s.y, s.w, s.h].every((v) => typeof v === 'number' && Number.isFinite(v));
+const hasRect = (s?: PublicSectionConfig): s is PublicSectionConfig & PublicRect =>
+  !!s && [s.x, s.y, s.w, s.h].every((v) => typeof v === 'number' && Number.isFinite(v));
 const overlaps = (a: PublicRect, b: PublicRect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 const byPosition = (a: PublicRect, b: PublicRect) => a.y - b.y || a.x - b.x;
 
@@ -188,7 +207,8 @@ export function publicGrid(cfg?: PublicPageConfig): PublicGridItem[] {
 }
 
 /** 流式页面只记主人隐藏了哪些默认显示的组件；默认不显示的不用记 */
-const flowSections = (items: PublicGridItem[]): PublicSectionConfig[] => items.filter((s) => s.hidden && !gridDef(s.id)?.off).map((s) => ({ id: s.id, hidden: true }));
+const flowSections = (items: PublicGridItem[]): PublicSectionConfig[] =>
+  items.filter((s) => s.hidden && !gridDef(s.id)?.off).map((s) => ({ id: s.id, hidden: true }));
 /** 主人只隐藏过组件、没动过位置：这种网格不存几何，页面继续按流式排列 */
 export const isFlowGrid = (items: PublicGridItem[]) => JSON.stringify(items) === JSON.stringify(publicGrid({ sections: flowSections(items) }));
 /** 网格转成要存的字段：没动过位置时只存隐藏了哪些 */
@@ -198,7 +218,8 @@ export const gridConfig = (items: PublicGridItem[]): PublicSectionConfig[] => (i
 export const publicGridBottom = (items: PublicGridItem[]) => items.reduce((max, s) => (s.hidden ? max : Math.max(max, s.y + s.h)), 0);
 
 /** 指标卡配置变了：只换它自己，位置不动 */
-export const setMetric = (items: PublicGridItem[], id: string, metric: PublicMetricCard) => items.map((s) => (s.id === id ? { ...s, metric, min: metricDef(metric.template).min, w: Math.max(s.w, metricDef(metric.template).min) } : s));
+export const setMetric = (items: PublicGridItem[], id: string, metric: PublicMetricCard) =>
+  items.map((s) => (s.id === id ? { ...s, metric, min: metricDef(metric.template).min, w: Math.max(s.w, metricDef(metric.template).min) } : s));
 
 /** 把一张卡放到新位置：位置不合规的夹回范围内，被压到的卡片往下推，其余不动 */
 export function placeItem(items: PublicGridItem[], id: string, rect: PublicRect): PublicGridItem[] {
@@ -208,7 +229,8 @@ export function placeItem(items: PublicGridItem[], id: string, rect: PublicRect)
 
 /** 两次摆放是否一样：指针还在同一格时不用重画 */
 export const samePlacement = (a: PublicGridItem[], b: PublicGridItem[]) =>
-  a.length === b.length && a.every((s, i) => s.id === b[i].id && s.x === b[i].x && s.y === b[i].y && s.w === b[i].w && s.h === b[i].h && !s.hidden === !b[i].hidden);
+  a.length === b.length &&
+  a.every((s, i) => s.id === b[i].id && s.x === b[i].x && s.y === b[i].y && s.w === b[i].w && s.h === b[i].h && !s.hidden === !b[i].hidden);
 
 /** 重新添加：没摆放过的页面回到原位（默认不显示的组件没有原位，放上去就算摆放过）；摆放过的放回页面最下面 */
 export function showItem(items: PublicGridItem[], id: string): PublicGridItem[] {
@@ -216,7 +238,11 @@ export function showItem(items: PublicGridItem[], id: string): PublicGridItem[] 
   if (!item) return items;
   if (isFlowGrid(items) && !gridDef(id)?.off) return publicGrid({ sections: flowSections(items.map((s) => (s.id === id ? { ...s, hidden: false } : s))) });
   const placed = isFlowGrid(items) ? publicGrid({ sections: gridSections(items) }) : items;
-  return placeItem(placed.map((s) => (s.id === id ? { ...s, hidden: false } : s)), id, { ...item, x: 0, y: publicGridBottom(placed) });
+  return placeItem(
+    placed.map((s) => (s.id === id ? { ...s, hidden: false } : s)),
+    id,
+    { ...item, x: 0, y: publicGridBottom(placed) },
+  );
 }
 
 /** 移除：没摆放过的页面重新补满；摆放过的只收起它独占的整行，其余不动。指标卡直接删掉，不留隐藏项 */
@@ -230,7 +256,11 @@ export function hideItem(items: PublicGridItem[], id: string): PublicGridItem[] 
 /** 高度补到内容需要的行数。原来同一排同样高的卡片一起变，并排的两张不会变成一高一矮 */
 export function fitHeights(items: PublicGridItem[], need: Record<string, number>): PublicGridItem[] {
   const shown = items.filter((s) => !s.hidden);
-  return settle(items.map((s) => (s.hidden ? s : { ...s, h: Math.max(s.h, ...shown.filter((o) => o.y === s.y && o.h === s.h).map((o) => Math.min(need[o.id] ?? 0, PUBLIC_MAX_HEIGHT))) })));
+  return settle(
+    items.map((s) =>
+      s.hidden ? s : { ...s, h: Math.max(s.h, ...shown.filter((o) => o.y === s.y && o.h === s.h).map((o) => Math.min(need[o.id] ?? 0, PUBLIC_MAX_HEIGHT))) },
+    ),
+  );
 }
 
 /** 去掉没有内容的卡片（没有退订、没有买断），只有它们占着的整行一起收起 */
@@ -243,7 +273,8 @@ export function collapseEmpty(items: PublicGridItem[], isEmpty: (id: string) => 
 }
 
 /** 网格转成要存的字段 */
-export const gridSections = (items: PublicGridItem[]): PublicSectionConfig[] => items.map(({ id, x, y, w, h, hidden, metric }) => ({ id, x, y, w, h, ...(hidden ? { hidden: true } : {}), ...(metric ? { metric } : {}) }));
+export const gridSections = (items: PublicGridItem[]): PublicSectionConfig[] =>
+  items.map(({ id, x, y, w, h, hidden, metric }) => ({ id, x, y, w, h, ...(hidden ? { hidden: true } : {}), ...(metric ? { metric } : {}) }));
 
 export const publicBottomShown = (cfg: PublicPageConfig | undefined, id: PublicBottomId) => !cfg?.sections?.some((s) => s.id === id && s.hidden);
 
@@ -327,7 +358,11 @@ export function restorablePublicPage(raw: unknown): PublicPageConfig | undefined
     let cards = 0;
     out.sections = (c.sections as PublicSectionConfig[]).flatMap((s) => {
       if (!s || typeof s !== 'object' || typeof s.id !== 'string' || seen.has(s.id)) return [];
-      const kept = validPublicPage({ sections: [s] }) ? s : s.hidden === true && validPublicPage({ sections: [{ id: s.id, hidden: true }] }) ? { id: s.id, hidden: true } : undefined;
+      const kept = validPublicPage({ sections: [s] })
+        ? s
+        : s.hidden === true && validPublicPage({ sections: [{ id: s.id, hidden: true }] })
+          ? { id: s.id, hidden: true }
+          : undefined;
       if (!kept || (METRIC_ID.test(s.id) && ++cards > PUBLIC_METRIC_CARDS_MAX)) return [];
       seen.add(s.id);
       return [kept];

@@ -130,7 +130,15 @@ function Preview({ device, frame }: { device: 'desktop' | 'phone'; frame: React.
 }
 
 /** 组件库的一项：缩略图说明它长什么样。能拖就拖到画布，点一下放到页面最下面 */
-function LibraryItem({ id, placed, disabled, draggable, onAdd, onRemove, onDrag }: {
+function LibraryItem({
+  id,
+  placed,
+  disabled,
+  draggable,
+  onAdd,
+  onRemove,
+  onDrag,
+}: {
   id: string;
   placed: boolean;
   disabled: boolean;
@@ -202,7 +210,17 @@ function LibraryItem({ id, placed, disabled, draggable, onAdd, onRemove, onDrag 
 }
 
 /** 选中一张指标卡时侧栏显示它的设置：换模板、换数据 */
-function MetricInspector({ card, onChange, onClose, onRemove }: { card: PublicMetricCard; onChange: (card: PublicMetricCard) => void; onClose: () => void; onRemove: () => void }) {
+function MetricInspector({
+  card,
+  onChange,
+  onClose,
+  onRemove,
+}: {
+  card: PublicMetricCard;
+  onChange: (card: PublicMetricCard) => void;
+  onClose: () => void;
+  onRemove: () => void;
+}) {
   const options = metricsFor(card.template);
   const setAt = (i: number, value: string) => onChange({ ...card, items: card.items.map((x, j) => (j === i ? value : x)) });
   const unused = options.find((m) => !card.items.includes(m.id));
@@ -220,7 +238,14 @@ function MetricInspector({ card, onChange, onClose, onRemove }: { card: PublicMe
       <Group title={t('settings.publicPage.template')}>
         <div className="ppe-templates">
           {PUBLIC_METRIC_TEMPLATES.map((tpl) => (
-            <button key={tpl} type="button" className="ppe-template" data-on={tpl === card.template ? '' : undefined} aria-pressed={tpl === card.template} onClick={() => onChange(metricWithTemplate(card, tpl))}>
+            <button
+              key={tpl}
+              type="button"
+              className="ppe-template"
+              data-on={tpl === card.template ? '' : undefined}
+              aria-pressed={tpl === card.template}
+              onClick={() => onChange(metricWithTemplate(card, tpl))}
+            >
               <WidgetThumb id={tpl} />
               <span>{widgetName(tpl)}</span>
             </button>
@@ -237,7 +262,11 @@ function MetricInspector({ card, onChange, onClose, onRemove }: { card: PublicMe
               onChange={(v) => setAt(i, v)}
             />
             {card.items.length > 1 && (
-              <IconButton aria-label={t('settings.publicPage.remove')} title={t('settings.publicPage.remove')} onClick={() => onChange({ ...card, items: card.items.filter((_, j) => j !== i) })}>
+              <IconButton
+                aria-label={t('settings.publicPage.remove')}
+                title={t('settings.publicPage.remove')}
+                onClick={() => onChange({ ...card, items: card.items.filter((_, j) => j !== i) })}
+              >
                 <X size={14} />
               </IconButton>
             )}
@@ -282,7 +311,14 @@ export function PublicPageEditor({ state }: { state: AppState }) {
       avatar: config?.avatar ?? s.avatar,
       config: publicConfigForVisitors(config),
       // 手机宽度、窄屏和触屏上只看效果
-      canvas: canvasOn ? { labels: Object.fromEntries(canvasIds.map((id) => [id, widgetName(id)])), remove: t('settings.publicPage.remove'), empty: t('settings.publicPage.emptyCard'), selected: selected ?? undefined } : undefined,
+      canvas: canvasOn
+        ? {
+            labels: Object.fromEntries(canvasIds.map((id) => [id, widgetName(id)])),
+            remove: t('settings.publicPage.remove'),
+            empty: t('settings.publicPage.emptyCard'),
+            selected: selected ?? undefined,
+          }
+        : undefined,
     }),
     [configKey, draft.publicTitle, s.displayName, s.avatar, canvasOn, selected],
   );
@@ -336,7 +372,12 @@ export function PublicPageEditor({ state }: { state: AppState }) {
     };
   }, [dirty]);
 
-  const save = () => run(() => saveSettings({ publicTitle: (draft.publicTitle.trim() || null) as string | undefined, publicPage: (config ?? null) as PublicPageConfig | undefined }), t('settings.toast.saved'));
+  const save = () =>
+    run(
+      () =>
+        saveSettings({ publicTitle: (draft.publicTitle.trim() || null) as string | undefined, publicPage: (config ?? null) as PublicPageConfig | undefined }),
+      t('settings.toast.saved'),
+    );
 
   /** 组件库拖动：指针被捕获在编辑页，换算成 iframe 里的坐标发过去；不在画布上就取消 */
   const dragWidget = (id: string, phase: 'move' | 'end' | 'cancel', x: number, y: number) => {
@@ -386,7 +427,15 @@ export function PublicPageEditor({ state }: { state: AppState }) {
         }
       >
         {!narrow && deviceSeg}
-        <button type="button" className="btn" disabled={isDefault} onClick={() => { setDraft(draftOf(undefined, undefined)); setSelected(null); }}>
+        <button
+          type="button"
+          className="btn"
+          disabled={isDefault}
+          onClick={() => {
+            setDraft(draftOf(undefined, undefined));
+            setSelected(null);
+          }}
+        >
           {t('settings.publicPage.reset')}
         </button>
         <button type="button" className="btn primary" disabled={!dirty} onClick={() => void save()}>

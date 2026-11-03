@@ -49,7 +49,16 @@ test('squarify ignores zero values and returns nothing without a positive total'
 });
 
 test('spendingMap groups current monthly spend by category, largest first', () => {
-  const map = spendingMap(ledger([sub('a', 'Tools', 10), sub('b', 'Video', 30), sub('c', 'Tools', 5), sub('gone', 'Tools', 99, { status: 'cancelled', end: '2025-06-01' }), sub('free', 'Music', 7, { status: 'paused', pausedAt: '2026-01-01' })]), today);
+  const map = spendingMap(
+    ledger([
+      sub('a', 'Tools', 10),
+      sub('b', 'Video', 30),
+      sub('c', 'Tools', 5),
+      sub('gone', 'Tools', 99, { status: 'cancelled', end: '2025-06-01' }),
+      sub('free', 'Music', 7, { status: 'paused', pausedAt: '2026-01-01' }),
+    ]),
+    today,
+  );
   assert.deepEqual(
     map.groups.map((g) => [g.name, g.rank, g.v, g.subs.map((s) => s.id)]),
     [
@@ -73,8 +82,24 @@ test('spendingMap counts a missing exchange rate instead of treating it as zero'
 
 test('spendTiles stays inside the box, sits flush with its edges and leaves the gap between tiles', () => {
   const groups: SpendGroup[] = [
-    { name: 'A', rank: 0, v: 60, subs: [{ id: 'a1', name: 'a1', v: 40 }, { id: 'a2', name: 'a2', v: 20 }] },
-    { name: 'B', rank: 1, v: 40, subs: [{ id: 'b1', name: 'b1', v: 30 }, { id: 'b2', name: 'b2', v: 10 }] },
+    {
+      name: 'A',
+      rank: 0,
+      v: 60,
+      subs: [
+        { id: 'a1', name: 'a1', v: 40 },
+        { id: 'a2', name: 'a2', v: 20 },
+      ],
+    },
+    {
+      name: 'B',
+      rank: 1,
+      v: 40,
+      subs: [
+        { id: 'b1', name: 'b1', v: 30 },
+        { id: 'b2', name: 'b2', v: 10 },
+      ],
+    },
   ];
   const W = 300;
   const H = 200;

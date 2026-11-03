@@ -1,7 +1,9 @@
 /** 组件库的缩略图：画出组件大概长什么样，一眼能认。线框用文字色的不同透明度，随主题变 */
 const FILL = 'currentColor';
 
-const Bar = ({ x, y, w, h = 3, o = 0.28 }: { x: number; y: number; w: number; h?: number; o?: number }) => <rect x={x} y={y} width={w} height={h} rx={1} fill={FILL} opacity={o} />;
+const Bar = ({ x, y, w, h = 3, o = 0.28 }: { x: number; y: number; w: number; h?: number; o?: number }) => (
+  <rect x={x} y={y} width={w} height={h} rx={1} fill={FILL} opacity={o} />
+);
 
 const SHAPES: Record<string, React.ReactNode> = {
   stats: (

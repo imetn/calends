@@ -1,5 +1,18 @@
 import { DAYS_PER_MONTH } from './billing.ts';
-import { addDays, addMonths, chargeServicePeriod, chargesBetween, coveredUntil, cycleDays, diffDays, effectiveStatus, isStopped, parseDay, phaseLanes, phaseSubs } from './billing.ts';
+import {
+  addDays,
+  addMonths,
+  chargeServicePeriod,
+  chargesBetween,
+  coveredUntil,
+  cycleDays,
+  diffDays,
+  effectiveStatus,
+  isStopped,
+  parseDay,
+  phaseLanes,
+  phaseSubs,
+} from './billing.ts';
 import type { Subscription } from './types.ts';
 import { dateFormat } from './intl.ts';
 
