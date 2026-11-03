@@ -1606,7 +1606,8 @@ test('bars meet the axis with square bottoms and every forecast area uses the on
   assert.match(body(styles, '.act-stack'), /border-radius:\s*var\(--bar-radius\) var\(--bar-radius\) 0 0/);
   assert.doesNotMatch(chart, /<rect\b[^>]*cc-bar/);
   assert.match(pub, /radius=\{\[radius, radius, 0, 0\]\}/);
-  assert.match(pub, /barCategoryGap="50%"/);
+  // Recharts 的 barCategoryGap 是每一侧的留白：25% 让柱子占格宽一半，50% 柱宽为 0、整张图没有柱子
+  assert.match(pub, /barCategoryGap="25%"/);
   assert.match(body(styles, '.sy-col i'), /border-radius:\s*var\(--bar-radius\) var\(--bar-radius\) 0 0/);
   // 金额图、用量图同一条灰色平均线
   // 汇总后取各柱合计的均值画一条平线，不把每笔均值累加成台阶

@@ -67,5 +67,69 @@
   "titleAnon": "Abonnements",
   "pile": {
     "label": "Tes abonnements en pile — plus l’icône est grande, plus il coûte"
+  },
+  "calendar": {
+    "title": "Calendrier"
+  },
+  "years": {
+    "title": "Frise des abonnements"
+  },
+  "tenure": {
+    "title": "Durée d'abonnement",
+    "avg": "Durée moyenne des abonnements actifs",
+    "longest": "Conservé le plus longtemps"
+  },
+  "treemap": {
+    "title": "Carte des dépenses",
+    "missing": {
+      "one": "{count} abonnement sans taux de change n'est pas inclus",
+      "other": "{count} abonnements sans taux de change ne sont pas inclus"
+    }
+  },
+  "changes": {
+    "title": "Modifications",
+    "more": "Tout afficher ({n})",
+    "less": "Afficher moins",
+    "kind": {
+      "added": "Nouveau",
+      "resumed": "Repris",
+      "buy": "Achat unique",
+      "up": "Hausse de prix",
+      "down": "Baisse de prix",
+      "switch": "Changement de région ou de formule",
+      "stopped": "Arrêté",
+      "paused": "En pause"
+    }
+  },
+  "waterfall": {
+    "title": "Variation mensuelle",
+    "prev": "Mois précédent",
+    "next": "Mois suivant",
+    "from": "Début",
+    "added": "Nouveaux",
+    "expansion": "Hausse de prix",
+    "contraction": "Baisse de prix",
+    "churned": "Arrêtés",
+    "fx": "Change",
+    "to": "Maintenant",
+    "monthEnd": "Fin de mois",
+    "incomplete": "Taux de change manquants, graphique impossible"
+  },
+  "metric": {
+    "monthly": "Dépenses mensuelles",
+    "yearly": "Par an",
+    "active": "Abonnements actifs",
+    "avgPerSub": "Moyenne par abonnement",
+    "paidTotal": "Total payé",
+    "paidYear": "Payé cette année",
+    "paidMonth": "Payé ce mois-ci",
+    "next30": "30 prochains jours",
+    "topSub": "Le plus cher",
+    "topCategory": "Catégorie principale",
+    "endedCount": "Résiliés",
+    "lifetimeCount": "Achat unique",
+    "fxEffect": "Effet de change (mensuel)",
+    "vsPrev": "vs an dernier",
+    "shareOf": "Part des dépenses mensuelles"
   }
 }

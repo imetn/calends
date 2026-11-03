@@ -65,5 +65,68 @@
   "titleAnon": "Langganan",
   "pile": {
     "label": "Tumpukan langganan: makin besar ikonnya, makin mahal"
+  },
+  "calendar": {
+    "title": "Kalender"
+  },
+  "years": {
+    "title": "Linimasa langganan"
+  },
+  "tenure": {
+    "title": "Lama berlangganan",
+    "avg": "Rata-rata lama langganan aktif",
+    "longest": "Paling lama"
+  },
+  "treemap": {
+    "title": "Peta pengeluaran",
+    "missing": {
+      "other": "{count} langganan tanpa kurs tidak disertakan"
+    }
+  },
+  "changes": {
+    "title": "Perubahan",
+    "more": "Tampilkan semua ({n})",
+    "less": "Tampilkan lebih sedikit",
+    "kind": {
+      "added": "Baru",
+      "resumed": "Dilanjutkan",
+      "buy": "Dibeli putus",
+      "up": "Harga naik",
+      "down": "Harga turun",
+      "switch": "Ganti wilayah atau paket",
+      "stopped": "Dihentikan",
+      "paused": "Dijeda"
+    }
+  },
+  "waterfall": {
+    "title": "Perubahan bulanan",
+    "prev": "Bulan sebelumnya",
+    "next": "Bulan berikutnya",
+    "from": "Awal",
+    "added": "Baru",
+    "expansion": "Harga naik",
+    "contraction": "Harga turun",
+    "churned": "Dihentikan",
+    "fx": "Kurs",
+    "to": "Sekarang",
+    "monthEnd": "Akhir bulan",
+    "incomplete": "Kurs tidak lengkap, grafik tidak dapat digambar"
+  },
+  "metric": {
+    "monthly": "Pengeluaran bulanan",
+    "yearly": "Per tahun",
+    "active": "Langganan aktif",
+    "avgPerSub": "Rata-rata per langganan",
+    "paidTotal": "Total dibayar",
+    "paidYear": "Dibayar tahun ini",
+    "paidMonth": "Dibayar bulan ini",
+    "next30": "30 hari ke depan",
+    "topSub": "Termahal",
+    "topCategory": "Kategori terbesar",
+    "endedCount": "Dibatalkan",
+    "lifetimeCount": "Sekali bayar",
+    "fxEffect": "Dampak kurs (bulanan)",
+    "vsPrev": "vs tahun lalu",
+    "shareOf": "Porsi dari pengeluaran bulanan"
   }
 }

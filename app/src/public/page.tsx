@@ -8,8 +8,9 @@ import { cnDate, flow, moneyTick, money, monthLabel, setSignedAmounts, symbol } 
 import { locale, t, type Params } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue, toBaseAt, toBaseOrNaN } from '../../../shared/fx.ts';
 import { cancelSavings, contributionOn, mrrSeries } from '../../../shared/metrics.ts';
-import { avatarOf, type AppState, type Subscription } from '../../../shared/types.ts';
-import { allCharges, catIcon, periodRange, sumBase, syncCategories, firstStart } from '../derive.ts';
+import { avatarOf, type AppState, type PublicPageConfig, type Subscription } from '../../../shared/types.ts';
+import { collapseEmpty, fillRows, flowSpans, gridSections, PUBLIC_GRID_SECTIONS, isCustomLayout, PUBLIC_PREVIEW_DATA, PUBLIC_PREVIEW_DRAFT, PUBLIC_PREVIEW_LAYOUT, PUBLIC_PREVIEW_READY, publicGrid, publicParts, tabletSpan, type PublicGridId, type PublicGridItem } from '../../../shared/public-layout.ts';
+import { allCharges, catIcon, periodRange, sumBase, sumBaseOrNaN, syncCategories, firstStart } from '../derive.ts';
 import { CatGlyph } from '../components/CatGlyph.tsx';
 import { THEME_LABEL, ThemeIcon, useThemeMode } from '../theme.tsx';
 import { AppIcon } from '@/public/components/app-icon';
@@ -18,7 +19,6 @@ import { Num } from '@/public/components/number';
 import { Badge } from '@/public/components/ui/badge';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/public/components/ui/card';
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/public/components/ui/chart';
-import { Separator } from '@/public/components/ui/separator';
 import { Skeleton } from '@/public/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/public/components/ui/tabs';
 import { TooltipProvider } from '@/public/components/ui/tooltip';
@@ -26,7 +26,22 @@ import { cn } from '@/public/lib/utils';
 import { PROJECT_NAME, PROJECT_URL } from '../../../shared/brand.ts';
 import { HatchPattern } from '../components/hatch.tsx';
 import { IconPile } from './components/icon-pile.tsx';
+import { Canvas, CanvasFixed, cellVars, type CanvasText } from './canvas.tsx';
 import { loadLocale, preferredLocale } from '../i18n.ts';
+import { metricValues, type MetricInputs } from '../../../shared/public-metrics.ts';
+import { publicChanges, waterfallFirstMonth } from '../../../shared/public-changes.ts';
+import { subscriptionTenure } from '../../../shared/scope-report.ts';
+import { byAmountDesc, spendingMap } from '../../../shared/treemap.ts';
+import { yearsTimeline } from '../../../shared/gantt.ts';
+import { clean, shade } from './widgets/lib.tsx';
+import { MetricCard, yearBefore } from './widgets/metric.tsx';
+import type { WidgetProps } from './widgets/props.ts';
+import { CalendarCard } from './widgets/calendar.tsx';
+import { YearsCard } from './widgets/years.tsx';
+import { TenureCard } from './widgets/tenure.tsx';
+import { TreemapCard } from './widgets/treemap.tsx';
+import { ChangesCard } from './widgets/changes.tsx';
+import { WaterfallCard } from './widgets/waterfall.tsx';
 
 /** 公开页可切换的币种：本位币，和（本位币不是美元时）美元 */
 type Ccy = string;
@@ -40,11 +55,11 @@ const save = (key: string, v: string) => {
 };
 
 /** 公开页去掉名字里的国旗 emoji，地区另有标签 */
-const clean = (name: string) => name.replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, ' ').replace(/\s+/g, ' ').trim();
 
 /** 标题：「某某的订阅」；没设名字时用通用标题 */
 let owner = '';
 let custom = '';
+let tabTitle = '';
 const title = () => custom.trim() || (owner.trim() ? t('public.title', { name: owner.trim() }) : t('public.titleAnon'));
 
 /** 文案里嵌元素：先按 params 填文字（含复数），再把 {name} 换成 parts 里的节点 */
@@ -64,26 +79,80 @@ function rich(key: string, params: Params, parts: Record<string, React.ReactNode
 /** 卡片留白：手机 16px，桌面 24px */
 const roomy = 'sm:[--card-spacing:--spacing(6)]';
 
+/** 页头和布局：访客来自账本设置；编辑页预览时由草稿实时覆盖，账本数据不重算 */
+type View = { title?: string; avatar?: string; config?: PublicPageConfig; canvas?: CanvasText };
+type Draft = Omit<View, 'title'> & { publicTitle?: string; displayName?: string };
+
+/** 被同源页面嵌入的编辑预览：数据由编辑页发来，不请求接口，公开页关闭时也能看 */
+const previewing = (() => {
+  if (!new URLSearchParams(location.search).has('preview') || window.parent === window) return false;
+  try {
+    return window.parent.location.origin === location.origin;
+  } catch {
+    return false;
+  }
+})();
+
+const applyTitle = (name: string | undefined, publicTitle: string | undefined, browserTitle: string | undefined) => {
+  owner = name ?? '';
+  custom = publicTitle ?? '';
+  tabTitle = browserTitle?.trim() ?? '';
+  document.title = tabTitle || title();
+};
+
 /** 对外公开的只读账本：数据已在服务端脱敏 */
 export function PublicPage() {
   const [state, setState] = useState<AppState | null>(null);
+  const [view, setView] = useState<View>({});
   const [err, setErr] = useState<string>();
   useEffect(() => {
     document.title = title();
+    const show = async (body: AppState) => {
+      // 语言包加载失败（发版后旧分包失效、断网）不挡账本：继续用当前语言渲染
+      if (preferredLocale(body.settings.language) !== locale()) await loadLocale(preferredLocale(body.settings.language)).catch(() => undefined);
+      if (body.settings.gainColor === 'red') document.documentElement.dataset.gain = 'red';
+      applyTitle(body.settings.displayName, body.settings.publicTitle, body.settings.publicPage?.browserTitle);
+      setSignedAmounts(body.settings.signedAmounts !== false);
+      setView({ title: title(), avatar: body.settings.avatar, config: body.settings.publicPage });
+      setState(body);
+    };
+    if (previewing) {
+      document.documentElement.dataset.preview = '';
+      let latest: Draft | undefined;
+      const applyDraft = () => {
+        if (!latest) return;
+        applyTitle(latest.displayName, latest.publicTitle, latest.config?.browserTitle);
+        setView({ title: title(), avatar: latest.avatar, config: latest.config, canvas: latest.canvas });
+      };
+      const onMessage = (e: MessageEvent) => {
+        if (e.origin !== location.origin || e.source !== window.parent) return;
+        const m = e.data as { type?: string; state?: AppState; draft?: Draft };
+        // 账本要先等语言包，草稿可能先到：账本到位后再套一次，不让已保存的布局盖掉草稿
+        if (m?.type === PUBLIC_PREVIEW_DATA && m.state) void show(m.state).then(applyDraft);
+        if (m?.type === PUBLIC_PREVIEW_DRAFT && m.draft) {
+          latest = m.draft;
+          applyDraft();
+        }
+      };
+      // 预览里不跳走：页脚链接点了只会把 iframe 带离编辑页
+      const onClick = (e: MouseEvent) => {
+        if ((e.target as Element).closest?.('a')) e.preventDefault();
+      };
+      window.addEventListener('message', onMessage);
+      document.addEventListener('click', onClick, true);
+      window.parent.postMessage({ type: PUBLIC_PREVIEW_READY }, location.origin);
+      return () => {
+        window.removeEventListener('message', onMessage);
+        document.removeEventListener('click', onClick, true);
+      };
+    }
     fetch(appPath('/api/public'))
       .then(async (r) => {
         // 不是 JSON（代理错误页、静态页顶替）或不是账本：统一显示加载失败，不露出解析异常
         const body = (await r.json().catch(() => null)) as (AppState & { error?: string }) | null;
         if (!r.ok) throw new Error(body?.error ?? t('public.loadFailed'));
         if (!Array.isArray(body?.subscriptions) || !body.settings) throw new Error(t('public.loadFailed'));
-        // 语言包加载失败（发版后旧分包失效、断网）不挡账本：继续用当前语言渲染
-        if (preferredLocale(body.settings.language) !== locale()) await loadLocale(preferredLocale(body.settings.language)).catch(() => undefined);
-        if (body.settings.gainColor === 'red') document.documentElement.dataset.gain = 'red';
-        owner = body.settings.displayName ?? '';
-        custom = body.settings.publicTitle ?? '';
-        document.title = title();
-        setSignedAmounts(body.settings.signedAmounts !== false);
-        setState(body);
+        await show(body);
       })
       .catch((e: Error) => setErr(e.message));
   }, []);
@@ -95,7 +164,7 @@ export function PublicPage() {
             <p className="py-24 text-center text-sm text-muted-foreground">{err}</p>
           </Shell>
         ) : state ? (
-          <Ledger state={state} />
+          <Ledger state={state} view={view} />
         ) : (
           <Shell>
             <Skeleton className="h-[560px] rounded-xl" />
@@ -106,21 +175,24 @@ export function PublicPage() {
   );
 }
 
-function Shell({ children, right, avatar }: { children: React.ReactNode; right?: React.ReactNode; avatar?: string }) {
+/** 没传 head 时不画页头（加载中、出错）：不先闪一下默认标题和头像 */
+function Shell({ children, right, head }: { children: React.ReactNode; right?: React.ReactNode; head?: { title?: string; avatar?: string; bio?: string } }) {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-[max(env(safe-area-inset-top),1.25rem)] pb-12 sm:px-6 sm:pt-10">
-      <header className="mb-5 flex items-center gap-3 sm:mb-6">
-        <img src={appPath(avatarOf({ avatar }))} alt="" className="size-9 rounded-md object-cover" />
-        <h1 className="min-w-0 flex-1 truncate text-[length:var(--fs-2)] font-semibold">{title()}</h1>
-        {right}
-      </header>
+      {head && (
+        <header className="mb-5 sm:mb-6">
+          <div className="flex items-center gap-3">
+            <img src={appPath(avatarOf({ avatar: head.avatar }))} alt="" className="size-9 rounded-md object-cover" />
+            <h1 className="min-w-0 flex-1 truncate text-[length:var(--fs-2)] font-semibold">{head.title}</h1>
+            {right}
+          </div>
+          {head.bio && <p className="mt-3 text-[length:var(--fs-2)] break-words whitespace-pre-line text-muted-foreground">{head.bio}</p>}
+        </header>
+      )}
       {children}
     </div>
   );
 }
-
-/** 卡片外层：允许内容收缩（min-w-0） */
-const Reveal = ({ className, children }: { className?: string; children: React.ReactNode }) => <div className={cn('min-w-0', className)}>{children}</div>;
 
 function ThemeButton() {
   const [mode, cycle] = useThemeMode();
@@ -129,7 +201,8 @@ function ThemeButton() {
       type="button"
       title={t('public.theme.title', { mode: THEME_LABEL[mode] })}
       aria-label={t('public.theme.aria', { mode: THEME_LABEL[mode] })}
-      onClick={cycle}
+      // 预览和主人的应用同源，这里切换会改掉主人本机的主题
+      onClick={previewing ? undefined : cycle}
       className="public-icon-btn"
     >
       <ThemeIcon mode={mode} size={16} />
@@ -137,7 +210,7 @@ function ThemeButton() {
   );
 }
 
-function Ledger({ state }: { state: AppState }) {
+function Ledger({ state, view }: { state: AppState; view: View }) {
   const base = state.settings.baseCurrency;
   const [ccy, setCcy] = useState<Ccy>(() => (base !== 'USD' && readStored('ledger:public-ccy') === 'USD' ? 'USD' : base));
   const today = todayIn(state.settings.timezone);
@@ -147,21 +220,23 @@ function Ledger({ state }: { state: AppState }) {
   const k = (ccy as string) === base ? 1 : toBaseAt(state, 1, base, undefined, ccy);
   const sym = symbol(ccy);
   // 折算金额取整；不足 10 的保留分，免得出现 ¥0
-  const fmt = (v: number) => money(v, ccy, { decimals: Math.abs(v) < 10 ? 2 : 0 });
-  const diff = (d.mrr - d.yearAgoMrr) * k;
+  const fmt = (v: number) => (Number.isFinite(v) ? money(v, ccy, { decimals: Math.abs(v) < 10 ? 2 : 0 }) : '—');
+  // k 为 0 是显示币种缺汇率：算不出来，金额写占位，不写 0
+  const rate = k > 0 ? k : Number.NaN;
+  const diff = (d.mrr - d.yearAgoMrr) * rate;
   // 时间线上的扣款：按日分组
   const loadTimeline = useCallback(
     (from: string, to: string) => {
       const map = new Map<string, TimelineGroup>();
       for (const c of allCharges(state, from, to, today)) {
         const g = map.get(c.date) ?? { date: c.date, items: [] };
-        const v = chargeValue(state, c) * k;
+        const v = chargeValue(state, c) * rate;
         g.items.push({
           key: `${c.sub.id}-${c.date}-${g.items.length}`,
           icon: <AppIcon sub={c.sub} className="rounded-md bg-card" size={30} />,
           name: clean(c.sub.name),
-          amount: `${flow(-c.amount, c.currency)}${c.currency !== ccy ? ` ≈ ${flow(-v, ccy, { decimals: Math.abs(v) < 10 ? 2 : 0 })}` : ''}`,
-          value: chargeBaseOrNaN(state, c) * k,
+          amount: `${flow(-c.amount, c.currency)}${c.currency !== ccy && Number.isFinite(v) ? ` ≈ ${flow(-v, ccy, { decimals: Math.abs(v) < 10 ? 2 : 0 })}` : ''}`,
+          value: chargeBaseOrNaN(state, c) * rate,
         });
         map.set(c.date, g);
       }
@@ -171,12 +246,148 @@ function Ledger({ state }: { state: AppState }) {
       }
       return [...map.values()];
     },
-    [state, today, ccy, k],
+    [state, today, ccy, rate],
   );
+
+  const config = view.config;
+  const parts = publicParts(config);
+  const widget: WidgetProps = { state, today, ccy, base, k, sym, fmt };
+  // 可选组件没放上页面就不算，放了但没内容也不占位
+  const optional = (id: PublicGridId, has: () => unknown) => (view.canvas || parts.has(id)) && !!has();
+  // 没有内容的组件（没有退订、没有买断）不占位，同一行的其他卡片自动补满
+  const blocks: Partial<Record<PublicGridId, React.ReactNode>> = {
+    stats: (
+      <Card className={cn(roomy, 'h-full')}>
+        <CardContent className="flex flex-col gap-6 @[976px]:flex-row @[976px]:items-end @[976px]:justify-between">
+          <div>
+            <div className="text-sm text-muted-foreground">{t('public.hero.monthly')}</div>
+            <Num value={d.mrr * rate} ccy={ccy} prefix={sym} className="mt-1 text-5xl font-semibold tracking-tight tnum sm:text-6xl" />
+            <div className="mt-2 text-[length:var(--fs-2)] text-muted-foreground tnum">
+              {!Number.isFinite(diff) ? '—' : Math.abs(diff) < 1 ? t('public.hero.flat') : t(diff > 0 ? 'public.hero.more' : 'public.hero.less', { amount: fmt(Math.abs(diff)) })}
+            </div>
+          </div>
+          <dl className="grid grid-cols-3 items-end gap-6 sm:gap-10">
+            <Stat label={t('public.hero.yearly')} value={<Num value={d.mrr * 12 * rate} ccy={ccy} prefix={sym} />} />
+            {/* 与下方订阅列表「全部」同一组（含试用、暂停），标题也用列表的标题 */}
+            <Stat label={t('public.list.title')} value={<Num value={d.live.length} />} />
+            <Stat label={t('public.hero.paid', { year: d.first.slice(0, 4) })} value={<Num value={ccy === base ? d.paidBase : d.paidUsd} ccy={ccy} prefix={sym} />} />
+          </dl>
+        </CardContent>
+      </Card>
+    ),
+    timeline: (
+      <Card className={cn(roomy, 'h-full')}>
+        <CardContent>
+          {/* 手机上标题与「接下来 30 天」上下排，不把说明挤成三行 */}
+          <div className="mb-2 flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:pr-16">
+            <h2 className="font-medium">{t('public.timeline.title')}</h2>
+            <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">
+              {rich('public.timeline.upcoming', { count: d.upcoming.length }, { amount: <Num value={sumBaseOrNaN(state, d.upcoming) * rate} ccy={ccy} prefix={sym} className="text-foreground" /> })}
+            </span>
+          </div>
+          <Timeline today={today} load={loadTimeline} start={firstStart(state, today)} />
+        </CardContent>
+      </Card>
+    ),
+    chart: (
+      <Card className={cn(roomy, 'h-full')}>
+        <Tabs defaultValue="paid" className="gap-0">
+          <CardHeader>
+            <CardTitle className="text-sm">{t('public.chart.title')}</CardTitle>
+            <CardDescription className="text-[length:var(--fs-2)]">{t('public.chart.desc')}</CardDescription>
+            <CardAction>
+              <TabsList>
+                <TabsTrigger value="paid" className="px-2.5 text-xs">
+                  {t('public.chart.paid')}
+                </TabsTrigger>
+                <TabsTrigger value="mrr" className="px-2.5 text-xs">
+                  {t('public.chart.mrr')}
+                </TabsTrigger>
+              </TabsList>
+            </CardAction>
+          </CardHeader>
+          <TabsContent value="paid" className="mt-4 px-2 sm:px-4">
+            <PaidChart months={ccy === base ? d.monthsBase : d.monthsUsd} cur={today.slice(0, 7)} ccy={ccy} fmt={fmt} />
+          </TabsContent>
+          <TabsContent value="mrr" className="mt-4 px-2 sm:px-4">
+            <MrrChart data={d.mrrTrend.map((p) => ({ ...p, mrr: p.mrr * k }))} ccy={ccy} fmt={fmt} />
+          </TabsContent>
+        </Tabs>
+      </Card>
+    ),
+    composition: <Composition cats={d.cats} total={d.mrr} k={rate} fmt={fmt} />,
+    fx: <Currencies d={d} ccy={ccy} fmt={fmt} />,
+    list: <SubList d={d} today={today} ccy={ccy} k={rate} fmt={fmt} />,
+    ended: d.ended.length > 0 && (
+              <Card className={cn(roomy, 'h-full')}>
+                <CardHeader>
+                  <CardTitle>{t('public.ended.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="-my-1.5">
+                    {d.ended.map((x) => (
+                      <li key={x.sub.id} className="flex items-center gap-3 py-1.5">
+                        <AppIcon sub={x.sub} className="size-7 rounded-md opacity-50 grayscale" />
+                        <span className="min-w-0 flex-1 truncate text-muted-foreground">{clean(x.sub.name)}{effectiveStatus(x.sub, today) === 'terminated' && <Badge variant="secondary" className="ml-2">{t('list.status.terminated')}</Badge>}</span>
+                        <span className="text-right tnum">
+                          <span className="text-[length:var(--fs-2)] text-muted-foreground line-through decoration-muted-foreground/50">{t('public.perMonth', { amount: fmt(x.monthly * k) })}</span>
+                          <span className="ml-3 text-[length:var(--fs-2)] text-muted-foreground">{monthLabel(x.since.slice(0, 7))}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+    ),
+    lifetime: d.lifetime.length > 0 && (
+              <Card className={cn(roomy, 'h-full')}>
+                <CardHeader>
+                  <CardTitle>{t('public.lifetime.title')}</CardTitle>
+                  <CardDescription>{t('public.lifetime.desc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="-my-1.5">
+                    {d.lifetime.map((s) => (
+                      <li key={s.id} className="flex items-center gap-3 py-1.5">
+                        <AppIcon sub={s} className="size-7 rounded-md" />
+                        <span className="min-w-0 flex-1 truncate">{clean(s.name)}</span>
+                        <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">{s.start.slice(0, 4)}</span>
+                        <span className="w-20 text-right tnum">{money(s.price, s.currency)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+    ),
+    calendar: optional('calendar', () => state.subscriptions.length) && <CalendarCard {...widget} />,
+    years: optional('years', () => yearsTimeline(state.subscriptions, today).rows.length) && <YearsCard {...widget} />,
+    tenure: optional('tenure', () => subscriptionTenure(state, today).longest.length) && <TenureCard {...widget} />,
+    treemap: optional('treemap', () => { const m = spendingMap(state, today); return m.groups.length || m.missing; }) && <TreemapCard {...widget} />,
+    changes: optional('changes', () => publicChanges(state, today, ccy).length) && <ChangesCard {...widget} />,
+    waterfall: optional('waterfall', () => waterfallFirstMonth(state, today)) && <WaterfallCard {...widget} />,
+  };
+  const grid = publicGrid(config);
+  const canvas = view.canvas;
+  // 只有页面上放了指标卡（或画布上可能拖进来）才算
+  const metrics = canvas || grid.some((s) => s.metric) ? metricValues(metricInputs(state, today, d, ccy, rate)) : undefined;
+  const blockOf = (s: PublicGridItem): React.ReactNode => (s.metric ? metrics && <MetricCard card={s.metric} values={metrics} f={{ ccy, sym, fmt }} /> : blocks[s.id as PublicGridId]);
+  // 只有没摆放过的页面才流式；放了指标卡或可选组件的一定摆放过
+  const flowCells = canvas || isCustomLayout(config) ? [] : grid.filter((s) => !s.hidden && blockOf(s));
+  const desktop = flowSpans(flowCells.map((s) => s.id));
+  const tablet = fillRows(flowCells.map((s) => tabletSpan(PUBLIC_GRID_SECTIONS.find((d) => d.id === s.id)!.w)));
+  const sendLayout = (message: { sections?: ReturnType<typeof gridSections>; remove?: string; select?: string }) => window.parent.postMessage({ type: PUBLIC_PREVIEW_LAYOUT, ...message }, location.origin);
+  const fixed = (id: 'footer' | 'pile', node: React.ReactNode) =>
+    canvas ? (
+      <CanvasFixed label={canvas.labels[id]} text={canvas} onRemove={() => sendLayout({ remove: id })}>
+        {node}
+      </CanvasFixed>
+    ) : (
+      node
+    );
 
   return (
     <Shell
-      avatar={state.settings.avatar}
+      head={{ title: view.title, avatar: view.avatar, bio: config?.bio }}
       right={
         <div className="flex items-center gap-1.5">
           {base !== 'USD' && (
@@ -200,144 +411,44 @@ function Ledger({ state }: { state: AppState }) {
         </div>
       }
     >
-      <div className="grid grid-cols-1 gap-4">
-        {/* 主卡：月支出、未来 30 天、每月扣款 */}
-        <Reveal>
-          <Card className={cn(roomy, 'h-full')}>
-            <CardContent className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div className="text-sm text-muted-foreground">{t('public.hero.monthly')}</div>
-                <Num value={d.mrr * k} ccy={ccy} prefix={sym} className="mt-1 text-5xl font-semibold tracking-tight tnum sm:text-6xl" />
-                <div className="mt-2 text-[length:var(--fs-2)] text-muted-foreground tnum">
-                  {Math.abs(diff) < 1 ? t('public.hero.flat') : t(diff > 0 ? 'public.hero.more' : 'public.hero.less', { amount: fmt(Math.abs(diff)) })}
-                </div>
-              </div>
-              <dl className="grid grid-cols-3 gap-6 sm:gap-10">
-                <Stat label={t('public.hero.yearly')} value={<Num value={d.mrr * 12 * k} ccy={ccy} prefix={sym} />} />
-                {/* 与下方订阅列表「全部」同一组（含试用、暂停），标题也用列表的标题 */}
-                <Stat label={t('public.list.title')} value={<Num value={d.live.length} />} />
-                <Stat label={t('public.hero.paid', { year: d.first.slice(0, 4) })} value={<Num value={ccy === base ? d.paidBase : d.paidUsd} ccy={ccy} prefix={sym} />} />
-              </dl>
-            </CardContent>
-
-            <Separator />
-
-            <CardContent>
-              {/* 手机上标题与「接下来 30 天」上下排，不把说明挤成三行 */}
-              <div className="mb-2 flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:pr-16">
-                <h2 className="font-medium">{t('public.timeline.title')}</h2>
-                <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">
-                  {rich('public.timeline.upcoming', { count: d.upcoming.length }, { amount: <Num value={d.upcoming.reduce((a, c) => a + c.value, 0) * k} ccy={ccy} prefix={sym} className="text-foreground" /> })}
-                </span>
-              </div>
-              <Timeline today={today} load={loadTimeline} start={firstStart(state, today)} />
-            </CardContent>
-
-            <Separator />
-
-            <Tabs defaultValue="paid" className="gap-0">
-              <CardHeader>
-                <CardTitle className="text-sm">{t('public.chart.title')}</CardTitle>
-                <CardDescription className="text-[length:var(--fs-2)]">{t('public.chart.desc')}</CardDescription>
-                <CardAction>
-                  <TabsList>
-                    <TabsTrigger value="paid" className="px-2.5 text-xs">
-                      {t('public.chart.paid')}
-                    </TabsTrigger>
-                    <TabsTrigger value="mrr" className="px-2.5 text-xs">
-                      {t('public.chart.mrr')}
-                    </TabsTrigger>
-                  </TabsList>
-                </CardAction>
-              </CardHeader>
-              <TabsContent value="paid" className="mt-4 px-2 sm:px-4">
-                <PaidChart months={ccy === base ? d.monthsBase : d.monthsUsd} cur={today.slice(0, 7)} ccy={ccy} fmt={fmt} />
-              </TabsContent>
-              <TabsContent value="mrr" className="mt-4 px-2 sm:px-4">
-                <MrrChart data={d.mrrTrend.map((p) => ({ ...p, mrr: p.mrr * k }))} ccy={ccy} fmt={fmt} />
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </Reveal>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Reveal className="h-full">
-            <Composition cats={d.cats} total={d.mrr} k={k} fmt={fmt} />
-          </Reveal>
-          <Reveal className="h-full">
-            <Currencies d={d} ccy={ccy} fmt={fmt} />
-          </Reveal>
+      {canvas ? (
+        <Canvas config={config} block={blockOf} text={canvas} onCommit={(items: PublicGridItem[]) => sendLayout({ sections: gridSections(items) })} onRemove={(id: string) => sendLayout({ remove: id })} onSelect={(id: string) => sendLayout({ select: id })} />
+      ) : isCustomLayout(config) ? (
+        <div className="public-grid" data-free="">
+          {collapseEmpty(grid, (id) => !blockOf(grid.find((s) => s.id === id)!)).map((s) => (
+            <div key={s.id} className="public-cell @container" data-half={s.metric && s.metric.template !== 'rows' && s.w <= 4 ? '' : undefined} style={cellVars(s)}>
+              {blockOf(s)}
+            </div>
+          ))}
         </div>
-
-        <Reveal>
-          <SubList d={d} today={today} ccy={ccy} k={k} fmt={fmt} />
-        </Reveal>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {d.ended.length > 0 && (
-            <Reveal className="h-full">
-              <Card className={cn(roomy, 'h-full')}>
-                <CardHeader>
-                  <CardTitle>{t('public.ended.title')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="-my-1.5">
-                    {d.ended.map((x) => (
-                      <li key={x.sub.id} className="flex items-center gap-3 py-1.5">
-                        <AppIcon sub={x.sub} className="size-7 rounded-md opacity-50 grayscale" />
-                        <span className="min-w-0 flex-1 truncate text-muted-foreground">{clean(x.sub.name)}{effectiveStatus(x.sub, today) === 'terminated' && <Badge variant="secondary" className="ml-2">{t('list.status.terminated')}</Badge>}</span>
-                        <span className="text-right tnum">
-                          <span className="text-[length:var(--fs-2)] text-muted-foreground line-through decoration-muted-foreground/50">{t('public.perMonth', { amount: fmt(x.monthly * k) })}</span>
-                          <span className="ml-3 text-[length:var(--fs-2)] text-muted-foreground">{monthLabel(x.since.slice(0, 7))}</span>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </Reveal>
-          )}
-          {d.lifetime.length > 0 && (
-            <Reveal className="h-full">
-              <Card className={cn(roomy, 'h-full')}>
-                <CardHeader>
-                  <CardTitle>{t('public.lifetime.title')}</CardTitle>
-                  <CardDescription>{t('public.lifetime.desc')}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="-my-1.5">
-                    {d.lifetime.map((s) => (
-                      <li key={s.id} className="flex items-center gap-3 py-1.5">
-                        <AppIcon sub={s} className="size-7 rounded-md" />
-                        <span className="min-w-0 flex-1 truncate">{clean(s.name)}</span>
-                        <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">{s.start.slice(0, 4)}</span>
-                        <span className="w-20 text-right tnum">{money(s.price, s.currency)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </Reveal>
-          )}
+      ) : (
+        <div className="public-grid">
+          {flowCells.map((s, i) => (
+            <div key={s.id} className="public-cell @container" style={{ '--span-md': tablet[i], '--span-lg': desktop[i] } as React.CSSProperties}>
+              {blockOf(s)}
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
-
-      <footer className="mt-10 flex items-center justify-between border-t-[0.5px] border-border/70 pt-5 text-[length:var(--fs-2)] text-muted-foreground">
-        <a href={PROJECT_URL} className="flex items-center gap-2 transition hover:text-foreground">
-          <img src={appPath("/icons/logo.svg")} alt="" className="size-5 rounded-md" />
-          <span className="font-medium text-foreground">{PROJECT_NAME}</span>
-          <span>v{__APP_VERSION__}</span>
-        </a>
-        <a href={PROJECT_URL} className="transition hover:text-foreground" aria-label="GitHub" title="GitHub">
-          <GitHubMark className="size-5" />
-        </a>
-      </footer>
+      {parts.has('footer') &&
+        fixed(
+          'footer',
+          <footer className="mt-10 text-[length:var(--fs-2)] text-muted-foreground">
+            <a href={PROJECT_URL} className="transition hover:text-foreground">
+              {PROJECT_NAME} v{__APP_VERSION__}
+            </a>
+          </footer>,
+        )}
       {/* 页脚下面的订阅堆：继续往下滑才会从屏幕顶端落下来；每个正在付费的订阅一个图标，越贵越大 */}
       {/* 抵消外层的底部留白（pb-12），让图标堆贴着页面最底部 */}
-      <div className="mt-6 -mb-12">
-        <IconPile items={d.live.filter((x) => x.v > 0)} />
-      </div>
+      {parts.has('pile') &&
+        fixed(
+          'pile',
+          <div className="mt-6 -mb-12">
+            <IconPile items={d.live.filter((x) => x.v > 0)} />
+          </div>,
+        )}
     </Shell>
   );
 }
@@ -345,6 +456,41 @@ function Ledger({ state }: { state: AppState }) {
 // ---------- 数据 ----------
 
 type Derived = ReturnType<typeof derive>;
+
+/** 指标卡要的数：当前值已按显示币种换算；历史扣款按扣款当天汇率单独累计 */
+function metricInputs(state: AppState, today: string, d: Derived, ccy: Ccy, rate: number): MetricInputs {
+  const base = state.settings.baseCurrency;
+  const paid = (from: string, to: string) => {
+    const cs = allCharges(state, from, to, today);
+    return sumBaseOrNaN(state, cs, ccy === base ? undefined : ccy);
+  };
+  const ago = yearBefore(today);
+  const months = ccy === base ? d.monthsBase : d.monthsUsd;
+  const top = d.live[0];
+  const cat = d.cats[0];
+  return {
+    mrr: d.mrr * rate,
+    yearAgoMrr: d.yearAgoMrr * rate,
+    mrrSeries: d.mrrTrend.slice(-13).map((p) => ({ label: monthFull(p.month), v: p.mrr * rate })),
+    active: d.live.length,
+    paidTotal: ccy === base ? d.paidBase : d.paidUsd,
+    paidYear: paid(`${today.slice(0, 4)}-01-01`, today),
+    paidYearPrev: paid(`${ago.slice(0, 4)}-01-01`, ago),
+    paidMonth: paid(`${today.slice(0, 7)}-01`, today),
+    paidMonthPrev: paid(`${ago.slice(0, 7)}-01`, ago),
+    // 卡片写的是本月至今，当月这根柱也到今天为止；哪个月缺汇率，那根柱就算不出来，不画偏小的数
+    paidSeries: months.filter((x) => x.m <= today.slice(0, 7)).map((x) => {
+      const end = addDays(addMonths(`${x.m}-01`, 1), -1);
+      return { label: monthFull(x.m), v: paid(`${x.m}-01`, end < today ? end : today) };
+    }),
+    next30: sumBaseOrNaN(state, d.upcoming) * rate,
+    topSub: top && { name: clean(top.s.name), v: top.v * rate },
+    topCategory: cat && { name: cat[0], v: cat[1].v * rate },
+    ended: d.ended.length,
+    lifetime: d.lifetime.length,
+    fxEffect: rate > 0 ? (d.fx[ccy]?.effect ?? Number.NaN) : Number.NaN,
+  };
+}
 
 function derive(state: AppState, today: string) {
   syncCategories(state);
@@ -356,7 +502,7 @@ function derive(state: AppState, today: string) {
   const live = state.subscriptions
     .map((s) => ({ s, v: contributionOn(state, s, today) }))
     .filter((x) => ['active', 'ending', 'trial', 'paused'].includes(effectiveStatus(x.s, today)))
-    .sort((a, b) => b.v - a.v);
+    .sort(byAmountDesc);
   const mrr = live.reduce((a, x) => a + x.v, 0);
   const trend = mrrSeries(state, today, 25);
 
@@ -394,12 +540,12 @@ function derive(state: AppState, today: string) {
   const fxFor = (to: string) => {
     const rows = [...byCcy.entries()]
       .filter(([c]) => c !== to)
-      .sort((a, b) => b[1].v - a[1].v)
+      .sort((a, b) => byAmountDesc(a[1], b[1]))
       .map(([c, e]) => {
         const now = toBaseAt(state, 1, c, undefined, to);
         const then = toBaseAt(state, 1, c, yearAgo, to);
         const native = e.v / (toBaseAt(state, 1, c, undefined, base) || 1);
-        return { c, now, share: e.v / (mrr || 1), chg: then ? (now - then) / then : 0, effect: native * (now - then) };
+        return { c, now, share: e.v / (mrr === 0 ? 1 : mrr), chg: now > 0 && then > 0 ? (now - then) / then : 0, effect: now > 0 && then > 0 ? native * (now - then) : Number.NaN };
       });
     return { rows, effect: rows.reduce((a, r) => a + r.effect, 0) };
   };
@@ -407,13 +553,13 @@ function derive(state: AppState, today: string) {
   const savings = cancelSavings(state, today);
   return {
     first,
-    paidBase: sumBase(state, past),
-    paidUsd: sumBase(state, past, 'USD'),
+    paidBase: sumBaseOrNaN(state, past),
+    paidUsd: sumBaseOrNaN(state, past, 'USD'),
     live,
     mrr,
     yearAgoMrr: trend[trend.length - 13]?.mrr ?? mrr,
     mrrTrend: trend.map((p) => ({ month: p.month, mrr: p.mrr })),
-    cats: [...cats.entries()].sort((a, b) => b[1].v - a[1].v),
+    cats: [...cats.entries()].sort((a, b) => byAmountDesc(a[1], b[1])),
     /** 筛选标签按分类表的顺序 */
     catTabs: [...cats.entries()],
     monthsBase: months.map((x) => ({ m: x.m, v: x.base })),
@@ -445,11 +591,12 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 
 function PaidChart({ months, cur, ccy, fmt }: { months: Array<{ m: string; v: number }>; cur: string; ccy: string; fmt: (v: number) => string }) {
   const paidConfig = { v: { label: t('public.chart.charge'), color: 'var(--c1)' } } satisfies ChartConfig;
+  // barCategoryGap 是每一侧的留白：25% 正好让柱子占格宽的一半（--bar-ratio），写 50% 柱宽为 0、一根都不显示
   // 与 --bar-radius 同一断点：Recharts 的 radius 只收数字
   const radius = globalThis.matchMedia?.('(max-width: 700px)').matches ? 4 : 6;
   return (
     <ChartContainer config={paidConfig} className="aspect-auto h-52 w-full">
-      <BarChart data={months} barCategoryGap="50%" margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+      <BarChart data={months} barCategoryGap="25%" margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
         <CartesianGrid strokeWidth={0.5} vertical={false} strokeDasharray="2 4" />
         <XAxis dataKey="m" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={6} tickFormatter={(m: string) => monthTick(m, cur)} />
         <YAxis tickLine={false} axisLine={false} width={44} tickCount={4} tickFormatter={(v: number) => moneyTick(v, ccy)} />
@@ -530,7 +677,7 @@ function Composition({ cats, total, k, fmt }: { cats: Derived['cats']; total: nu
                 {copyParts(x.name)} <span className="text-[length:var(--fs-2)] text-muted-foreground">{t('public.count', { count: x.n })}</span>
               </span>
               <span className="tnum">{fmt(x.v * k)}</span>
-              <span className="w-10 text-right text-[length:var(--fs-2)] text-muted-foreground tnum">{Math.round((x.v / (total || 1)) * 100)}%</span>
+              <span className="w-10 text-right text-[length:var(--fs-2)] text-muted-foreground tnum">{Number.isFinite(x.v / (total === 0 ? 1 : total)) ? `${Math.round((x.v / (total === 0 ? 1 : total)) * 100)}%` : '—'}</span>
             </li>
           ))}
         </ul>
@@ -541,7 +688,6 @@ function Composition({ cats, total, k, fmt }: { cats: Derived['cats']; total: nu
 
 /** 汇率：外币占比与一年变化 */
 /** 占比条的灰阶：第一名最深，依次变浅（构成与汇率两张卡共用） */
-const shade = (i: number) => `var(--c${[1, 4, 5, 6, 7][i] ?? 9})`;
 
 function Currencies({ d, ccy, fmt }: { d: Derived; ccy: Ccy; fmt: (v: number) => string }) {
   const { rows, effect: eff } = d.fx[ccy];
@@ -550,7 +696,9 @@ function Currencies({ d, ccy, fmt }: { d: Derived; ccy: Ccy; fmt: (v: number) =>
       <CardHeader>
         <CardTitle>{t('public.fx.title')}</CardTitle>
         <CardDescription>
-          {Math.abs(eff) < 1 ? (
+          {!Number.isFinite(eff) ? (
+            '—'
+          ) : Math.abs(eff) < 1 ? (
             t('public.fx.flat')
           ) : (
             <>{rich(eff < 0 ? 'public.fx.less' : 'public.fx.more', {}, { amount: <span className="font-medium text-foreground tnum">{fmt(Math.abs(eff))}</span> })}</>
@@ -582,7 +730,7 @@ function Currencies({ d, ccy, fmt }: { d: Derived; ccy: Ccy; fmt: (v: number) =>
                 <span className="flex-1 text-[length:var(--fs-2)] text-muted-foreground tnum">
                   1 {f.c} = {now < 0.1 ? now.toFixed(4) : now.toFixed(3)} {ccy}
                 </span>
-                <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">{t('public.fx.share', { pct: Math.round(f.share * 100) })}</span>
+                <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">{Number.isFinite(f.share) ? t('public.fx.share', { pct: Math.round(f.share * 100) }) : '—'}</span>
                 <span className={cn('w-14 text-right tnum', Math.abs(f.chg) < 0.005 ? 'text-muted-foreground' : f.chg > 0 ? 'text-up' : 'text-down')}>
                   {f.chg > 0 ? '↑' : f.chg < 0 ? '↓' : ''}
                   {Math.abs(f.chg * 100).toFixed(1)}%
@@ -626,7 +774,7 @@ function SubList({ d, today, ccy, k, fmt }: { d: Derived; today: string; ccy: Cc
             ))}
           </div>
         </div>
-        <ul className="grid gap-x-10 md:grid-cols-2">
+        <ul className="grid gap-x-10 @[720px]:grid-cols-2">
           <AnimatePresence initial={false} mode="popLayout">
             {rows.map(({ s, v }) => (
               <motion.li key={s.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }} className="border-b-[0.5px] border-border/60">
@@ -673,14 +821,5 @@ function Row({ s, v, today, ccy, k, fmt }: { s: Subscription; v: number; today: 
         {!monthly && <div className="text-[length:var(--fs-2)] text-muted-foreground">{t('public.row.perMonthEq')}</div>}
       </div>
     </div>
-  );
-}
-
-/** GitHub 标志（官方 mark） */
-function GitHubMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
-      <path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .32.21.69.82.57A12 12 0 0 0 12 .3" />
-    </svg>
   );
 }

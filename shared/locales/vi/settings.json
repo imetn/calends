@@ -1,6 +1,8 @@
 {
   "title": "Cài đặt",
-  "days": { "other": "{count} ngày" },
+  "days": {
+    "other": "{count} ngày"
+  },
   "logout": "Đăng xuất",
   "toast": {
     "saved": "Đã lưu",
@@ -20,9 +22,7 @@
     "startPageAria": "Trang bắt đầu",
     "baseCurrency": "Tiền tệ cơ sở",
     "signedAmounts": "Dấu thu chi",
-    "signedAmountsSub": "Hiển thị − cho khoản chi và + cho tiền hoàn lại và tiền thu về",
     "gainColor": "Màu lãi/lỗ",
-    "gainColorSub": "Thu nhập, thặng dư và giảm giá dùng màu lãi; lỗ và tăng giá dùng màu lỗ. Áp dụng cả trang công khai",
     "gainGreen": "Xanh lãi, đỏ lỗ",
     "gainRed": "Đỏ lãi, xanh lỗ",
     "timezone": "Múi giờ",
@@ -56,13 +56,19 @@
   "today": {
     "recent": "Đã gửi gần đây",
     "title": "Hôm nay ({day})",
-    "items": { "other": "{count} mục" }
+    "items": {
+      "other": "{count} mục"
+    }
   },
   "books": {
     "title": "Ghi sổ",
     "defaultMethod": "Phương thức thanh toán mặc định",
-    "unassigned": { "other": "{count} gói đăng ký chưa có phương thức thanh toán" },
-    "assignAllDone": { "other": "Đã đặt {count} gói đăng ký về phương thức thanh toán mặc định" },
+    "unassigned": {
+      "other": "{count} gói đăng ký chưa có phương thức thanh toán"
+    },
+    "assignAllDone": {
+      "other": "Đã đặt {count} gói đăng ký về phương thức thanh toán mặc định"
+    },
     "assignAll": "Dùng mặc định cho tất cả",
     "collectCurrency": "Tiền tệ gói chia sẻ"
   },
@@ -73,7 +79,9 @@
     "updated": "Đã cập nhật tỷ giá",
     "history": "Tỷ giá lịch sử",
     "earliest": "Từ {date}",
-    "coverage": { "other": "{covered} / {count} ngày" },
+    "coverage": {
+      "other": "{covered} / {count} ngày"
+    },
     "fill": "Bổ sung tỷ giá còn thiếu",
     "historyUpdated": "Đã cập nhật tỷ giá lịch sử"
   },
@@ -115,7 +123,9 @@
     "warning": "Sổ hiện tại sẽ bị thay thế hoàn toàn bằng bản sao lưu. Thao tác này không thể hoàn tác — nên xuất một bản sao lưu trước.",
     "subs": "Gói đăng ký",
     "methods": "Phương thức thanh toán",
-    "count": { "other": "{count}" },
+    "count": {
+      "other": "{count}"
+    },
     "time": "Thời điểm sao lưu",
     "format": "Định dạng",
     "legacy": "Bản sao lưu cũ: chỉ có gói đăng ký và phương thức thanh toán"
@@ -143,7 +153,9 @@
     "formats": "CSV, bản sao lưu ZIP hoặc cơ sở dữ liệu SQLite"
   },
   "channels": {
-    "title": { "other": "Kênh thông báo\n{count} đang bật" },
+    "title": {
+      "other": "Kênh thông báo\n{count} đang bật"
+    },
     "empty": "Chưa có kênh nào — nhắc nhở sẽ không được gửi.",
     "test": "Thử",
     "testFailed": "Không gửi được",
@@ -215,9 +227,15 @@
     "unknownBrowser": "Trình duyệt không xác định",
     "ago": {
       "justNow": "Vừa hoạt động",
-      "minutes": { "other": "{count} phút trước" },
-      "hours": { "other": "{count} giờ trước" },
-      "days": { "other": "{count} ngày trước" }
+      "minutes": {
+        "other": "{count} phút trước"
+      },
+      "hours": {
+        "other": "{count} giờ trước"
+      },
+      "days": {
+        "other": "{count} ngày trước"
+      }
     },
     "thisDevice": "Thiết bị này",
     "signedInPasskey": "Đăng nhập bằng passkey lúc {time}",
@@ -233,10 +251,16 @@
     "alreadyBound": "Thiết bị này đã có passkey",
     "changePassword": "Đổi mật khẩu",
     "devices": "Thiết bị đã đăng nhập",
-    "devicesCount": { "other": "Thiết bị đã đăng nhập\n{count}" },
+    "devicesCount": {
+      "other": "Thiết bị đã đăng nhập\n{count}"
+    },
     "maxSessions": "Số thiết bị đăng nhập tối đa",
-    "maxSessionsSaved": { "other": "Tối đa {count} thiết bị" },
-    "deviceCount": { "other": "{count} thiết bị" },
+    "maxSessionsSaved": {
+      "other": "Tối đa {count} thiết bị"
+    },
+    "deviceCount": {
+      "other": "{count} thiết bị"
+    },
     "confirmLogoutOthers": "Đăng xuất tất cả thiết bị khác?",
     "loggedOutOthers": "Đã đăng xuất các thiết bị khác",
     "logoutOthers": "Đăng xuất tất cả thiết bị khác",
@@ -296,6 +320,126 @@
       "health": "Sức khỏe & thể thao",
       "travel": "Đi lại",
       "people": "Con người & học tập"
+    }
+  },
+  "publicPage": {
+    "title": "Sửa trang công khai",
+    "access": "Truy cập công khai",
+    "back": "Quay lại cài đặt",
+    "reset": "Khôi phục mặc định",
+    "leave": "Có thay đổi chưa lưu. Vẫn rời đi?",
+    "leaveOk": "Rời đi",
+    "head": "Phần đầu",
+    "browserTitle": "Tiêu đề trình duyệt",
+    "avatarFollow": "Dùng ảnh đại diện chung",
+    "avatarLinkHint": "Trình duyệt của khách truy cập gọi trực tiếp địa chỉ này nên máy chủ của nó thấy được IP của họ.",
+    "bio": "Nội dung",
+    "bioPlaceholder": "Hiển thị dưới tiêu đề. Giữ xuống dòng; không đổi theo ngôn ngữ.",
+    "sections": "Thành phần",
+    "remove": "Gỡ",
+    "emptyCard": "Chưa có dữ liệu. Khách truy cập sẽ không thấy thẻ này.",
+    "editTab": "Cài đặt",
+    "previewTab": "Xem trước",
+    "desktop": "Máy tính",
+    "phone": "Điện thoại",
+    "library": {
+      "metrics": "Con số",
+      "charts": "Biểu đồ",
+      "lists": "Danh sách và thời gian",
+      "bottom": "Cuối trang"
+    },
+    "hintDrag": "Kéo một thành phần vào trang, hoặc nhấp để thêm xuống cuối trang.",
+    "hintTap": "Chạm để thêm xuống cuối trang.",
+    "backToLibrary": "Quay lại thành phần",
+    "metricCard": "Thẻ chỉ số",
+    "template": "Kiểu",
+    "metricData": "Dữ liệu hiển thị",
+    "addMetric": "Thêm giá trị khác",
+    "widget": {
+      "stats": {
+        "name": "Tổng quan",
+        "desc": "Chi tiêu hằng tháng và các số chính"
+      },
+      "number": {
+        "name": "Con số",
+        "desc": "Một con số, hiển thị lớn"
+      },
+      "trend": {
+        "name": "Xu hướng",
+        "desc": "Một con số kèm biểu đồ mini"
+      },
+      "compare": {
+        "name": "So sánh",
+        "desc": "So với cùng kỳ năm ngoái"
+      },
+      "share": {
+        "name": "Tỷ trọng",
+        "desc": "Tỷ trọng trong chi tiêu hằng tháng"
+      },
+      "rows": {
+        "name": "Nhiều dòng",
+        "desc": "Tối đa 4 con số cùng lúc"
+      },
+      "chart": {
+        "name": "Biểu đồ cột",
+        "desc": "Khoản phí hằng tháng và xu hướng chi tiêu"
+      },
+      "composition": {
+        "name": "Cơ cấu",
+        "desc": "Chi tiêu theo danh mục"
+      },
+      "treemap": {
+        "name": "Treemap",
+        "desc": "Diện tích thể hiện mức chi tiêu"
+      },
+      "waterfall": {
+        "name": "Biến động theo tháng",
+        "desc": "Những gì được thêm, tăng giá hoặc hủy"
+      },
+      "fx": {
+        "name": "Tiền tệ",
+        "desc": "Tỷ trọng tiền tệ và biến động tỷ giá"
+      },
+      "timeline": {
+        "name": "Dòng thời gian",
+        "desc": "Khoản phí từng ngày"
+      },
+      "calendar": {
+        "name": "Lịch",
+        "desc": "Những ngày bị trừ phí"
+      },
+      "years": {
+        "name": "Dòng thời gian gói đăng ký",
+        "desc": "Mỗi gói đăng ký dùng trong thời gian nào"
+      },
+      "list": {
+        "name": "Danh sách gói đăng ký",
+        "desc": "Tất cả gói đang dùng"
+      },
+      "tenure": {
+        "name": "Thời gian đăng ký",
+        "desc": "Trung bình và lâu nhất"
+      },
+      "changes": {
+        "name": "Thay đổi",
+        "desc": "Thêm mới, đổi giá và đã dừng"
+      },
+      "ended": {
+        "name": "Đã hủy",
+        "desc": "Những gì đã hủy và giá"
+      },
+      "lifetime": {
+        "name": "Mua đứt",
+        "desc": "Các lần mua một lần"
+      },
+      "footer": {
+        "name": "Chân trang",
+        "desc": "Tên dự án và phiên bản"
+      },
+      "pile": {
+        "name": "Đống biểu tượng",
+        "desc": "Biểu tượng rơi xuống cuối trang"
+      }
     }
   }
 }

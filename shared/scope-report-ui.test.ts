@@ -25,6 +25,7 @@ import * as periodGrid from './period-grid.ts';
 import * as assistantFields from '../app/src/views/assistant-fields.ts';
 import { detailForecast, detailHistoryEnd } from '../app/src/views/detail-data.ts';
 import { calendarJump } from '../app/src/views/calendar-jump.ts';
+import { monthGrid } from './calendar.ts';
 import { PERSON_COLORS, DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 
 // Execute component event handlers in the existing JSX harness, retaining pure financial builders.
@@ -142,6 +143,7 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     useEffect: (fn: () => unknown) => fn(),
     useLayoutEffect: (fn: () => unknown) => fn(),
     calendarJump,
+    monthGrid,
     location: { search: '', pathname: '/calendar' },
     history: { state: null, replaceState() {} },
     useState(initial: unknown) {
@@ -221,6 +223,9 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     Layers: 'Layers',
     ChevronUp: 'ChevronUp',
     SpendingDelta: 'SpendingDelta',
+    clean: (name: string) => name,
+    byAmountDesc: (a: { v: number }, b: { v: number }) => (Number.isFinite(b.v) ? b.v : -Infinity) - (Number.isFinite(a.v) ? a.v : -Infinity) || 0,
+    shade: (i: number) => `shade-${i}`,
     ...extra,
   };
   const components = { ...deps, ...metricComponents(deps.React) };
@@ -3668,6 +3673,7 @@ test('annual review new/ended metric keeps counts and its existing note without 
 
 test('public stopped card omits the avoided-renewal total while retaining each old monthly price and stop month', async () => {
   const { maskForPublic } = await import('./mask.ts');
+  const { collapseEmpty, fillRows, flowSpans, PUBLIC_GRID_SECTIONS, isCustomLayout, publicGrid, publicParts, tabletSpan } = await import('./public-layout.ts');
   const sub: Subscription = {
     id: 'public-stopped',
     name: 'Fictional stopped',
@@ -3707,6 +3713,17 @@ test('public stopped card omits the avoided-renewal total while retaining each o
     {},
     {
       ...components,
+      ...Object.fromEntries(['CalendarCard', 'YearsCard', 'TenureCard', 'TreemapCard', 'ChangesCard', 'WaterfallCard', 'MetricCard'].map((name) => [name, name])),
+      metricValues: () => ({}),
+      yearBefore: (day: string) => day,
+      collapseEmpty,
+      flowSpans,
+      PUBLIC_GRID_SECTIONS,
+      fillRows,
+      isCustomLayout,
+      publicGrid,
+      publicParts,
+      tabletSpan,
       readStored: () => null,
       cn: (...v: string[]) => v.join(' '),
       syncCategories: () => [],
@@ -3722,7 +3739,7 @@ test('public stopped card omits the avoided-renewal total while retaining each o
   assert.equal(d.ended.length, 1);
   assert.equal(d.ended[0].monthly, metrics.cancelSavings(state, today).items[0].monthly);
   assert.equal(d.ended[0].since, sub.end);
-  const nodes = r.render('Ledger', { state });
+  const nodes = r.render('Ledger', { state, view: {} });
   assert.ok(!JSON.stringify(nodes).includes('public.ended.saved'));
   assert.ok(!JSON.stringify(nodes).includes(sub.account!));
   assert.ok(nodes.some((n) => String(n.props.className).includes('line-through') && n.children.includes('public.perMonth')));

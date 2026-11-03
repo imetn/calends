@@ -171,7 +171,7 @@ export function Dock({
   ];
   if (settings)
     inner.push(
-      <a key="settings" className={`arc-item ${route === 'settings' ? 'on' : ''}`} href={href('settings')} onClick={close}>
+      <a key="settings" className={`arc-item ${route === 'settings' || route === 'settings/public' ? 'on' : ''}`} href={href('settings')} onClick={close}>
         <Icon name="gear" />
         <span className="arc-label">{t('app.navShort.settings')}</span>
       </a>,

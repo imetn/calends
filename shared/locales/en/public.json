@@ -67,5 +67,69 @@
   "titleAnon": "Subscriptions",
   "pile": {
     "label": "Your subscriptions, piled up — bigger icons cost more"
+  },
+  "calendar": {
+    "title": "Calendar"
+  },
+  "years": {
+    "title": "Subscription timeline"
+  },
+  "tenure": {
+    "title": "Time subscribed",
+    "avg": "Average time held, active subscriptions",
+    "longest": "Held longest"
+  },
+  "treemap": {
+    "title": "Spending map",
+    "missing": {
+      "one": "{count} subscription has no exchange rate and is not included",
+      "other": "{count} subscriptions have no exchange rate and are not included"
+    }
+  },
+  "changes": {
+    "title": "Changes",
+    "more": "Show all ({n})",
+    "less": "Show less",
+    "kind": {
+      "added": "New",
+      "resumed": "Resumed",
+      "buy": "Bought outright",
+      "up": "Price up",
+      "down": "Price down",
+      "switch": "Switched region or plan",
+      "stopped": "Stopped",
+      "paused": "Paused"
+    }
+  },
+  "waterfall": {
+    "title": "Monthly change",
+    "prev": "Previous month",
+    "next": "Next month",
+    "from": "Start",
+    "added": "New",
+    "expansion": "Price up",
+    "contraction": "Price down",
+    "churned": "Stopped",
+    "fx": "FX",
+    "to": "Now",
+    "monthEnd": "End",
+    "incomplete": "Missing exchange rates, can't draw the chart"
+  },
+  "metric": {
+    "monthly": "Monthly spend",
+    "yearly": "Per year",
+    "active": "Active subscriptions",
+    "avgPerSub": "Average per subscription",
+    "paidTotal": "Total paid",
+    "paidYear": "Paid this year",
+    "paidMonth": "Paid this month",
+    "next30": "Next 30 days",
+    "topSub": "Most expensive",
+    "topCategory": "Largest category",
+    "endedCount": "Cancelled",
+    "lifetimeCount": "Lifetime",
+    "fxEffect": "Exchange-rate effect (monthly)",
+    "vsPrev": "vs last year",
+    "shareOf": "Share of monthly spend"
   }
 }

@@ -1,6 +1,8 @@
 {
   "title": "设置",
-  "days": { "other": "{count} 天" },
+  "days": {
+    "other": "{count} 天"
+  },
   "logout": "退出登录",
   "toast": {
     "saved": "已保存",
@@ -20,9 +22,7 @@
     "startPageAria": "启动页",
     "baseCurrency": "本位币",
     "signedAmounts": "收支正负号",
-    "signedAmountsSub": "支出显示 −，退款和收回的钱显示 +",
     "gainColor": "盈亏颜色",
-    "gainColorSub": "收入、盈余和降价用“盈”的颜色，亏损和涨价用“亏”的颜色；公开页同样生效",
     "gainGreen": "绿盈红亏",
     "gainRed": "红盈绿亏",
     "timezone": "时区",
@@ -56,13 +56,19 @@
   "today": {
     "recent": "最近发送",
     "title": "今天（{day}）",
-    "items": { "other": "{count} 项" }
+    "items": {
+      "other": "{count} 项"
+    }
   },
   "books": {
     "title": "记账",
     "defaultMethod": "默认支付方式",
-    "unassigned": { "other": "{count} 个订阅未指定支付方式" },
-    "assignAllDone": { "other": "已把 {count} 个订阅设为默认支付方式" },
+    "unassigned": {
+      "other": "{count} 个订阅未指定支付方式"
+    },
+    "assignAllDone": {
+      "other": "已把 {count} 个订阅设为默认支付方式"
+    },
     "assignAll": "全部设为默认",
     "collectCurrency": "合租收款币种"
   },
@@ -73,7 +79,9 @@
     "updated": "汇率已更新",
     "history": "历史汇率覆盖",
     "earliest": "最早 {date}",
-    "coverage": { "other": "{covered} / {count} 天" },
+    "coverage": {
+      "other": "{covered} / {count} 天"
+    },
     "fill": "补齐缺失的汇率",
     "historyUpdated": "历史汇率已更新"
   },
@@ -115,7 +123,9 @@
     "warning": "当前账本会被备份里的内容整体替换，无法撤销；建议先导出一份当前备份。",
     "subs": "订阅",
     "methods": "支付方式",
-    "count": { "other": "{count} 个" },
+    "count": {
+      "other": "{count} 个"
+    },
     "time": "备份时间",
     "format": "格式",
     "legacy": "旧版备份：只含订阅与支付方式"
@@ -143,7 +153,9 @@
     "formats": "CSV、ZIP 备份或 SQLite 数据库"
   },
   "channels": {
-    "title": { "other": "通知渠道\n{count} 个开启" },
+    "title": {
+      "other": "通知渠道\n{count} 个开启"
+    },
     "empty": "还没有渠道，提醒不会发出。",
     "test": "测试",
     "testFailed": "发送失败",
@@ -215,9 +227,15 @@
     "unknownBrowser": "未知浏览器",
     "ago": {
       "justNow": "刚刚活跃",
-      "minutes": { "other": "{count} 分钟前" },
-      "hours": { "other": "{count} 小时前" },
-      "days": { "other": "{count} 天前" }
+      "minutes": {
+        "other": "{count} 分钟前"
+      },
+      "hours": {
+        "other": "{count} 小时前"
+      },
+      "days": {
+        "other": "{count} 天前"
+      }
     },
     "thisDevice": "本机",
     "signedInPasskey": "Passkey 登录于 {time}",
@@ -233,10 +251,16 @@
     "alreadyBound": "这台设备已经绑定过了",
     "changePassword": "修改密码",
     "devices": "登录设备",
-    "devicesCount": { "other": "登录设备\n{count}" },
+    "devicesCount": {
+      "other": "登录设备\n{count}"
+    },
     "maxSessions": "最多同时登录",
-    "maxSessionsSaved": { "other": "最多 {count} 台设备" },
-    "deviceCount": { "other": "{count} 台" },
+    "maxSessionsSaved": {
+      "other": "最多 {count} 台设备"
+    },
+    "deviceCount": {
+      "other": "{count} 台"
+    },
     "confirmLogoutOthers": "退出除本机外的所有设备？",
     "loggedOutOthers": "其他设备已退出",
     "logoutOthers": "退出其他所有设备",
@@ -296,6 +320,126 @@
       "health": "健康运动",
       "travel": "出行",
       "people": "社交学习"
+    }
+  },
+  "publicPage": {
+    "title": "编辑公开页",
+    "access": "公开访问",
+    "back": "返回设置",
+    "reset": "恢复默认",
+    "leave": "有未保存的改动，确定离开？",
+    "leaveOk": "离开",
+    "head": "页头",
+    "browserTitle": "浏览器标题",
+    "avatarFollow": "跟随全局头像",
+    "avatarLinkHint": "访客浏览器会直接请求这个地址，对方能看到访客的 IP。",
+    "bio": "正文",
+    "bioPlaceholder": "显示在标题下方，可换行，不随语言切换",
+    "sections": "组件",
+    "remove": "移除",
+    "emptyCard": "暂无数据，访客看不到这张卡片",
+    "editTab": "设置",
+    "previewTab": "预览",
+    "desktop": "桌面",
+    "phone": "手机",
+    "library": {
+      "metrics": "数字",
+      "charts": "图表",
+      "lists": "列表与时间",
+      "bottom": "页面底部"
+    },
+    "hintDrag": "把组件拖到页面上，或点一下放到最下面。",
+    "hintTap": "点一下添加到页面最下面。",
+    "backToLibrary": "返回组件库",
+    "metricCard": "指标卡",
+    "template": "样式",
+    "metricData": "显示的数据",
+    "addMetric": "再加一个数据",
+    "widget": {
+      "stats": {
+        "name": "概览",
+        "desc": "每月支出和关键数字"
+      },
+      "number": {
+        "name": "数字",
+        "desc": "一个数字，放大显示"
+      },
+      "trend": {
+        "name": "趋势",
+        "desc": "数字加迷你走势"
+      },
+      "compare": {
+        "name": "对比",
+        "desc": "和去年同期比"
+      },
+      "share": {
+        "name": "占比",
+        "desc": "占每月支出多少"
+      },
+      "rows": {
+        "name": "多行",
+        "desc": "最多 4 个数字一起看"
+      },
+      "chart": {
+        "name": "柱状图",
+        "desc": "每月扣款和月度开销走势"
+      },
+      "composition": {
+        "name": "构成",
+        "desc": "各分类占多少"
+      },
+      "treemap": {
+        "name": "方块图",
+        "desc": "面积表示花多少"
+      },
+      "waterfall": {
+        "name": "月度变化",
+        "desc": "新增、涨价、取消的增减"
+      },
+      "fx": {
+        "name": "币种与汇率",
+        "desc": "各币种占比和涨跌"
+      },
+      "timeline": {
+        "name": "时间线",
+        "desc": "按天排列的扣款"
+      },
+      "calendar": {
+        "name": "日历",
+        "desc": "一个月里哪天扣款"
+      },
+      "years": {
+        "name": "订阅年表",
+        "desc": "每个订阅从哪年用到哪年"
+      },
+      "list": {
+        "name": "订阅列表",
+        "desc": "正在用的全部订阅"
+      },
+      "tenure": {
+        "name": "订阅时长",
+        "desc": "平均和用得最久的"
+      },
+      "changes": {
+        "name": "变动记录",
+        "desc": "新增、涨价和停用"
+      },
+      "ended": {
+        "name": "已退订",
+        "desc": "退订了什么、原来多少钱"
+      },
+      "lifetime": {
+        "name": "买断",
+        "desc": "一次付清的软件"
+      },
+      "footer": {
+        "name": "页脚",
+        "desc": "项目名和版本"
+      },
+      "pile": {
+        "name": "底部订阅堆",
+        "desc": "页面底部落下的图标"
+      }
     }
   }
 }

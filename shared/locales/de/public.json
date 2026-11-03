@@ -67,5 +67,69 @@
   "titleAnon": "Abos",
   "pile": {
     "label": "Deine Abos als Stapel – je größer, desto teurer"
+  },
+  "calendar": {
+    "title": "Kalender"
+  },
+  "years": {
+    "title": "Abo-Zeitleiste"
+  },
+  "tenure": {
+    "title": "Abo-Dauer",
+    "avg": "Durchschnittliche Laufzeit aktiver Abos",
+    "longest": "Am längsten gehalten"
+  },
+  "treemap": {
+    "title": "Ausgabenkarte",
+    "missing": {
+      "one": "{count} Abo ohne Wechselkurs ist nicht enthalten",
+      "other": "{count} Abos ohne Wechselkurs sind nicht enthalten"
+    }
+  },
+  "changes": {
+    "title": "Änderungen",
+    "more": "Alle anzeigen ({n})",
+    "less": "Weniger anzeigen",
+    "kind": {
+      "added": "Neu",
+      "resumed": "Wieder aufgenommen",
+      "buy": "Gekauft",
+      "up": "Preis gestiegen",
+      "down": "Preis gesenkt",
+      "switch": "Region oder Tarif gewechselt",
+      "stopped": "Beendet",
+      "paused": "Pausiert"
+    }
+  },
+  "waterfall": {
+    "title": "Monatliche Veränderung",
+    "prev": "Vorheriger Monat",
+    "next": "Nächster Monat",
+    "from": "Start",
+    "added": "Neu",
+    "expansion": "Preis gestiegen",
+    "contraction": "Preis gesenkt",
+    "churned": "Beendet",
+    "fx": "Wechselkurs",
+    "to": "Jetzt",
+    "monthEnd": "Monatsende",
+    "incomplete": "Wechselkurse fehlen, Diagramm nicht möglich"
+  },
+  "metric": {
+    "monthly": "Monatliche Ausgaben",
+    "yearly": "Pro Jahr",
+    "active": "Aktive Abos",
+    "avgPerSub": "Durchschnitt pro Abo",
+    "paidTotal": "Insgesamt bezahlt",
+    "paidYear": "Dieses Jahr bezahlt",
+    "paidMonth": "Diesen Monat bezahlt",
+    "next30": "Nächste 30 Tage",
+    "topSub": "Teuerstes Abo",
+    "topCategory": "Größte Kategorie",
+    "endedCount": "Gekündigt",
+    "lifetimeCount": "Einmalkauf",
+    "fxEffect": "Wechselkurseffekt (monatlich)",
+    "vsPrev": "ggü. Vorjahr",
+    "shareOf": "Anteil an den monatlichen Ausgaben"
   }
 }

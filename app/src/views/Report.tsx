@@ -6,8 +6,8 @@ import { snapshotCard } from '../snapshot.ts';
 import { copyParts } from '../components/copy.tsx';
 import { base as appPath } from '../base.ts';
 import { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { addDays, addMonths, DAYS_PER_MONTH, diffDays, effectiveStatus, isStopped } from '../../../shared/billing.ts';
-import { flow, cnDate, money, moneyTick, monthLabel } from '../../../shared/format.ts';
+import { addDays, addMonths, diffDays, effectiveStatus, isStopped } from '../../../shared/billing.ts';
+import { flow, cnDate, money, moneyTick, monthLabel, servedSpan } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { tx } from '../i18n.ts';
 import {
@@ -371,8 +371,8 @@ function TenureCard({ state, today, onOpen }: { state: AppState; today: string; 
         </div>
       </div>
       <MetricCards inline>
-        <Metric label={t('report.tenure.active')} value={span(r.active.avgDays)} />
-        <Metric label={t('report.tenure.stopped')} value={r.stopped.count ? span(r.stopped.avgDays) : '—'} />
+        <Metric label={t('report.tenure.active')} value={servedSpan(r.active.avgDays)} />
+        <Metric label={t('report.tenure.stopped')} value={r.stopped.count ? servedSpan(r.stopped.avgDays) : '—'} />
         <Metric
           label={t('report.tenure.quick')}
           value={r.quick.length}
@@ -405,7 +405,7 @@ function TenureCard({ state, today, onOpen }: { state: AppState; today: string; 
               <span>{t('report.all.since', { date: monthLabel(x.since.slice(0, 7)) })}</span>
             </span>
             <span className="stop-amount">
-              <b className="num">{span(x.days)}</b>
+              <b className="num">{servedSpan(x.days)}</b>
             </span>
           </button>
         ))}
@@ -425,15 +425,6 @@ function TenureCard({ state, today, onOpen }: { state: AppState; today: string; 
       />
     </div>
   );
-}
-
-/** 时长：满一年写几年几个月，不足一个月写天数；与详情页同一写法 */
-function span(days: number) {
-  const n = days < 30 ? 0 : Math.round(days / DAYS_PER_MONTH);
-  const years = Math.floor(n / 12);
-  const months = n % 12;
-  if (years) return months ? t('detail.stats.yearsMonths', { years, months }) : t('detail.stats.years', { count: years });
-  return months ? t('detail.stats.months', { count: months }) : t('detail.stats.days', { count: Math.round(days) });
 }
 
 /** 月度变动瀑布：上月末 → 新增 → 涨价 → 降价 → 退订 → 本月 */

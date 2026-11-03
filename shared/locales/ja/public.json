@@ -65,5 +65,68 @@
   "titleAnon": "サブスク一覧",
   "pile": {
     "label": "サブスクの山：アイコンが大きいほど月額が高い"
+  },
+  "calendar": {
+    "title": "カレンダー"
+  },
+  "years": {
+    "title": "サブスク年表"
+  },
+  "tenure": {
+    "title": "契約期間",
+    "avg": "利用中サブスクの平均契約期間",
+    "longest": "最長契約"
+  },
+  "treemap": {
+    "title": "支出マップ",
+    "missing": {
+      "other": "為替レートがない{count}件のサブスクは含まれていません"
+    }
+  },
+  "changes": {
+    "title": "変更履歴",
+    "more": "すべて表示（{n}）",
+    "less": "折りたたむ",
+    "kind": {
+      "added": "新規",
+      "resumed": "再開",
+      "buy": "買い切り",
+      "up": "値上げ",
+      "down": "値下げ",
+      "switch": "地域・プラン変更",
+      "stopped": "停止",
+      "paused": "一時停止"
+    }
+  },
+  "waterfall": {
+    "title": "月ごとの変動",
+    "prev": "前の月",
+    "next": "次の月",
+    "from": "月初",
+    "added": "新規",
+    "expansion": "値上げ",
+    "contraction": "値下げ",
+    "churned": "停止",
+    "fx": "為替",
+    "to": "現在",
+    "monthEnd": "月末",
+    "incomplete": "為替レートがなく、グラフを描画できません"
+  },
+  "metric": {
+    "monthly": "毎月の支出",
+    "yearly": "年間",
+    "active": "利用中のサブスク",
+    "avgPerSub": "サブスクあたりの平均",
+    "paidTotal": "累計支払額",
+    "paidYear": "今年の支払額",
+    "paidMonth": "今月の支払額",
+    "next30": "今後30日間",
+    "topSub": "最も高いサブスク",
+    "topCategory": "最大のカテゴリ",
+    "endedCount": "解約済み",
+    "lifetimeCount": "買い切り",
+    "fxEffect": "為替の影響（月額）",
+    "vsPrev": "前年比",
+    "shareOf": "毎月の支出に占める割合"
   }
 }

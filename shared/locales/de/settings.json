@@ -23,9 +23,7 @@
     "startPageAria": "Startseite",
     "baseCurrency": "Basiswährung",
     "signedAmounts": "Vorzeichen für Geldflüsse",
-    "signedAmountsSub": "− für Ausgaben und + für Erstattungen und Zahlungseingänge anzeigen",
     "gainColor": "Farben für Gewinn/Verlust",
-    "gainColorSub": "Einnahmen, Überschüsse und Preissenkungen in der Gewinnfarbe, Verluste und Preiserhöhungen in der Verlustfarbe. Gilt auch für die öffentliche Seite",
     "gainGreen": "Grün Gewinn, Rot Verlust",
     "gainRed": "Rot Gewinn, Grün Verlust",
     "timezone": "Zeitzone",
@@ -340,6 +338,126 @@
       "health": "Gesundheit & Sport",
       "travel": "Reisen",
       "people": "Menschen & Lernen"
+    }
+  },
+  "publicPage": {
+    "title": "Öffentliche Seite bearbeiten",
+    "access": "Öffentlicher Zugriff",
+    "back": "Zurück zu den Einstellungen",
+    "reset": "Standard wiederherstellen",
+    "leave": "Es gibt ungespeicherte Änderungen. Trotzdem verlassen?",
+    "leaveOk": "Verlassen",
+    "head": "Kopfbereich",
+    "browserTitle": "Browsertitel",
+    "avatarFollow": "Globalen Avatar verwenden",
+    "avatarLinkHint": "Browser der Besucher rufen diese Adresse direkt auf, der Host sieht also ihre IP.",
+    "bio": "Text",
+    "bioPlaceholder": "Erscheint unter dem Titel. Zeilenumbrüche bleiben erhalten; wird nicht übersetzt.",
+    "sections": "Bereiche",
+    "remove": "Entfernen",
+    "emptyCard": "Noch keine Daten. Besucher sehen diese Karte nicht.",
+    "editTab": "Einstellungen",
+    "previewTab": "Vorschau",
+    "desktop": "Desktop",
+    "phone": "Smartphone",
+    "library": {
+      "metrics": "Zahlen",
+      "charts": "Diagramme",
+      "lists": "Listen und Zeit",
+      "bottom": "Seitenende"
+    },
+    "hintDrag": "Komponente auf die Seite ziehen oder anklicken, um sie unten einzufügen.",
+    "hintTap": "Tippen, um unten auf der Seite einzufügen.",
+    "backToLibrary": "Zurück zu den Komponenten",
+    "metricCard": "Kennzahlkarte",
+    "template": "Stil",
+    "metricData": "Angezeigte Daten",
+    "addMetric": "Weiteren Wert hinzufügen",
+    "widget": {
+      "stats": {
+        "name": "Übersicht",
+        "desc": "Monatliche Ausgaben und wichtige Zahlen"
+      },
+      "number": {
+        "name": "Zahl",
+        "desc": "Eine Zahl, groß dargestellt"
+      },
+      "trend": {
+        "name": "Trend",
+        "desc": "Eine Zahl mit Sparkline"
+      },
+      "compare": {
+        "name": "Vergleich",
+        "desc": "Gegenüber dem Vorjahreszeitraum"
+      },
+      "share": {
+        "name": "Anteil",
+        "desc": "Anteil an den monatlichen Ausgaben"
+      },
+      "rows": {
+        "name": "Zeilen",
+        "desc": "Bis zu 4 Zahlen zusammen"
+      },
+      "chart": {
+        "name": "Balkendiagramm",
+        "desc": "Monatliche Abbuchungen und Ausgabentrend"
+      },
+      "composition": {
+        "name": "Zusammensetzung",
+        "desc": "Ausgaben nach Kategorie"
+      },
+      "treemap": {
+        "name": "Treemap",
+        "desc": "Die Fläche zeigt die Höhe der Ausgaben"
+      },
+      "waterfall": {
+        "name": "Monatliche Veränderung",
+        "desc": "Was neu, teurer oder gekündigt wurde"
+      },
+      "fx": {
+        "name": "Währungen",
+        "desc": "Währungsanteile und Kursbewegungen"
+      },
+      "timeline": {
+        "name": "Zeitleiste",
+        "desc": "Abbuchungen Tag für Tag"
+      },
+      "calendar": {
+        "name": "Kalender",
+        "desc": "An welchen Tagen abgebucht wird"
+      },
+      "years": {
+        "name": "Abo-Zeitleiste",
+        "desc": "Wann welches Abo lief"
+      },
+      "list": {
+        "name": "Abo-Liste",
+        "desc": "Alles, was in Gebrauch ist"
+      },
+      "tenure": {
+        "name": "Abo-Dauer",
+        "desc": "Durchschnitt und längste Laufzeit"
+      },
+      "changes": {
+        "name": "Änderungen",
+        "desc": "Neu, Preisänderung und beendet"
+      },
+      "ended": {
+        "name": "Gekündigt",
+        "desc": "Was gekündigt wurde und der Preis"
+      },
+      "lifetime": {
+        "name": "Einmalkauf",
+        "desc": "Einmalige Käufe"
+      },
+      "footer": {
+        "name": "Fußzeile",
+        "desc": "Projektname und Version"
+      },
+      "pile": {
+        "name": "Symbolhaufen",
+        "desc": "Symbole, die am Seitenende herabfallen"
+      }
     }
   }
 }

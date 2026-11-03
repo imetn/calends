@@ -1,8 +1,9 @@
 // 公开页脱敏：服务端只下发这里处理过的数据，浏览器拿不到原始信息
 import { DEFAULT_SETTINGS, type AppState, type Payment, type PaymentMethod, type Phase, type Stop, type Subscription } from './types.ts';
-import { fnv1a, migrateRenewalRules } from './billing.ts';
+import { effectiveStatus, fnv1a, isStopped, migrateRenewalRules, priceAt, todayIn } from './billing.ts';
 import { isLocale, t } from './i18n.ts';
 import { categoryList, isDomainCategory, presetOf, type Category } from './categories.ts';
+import { publicConfigForVisitors, publicParts, type PublicPart } from './public-layout.ts';
 
 const DOMAIN = /\b((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+)([a-z]{2,})\b/gi;
 
@@ -130,12 +131,49 @@ function publicSub(s: Subscription, cats: Category[]): Subscription {
   };
 }
 
-export function maskForPublic(state: AppState): AppState {
+/** 哪些部分用到哪类数据：相关部分全部隐藏后，这类数据就不下发；只隐藏一部分时仍要下发 */
+const NEEDS_NAMES: PublicPart[] = ['timeline', 'list', 'ended', 'lifetime', 'pile', 'calendar', 'years', 'tenure', 'treemap', 'changes'];
+const NEEDS_HISTORY: PublicPart[] = ['stats', 'timeline', 'chart', 'list', 'calendar', 'years', 'tenure', 'changes', 'waterfall'];
+const NEEDS_ENDED: PublicPart[] = ['stats', 'timeline', 'chart', 'ended', 'calendar', 'years', 'tenure', 'changes', 'waterfall'];
+const NEEDS_CATEGORIES: PublicPart[] = ['composition', 'list', ...NEEDS_NAMES];
+/** 用到金额的部分（订阅堆按金额筛选）：全部隐藏后订阅和付款来源都不下发 */
+const NEEDS_AMOUNTS: PublicPart[] = ['stats', 'timeline', 'chart', 'composition', 'fx', 'list', 'ended', 'lifetime', 'pile', 'calendar', 'years', 'tenure', 'treemap', 'changes', 'waterfall'];
+
+/** 去掉扣款和价格历史，只留算出 day 当天价格所需的一条 */
+function withoutHistory<T extends Phase>(p: T, day: string): T {
+  const price = priceAt(p as unknown as Subscription, day);
+  return { ...p, price, payments: undefined, priceHistory: undefined, renewalHistory: undefined, nextDue: undefined };
+}
+
+export function maskForPublic(state: AppState, opts: { untrimmed?: boolean } = {}): AppState {
   const cats = categoryList(state.settings, state.subscriptions);
+  const config = state.settings.publicPage;
+  // 自定义里隐藏的组件，只有不再被其他可见部分用到的数据才不下发。编辑页预览传 untrimmed，草稿可能重新打开任何组件
+  const parts = opts.untrimmed ? undefined : publicParts(config);
+  const needs = (of: PublicPart[]) => !parts || of.some((x) => parts.has(x));
+  const today = todayIn(state.settings.timezone);
   // 代付涉及他人，公开页完全不出现；设置里取消展示的也不下发
   const hidden = new Set(state.settings.publicHidden ?? []);
-  const subs = state.subscriptions.filter((s) => !s.proxy && !hidden.has(s.id));
-  const used = new Set(subs.map((s) => s.category));
+  const keepEnded = needs(NEEDS_ENDED);
+  const keepLifetime = needs(['lifetime']);
+  const keepAmounts = needs(NEEDS_AMOUNTS);
+  const subs = state.subscriptions.filter(
+    (s) => keepAmounts && !s.proxy && !hidden.has(s.id) && (keepEnded || !isStopped(effectiveStatus(s, today)) || (keepLifetime && s.cycle.unit === 'lifetime')),
+  );
+  const keepCategories = needs(NEEDS_CATEGORIES);
+  const used = new Set(keepCategories ? subs.map((s) => s.category) : []);
+  const keepNames = needs(NEEDS_NAMES);
+  const keepHistory = needs(NEEDS_HISTORY);
+  const trimSub = (s: Subscription, i: number): Subscription => {
+    // 已结束的订阅按结束那天的价格算「原来每月多少」，结束日在未来也一样（已付至未来）
+    const day = isStopped(effectiveStatus(s, today)) ? (s.end ?? today) : today;
+    const flat = keepHistory ? s : { ...withoutHistory(s, day), ...(s.cycle.unit === 'lifetime' ? { price: s.price } : {}), phases: s.phases?.map((p) => withoutHistory(p, day)) };
+    return {
+      ...flat,
+      ...(keepNames ? {} : { id: `s${i}`, name: '', icon: undefined, url: undefined, region: undefined, phases: flat.phases?.map((p) => ({ ...p, region: undefined })) }),
+      ...(keepCategories ? {} : { category: '' }),
+    };
+  };
   return {
     readonly: true,
     fx: state.fx,
@@ -146,9 +184,11 @@ export function maskForPublic(state: AppState): AppState {
       baseCurrency: state.settings.baseCurrency,
       signedAmounts: state.settings.signedAmounts !== false,
       timezone: state.settings.timezone,
-      displayName: state.settings.displayName,
-      avatar: state.settings.avatar,
+      // 自定义了标题就不再需要真实名字
+      displayName: state.settings.publicTitle?.trim() ? '' : state.settings.displayName,
+      avatar: config?.avatar ?? state.settings.avatar,
       publicTitle: state.settings.publicTitle,
+      publicPage: publicConfigForVisitors(config),
       weekStart: state.settings.weekStart,
       // 公开页跟主人的界面语言走；主人跟随浏览器时用后台最近实际用的语言
       language: isLocale(state.settings.language) ? state.settings.language : state.settings.languageSeen,
@@ -161,7 +201,8 @@ export function maskForPublic(state: AppState): AppState {
         .filter((c) => used.has(c.name))
         .map((c) => ({ name: c.name, icon: c.icon, color: c.color, preset: c.preset === 'domains' ? c.preset : undefined })),
     },
-    methods: state.methods.map(publicMethod),
-    subscriptions: subs.map((s) => publicSub(s, cats)),
+    // 不展示名字时，付款来源的地区也不能留：methodId 连着它就能还原订阅的地区
+    methods: keepAmounts ? state.methods.map(publicMethod).map((m) => (keepNames ? m : { ...m, name: '', region: undefined })) : [],
+    subscriptions: subs.map((s, i) => trimSub(publicSub(s, cats), i)),
   };
 }

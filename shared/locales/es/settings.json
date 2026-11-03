@@ -1,6 +1,9 @@
 {
   "title": "Ajustes",
-  "days": { "one": "{count} día", "other": "{count} días" },
+  "days": {
+    "one": "{count} día",
+    "other": "{count} días"
+  },
   "logout": "Cerrar sesión",
   "toast": {
     "saved": "Guardado",
@@ -20,9 +23,7 @@
     "startPageAria": "Página de inicio",
     "baseCurrency": "Moneda base",
     "signedAmounts": "Signos de ingresos y gastos",
-    "signedAmountsSub": "Mostrar − en gastos y + en reembolsos y cobros",
     "gainColor": "Colores de ganancia/pérdida",
-    "gainColorSub": "Ingresos, superávits y bajadas de precio con el color de ganancia; pérdidas y subidas con el de pérdida. También en la página pública",
     "gainGreen": "Verde ganancia, rojo pérdida",
     "gainRed": "Rojo ganancia, verde pérdida",
     "timezone": "Zona horaria",
@@ -56,12 +57,18 @@
   "today": {
     "recent": "Envíos recientes",
     "title": "Hoy ({day})",
-    "items": { "one": "{count} elemento", "other": "{count} elementos" }
+    "items": {
+      "one": "{count} elemento",
+      "other": "{count} elementos"
+    }
   },
   "books": {
     "title": "Contabilidad",
     "defaultMethod": "Método de pago predeterminado",
-    "unassigned": { "one": "{count} suscripción no tiene método de pago", "other": "{count} suscripciones no tienen método de pago" },
+    "unassigned": {
+      "one": "{count} suscripción no tiene método de pago",
+      "other": "{count} suscripciones no tienen método de pago"
+    },
     "assignAllDone": {
       "one": "Se asignó el método de pago predeterminado a {count} suscripción",
       "other": "Se asignó el método de pago predeterminado a {count} suscripciones"
@@ -76,7 +83,10 @@
     "updated": "Tipos de cambio actualizados",
     "history": "Tipos históricos",
     "earliest": "Desde {date}",
-    "coverage": { "one": "{covered} / {count} día", "other": "{covered} / {count} días" },
+    "coverage": {
+      "one": "{covered} / {count} día",
+      "other": "{covered} / {count} días"
+    },
     "fill": "Completar los tipos que faltan",
     "historyUpdated": "Tipos históricos actualizados"
   },
@@ -118,7 +128,10 @@
     "warning": "Tu registro actual se reemplazará por completo con la copia de seguridad. No se puede deshacer; te recomendamos exportar antes una copia.",
     "subs": "Suscripciones",
     "methods": "Métodos de pago",
-    "count": { "one": "{count}", "other": "{count}" },
+    "count": {
+      "one": "{count}",
+      "other": "{count}"
+    },
     "time": "Copia realizada",
     "format": "Formato",
     "legacy": "Copia antigua: solo suscripciones y métodos de pago"
@@ -147,7 +160,10 @@
     "formats": "CSV, copia ZIP o base SQLite"
   },
   "channels": {
-    "title": { "one": "Canales de notificación\n{count} activo", "other": "Canales de notificación\n{count} activos" },
+    "title": {
+      "one": "Canales de notificación\n{count} activo",
+      "other": "Canales de notificación\n{count} activos"
+    },
     "empty": "Aún no hay canales: no se enviarán recordatorios.",
     "test": "Probar",
     "testFailed": "No se pudo enviar",
@@ -219,9 +235,18 @@
     "unknownBrowser": "Navegador desconocido",
     "ago": {
       "justNow": "Activo ahora mismo",
-      "minutes": { "one": "Hace {count} minuto", "other": "Hace {count} minutos" },
-      "hours": { "one": "Hace {count} hora", "other": "Hace {count} horas" },
-      "days": { "one": "Hace {count} día", "other": "Hace {count} días" }
+      "minutes": {
+        "one": "Hace {count} minuto",
+        "other": "Hace {count} minutos"
+      },
+      "hours": {
+        "one": "Hace {count} hora",
+        "other": "Hace {count} horas"
+      },
+      "days": {
+        "one": "Hace {count} día",
+        "other": "Hace {count} días"
+      }
     },
     "thisDevice": "Este dispositivo",
     "signedInPasskey": "Inició sesión con llave de acceso: {time}",
@@ -237,10 +262,19 @@
     "alreadyBound": "Este dispositivo ya tiene una llave de acceso",
     "changePassword": "Cambiar contraseña",
     "devices": "Dispositivos con sesión iniciada",
-    "devicesCount": { "one": "Dispositivos con sesión iniciada\n{count}", "other": "Dispositivos con sesión iniciada\n{count}" },
+    "devicesCount": {
+      "one": "Dispositivos con sesión iniciada\n{count}",
+      "other": "Dispositivos con sesión iniciada\n{count}"
+    },
     "maxSessions": "Máximo de dispositivos con sesión",
-    "maxSessionsSaved": { "one": "Hasta {count} dispositivo", "other": "Hasta {count} dispositivos" },
-    "deviceCount": { "one": "{count} dispositivo", "other": "{count} dispositivos" },
+    "maxSessionsSaved": {
+      "one": "Hasta {count} dispositivo",
+      "other": "Hasta {count} dispositivos"
+    },
+    "deviceCount": {
+      "one": "{count} dispositivo",
+      "other": "{count} dispositivos"
+    },
     "confirmLogoutOthers": "¿Cerrar sesión en todos los demás dispositivos?",
     "loggedOutOthers": "Sesión cerrada en los demás dispositivos",
     "logoutOthers": "Cerrar sesión en los demás dispositivos",
@@ -304,6 +338,126 @@
       "health": "Salud y deporte",
       "travel": "Viajes",
       "people": "Personas y estudio"
+    }
+  },
+  "publicPage": {
+    "title": "Editar página pública",
+    "access": "Acceso público",
+    "back": "Volver a ajustes",
+    "reset": "Restaurar valores",
+    "leave": "Hay cambios sin guardar. ¿Salir de todos modos?",
+    "leaveOk": "Salir",
+    "head": "Encabezado",
+    "browserTitle": "Título del navegador",
+    "avatarFollow": "Usar el avatar global",
+    "avatarLinkHint": "Los navegadores de los visitantes solicitan esta dirección directamente, así que su servidor puede ver su IP.",
+    "bio": "Texto",
+    "bioPlaceholder": "Aparece bajo el título. Conserva los saltos de línea; no se traduce.",
+    "sections": "Secciones",
+    "remove": "Quitar",
+    "emptyCard": "Aún no hay datos. Los visitantes no verán esta tarjeta.",
+    "editTab": "Ajustes",
+    "previewTab": "Vista previa",
+    "desktop": "Escritorio",
+    "phone": "Móvil",
+    "library": {
+      "metrics": "Números",
+      "charts": "Gráficos",
+      "lists": "Listas y tiempo",
+      "bottom": "Final de la página"
+    },
+    "hintDrag": "Arrastra un componente a la página o haz clic para añadirlo al final.",
+    "hintTap": "Toca para añadirlo al final de la página.",
+    "backToLibrary": "Volver a los componentes",
+    "metricCard": "Tarjeta de métrica",
+    "template": "Estilo",
+    "metricData": "Datos mostrados",
+    "addMetric": "Añadir otro valor",
+    "widget": {
+      "stats": {
+        "name": "Resumen",
+        "desc": "Gasto mensual y cifras clave"
+      },
+      "number": {
+        "name": "Número",
+        "desc": "Un número en tamaño grande"
+      },
+      "trend": {
+        "name": "Tendencia",
+        "desc": "Un número con minigráfico"
+      },
+      "compare": {
+        "name": "Comparar",
+        "desc": "Frente al mismo periodo del año pasado"
+      },
+      "share": {
+        "name": "Proporción",
+        "desc": "Proporción del gasto mensual"
+      },
+      "rows": {
+        "name": "Filas",
+        "desc": "Hasta 4 números juntos"
+      },
+      "chart": {
+        "name": "Gráfico de barras",
+        "desc": "Cobros mensuales y tendencia del gasto"
+      },
+      "composition": {
+        "name": "Composición",
+        "desc": "Gasto por categoría"
+      },
+      "treemap": {
+        "name": "Mapa de árbol",
+        "desc": "El área muestra cuánto gastas"
+      },
+      "waterfall": {
+        "name": "Cambio mensual",
+        "desc": "Qué se añadió, subió o canceló"
+      },
+      "fx": {
+        "name": "Divisas",
+        "desc": "Peso de cada divisa y variación de tipos"
+      },
+      "timeline": {
+        "name": "Cronología",
+        "desc": "Cobros día a día"
+      },
+      "calendar": {
+        "name": "Calendario",
+        "desc": "Qué días se cobra"
+      },
+      "years": {
+        "name": "Cronología de suscripciones",
+        "desc": "Cuándo estuvo activa cada suscripción"
+      },
+      "list": {
+        "name": "Lista de suscripciones",
+        "desc": "Todo lo que está en uso"
+      },
+      "tenure": {
+        "name": "Tiempo suscrito",
+        "desc": "Promedio y suscripción más longeva"
+      },
+      "changes": {
+        "name": "Cambios",
+        "desc": "Altas, cambios de precio y bajas"
+      },
+      "ended": {
+        "name": "Canceladas",
+        "desc": "Qué se canceló y su precio"
+      },
+      "lifetime": {
+        "name": "Pago único",
+        "desc": "Compras de pago único"
+      },
+      "footer": {
+        "name": "Pie de página",
+        "desc": "Nombre del proyecto y versión"
+      },
+      "pile": {
+        "name": "Montón de iconos",
+        "desc": "Iconos que caen al final de la página"
+      }
     }
   }
 }

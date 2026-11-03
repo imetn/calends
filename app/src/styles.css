@@ -68,6 +68,11 @@ a {
 .loss {
   color: var(--loss);
 }
+.gain-sample {
+  display: inline-flex;
+  gap: 8px;
+  flex: none;
+}
 .num {
   font-variant-numeric: tabular-nums;
 }

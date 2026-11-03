@@ -1,6 +1,9 @@
 {
   "title": "Ayarlar",
-  "days": { "one": "{count} gün", "other": "{count} gün" },
+  "days": {
+    "one": "{count} gün",
+    "other": "{count} gün"
+  },
   "logout": "Çıkış yap",
   "toast": {
     "saved": "Kaydedildi",
@@ -20,9 +23,7 @@
     "startPageAria": "Başlangıç sayfası",
     "baseCurrency": "Ana para birimi",
     "signedAmounts": "Gelir ve gider işaretleri",
-    "signedAmountsSub": "Giderlerde −, iadelerde ve tahsilatlarda + göster",
     "gainColor": "Kazanç/kayıp renkleri",
-    "gainColorSub": "Gelir, fazla ve fiyat düşüşleri kazanç rengiyle; kayıplar ve fiyat artışları kayıp rengiyle gösterilir. Herkese açık sayfada da geçerlidir",
     "gainGreen": "Yeşil kazanç, kırmızı kayıp",
     "gainRed": "Kırmızı kazanç, yeşil kayıp",
     "timezone": "Saat dilimi",
@@ -56,13 +57,22 @@
   "today": {
     "recent": "Son gönderimler",
     "title": "Bugün ({day})",
-    "items": { "one": "{count} öğe", "other": "{count} öğe" }
+    "items": {
+      "one": "{count} öğe",
+      "other": "{count} öğe"
+    }
   },
   "books": {
     "title": "Defter",
     "defaultMethod": "Varsayılan ödeme yöntemi",
-    "unassigned": { "one": "{count} aboneliğin ödeme yöntemi yok", "other": "{count} aboneliğin ödeme yöntemi yok" },
-    "assignAllDone": { "one": "{count} aboneliğe varsayılan ödeme yöntemi atandı", "other": "{count} aboneliğe varsayılan ödeme yöntemi atandı" },
+    "unassigned": {
+      "one": "{count} aboneliğin ödeme yöntemi yok",
+      "other": "{count} aboneliğin ödeme yöntemi yok"
+    },
+    "assignAllDone": {
+      "one": "{count} aboneliğe varsayılan ödeme yöntemi atandı",
+      "other": "{count} aboneliğe varsayılan ödeme yöntemi atandı"
+    },
     "assignAll": "Tümüne varsayılanı uygula",
     "collectCurrency": "Ortak plan para birimi"
   },
@@ -73,7 +83,10 @@
     "updated": "Döviz kurları güncellendi",
     "history": "Geçmiş kurlar",
     "earliest": "{date} itibarıyla",
-    "coverage": { "one": "{covered} / {count} gün", "other": "{covered} / {count} gün" },
+    "coverage": {
+      "one": "{covered} / {count} gün",
+      "other": "{covered} / {count} gün"
+    },
     "fill": "Eksik kurları tamamla",
     "historyUpdated": "Geçmiş kurlar güncellendi"
   },
@@ -115,7 +128,10 @@
     "warning": "Mevcut defteriniz tamamen yedekle değiştirilecek. Bu işlem geri alınamaz; önce bir yedek dışa aktarmayı düşünün.",
     "subs": "Abonelikler",
     "methods": "Ödeme yöntemleri",
-    "count": { "one": "{count}", "other": "{count}" },
+    "count": {
+      "one": "{count}",
+      "other": "{count}"
+    },
     "time": "Yedekleme zamanı",
     "format": "Biçim",
     "legacy": "Eski yedek: yalnızca abonelikler ve ödeme yöntemleri"
@@ -144,7 +160,10 @@
     "formats": "CSV, ZIP yedeği veya SQLite veritabanı"
   },
   "channels": {
-    "title": { "one": "Bildirim kanalları\n{count} açık", "other": "Bildirim kanalları\n{count} açık" },
+    "title": {
+      "one": "Bildirim kanalları\n{count} açık",
+      "other": "Bildirim kanalları\n{count} açık"
+    },
     "empty": "Henüz kanal yok; hatırlatmalar gönderilmeyecek.",
     "test": "Test et",
     "testFailed": "Gönderilemedi",
@@ -216,9 +235,18 @@
     "unknownBrowser": "Bilinmeyen tarayıcı",
     "ago": {
       "justNow": "Az önce etkindi",
-      "minutes": { "one": "{count} dakika önce", "other": "{count} dakika önce" },
-      "hours": { "one": "{count} saat önce", "other": "{count} saat önce" },
-      "days": { "one": "{count} gün önce", "other": "{count} gün önce" }
+      "minutes": {
+        "one": "{count} dakika önce",
+        "other": "{count} dakika önce"
+      },
+      "hours": {
+        "one": "{count} saat önce",
+        "other": "{count} saat önce"
+      },
+      "days": {
+        "one": "{count} gün önce",
+        "other": "{count} gün önce"
+      }
     },
     "thisDevice": "Bu cihaz",
     "signedInPasskey": "{time} geçiş anahtarıyla giriş yapıldı",
@@ -234,10 +262,19 @@
     "alreadyBound": "Bu cihazda zaten bir geçiş anahtarı var",
     "changePassword": "Parolayı değiştir",
     "devices": "Giriş yapılmış cihazlar",
-    "devicesCount": { "one": "Giriş yapılmış cihazlar\n{count}", "other": "Giriş yapılmış cihazlar\n{count}" },
+    "devicesCount": {
+      "one": "Giriş yapılmış cihazlar\n{count}",
+      "other": "Giriş yapılmış cihazlar\n{count}"
+    },
     "maxSessions": "En fazla giriş yapılmış cihaz",
-    "maxSessionsSaved": { "one": "En fazla {count} cihaz", "other": "En fazla {count} cihaz" },
-    "deviceCount": { "one": "{count} cihaz", "other": "{count} cihaz" },
+    "maxSessionsSaved": {
+      "one": "En fazla {count} cihaz",
+      "other": "En fazla {count} cihaz"
+    },
+    "deviceCount": {
+      "one": "{count} cihaz",
+      "other": "{count} cihaz"
+    },
     "confirmLogoutOthers": "Diğer tüm cihazlardan çıkış yapılsın mı?",
     "loggedOutOthers": "Diğer cihazlardan çıkış yapıldı",
     "logoutOthers": "Diğer tüm cihazlardan çıkış yap",
@@ -301,6 +338,126 @@
       "health": "Sağlık ve spor",
       "travel": "Seyahat",
       "people": "İnsanlar ve eğitim"
+    }
+  },
+  "publicPage": {
+    "title": "Herkese açık sayfayı düzenle",
+    "access": "Herkese açık erişim",
+    "back": "Ayarlara dön",
+    "reset": "Varsayılana döndür",
+    "leave": "Kaydedilmemiş değişiklikler var. Yine de çıkılsın mı?",
+    "leaveOk": "Çık",
+    "head": "Üst bölüm",
+    "browserTitle": "Tarayıcı başlığı",
+    "avatarFollow": "Genel avatarı kullan",
+    "avatarLinkHint": "Ziyaretçilerin tarayıcıları bu adrese doğrudan istek gönderir, bu yüzden sunucusu IP'lerini görebilir.",
+    "bio": "Metin",
+    "bioPlaceholder": "Başlığın altında görünür. Satır sonları korunur; çevrilmez.",
+    "sections": "Bölümler",
+    "remove": "Kaldır",
+    "emptyCard": "Henüz veri yok. Ziyaretçiler bu kartı görmez.",
+    "editTab": "Ayarlar",
+    "previewTab": "Önizleme",
+    "desktop": "Masaüstü",
+    "phone": "Telefon",
+    "library": {
+      "metrics": "Sayılar",
+      "charts": "Grafikler",
+      "lists": "Listeler ve zaman",
+      "bottom": "Sayfanın altı"
+    },
+    "hintDrag": "Bir bileşeni sayfaya sürükleyin veya en alta eklemek için tıklayın.",
+    "hintTap": "Sayfanın en altına eklemek için dokunun.",
+    "backToLibrary": "Bileşenlere dön",
+    "metricCard": "Metrik kartı",
+    "template": "Stil",
+    "metricData": "Gösterilen veri",
+    "addMetric": "Bir değer daha ekle",
+    "widget": {
+      "stats": {
+        "name": "Genel bakış",
+        "desc": "Aylık harcama ve temel rakamlar"
+      },
+      "number": {
+        "name": "Sayı",
+        "desc": "Tek bir sayı, büyük gösterilir"
+      },
+      "trend": {
+        "name": "Eğilim",
+        "desc": "Mini grafikli bir sayı"
+      },
+      "compare": {
+        "name": "Karşılaştırma",
+        "desc": "Geçen yılın aynı dönemiyle"
+      },
+      "share": {
+        "name": "Pay",
+        "desc": "Aylık harcamadaki pay"
+      },
+      "rows": {
+        "name": "Satırlar",
+        "desc": "Birlikte en fazla 4 sayı"
+      },
+      "chart": {
+        "name": "Çubuk grafik",
+        "desc": "Aylık ödemeler ve harcama eğilimi"
+      },
+      "composition": {
+        "name": "Dağılım",
+        "desc": "Kategoriye göre harcama"
+      },
+      "treemap": {
+        "name": "Ağaç haritası",
+        "desc": "Alan, ne kadar harcadığınızı gösterir"
+      },
+      "waterfall": {
+        "name": "Aylık değişim",
+        "desc": "Eklenen, zamlanan veya iptal edilenler"
+      },
+      "fx": {
+        "name": "Para birimleri",
+        "desc": "Para birimi payı ve kur hareketleri"
+      },
+      "timeline": {
+        "name": "Zaman çizelgesi",
+        "desc": "Gün gün ödemeler"
+      },
+      "calendar": {
+        "name": "Takvim",
+        "desc": "Hangi günler ödeme alınır"
+      },
+      "years": {
+        "name": "Abonelik zaman çizelgesi",
+        "desc": "Her aboneliğin ne zaman sürdüğü"
+      },
+      "list": {
+        "name": "Abonelik listesi",
+        "desc": "Kullanımdaki her şey"
+      },
+      "tenure": {
+        "name": "Abonelik süresi",
+        "desc": "Ortalama ve en uzun süre"
+      },
+      "changes": {
+        "name": "Değişiklikler",
+        "desc": "Eklenen, fiyatı değişen ve durdurulanlar"
+      },
+      "ended": {
+        "name": "İptal edilenler",
+        "desc": "İptal edilenler ve fiyatı"
+      },
+      "lifetime": {
+        "name": "Tek seferlik",
+        "desc": "Tek seferlik satın alımlar"
+      },
+      "footer": {
+        "name": "Alt bilgi",
+        "desc": "Proje adı ve sürüm"
+      },
+      "pile": {
+        "name": "Simge yığını",
+        "desc": "Sayfanın altına düşen simgeler"
+      }
     }
   }
 }
