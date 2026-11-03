@@ -60,7 +60,7 @@ function publicPayment(pay: Payment): Payment {
   };
 }
 
-const publicStop = (stop: Stop | undefined) => stop && { kind: stop.kind, date: stop.date, paidThrough: stop.paidThrough };
+const publicStop = (stop: Stop | undefined) => stop && { kind: stop.kind, date: stop.date, paidThrough: stop.paidThrough, pausedAt: stop.pausedAt };
 
 /** 公开页的一个阶段（白名单）：计费需要的字段，不带备注与停用原因；以后新增的阶段字段不会被顺带公开 */
 function publicPhase(p: Phase): Phase {

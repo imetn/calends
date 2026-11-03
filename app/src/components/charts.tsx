@@ -128,7 +128,7 @@ export function AreaChart({
 const VAL_PX = 7;
 
 /** 柱子宽度：占格宽的比例与上限，与 design-tokens.css 的 --bar-ratio、--bar-max 同值，给 SVG 画的柱子用 */
-export const BAR = { ratio: 0.6, max: 28 };
+export const BAR = { ratio: 0.5, max: 24, radius: 6 };
 
 /** 柱 + 线：柱为现金，线为权责 */
 export function BarLine({
@@ -220,7 +220,7 @@ export function BarLine({
                 }
               : {})}
           >
-            <i style={{ position: 'absolute', top: y(Math.max(0, v)), height: (Math.abs(v) / span) * (height - pad) }} />
+            <i className={v < 0 ? 'neg' : undefined} style={{ position: 'absolute', top: y(Math.max(0, v)), height: (Math.abs(v) / span) * (height - pad) }} />
             {shown(i) && (
               // 折线在柱顶之上时标到折线点上方，免得线穿过数字
               <span className="bl-val" style={{ top: Math.min(y(Math.max(0, v)), y(line[i] ?? v)) - 3 }}>
@@ -240,7 +240,7 @@ export function BarLine({
 }
 
 /** 取整齐的刻度：1 / 2 / 2.5 / 5 × 10^n */
-function niceTicks(max: number, count = 4): number[] {
+export function niceTicks(max: number, count = 4): number[] {
   if (max <= 0) return [0];
   const raw = max / count;
   const mag = Math.pow(10, Math.floor(Math.log10(raw)));
@@ -326,7 +326,7 @@ export function Activity({
             {...(tip && b.total > 0 ? tipProps(() => tip(b)) : {})}
           >
             <div className="act-stack" style={{ height: `${(b.total / top) * 100}%` }}>
-              {/* 颜色传 pending 的一段是还没扣的（本月待扣）：与全站「未扣」同一种虚框样式 */}
+              {/* 颜色传 pending 的一段是还没扣的（本月待扣）：与全站「预计」同一种斜纹 */}
               {mergeByColor(b.parts, color).map((p) =>
                 p.c === 'pending' ? (
                   <i key={p.k} className="act-pending" style={{ flexGrow: p.v }} />

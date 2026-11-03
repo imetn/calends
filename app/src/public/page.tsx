@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/public/components/ui
 import { TooltipProvider } from '@/public/components/ui/tooltip';
 import { cn } from '@/public/lib/utils';
 import { PROJECT_NAME, PROJECT_URL } from '../../../shared/brand.ts';
+import { HatchPattern } from '../components/hatch.tsx';
 import { IconPile } from './components/icon-pile.tsx';
 import { Canvas, CanvasFixed, cellVars, type CanvasText } from './canvas.tsx';
 import { loadLocale, preferredLocale } from '../i18n.ts';
@@ -603,14 +604,16 @@ function PaidChart({ months, cur, ccy, fmt }: { months: Array<{ m: string; v: nu
           cursor={false}
           content={<ChartTooltipContent hideIndicator labelFormatter={(m) => (String(m) > cur ? copyParts(t('public.chart.projected', { month: monthFull(String(m)) })) : monthFull(String(m)))} formatter={(v) => <span className="font-medium tnum">{fmt(Number(v))}</span>} />}
         />
+        <defs>
+          <HatchPattern id="pub-hatch" />
+        </defs>
         <Bar dataKey="v" radius={[radius, radius, 0, 0]} maxBarSize={24}>
           {months.map((x) => (
             <Cell
               key={x.m}
-              fill={x.m === cur ? 'var(--color-v)' : x.m > cur ? 'transparent' : 'color-mix(in srgb, var(--color-v) 70%, var(--card))'}
-              stroke={x.m > cur ? 'var(--color-v)' : undefined}
-              strokeWidth={0.5}
-              strokeDasharray={x.m > cur ? '3 3' : undefined}
+              fill={x.m === cur ? 'var(--color-v)' : x.m > cur ? 'url(#pub-hatch)' : 'color-mix(in srgb, var(--color-v) 70%, var(--card))'}
+              stroke={x.m > cur ? 'var(--unpaid-line)' : undefined}
+              strokeWidth={1}
             />
           ))}
         </Bar>

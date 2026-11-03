@@ -1927,6 +1927,26 @@ test('MCP 改开始日与网页 movePhaseStart 一致：默认保留扣款锚点
   assert.equal((await f.call('get_subscription', { subscription: 's' })).structuredContent.next_charge.slice(8), '15');
 });
 
+test('MCP 改开始日：已有扣款新落到服务期之外时返回警告，dry_run 同样返回，不拦写入', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const payment = { date: '2026-01-15', amount: 10 };
+  const s: Subscription = { ...sub(), start: '2026-01-15', payments: [payment], share: undefined, proxy: undefined };
+  await upsert(f.env, 'subscriptions', 's', s);
+  const before = await f.snapshot();
+  for (const [tool, args] of [
+    ['update_subscription', { subscription: 's', set: { start: '2026-02-01' } }],
+    ['change_plan', { subscription: 's', action: 'edit', at: '2026-01-15', set: { start: '2026-02-01' } }],
+  ] as const) {
+    const moved = await f.call(tool, { ...args, dry_run: true });
+    assert.equal(moved.isError, undefined, JSON.stringify(moved));
+    assert.deepEqual(moved.structuredContent.payments_outside_service_period, [payment], tool);
+    const inside = await f.call(tool, { ...args, set: { start: '2026-01-10' }, dry_run: true });
+    assert.equal(inside.structuredContent.payments_outside_service_period, undefined, tool);
+  }
+  assert.deepEqual(await f.snapshot(), before);
+});
+
 test('set_status edit=true 修改已有停用：日期、不续费/立即停用、原因、退款，被服务商停用不能改成取消', async (t) => {
   const f = await setup();
   t.after(() => f.db.close());

@@ -333,6 +333,7 @@
 .cal-mini-negative {
   display: flex;
   flex-direction: column-reverse;
+  align-items: center;
   height: 50%;
   border-bottom: var(--hairline) solid var(--sep);
 }
@@ -342,12 +343,20 @@
 }
 .cal-mini-bars i {
   display: block;
+  width: var(--bar-ratio);
+  max-width: var(--bar-max);
   background: currentColor;
   flex-shrink: 0;
 }
+.cal-mini-positive i:last-child {
+  border-radius: var(--bar-radius) var(--bar-radius) 0 0;
+}
+.cal-mini-negative i:last-child {
+  border-radius: 0 0 var(--bar-radius) var(--bar-radius);
+}
 .cal-mini-bars .forecast {
-  border: var(--hairline) dashed currentColor;
-  background: none;
+  background: var(--unpaid-hatch);
+  box-shadow: var(--unpaid-border);
 }
 .cal-dc-meta {
   min-width: 0;

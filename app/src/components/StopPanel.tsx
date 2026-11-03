@@ -170,6 +170,7 @@ export function StopFields({ sub, today, value, onChange }: { sub: Subscription;
         sub={
           mode === 'nonrenew' &&
           !postpaid &&
+          sub.status !== 'paused' &&
           chargesBetween({ ...cur, end: undefined, stop: undefined, status: sub.status === 'trial' ? 'trial' : 'active' }, date, date, today).some(
             (c) => !c.kind && c.amount > 0,
           ) ? (

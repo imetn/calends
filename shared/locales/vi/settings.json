@@ -50,7 +50,8 @@
     "channelError": "{channel}: {error}",
     "errorSep": "; ",
     "testSent": "Đã gửi nhắc nhở thử",
-    "preview": "Xem trước nhắc nhở hôm nay"
+    "preview": "Xem trước nhắc nhở hôm nay",
+    "log": "Nhật ký gửi"
   },
   "today": {
     "recent": "Đã gửi gần đây",

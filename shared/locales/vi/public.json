@@ -22,7 +22,7 @@
   },
   "chart": {
     "title": "Khoản phí hằng tháng",
-    "desc": "12 tháng qua và 3 tháng tới; cột nét đứt là dự kiến",
+    "desc": "12 tháng qua và 3 tháng tới; cột sọc chéo là dự kiến",
     "paid": "Đã trả",
     "mrr": "Chi phí hằng tháng",
     "charge": "Đã trừ tiền",

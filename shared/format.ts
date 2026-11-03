@@ -83,9 +83,15 @@ export function moneyDecimals(n: number, ccy: string, opts: MoneyOptions = {}): 
   return digits === 0 ? 0 : (opts.decimals ?? (opts.compact && (Math.abs(n) >= 1000 || Number.isInteger(n)) ? 0 : digits));
 }
 
-/** 图表的缩略金额刻度，精度同样服从币种规则。 */
+/** 图表的缩略金额刻度。k、M 档的小数是缩写的精度，零小数货币也保留，否则 ¥2,500 和 ¥3,000 都写成 ¥3k。 */
 export function moneyTick(n: number, ccy: string): string {
-  return Math.abs(n) >= 1000 ? `${money(n / 1000, ccy, { decimals: Math.abs(n) >= 10000 ? 0 : 1 })}k` : money(n, ccy, { decimals: 0 });
+  const abs = Math.abs(n);
+  if (!Number.isFinite(n) || abs < 1000) return money(n, ccy, { decimals: 0 });
+  // 四舍五入后到 1000 就升一档：999,600 写 1M，不写 1,000k
+  const tier = abs >= 999.5e6 ? 1e9 : abs >= 999.5e3 ? 1e6 : 1e3;
+  const v = abs / tier;
+  const s = numberFormat(intlLocale(), { maximumFractionDigits: v >= 10 ? 0 : 1 }).format(v);
+  return `${n < 0 ? '−' : ''}${symbol(ccy)}${s}${tier === 1e9 ? 'B' : tier === 1e6 ? 'M' : 'k'}`;
 }
 
 /** 带币种符号的金额；compact 去掉多余小数。数字分组跟随当前语言 */

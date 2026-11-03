@@ -33,6 +33,7 @@ const stop = record(
     kind: { type: 'string', enum: ['cancel', 'terminate'] },
     date: { ...day, description: 'Actual last service day; must equal end. Omit stop entirely when the stopping date is unknown.' },
     paidThrough: { ...day, description: 'Original last paid service day, inclusive, before early cancellation or provider termination.' },
+    pausedAt: { ...day, description: 'Pause date when stopped while paused; no charges from this day on. Set by the stop action.' },
     reason: { ...text, description: 'Only provider termination (kind=terminate) can have a reason.' },
   },
   ['kind', 'date', 'paidThrough'],

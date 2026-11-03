@@ -23,7 +23,7 @@
   },
   "chart": {
     "title": "Cobros mensuales",
-    "desc": "Últimos 12 meses y próximos 3; las barras discontinuas son previsiones",
+    "desc": "Últimos 12 meses y próximos 3; las barras rayadas son previsiones",
     "paid": "Pagado",
     "mrr": "Coste mensual",
     "charge": "Cobrado",

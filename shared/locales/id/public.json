@@ -22,7 +22,7 @@
   },
   "chart": {
     "title": "Tagihan bulanan",
-    "desc": "12 bulan terakhir dan 3 bulan ke depan; batang putus-putus adalah perkiraan",
+    "desc": "12 bulan terakhir dan 3 bulan ke depan; batang berarsir adalah perkiraan",
     "paid": "Dibayar",
     "mrr": "Biaya bulanan",
     "charge": "Ditagih",

@@ -1,4 +1,4 @@
-import { amountTotal, chargesTotal, formatTotal, sumTotals, type FxTotal } from '../../../../shared/fx-total.ts';
+import { amountTotal, averageLine, chargesTotal, formatTotal, sumTotals, type FxTotal } from '../../../../shared/fx-total.ts';
 import { copyParts } from '../../components/copy.tsx';
 import { chargeMethodId } from '../../../../shared/billing.ts';
 import { useRef, useState } from 'react';
@@ -21,7 +21,7 @@ import {
   priceAt,
   type Charge,
 } from '../../../../shared/billing.ts';
-import { cnDate, cnDateFull, money, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
+import { cnDate, cnDateFull, money, moneyTick, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
 import { chargeBaseOrNaN, chargeValue } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 import { Seg } from '../../components/inputs.tsx';
@@ -156,9 +156,12 @@ export function Timeline({
   // 图表在柱子太密时按月、季、年汇总，图例里写明一根柱代表多久的合计
   const [bucket, setBucket] = useState(0);
   const ccy = unit === 'orig' && origCcy ? origCcy : base;
+  // 平均线：与用量图一样按全部实际记录算，只画在已发生的柱上；缺汇率的不算进去，不能当 0
+  const average = averageLine(reg.map((c) => (ccy === base ? chargeBaseOrNaN(state, c, base) : c.amount)));
   const each = [...past.map((c) => ({ c, future: false })), ...future.map((c) => ({ c, future: true }))].map((r) => {
-    const v = ccy === base ? chargeValue(state, r.c, base) : r.c.amount;
-    // 首期优惠：这一笔按优惠价扣，原价减去的部分在柱顶画成虚框（按这一笔同样的折算比例）
+    // 缺汇率的是 NaN：图表画占位短柱，也不算进汇总后的平均线
+    const v = ccy === base ? chargeBaseOrNaN(state, r.c, base) : r.c.amount;
+    // 首期优惠：这一笔按优惠价扣，原价减去的部分在柱顶画成斜纹（按这一笔同样的折算比例）
     const regularPrice = r.c.sub.intro && r.c.date < r.c.sub.intro.until && !r.c.kind ? priceAt({ ...r.c.sub, intro: undefined }, r.c.date) : undefined;
     const full = regularPrice && r.c.amount > 0 && regularPrice > r.c.amount ? (v * regularPrice) / r.c.amount : undefined;
     return {
@@ -166,6 +169,7 @@ export function Timeline({
       date: barDay(r.c, today),
       phase: r.c.sub.start,
       v,
+      ref: r.future ? undefined : average,
       full: full != null && Number.isFinite(full) ? full : undefined,
     };
   });
@@ -238,6 +242,8 @@ export function Timeline({
         todayLabel={t('calendar.today')}
         midMonth={isPostpaid(sub)}
         fmt={fmt}
+        // 金额很小时刻度是 0.25、0.5，取整会出现两个相同的标签
+        tick={(v) => (Number.isInteger(v) ? moneyTick(v, ccy) : money(v, ccy))}
         lanes={lanes}
         onBucket={setBucket}
         tip={(idx, summed) => {
@@ -308,27 +314,19 @@ export function Timeline({
           );
         }}
       />
-      {/* 图例：实色是已扣，虚框是预测；预测合计按今天的汇率 */}
-      <div className="dt-legend">
-        {end.unknown && <span>{t('detail.chart.unknownEnd')}</span>}
-        <span>
-          <i className="k-v" />
-          {t('detail.timeline.paid')}
-        </span>
-        {bucket > 0 && <span>{t(`detail.chart.bucket.m${bucket}`)}</span>}
-        {each.some((r) => r.full != null) && (
-          <span>
-            <i className="k-f" />
-            {t('detail.chart.saved')}
-          </span>
-        )}
-        {future.length > 0 && (
-          <span>
-            <i className="k-f" />
-            {t('detail.timeline.planned')}
-          </span>
-        )}
-      </div>
+      {/* 实色是已扣、斜纹是预计，一看就知道，图例只写看不出来的事 */}
+      {(end.unknown || bucket > 0 || each.some((r) => r.full != null)) && (
+        <div className="dt-legend">
+          {end.unknown && <span>{t('detail.chart.unknownEnd')}</span>}
+          {bucket > 0 && <span>{t(`detail.chart.bucket.m${bucket}`)}</span>}
+          {each.some((r) => r.full != null) && (
+            <span>
+              <i className="k-f" />
+              {t('detail.chart.saved')}
+            </span>
+          )}
+        </div>
+      )}
     </Panel>
   );
 }

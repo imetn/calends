@@ -64,18 +64,19 @@
   --chart-ink: var(--gray-12);
   /* 双系列图的第二系列（如报告页现金柱） */
   --chart-ink-2: var(--gray-8);
-  /* 柱状图的柱子：占所在格宽的 60%，最宽 28px；SVG 柱（DetailChart）用 charts.tsx 的 BAR，两处同值 */
-  --bar-ratio: 60%;
-  --bar-max: 28px;
-  /* 还没扣的钱（预测、本月待扣、首期优惠省下）：全站同一种浅底 + 虚线框，SVG 柱与 HTML 柱都用这两个值 */
-  --unpaid-fill: var(--gray-3);
-  --unpaid-line: var(--gray-9);
+  /* 柱状图的柱子：占所在格宽的 50%，最宽 24px，顶部圆角、底边贴横轴；SVG 柱（DetailChart）用 charts.tsx 的 BAR，两处同值 */
+  --bar-ratio: 50%;
+  --bar-max: 24px;
+  --bar-radius: 6px;
   /*
-   * 虚线框：CSS 的 dashed 边框改不了线段长短、细线时密得看不出是虚线，所以用一张圆角矩形描边的 SVG 当遮罩，
-   * 线宽 1.5px、线段 3px 空 2px；矩形圆角与柱子的 --radius-sm（6px）一致，四个角的虚线才不会被裁掉；
-   * 颜色由背景色（--unpaid-line）决定，深浅主题都跟着变
+   * 预计、未来、还没扣的钱：面状标记（柱、色块）全站同一种斜纹 + 细边框，线状标记（折线未来段、事件节点）仍用虚线。
+   * SVG 柱的同款斜纹见 components/hatch.tsx
    */
-  --unpaid-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' rx='6' fill='none' stroke='%23000' stroke-width='3' stroke-dasharray='3 2'/%3E%3C/svg%3E");
+  --unpaid-fill: var(--gray-2);
+  --unpaid-stripe: var(--gray-7);
+  --unpaid-line: var(--gray-8);
+  --unpaid-hatch: repeating-linear-gradient(135deg, var(--unpaid-stripe) 0 1.5px, transparent 1.5px 5px), var(--unpaid-fill);
+  --unpaid-border: inset 0 0 0 1px var(--unpaid-line);
   --on-ink: var(--gray-1);
   --accent: var(--indigo-11);
   --accent-solid: var(--indigo-9);

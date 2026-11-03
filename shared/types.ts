@@ -18,6 +18,8 @@ export interface Stop {
   date: string;
   /** 原已付服务期最后一天（含），停止之后的天数为已付未用 */
   paidThrough: string;
+  /** 暂停中停用时的暂停日：从这天起没有扣款，已付期也算到暂停前 */
+  pausedAt?: string;
   reason?: string;
 }
 

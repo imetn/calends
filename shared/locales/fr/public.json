@@ -23,7 +23,7 @@
   },
   "chart": {
     "title": "Prélèvements mensuels",
-    "desc": "12 derniers mois et 3 prochains ; les barres en pointillés sont des prévisions",
+    "desc": "12 derniers mois et 3 prochains ; les barres hachurées sont des prévisions",
     "paid": "Payé",
     "mrr": "Coût mensuel",
     "charge": "Prélevé",

@@ -20,6 +20,15 @@ import { Cell, Group, Metric } from '../../components/ui.tsx';
 import { saveSub } from '../../store.ts';
 import { run } from '../../toast.ts';
 
+/** 纵轴刻度：放进定宽的刻度列，单位太长（如 requests）就只写数，单位在统计卡和提示框里都有 */
+const usageTick = (v: number, unit: string, ticks: number[]) => {
+  const num = (x: number, digits: number) => numberFormat(intlLocale(), { maximumFractionDigits: digits }).format(x);
+  const bare = (x: number) => (x >= 1e9 ? `${num(x / 1e9, 1)}B` : x >= 1e6 ? `${num(x / 1e6, 1)}M` : x >= 1000 ? `${num(x / 1000, 1)}k` : num(x, 3));
+  const label = (x: number) => (unit ? `${bare(x)} ${unit}` : bare(x));
+  // 汉字占两格；同一把尺要么都带单位，要么都不带
+  return ticks.every((x) => [...label(x)].reduce((w, c) => w + (c > '\u2e7f' ? 2 : 1), 0) <= 7) ? label(v) : bare(v);
+};
+
 /** 平均值是算出来的：记录带小数时与其余数量同一位数；记录全是整数（次数、度数）时按量级留小数：307.2 度、3.47 次 */
 const avgQty = (n: number) => numberFormat(intlLocale(), { maximumFractionDigits: Math.abs(n) >= 100 ? 1 : 2 }).format(n);
 const avgFmt = (decimals: number) => (decimals ? fixedQty(decimals) : avgQty);
@@ -103,6 +112,7 @@ export function Meters({
   const meters = sub.meters ?? [];
   const [manage, setManage] = useState(false);
   const [reading, setReading] = useState<{ id?: string } | null>(null);
+  const [bucket, setBucket] = useState(0);
   const cur = meters.find((m) => m.id === meterId) ?? meters[0];
   const setPicked = (id: string) => onMeter?.(id);
   const save = (next: Subscription, close: () => void) =>
@@ -223,7 +233,7 @@ export function Meters({
             )}
           </div>
         )}
-        {/* 走势：虚线是平均每期。有费用图时与它同一条日期横轴、同一个范围；否则画最近 24 期 */}
+        {/* 走势：虚线是平均每期（柱子汇总后是各柱合计的均值）。有费用图时与它同一条日期横轴、同一个范围；否则画最近 24 期 */}
         {trend.length > 1 && (
           <ChargeBars
             bars={trend.map((r) => ({ date: barDate(r), v: r.usage!, ref: stats.average }))}
@@ -233,7 +243,9 @@ export function Meters({
             todayLabel={t('calendar.today')}
             midMonth={isPostpaid(sub)}
             fmt={(v) => withUnit(v, cur.unit, q)}
+            tick={(v, ticks) => usageTick(v, cur.unit, ticks)}
             lanes={[]}
+            onBucket={setBucket}
             onPick={
               ro
                 ? undefined
@@ -268,6 +280,11 @@ export function Meters({
               )
             }
           />
+        )}
+        {trend.length > 1 && bucket > 0 && (
+          <div className="dt-legend">
+            <span>{t(`detail.chart.bucket.m${bucket}`)}</span>
+          </div>
         )}
         {/* 指标在顶部，这里只有走势；画不出时留一句说明，不留空卡 */}
         {trend.length <= 1 && <p className="muted dt-meters-none">{t('detail.meters.noTrend')}</p>}

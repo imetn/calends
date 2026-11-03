@@ -50,7 +50,8 @@
     "channelError": "{channel}：{error}",
     "errorSep": "；",
     "testSent": "テスト通知を送信しました",
-    "preview": "今日の通知をプレビュー"
+    "preview": "今日の通知をプレビュー",
+    "log": "送信履歴"
   },
   "today": {
     "recent": "最近の送信",

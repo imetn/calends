@@ -111,3 +111,13 @@ export function dueTotal(
     ? sumTotals(Object.entries(due.originals).map(([c, v]) => convertedTotal(state, v, c, date, to)))
     : amountTotal(due.owed, due.currency, converted ?? toBaseOrNaN(state, due.owed, due.currency, date, to));
 }
+
+/**
+ * 图表平均线的取值：不足两笔没有可比的，每笔都一样时线只会贴着柱顶，都不画。
+ * 换算不了的（NaN）不算进去，不能当 0 拉低平均
+ */
+export function averageLine(values: number[]): number | undefined {
+  const known = values.filter(Number.isFinite);
+  if (known.length < 2 || Math.max(...known) - Math.min(...known) < 0.005) return undefined;
+  return known.reduce((a, v) => a + v, 0) / known.length;
+}

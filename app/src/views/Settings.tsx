@@ -170,9 +170,12 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
   const [pubSubs, setPubSubs] = useState(false);
   const [importing, setImporting] = useState<ImportSource | null>(null);
   const [reading, setReading] = useState(false);
+  const [sendLog, setSendLog] = useState(false);
 
   // 读取失败要显示出来：不能把失败当成「今天没有提醒」「汇率覆盖未知」
   const [failed, setFailed] = useState({ preview: false, fx: false });
+  // 重试成功但没有记录时，这一行和面板一起消失，不留空面板
+  const showLog = failed.preview || (!!preview && (preview.digests.length > 0 || preview.log.length > 0));
   const loadPreview = () =>
     api<Preview>('/api/notify/preview').then(
       (v) => {
@@ -448,17 +451,15 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
             // 今天没有要发的提醒：直接说明，不打开空白或原始数据页
             onClick={() => (preview && !preview.digests.length ? toast(t('notify.previewEmpty')) : window.open(base('/api/notify/preview?html=1'), '_blank'))}
           />
+          {/* 发送记录属于日志，不占设置页：没有记录时不出这一行；读取失败时在行上写明，点进去重试 */}
+          {showLog && (
+            <Cell label={t('settings.remind.log')} onClick={() => setSendLog(true)}>
+              {failed.preview && <span style={{ color: 'var(--red)' }}>{t('ui.loadFailed')}</span>}
+            </Cell>
+          )}
         </Group>
 
         <ChannelsGroup state={state} />
-
-        {failed.preview && !preview ? (
-          <Group>
-            <LoadFailed onRetry={() => void loadPreview()} />
-          </Group>
-        ) : (
-          <ReminderPreview preview={preview} timezone={s.timezone} />
-        )}
 
         <Group title={t('settings.books.title')}>
           <Cell label={t('settings.books.defaultMethod')}>
@@ -616,6 +617,19 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
             {restoring.exportedAt && <Cell label={t('settings.restore.time')}>{localTime(restoring.exportedAt, state.settings.timezone)}</Cell>}
             {restoring.version < 2 && <Cell label={t('settings.restore.format')}>{t('settings.restore.legacy')}</Cell>}
           </Group>
+        </Sheet>
+      )}
+      {sendLog && showLog && (
+        <Sheet narrow title={t('settings.remind.log')} onClose={() => setSendLog(false)}>
+          <div className="stack" style={{ gap: 26 }}>
+            {/* 刷新失败时上次读到的记录还在，留着并写明，不当成最新 */}
+            {failed.preview && (
+              <Group>
+                <LoadFailed onRetry={() => void loadPreview()} />
+              </Group>
+            )}
+            {preview && <ReminderPreview preview={preview} timezone={s.timezone} />}
+          </div>
         </Sheet>
       )}
       {ics && <IcsSheet state={state} onClose={() => setIcs(false)} />}

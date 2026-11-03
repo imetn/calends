@@ -1587,3 +1587,58 @@ test('#12 公开页语言包加载失败仍渲染账本，不把分包错误显�
   const page = readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8');
   assert.match(page, /await loadLocale\(preferredLocale\(body\.settings\.language\)\)\.catch\(\(\) => undefined\)/);
 });
+
+test('bars meet the axis with square bottoms and every forecast area uses the one hatch', () => {
+  const tokens = readFileSync(new URL('design-tokens.css', root), 'utf8');
+  const styles = readFileSync(new URL('styles.css', root), 'utf8');
+  const detail = readFileSync(new URL('views/detail.css', root), 'utf8');
+  const report = readFileSync(new URL('components/scope-report.css', root), 'utf8');
+  const chart = readFileSync(new URL('views/DetailChart.tsx', root), 'utf8');
+  const pub = readFileSync(new URL('public/page.tsx', root), 'utf8');
+  const body = (css, sel) => cssRules(css).find(([s]) => s === sel)?.[1] ?? '';
+
+  // SVG 柱与 HTML 柱同一比例、同一圆角，顶部圆、底部直角
+  assert.match(tokens, /--bar-ratio:\s*50%/);
+  assert.match(tokens, /--bar-max:\s*24px/);
+  assert.match(tokens, /--bar-radius:\s*6px/);
+  assert.match(readFileSync(new URL('components/charts.tsx', root), 'utf8'), /BAR = \{ ratio: 0\.5, max: 24, radius: 6 \}/);
+  assert.match(body(styles, '.bl-col i'), /border-radius:\s*var\(--bar-radius\) var\(--bar-radius\) 0 0/);
+  assert.match(body(styles, '.act-stack'), /border-radius:\s*var\(--bar-radius\) var\(--bar-radius\) 0 0/);
+  assert.doesNotMatch(chart, /<rect\b[^>]*cc-bar/);
+  assert.match(pub, /radius=\{\[radius, radius, 0, 0\]\}/);
+  // Recharts 的 barCategoryGap 是每一侧的留白：25% 让柱子占格宽一半，50% 柱宽为 0、整张图没有柱子
+  assert.match(pub, /barCategoryGap="25%"/);
+  assert.match(body(styles, '.sy-col i'), /border-radius:\s*var\(--bar-radius\) var\(--bar-radius\) 0 0/);
+  // 金额图、用量图同一条灰色平均线
+  // 汇总后取各柱合计的均值画一条平线，不把每笔均值累加成台阶
+  assert.match(chart, /bucket \? bucketRef : Math\.max/);
+  assert.match(body(detail, '.cc-ref'), /stroke:\s*var\(--gray-9\)/);
+  assert.match(readFileSync(new URL('views/detail/ChargeTimeline.tsx', root), 'utf8'), /ref: r\.future \? undefined : average/);
+
+  // 预计的面状标记只有一种斜纹；虚线遮罩已退役，免收豁免不再用斜纹
+  assert.doesNotMatch(tokens + styles + detail, /--unpaid-dash/);
+  for (const [css, sel] of [
+    [styles, '.gt-seg.planned'],
+    [styles, '.gt-legend .lg-planned'],
+    [styles, '.mt-seg.future'],
+    [styles, '.rv-cell.upcoming'],
+    [detail, '.dt-legend i.k-f'],
+    [detail, '.cc-tip-r i.k-f'],
+    [report, '.cal-mini-bars .forecast'],
+  ])
+    assert.match(body(css, sel), /var\(--unpaid-hatch\)/, sel);
+  assert.doesNotMatch(body(detail, '.cc-bar.future'), /dasharray/);
+  assert.match(pub, /url\(#pub-hatch\)/);
+  for (const sel of ['.mt-seg.waived', '.rv-cell.waived,\n.rv-cell.free']) assert.doesNotMatch(body(styles, sel), /gradient/, sel);
+
+  // 够宽才有纵轴，窄屏才有柱顶数值
+  assert.match(chart, /\{!axis && peak >= 0 && \(/);
+  const legend = readFileSync(new URL('views/detail/ChargeTimeline.tsx', root), 'utf8');
+  assert.doesNotMatch(legend, /detail\.timeline\.paid/);
+});
+
+test('表单底栏压住内容里抬高的时间线圆点，手机上滚动时不从底栏露出', () => {
+  const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  const layer = (selector) => Number(css.match(new RegExp(`${selector}\\s*\\{[^}]*z-index:\\s*(\\d+)`))?.[1] ?? 0);
+  assert.ok(layer('\\.sheet-foot') > layer('\\.h-phase::before'));
+});

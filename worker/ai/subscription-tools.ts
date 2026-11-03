@@ -20,6 +20,7 @@ import {
   cancelAtEnd,
   stopUndated,
   movePhaseStart,
+  paymentsOutsideMovedPhase,
 } from '../../shared/phases.ts';
 import { editStop } from '../../shared/stop-form.ts';
 import { iconInput } from '../../shared/icon.ts';
@@ -256,6 +257,12 @@ export const save_subscription: Tool = {
   },
 };
 
+/** 改开始日后新落到服务期之外的已有扣款：照写不拦，和网页一样先告诉调用方（dry_run 同样返回） */
+function outsidePayments(previous: Subscription, moved: Subscription) {
+  const outside = paymentsOutsideMovedPhase(previous, moved);
+  return outside.length ? { payments_outside_service_period: outside } : {};
+}
+
 export const update_subscription: Tool = {
   name: 'update_subscription',
   description:
@@ -344,7 +351,10 @@ export const update_subscription: Tool = {
       if (k in set) put(f, set[k] == null ? undefined : date(set[k], k), k);
     }
     if (!changed.length) throw new Error(t('mcp.error.noFields'));
-    return commit(ctx, st, today, syncPhase(preserveRenewalHistory(base, next, today), today), a.dry_run, changed, category?.creation);
+    return {
+      ...(await commit(ctx, st, today, syncPhase(preserveRenewalHistory(base, next, today), today), a.dry_run, changed, category?.creation)),
+      ...outsidePayments(s, base),
+    };
   },
 };
 
@@ -470,6 +480,7 @@ export const change_plan: Tool = {
       const after = act === 'remove' ? removePhase(s, index) : Object.keys(rest).length ? editPhase(moved, target, rest) : moved;
       return {
         ...(await commit(ctx, st, today, after, a.dry_run, [act])),
+        ...outsidePayments(s, moved),
         affected_estimated_charges: affectedPriceCharges(s, after, today),
         before: phases[index],
         after: act === 'remove' ? null : (after.phases?.find((p) => p.start === target) ?? phaseSubs(after).find((p) => p.start === target)),
