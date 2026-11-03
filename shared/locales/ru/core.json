@@ -131,7 +131,9 @@
     },
     "balance": {
       "title": "{name} не хватит до {date}",
-      "body": "Для {sub} нужно {need}, а на балансе около {current}."
+      "body": "Для {sub} нужно {need}, к тому моменту останется только {current}.",
+      "bodyOver": "Для {sub} нужно {need}, а баланс уже {current}.",
+      "bodyToday": "После сегодняшнего платежа {sub} ({need}) баланс составит {current}."
     },
     "fx": {
       "title": "{pct}% расходов — в иностранной валюте",

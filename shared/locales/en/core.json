@@ -113,7 +113,9 @@
     },
     "balance": {
       "title": "{name} won't last until {date}",
-      "body": "{sub} needs {need}; the balance is about {current}."
+      "body": "{sub} needs {need}, with only {current} left by then.",
+      "bodyOver": "{sub} needs {need}, and the balance is already {current}.",
+      "bodyToday": "After today's {sub} ({need}), the balance is {current}."
     },
     "fx": {
       "title": "{pct}% of spending is in foreign currencies",

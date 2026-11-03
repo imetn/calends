@@ -1278,8 +1278,14 @@ export interface Runway {
   /** 今天的估算余额（asOf 之后的扣款已扣除） */
   current: number;
   monthlyDrain: number;
-  /** 余额首次不足以支付的那笔扣款 */
+  /** 余额首次不足以支付的那笔扣款；今天这笔不够时就是今天；current 始终扣到今天，充值和校准都以它为准 */
   shortfall?: Charge;
+  /** 扣那一笔之前还剩多少 */
+  beforeShortfall?: number;
+  /** 校准之后到今天已经扣掉的金额（账户币种） */
+  spentSince: number;
+  /** 今天到期的扣款：校准日设为今天时，它们算已包含在余额里 */
+  dueToday: Array<Charge & { amountInMethod: number }>;
   /** 余额还能完整支付的期数 */
   coveredCharges: number;
   runsOutOn?: string;
@@ -1292,12 +1298,23 @@ export interface Runway {
   upcoming: Runway['forecast'];
 }
 
+/**
+ * 在表单里改余额：填的是今天的数，校准日跟着到今天，否则旧校准日之后的扣款会再扣一遍。
+ * 手动选过日期的按选的算；改回原来的数等于没改；清空余额时校准日一起清。
+ */
+export function editedBalance(m: Pick<PaymentMethod, 'balance' | 'balanceAsOf'>, balance: number | undefined, today: string, picked?: string) {
+  if (balance == null) return { balance: undefined, balanceAsOf: undefined };
+  const balanceAsOf = picked ?? (balance === m.balance ? m.balanceAsOf : undefined) ?? today;
+  return { balance, balanceAsOf };
+}
+
 export function runwayFor(method: PaymentMethod, state: AppState, today: string, horizonMonths = 36): Runway | undefined {
   if (method.balance == null) return undefined;
   // 按阶段展开：换区前后可能用不同的支付方式。月消耗仍按阶段的支付方式
   const phases = state.subscriptions.flatMap(phaseSubs);
   const subs = phases.filter((s) => s.methodId === method.id);
-  const asOf = method.balanceAsOf ?? today;
+  // 校准日写成未来时按今天算，否则这段时间的扣款会被跳过
+  const asOf = method.balanceAsOf && method.balanceAsOf < today ? method.balanceAsOf : today;
   const horizon = addMonths(today, Math.max(12, horizonMonths));
   // 余额按每笔实际的来源扣：单笔记的支付方式优先，拆分付款按份额；预测的扣款没有单笔记录，仍归阶段的支付方式
   const share = (c: Charge) => chargeSources(c).reduce((a, x) => a + (x.methodId === method.id ? x.share : 0), 0);
@@ -1313,6 +1330,9 @@ export function runwayFor(method: PaymentMethod, state: AppState, today: string,
     state.subscriptions.filter((s) => s.proxy?.charged?.length).map((s) => [s.id, new Map(s.proxy!.charged!.map((c) => [c.charge, c]))]),
   );
   let shortfall: Charge | undefined;
+  let beforeShortfall: number | undefined;
+  let spentSince = 0;
+  const dueToday: Runway['dueToday'] = [];
   let covered = 0;
   let current = bal;
   let incomplete = false;
@@ -1326,13 +1346,19 @@ export function runwayFor(method: PaymentMethod, state: AppState, today: string,
     if (!Number.isFinite(amt)) incomplete = true;
     const partial = scaleTotal(chargeTotal(state, { ...c, settled }, method.currency), share);
     balancePartial = sumTotals([balancePartial, scaleTotal(partial, -1)]);
+    if (c.date === today && !c.kind && amt !== 0) dueToday.push({ ...c, amountInMethod: amt });
+    // 退款、失败记录不会让余额不够；过去的扣款已经发生，只有今天和之后才谈得上付不付得起
+    if (!shortfall && c.date >= today && amt > 0 && bal - amt < -1e-9) {
+      shortfall = c;
+      beforeShortfall = bal;
+    }
     if (c.date <= today) {
+      if (!shortfall) spentSince += amt;
       currentPartial = balancePartial;
       bal -= amt;
       current = bal;
       continue;
     }
-    if (!shortfall && bal - amt < -1e-9) shortfall = c;
     bal -= amt;
     if (!shortfall && Number.isFinite(bal)) covered++;
     forecast.push({ ...c, balanceAfter: bal, amountInMethod: amt, partial, balancePartial });
@@ -1360,6 +1386,9 @@ export function runwayFor(method: PaymentMethod, state: AppState, today: string,
     monthlyDrain,
     incomplete,
     shortfall,
+    beforeShortfall,
+    spentSince,
+    dueToday,
     coveredCharges: covered,
     runsOutOn: shortfall?.date,
     topUp12m: Math.max(0, need12 - current),

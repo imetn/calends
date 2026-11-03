@@ -40,7 +40,9 @@
     "headlineUnpaid": "{name} ещё не вернул(а) деньги за {sub}"
   },
   "balance": {
-    "sub": "Баланса {balance} не хватит на {sub} ({amount}) {date}",
+    "sub": "К {date} останется только {left}, не хватит на {sub} ({amount})",
+    "subSince": "{asOf} установлено {calibrated}, с тех пор списано {spent}. К {date} останется только {left}, не хватит на {sub} ({amount})",
+    "subOver": "Баланс уже {left}, не хватит на {sub} ({amount}) {date}",
     "headline": "У {name} заканчивается баланс"
   },
   "section": {

@@ -113,6 +113,9 @@
     "balance": "現在の残高",
     "optional": "任意",
     "asOf": "基準日",
+    "spentSince": "設定後に {spent} 引き落とし済み、現在約 {current} です。",
+    "nextCharge": "{date} の {name}（{amount}）もこの残高から引き落とされ、残りは {after} です。すでに引き落とし済みなら先に記録してください。",
+    "todayIncluded": "今日の {name}（{amount}）はこの残高に反映済みとして扱います。まだ引き落とされていない場合は、明日更新してください。",
     "lowAlert": "残高不足アラート",
     "lowAlertOpt": {
       "other": "{count}日前"

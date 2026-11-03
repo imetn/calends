@@ -113,7 +113,9 @@
     },
     "balance": {
       "title": "{name} ne tiendra pas jusqu’au {date}",
-      "body": "{sub} nécessite {need} ; le solde est d’environ {current}."
+      "body": "{sub} nécessite {need}, il ne restera que {current}.",
+      "bodyOver": "{sub} nécessite {need}, le solde est déjà à {current}.",
+      "bodyToday": "Après le {sub} ({need}) du jour, le solde est de {current}."
     },
     "fx": {
       "title": "{pct} % des dépenses sont en devises étrangères",

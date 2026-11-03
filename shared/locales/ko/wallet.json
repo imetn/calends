@@ -113,6 +113,9 @@
     "balance": "현재 잔액",
     "optional": "선택 사항",
     "asOf": "기준일",
+    "spentSince": "설정 후 {spent} 결제되어 현재 약 {current}입니다.",
+    "nextCharge": "{date}의 {name}({amount})도 이 잔액에서 결제되어 {after}이(가) 남습니다. 이미 결제되었다면 먼저 기록하세요.",
+    "todayIncluded": "오늘의 {name}({amount})은(는) 이 잔액에 이미 반영된 것으로 봅니다. 아직 결제되지 않았다면 내일 업데이트하세요.",
     "lowAlert": "잔액 부족 알림",
     "lowAlertOpt": {
       "other": "{count}일 전"

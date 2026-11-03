@@ -19,11 +19,12 @@ import {
   todayIn,
   totals,
   chargeMethodId,
+  type Runway,
 } from '../shared/billing.ts';
 import { toBaseOrNaN } from '../shared/fx.ts';
 import { billLabel, cnDate, money, monthLabel, relDays } from '../shared/format.ts';
 import { t } from '../shared/i18n.ts';
-import { channelsOf, type AppState, type Subscription } from '../shared/types.ts';
+import { channelsOf, type AppState, type PaymentMethod, type Subscription } from '../shared/types.ts';
 import type { Env } from './env.ts';
 import { proxyLedger } from '../shared/proxy.ts';
 import { sendTo } from './channels.ts';
@@ -78,6 +79,21 @@ function iconOf(s: Pick<Subscription, 'icon' | 'url'>): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/** 写明校准值和之后扣掉的钱：用户刚填的余额和提醒里的数对得上 */
+function balanceNote(r: Runway, m: PaymentMethod): string {
+  const short = r.shortfall!;
+  const left = r.beforeShortfall ?? r.current;
+  const note = {
+    date: cnDate(short.date),
+    sub: short.sub.name,
+    amount: money(short.amount, short.currency),
+    left: money(left, m.currency),
+  };
+  if (left < 0) return t('notify.balance.subOver', note);
+  if (!m.balanceAsOf || !(r.spentSince > 0.005)) return t('notify.balance.sub', note);
+  return t('notify.balance.subSince', { ...note, asOf: cnDate(m.balanceAsOf), calibrated: money(m.balance!, m.currency), spent: money(r.spentSince, m.currency) });
 }
 
 /** 计算 today 应发出的提醒；不产生副作用，供 cron、预览与测试共用 */
@@ -224,12 +240,7 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
     if (d === lead || d === 14 || d === 7 || d === 3 || d === 1 || d === 0) {
       balance.push({
         title: m.name,
-        sub: t('notify.balance.sub', {
-          balance: money(r.current, m.currency),
-          date: cnDate(r.shortfall.date),
-          sub: r.shortfall.sub.name,
-          amount: money(r.shortfall.amount, r.shortfall.currency),
-        }),
+        sub: balanceNote(r, m),
         amount: relDays(d),
         tone: 'warn',
         icon: m.logo && !m.logo.startsWith('data:') ? m.logo : undefined,

@@ -30,7 +30,9 @@
     "headlineUnpaid": "{name} 的 {sub} 还没收回"
   },
   "balance": {
-    "sub": "余额 {balance}，不足以支付 {date} 的 {sub}（{amount}）",
+    "sub": "到 {date} 只剩 {left}，不够付 {sub}（{amount}）",
+    "subSince": "{asOf} 校准为 {calibrated}，之后已扣 {spent}。到 {date} 只剩 {left}，不够付 {sub}（{amount}）",
+    "subOver": "余额已是 {left}，不够付 {date} 的 {sub}（{amount}）",
     "headline": "{name} 余额将不足"
   },
   "section": {

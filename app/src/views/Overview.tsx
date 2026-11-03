@@ -429,7 +429,7 @@ function WalletBrief({ state, today }: { state: AppState; today: string }) {
       </div>
       {rows.map(({ m, r }) => {
         const days = r?.runsOutOn ? diffDays(today, r.runsOutOn) : undefined;
-        const pct = r ? (r.monthlyDrain <= 0 ? 100 : Math.min(100, ((days ?? 365) / 365) * 100)) : 0;
+        const pct = r ? (r.monthlyDrain <= 0 && !r.shortfall ? 100 : Math.min(100, ((days ?? 365) / 365) * 100)) : 0;
         return (
           <a key={m.id} className="wal-row" href={appPath('/wallet')}>
             <MethodMark m={m} size={28} />

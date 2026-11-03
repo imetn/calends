@@ -113,7 +113,9 @@
     },
     "balance": {
       "title": "{name} reicht nicht bis {date}",
-      "body": "{sub} braucht {need}; das Guthaben beträgt etwa {current}."
+      "body": "{sub} kostet {need}, bis dahin bleiben nur {current}.",
+      "bodyOver": "{sub} kostet {need}, das Guthaben liegt bereits bei {current}.",
+      "bodyToday": "Nach dem heutigen {sub} ({need}) beträgt das Guthaben {current}."
     },
     "fx": {
       "title": "{pct} % der Ausgaben sind in Fremdwährungen",

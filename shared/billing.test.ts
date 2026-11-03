@@ -266,6 +266,98 @@ test('issue #11：准时、补录、逾期与非续费记录不顺延', async ()
   assert.equal(trial.payments?.find((p) => p.date === '2026-10-28')?.serviceDate, undefined);
 });
 
+test('钱包反馈：校准余额后的推演与提醒', async (t) => {
+  const { editedBalance } = await import('./billing.ts');
+  const { topUpPlan } = await import('./metrics.ts');
+  const { buildDaily } = await import('../worker/notify.ts');
+  const method = { id: 'w', name: 'Wallet', kind: 'prepaid', currency: 'USD', balance: 500.01, balanceAsOf: '2026-11-02' } as AppState['methods'][number];
+  const sub = base({ name: 'Fictional', price: 499.99, start: '2026-07-03', nextDue: '2026-11-03', methodId: 'w' });
+  const state = (m: AppState['methods'][number] = method, s: Subscription = sub) =>
+    ({ subscriptions: [s], methods: [m], fx: FALLBACK_FX, settings: DEFAULT_SETTINGS }) as unknown as AppState;
+  // 截图那组：当天这笔扣完剩 0.02，提醒要写清校准值和已扣金额
+  const r = runwayFor(method, state(), '2026-11-03')!;
+  assert.ok(Math.abs(r.current - 0.02) < 1e-6);
+  assert.equal(r.shortfall?.date, '2026-12-03');
+  assert.ok(Math.abs(r.spentSince - 499.99) < 1e-6);
+  assert.ok(Math.abs(r.beforeShortfall! - 0.02) < 1e-6);
+  assert.deepEqual(r.dueToday.map((c) => c.date), ['2026-11-03']);
+  const { flatten, setLocale } = await import('./i18n.ts');
+  const { default: messages } = await import('./locales/en/notify.json', { with: { type: 'json' } });
+  setLocale('en', [flatten('notify', messages)]);
+  t.after(() => setLocale('en', []));
+  const note = buildDaily(state(), '2026-11-03')!.sections.flatMap((x) => x.rows).find((x) => x.title === 'Wallet')!.sub!;
+  for (const part of ['500.01', '499.99', '0.02']) assert.ok(note.includes(part), note);
+  // 当天的扣款不够：今天就报，不跳到下个月
+  const low = { ...method, balance: 100 };
+  const today = runwayFor(low, state(low), '2026-11-03')!;
+  assert.equal(today.shortfall?.date, '2026-11-03');
+  assert.equal(today.beforeShortfall, 100);
+  assert.equal(today.spentSince, 0);
+  assert.equal(today.coveredCharges, 0);
+  // 余额照样扣到今天：当天充值不会把这笔抹掉，下个月的提醒也还在
+  assert.ok(Math.abs(today.current + 399.99) < 1e-6);
+  const toppedUp = { ...low, balance: Math.round((today.current + 400) * 100) / 100, balanceAsOf: '2026-11-03' };
+  assert.equal(toppedUp.balance, 0.01);
+  assert.equal(runwayFor(toppedUp, state(toppedUp), '2026-11-04')!.current, 0.01);
+  assert.equal(runwayFor(toppedUp, state(toppedUp), '2026-11-04')!.shortfall?.date, '2026-12-03');
+  const plan = topUpPlan(state(low), '2026-11-03')[0];
+  assert.equal(plan.deadline, '2026-11-03');
+  assert.ok(Math.abs(plan.minNeed - 399.99) < 1e-6);
+  assert.ok(buildDaily(state(low), '2026-11-03')!.sections.flatMap((x) => x.rows).some((x) => x.title === 'Wallet' && x.amount));
+  // 累计不够：写的是扣到那一笔之前的余额，不是今天的余额
+  const two = base({ id: 'y', name: 'Second', price: 80, start: '2026-07-04', nextDue: '2026-11-04', methodId: 'w' });
+  const hundred = { ...method, balance: 100, balanceAsOf: '2026-11-03' };
+  const both = { ...state(hundred), subscriptions: [base({ ...two, id: 'z', name: 'First', start: '2026-07-04' }), two] } as AppState;
+  const piled = runwayFor(hundred, both, '2026-11-03')!;
+  assert.equal(piled.shortfall?.date, '2026-11-04');
+  assert.equal(piled.beforeShortfall, 20);
+  assert.equal(piled.current, 100);
+  const pile = buildDaily(both, '2026-11-03')!.sections.flatMap((x) => x.rows).find((x) => x.title === 'Wallet')!.sub!;
+  assert.ok(pile.includes('$20.00'), pile);
+  // 今天不够时，洞察和卡片都用扣到今天的余额
+  const { insights } = await import('./metrics.ts');
+  const { default: coreMessages } = await import('./locales/en/core.json', { with: { type: 'json' } });
+  setLocale('en', [flatten('notify', messages), flatten('core', coreMessages)]);
+  const insight = insights(state(low), '2026-11-03').find((x) => x.methods?.[0]?.id === 'w');
+  assert.ok(insight!.body.startsWith("After today's Fictional"), insight!.body);
+  assert.ok(insight!.body.includes('399.99'), insight!.body);
+  // 退款和失败记录不算余额不够；已透支时不说「只剩」
+  const over = { ...method, balance: 10, balanceAsOf: '2026-10-29' };
+  const owed = base({ ...sub, price: 50, start: '2026-10-30', nextDue: '2026-11-30' });
+  const failed = base({ ...owed, payments: [{ date: '2026-11-03', amount: 0, kind: 'failed' }, { date: '2026-11-03', amount: -10, kind: 'refund' }] });
+  const overRun = runwayFor(over, state(over, failed), '2026-11-03')!;
+  assert.equal(overRun.shortfall?.date, '2026-11-30');
+  assert.deepEqual(overRun.dueToday, []);
+  const overdrawn = { ...over, lowRunwayDays: 27 };
+  const overNote = buildDaily(state(overdrawn, owed), '2026-11-03')!.sections.flatMap((x) => x.rows).find((x) => x.title === 'Wallet')!.sub!;
+  assert.ok(overNote.includes('already') && overNote.includes('40.00'), overNote);
+  // 今天的多笔都算在内，0 元的不算；买断也报
+  const free = base({ id: 'f', name: 'Free', price: 0, start: '2026-07-03', nextDue: '2026-11-03', methodId: 'w' });
+  const many = { ...state(), subscriptions: [free, sub, base({ ...sub, id: 'n', name: 'Next', price: 20 })] } as AppState;
+  assert.deepEqual(runwayFor(method, many, '2026-11-03')!.dueToday.map((c) => c.sub.name).sort(), ['Fictional', 'Next']);
+  const once = base({ price: 499.99, start: '2026-11-03', nextDue: undefined, cycle: { unit: 'lifetime', every: 1 }, methodId: 'w' });
+  const lump = runwayFor(low, state(low, once), '2026-11-03')!;
+  assert.equal(lump.shortfall?.date, '2026-11-03');
+  assert.equal(topUpPlan(state(low, once), '2026-11-03').length, 1);
+  // 校准日当天的扣款算已包含；未来的校准日按今天算，不跳过中间的扣款
+  assert.equal(runwayFor({ ...method, balanceAsOf: '2026-11-03' }, state(), '2026-11-03')!.current, 500.01);
+  const future = runwayFor({ ...method, balanceAsOf: '2026-12-20' }, state(), '2026-11-03')!;
+  assert.equal(future.current, 500.01);
+  assert.equal(future.shortfall?.date, '2027-01-03');
+  // 表单改余额：校准日到今天，否则旧日期之后的扣款被重复扣
+  const old = { balance: 100, balanceAsOf: '2026-10-01' };
+  assert.deepEqual(editedBalance(old, 120, '2026-11-02'), { balance: 120, balanceAsOf: '2026-11-02' });
+  assert.deepEqual(editedBalance(old, 120, '2026-11-02', '2026-10-15'), { balance: 120, balanceAsOf: '2026-10-15' });
+  assert.deepEqual(editedBalance(old, 100, '2026-11-02'), old);
+  assert.deepEqual(editedBalance(old, undefined, '2026-11-02'), { balance: undefined, balanceAsOf: undefined });
+  assert.deepEqual(editedBalance({}, 50, '2026-11-02'), { balance: 50, balanceAsOf: '2026-11-02' });
+  const edited = { ...method, balance: 120, balanceAsOf: '2026-10-01' };
+  const stale = base({ ...sub, price: 80, nextDue: '2026-10-03' });
+  assert.equal(runwayFor(edited, state(edited, stale), '2026-11-02')!.current, 40);
+  const fixed = { ...method, ...editedBalance(edited, 200, '2026-11-02') };
+  assert.equal(runwayFor(fixed, state(fixed, stale), '2026-11-02')!.current, 200);
+});
+
 test('提前记账后余额不再重复扣原到期日那一笔', async () => {
   const { savePayment } = await import('./phases.ts');
   const method = { id: 'w', name: 'Wallet', kind: 'wallet', currency: 'USD', balance: 500.01, balanceAsOf: '2026-11-02' } as AppState['methods'][number];

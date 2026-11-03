@@ -104,7 +104,9 @@
     },
     "balance": {
       "title": "{name} sẽ không đủ đến {date}",
-      "body": "{sub} cần {need}; số dư hiện khoảng {current}."
+      "body": "{sub} cần {need}, đến lúc đó chỉ còn {current}.",
+      "bodyOver": "{sub} cần {need}, số dư đã là {current}.",
+      "bodyToday": "Sau {sub} ({need}) hôm nay, số dư là {current}."
     },
     "fx": {
       "title": "{pct}% chi tiêu bằng ngoại tệ",

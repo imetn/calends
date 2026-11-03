@@ -34,7 +34,9 @@
     "headlineUnpaid": "{name}이(가) {sub}을(를) 아직 갚지 않았습니다"
   },
   "balance": {
-    "sub": "잔액 {balance}(으)로는 {date}의 {sub}({amount})을(를) 결제할 수 없습니다",
+    "sub": "{date}까지 {left}만 남아 {sub}({amount})에 부족합니다",
+    "subSince": "{asOf}에 {calibrated}(으)로 설정, 이후 {spent} 결제됨. {date}까지 {left}만 남아 {sub}({amount})에 부족합니다",
+    "subOver": "잔액이 이미 {left}(으)로 {date}의 {sub}({amount})에 부족합니다",
     "headline": "{name} 잔액 부족"
   },
   "section": {

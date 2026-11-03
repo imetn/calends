@@ -34,7 +34,9 @@
     "headlineUnpaid": "{name}が{sub}をまだ返済していません"
   },
   "balance": {
-    "sub": "残高{balance}では{date}の{sub}（{amount}）に足りません",
+    "sub": "{date} までに残り {left} となり、{sub}（{amount}）に足りません",
+    "subSince": "{asOf} に {calibrated} に設定、以降 {spent} を引き落とし。{date} までに残り {left} となり、{sub}（{amount}）に足りません",
+    "subOver": "残高はすでに {left} で、{date} の {sub}（{amount}）に足りません",
     "headline": "{name}の残高が少なくなっています"
   },
   "section": {

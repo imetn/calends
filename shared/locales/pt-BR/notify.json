@@ -36,7 +36,9 @@
     "headlineUnpaid": "{name} ainda não reembolsou {sub}"
   },
   "balance": {
-    "sub": "O saldo de {balance} não cobre {sub} ({amount}) em {date}",
+    "sub": "Restarão só {left} até {date}, não cobre {sub} ({amount})",
+    "subSince": "Definido como {calibrated} em {asOf}, {spent} cobrados desde então. Restarão só {left} até {date}, não cobre {sub} ({amount})",
+    "subOver": "O saldo já está em {left}, não cobre {sub} ({amount}) em {date}",
     "headline": "Saldo de {name} acabando"
   },
   "section": {

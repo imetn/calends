@@ -34,7 +34,9 @@
     "headlineUnpaid": "{name} belum mengganti {sub}"
   },
   "balance": {
-    "sub": "Saldo {balance} tidak cukup untuk {sub} ({amount}) pada {date}",
+    "sub": "Hanya tersisa {left} pada {date}, tidak cukup untuk {sub} ({amount})",
+    "subSince": "Diatur ke {calibrated} pada {asOf}, {spent} terpotong sejak itu. Hanya tersisa {left} pada {date}, tidak cukup untuk {sub} ({amount})",
+    "subOver": "Saldo sudah {left}, tidak cukup untuk {sub} ({amount}) pada {date}",
     "headline": "Saldo {name} menipis"
   },
   "section": {

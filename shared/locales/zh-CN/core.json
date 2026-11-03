@@ -86,7 +86,9 @@
     },
     "balance": {
       "title": "{name} 余额撑不到 {date}",
-      "body": "{sub} 需要 {need}，当前约 {current}。"
+      "body": "{sub} 需要 {need}，到时只剩 {current}。",
+      "bodyOver": "{sub} 需要 {need}，余额已是 {current}。",
+      "bodyToday": "扣掉今天的 {sub}（{need}）后，余额是 {current}。"
     },
     "fx": {
       "title": "{pct}% 的支出以外币计价",

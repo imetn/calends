@@ -104,7 +104,9 @@
     },
     "balance": {
       "title": "{name}は{date}まで持ちません",
-      "body": "{sub}に{need}必要ですが、残高は約{current}です。"
+      "body": "{sub} に {need} 必要ですが、その時点の残りは {current} です。",
+      "bodyOver": "{sub} に {need} 必要ですが、残高はすでに {current} です。",
+      "bodyToday": "今日の {sub}（{need}）を引くと、残高は {current} です。"
     },
     "fx": {
       "title": "支出の{pct}%が外貨建てです",

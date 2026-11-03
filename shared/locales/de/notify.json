@@ -36,7 +36,9 @@
     "headlineUnpaid": "{name} hat {sub} noch nicht zurückgezahlt"
   },
   "balance": {
-    "sub": "Guthaben {balance} reicht am {date} nicht für {sub} ({amount})",
+    "sub": "Bis {date} bleiben nur {left}, zu wenig für {sub} ({amount})",
+    "subSince": "Am {asOf} auf {calibrated} gesetzt, seitdem {spent} abgebucht. Bis {date} bleiben nur {left}, zu wenig für {sub} ({amount})",
+    "subOver": "Guthaben liegt bereits bei {left}, zu wenig für {sub} ({amount}) am {date}",
     "headline": "Guthaben von {name} wird knapp"
   },
   "section": {

@@ -104,7 +104,9 @@
     },
     "balance": {
       "title": "{name} tidak akan cukup sampai {date}",
-      "body": "{sub} butuh {need}; saldo sekitar {current}."
+      "body": "{sub} perlu {need}, saat itu hanya tersisa {current}.",
+      "bodyOver": "{sub} perlu {need}, saldo sudah {current}.",
+      "bodyToday": "Setelah {sub} ({need}) hari ini, saldo menjadi {current}."
     },
     "fx": {
       "title": "{pct}% pengeluaran dalam mata uang asing",

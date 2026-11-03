@@ -118,6 +118,9 @@
     "balance": "Solde actuel",
     "optional": "Facultatif",
     "asOf": "Au",
+    "spentSince": "{spent} débités depuis la mise à jour, environ {current} maintenant.",
+    "nextCharge": "{name} ({amount}) du {date} sera encore prélevé sur ce solde, il restera {after}. S'il a déjà été débité, enregistrez-le d'abord.",
+    "todayIncluded": "Le {name} ({amount}) du jour est considéré comme inclus dans ce solde. S'il n'a pas encore été débité, mettez à jour demain.",
     "lowAlert": "Alerte de solde faible",
     "lowAlertOpt": {
       "one": "{count} jour avant",

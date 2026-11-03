@@ -104,7 +104,9 @@
     },
     "balance": {
       "title": "{name}의 잔액이 {date}까지 버티지 못합니다",
-      "body": "{sub}에 {need}이(가) 필요하지만 잔액은 약 {current}입니다."
+      "body": "{sub}에 {need}이(가) 필요하지만 그때 남는 금액은 {current}입니다.",
+      "bodyOver": "{sub}에 {need}이(가) 필요하지만 잔액이 이미 {current}입니다.",
+      "bodyToday": "오늘의 {sub}({need})을(를) 빼면 잔액은 {current}입니다."
     },
     "fx": {
       "title": "지출의 {pct}%가 외화입니다",

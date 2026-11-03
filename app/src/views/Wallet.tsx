@@ -9,11 +9,13 @@ import { arrayMove, rectSortingStrategy, SortableContext, sortableKeyboardCoordi
 import { useRef, useState } from 'react';
 import {
   activePhases,
+  addDays,
   currentPhase,
   cycleLabel,
   diffDays,
   effectiveStatus,
   monthlyTotal,
+  editedBalance,
   runwayFor,
   uid,
   type Runway,
@@ -21,6 +23,7 @@ import {
 } from '../../../shared/billing.ts';
 import { flow, cnDate, cnDateAuto, money, relDays } from '../../../shared/format.ts';
 import { toBaseAt } from '../../../shared/fx.ts';
+import { intlLocale } from '../../../shared/i18n.ts';
 import { BALANCE_KINDS, type AppState, type CardNetwork, type MethodKind, type PaymentMethod, type Subscription, type TopUp } from '../../../shared/types.ts';
 import { DatePicker } from '../components/DatePicker.tsx';
 import { IconButton, Cell, Group, Toolbar } from '../components/ui.tsx';
@@ -84,7 +87,7 @@ function RunwayCard({ r, today, state, flat, detailsOnly }: { r: Runway; today: 
         {/* 缺汇率时月消耗、余额推演算不出：说明不完整，不说「够用」 */}
         {r.incomplete ? (
           totalNote(r.partial.topUp12m)
-        ) : r.monthlyDrain <= 0 ? (
+        ) : r.monthlyDrain <= 0 && !r.shortfall ? (
           t('wallet.runway.noSubs')
         ) : r.shortfall && r.coveredCharges === 0 ? (
           <>
@@ -134,7 +137,7 @@ function paysWith(s: Subscription, m: PaymentMethod, today: string): boolean {
 function cardHint(m: PaymentMethod, r: Runway | undefined): string {
   if (r) {
     if (r.incomplete) return totalNote(r.partial.current.incomplete ? r.partial.current : r.partial.topUp12m);
-    if (r.monthlyDrain <= 0) return t('wallet.card.noCharges');
+    if (r.monthlyDrain <= 0 && !r.shortfall) return t('wallet.card.noCharges');
     if (!r.shortfall) return t('wallet.card.enough');
     return r.coveredCharges ? t('wallet.card.periodsLeft', { count: r.coveredCharges }) : t('wallet.card.low');
   }
@@ -461,9 +464,40 @@ function MethodSheet({
  * 充值 / 校准余额。充值时可以顺便记下实际花了多少（比如买土耳其区礼品卡花的人民币），
  * 下面列出历次充值和实际汇率，对比市价看溢价多少。
  */
+/** 校准前说清楚：校准后已扣了多少，近几天还有哪笔要从这个余额扣 */
+function calibrationNote(after: Runway | undefined, m: PaymentMethod, today: string, included: Runway['dueToday'] = []) {
+  if (!after) return undefined;
+  const notes: string[] = [];
+  const spent = (after.method.balance ?? 0) - after.current;
+  if (spent > 0.005) notes.push(t('wallet.editor.spentSince', { spent: money(spent, m.currency), current: money(after.current, m.currency) }));
+  const includedTotal = included.reduce((a, c) => a + c.amountInMethod, 0);
+  if (included.length && Number.isFinite(includedTotal))
+    notes.push(
+      t('wallet.editor.todayIncluded', {
+        name: new Intl.ListFormat(intlLocale()).format(included.map((c) => c.sub.name)),
+        amount: money(includedTotal, m.currency),
+      }),
+    );
+  const next = after.forecast.find((c) => !c.kind && c.amountInMethod > 0);
+  if (next && Number.isFinite(next.balanceAfter) && diffDays(today, next.date) <= 7)
+    notes.push(
+      t('wallet.editor.nextCharge', {
+        date: cnDateAuto(next.date, today),
+        name: next.sub.name,
+        amount: money(next.amountInMethod, m.currency),
+        after: money(next.balanceAfter, m.currency),
+      }),
+    );
+  return notes.length ? notes.join(' ') : undefined;
+}
+
+/** 今天到期的那笔；和卡上原来的校准日无关，第一次填余额时也要提示 */
+const dueTodayOf = (m: PaymentMethod, balance: number, state: AppState, today: string) =>
+  runwayFor({ ...m, balance, balanceAsOf: addDays(today, -1) }, state, today)?.dueToday;
+
 function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current: number; today: string; onClose: () => void }) {
   const state = getState();
-  const [mode, setMode] = useState<'add' | 'set'>(m.balance == null ? 'set' : 'add');
+  const [mode, setMode] = useState<'add' | 'set'>(m.balance == null || !Number.isFinite(current) ? 'set' : 'add');
   const [val, setVal] = useState('');
   const [date, setDate] = useState(today);
   const [cost, setCost] = useState('');
@@ -472,6 +506,17 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
   const n = Number(val);
   const next = mode === 'add' ? current + (n || 0) : n || 0;
   const tops = (m.topUps ?? []).slice().sort((a, b) => b.date.localeCompare(a.date));
+  const saved = Math.round(next * 100) / 100;
+  // 汇率缺失时 next 是 NaN，不能预览也不能保存（存下去就成了空余额）
+  const balanceNote =
+    val && Number.isFinite(saved)
+      ? calibrationNote(
+          runwayFor({ ...m, balance: saved, balanceAsOf: today }, state, today),
+          m,
+          today,
+          mode === 'set' ? dueTodayOf(m, saved, state, today) : undefined,
+        )
+      : undefined;
   // 实际成本折算：每 1 单位账户币种花了多少（成本币种），对比当天市价
   const rateOf = (tp: TopUp) => (tp.cost != null && tp.amount ? tp.cost / tp.amount : undefined);
   const market = (tp: TopUp) => toBaseAt(state, 1, m.currency, tp.date, tp.costCurrency ?? state.settings.baseCurrency);
@@ -482,7 +527,7 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
           mode === 'add' && n > 0
             ? { date, amount: n, cost: cost === '' ? undefined : Number(cost), costCurrency: cost === '' ? undefined : costCcy, note: note.trim() || undefined }
             : undefined;
-        await saveMethod({ ...m, balance: Math.round(next * 100) / 100, balanceAsOf: today, topUps: top ? [...(m.topUps ?? []), top] : m.topUps });
+        await saveMethod({ ...m, balance: saved, balanceAsOf: today, topUps: top ? [...(m.topUps ?? []), top] : m.topUps });
         onClose();
       },
       mode === 'add' ? t('wallet.topup.toastAdd') : t('wallet.topup.toastSet'),
@@ -499,7 +544,7 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
           <button className="btn" onClick={onClose}>
             {t('wallet.topup.cancel')}
           </button>
-          <button className="btn primary" disabled={!val || !Number.isFinite(n)} onClick={save}>
+          <button className="btn primary" disabled={!val || !Number.isFinite(n) || !Number.isFinite(next)} onClick={save}>
             {t('wallet.topup.save')}
           </button>
         </>
@@ -514,7 +559,7 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
             ['set', t('wallet.topup.modeSet')],
           ]}
         />
-        <Group>
+        <Group foot={balanceNote}>
           <Cell label={mode === 'add' ? t('wallet.topup.amount', { ccy: m.currency }) : t('wallet.topup.actual')}>
             <MoneyInput
               ccy={m.currency}
@@ -669,10 +714,17 @@ function MethodDeleteSheet({ m, state, onClose, onDeleted }: { m: PaymentMethod;
 function MethodEditor({ m, state, onClose }: { m: PaymentMethod; state: AppState; onClose: () => void }) {
   const [f, setF] = useState<PaymentMethod>(m);
   const [deleting, setDeleting] = useState(false);
+  const [pickedAsOf, setPickedAsOf] = useState<string>();
   // 打开时决定：编辑期间这张卡在别处被删，保存时报错而不是当新卡建回来
   const [isNew] = useState(() => !state.methods.some((x) => x.id === m.id));
   const up = (p: Partial<PaymentMethod>) => setF({ ...f, ...p });
   const balanceKind = BALANCE_KINDS.includes(f.kind);
+  const day = today();
+  const recalibrated = f.balanceAsOf === day && (f.balance !== m.balance || m.balanceAsOf !== day);
+  const balanceFoot =
+    balanceKind && f.balance != null
+      ? calibrationNote(runwayFor(f, state, day), f, day, recalibrated ? dueTodayOf(f, f.balance, state, day) : undefined)
+      : undefined;
   const val = (e: { target: EventTarget | null }) => (e.target as HTMLInputElement).value;
   return (
     <Sheet
@@ -834,18 +886,25 @@ function MethodEditor({ m, state, onClose }: { m: PaymentMethod; state: AppState
           </Cell>
         </Group>
         {balanceKind && (
-          <Group title={t('wallet.editor.balanceGroup')}>
+          <Group title={t('wallet.editor.balanceGroup')} foot={balanceFoot}>
             <Cell label={t('wallet.editor.balance')}>
               <NumInput
                 className="num"
                 ccy={f.currency}
                 value={f.balance}
                 placeholder={t('wallet.editor.optional')}
-                onValue={(n) => up({ balance: n, balanceAsOf: f.balanceAsOf ?? today() })}
+                onValue={(n) => up(editedBalance(m, n, day, pickedAsOf))}
               />
             </Cell>
             <Cell label={t('wallet.editor.asOf')}>
-              <DatePicker value={f.balanceAsOf} onChange={(v) => up({ balanceAsOf: v })} />
+              <DatePicker
+                value={f.balanceAsOf}
+                max={day}
+                onChange={(v) => {
+                  setPickedAsOf(v);
+                  up({ balanceAsOf: v ?? (f.balance == null ? undefined : day) });
+                }}
+              />
             </Cell>
             <Cell label={t('wallet.editor.lowAlert')}>
               <Picker

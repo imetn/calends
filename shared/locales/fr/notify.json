@@ -36,7 +36,9 @@
     "headlineUnpaid": "{name} n’a pas encore remboursé {sub}"
   },
   "balance": {
-    "sub": "Le solde de {balance} ne couvrira pas {sub} ({amount}) le {date}",
+    "sub": "Plus que {left} d'ici le {date}, insuffisant pour {sub} ({amount})",
+    "subSince": "Défini à {calibrated} le {asOf}, {spent} débités depuis. Plus que {left} d'ici le {date}, insuffisant pour {sub} ({amount})",
+    "subOver": "Le solde est déjà à {left}, insuffisant pour {sub} ({amount}) le {date}",
     "headline": "Solde de {name} bientôt insuffisant"
   },
   "section": {

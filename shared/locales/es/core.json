@@ -113,7 +113,9 @@
     },
     "balance": {
       "title": "{name} no alcanzará hasta el {date}",
-      "body": "{sub} necesita {need}; el saldo es de unos {current}."
+      "body": "{sub} necesita {need} y para entonces solo quedarán {current}.",
+      "bodyOver": "{sub} necesita {need} y el saldo ya está en {current}.",
+      "bodyToday": "Tras el cobro de hoy de {sub} ({need}), el saldo es {current}."
     },
     "fx": {
       "title": "El {pct}% del gasto es en monedas extranjeras",

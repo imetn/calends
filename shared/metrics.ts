@@ -546,18 +546,21 @@ export function topUpPlan(state: AppState, today: string, months = 6): TopUp[] {
   const out: TopUp[] = [];
   for (const m of state.methods) {
     const r = runwayFor(m, state, today, Math.max(12, months));
-    if (!r || !r.forecast.length) continue;
+    if (!r || (!r.forecast.length && !r.shortfall)) continue;
     const horizon = addMonths(today, months);
     const due = r.forecast.filter((c) => c.date <= horizon).reduce((a, c) => a + c.amountInMethod, 0);
     const need = Math.max(0, due - r.current);
     // 最少补多少：累计到第一笔付不起的扣款为止
     let acc = 0;
-    let minNeed = 0;
-    for (const c of r.forecast) {
-      acc += c.amountInMethod;
-      if (acc > r.current) {
-        minNeed = acc - r.current;
-        break;
+    // 今天那笔已经不够：先补上今天的缺口，和截止日说的是同一笔
+    let minNeed = r.shortfall?.date === today ? Math.max(0, -r.current) : 0;
+    if (!minNeed) {
+      for (const c of r.forecast) {
+        acc += c.amountInMethod;
+        if (acc > r.current) {
+          minNeed = acc - r.current;
+          break;
+        }
       }
     }
     const byCard = ['appstore', 'googleplay', 'giftcard', 'phone'].includes(m.kind);
@@ -714,14 +717,17 @@ export function insights(state: AppState, today: string): Insight[] {
   for (const m of state.methods) {
     const r = runwayFor(m, state, today);
     if (r?.shortfall && diffDays(today, r.shortfall.date) <= (m.lowRunwayDays ?? 30)) {
+      // 今天这笔已算进页面上的余额，这里和卡片用同一个数，并说明已扣过
+      const dueNow = r.shortfall.date === today;
+      const left = dueNow ? r.current : (r.beforeShortfall ?? r.current);
       out.push({
         id: `bal-${m.id}`,
         tone: 'warn',
         title: t('core.insight.balance.title', { name: m.name, date: cnDateAuto(r.shortfall.date, today) }),
-        body: t('core.insight.balance.body', {
+        body: t(dueNow ? 'core.insight.balance.bodyToday' : left < 0 ? 'core.insight.balance.bodyOver' : 'core.insight.balance.body', {
           sub: r.shortfall.sub.name,
           need: money(r.shortfall.amount, r.shortfall.currency),
-          current: money(r.current, m.currency, { compact: true }),
+          current: money(left, m.currency, { compact: true }),
         }),
         methods: [m],
         subs: [r.shortfall.sub],

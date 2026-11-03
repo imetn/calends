@@ -1713,3 +1713,10 @@ test('导入边界提示只在扣款记录为空时出现一次，指标卡不�
   assert.doesNotMatch(detail('Kpis.tsx'), /settings\.import\.history/);
   assert.match(detail('Ledgers.tsx'), /sub\.estimateFrom && !history\.length && <p className="muted dt-import-note">/);
 });
+
+test('汇率缺失时充值不能保存估算出来的空余额；校准日不能选未来', () => {
+  const wallet = readFileSync(new URL('../app/src/views/Wallet.tsx', import.meta.url), 'utf8');
+  assert.match(wallet, /disabled=\{!val \|\| !Number\.isFinite\(n\) \|\| !Number\.isFinite\(next\)\}/);
+  assert.match(wallet, /<DatePicker\s+value=\{f\.balanceAsOf\}\s+max=\{day\}/);
+  assert.match(wallet, /up\(editedBalance\(m, n, day, pickedAsOf\)\)/);
+});

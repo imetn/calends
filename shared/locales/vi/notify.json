@@ -34,7 +34,9 @@
     "headlineUnpaid": "{name} chưa trả lại {sub}"
   },
   "balance": {
-    "sub": "Số dư {balance} không đủ cho {sub} ({amount}) vào {date}",
+    "sub": "Đến {date} chỉ còn {left}, không đủ cho {sub} ({amount})",
+    "subSince": "Đặt thành {calibrated} vào {asOf}, đã trừ {spent} từ đó. Đến {date} chỉ còn {left}, không đủ cho {sub} ({amount})",
+    "subOver": "Số dư đã là {left}, không đủ cho {sub} ({amount}) vào {date}",
     "headline": "Số dư {name} sắp hết"
   },
   "section": {

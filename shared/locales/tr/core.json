@@ -113,7 +113,9 @@
     },
     "balance": {
       "title": "{name} bakiyesi {date} tarihine kadar yetmeyecek",
-      "body": "{sub} için {need} gerekiyor; bakiye yaklaşık {current}."
+      "body": "{sub} için {need} gerekiyor, o zamana kadar yalnızca {current} kalacak.",
+      "bodyOver": "{sub} için {need} gerekiyor, bakiye zaten {current}.",
+      "bodyToday": "Bugünkü {sub} ({need}) sonrası bakiye {current}."
     },
     "fx": {
       "title": "Harcamaların %{pct} kadarı yabancı para birimlerinde",
