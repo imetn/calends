@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import { prepareImport, type ImportFixes, type ImportSource } from '../../../shared/import-ledger.ts';
 import type { AppState, Cycle } from '../../../shared/types.ts';
 import { t } from '../../../shared/i18n.ts';
-import { cycleLabel } from '../../../shared/billing.ts';
+import { cycleLabel, validDay } from '../../../shared/billing.ts';
 import { ask, Sheet } from '../components/overlays.tsx';
 import { Cell, Group } from '../components/ui.tsx';
-import { NumInput, Toggle } from '../components/inputs.tsx';
+import { DatePicker } from '../components/DatePicker.tsx';
+import { NumInput, Stepper, Toggle } from '../components/inputs.tsx';
 import { CurrencySelect, Picker } from '../components/Picker.tsx';
 import { importData } from '../store.ts';
 import { run } from '../toast.ts';
@@ -78,6 +79,8 @@ export function ImportSheet({ source, state, today, onClose }: { source: ImportS
           const fix = fixes[row.key] ?? {};
           const issue = preview.issues.find((i) => i.key === row.key);
           const cycle = fix.cycle ?? row.cycle;
+          // 源文件里认不出的日期不交给月历：显示为空，由预览报错、用户重选
+          const start = fix.start ?? row.start ?? today;
           return (
             <Group key={row.key} title={row.name} foot={[issue?.message, !row.start ? t('core.import.unknownStart') : ''].filter(Boolean).join('\n')}>
               <Cell label={t('settings.import.include')} sub={[row.account, row.category, row.method].filter(Boolean).join(t('core.listSep'))}>
@@ -90,11 +93,9 @@ export function ImportSheet({ source, state, today, onClose }: { source: ImportS
               {!excluded.includes(row.key) && (
                 <>
                   <Cell label={t('editor.field.amount')}>
-                    {/* 按币种限制小数位（日元等不收小数）；保留原来的数字输入框样式 */}
+                    {/* 按币种限制小数位（日元等不收小数） */}
                     <NumInput
-                      type="number"
-                      min="0"
-                      step="any"
+                      className="num"
                       ccy={fix.currency ?? row.currency}
                       aria-label={`${t('editor.field.amount')} ${row.name}`}
                       value={Number.isFinite(fix.price ?? row.price) ? (fix.price ?? row.price) : undefined}
@@ -121,22 +122,21 @@ export function ImportSheet({ source, state, today, onClose }: { source: ImportS
                   </Cell>
                   {cycle && cycle.unit !== 'lifetime' && (
                     <Cell label={t('settings.import.every')}>
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        aria-label={`${t('settings.import.every')} ${row.name}`}
-                        value={cycle.every}
-                        onChange={(e) => edit(row.key, { cycle: { ...cycle, every: Number(e.target.value) } })}
+                      <Stepper
+                        label={`${t('settings.import.every')} ${row.name}`}
+                        value={Number.isInteger(cycle.every) ? cycle.every : 1}
+                        min={1}
+                        max={Math.max(999, cycle.every || 0)}
+                        unit={() => ''}
+                        onChange={(every) => edit(row.key, { cycle: { ...cycle, every } })}
                       />
                     </Cell>
                   )}
                   <Cell label={t('editor.field.start')}>
-                    <input
-                      type="date"
-                      aria-label={`${t('editor.field.start')} ${row.name}`}
-                      value={fix.start ?? row.start ?? today}
-                      onChange={(e) => edit(row.key, { start: e.target.value })}
+                    <DatePicker
+                      ariaLabel={`${t('editor.field.start')} ${row.name}`}
+                      value={validDay(start) ? start : undefined}
+                      onChange={(v) => edit(row.key, { start: v ?? today })}
                     />
                   </Cell>
                   {row.nextDue && <Cell label={t('settings.import.next')}>{row.nextDue}</Cell>}

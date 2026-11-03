@@ -2,6 +2,7 @@ import { ArrowLeft, Plus, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '../../../shared/i18n.ts';
 import { maskForPublic } from '../../../shared/mask.ts';
+import { Picker } from '../components/Picker.tsx';
 import {
   metricsFor,
   metricWithTemplate,
@@ -229,15 +230,12 @@ function MetricInspector({ card, onChange, onClose, onRemove }: { card: PublicMe
       <Group title={t('settings.publicPage.metricData')}>
         {card.items.map((id, i) => (
           <div key={id} className="cell ppe-metric-row">
-            <select aria-label={t('settings.publicPage.metricData')} value={id} onChange={(e) => setAt(i, (e.target as HTMLSelectElement).value)}>
-              {options
-                .filter((m) => m.id === id || !card.items.includes(m.id))
-                .map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {metricName(m.id)}
-                  </option>
-                ))}
-            </select>
+            <Picker
+              value={id}
+              ariaLabel={t('settings.publicPage.metricData')}
+              options={options.filter((m) => m.id === id || !card.items.includes(m.id)).map((m) => ({ value: m.id, label: metricName(m.id) }))}
+              onChange={(v) => setAt(i, v)}
+            />
             {card.items.length > 1 && (
               <IconButton aria-label={t('settings.publicPage.remove')} title={t('settings.publicPage.remove')} onClick={() => onChange({ ...card, items: card.items.filter((_, j) => j !== i) })}>
                 <X size={14} />

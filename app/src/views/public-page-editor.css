@@ -142,8 +142,9 @@
 .ppe-template[data-on] {
   box-shadow: 0 0 0 1.5px var(--label);
 }
-.ppe-metric-row select {
+.ppe-metric-row .pk-btn {
   flex: 1;
+  justify-content: space-between;
   min-width: 0;
 }
 .ppe-preview {
