@@ -193,6 +193,52 @@ test('app title hints go through CardTitle so text and trigger share an alignmen
   assert.deepEqual(failures, []);
 });
 
+test('native system controls stay out of the UI', async () => {
+  const types = 'date|time|datetime-local|month|week|number|range|radio|color';
+  const bannedType = new RegExp(`['"](?:${types})['"]`);
+  // 自选色仍开系统色盘，是待决的已知例外；People 的源码里拼入了 PersonProfile
+  const known = { 'views/PersonProfile.tsx': 1, 'views/People.tsx': 1 };
+  const publicFiles = readdirSync(new URL('public/', root), { recursive: true }).filter((file) => file.endsWith('.tsx'));
+  const publicSources = [];
+  for (const file of publicFiles) {
+    const source = readFileSync(new URL(`public/${file}`, root), 'utf8');
+    publicSources.push([`public/${file}`, await parsers.typescript.parse(source), source]);
+  }
+  const failures = [];
+  for (const [file, ast, source] of [...sources, ...publicSources]) {
+    let colors = 0;
+    visit(ast, (node) => {
+      if (node.type !== 'JSXOpeningElement') return;
+      const name = node.name.name;
+      if (['select', 'option', 'optgroup', 'datalist', 'progress', 'meter', 'dialog'].includes(name)) failures.push(`${file}: <${name}>`);
+      // NumInput 等会把 type 透传给 input，所以不只查 input 标签；三元、字面量表达式也算
+      const type = text(attr(node, 'type')?.value, source);
+      if (!bannedType.test(type)) return;
+      if (type.includes('color')) colors++;
+      else failures.push(`${file}: ${name} type=${type}`);
+    });
+    if (colors > (known[file] ?? 0)) failures.push(`${file}: ${colors} color inputs`);
+  }
+  assert.deepEqual(failures, []);
+});
+
+test('import preview never hands an unrecognized source date to the calendar', () => {
+  // 月历拿到 Jan 5 2026 这类值会抛 RangeError，整页崩溃
+  const [, ast, source] = sources.find(([file]) => file === 'views/ImportSheet.tsx');
+  let value;
+  visit(ast, (node) => {
+    if (node.type === 'JSXOpeningElement' && node.name.name === 'DatePicker') value = text(attr(node, 'value')?.value, source);
+  });
+  assert.match(value, /validDay\(start\) \? start : undefined/);
+});
+
+test('checkboxes and disclosure markers are redrawn, never the system look', () => {
+  const css = readFileSync(new URL('components/ui.css', root), 'utf8');
+  assert.match(css, /input\[type='checkbox'\] \{\s*appearance: none;/);
+  assert.match(css, /summary \{[^}]*list-style: none;/);
+  assert.match(css, /summary::-webkit-details-marker \{\s*display: none;/);
+});
+
 test('circular icon controls use the shared primitive and cannot override its hit area inline', () => {
   const failures = [];
   for (const [file, ast, source] of sources) {

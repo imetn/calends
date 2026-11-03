@@ -207,6 +207,8 @@
     "settledCcy": "实扣币种",
     "settledAmount": "实扣金额",
     "usageFoot": "记在这笔的计费周期 {period}",
+    "earlyHint": "这笔算提前续费：结清 {settles} 这一期，下一期 {next}。",
+    "earlyExtra": "这是额外费用",
     "freezeHint": "这一段目前按周期推算扣款；保存后会先把到今天为止推算出的 {amount} 各期固化成记录，以后完全以记录为准，未来的扣款照旧。",
     "method": "支付方式",
     "scopeOne": "只改这一笔",

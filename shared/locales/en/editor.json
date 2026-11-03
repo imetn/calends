@@ -232,6 +232,8 @@
     "settledCcy": "Card currency",
     "settledAmount": "Card amount",
     "usageFoot": "Recorded for the billing period {period}",
+    "earlyHint": "Counts as an early renewal: settles the {settles} period, next one {next}.",
+    "earlyExtra": "This is an extra charge",
     "freezeHint": "Charges in this phase are currently estimated from the billing cycle. Saving will first turn the estimated {amount} charges up to today into records; from then on, records are the source of truth. Future charges are unchanged.",
     "method": "Payment method",
     "scopeOne": "This charge only",

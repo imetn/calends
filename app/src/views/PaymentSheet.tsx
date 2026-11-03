@@ -5,7 +5,7 @@ import { cnDateAuto, currencyDecimals, money } from '../../../shared/format.ts';
 import { settlementCurrencyOf } from '../../../shared/fx.ts';
 import { t } from '../../../shared/i18n.ts';
 import { meterRows, periodReading, periodReadingCount, setPeriodValues, usageWithin } from '../../../shared/meters.ts';
-import { deletePayment, savePayment, setPhaseMethod } from '../../../shared/phases.ts';
+import { deletePayment, earlyRenewalEffect, savePayment, setPhaseMethod } from '../../../shared/phases.ts';
 import type { Meter, Payment, Subscription } from '../../../shared/types.ts';
 import { DatePicker } from '../components/DatePicker.tsx';
 import { CurrencySelect, Picker } from '../components/Picker.tsx';
@@ -90,6 +90,10 @@ export function PaymentSheet({
   };
   const setPart = (i: number, patch: Partial<{ methodId?: string; amount: string }>) => setSplit((xs) => xs!.map((x, k) => (k === i ? { ...x, ...patch } : x)));
 
+  // 这笔会算提前续费时先说明结果；临时加购等额外费用可以一键改成调整，不影响到期日
+  const target = originalDate && originalIndex != null ? { date: originalDate, index: originalIndex } : undefined;
+  const early = kind === 'charge' ? earlyRenewalEffect(sub, today, { date, amount: Number(amount) || 0 }, target, pick) : undefined;
+
   const [busy, submit] = useSubmit();
   const save = () => {
     const n = Number(amount);
@@ -111,7 +115,7 @@ export function PaymentSheet({
     return submit(() =>
       run(
         async () => {
-          let next = savePayment(sub, today, pay, originalDate && originalIndex != null ? { date: originalDate, index: originalIndex } : undefined, pick);
+          let next = savePayment(sub, today, pay, target, pick);
           if (!split && changed && scope === 'phase') next = setPhaseMethod(next, phase.start, method);
           if (period && Object.keys(usage).length) {
             // 新建的记录记在周期末日，周期还没过完时记今天
@@ -158,7 +162,18 @@ export function PaymentSheet({
       }
     >
       <div className="stack">
-        <Group>
+        <Group
+          foot={
+            early && (
+              <>
+                {t('editor.payment.earlyHint', { settles: cnDateAuto(early.settles, today), next: cnDateAuto(early.next, today) })}{' '}
+                <button type="button" className="as-link" onClick={() => setKind('adjust')}>
+                  {t('editor.payment.earlyExtra')}
+                </button>
+              </>
+            )
+          }
+        >
           <Cell label={t('editor.payment.date')}>
             <DatePicker value={date} onChange={(v) => setDate(v ?? today)} />
           </Cell>

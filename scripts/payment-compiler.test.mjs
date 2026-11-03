@@ -42,6 +42,7 @@ test('compiled payment renders the whole new form including its unused delete ca
     useState: (v) => [v, () => {}],
     currentPhase: (s) => s,
     chargesBetween: () => [],
+    earlyRenewalEffect: () => undefined,
     currencyDecimals: () => 2,
     useSubmit: () => [false, () => {}],
     getState: () => ({ methods: [], settings: { baseCurrency: 'CNY' } }),

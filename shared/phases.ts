@@ -11,6 +11,7 @@ import {
   isPostpaid,
   isStopped,
   phaseSubs,
+  settleLegacyEarly,
   priceAt,
   stopBillingPeriod,
   subError,
@@ -533,9 +534,58 @@ function dropSettledEstimate(p: Phase, v: Subscription, pay: Payment, today: str
   return { phase: { ...p, payments: payments.filter((x) => x !== settled) }, service: charge?.serviceDate ?? settled.date };
 }
 
+/** 写入前把旧版提前记账落成记录，后面的顺延和回退都按它算。 */
+function settleLegacyPhases(phases: Phase[], sub: Subscription, stopAt?: string): void {
+  phases.forEach((p, k) => {
+    if (stopAt && p.payments?.some((x) => !x.kind && x.date >= stopAt)) return;
+    const v = phaseView(phases, k, sub);
+    const settled = settleLegacyEarly(v);
+    if (settled !== v) phases[k] = { ...p, nextDue: settled.nextDue, payments: settled.payments };
+  });
+}
+
+/** 这笔普通扣款保存后算提前续费时，返回它结清的一期和下一期的扣款日；表单用来提前说明。 */
+export function earlyRenewalEffect(
+  s: Subscription,
+  today: string,
+  pay: Payment,
+  old?: { date: string; index: number },
+  phase?: string,
+): { settles: string; next: string } | undefined {
+  if (pay.kind || old?.date === pay.date) return undefined;
+  let saved: Subscription;
+  try {
+    saved = savePayment(s, today, pay, old, phase);
+  } catch {
+    return undefined;
+  }
+  // 只看这次新增的结清：同一段同一天已有一笔提前续费时，再记一笔不算
+  const had = new Map(
+    phaseSubs(s).map((v) => [
+      v.start,
+      new Set(
+        settleLegacyEarly(v)
+          .payments?.filter((x) => x.date === pay.date)
+          .map((x) => x.serviceDate),
+      ),
+    ]),
+  );
+  for (const v of phaseSubs(saved)) {
+    const service = settleLegacyEarly(v).payments?.find((x) => x.date === pay.date && x.serviceDate && !had.get(v.start)?.has(x.serviceDate))?.serviceDate;
+    if (!service) continue;
+    const settles = chargeOfService(v, service);
+    if (pay.date >= settles) continue;
+    const span = Math.ceil(cycleDays(v.cycle) * 2) + 32 + (v.chargeLeadDays ?? 0);
+    const next = chargesBetween(v, addDays(settles, 1), addDays(settles, span), today).find((c) => !c.kind)?.date;
+    if (next) return { settles, next };
+  }
+  return undefined;
+}
+
 /** 新增或修改一笔扣款记录；old 为原记录的日期与序号（修改时） */
 export function savePayment(s: Subscription, today: string, pay: Payment, old?: { date: string; index: number }, phase?: string): Subscription {
   const phases = phasesOf(s);
+  settleLegacyPhases(phases, s);
   // 改写一笔时没有带 methodId 这个键（如 MCP 只改金额），沿用原来那一笔单独记的支付方式；明确传 undefined 才清除
   let originalPhase: number | undefined;
   let keptService: string | undefined;
@@ -614,6 +664,7 @@ export function setPhaseMethod(s: Subscription, phaseStart: string, methodId: st
 /** 删除一笔扣款记录 */
 export function deletePayment(s: Subscription, today: string, date: string, index: number, phase?: string): Subscription {
   const phases = phasesOf(s);
+  settleLegacyPhases(phases, s);
   const i = phaseIndexAt(phases, date, s, phase, true);
   phases[i] = materialize(phases[i], s, today, date);
   const list = (phases[i].payments ?? []).filter((x) => x.date === date);
@@ -648,6 +699,12 @@ export function stopSubscription(s: Subscription, today: string, kind: Stop['kin
   if (!validDay(at)) throw new Error(t('mcp.error.notDate', { what: 'at' }));
   if (at < s.start) throw new Error(t('mcp.error.stopBeforeStart'));
   if (s.stop || isStopped(effectiveStatus(s, today))) throw new Error(t('mcp.error.subscriptionEnded'));
+  // 旧版提前续费先写进记录：停用后读取不再识别，已付账期要和停用前算的一致
+  if (s.phases?.length) {
+    const phases = phasesOf(s);
+    settleLegacyPhases(phases, s, at);
+    s = mirror(s, phases);
+  } else if (!s.payments?.some((p) => !p.kind && p.date >= at)) s = settleLegacyEarly(s);
   const current = currentPhase(s, at);
   if (at < current.start) throw new Error(t('mcp.error.stopBeforeStart'));
   const period = stopBillingPeriod(current, at, today);

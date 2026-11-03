@@ -207,6 +207,8 @@
     "settledCcy": "實扣貨幣",
     "settledAmount": "實扣金額",
     "usageFoot": "記在這筆的計費週期 {period}",
+    "earlyHint": "這筆算提前續費：結清 {settles} 這一期，下一期 {next}。",
+    "earlyExtra": "這是額外費用",
     "freezeHint": "這一段目前依週期推算扣款；儲存後會先把到今天為止推算出的 {amount} 各期固化成記錄，以後完全以記錄為準，未來的扣款照舊。",
     "method": "付款方式",
     "scopeOne": "只改這一筆",

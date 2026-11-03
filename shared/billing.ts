@@ -589,6 +589,56 @@ export function chargeOfService(s: Subscription, service: string): string {
   return service === billingAnchor(s) ? service : renewalDate(s, addDays(service, -(s.renewalOffsetDays ?? 0)));
 }
 
+/**
+ * 旧版提前记账没有顺延 nextDue，准时记账也不更新它，所以存储的 nextDue 常常落后。从最后一笔续费往前找：
+ * 连续几期都落在到期前半个周期内，再往前有一笔结清了上一期（排除一直晚付的），就按提前续费计算。
+ * 只影响计算，不改存储；下次保存这一段时才写入记录。付款较早的识别不了，重新保存那一笔即可；确实是额外费用的改记成补差。
+ */
+export function settleLegacyEarly(s: Subscription): Subscription {
+  if (!s.nextDue || !s.payments?.length || s.status === 'trial' || s.cycle.unit === 'lifetime' || isPostpaid(s)) return s;
+  const renewals = s.payments.filter((p) => !p.kind).sort((a, b) => a.date.localeCompare(b.date));
+  const last = renewals.at(-1);
+  const stopped = s.stop?.date ?? pausedFromOf(s);
+  if (!last || last.serviceDate || (stopped && last.date >= stopped)) return s;
+  // 没写日期的暂停、退订算不出账期，不动
+  if (!stopped && (s.status === 'paused' || (s.status === 'cancelled' && !s.end))) return s;
+  // 按没有停止、暂停和结束日的账期走：停用后已结清的一期也不能再冒出来
+  const open: Subscription = { ...s, stop: undefined, end: undefined, pausedAt: undefined, status: 'active' };
+  const half = cycleDays(s.cycle) / 2;
+  const span = Math.ceil(cycleDays(s.cycle) * 2) + 32 + maxChargeLead(s);
+  // 赠送期之后账期从赠送结束日重新算；月底日号要从 nextDue 起算才不被夹短
+  const rebased = s.bonus && s.bonus.until > s.nextDue ? s.bonus.until : undefined;
+  const after = (day: string) =>
+    schedule(open, rebased && day >= rebased ? rebased : s.nextDue!, addDays(day, 1), addDays(day, span), day, day, true).find((c) => !c.kind);
+  const refundFrom = s.payments.filter((p) => p.kind === 'refund').reduce((m, p) => (p.date > m ? p.date : m), '');
+  const chain: Array<{ pay: Payment; due: Charge }> = [];
+  let first = renewals.length;
+  for (let k = renewals.length - 1; k >= 0; k--) {
+    const pay = renewals[k];
+    const due = after(pay.date);
+    // 记完又退了款的是冲销，不算续费
+    if (!due || pay.serviceDate || pay.date <= refundFrom || (rebased && chain.length && pay.date < rebased)) break;
+    if (diffDays(pay.date, due.date) >= half || pay.date <= chargeBefore(open, due.date)) break;
+    if (chain.length && after(due.date)?.date !== chain[0].due.date) break;
+    const service = due.serviceDate ?? due.date;
+    if (
+      (s.end && service > s.end) ||
+      (stopped && (due.date > stopped || (!s.stop && due.date === stopped))) ||
+      (s.bonus && service >= s.bonus.from && service < s.bonus.until)
+    )
+      return s;
+    chain.unshift({ pay, due });
+    first = k;
+  }
+  if (!chain.length) return s;
+  const prior = chargeBefore(open, chain[0].due.date);
+  if (!renewals.slice(0, first).some((p) => (p.serviceDate ?? p.date) >= prior)) return s;
+  const next = after(chain.at(-1)!.due.date);
+  if (!next) return s;
+  const settled = new Map(chain.map((x) => [x.pay, x.due.serviceDate ?? x.due.date]));
+  return { ...s, nextDue: next.date, payments: s.payments.map((p) => (settled.has(p) ? { ...p, serviceDate: settled.get(p) } : p)) };
+}
+
 /** 按原服务边界迭代，再转换现金日期；首购和试用转付费不提前扣。 */
 function schedule(s: Subscription, anchor: string, from: string, to: string, today: string, after = '', cashAnchor = false): Charge[] {
   const out: Charge[] = [];
@@ -652,6 +702,12 @@ export function chargesBetween(s: Subscription, from: string, to: string, today:
       .flatMap((v) => chargesBetween(v, from, to, today))
       .sort((a, b) => a.date.localeCompare(b.date));
   }
+  return chargesAsRecorded(settleLegacyEarly(s), from, to, today);
+}
+
+/** 按记录原样算，不再识别旧版提前续费；账期计算去掉停用状态后用它，否则会绕过 settleLegacyEarly 的停用判断 */
+function chargesAsRecorded(s: Subscription, from: string, to: string, today: string): Charge[] {
+  if (s.expires && s.chargeLeadDays == null) s = migrateRenewalRules(s);
   const recorded = new Set((s.payments ?? []).map((p) => p.date));
   const known = (c: Charge) => !s.estimateFrom || c.date >= s.estimateFrom || recorded.has(c.date);
   const raw = rawCharges(s, from, to, today).filter(known);
@@ -890,6 +946,10 @@ export function lastCharge(s: Subscription, today: string): string | undefined {
 /** 停止前原账期。按原始锚点推算，保留月末夹紧、nextDue、实付与赠送期。 */
 export function billingPeriod(s: Subscription, at: string): { from: string; paidThrough: string; paid: number; days: number } {
   if (s.phases?.length) return billingPeriod(currentPhase(s, at), at);
+  return periodAsRecorded(settleLegacyEarly(s), at);
+}
+
+function periodAsRecorded(s: Subscription, at: string): { from: string; paidThrough: string; paid: number; days: number } {
   const pausedFrom = pausedFromOf(s);
   if (pausedFrom && at >= pausedFrom) {
     // 暂停后没有新账期：已付期算到暂停前那期（或暂停后记下的最后一笔实付），停在这之后就没有未用天数
@@ -898,7 +958,7 @@ export function billingPeriod(s: Subscription, at: string): { from: string; paid
       .map((p) => p.date)
       .sort()
       .at(-1);
-    const period = billingPeriod({ ...s, pausedAt: undefined, stop: s.stop && { ...s.stop, pausedAt: undefined } }, paid ?? addDays(pausedFrom, -1));
+    const period = periodAsRecorded({ ...s, pausedAt: undefined, stop: s.stop && { ...s.stop, pausedAt: undefined } }, paid ?? addDays(pausedFrom, -1));
     return period.paidThrough < at ? { ...period, paidThrough: at } : period;
   }
   const open = {
@@ -922,7 +982,7 @@ export function billingPeriod(s: Subscription, at: string): { from: string; paid
   // 账期按完整计费规则推算：导入边界（estimateFrom）只决定统计里算不算边界前的推算扣款，
   // 不能让当前账期的那一笔消失，否则已付金额为 0、退款上限和浪费天数全错
   const paidOpen = { ...open, start: paidFrom, estimateFrom: undefined };
-  const past = chargesBetween(paidOpen, paidFrom, at, at).filter((c) => !c.kind);
+  const past = chargesAsRecorded(paidOpen, paidFrom, at, at).filter((c) => !c.kind);
   const last = past.at(-1);
   // 提前续费：现金日早于服务日，服务开始后账期从服务日算
   const from = last?.serviceDate && last.serviceDate <= at ? last.serviceDate : (last?.date ?? s.start);
@@ -932,14 +992,14 @@ export function billingPeriod(s: Subscription, at: string): { from: string; paid
   const next =
     s.cycle.unit === 'lifetime'
       ? addDays(at, 1)
-      : (nextPaid(chargesBetween(paidOpen, addDays(at, 1), horizon, at).find((c) => !c.kind)?.date) ?? nthCharge(from, s.cycle, 1));
+      : (nextPaid(chargesAsRecorded(paidOpen, addDays(at, 1), horizon, at).find((c) => !c.kind)?.date) ?? nthCharge(from, s.cycle, 1));
   if ((s.chargeLeadDays ?? 0) > 0 || s.renewalHistory?.length) {
     const service = last ? chargeServicePeriod(s, last.date, last.serviceDate) : { from: s.start, until: next };
     return {
       from: service.from,
       paidThrough: addDays(service.until, -1),
       paid: last
-        ? chargesBetween(paidOpen, last.date, at, at)
+        ? chargesAsRecorded(paidOpen, last.date, at, at)
             .filter((c) => c.amount > 0 && c.kind !== 'failed')
             .reduce((sum, c) => sum + c.amount, 0)
         : 0,
@@ -948,7 +1008,7 @@ export function billingPeriod(s: Subscription, at: string): { from: string; paid
   }
   const paidThrough = addDays(next, -1);
   const paid = last
-    ? chargesBetween(paidOpen, last.date, at, at)
+    ? chargesAsRecorded(paidOpen, last.date, at, at)
         .filter((c) => c.amount > 0 && c.kind !== 'failed')
         .reduce((a, c) => a + c.amount, 0)
     : 0;
@@ -957,7 +1017,9 @@ export function billingPeriod(s: Subscription, at: string): { from: string; paid
 
 /** 在 at 停止时校验用的账期：先付费按今天已付到哪天；后付费随时可停，账期截到 at */
 export function stopBillingPeriod(s: Subscription, at: string, today: string) {
-  return billingPeriod(s, isPostpaid(s) || at < today || pausedFromOf(s) ? at : today);
+  const day = isPostpaid(s) || at < today || pausedFromOf(s) ? at : today;
+  // 停在最后一笔续费当天或之前：停用后这笔不算提前续费，这里要同样算
+  return s.payments?.some((p) => !p.kind && p.date >= at) ? periodAsRecorded(s, day) : billingPeriod(s, day);
 }
 
 export function stopSummary(s: Subscription, asOf = '9999-12-31') {
