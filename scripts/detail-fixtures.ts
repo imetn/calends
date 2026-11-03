@@ -329,7 +329,7 @@ export function detailFixtures(today = todayIn('Asia/Shanghai')) {
   add(
     41,
     { ...s, id: id(), name: '月付 · 导入记录 · 已有扣款', payments: [{ date: addDays(today, -5), amount: 36 }] },
-    '导入后已有一笔已知扣款：提示和扣款表同时显示，检查提示内距与表格全宽。',
+    '导入后已有一笔已知扣款：提示不再显示，只留扣款表，检查表格全宽。',
   );
 
   const fxDates = new Set(subscriptions.flatMap((s) => chargesBetween(s, s.start, today, today).map((c) => c.date)).concat(today));

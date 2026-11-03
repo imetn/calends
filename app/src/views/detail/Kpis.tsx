@@ -147,11 +147,9 @@ export function Kpis({
                 ? cost.partial.known
                   ? totalNote(cost.partial)
                   : t('detail.stats.count', { count: history.length })
-                : sub.estimateFrom
-                  ? t('settings.import.history')
-                  : transferred
-                    ? copyParts([t('detail.stats.count', { count: history.length }), t('detail.transfer.included')].join('\n'))
-                    : t('detail.stats.count', { count: history.length })
+                : transferred
+                  ? copyParts([t('detail.stats.count', { count: history.length }), t('detail.transfer.included')].join('\n'))
+                  : t('detail.stats.count', { count: history.length })
             }
           />
         )}

@@ -122,7 +122,7 @@ export function Charges({
         )
       }
     >
-      {sub.estimateFrom && <p className="muted dt-import-note">{t('settings.import.history')}</p>}
+      {sub.estimateFrom && !history.length && <p className="muted dt-import-note">{t('settings.import.history')}</p>}
       {/* 与合租的收款、付款表同一套表格（YearLedger）：表头、按年分组带小计、日期写全 */}
       {history.length > 0 && (
         <YearLedger

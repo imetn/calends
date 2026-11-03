@@ -1707,3 +1707,9 @@ test('标签和分段控件一行放不下时换行，控件不盖住标签；�
   const meters = readFileSync(new URL('../app/src/views/detail/Meters.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(meters, /detail\.meters\.kindLabel/);
 });
+
+test('导入边界提示只在扣款记录为空时出现一次，指标卡不重复', () => {
+  const detail = (file) => readFileSync(new URL(`../app/src/views/detail/${file}`, import.meta.url), 'utf8');
+  assert.doesNotMatch(detail('Kpis.tsx'), /settings\.import\.history/);
+  assert.match(detail('Ledgers.tsx'), /sub\.estimateFrom && !history\.length && <p className="muted dt-import-note">/);
+});
