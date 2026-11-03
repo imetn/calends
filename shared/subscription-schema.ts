@@ -205,7 +205,7 @@ const full = {
   notes: text,
   createdAt: text,
   updatedAt: text,
-// pauses is recorded by the write path when a pause ends, so it is not an editable field.
+  // pauses is recorded by the write path when a pause ends, so it is not an editable field.
 } satisfies Record<Exclude<keyof Subscription, 'pauses'>, Schema> & { note: Schema };
 
 // note is a Phase field; a Subscription stores notes instead.

@@ -93,7 +93,12 @@ function balanceNote(r: Runway, m: PaymentMethod): string {
   };
   if (left < 0) return t('notify.balance.subOver', note);
   if (!m.balanceAsOf || !(r.spentSince > 0.005)) return t('notify.balance.sub', note);
-  return t('notify.balance.subSince', { ...note, asOf: cnDate(m.balanceAsOf), calibrated: money(m.balance!, m.currency), spent: money(r.spentSince, m.currency) });
+  return t('notify.balance.subSince', {
+    ...note,
+    asOf: cnDate(m.balanceAsOf),
+    calibrated: money(m.balance!, m.currency),
+    spent: money(r.spentSince, m.currency),
+  });
 }
 
 /** 计算 today 应发出的提醒；不产生副作用，供 cron、预览与测试共用 */

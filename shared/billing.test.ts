@@ -280,12 +280,17 @@ test('钱包反馈：校准余额后的推演与提醒', async (t) => {
   assert.equal(r.shortfall?.date, '2026-12-03');
   assert.ok(Math.abs(r.spentSince - 499.99) < 1e-6);
   assert.ok(Math.abs(r.beforeShortfall! - 0.02) < 1e-6);
-  assert.deepEqual(r.dueToday.map((c) => c.date), ['2026-11-03']);
+  assert.deepEqual(
+    r.dueToday.map((c) => c.date),
+    ['2026-11-03'],
+  );
   const { flatten, setLocale } = await import('./i18n.ts');
   const { default: messages } = await import('./locales/en/notify.json', { with: { type: 'json' } });
   setLocale('en', [flatten('notify', messages)]);
   t.after(() => setLocale('en', []));
-  const note = buildDaily(state(), '2026-11-03')!.sections.flatMap((x) => x.rows).find((x) => x.title === 'Wallet')!.sub!;
+  const note = buildDaily(state(), '2026-11-03')!
+    .sections.flatMap((x) => x.rows)
+    .find((x) => x.title === 'Wallet')!.sub!;
   for (const part of ['500.01', '499.99', '0.02']) assert.ok(note.includes(part), note);
   // 当天的扣款不够：今天就报，不跳到下个月
   const low = { ...method, balance: 100 };
@@ -303,7 +308,11 @@ test('钱包反馈：校准余额后的推演与提醒', async (t) => {
   const plan = topUpPlan(state(low), '2026-11-03')[0];
   assert.equal(plan.deadline, '2026-11-03');
   assert.ok(Math.abs(plan.minNeed - 399.99) < 1e-6);
-  assert.ok(buildDaily(state(low), '2026-11-03')!.sections.flatMap((x) => x.rows).some((x) => x.title === 'Wallet' && x.amount));
+  assert.ok(
+    buildDaily(state(low), '2026-11-03')!
+      .sections.flatMap((x) => x.rows)
+      .some((x) => x.title === 'Wallet' && x.amount),
+  );
   // 累计不够：写的是扣到那一笔之前的余额，不是今天的余额
   const two = base({ id: 'y', name: 'Second', price: 80, start: '2026-07-04', nextDue: '2026-11-04', methodId: 'w' });
   const hundred = { ...method, balance: 100, balanceAsOf: '2026-11-03' };
@@ -312,7 +321,9 @@ test('钱包反馈：校准余额后的推演与提醒', async (t) => {
   assert.equal(piled.shortfall?.date, '2026-11-04');
   assert.equal(piled.beforeShortfall, 20);
   assert.equal(piled.current, 100);
-  const pile = buildDaily(both, '2026-11-03')!.sections.flatMap((x) => x.rows).find((x) => x.title === 'Wallet')!.sub!;
+  const pile = buildDaily(both, '2026-11-03')!
+    .sections.flatMap((x) => x.rows)
+    .find((x) => x.title === 'Wallet')!.sub!;
   assert.ok(pile.includes('$20.00'), pile);
   // 今天不够时，洞察和卡片都用扣到今天的余额
   const { insights } = await import('./metrics.ts');
@@ -324,17 +335,30 @@ test('钱包反馈：校准余额后的推演与提醒', async (t) => {
   // 退款和失败记录不算余额不够；已透支时不说「只剩」
   const over = { ...method, balance: 10, balanceAsOf: '2026-10-29' };
   const owed = base({ ...sub, price: 50, start: '2026-10-30', nextDue: '2026-11-30' });
-  const failed = base({ ...owed, payments: [{ date: '2026-11-03', amount: 0, kind: 'failed' }, { date: '2026-11-03', amount: -10, kind: 'refund' }] });
+  const failed = base({
+    ...owed,
+    payments: [
+      { date: '2026-11-03', amount: 0, kind: 'failed' },
+      { date: '2026-11-03', amount: -10, kind: 'refund' },
+    ],
+  });
   const overRun = runwayFor(over, state(over, failed), '2026-11-03')!;
   assert.equal(overRun.shortfall?.date, '2026-11-30');
   assert.deepEqual(overRun.dueToday, []);
   const overdrawn = { ...over, lowRunwayDays: 27 };
-  const overNote = buildDaily(state(overdrawn, owed), '2026-11-03')!.sections.flatMap((x) => x.rows).find((x) => x.title === 'Wallet')!.sub!;
+  const overNote = buildDaily(state(overdrawn, owed), '2026-11-03')!
+    .sections.flatMap((x) => x.rows)
+    .find((x) => x.title === 'Wallet')!.sub!;
   assert.ok(overNote.includes('already') && overNote.includes('40.00'), overNote);
   // 今天的多笔都算在内，0 元的不算；买断也报
   const free = base({ id: 'f', name: 'Free', price: 0, start: '2026-07-03', nextDue: '2026-11-03', methodId: 'w' });
   const many = { ...state(), subscriptions: [free, sub, base({ ...sub, id: 'n', name: 'Next', price: 20 })] } as AppState;
-  assert.deepEqual(runwayFor(method, many, '2026-11-03')!.dueToday.map((c) => c.sub.name).sort(), ['Fictional', 'Next']);
+  assert.deepEqual(
+    runwayFor(method, many, '2026-11-03')!
+      .dueToday.map((c) => c.sub.name)
+      .sort(),
+    ['Fictional', 'Next'],
+  );
   const once = base({ price: 499.99, start: '2026-11-03', nextDue: undefined, cycle: { unit: 'lifetime', every: 1 }, methodId: 'w' });
   const lump = runwayFor(low, state(low, once), '2026-11-03')!;
   assert.equal(lump.shortfall?.date, '2026-11-03');
