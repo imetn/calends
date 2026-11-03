@@ -183,6 +183,10 @@
     align-items: stretch;
     gap: 16px;
   }
+  /* 和下面的组件 / 页头切换一样等分 */
+  .ppe.page > .seg button {
+    flex: 1;
+  }
   .ppe-preview {
     position: static;
     height: calc(100dvh - 220px);

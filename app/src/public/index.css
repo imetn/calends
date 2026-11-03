@@ -138,6 +138,10 @@
 .public-icon-btn:disabled {
   opacity: 0.45;
 }
+/* 画布上隐藏的主题按钮：访客看不到，这里淡显才能点回来 */
+.public-icon-btn[data-off] {
+  opacity: 0.35;
+}
 
 /* Public tabs and their neighboring icon actions share the outer frame. */
 [data-slot='tabs-list'][data-orientation='horizontal'] {
@@ -220,6 +224,42 @@
 [data-canvas] .public-cell,
 .public-canvas-fixed {
   position: relative;
+}
+/* 画布上的页头：文字位置和访客看到的一致，内边距用负外边距抵消 */
+.public-head-field {
+  display: block;
+  width: calc(100% + 12px);
+  margin: -2px -6px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+}
+/* 名字没改时占位就是访客看到的默认标题，点进去才变淡 */
+.public-head-field::placeholder {
+  color: inherit;
+  opacity: 1;
+}
+.public-head-field:focus::placeholder,
+.public-head-field[data-bio]::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.6;
+}
+.public-head-field:hover,
+.public-head-field:focus,
+.public-head-avatar:hover,
+.public-head-avatar[data-selected] {
+  box-shadow: 0 0 0 1.5px var(--foreground);
+}
+.public-head-avatar {
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
 }
 [data-canvas] .public-cell[data-active] {
   z-index: 1;

@@ -13,7 +13,8 @@ const SCROLL_SPEED = 12;
 /** 指针移动超过这么多才算开始拖，之前不自动滚动 */
 const DRAG_START = 3;
 
-export type CanvasText = { labels: Record<string, string>; remove: string; empty: string; selected?: string };
+export type CanvasHead = { title: string; titleLabel: string; titlePlaceholder: string; bioLabel: string; bioPlaceholder: string; avatarLabel: string; themeHide: string; themeShow: string };
+export type CanvasText = { labels: Record<string, string>; remove: string; empty: string; selected?: string; head: CanvasHead };
 type Mode = 'move' | 'e' | 's' | 'se';
 type Drag = { id: string; mode: Mode; base: PublicGridItem[]; from: PublicGridItem; startX: number; startY: number; x: number; y: number; latest: PublicGridItem[]; frame: number; incoming?: boolean; measured?: boolean; fit?: { w: number; rows: number } };
 
@@ -242,4 +243,40 @@ export function CanvasFixed({ label, text, onRemove, children }: { label: string
       </div>
     </div>
   );
+}
+
+/** 页头文字原地改：输入先留在本地，每次改动发给编辑页；编辑中不被回传的草稿（已去掉首尾空格）覆盖 */
+function useHeadText(value: string, onChange: (v: string) => void) {
+  const [text, setText] = useState(value);
+  const [editing, setEditing] = useState(false);
+  if (!editing && text !== value) setText(value);
+  return {
+    text,
+    bind: {
+      value: text,
+      onFocus: () => setEditing(true),
+      onBlur: () => setEditing(false),
+      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setText(e.target.value);
+        onChange(e.target.value);
+      },
+    },
+  };
+}
+
+export function CanvasTitle({ value, label, placeholder, maxLength, onChange }: { value: string; label: string; placeholder: string; maxLength: number; onChange: (v: string) => void }) {
+  const { bind } = useHeadText(value, onChange);
+  return <input {...bind} className="public-head-field" aria-label={label} title={label} placeholder={placeholder} maxLength={maxLength} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} />;
+}
+
+/** 简介随内容增高，不出现滚动条 */
+export function CanvasBio({ value, label, placeholder, maxLength, onChange }: { value: string; label: string; placeholder: string; maxLength: number; onChange: (v: string) => void }) {
+  const { text, bind } = useHeadText(value, onChange);
+  const el = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    if (!el.current) return;
+    el.current.style.height = 'auto';
+    el.current.style.height = `${el.current.scrollHeight}px`;
+  }, [text]);
+  return <textarea {...bind} ref={el} rows={1} className="public-head-field" data-bio="" aria-label={label} title={label} placeholder={placeholder} maxLength={maxLength} />;
 }

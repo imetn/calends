@@ -9,7 +9,7 @@ import { locale, t, type Params } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue, toBaseAt, toBaseOrNaN } from '../../../shared/fx.ts';
 import { cancelSavings, contributionOn, mrrSeries } from '../../../shared/metrics.ts';
 import { avatarOf, type AppState, type PublicPageConfig, type Subscription } from '../../../shared/types.ts';
-import { collapseEmpty, fillRows, flowSpans, gridSections, PUBLIC_GRID_SECTIONS, isCustomLayout, PUBLIC_PREVIEW_DATA, PUBLIC_PREVIEW_DRAFT, PUBLIC_PREVIEW_LAYOUT, PUBLIC_PREVIEW_READY, publicGrid, publicParts, tabletSpan, type PublicGridId, type PublicGridItem } from '../../../shared/public-layout.ts';
+import { collapseEmpty, fillRows, flowSpans, gridSections, PUBLIC_BIO_MAX, PUBLIC_GRID_SECTIONS, PUBLIC_HEAD_AVATAR, PUBLIC_TITLE_MAX, isCustomLayout, PUBLIC_PREVIEW_DATA, PUBLIC_PREVIEW_DRAFT, PUBLIC_PREVIEW_LAYOUT, PUBLIC_PREVIEW_READY, publicGrid, publicParts, tabletSpan, type PublicGridId, type PublicGridItem } from '../../../shared/public-layout.ts';
 import { allCharges, catIcon, periodRange, sumBase, sumBaseOrNaN, syncCategories, firstStart } from '../derive.ts';
 import { CatGlyph } from '../components/CatGlyph.tsx';
 import { THEME_LABEL, ThemeIcon, useThemeMode } from '../theme.tsx';
@@ -26,7 +26,7 @@ import { cn } from '@/public/lib/utils';
 import { PROJECT_NAME, PROJECT_URL } from '../../../shared/brand.ts';
 import { HatchPattern } from '../components/hatch.tsx';
 import { IconPile, PILE_HEIGHT } from './components/icon-pile.tsx';
-import { Canvas, CanvasFixed, cellVars, type CanvasText } from './canvas.tsx';
+import { Canvas, CanvasBio, CanvasFixed, CanvasTitle, cellVars, type CanvasText } from './canvas.tsx';
 import { loadLocale, preferredLocale } from '../i18n.ts';
 import { metricValues, type MetricInputs } from '../../../shared/public-metrics.ts';
 import { publicChanges, waterfallFirstMonth } from '../../../shared/public-changes.ts';
@@ -175,22 +175,53 @@ export function PublicPage() {
   );
 }
 
+type HeadPatch = { publicTitle?: string; bio?: string; themeButton?: boolean };
+type HeadEdit = { text: CanvasText; onChange: (patch: HeadPatch) => void; onAvatar: () => void };
+
 /** 没传 head 时不画页头（加载中、出错）：不先闪一下默认标题和头像 */
-function Shell({ children, right, head }: { children: React.ReactNode; right?: React.ReactNode; head?: { title?: string; avatar?: string; bio?: string } }) {
+function Shell({ children, right, head }: { children: React.ReactNode; right?: React.ReactNode; head?: { title?: string; avatar?: string; bio?: string; edit?: HeadEdit } }) {
+  const edit = head?.edit;
+  const avatar = head && <img src={appPath(avatarOf({ avatar: head.avatar }))} alt="" className="size-9 rounded-md object-cover" />;
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-[max(env(safe-area-inset-top),1.25rem)] pb-12 sm:px-6 sm:pt-10">
       {head && (
         <header className="mb-5 sm:mb-6">
           <div className="flex items-center gap-3">
-            <img src={appPath(avatarOf({ avatar: head.avatar }))} alt="" className="size-9 rounded-md object-cover" />
-            <h1 className="min-w-0 flex-1 truncate text-[length:var(--fs-2)] font-semibold">{head.title}</h1>
+            {edit ? (
+              <button type="button" className="public-head-avatar" data-selected={edit.text.selected === PUBLIC_HEAD_AVATAR ? '' : undefined} aria-label={edit.text.head.avatarLabel} title={edit.text.head.avatarLabel} onClick={edit.onAvatar}>
+                {avatar}
+              </button>
+            ) : (
+              avatar
+            )}
+            {/* 编辑时不裁切：输入框的外框比标题宽 */}
+            <h1 className={`min-w-0 flex-1 text-[length:var(--fs-2)] font-semibold ${edit ? '' : 'truncate'}`}>
+              {edit ? <CanvasTitle value={edit.text.head.title} label={edit.text.head.titleLabel} placeholder={edit.text.head.titlePlaceholder} maxLength={PUBLIC_TITLE_MAX} onChange={(publicTitle) => edit.onChange({ publicTitle })} /> : head.title}
+            </h1>
             {right}
           </div>
-          {head.bio && <p className="mt-3 text-[length:var(--fs-2)] break-words whitespace-pre-line text-muted-foreground">{head.bio}</p>}
+          {edit ? (
+            <p className="mt-3 text-[length:var(--fs-2)] text-muted-foreground">
+              <CanvasBio value={head.bio ?? ''} label={edit.text.head.bioLabel} placeholder={edit.text.head.bioPlaceholder} maxLength={PUBLIC_BIO_MAX} onChange={(bio) => edit.onChange({ bio })} />
+            </p>
+          ) : (
+            head.bio && <p className="mt-3 text-[length:var(--fs-2)] break-words whitespace-pre-line text-muted-foreground">{head.bio}</p>
+          )}
         </header>
       )}
       {children}
     </div>
+  );
+}
+
+/** 画布上点一下决定访客看不看得到：隐藏后淡显，还能点回来 */
+function CanvasThemeButton({ shown, text, onChange }: { shown: boolean; text: CanvasText; onChange: (shown: boolean) => void }) {
+  const [mode] = useThemeMode();
+  const label = shown ? text.head.themeHide : text.head.themeShow;
+  return (
+    <button type="button" className="public-icon-btn" data-off={shown ? undefined : ''} aria-label={label} title={label} onClick={() => onChange(!shown)}>
+      <ThemeIcon mode={mode} size={16} />
+    </button>
   );
 }
 
@@ -375,7 +406,7 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
   const flowCells = canvas || isCustomLayout(config) ? [] : grid.filter((s) => !s.hidden && blockOf(s));
   const desktop = flowSpans(flowCells.map((s) => s.id));
   const tablet = fillRows(flowCells.map((s) => tabletSpan(PUBLIC_GRID_SECTIONS.find((d) => d.id === s.id)!.w)));
-  const sendLayout = (message: { sections?: ReturnType<typeof gridSections>; remove?: string; select?: string }) => window.parent.postMessage({ type: PUBLIC_PREVIEW_LAYOUT, ...message }, location.origin);
+  const sendLayout = (message: { sections?: ReturnType<typeof gridSections>; remove?: string; select?: string; head?: HeadPatch }) => window.parent.postMessage({ type: PUBLIC_PREVIEW_LAYOUT, ...message }, location.origin);
   const fixed = (id: 'footer' | 'pile', node: React.ReactNode) =>
     canvas ? (
       <CanvasFixed label={canvas.labels[id]} text={canvas} onRemove={() => sendLayout({ remove: id })}>
@@ -387,7 +418,12 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
 
   return (
     <Shell
-      head={{ title: view.title, avatar: view.avatar, bio: config?.bio }}
+      head={{
+        title: view.title,
+        avatar: view.avatar,
+        bio: config?.bio,
+        edit: canvas && { text: canvas, onChange: (head) => sendLayout({ head }), onAvatar: () => sendLayout({ select: PUBLIC_HEAD_AVATAR }) },
+      }}
       right={
         <div className="flex items-center gap-1.5">
           {base !== 'USD' && (
@@ -407,7 +443,7 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
               </TabsList>
             </Tabs>
           )}
-          <ThemeButton />
+          {canvas ? <CanvasThemeButton shown={config?.themeButton !== false} text={canvas} onChange={(themeButton) => sendLayout({ head: { themeButton } })} /> : config?.themeButton !== false && <ThemeButton />}
         </div>
       }
     >

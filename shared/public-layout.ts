@@ -319,10 +319,11 @@ export const validPublicAvatar = (v: unknown) => v === undefined || (typeof v ==
 export function validPublicPage(cfg: unknown): boolean {
   if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) return false;
   const c = cfg as Record<string, unknown>;
-  if (Object.keys(c).some((k) => !['browserTitle', 'bio', 'avatar', 'sections'].includes(k))) return false;
+  if (Object.keys(c).some((k) => !['browserTitle', 'bio', 'avatar', 'themeButton', 'sections'].includes(k))) return false;
   const text = (v: unknown, max: number) => v === undefined || (typeof v === 'string' && v.length <= max);
   if (!text(c.browserTitle, PUBLIC_TITLE_MAX) || !text(c.bio, PUBLIC_BIO_MAX)) return false;
   if (!validPublicAvatar(c.avatar)) return false;
+  if (c.themeButton !== undefined && c.themeButton !== false) return false;
   if (c.sections !== undefined) {
     if (!Array.isArray(c.sections)) return false;
     const seen = new Set<string>();
@@ -352,7 +353,7 @@ export function restorablePublicPage(raw: unknown): PublicPageConfig | undefined
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const c = raw as Record<string, unknown>;
   const out: Record<string, unknown> = {};
-  for (const k of ['browserTitle', 'bio', 'avatar']) if (c[k] !== undefined && validPublicPage({ [k]: c[k] })) out[k] = c[k];
+  for (const k of ['browserTitle', 'bio', 'avatar', 'themeButton']) if (c[k] !== undefined && validPublicPage({ [k]: c[k] })) out[k] = c[k];
   if (Array.isArray(c.sections)) {
     const seen = new Set<string>();
     let cards = 0;
@@ -380,6 +381,7 @@ export function publicConfigForVisitors(cfg?: PublicPageConfig): PublicPageConfi
   return {
     browserTitle: cfg.browserTitle?.trim() || undefined,
     bio: cfg.bio?.trim() || undefined,
+    ...(cfg.themeButton === false ? { themeButton: false as const } : {}),
     sections: [...grid, ...bottom],
   };
 }
@@ -388,7 +390,9 @@ export function publicConfigForVisitors(cfg?: PublicPageConfig): PublicPageConfi
 export const PUBLIC_PREVIEW_READY = 'calends:public-preview-ready';
 export const PUBLIC_PREVIEW_DATA = 'calends:public-preview-data';
 export const PUBLIC_PREVIEW_DRAFT = 'calends:public-preview-draft';
-/** 画布（iframe）发回编辑页：摆放结果、要隐藏的组件，或选中的指标卡 */
+/** 画布（iframe）发回编辑页：摆放结果、要隐藏的组件、选中的对象，或页头的改动 */
 export const PUBLIC_PREVIEW_LAYOUT = 'calends:public-preview-layout';
+/** 画布上选中页头头像时的选中项 id，不会和组件 id 重复 */
+export const PUBLIC_HEAD_AVATAR = 'head-avatar';
 /** 编辑页发给画布：组件库里拖着的组件走到哪了。指针被编辑页捕获，iframe 收不到指针事件 */
 export const PUBLIC_PREVIEW_DROP = 'calends:public-preview-drop';

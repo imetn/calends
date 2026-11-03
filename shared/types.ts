@@ -445,6 +445,8 @@ export interface PublicPageConfig {
   bio?: string;
   /** 公开页单独的头像；缺省用 Settings.avatar */
   avatar?: string;
+  /** false：访客页不显示主题按钮；缺省显示 */
+  themeButton?: false;
   sections?: PublicSectionConfig[];
 }
 

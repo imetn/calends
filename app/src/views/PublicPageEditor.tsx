@@ -9,6 +9,7 @@ import {
   newMetricItem,
   PUBLIC_BIO_MAX,
   PUBLIC_BOTTOM_SECTIONS,
+  PUBLIC_HEAD_AVATAR,
   PUBLIC_METRIC_CARDS_MAX,
   PUBLIC_METRIC_ROWS_MAX,
   PUBLIC_METRIC_TEMPLATES,
@@ -35,7 +36,7 @@ import {
 import type { AppState, PublicPageConfig, PublicSectionConfig, Settings } from '../../../shared/types.ts';
 import { base } from '../base.ts';
 import { ask } from '../components/overlays.tsx';
-import { Seg, useMedia } from '../components/inputs.tsx';
+import { Seg, Toggle, useMedia } from '../components/inputs.tsx';
 import { Cell, Group, IconButton, Toolbar } from '../components/ui.tsx';
 import { href, setLeaveGuard } from '../router.ts';
 import { saveSettings } from '../store.ts';
@@ -49,6 +50,7 @@ interface Draft {
   browserTitle: string;
   bio: string;
   avatar?: string;
+  themeButton: boolean;
   grid: PublicGridItem[];
   bottom: Record<PublicBottomId, boolean>;
 }
@@ -58,6 +60,7 @@ const draftOf = (publicTitle: string | undefined, cfg: PublicPageConfig | undefi
   browserTitle: cfg?.browserTitle ?? '',
   bio: cfg?.bio ?? '',
   avatar: cfg?.avatar,
+  themeButton: cfg?.themeButton !== false,
   grid: publicGrid(cfg),
   bottom: { footer: publicBottomShown(cfg, 'footer'), pile: publicBottomShown(cfg, 'pile') },
 });
@@ -70,6 +73,7 @@ function configOf(d: Draft): PublicPageConfig | undefined {
     ...(d.browserTitle.trim() ? { browserTitle: d.browserTitle.trim() } : {}),
     ...(d.bio.trim() ? { bio: d.bio.trim() } : {}),
     ...(d.avatar ? { avatar: d.avatar } : {}),
+    ...(d.themeButton ? {} : { themeButton: false as const }),
     ...(sections.length ? { sections } : {}),
   };
   return Object.keys(cfg).length ? cfg : undefined;
@@ -300,6 +304,7 @@ export function PublicPageEditor({ state }: { state: AppState }) {
   const dirty = draft.publicTitle.trim() !== (s.publicTitle ?? '') || JSON.stringify(config) !== JSON.stringify(configOf(saved));
   const isDefault = !config && !draft.publicTitle.trim();
 
+  const placeholderTitle = s.displayName.trim() ? t('public.title', { name: s.displayName.trim() }) : t('public.titleAnon');
   // 预览数据：真实账本走同一个脱敏，所有组件都下发（草稿可能拖进任何组件）；账本没变就不重发
   const masked = useMemo(() => maskForPublic(state, { untrimmed: true }), [state]);
   // config 每次渲染都是新对象，按内容判断有没有变
@@ -317,6 +322,16 @@ export function PublicPageEditor({ state }: { state: AppState }) {
             remove: t('settings.publicPage.remove'),
             empty: t('settings.publicPage.emptyCard'),
             selected: selected ?? undefined,
+            head: {
+              title: draft.publicTitle.trim(),
+              titleLabel: t('settings.open.publicTitle'),
+              titlePlaceholder: placeholderTitle,
+              bioLabel: t('settings.publicPage.bio'),
+              bioPlaceholder: t('settings.publicPage.bioPlaceholder'),
+              avatarLabel: t('settings.general.avatar'),
+              themeHide: t('settings.publicPage.themeHide'),
+              themeShow: t('settings.publicPage.themeShow'),
+            },
           }
         : undefined,
     }),
@@ -329,7 +344,17 @@ export function PublicPageEditor({ state }: { state: AppState }) {
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== location.origin || e.source !== frame.current?.contentWindow) return;
       if (e.data?.type === PUBLIC_PREVIEW_LAYOUT) {
-        const { sections, remove, select } = e.data as { sections?: PublicSectionConfig[]; remove?: string; select?: string };
+        const { sections, remove, select, head } = e.data as {
+          sections?: PublicSectionConfig[];
+          remove?: string;
+          select?: string;
+          head?: { publicTitle?: unknown; bio?: unknown; themeButton?: unknown };
+        };
+        if (head) {
+          if (typeof head.publicTitle === 'string') up({ publicTitle: head.publicTitle.slice(0, PUBLIC_TITLE_MAX) });
+          if (typeof head.bio === 'string') up({ bio: head.bio.slice(0, PUBLIC_BIO_MAX) });
+          if (typeof head.themeButton === 'boolean') up({ themeButton: head.themeButton });
+        }
         if (sections && validPublicPage({ sections })) {
           setDraft((d) => {
             // 刚拖进来的指标卡直接选中，接着选数据
@@ -399,7 +424,15 @@ export function PublicPageEditor({ state }: { state: AppState }) {
   const metricCards = draft.grid.filter((x) => x.metric);
   const full = metricCards.length >= PUBLIC_METRIC_CARDS_MAX;
   const current = draft.grid.find((x) => x.id === selected && x.metric);
-  const placeholderTitle = s.displayName.trim() ? t('public.title', { name: s.displayName.trim() }) : t('public.titleAnon');
+  const avatarField = (
+    <AvatarField
+      avatar={draft.avatar}
+      fallback={s.avatar}
+      defaultLabel={t('settings.publicPage.avatarFollow')}
+      linkHint={t('settings.publicPage.avatarLinkHint')}
+      onChange={(v) => up({ avatar: v ?? undefined })}
+    />
+  );
   const showEdit = !narrow || tab === 'edit';
   const showPreview = !narrow || tab === 'preview';
   const deviceSeg = (
@@ -458,7 +491,21 @@ export function PublicPageEditor({ state }: { state: AppState }) {
           <Preview device={device} frame={frame} />
         </div>
         <div className="ppe-side" hidden={!showEdit}>
-          {current?.metric ? (
+          {selected === PUBLIC_HEAD_AVATAR ? (
+            <div className="ppe-panel stack">
+              <div className="ppe-panel-head">
+                <IconButton
+                  aria-label={t('settings.publicPage.backToLibrary')}
+                  title={t('settings.publicPage.backToLibrary')}
+                  onClick={() => setSelected(null)}
+                >
+                  <ArrowLeft size={16} />
+                </IconButton>
+                <span className="ppe-panel-title">{t('settings.general.avatar')}</span>
+              </div>
+              <Group>{avatarField}</Group>
+            </div>
+          ) : current?.metric ? (
             <MetricInspector
               card={current.metric}
               onChange={(metric) => setDraft((d) => ({ ...d, grid: setMetric(d.grid, current.id, metric) }))}
@@ -507,6 +554,7 @@ export function PublicPageEditor({ state }: { state: AppState }) {
                 </>
               ) : (
                 <>
+                  {canvasOn && <p className="ppe-hint">{t('settings.publicPage.headHint')}</p>}
                   <Group title={t('settings.publicPage.head')}>
                     <Cell label={t('settings.publicPage.browserTitle')}>
                       <input
@@ -516,35 +564,39 @@ export function PublicPageEditor({ state }: { state: AppState }) {
                         onChange={(e) => up({ browserTitle: (e.target as HTMLInputElement).value })}
                       />
                     </Cell>
-                    <Cell label={t('settings.open.publicTitle')}>
-                      <input
-                        value={draft.publicTitle}
-                        maxLength={PUBLIC_TITLE_MAX}
-                        placeholder={placeholderTitle}
-                        onChange={(e) => up({ publicTitle: (e.target as HTMLInputElement).value })}
-                      />
-                    </Cell>
-                    <AvatarField
-                      avatar={draft.avatar}
-                      fallback={s.avatar}
-                      defaultLabel={t('settings.publicPage.avatarFollow')}
-                      linkHint={t('settings.publicPage.avatarLinkHint')}
-                      onChange={(v) => up({ avatar: v ?? undefined })}
-                    />
+                    {/* 名字、头像、简介、主题按钮在画布上直接改；没有画布时（窄屏、触屏、手机预览）留在这里 */}
+                    {!canvasOn && (
+                      <>
+                        <Cell label={t('settings.open.publicTitle')}>
+                          <input
+                            value={draft.publicTitle}
+                            maxLength={PUBLIC_TITLE_MAX}
+                            placeholder={placeholderTitle}
+                            onChange={(e) => up({ publicTitle: (e.target as HTMLInputElement).value })}
+                          />
+                        </Cell>
+                        {avatarField}
+                        <Cell label={t('settings.publicPage.themeButton')}>
+                          <Toggle label={t('settings.publicPage.themeButton')} checked={draft.themeButton} onChange={(themeButton) => up({ themeButton })} />
+                        </Cell>
+                      </>
+                    )}
                   </Group>
-                  <Group title={t('settings.publicPage.bio')}>
-                    <div className="cell">
-                      <span className="cell-r">
-                        <textarea
-                          value={draft.bio}
-                          maxLength={PUBLIC_BIO_MAX}
-                          placeholder={t('settings.publicPage.bioPlaceholder')}
-                          aria-label={t('settings.publicPage.bio')}
-                          onChange={(e) => up({ bio: (e.target as HTMLTextAreaElement).value })}
-                        />
-                      </span>
-                    </div>
-                  </Group>
+                  {!canvasOn && (
+                    <Group title={t('settings.publicPage.bio')}>
+                      <div className="cell">
+                        <span className="cell-r">
+                          <textarea
+                            value={draft.bio}
+                            maxLength={PUBLIC_BIO_MAX}
+                            placeholder={t('settings.publicPage.bioPlaceholder')}
+                            aria-label={t('settings.publicPage.bio')}
+                            onChange={(e) => up({ bio: (e.target as HTMLTextAreaElement).value })}
+                          />
+                        </span>
+                      </div>
+                    </Group>
+                  )}
                 </>
               )}
             </div>

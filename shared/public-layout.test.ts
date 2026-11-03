@@ -315,6 +315,30 @@ test('页头：设了标题不下发真实名字，公开页头像合并后不�
   assert.equal(maskForPublic(ledger(undefined, { avatar: 'https://example.test/global.png' })).settings.avatar, 'https://example.test/global.png');
 });
 
+test('页头：主题按钮只能存为隐藏，访客配置和恢复备份都带上，缺省不下发', () => {
+  assert.equal(validPublicPage({ themeButton: false }), true);
+  assert.equal(validPublicPage({ themeButton: true }), false);
+  assert.equal(validPublicPage({ themeButton: 'no' }), false);
+  assert.equal(maskForPublic(ledger({ themeButton: false })).settings.publicPage?.themeButton, false);
+  assert.equal('themeButton' in maskForPublic(ledger({ bio: 'hello' })).settings.publicPage!, false);
+  assert.equal(restorablePublicPage({ themeButton: false, bio: 'hello' })?.themeButton, false);
+  assert.equal(restorablePublicPage({ themeButton: true, bio: 'hello' })?.themeButton, undefined);
+});
+
+test('页头：画布上直接改，只有没画布时才留在侧栏；隐藏后访客页不渲染主题按钮', () => {
+  const editor = readFileSync(new URL('../app/src/views/PublicPageEditor.tsx', import.meta.url), 'utf8');
+  assert.match(editor, /\{!canvasOn && \(\s*<>\s*<Cell label=\{t\('settings\.open\.publicTitle'\)\}>/);
+  assert.match(editor, /\{!canvasOn && \(\s*<Group title=\{t\('settings\.publicPage\.bio'\)\}>/);
+  // 画布发回来的值也限长，存之前不靠 iframe 自觉
+  assert.match(editor, /head\.publicTitle\.slice\(0, PUBLIC_TITLE_MAX\)/);
+  assert.match(editor, /head\.bio\.slice\(0, PUBLIC_BIO_MAX\)/);
+  const page = readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8');
+  assert.match(page, /config\?\.themeButton !== false && <ThemeButton \/>/);
+  // 编辑态的标题不能裁切，否则输入框外框看不到
+  assert.match(page, /\$\{edit \? '' : 'truncate'\}/);
+  assert.doesNotMatch(page, /aria-pressed=\{shown\}/);
+});
+
 test('预览消息：只接受同源父窗口，发消息限定本站', () => {
   const page = readFileSync(new URL('../app/src/public/page.tsx', import.meta.url), 'utf8');
   assert.match(page, /e\.origin !== location\.origin \|\| e\.source !== window\.parent/);
