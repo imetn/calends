@@ -28,7 +28,7 @@
 Track what you pay, when it renews, and who owes you. Calends brings subscriptions, shared plans and prepaid balances into one private, single-owner ledger, with an optional read-only public page and AI access through MCP.
 
 - **Flexible billing** — monthly, yearly, custom cycles and lifetime purchases, with trials, intro prices, bonus periods, pauses, postpaid billing, advance charging and cancellation deadlines.
-- **Usage meters** — track per-period usage or cumulative readings in any unit, with usage metrics, aligned charts and usage in charge records.
+- **Usage meters** — track per-period usage or cumulative readings in any unit, with shared meters across subscriptions, usage metrics, aligned charts and usage in charge records.
 - **Billing history** — keep price, plan and region changes, gaps and overlapping subscriptions. See total spent, actual monthly cost and every charge.
 - **Transfers and split payments** — count second-hand takeovers and resales in net cost, and split a charge across multiple payment methods.
 - **Multiple currencies** — historical exchange rates for past charges, current rates for forecasts, and your choice of display currency.
@@ -38,6 +38,7 @@ Track what you pay, when it renews, and who owes you. Calends brings subscriptio
 - **Renewal reminders** — email, Telegram, Lark/Feishu, DingTalk, WeCom, Slack, Discord, Bark, ntfy, ServerChan and custom webhooks.
 - **AI access** — query and update your ledger from an MCP-compatible assistant, with scoped tokens and previews for write operations.
 - **Import external ledgers** — preview and import CSV files, ZIP backups and databases from Wallos and other services in your browser.
+- **Public page editor** — arrange widgets on a grid canvas and customize the header of your read-only public page.
 - **Storage and access** — password and passkey sign-in, remote device sign-out, optional public sharing with server-side masking, JSON backup/restore and CSV import/export. Available in 14 languages.
 
 <details>
