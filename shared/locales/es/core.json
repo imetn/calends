@@ -54,6 +54,8 @@
     "transfer": "Traspaso no válido: se requieren tipo, fecha, importe positivo y moneda",
     "meter": "Medidor no válido: necesita un id único y un nombre",
     "reading": "Registro de uso no válido: necesita un id único, una fecha válida y valores numéricos",
+    "meterLink": "El medidor vinculado no existe o también es un vínculo a otro medidor",
+    "meterLinkUsed": "«{meter}» está vinculado desde «{name}»; elimina primero ese vínculo",
     "readingMeter": "Un registro de uso hace referencia a un medidor no definido"
   },
   "phase": {

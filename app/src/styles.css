@@ -6274,6 +6274,15 @@ a.car-toggle {
   background: var(--fill-2);
 }
 
+/* 标签和分段控件一行放不下时换行，控件不向左盖住标签 */
+.cell:has(> .cell-r > .seg) {
+  flex-wrap: wrap;
+}
+.cell:has(> .cell-r > .seg) > .cell-r {
+  flex: 1 0 auto;
+  max-width: 100%;
+}
+
 /* 表单里独占一行的分段控件撑满宽度，各段等分 */
 .cell > .seg:only-child,
 .stack > .seg {
@@ -7119,7 +7128,11 @@ a.car-toggle {
 }
 .chip-btn {
   height: var(--ctl-h-sm);
+  max-width: 100%;
   padding: 0 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border: 0;
   border-radius: var(--radius-pill);
   background: var(--fill-2);

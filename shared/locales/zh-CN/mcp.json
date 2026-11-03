@@ -82,6 +82,7 @@
     "badMonth": "月份格式应为 YYYY-MM：{month}",
     "meterNotFound": "没有匹配“{q}”的指标。现有指标：{list}",
     "readingNotFound": "没有 id 为“{q}”的用量记录",
+    "meterLinked": "“{name}”关联自“{owner}”，数值要到那个订阅上记，也不能在这里改名",
     "noMeters": "这个订阅还没有用量指标，先用 set_meters 定义"
   },
   "tool": {

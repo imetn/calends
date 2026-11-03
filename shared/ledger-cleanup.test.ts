@@ -314,3 +314,107 @@ test('纯函数：只校验改动字段、清理悬空引用、旧值放行', ()
   assert.throws(() => deleteMethodData({ ...st, settings: { ...DEFAULT_SETTINGS, defaultMethodId: 'target' } }, 'target'));
   assert.equal(deleteMethodData({ ...st, settings: { ...DEFAULT_SETTINGS, defaultMethodId: 'target' } }, 'target', null).settings.defaultMethodId, undefined);
 });
+
+test('共用用量：网页 PUT、DELETE、导入与 MCP 同一套引用校验，关联方看到来源的数，来源没了不说成 0', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const today = todayIn('UTC');
+  const start = addDays(today, -100);
+  const base = { ...(await f.rawSub('plain')), start, share: undefined, proxy: undefined };
+  const owner = {
+    ...base,
+    id: 'owner',
+    name: 'Fictional insurance',
+    meters: [{ id: 'km', name: 'Mileage', unit: 'km' }],
+    readings: [
+      { id: 'k1', date: addDays(today, -60), values: { km: 800 } },
+      { id: 'k2', date: addDays(today, -30), values: { km: 900 } },
+    ],
+  };
+  const linker = { ...base, id: 'linker', name: 'Fictional charger', meters: [{ id: 'kwh', name: 'Power', unit: 'kWh' }] };
+  assert.equal((await f.request('subscriptions/owner', 'PUT', owner)).status, 200);
+  assert.equal((await f.request('subscriptions/linker', 'PUT', linker)).status, 200);
+
+  // 网页 PUT 指向不存在的来源、MCP 预览不写入
+  const dangling = { ...linker, meters: [{ id: 'lk', name: 'x', unit: 'km', link: { subId: 'owner', meterId: 'none' } }] };
+  assert.equal((await f.request('subscriptions/linker', 'PUT', dangling)).status, 400);
+  const link = { subscription: 'linker', meters: [{ link: { subscription: 'owner', meter: 'Mileage' } }] };
+  assert.equal((await f.call('set_meters', { ...link, dry_run: true })).isError ?? false, false);
+  assert.equal(((await f.rawSub('linker')) as { meters: unknown[] }).meters.length, 1);
+  assert.equal((await f.call('set_meters', link)).isError ?? false, false);
+  const stored = (await f.rawSub('linker')) as { meters: Array<{ id: string; name: string; link?: unknown }>; readings?: unknown };
+  const lk = stored.meters.find((m) => m.link)!;
+  assert.deepEqual(lk.link, { subId: 'owner', meterId: 'km' });
+  assert.equal(stored.readings, undefined);
+
+  // 关联方不能自己记数、不能改关联指标；来源记的数两边都看得到
+  assert.equal((await f.call('add_readings', { subscription: 'linker', readings: [{ date: today, values: { [lk.id]: 1 } }] })).isError, true);
+  assert.equal((await f.call('set_meters', { subscription: 'linker', meters: [{ id: lk.id, unit: 'mi' }] })).isError, true);
+  const meters = async () =>
+    JSON.parse((await f.call('get_subscription', { subscription: 'linker' })).content[0].text).meters as Array<Record<string, unknown>>;
+  const shared = (await meters()).find((m) => m.id === lk.id)!;
+  assert.equal(shared.total_usage, 1700);
+  assert.equal(shared.unit, 'km');
+  assert.deepEqual(shared.linked_from, { subscription_id: 'owner', subscription: 'Fictional insurance', meter_id: 'km' });
+
+  // 年付按月记：MCP 的单价与详情页同一口径，是摊到已记录时段的费用 ÷ 用量，不是首条摊整笔
+  const annual = {
+    ...owner,
+    id: 'annual',
+    name: 'Fictional annual',
+    price: 3650,
+    currency: 'CNY',
+    cycle: { unit: 'year', every: 1 },
+    payments: undefined,
+    phases: undefined,
+  };
+  assert.equal((await f.request('subscriptions/annual', 'PUT', annual)).status, 200);
+  const annualMeter = JSON.parse((await f.call('get_subscription', { subscription: 'annual' })).content[0].text).meters[0];
+  assert.equal(annualMeter.latest_unit_price.date, addDays(today, -30));
+  assert.ok(annualMeter.latest_unit_price.amount > 0.41 && annualMeter.latest_unit_price.amount < 0.42, String(annualMeter.latest_unit_price.amount));
+  assert.equal((await f.request('subscriptions/annual', 'DELETE')).status, 200);
+
+  // 同一次调用里给自有指标改名、再用旧名新建：各归各的
+  await f.call('set_meters', {
+    subscription: 'linker',
+    meters: [
+      { id: 'kwh', name: 'Energy' },
+      { name: 'Power', unit: 'W' },
+    ],
+  });
+  const renamedOwn = ((await f.rawSub('linker')) as { meters: Array<{ id: string; name: string; link?: unknown }> }).meters.filter((m) => !m.link);
+  assert.deepEqual(
+    renamedOwn.map((m) => m.name),
+    ['Energy', 'Power'],
+  );
+  await f.call('set_meters', { subscription: 'linker', remove: renamedOwn.filter((m) => m.name === 'Power').map((m) => m.id) });
+
+  // 来源改名后，按现名找关联指标：说明它是关联的，不新建重名指标也不报找不到
+  const renamed = { ...(await f.rawSub('owner')), meters: [{ id: 'km', name: 'Odometer', unit: 'km' }] };
+  assert.equal((await f.request('subscriptions/owner', 'PUT', renamed)).status, 200);
+  const before = ((await f.rawSub('linker')) as { meters: unknown[] }).meters.length;
+  const byName = await f.call('add_readings', { subscription: 'linker', readings: [{ date: today, values: { Odometer: 1 } }] });
+  assert.equal(byName.isError, true);
+  assert.match(byName.content[0].text, /Fictional insurance/);
+  assert.equal((await f.call('set_meters', { subscription: 'linker', meters: [{ name: 'Odometer', unit: 'mi' }] })).isError, true);
+  assert.equal(((await f.rawSub('linker')) as { meters: unknown[] }).meters.length, before);
+  assert.equal((await f.request('subscriptions/owner', 'PUT', owner)).status, 200);
+
+  // 有人关联时，删来源订阅、删来源指标、导入覆盖掉来源都被拒，账本不变
+  assert.equal((await f.request('subscriptions/owner', 'DELETE')).status, 400);
+  assert.equal((await f.call('delete_subscription', { subscription: 'owner' })).isError, true);
+  assert.equal((await f.call('set_meters', { subscription: 'owner', remove: ['km'] })).isError, true);
+  assert.equal((await f.request('subscriptions/owner', 'PUT', { ...owner, meters: undefined, readings: undefined })).status, 400);
+  assert.equal((await f.request('import', 'POST', { subscriptions: [{ ...owner, meters: [], readings: [] }] })).status, 400);
+  assert.ok(await f.rawSub('owner'));
+
+  // 备份恢复或并发留下的悬空引用：读到的是「来源不存在」，不是用了 0；无关修改照常存
+  await upsert(f.env, 'subscriptions', 'owner', { ...owner, meters: [], readings: [] });
+  const gone = (await meters()).find((m) => m.id === lk.id)!;
+  assert.deepEqual([gone.source_missing, gone.total_usage, gone.periods], [true, null, null]);
+  assert.equal((await f.request('subscriptions/linker', 'PUT', { ...(await f.rawSub('linker')), notes: 'Fictional note' })).status, 200);
+
+  // 先解除关联就能删
+  assert.equal((await f.call('set_meters', { subscription: 'linker', remove: [lk.id] })).isError ?? false, false);
+  assert.equal((await f.request('subscriptions/owner', 'DELETE')).status, 200);
+});

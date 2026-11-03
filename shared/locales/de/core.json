@@ -54,6 +54,8 @@
     "transfer": "Ungültige Übertragung: Art, Datum, positiver Betrag und Währung sind erforderlich",
     "meter": "Ungültige Messgröße: eindeutige id und Name erforderlich",
     "reading": "Ungültiger Nutzungseintrag: eindeutige id, gültiges Datum und Zahlenwerte erforderlich",
+    "meterLink": "Die verknüpfte Messgröße existiert nicht oder ist selbst eine Verknüpfung",
+    "meterLinkUsed": "„{meter}“ ist mit „{name}“ verknüpft; entferne zuerst dort die Verknüpfung",
     "readingMeter": "Ein Nutzungseintrag verweist auf eine nicht definierte Messgröße"
   },
   "phase": {

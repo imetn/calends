@@ -209,6 +209,8 @@ export interface Meter {
   unit: string;
   /** 缺省为本期用量（直接填这一期用了多少）；reading 为累计读数（里程表、电表读数），本期用量 = 本次 − 上次 */
   kind?: 'reading';
+  /** 关联别的订阅的指标：数值只存在来源订阅上，这里不存；名称、单位、类型是快照，显示以来源为准（meterView） */
+  link?: { subId: string; meterId: string };
 }
 
 /** 业务数据的一条记录：某个账期 / 记录日各指标的数值，可只填部分指标；与付款分开存 */
@@ -219,6 +221,8 @@ export interface Reading {
   /** meterId → 数值 */
   values: Record<string, number>;
   note?: string;
+  /** 只出现在 meterView 的只读副本里：累计读数在这条重新起算，这条本身没有用量。不写入账本 */
+  base?: boolean;
 }
 
 /** 头像底色：只存色名，显示时按主题取色 */

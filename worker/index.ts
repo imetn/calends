@@ -2,6 +2,7 @@ import { prepareSubWrite, validSub } from '../shared/sub-write.ts';
 import { validateAvatar, validatePeopleAvatars } from '../shared/avatar.ts';
 import { normalizeBasePath, stripBase, siteUrl, withBase } from '../shared/base.ts';
 import { addDays, todayIn } from '../shared/billing.ts';
+import { meterLinkError } from '../shared/meters.ts';
 import {
   DEFAULT_SETTINGS,
   type AppState,
@@ -197,15 +198,22 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     if (method === 'PUT') {
       let sub = (await readJson(req)) as Subscription;
       if (sub.id !== m[1]) return bad(t('server.idMismatch'));
-      const previous = (await loadSubs(env)).find((x) => x.id === sub.id);
+      const subscriptions = await loadSubs(env);
+      const previous = subscriptions.find((x) => x.id === sub.id);
       const today = todayIn((await getSettings(env)).timezone);
-      const prepared = prepareSubWrite(previous, sub, today, { methods: await loadMethods(env), fx: await getFx(env) });
+      const prepared = prepareSubWrite(previous, sub, today, { subscriptions, methods: await loadMethods(env), fx: await getFx(env) });
       if (prepared.error !== undefined) return bad(prepared.error);
       sub = prepared.sub;
       const rev = await upsert(env, 'subscriptions', sub.id, sub);
       return json(sub, 200, rev);
     }
     if (method === 'DELETE') {
+      const subscriptions = await loadSubs(env);
+      const linkError = meterLinkError(
+        subscriptions,
+        subscriptions.filter((x) => x.id !== m![1]),
+      );
+      if (linkError) return bad(linkError);
       // 与 MCP delete_subscription 相同：同一事务里把它从公开页隐藏列表去掉，不留悬空 id
       const settings = deleteSubscriptionSettings(await getSettings(env), m[1]);
       const rev = await saveLedgerEdit(env, { settings }, [], [m[1]]);
@@ -376,6 +384,11 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
       );
       if (error) return bad(t('server.invalidItem', { name: pm?.name ?? '?', error }));
     }
+    // 合并导入可能覆盖别的订阅正在关联的指标，按导入后的整个账本查
+    const before = await loadSubs(env);
+    const imported = new Set(subs.map((s) => s.id));
+    const linkError = meterLinkError(before, [...(mode === 'merge' ? before.filter((s) => !imported.has(s.id)) : []), ...subs]);
+    if (linkError) return bad(linkError);
     await replaceAll(env, subs, methods, mode);
     const state = await loadState(env);
     return json(state, 200, state.rev);

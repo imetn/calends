@@ -454,6 +454,14 @@
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
 }
+/* 叠加的第二个指标：只看走势，颜色与柱子区分开 */
+.cc-line {
+  fill: none;
+  stroke: var(--orange-9);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
 .cc-today {
   position: absolute;
   border-left: var(--hairline) dashed var(--label-2);
@@ -1006,6 +1014,10 @@
   height: 8px;
   border-radius: 2px;
   background: var(--chart-ink);
+}
+.dt-legend i.k-l {
+  height: 2px;
+  background: var(--orange-9);
 }
 .dt-legend i.k-f {
   background: var(--unpaid-hatch);

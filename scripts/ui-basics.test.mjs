@@ -1642,3 +1642,10 @@ test('表单底栏压住内容里抬高的时间线圆点，手机上滚动时�
   const layer = (selector) => Number(css.match(new RegExp(`${selector}\\s*\\{[^}]*z-index:\\s*(\\d+)`))?.[1] ?? 0);
   assert.ok(layer('\\.sheet-foot') > layer('\\.h-phase::before'));
 });
+
+test('标签和分段控件一行放不下时换行，控件不盖住标签；指标表单的类型不再占标签位', () => {
+  const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\.cell:has\(> \.cell-r > \.seg\) \{ ?\s*flex-wrap: wrap;/);
+  const meters = readFileSync(new URL('../app/src/views/detail/Meters.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(meters, /detail\.meters\.kindLabel/);
+});

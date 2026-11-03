@@ -6,17 +6,23 @@ import {
   costBetween,
   meterDecimals,
   meterError,
+  meterLinkError,
   meterRows,
+  meterSource,
   meterStats,
   meterSuggestions,
   meterSummary,
+  meterView,
   periodReading,
   periodReadingCount,
   removeMeter,
+  removeReading,
   replaceMeters,
   setPeriodValues,
+  spreadUnitPrice,
   stableId,
   usageWithin,
+  writeReading,
 } from './meters.ts';
 import { DEFAULT_SETTINGS, type AppState, type Meter, type Payment, type Reading, type Subscription } from './types.ts';
 
@@ -389,4 +395,413 @@ test('postpaid bills sit on the last day of the period they settle, prepaid char
   assert.deepEqual(chargeServicePeriod(dup, '2026-05-03'), { from: '2026-03-31', until: '2026-04-30' });
   const [mar10] = chargesBetween(vps(), '2025-03-10', '2025-03-10', today);
   assert.equal(chargeDay(mar10), '2025-03-10');
+});
+
+// 虚构场景：车险年付 ¥1200 持有里程；充电桩月付 ¥30 记电量，并关联车险的里程
+const sharedOwner = (over: Partial<Subscription> = {}): Subscription => ({
+  id: 'fictional-ins',
+  name: 'Fictional insurance',
+  price: 1200,
+  currency: 'CNY',
+  cycle: { unit: 'year', every: 1 },
+  start: '2026-01-01',
+  status: 'active',
+  category: 'tools',
+  tags: [],
+  meters: [{ id: 'km', name: 'Mileage', unit: 'km' }],
+  readings: [
+    { id: 'k1', date: '2026-01-31', values: { km: 800 }, note: 'first month' },
+    { id: 'k2', date: '2026-02-28', values: { km: 1000 } },
+    { id: 'k3', date: '2026-03-31', values: { km: 900 } },
+  ],
+  ...over,
+});
+const sharedLinker = (over: Partial<Subscription> = {}): Subscription => ({
+  ...sharedOwner(),
+  id: 'fictional-pile',
+  name: 'Fictional charger',
+  price: 30,
+  cycle: { unit: 'month', every: 1 },
+  start: '2026-02-01',
+  meters: [
+    { id: 'kwh', name: 'Power', unit: 'kWh' },
+    { id: 'lk', name: 'stale', unit: '?', link: { subId: 'fictional-ins', meterId: 'km' } },
+  ],
+  readings: [{ id: 'e1', date: '2026-02-15', values: { kwh: 40 } }],
+  ...over,
+});
+
+test('关联指标显示来源的名称单位和记录，只取本订阅服务期内，存的数不进原始订阅', () => {
+  const linker = sharedLinker({ stop: { date: '2026-03-15', kind: 'cancel' } } as Partial<Subscription>);
+  const owner = sharedOwner();
+  const view = meterView(linker, [owner, linker]);
+  const meter = view.meters!.find((m) => m.id === 'lk')!;
+  assert.deepEqual([meter.name, meter.unit, meter.link?.subId], ['Mileage', 'km', 'fictional-ins']);
+  // 1 月的在开始前、3 月 31 日的在停用后，都不算；记录 id 与备注跟来源一致
+  const rows = view.readings!.filter((r) => 'lk' in r.values);
+  assert.deepEqual(rows, [{ id: 'k2', date: '2026-02-28', values: { lk: 1000 } }]);
+  assert.equal(meterSummary(view, meter, '2026-04-15').total, 1000);
+  assert.equal(linker.readings!.length, 1);
+  assert.equal(meterView(owner, [owner, linker]), owner);
+});
+
+test('关联累计读数型时保留开始前最后一条作基数，来源的类型覆盖本地旧类型', () => {
+  const owner = sharedOwner({
+    meters: [{ id: 'km', name: 'Odometer', unit: 'km', kind: 'reading' }],
+    readings: [
+      { id: 'o1', date: '2026-01-10', values: { km: 100 } },
+      { id: 'o2', date: '2026-01-20', values: { km: 500 } },
+      { id: 'o3', date: '2026-02-20', values: { km: 900 } },
+    ],
+  });
+  const linker = sharedLinker();
+  const view = meterView(linker, [owner, linker]);
+  const meter = view.meters!.find((m) => m.id === 'lk')!;
+  assert.equal(meter.kind, 'reading');
+  const rows = meterRows(view, meter, '2026-04-15');
+  assert.deepEqual(
+    rows.map((r) => [r.reading.id, r.usage ?? null]),
+    [
+      ['o2', null],
+      ['o3', 400],
+    ],
+  );
+});
+
+test('来源不存在时关联指标不并入任何记录，不显示成用了 0', () => {
+  const linker = sharedLinker();
+  const view = meterView(linker, [linker]);
+  assert.equal(meterSource(linker, linker.meters![1], [linker]), undefined);
+  assert.equal(
+    view.readings!.some((r) => 'lk' in r.values),
+    false,
+  );
+  assert.equal(view.meters![1].name, 'stale');
+});
+
+test('引用校验拒绝新造的坏引用，放行早就坏掉的，拦住删来源、删指标和把来源改成关联', () => {
+  const owner = sharedOwner();
+  const linker = sharedLinker();
+  const before = [owner, linker];
+  assert.equal(meterLinkError(before, before), undefined);
+  // 新建指向不存在的指标、指向自己
+  const dangling = sharedLinker({ meters: [{ id: 'lk', name: 'x', unit: 'km', link: { subId: 'fictional-ins', meterId: 'none' } }] });
+  assert.ok(meterLinkError(before, [owner, dangling]));
+  const self = sharedLinker({ meters: [{ id: 'lk', name: 'x', unit: 'km', link: { subId: 'fictional-pile', meterId: 'kwh' } }] });
+  assert.ok(meterLinkError(before, [owner, self]));
+  // 删来源订阅、删来源指标：提示里点名被谁用着
+  assert.match(meterLinkError(before, [linker]) ?? '', /./);
+  assert.ok(meterLinkError(before, [{ ...owner, meters: [] }, linker]));
+  // 来源变成关联别人：只有一层
+  const third = sharedOwner({ id: 'fictional-third', name: 'Third' });
+  const chained = { ...owner, meters: [{ id: 'km', name: 'Mileage', unit: 'km', link: { subId: 'fictional-third', meterId: 'km' } }], readings: undefined };
+  assert.ok(meterLinkError([owner, linker, third], [chained, linker, third]));
+  // 早就悬空的引用：无关修改照常存
+  const stale = sharedLinker();
+  assert.equal(meterLinkError([stale], [{ ...stale, notes: 'Fictional note' }]), undefined);
+});
+
+test('关联指标自己不存数，写入校验拒绝显示副本存回去', () => {
+  const linker = sharedLinker();
+  assert.equal(meterError(linker), undefined);
+  assert.ok(meterError(meterView(linker, [sharedOwner(), linker])));
+  assert.ok(meterError({ meters: [{ id: 'lk', name: 'x', unit: 'km', link: { subId: '', meterId: 'km' } }] }));
+});
+
+test('写记录和删记录只动这个指标，同一条上的其他指标留着', () => {
+  const s = sharedOwner({
+    meters: [
+      { id: 'km', name: 'Mileage', unit: 'km' },
+      { id: 'kwh', name: 'Power', unit: 'kWh' },
+    ],
+    readings: [{ id: 'k1', date: '2026-01-31', values: { km: 800, kwh: 50 }, note: 'old' }],
+  });
+  const edited = writeReading(s, ['km'], { id: 'k1', date: '2026-01-31', values: { km: 810 } });
+  assert.deepEqual(edited.readings, [{ id: 'k1', date: '2026-01-31', values: { kwh: 50, km: 810 } }]);
+  // 改日期：其他指标留在原日期，这个指标拆成新的一条
+  const moved = writeReading(s, ['km'], { id: 'k1', date: '2026-02-01', values: { km: 810 } }, 'k1');
+  assert.deepEqual(moved.readings![0], { id: 'k1', date: '2026-01-31', values: { kwh: 50 }, note: 'old' });
+  assert.deepEqual([moved.readings![1].date, moved.readings![1].values], ['2026-02-01', { km: 810 }]);
+  assert.notEqual(moved.readings![1].id, 'k1');
+  // 同一个 id 重试：覆盖不重复记
+  const retry = writeReading(edited, ['km'], { id: 'k1', date: '2026-01-31', values: { km: 810 } });
+  assert.equal(retry.readings!.length, 1);
+  const added = writeReading(s, ['km'], { id: 'k9', date: '2026-03-01', values: { km: 1 } });
+  assert.equal(added.readings!.length, 2);
+  // 删：只清这个指标；没有数了才删整条
+  const removed = removeReading(s, ['km'], 'k1');
+  assert.deepEqual(removed.readings![0].values, { kwh: 50 });
+  assert.equal(removeReading(removed, ['kwh'], 'k1').readings, undefined);
+});
+
+test('年付车险按月记里程：单价按已记录时段摊费，晚记不涨价，逐期记录走原来的单价', () => {
+  const s = sharedOwner();
+  const rows = meterRows(s, s.meters![0], '2026-04-15');
+  const spread = spreadUnitPrice(s, rows, '2026-04-15');
+  // 1 月 1 日到 3 月 31 日共 90 天：1200 × 90 ÷ 365 ÷ 2700
+  assert.equal(spread?.asOf, '2026-03-31');
+  assert.ok(Math.abs(spread!.price!.amount - (1200 * 90) / 365 / 2700) < 1e-9);
+  assert.equal(spread!.price!.currency, 'CNY');
+  // 今天往后推，费用和用量都截至最后一条记录，单价不变
+  const later = spreadUnitPrice(s, meterRows(s, s.meters![0], '2026-09-01'), '2026-09-01');
+  assert.ok(Math.abs(later!.price!.amount - spread!.price!.amount) < 1e-9);
+  // 每期一条：不摊，走逐期单价
+  const monthly = sharedOwner({ cycle: { unit: 'month', every: 1 }, price: 30 });
+  assert.equal(spreadUnitPrice(monthly, meterRows(monthly, monthly.meters![0], '2026-04-15'), '2026-04-15'), undefined);
+  // 没有用量、终身买断：都不摊
+  assert.equal(spreadUnitPrice(sharedOwner({ readings: undefined }), [], '2026-04-15'), undefined);
+  const lifetime = sharedOwner({ cycle: { unit: 'lifetime', every: 1 } });
+  assert.equal(spreadUnitPrice(lifetime, meterRows(lifetime, lifetime.meters![0], '2026-04-15'), '2026-04-15'), undefined);
+});
+
+test('公开页不带关联指标和来源引用', () => {
+  const state: AppState = { settings: DEFAULT_SETTINGS, fx: FALLBACK_FX, methods: [], subscriptions: [sharedOwner(), sharedLinker()] };
+  const text = JSON.stringify(maskForPublic(state));
+  assert.equal(text.includes('"link"'), false);
+  assert.equal(text.includes('"meters"'), false);
+  assert.equal(text.includes('"readings"'), false);
+});
+
+const spreadOf = (s: Subscription, today: string) => spreadUnitPrice(s, meterRows(s, s.meters![0], today), today);
+
+test('摊销单价：中途才开始记录时只算首条所在的那一期，不把更早的费用摊进来', () => {
+  const s = sharedOwner({ start: '2024-01-01' });
+  const spread = spreadOf(s, '2026-04-15')!;
+  assert.equal(spread.asOf, '2026-03-31');
+  assert.ok(Math.abs(spread.price!.amount - (1200 * 90) / 365 / 2700) < 1e-9);
+});
+
+test('摊销单价：还没出账的后付费当期不进分母，截至日停在已出账的最后一条', () => {
+  const s = sharedOwner({
+    price: 90,
+    billing: 'postpaid',
+    cycle: { unit: 'month', every: 1 },
+    readings: [
+      { id: 'a', date: '2026-01-15', values: { km: 100 } },
+      { id: 'b', date: '2026-01-31', values: { km: 100 } },
+      { id: 'c', date: '2026-02-15', values: { km: 100 } },
+    ],
+  } as Partial<Subscription>);
+  // 2 月 20 日时 1 月账单已出，2 月账单还没出：2 月那条既没费用也不算用量
+  const spread = spreadOf(s, '2026-02-20')!;
+  assert.equal(spread.asOf, '2026-01-31');
+  assert.ok(Math.abs(spread.price!.amount - 90 / 200) < 1e-9);
+});
+
+test('摊销单价：币种只看摊到的扣款，换币前的不挡住单价；同一时段混币种才没有', () => {
+  const s = sharedOwner({
+    start: '2025-01-01',
+    phases: [
+      { start: '2025-01-01', price: 200, currency: 'USD', cycle: { unit: 'year', every: 1 } },
+      { start: '2026-01-01', price: 1200, currency: 'CNY', cycle: { unit: 'year', every: 1 } },
+    ],
+  } as Partial<Subscription>);
+  assert.equal(spreadOf(s, '2026-04-15')!.price!.currency, 'CNY');
+  const parallel = sharedOwner({
+    phases: [
+      { start: '2026-01-01', end: '2026-12-31', price: 200, currency: 'USD', cycle: { unit: 'year', every: 1 } },
+      { start: '2026-01-02', price: 1200, currency: 'CNY', cycle: { unit: 'year', every: 1 } },
+    ],
+  } as Partial<Subscription>);
+  assert.equal(spreadOf(parallel, '2026-04-15')!.price, undefined);
+});
+
+test('摊销单价：退款和补差算进费用，全退后没有单价，扣款失败不算', () => {
+  const pay = (over: object) => [
+    { date: '2026-01-01', amount: 1200, currency: 'CNY' },
+    { currency: 'CNY', ...over },
+  ];
+  const plain = spreadOf(sharedOwner(), '2026-04-15')!.price!.amount;
+  const refunded = sharedOwner({ payments: pay({ date: '2026-02-01', amount: -1200, kind: 'refund' }) } as Partial<Subscription>);
+  assert.equal(spreadOf(refunded, '2026-04-15')!.price, undefined);
+  const adjusted = sharedOwner({ payments: pay({ date: '2026-02-01', amount: 600, kind: 'adjust' }) } as Partial<Subscription>);
+  assert.ok(Math.abs(spreadOf(adjusted, '2026-04-15')!.price!.amount - plain * 1.5) < 1e-6);
+  const failed = sharedOwner({ payments: pay({ date: '2026-02-01', amount: 600, kind: 'failed' }) } as Partial<Subscription>);
+  assert.ok(Math.abs(spreadOf(failed, '2026-04-15')!.price!.amount - plain) < 1e-9);
+});
+
+test('关联指标只取真正服务的日子：阶段空档、暂停之后不算，并行阶段任一段覆盖即可', () => {
+  const owner = sharedOwner({
+    readings: ['01-31', '03-15', '05-15', '07-15', '09-15'].map((d, i) => ({ id: `k${i}`, date: `2026-${d}`, values: { km: 100 } })),
+  });
+  const dates = (s: Subscription) =>
+    meterView(s, [owner, s])
+      .readings!.filter((r) => 'lk' in r.values)
+      .map((r) => r.date);
+  const plan = { price: 30, currency: 'CNY', cycle: { unit: 'month', every: 1 } };
+  const gap = sharedLinker({
+    start: '2026-01-01',
+    phases: [
+      { ...plan, start: '2026-01-01', end: '2026-02-28' },
+      { ...plan, start: '2026-05-01', end: '2026-06-30' },
+    ],
+  } as Partial<Subscription>);
+  assert.deepEqual(dates(gap), ['2026-01-31', '2026-05-15']);
+  const paused = sharedLinker({ start: '2026-01-01', status: 'paused', pausedAt: '2026-04-01' } as Partial<Subscription>);
+  assert.deepEqual(dates(paused), ['2026-01-31', '2026-03-15']);
+  // 并行：后开始的那段先结束，最后一段的结束日不能当成整个订阅的结束日
+  const parallel = sharedLinker({
+    start: '2026-01-01',
+    phases: [
+      { ...plan, start: '2026-01-01', end: '2026-08-31' },
+      { ...plan, start: '2026-02-01', end: '2026-04-30' },
+    ],
+  } as Partial<Subscription>);
+  assert.deepEqual(dates(parallel), ['2026-01-31', '2026-03-15', '2026-05-15', '2026-07-15']);
+});
+
+test('摊销单价：账单变多不改变单价，现金日在期外的正常扣款按自己的服务期算', () => {
+  const twice = (m: string) => [
+    { id: `${m}a`, date: `2026-${m}-14`, values: { km: 100 } },
+    { id: `${m}b`, date: `2026-${m}-${m === '02' ? '28' : '31'}`, values: { km: 100 } },
+  ];
+  const post = sharedOwner({
+    price: 90,
+    billing: 'postpaid',
+    cycle: { unit: 'month', every: 1 },
+    readings: [...twice('01'), ...twice('02')],
+  } as Partial<Subscription>);
+  for (const day of ['2026-03-05', '2026-04-05', '2026-09-05']) assert.ok(Math.abs(spreadOf(post, day)!.price!.amount - 0.45) < 1e-9, day);
+  // 提前续费：1 月 28 日付的是 2 月的
+  const early = sharedOwner({
+    price: 310,
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-01-01',
+    payments: [{ date: '2026-01-28', amount: 310, currency: 'CNY', serviceDate: '2026-02-01' }],
+    readings: [
+      { id: 'x', date: '2026-02-10', values: { km: 10 } },
+      { id: 'y', date: '2026-02-20', values: { km: 10 } },
+    ],
+  } as Partial<Subscription>);
+  assert.ok(spreadOf(early, '2026-02-25')!.price);
+});
+
+test('摊销单价：服务结束后才退的款归最后一期', () => {
+  const s = sharedOwner({
+    price: 200,
+    cycle: { unit: 'month', every: 1 },
+    status: 'cancelled',
+    stop: { date: '2026-02-01', kind: 'cancel' },
+    payments: [
+      { date: '2026-01-01', amount: 200, currency: 'CNY' },
+      { date: '2026-03-02', amount: -100, currency: 'CNY', kind: 'refund' },
+    ],
+    readings: [
+      { id: 'x', date: '2026-01-10', values: { km: 100 } },
+      { id: 'y', date: '2026-01-31', values: { km: 100 } },
+    ],
+  } as Partial<Subscription>);
+  assert.ok(Math.abs(spreadOf(s, '2026-04-01')!.price!.amount - 0.5) < 1e-9);
+});
+
+test('关联累计读数：断档和开始前很久的读数不算用量，跨断档的差不进累计', () => {
+  const owner = sharedOwner({
+    meters: [{ id: 'km', name: 'Odometer', unit: 'km', kind: 'reading' }],
+    readings: ['01', '02', '03', '04', '05', '06', '07', '08'].map((m, i) => ({ id: `o${m}`, date: `2026-${m}-15`, values: { km: 1000 * (i + 1) } })),
+  });
+  const plan = { price: 30, currency: 'CNY', cycle: { unit: 'month', every: 1 } };
+  const gap = sharedLinker({
+    start: '2026-01-01',
+    phases: [
+      { ...plan, start: '2026-01-01', end: '2026-03-31' },
+      { ...plan, start: '2026-07-01' },
+    ],
+  } as Partial<Subscription>);
+  const view = meterView(gap, [owner, gap]);
+  const rows = meterRows(
+    view,
+    view.meters!.find((m) => m.id === 'lk')!,
+    '2026-09-01',
+  );
+  // 6-15 是断档里紧挨的基数，不算用量；7、8 月各 1000
+  assert.deepEqual(
+    rows.map((r) => [r.reading.date, r.usage]),
+    [
+      ['2026-01-15', undefined],
+      ['2026-02-15', 1000],
+      ['2026-03-15', 1000],
+      ['2026-06-15', undefined],
+      ['2026-07-15', 1000],
+      ['2026-08-15', 1000],
+    ],
+  );
+  // 基数太远：以开始后首条为基数，不把几年的里程算到这个订阅上
+  const old = sharedOwner({
+    meters: owner.meters,
+    readings: [
+      { id: 'a', date: '2020-02-01', values: { km: 1000 } },
+      { id: 'b', date: '2026-07-15', values: { km: 90000 } },
+      { id: 'c', date: '2026-08-15', values: { km: 91000 } },
+    ],
+  });
+  const late = sharedLinker({ start: '2026-07-01' });
+  const lateView = meterView(late, [old, late]);
+  const lateSum = meterSummary(
+    lateView,
+    lateView.meters!.find((m) => m.id === 'lk')!,
+    '2026-09-01',
+  );
+  assert.equal(lateSum.total, 1000);
+});
+
+test('关联累计读数：断档里没有读数也不算跨断档的差；相邻、并行阶段算一段连续服务', () => {
+  const plan = { price: 30, currency: 'CNY', cycle: { unit: 'month', every: 1 } };
+  const usages = (values: Array<[string, number]>, phases: Array<Record<string, unknown>>) => {
+    const owner = sharedOwner({
+      meters: [{ id: 'km', name: 'Odometer', unit: 'km', kind: 'reading' }],
+      readings: values.map(([date, km]) => ({ id: date, date, values: { km } })),
+    });
+    const s = sharedLinker({ start: String(phases[0].start), phases: phases.map((p) => ({ ...plan, ...p })) } as Partial<Subscription>);
+    const view = meterView(s, [owner, s]);
+    return meterRows(
+      view,
+      view.meters!.find((m) => m.id === 'lk')!,
+      '2026-12-01',
+    ).map((r) => r.usage);
+  };
+  // 空档 3-02 ~ 6-30 里没有读数：7-15 只作新基数
+  assert.deepEqual(
+    usages(
+      [
+        ['2026-01-15', 1000],
+        ['2026-02-15', 1100],
+        ['2026-07-15', 5000],
+        ['2026-08-15', 5100],
+      ],
+      [
+        { start: '2026-01-01', end: '2026-03-01' },
+        { start: '2026-07-01', end: '2026-09-30' },
+      ],
+    ),
+    [undefined, 100, undefined, 100],
+  );
+  // 前后相接的两个阶段不算断档
+  assert.deepEqual(
+    usages(
+      [
+        ['2026-01-15', 100],
+        ['2026-02-15', 200],
+      ],
+      [
+        { start: '2026-01-01', end: '2026-01-31' },
+        { start: '2026-02-01', end: '2026-03-31' },
+      ],
+    ),
+    [undefined, 100],
+  );
+  // 并行阶段：基数距离从整段服务的开始算，19 天内不丢用量
+  assert.deepEqual(
+    usages(
+      [
+        ['2026-02-10', 100],
+        ['2026-03-25', 500],
+        ['2026-04-25', 800],
+      ],
+      [
+        { start: '2026-03-01', end: '2026-06-30' },
+        { start: '2026-03-20', end: '2026-05-31' },
+      ],
+    ),
+    [undefined, 400, 300],
+  );
 });

@@ -82,6 +82,7 @@
     "badMonth": "Bulan harus berformat YYYY-MM: {month}",
     "meterNotFound": "Tidak ada meteran yang cocok dengan “{q}”. Meteran: {list}",
     "readingNotFound": "Tidak ada catatan penggunaan dengan id “{q}”",
+    "meterLinked": "“{name}” ditautkan dari “{owner}”: catat nilai dan ubah namanya di sana",
     "noMeters": "Langganan ini belum punya meteran; tentukan dulu dengan set_meters"
   },
   "tool": {

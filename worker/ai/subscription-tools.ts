@@ -31,7 +31,7 @@ import { SUBSCRIPTION_SCHEMA } from '../../shared/subscription-schema.ts';
 import { prepareSubWrite } from '../../shared/sub-write.ts';
 import { validateCurrency, deleteSubscriptionSettings } from '../../shared/ledger-edit.ts';
 import { cleanTransfers } from '../../shared/transfers.ts';
-import { removeMeter, stableId } from '../../shared/meters.ts';
+import { meterLinkError, meterView, removeMeter, stableId } from '../../shared/meters.ts';
 import type { Meter, Reading } from '../../shared/types.ts';
 import type { Tool } from './tool-kit.ts';
 import {
@@ -768,6 +768,17 @@ const METER_INPUT = obj(
       enum: ['usage', 'reading'],
       description: 'usage (default) = the amount used in that period; reading = a cumulative counter (odometer, meter reading), usage = this − previous.',
     },
+    link: {
+      ...obj(
+        {
+          subscription: { type: 'string', description: 'Subscription id or exact name that owns the meter.' },
+          meter: { type: 'string', description: 'Meter id or exact name on that subscription.' },
+        },
+        ['subscription', 'meter'],
+      ),
+      description:
+        'Link a meter owned by another subscription instead of storing values here (same mileage for car insurance and a charger). Name, unit and kind follow the source; only for new meters.',
+    },
   },
   [],
 );
@@ -784,7 +795,7 @@ function findMeter(meters: Meter[], ref: string): Meter {
 export const set_meters: Tool = {
   name: 'set_meters',
   description:
-    'Define custom business meters on a subscription (anything the user tracks per period: electricity of a utility bill, car mileage, server egress traffic, calls…). Names and units are free text; nothing is built in. Each item in meters updates the meter with that id (or the same name, case-insensitive) or creates a new one; omitted fields keep their values. remove = meter ids to delete — their values are cleared from every reading and readings left empty are deleted (subscription must then be an id or exact name). Record values with add_readings; get_subscription.meters returns per-period usage, totals and unit price (period charges ÷ usage).',
+    'Define custom business meters on a subscription (anything the user tracks per period: electricity of a utility bill, car mileage, server egress traffic, calls…). Names and units are free text; nothing is built in. Each item in meters updates the meter with that id (or the same name, case-insensitive) or creates a new one; omitted fields keep their values. remove = meter ids to delete — their values are cleared from every reading and readings left empty are deleted (subscription must then be an id or exact name). An item with link shares a meter owned by another subscription; its values stay on the owner, and a meter other subscriptions link to cannot be removed. Record values with add_readings; get_subscription.meters returns per-period usage, totals and unit price (period charges ÷ usage).',
   write: true,
   inputSchema: obj(
     {
@@ -810,13 +821,33 @@ export const set_meters: Tool = {
       next = removeMeter(next, id);
     }
     const meters = [...(next.meters ?? [])];
+    // 关联指标存的名称只是快照，按名字找时用来源的现名
+    const shown = new Map((meterView(next, st.subscriptions).meters ?? []).map((m) => [m.id, m.name]));
     for (const input of inputs) {
       const id = str(input.id);
+      const link = input.link as { subscription?: unknown; meter?: unknown } | undefined;
+      if (link) {
+        const owner = findSub(st, link.subscription, { exact: true });
+        const source = findMeter(owner.meters ?? [], String(link.meter ?? ''));
+        const taken = new Set(meters.map((m) => m.id));
+        const { link: _l, ...shape } = source;
+        meters.push({ ...shape, id: id ?? stableId('m', `${s.id}|${owner.id}|${source.id}`, taken), link: { subId: owner.id, meterId: source.id } });
+        continue;
+      }
       const name = str(input.name)?.trim();
-      const at = meters.findIndex((m) => (id ? m.id === id : !!name && m.name.trim().toLowerCase() === name.toLowerCase()));
+      const at = meters.findIndex((m) =>
+        id ? m.id === id : !!name && (m.link ? (shown.get(m.id) ?? m.name) : m.name).trim().toLowerCase() === name.toLowerCase(),
+      );
       const kind = input.kind === 'reading' ? 'reading' : input.kind === 'usage' ? undefined : at >= 0 ? meters[at].kind : undefined;
       if (at >= 0) {
         const old = meters[at];
+        if (old.link)
+          throw new Error(
+            t('mcp.error.meterLinked', {
+              name: shown.get(old.id) ?? old.name,
+              owner: st.subscriptions.find((x) => x.id === old.link!.subId)?.name ?? old.link.subId,
+            }),
+          );
         const { kind: _k, ...rest } = old;
         meters[at] = { ...rest, ...(name ? { name } : {}), ...(input.unit != null ? { unit: String(input.unit).trim() } : {}), ...(kind ? { kind } : {}) };
         continue;
@@ -833,7 +864,7 @@ export const set_meters: Tool = {
 export const add_readings: Tool = {
   name: 'add_readings',
   description:
-    'Record custom meter values on a subscription in bulk (e.g. import dozens of electricity bills at once). Each reading has a date (billing period / record day), values = {meter id or exact meter name: number} (only some meters may be filled) and an optional note. A reading with an existing id, or else on a date that already has a reading, is merged: given values overwrite, null removes that value, note replaces (null clears); otherwise a new reading is added. Readings left without values are deleted. delete = reading ids to remove. Define meters first with set_meters. Values are stored apart from payments; get_subscription.meters derives usage (cumulative readings: this − previous, none on rollback), totals and unit price (actual charges in the period after the previous reading up to this one ÷ usage).',
+    'Record custom meter values on a subscription in bulk (e.g. import dozens of electricity bills at once). Each reading has a date (billing period / record day), values = {meter id or exact meter name: number} (only some meters may be filled) and an optional note. A reading with an existing id, or else on a date that already has a reading, is merged: given values overwrite, null removes that value, note replaces (null clears); otherwise a new reading is added. Readings left without values are deleted. delete = reading ids to remove. Define meters first with set_meters. A linked meter takes its values on the subscription that owns it. Values are stored apart from payments; get_subscription.meters derives usage (cumulative readings: this − previous, none on rollback), totals and unit price (actual charges in the period after the previous reading up to this one ÷ usage).',
   write: true,
   inputSchema: obj(
     {
@@ -864,6 +895,8 @@ export const add_readings: Tool = {
     const s = findSub(st, a.subscription, { exact: remove.length > 0 });
     const meters = s.meters ?? [];
     if (inputs.length && !meters.length) throw new Error(t('mcp.error.noMeters'));
+    // 关联指标存的名称只是快照，按名字找时用来源的现名
+    const shownMeters = meterView(s, st.subscriptions).meters ?? meters;
     let list: Reading[] = [...(s.readings ?? [])];
     for (const id of remove) {
       if (!list.some((r) => r.id === id)) throw new Error(t('mcp.error.readingNotFound', { q: id }));
@@ -877,7 +910,9 @@ export const add_readings: Tool = {
       const at = list.findIndex((r) => (id ? r.id === id : r.date === day));
       const values: Record<string, number> = at >= 0 ? { ...list[at].values } : {};
       for (const [key, v] of Object.entries(raw as Record<string, unknown>)) {
-        const m = findMeter(meters, key);
+        const m = findMeter(shownMeters, key);
+        if (m.link)
+          throw new Error(t('mcp.error.meterLinked', { name: m.name, owner: st.subscriptions.find((x) => x.id === m.link!.subId)?.name ?? m.link.subId }));
         if (v === null) delete values[m.id];
         else if (typeof v === 'number' && Number.isFinite(v)) values[m.id] = v;
         else throw new Error(t('mcp.error.notNumber', { what: `readings[${i}].values.${key}` }));
@@ -901,13 +936,19 @@ export const add_readings: Tool = {
 
 export const delete_subscription: Tool = {
   name: 'delete_subscription',
-  description: 'Delete a subscription and its whole history. Irreversible: always preview with dry_run first; the user confirms.',
+  description:
+    'Delete a subscription and its whole history. Refused while another subscription links one of its meters. Irreversible: always preview with dry_run first; the user confirms.',
   write: true,
   destructive: true,
   inputSchema: obj({ subscription: SUBREF_EXACT, dry_run: drySchema }, ['subscription']),
   async run(a, ctx) {
     const { st, today } = await state(ctx);
     const s = findSub(st, a.subscription, { exact: true });
+    const linkError = meterLinkError(
+      st.subscriptions,
+      st.subscriptions.filter((x) => x.id !== s.id),
+    );
+    if (linkError) throw new Error(linkError);
     const preview = {
       before: s,
       after: null,

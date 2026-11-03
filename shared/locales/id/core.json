@@ -49,6 +49,8 @@
     "transfer": "Pengalihan tidak valid: jenis, tanggal, jumlah positif, dan mata uang wajib diisi",
     "meter": "Meteran tidak valid: perlu id unik dan nama",
     "reading": "Catatan penggunaan tidak valid: perlu id unik, tanggal valid, dan nilai angka",
+    "meterLink": "Meteran yang ditautkan tidak ada atau juga merupakan tautan ke meteran lain",
+    "meterLinkUsed": "“{meter}” ditautkan oleh “{name}”; hapus tautan di sana terlebih dahulu",
     "readingMeter": "Catatan penggunaan merujuk ke meteran yang belum ditentukan"
   },
   "phase": {

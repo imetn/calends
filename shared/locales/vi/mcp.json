@@ -82,6 +82,7 @@
     "badMonth": "Tháng phải có dạng YYYY-MM: {month}",
     "meterNotFound": "Không có chỉ số khớp với “{q}”. Chỉ số: {list}",
     "readingNotFound": "Không có bản ghi sử dụng với id “{q}”",
+    "meterLinked": "“{name}” được liên kết từ “{owner}”: hãy ghi giá trị và đổi tên tại đó",
     "noMeters": "Gói này chưa có chỉ số; hãy định nghĩa bằng set_meters trước"
   },
   "tool": {

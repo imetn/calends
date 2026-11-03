@@ -85,6 +85,7 @@
     "badMonth": "Le mois doit être au format YYYY-MM : {month}",
     "meterNotFound": "Aucun compteur ne correspond à « {q} ». Compteurs : {list}",
     "readingNotFound": "Aucune entrée d’usage avec l’id « {q} »",
+    "meterLinked": "« {name} » est lié depuis « {owner} » : saisissez les valeurs et renommez-le là-bas",
     "noMeters": "Cet abonnement n’a pas encore de compteurs ; définissez-les d’abord avec set_meters"
   },
   "tool": {

@@ -85,6 +85,7 @@
     "badMonth": "O mês deve estar no formato YYYY-MM: {month}",
     "meterNotFound": "Nenhum medidor corresponde a “{q}”. Medidores: {list}",
     "readingNotFound": "Nenhum registro de uso com o id “{q}”",
+    "meterLinked": "“{name}” está vinculado a partir de “{owner}”: registre os valores e altere o nome por lá",
     "noMeters": "Esta assinatura ainda não tem medidores; defina-os primeiro com set_meters"
   },
   "tool": {

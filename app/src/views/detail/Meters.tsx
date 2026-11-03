@@ -1,19 +1,34 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Settings2 } from 'lucide-react';
-import { addDays, diffDays, isPostpaid, midDay, uid, type Charge } from '../../../../shared/billing.ts';
+import { addDays, chargeServicePeriod, diffDays, isPostpaid, midDay, uid, type Charge } from '../../../../shared/billing.ts';
 import { chargesTotal, formatTotal } from '../../../../shared/fx-total.ts';
 import { cnDateFull, weekdayOf, wholeCurrencies } from '../../../../shared/format.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
 import { numberFormat } from '../../../../shared/intl.ts';
-import { meterDecimals, meterStats, meterSuggestions, meterSummary, replaceMeters, type MeterRow } from '../../../../shared/meters.ts';
+import {
+  linkableMeters,
+  meterDecimals,
+  meterRows,
+  meterSource,
+  meterStats,
+  meterSuggestions,
+  meterSummary,
+  meterView,
+  removeReading,
+  replaceMeters,
+  spreadUnitPrice,
+  usageWithin,
+  writeReading,
+  type MeterRow,
+} from '../../../../shared/meters.ts';
 import type { AppState, Meter, Reading, Subscription } from '../../../../shared/types.ts';
 import { ConfirmButton } from '../../components/ConfirmButton.tsx';
 import { DatePicker } from '../../components/DatePicker.tsx';
 import { Panel } from '../../components/DetailKit.tsx';
 import { Picker } from '../../components/Picker.tsx';
 import { ChargeBars } from '../DetailChart.tsx';
-import { ChargeTip, chargeUsage, fixedQty, unitMoney, withUnit } from './ChargeTip.tsx';
+import { ChargeTip, chargeOpen, chargeUsage, fixedQty, unitMoney, withUnit } from './ChargeTip.tsx';
 import { NumInput, Seg, useSubmit } from '../../components/inputs.tsx';
 import { ask, Sheet } from '../../components/overlays.tsx';
 import { Cell, Group, Metric } from '../../components/ui.tsx';
@@ -44,6 +59,9 @@ export function usageMetrics(sub: Subscription, cur: Meter, today: string) {
   const isReading = cur.kind === 'reading';
   const dec = meterDecimals(sub, cur.id);
   const q = fixedQty(dec);
+  // 年付车险按月记里程：不用逐期单价（只有含扣款的那一期有且很高），改用摊到已记录时段的费用 ÷ 用量
+  const spread = spreadUnitPrice(sub, summary.rows, today);
+  const price = spread ? spread.price : stats.unitPrice;
   return [
     <Metric
       key="latest"
@@ -70,8 +88,12 @@ export function usageMetrics(sub: Subscription, cur: Meter, today: string) {
     <Metric
       key="price"
       label={t('detail.meters.avgPrice')}
-      value={stats.unitPrice ? unitMoney(stats.unitPrice.amount, stats.unitPrice.currency, cur.unit) : '—'}
-      note={summary.latestPriced && t('detail.meters.latestPrice', { v: priceText(summary.latestPriced, cur.unit) })}
+      value={price ? unitMoney(price.amount, price.currency, cur.unit) : '—'}
+      note={
+        spread
+          ? t('detail.meters.asOf', { date: cnDateFull(spread.asOf) })
+          : summary.latestPriced && t('detail.meters.latestPrice', { v: priceText(summary.latestPriced, cur.unit) })
+      }
     />,
     <Metric
       key="total"
@@ -90,7 +112,7 @@ export function usageMetrics(sub: Subscription, cur: Meter, today: string) {
  */
 /** axis：与费用走势共用的日期横轴与范围；没有费用图时按自己的记录画 */
 export function Meters({
-  sub,
+  sub: raw,
   state,
   today,
   history = [],
@@ -109,12 +131,19 @@ export function Meters({
   axis?: { from: string; to: string; since: string };
 }) {
   const ro = !!state.readonly;
+  // sub 只用来看和算（含关联来的记录），保存一律用原始的 raw
+  const sub = meterView(raw, state.subscriptions);
   const meters = sub.meters ?? [];
   const [manage, setManage] = useState(false);
   const [reading, setReading] = useState<{ id?: string } | null>(null);
   const [bucket, setBucket] = useState(0);
   const cur = meters.find((m) => m.id === meterId) ?? meters[0];
   const setPicked = (id: string) => onMeter?.(id);
+  // 关联指标的记录写回来源订阅，一次只写一个订阅；来源不在了就没有可写的地方
+  const source = cur && meterSource(raw, cur, state.subscriptions);
+  const gone = !!cur?.link && !source;
+  const readingOwner = source?.sub ?? raw;
+  const readingScope = source ? [source.meter] : (raw.meters ?? []).filter((m) => !m.link);
   const save = (next: Subscription, close: () => void) =>
     run(async () => {
       await saveSub(next);
@@ -126,8 +155,11 @@ export function Meters({
       {manage &&
         createPortal(
           <MetersSheet
-            sub={sub}
-            suggestions={meterSuggestions(state.subscriptions, sub)}
+            sub={raw}
+            view={sub}
+            subs={state.subscriptions}
+            suggestions={meterSuggestions(state.subscriptions, raw)}
+            linkable={linkableMeters(state.subscriptions, raw)}
             onSave={(next) => save(next, () => setManage(false))}
             onClose={() => setManage(false)}
           />,
@@ -136,8 +168,9 @@ export function Meters({
       {reading &&
         createPortal(
           <ReadingSheet
-            sub={sub}
-            edit={sub.readings?.find((r) => r.id === reading.id)}
+            sub={readingOwner}
+            meters={readingScope}
+            edit={readingOwner.readings?.find((r) => r.id === reading.id)}
             today={today}
             onSave={(next) => save(next, () => setReading(null))}
             onClose={() => setReading(null)}
@@ -164,6 +197,23 @@ export function Meters({
   const base = state.settings.baseCurrency;
   const used = summary.rows.filter((r) => r.usage != null);
   const q = fixedQty(meterDecimals(sub, cur.id));
+  // 看自己的指标时，把关联来的第一个指标叠成折线（充电桩的电量柱上看里程走势）
+  const lineMeter = cur.link ? undefined : meters.find((m) => m.link && meterSource(raw, m, state.subscriptions));
+  const lineRows = lineMeter ? meterRows(sub, lineMeter, today) : [];
+  const lineQ = lineMeter && fixedQty(meterDecimals(sub, lineMeter.id));
+  const lineRow = (from: string, until: string) => {
+    const v = lineMeter && usageWithin(lineRows, from, until);
+    return (
+      v != null && (
+        <div className="cc-tip-r">
+          <span>{lineMeter!.name}</span>
+          <b>{withUnit(v, lineMeter!.unit, lineQ)}</b>
+        </div>
+      )
+    );
+  };
+  // 一根柱对应的记录区间 (since, date]
+  const rowFrom = (r: MeterRow) => (r.since ? addDays(r.since, 1) : r.reading.date);
   const whole = wholeCurrencies(history);
   // 用量柱画在它那一期 (since, date] 的中间，与后付费的费用柱同一位置；按画的位置筛进横轴范围，免得首根柱压在纵轴刻度上
   const barDate = (r: MeterRow) => (r.since ? midDay(addDays(r.since, 1), r.reading.date) : r.reading.date);
@@ -178,7 +228,8 @@ export function Meters({
     const r = trend[i];
     // 读数所属的那笔扣款（结算区间含这一天）：与费用走势同一个提示框；还没出账的只写日期和用量
     const c = history.find((h) => chargeUsage([r], h) != null);
-    if (c)
+    if (c) {
+      const p = chargeServicePeriod(c.sub, c.date, c.serviceDate);
       return (
         <ChargeTip
           c={c}
@@ -187,11 +238,14 @@ export function Meters({
           whole={whole}
           converted={c.currency !== base ? formatTotal(chargesTotal(state, [c], base), base, { direction: -1 }) : undefined}
           usage={chargeUsage(summary.rows, c)}
+          open={chargeOpen(summary.rows, c)}
           meter={cur}
           decimals={meterDecimals(sub, cur.id)}
+          extra={lineRow(p.from, p.until)}
           note={r.reading.note}
         />
       );
+    }
     return (
       <>
         <div className="cc-tip-h">
@@ -202,6 +256,7 @@ export function Meters({
           <span>{t('detail.meters.head.usage')}</span>
           <b>{withUnit(r.usage!, cur.unit, q)}</b>
         </div>
+        {lineRow(rowFrom(r), addDays(r.reading.date, 1))}
         {r.reading.note && <div className="cc-tip-f">{r.reading.note}</div>}
       </>
     );
@@ -216,9 +271,11 @@ export function Meters({
             <button className="dt-btn sm dt-add" onClick={() => setManage(true)} title={t('detail.meters.manageTitle')}>
               <Settings2 size={14} /> {t('detail.meters.manage')}
             </button>
-            <button className="dt-btn sm dt-add" onClick={() => setReading({})} title={t('detail.meters.addTitle')}>
-              <Plus size={14} /> {t('detail.charges.addShort')}
-            </button>
+            {!gone && (
+              <button className="dt-btn sm dt-add" onClick={() => setReading({})} title={t('detail.meters.addTitle')}>
+                <Plus size={14} /> {t('detail.charges.addShort')}
+              </button>
+            )}
           </>
         )
       }
@@ -237,6 +294,9 @@ export function Meters({
         {trend.length > 1 && (
           <ChargeBars
             bars={trend.map((r) => ({ date: barDate(r), v: r.usage!, ref: stats.average }))}
+            line={lineRows
+              .filter((r) => r.usage != null && barDate(r) >= range.from && r.reading.date <= range.to)
+              .map((r) => ({ date: barDate(r), v: r.usage! }))}
             from={range.from}
             to={range.to}
             today={today}
@@ -274,6 +334,7 @@ export function Meters({
                       )}
                     </b>
                   </div>
+                  {lineRow(rowFrom(trend[idx[0]]), addDays(trend[idx[idx.length - 1]].reading.date, 1))}
                 </>
               ) : (
                 tipOf(idx[0])
@@ -281,42 +342,59 @@ export function Meters({
             }
           />
         )}
-        {trend.length > 1 && bucket > 0 && (
+        {((trend.length > 1 && (bucket > 0 || lineRows.some((r) => r.usage != null))) || !!source) && (
           <div className="dt-legend">
-            <span>{t(`detail.chart.bucket.m${bucket}`)}</span>
+            {source && <span>{t('detail.meters.linkFrom', { name: source.sub.name })}</span>}
+            {trend.length > 1 && lineRows.some((r) => r.usage != null) && lineMeter && (
+              <span>
+                <i className="k-l" />
+                {lineMeter.name}
+              </span>
+            )}
+            {trend.length > 1 && bucket > 0 && <span>{t(`detail.chart.bucket.m${bucket}`)}</span>}
           </div>
         )}
         {/* 指标在顶部，这里只有走势；画不出时留一句说明，不留空卡 */}
-        {trend.length <= 1 && <p className="muted dt-meters-none">{t('detail.meters.noTrend')}</p>}
+        {trend.length <= 1 && <p className="muted dt-meters-none">{t(gone ? 'detail.meters.linkGone' : 'detail.meters.noTrend')}</p>}
       </div>
       {sheets}
     </Panel>
   );
 }
 
-type Draft = { id: string; name: string; unit: string; kind?: 'reading' };
+type Draft = { id: string; name: string; unit: string; kind?: 'reading'; link?: Meter['link'] };
 
 /** 管理指标：增删、改名、改单位、切换本期用量 / 累计读数；删掉有历史数值的指标前确认（数值一并清除） */
 function MetersSheet({
   sub,
+  view,
+  subs,
   suggestions,
+  linkable,
   onSave,
   onClose,
 }: {
   sub: Subscription;
+  /** meterView 的结果：关联指标的名称、单位、类型取来源当前的 */
+  view: Subscription;
+  subs: Subscription[];
   suggestions: Array<Pick<Meter, 'name' | 'unit' | 'kind'>>;
+  linkable: Array<{ sub: Subscription; meter: Meter }>;
   onSave: (next: Subscription) => unknown;
   onClose: () => void;
 }) {
   const blank = (): Draft => ({ id: uid(), name: '', unit: '' });
-  const [list, setList] = useState<Draft[]>(() => (sub.meters?.length ? sub.meters.map((m) => ({ ...m })) : [blank()]));
+  const [list, setList] = useState<Draft[]>(() => (view.meters?.length ? view.meters.map((m) => ({ ...m })) : [blank()]));
   const set = (id: string, patch: Partial<Draft>) => setList((l) => l.map((d) => (d.id === id ? { ...d, ...patch } : d)));
   const names = list.map((d) => d.name.trim().toLowerCase());
   const dup = names.some((n, i) => n && names.indexOf(n) !== i);
   const valid = !dup && list.every((d) => d.name.trim());
   // 已填的名称不再出现在建议里
   const offered = suggestions.filter((s) => !names.includes(s.name.trim().toLowerCase()));
+  const picked = new Set(list.map((d) => d.link && `${d.link.subId}\u0000${d.link.meterId}`));
+  const links = linkable.filter((l) => !picked.has(`${l.sub.id}\u0000${l.meter.id}`));
   const [busy, submit] = useSubmit();
+  const linkOwner = (d: Draft) => subs.find((s) => s.id === d.link!.subId)?.name;
 
   const save = () =>
     submit(async () => {
@@ -333,6 +411,7 @@ function MetersSheet({
         name: d.name.trim(),
         unit: d.unit.trim(),
         ...(d.kind === 'reading' ? { kind: 'reading' as const } : {}),
+        ...(d.link ? { link: d.link } : {}),
       }));
       await onSave(replaceMeters(sub, meters));
     });
@@ -354,35 +433,74 @@ function MetersSheet({
       }
     >
       <div className="stack">
-        {list.map((d) => (
-          <Group
-            key={d.id}
-            title={d.name.trim() || t('detail.meters.newMeter')}
-            action={
-              <button type="button" className="btn plain" onClick={() => setList((l) => l.filter((x) => x.id !== d.id))}>
-                {t('common.delete')}
-              </button>
-            }
-          >
-            <Cell label={t('detail.meters.name')}>
-              <input value={d.name} placeholder={t('detail.meters.namePh')} onChange={(e) => set(d.id, { name: (e.target as HTMLInputElement).value })} />
-            </Cell>
-            <Cell label={t('detail.meters.unit')}>
-              <input value={d.unit} placeholder={t('detail.meters.unitPh')} onChange={(e) => set(d.id, { unit: (e.target as HTMLInputElement).value })} />
-            </Cell>
-            <Cell label={t('detail.meters.kindLabel')}>
-              <Seg
-                small
-                value={d.kind === 'reading' ? 'reading' : 'usage'}
-                onChange={(v) => set(d.id, { kind: v === 'reading' ? 'reading' : undefined })}
-                options={[
-                  ['usage', t('detail.meters.usage')],
-                  ['reading', t('detail.meters.reading')],
-                ]}
-              />
-            </Cell>
+        {list.map((d) =>
+          d.link ? (
+            <Group
+              key={d.id}
+              title={d.name}
+              action={
+                <button type="button" className="btn plain" onClick={() => setList((l) => l.filter((x) => x.id !== d.id))}>
+                  {t('detail.meters.unlink')}
+                </button>
+              }
+            >
+              <div className="cell muted">{linkOwner(d) ? t('detail.meters.linkFrom', { name: linkOwner(d)! }) : t('detail.meters.linkGone')}</div>
+            </Group>
+          ) : (
+            <Group
+              key={d.id}
+              title={d.name.trim() || t('detail.meters.newMeter')}
+              action={
+                <button type="button" className="btn plain" onClick={() => setList((l) => l.filter((x) => x.id !== d.id))}>
+                  {t('common.delete')}
+                </button>
+              }
+            >
+              <Cell label={t('detail.meters.name')}>
+                <input value={d.name} placeholder={t('detail.meters.namePh')} onChange={(e) => set(d.id, { name: (e.target as HTMLInputElement).value })} />
+              </Cell>
+              <Cell label={t('detail.meters.unit')}>
+                <input value={d.unit} placeholder={t('detail.meters.unitPh')} onChange={(e) => set(d.id, { unit: (e.target as HTMLInputElement).value })} />
+              </Cell>
+              {/* 两个选项本身说清了类型，手机上再放标签会被挤掉一截 */}
+              <div className="cell">
+                <Seg
+                  small
+                  value={d.kind === 'reading' ? 'reading' : 'usage'}
+                  onChange={(v) => set(d.id, { kind: v === 'reading' ? 'reading' : undefined })}
+                  options={[
+                    ['usage', t('detail.meters.usage')],
+                    ['reading', t('detail.meters.reading')],
+                  ]}
+                />
+              </div>
+            </Group>
+          ),
+        )}
+        {links.length > 0 && (
+          <Group title={t('detail.meters.linkGroup')} foot={t('detail.meters.linkFoot')}>
+            <div className="cell bonus-quick">
+              {links.map((l) => (
+                <button
+                  type="button"
+                  key={`${l.sub.id}\u0000${l.meter.id}`}
+                  className="chip-btn"
+                  title={`${l.meter.name} (${l.sub.name})`}
+                  onClick={() =>
+                    setList((cur) => {
+                      const { link: _l, ...shape } = l.meter;
+                      const item = { ...shape, id: uid(), link: { subId: l.sub.id, meterId: l.meter.id } };
+                      const empty = cur.find((d) => !d.link && !d.name.trim() && !d.unit.trim());
+                      return empty ? cur.map((d) => (d === empty ? item : d)) : [...cur, item];
+                    })
+                  }
+                >
+                  {`${l.meter.name} (${l.sub.name})`}
+                </button>
+              ))}
+            </div>
           </Group>
-        ))}
+        )}
         <Group
           title={offered.length ? t('detail.meters.suggest') : undefined}
           action={
@@ -419,34 +537,36 @@ function MetersSheet({
   );
 }
 
-/** 记一笔 / 修改一条记录：日期默认今天，每个指标一个数字框，可只填一部分 */
+/** 记一笔 / 修改一条记录：日期默认今天，每个指标一个数字框，可只填一部分；只动 meters 里这几个指标的值，同一条上别的指标不变 */
 function ReadingSheet({
   sub,
+  meters,
   edit,
   today,
   onSave,
   onClose,
 }: {
+  /** 记录写在哪个订阅上：关联指标是来源订阅 */
   sub: Subscription;
+  meters: Meter[];
   edit?: Reading;
   today: string;
   onSave: (next: Subscription) => unknown;
   onClose: () => void;
 }) {
-  const meters = sub.meters ?? [];
-  const list = sub.readings ?? [];
+  const scope = meters.map((m) => m.id);
+  // 新记录的 id 打开时就定下：上次其实存上了、只是响应丢了时，重试不会多记一条
+  const [newId] = useState(uid);
   const [date, setDate] = useState(edit?.date ?? today);
-  const [values, setValues] = useState<Record<string, number | undefined>>(() => ({ ...edit?.values }));
+  const [values, setValues] = useState<Record<string, number | undefined>>(() => Object.fromEntries(scope.map((k) => [k, edit?.values[k]])));
   const [note, setNote] = useState(edit?.note ?? '');
   const filled = Object.fromEntries(Object.entries(values).filter((e): e is [string, number] => typeof e[1] === 'number' && Number.isFinite(e[1])));
   const valid = Object.keys(filled).length > 0;
   const [busy, submit] = useSubmit();
-  const write = (readings: Reading[]) => onSave({ ...sub, readings: readings.length ? readings : undefined });
-
   const save = () => {
     if (!valid) return;
-    const item: Reading = { id: edit?.id ?? uid(), date, values: filled, ...(note.trim() ? { note: note.trim() } : {}) };
-    return submit(() => write(edit ? list.map((r) => (r.id === edit.id ? item : r)) : [...list, item]));
+    const item: Reading = { id: edit?.id ?? newId, date, values: filled, ...(note.trim() ? { note: note.trim() } : {}) };
+    return submit(() => onSave(writeReading(sub, scope, item, edit?.id)));
   };
 
   return (
@@ -457,7 +577,7 @@ function ReadingSheet({
       foot={
         <>
           {edit && (
-            <ConfirmButton disabled={busy} onConfirm={() => void submit(() => write(list.filter((r) => r.id !== edit.id)))}>
+            <ConfirmButton disabled={busy} onConfirm={() => void submit(() => onSave(removeReading(sub, scope, edit.id)))}>
               {t('common.delete')}
             </ConfirmButton>
           )}

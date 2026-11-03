@@ -27,7 +27,7 @@ import { type LedgerPeriod } from '../../shared/receivables.ts';
 import { personAmounts, type PersonLedger } from '../../shared/people.ts';
 import type { AppState, Person, ShareMember, Subscription } from '../../shared/types.ts';
 import { carRule, followsCar, memberPaidThrough } from '../../shared/carpool.ts';
-import { meterSummary, type MeterRow } from '../../shared/meters.ts';
+import { meterSource, meterSummary, meterView, spreadUnitPrice, type MeterRow } from '../../shared/meters.ts';
 
 export function money(st: AppState, amount: number, currency: string, date?: string, to = st.settings.baseCurrency) {
   const conv = !Number.isFinite(amount) ? NaN : currency === to ? amount : toBaseOrNaN(st, amount, currency, date, to);
@@ -256,7 +256,8 @@ export function roundAll<T extends object>(o: T): T {
 const unitRound = (n: number) => Math.round(n * 1e4) / 1e4;
 
 /** 业务数据：每个指标的累计、最近一期与时间窗内逐条派生（用量、期间扣款、单价，币种为扣款原币） */
-export function metersOut(s: Subscription, today: string, from: string) {
+export function metersOut(raw: Subscription, today: string, from: string, subs: Subscription[]) {
+  const s = meterView(raw, subs);
   const one = (r: MeterRow) => ({
     reading_id: r.reading.id,
     date: r.reading.date,
@@ -270,18 +271,42 @@ export function metersOut(s: Subscription, today: string, from: string) {
   });
   return (s.meters ?? []).map((m) => {
     const sum = meterSummary(s, m, today);
+    const source = meterSource(s, m, subs);
+    // 与详情页的平均单价同一口径
+    const spread = spreadUnitPrice(s, sum.rows, today);
+    // 来源已不存在：数据不可知，不说成用了 0
+    if (m.link && !source)
+      return {
+        id: m.id,
+        name: m.name,
+        unit: m.unit,
+        kind: m.kind ?? 'usage',
+        linked_from: null,
+        source_missing: true,
+        total_usage: null,
+        periods: null,
+        latest: null,
+        latest_unit_price: null,
+        readings: [],
+      };
     return {
       id: m.id,
       name: m.name,
       unit: m.unit,
       kind: m.kind ?? 'usage',
+      ...(source ? { linked_from: { subscription_id: source.sub.id, subscription: source.sub.name, meter_id: source.meter.id } } : {}),
       total_usage: sum.total,
       periods: sum.periods,
-      latest: sum.latest ? one(sum.latest) : null,
-      latest_unit_price: sum.latestPriced
-        ? { date: sum.latestPriced.reading.date, amount: unitRound(sum.latestPriced.unitPrice!), currency: sum.latestPriced.cost!.currency }
-        : null,
-      readings: sum.rows.filter((r) => r.reading.date >= from).map(one),
+      latest: sum.latest ? (spread ? { ...one(sum.latest), unit_price: null } : one(sum.latest)) : null,
+      latest_unit_price: spread
+        ? spread.price
+          ? { date: spread.asOf, amount: unitRound(spread.price.amount), currency: spread.price.currency }
+          : null
+        : sum.latestPriced
+          ? { date: sum.latestPriced.reading.date, amount: unitRound(sum.latestPriced.unitPrice!), currency: sum.latestPriced.cost!.currency }
+          : null,
+      // 摊销口径下逐条单价没有意义（只有含扣款的那条有且很高），与 latest_unit_price 打架
+      readings: sum.rows.filter((r) => r.reading.date >= from).map((r) => (spread ? { ...one(r), unit_price: null } : one(r))),
     };
   });
 }

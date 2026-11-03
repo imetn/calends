@@ -54,6 +54,8 @@
     "transfer": "Cession invalide : type, date, montant positif et devise sont requis",
     "meter": "Compteur invalide : un id unique et un nom sont requis",
     "reading": "Entrée d’usage invalide : un id unique, une date valide et des valeurs numériques sont requis",
+    "meterLink": "Le compteur lié n’existe pas ou est lui-même lié à un autre compteur",
+    "meterLinkUsed": "« {meter} » est lié depuis « {name} » ; supprimez d’abord ce lien",
     "readingMeter": "Une entrée d’usage fait référence à un compteur non défini"
   },
   "phase": {

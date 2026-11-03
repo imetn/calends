@@ -85,6 +85,7 @@
     "badMonth": "Der Monat muss YYYY-MM sein: {month}",
     "meterNotFound": "Keine Messgröße passt zu „{q}“. Messgrößen: {list}",
     "readingNotFound": "Kein Nutzungseintrag mit der id „{q}“",
+    "meterLinked": "„{name}“ ist mit einer Messgröße aus „{owner}“ verknüpft: Erfasse Werte und ändere den Namen dort",
     "noMeters": "Dieses Abo hat noch keine Messgrößen; zuerst mit set_meters festlegen"
   },
   "tool": {

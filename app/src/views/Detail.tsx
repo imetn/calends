@@ -1,5 +1,6 @@
 import { CopyImageButton } from '../components/CopyImageButton.tsx';
 import { isStopped } from '../../../shared/billing.ts';
+import { meterView } from '../../../shared/meters.ts';
 import { createPortal } from 'react-dom';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -135,7 +136,8 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   const axis = timelineAxis(sub, today, history, rangePick?.id === sub.id ? rangePick.range : undefined);
   // 当前看的用量指标：顶部用量行与用量卡共用
   const [meterPick, setMeterPick] = useState<{ id: string; meter: string }>();
-  const meter = sub.meters?.find((m) => meterPick?.id === sub.id && m.id === meterPick.meter) ?? sub.meters?.[0];
+  const usageSub = meterView(sub, state.subscriptions);
+  const meter = usageSub.meters?.find((m) => meterPick?.id === sub.id && m.id === meterPick.meter) ?? usageSub.meters?.[0];
   const charges = (
     <Charges
       sub={sub}
@@ -221,7 +223,7 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
           提醒仍是卡片，其余（走势、记录、合租、详情、历程）用分隔线隔开
         */}
       <div className="dt-body dt-flow">
-        <Kpis sub={sub} state={state} today={today} history={history} usage={meter && usageMetrics(sub, meter, today)} />
+        <Kpis sub={sub} state={state} today={today} history={history} usage={meter && usageMetrics(usageSub, meter, today)} />
         {/* 指标下面：本期进度与属性（不加标题），然后是扣款走势、提醒和记录 */}
         <Summary key={sub.id} sub={sub} state={state} today={today} />
         {!compact && (

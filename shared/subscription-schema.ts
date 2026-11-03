@@ -182,8 +182,14 @@ const full = {
     ]),
   ),
   meters: {
-    ...list(record({ id: text, name: text, unit: text, kind: { type: 'string', enum: ['reading'] } }, ['id', 'name', 'unit'])),
-    description: 'Custom business meters (electricity, mileage, traffic…). kind=reading is a cumulative counter; omitted = usage per period.',
+    ...list(
+      record(
+        { id: text, name: text, unit: text, kind: { type: 'string', enum: ['reading'] }, link: record({ subId: text, meterId: text }, ['subId', 'meterId']) },
+        ['id', 'name', 'unit'],
+      ),
+    ),
+    description:
+      'Custom business meters (electricity, mileage, traffic…). kind=reading is a cumulative counter; omitted = usage per period. link points at a meter owned by another subscription; its values stay there. Prefer set_meters.',
   },
   readings: {
     ...list(

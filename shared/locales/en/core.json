@@ -54,6 +54,8 @@
     "transfer": "Invalid transfer: type, date, a positive amount and currency are required",
     "meter": "Invalid meter: each needs a unique id and a name",
     "reading": "Invalid meter record: each needs a unique id, a valid date and numeric values",
+    "meterLink": "The linked meter does not exist or is itself linked",
+    "meterLinkUsed": "“{meter}” is linked by “{name}”; remove that link first",
     "readingMeter": "A meter record refers to a meter that is not defined"
   },
   "phase": {

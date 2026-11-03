@@ -71,7 +71,8 @@ export function PaymentSheet({
   const amountValid = amount.trim() !== '' && Number(amount) >= 0;
   const blanks = (split ?? []).filter((x) => x.amount === '').length;
   // 用量跟计费周期走：填的数记在这笔扣款覆盖的那段时间里，周期内已有记录就改它；只写改过的指标
-  const meters = sub.meters ?? [];
+  // 关联指标的数值存在来源订阅上，这里只填自己的
+  const meters = (sub.meters ?? []).filter((m) => !m.link);
   // 改日期时原记录还在旧日期上，按它算会把旧日期当成「已按时结清」的边界，周期归错；算周期前先拿掉正在改的这笔
   const others = (() => {
     const list = phase.payments ?? [];

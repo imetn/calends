@@ -82,6 +82,7 @@
     "badMonth": "月は YYYY-MM 形式で指定してください：{month}",
     "meterNotFound": "「{q}」に一致する指標がありません。指標：{list}",
     "readingNotFound": "id「{q}」の使用量記録はありません",
+    "meterLinked": "「{name}」は「{owner}」からリンクされています。値の記録や名前の変更はリンク元で行ってください",
     "noMeters": "このサブスクにはまだ指標がありません。先に set_meters で定義してください"
   },
   "tool": {

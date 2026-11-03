@@ -82,6 +82,7 @@
     "badMonth": "月份格式應為 YYYY-MM：{month}",
     "meterNotFound": "沒有符合「{q}」的指標。現有指標：{list}",
     "readingNotFound": "沒有 id 為「{q}」的用量紀錄",
+    "meterLinked": "「{name}」關聯自「{owner}」，請到該訂閱記錄數值或修改名稱",
     "noMeters": "這個訂閱還沒有用量指標，請先用 set_meters 定義"
   },
   "tool": {

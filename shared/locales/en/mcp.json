@@ -85,6 +85,7 @@
     "badMonth": "month must be YYYY-MM: {month}",
     "meterNotFound": "No meter matches “{q}”. Meters: {list}",
     "readingNotFound": "No meter record has the id “{q}”",
+    "meterLinked": "“{name}” is linked from “{owner}”: record values and rename it there",
     "noMeters": "This subscription has no meters yet; define them with set_meters first"
   },
   "tool": {

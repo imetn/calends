@@ -157,9 +157,17 @@ export function summaryRows(
       break;
     }
     case 'set_meters': {
-      const list = (a.meters as Array<{ name?: string; unit?: string }> | undefined) ?? [];
+      const list = (a.meters as Array<{ name?: string; unit?: string; link?: { subscription?: string; meter?: string } }> | undefined) ?? [];
       const remove = (a.remove as string[] | undefined) ?? [];
-      if (list.length) add(t('detail.meters.manageTitle'), list.map((m) => (m.unit ? `${m.name ?? ''} (${m.unit})` : (m.name ?? ''))).join('\n'));
+      const meterLine = (m: (typeof list)[number]) => {
+        if (m.link) {
+          const owner = state.subscriptions.find((s) => s.id === m.link!.subscription || s.name === m.link!.subscription);
+          const source = owner?.meters?.find((x) => x.id === m.link!.meter)?.name ?? m.link.meter ?? '';
+          return `${source} (${t('detail.meters.linkFrom', { name: owner?.name ?? m.link.subscription ?? '' })})`;
+        }
+        return m.unit ? `${m.name ?? ''} (${m.unit})` : (m.name ?? '');
+      };
+      if (list.length) add(t('detail.meters.manageTitle'), list.map(meterLine).join('\n'));
       if (remove.length) add(t('assistant.f.effect'), t('detail.meters.removeMeters'));
       break;
     }

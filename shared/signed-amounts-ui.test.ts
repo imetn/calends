@@ -1,6 +1,7 @@
 import * as fxTotals from './fx-total.ts';
 import { shouldGroupYears } from '../app/src/components/year-ledger.ts';
 import { readUiSource, extractUiFunction } from '../scripts/ui-test-source.ts';
+import { usageWithin } from './meters.ts';
 import assert from 'node:assert/strict';
 import * as transfers from './transfers.ts';
 import { numberFormat } from './intl.ts';
@@ -208,6 +209,9 @@ test('Detail charge rows and annual totals show expenses/refunds consistently, i
     wholeCurrencies,
     wholeOpts,
     chargeServicePeriod: billing.chargeServicePeriod,
+    meterView: (sub: unknown) => sub,
+    chargesUsage: () => 0,
+    chargeOpen: () => false,
     addDays: billing.addDays,
     cnDate: (d: string) => d,
     chargeValue,
@@ -293,6 +297,9 @@ test('Detail charge history groups every year when one year has multiple rows, a
     wholeCurrencies,
     wholeOpts,
     chargeServicePeriod: billing.chargeServicePeriod,
+    meterView: (sub: unknown) => sub,
+    chargesUsage: () => 0,
+    chargeOpen: () => false,
     addDays: billing.addDays,
     cnDate: (d: string) => d,
     chargeValue,
@@ -510,6 +517,7 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     ...billing,
     ...transfers,
     detailForecast,
+    meterView: (sub: unknown) => sub,
     detailHistoryEnd,
     money,
     cnDateFull,
@@ -743,4 +751,37 @@ test('detail timeline forecasts only the next charge, for monthly and yearly pla
     assert.equal(ax.future.length, 1, sub.cycle.unit);
     assert.equal(ax.future[0].date, detailForecast(sub, today).charges[0].date);
   }
+});
+
+test('同一条用量落在并行两段的服务期里只算一次，服务期没记完不写平均单价', () => {
+  const url = new URL('../app/src/views/detail/ChargeTip.tsx', import.meta.url);
+  const deps = { chargeServicePeriod: billing.chargeServicePeriod, usageWithin, addDays: billing.addDays, diffDays: billing.diffDays };
+  const chargesUsage = load('../app/src/views/detail/ChargeTip.tsx', 'chargesUsage', extractUiFunction(url, 'chargesUsage'), deps);
+  const chargeOpen = load('../app/src/views/detail/ChargeTip.tsx', 'chargeOpen', extractUiFunction(url, 'chargeOpen'), deps);
+  const sub = { start: '2026-01-01', cycle: { unit: 'year', every: 1 }, price: 1200, currency: 'CNY' };
+  const charge = { sub, date: '2026-01-01', serviceDate: '2026-01-01' };
+  const row = (date: string, usage: number) => ({ reading: { id: date, date, values: {} }, value: usage, usage, since: '2025-12-31' });
+  const rows = [row('2026-01-31', 800), row('2026-02-28', 1000)];
+  // 同一服务期的两笔（并行段、补缴）：不把同一条记录加两次
+  assert.equal(chargesUsage(rows, [charge, { ...charge }]), 1800);
+  assert.equal(chargesUsage(undefined, [charge]), undefined);
+  // 记到 2 月：还在年内，整笔 ÷ 已记用量不是单价；记到期末才算完
+  assert.equal(chargeOpen(rows, charge), true);
+  assert.equal(chargeOpen([...rows, row('2026-12-31', 900)], charge), false);
+  assert.equal(chargeOpen(undefined, charge), true);
+  // 累计读数从半途才开始记：服务期开头没覆盖，尾部记满了也不写单价
+  const late = [{ ...row('2026-12-31', 900), since: '2026-07-01' }];
+  assert.equal(chargeOpen(late, charge), true);
+  // 只记到 3 月、下一条已到明年：尾部断了好几个月，不写单价；月付每月 15 日记一次算记完
+  const months = [row('2026-01-31', 100), { ...row('2026-02-28', 100), since: '2026-01-31' }, { ...row('2026-03-31', 100), since: '2026-02-28' }];
+  assert.equal(chargeOpen([...months, { ...row('2027-02-28', 100), since: '2026-03-31' }], charge), true);
+  const monthly = { sub: { ...sub, cycle: { unit: 'month', every: 1 } }, date: '2026-10-01', serviceDate: '2026-10-01' };
+  const mid = [
+    { ...row('2026-10-15', 50), since: '2026-09-15' },
+    { ...row('2026-11-15', 50), since: '2026-10-15' },
+  ];
+  assert.equal(chargeOpen(mid, monthly), false);
+  // 这期有退款：整笔 ÷ 用量对不上指标卡，不写
+  const refunded = { ...charge, sub: { ...sub, payments: [{ date: '2026-06-01', amount: -600, kind: 'refund' }] } };
+  assert.equal(chargeOpen([...rows, row('2026-12-31', 900)], refunded), true);
 });

@@ -70,6 +70,7 @@ export function ChargeBars({
   onBucket,
   onPick,
   midMonth,
+  line,
 }: {
   bars: ChartBar[];
   from: string;
@@ -88,6 +89,8 @@ export function ChargeBars({
   onPick?: (indices: number[]) => void;
   /** 柱子画在周期中间（后付费）：月份标签写在 15 日 */
   midMonth?: boolean;
+  /** 叠一条折线（另一个指标）：同一条日期横轴、自己的高度比例，只看走势，具体数在提示框里；与柱子同样按月、季、年汇总 */
+  line?: Array<{ date: string; v: number }>;
 }) {
   const [box, w] = useWidth();
   const [hover, setHover] = useState<number | null>(null);
@@ -171,6 +174,35 @@ export function ChargeBars({
     if (peakFrom.includes(g) && g.idx.every((i) => Number.isFinite(bars[i].v)) && peakOf(g) > 0 && (peak < 0 || peakOf(g) > peakOf(groups[peak]))) peak = gi;
   });
   const cx = groups.map((g) => g.x);
+  // 折线：汇总时同一段合计成一个点；记录断档（间距超过中位数两倍）时断开，不画成连续的走势，也不当成 0
+  const linePts = (() => {
+    const pts: Array<{ date: string; v: number; n: number; sum: number }> = [];
+    for (const p of [...(line ?? [])].sort((a, b) => a.date.localeCompare(b.date))) {
+      const last = pts[pts.length - 1];
+      if (last && (bucket ? bucketOf(last.date, bucket) === bucketOf(p.date, bucket) : last.date === p.date)) {
+        last.v += p.v;
+        last.n++;
+        last.sum += x(p.date);
+      } else pts.push({ ...p, n: 1, sum: x(p.date) });
+    }
+    return pts.map((p) => ({ date: p.date, v: p.v, x: p.sum / p.n }));
+  })();
+  const lineD = (() => {
+    if (!linePts.length) return '';
+    const spans = linePts
+      .slice(1)
+      .map((p, i) => diffDays(linePts[i].date, p.date))
+      .sort((a, b) => a - b);
+    const limit = (spans[Math.floor(spans.length / 2)] ?? 0) * 2;
+    const top = Math.max(...linePts.map((p) => p.v)) || 1;
+    const ly = (v: number) => T + headroom + (1 - v / top) * (H - T - headroom - 6);
+    return linePts
+      .map(
+        (p, i) =>
+          `${i && diffDays(linePts[i - 1].date, p.date) <= limit ? 'L' : 'M'}${p.x},${ly(p.v)}${i && diffDays(linePts[i - 1].date, p.date) <= limit ? '' : 'h0'}`,
+      )
+      .join('');
+  })();
 
   // 月份刻度：间隔按宽度挑，最多约每 90px 一个。后付费的柱子画在所属周期中间，标签也写在那个月中间（15 日），
   // 柱子正好落在自己的月份上，不被误读成下个月；预付费在 1 日扣款，标签留在月初
@@ -318,6 +350,7 @@ export function ChargeBars({
               });
               return d && <path className="cc-ref" d={d} />;
             })()}
+            {lineD && <path className="cc-line" d={lineD} />}
             {!axis && peak >= 0 && (
               <PeakLabel
                 x={groups[peak].x}

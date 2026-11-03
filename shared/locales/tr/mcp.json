@@ -82,6 +82,7 @@
     "badMonth": "Ay YYYY-MM biçiminde olmalı: {month}",
     "meterNotFound": "“{q}” ile eşleşen ölçüt yok. Ölçütler: {list}",
     "readingNotFound": "“{q}” id’li kullanım kaydı yok",
+    "meterLinked": "“{name}”, “{owner}” aboneliğindeki bir ölçüte bağlıdır: değerleri orada kaydedin ve adını orada değiştirin",
     "noMeters": "Bu abonelikte henüz ölçüt yok; önce set_meters ile tanımlayın"
   },
   "tool": {

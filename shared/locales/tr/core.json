@@ -54,6 +54,8 @@
     "transfer": "Geçersiz devir: tür, tarih, pozitif tutar ve para birimi gerekli",
     "meter": "Geçersiz ölçüt: benzersiz bir id ve ad gerekli",
     "reading": "Geçersiz kullanım kaydı: benzersiz bir id, geçerli bir tarih ve sayısal değerler gerekli",
+    "meterLink": "Bağlanan ölçüt mevcut değil veya kendisi de başka bir ölçüte bağlı",
+    "meterLinkUsed": "“{name}” aboneliği “{meter}” ölçütüne bağlı; önce o abonelikteki bağlantıyı kaldırın",
     "readingMeter": "Bir kullanım kaydı tanımlanmamış bir ölçüte başvuruyor"
   },
   "phase": {

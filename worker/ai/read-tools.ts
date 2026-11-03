@@ -223,7 +223,7 @@ export const get_subscription: Tool = {
         note: tr.note ?? null,
       })),
       // 业务数据（自定义指标与按期记录）；readings 只列 months_back 以内，累计与最近一期按全部记录
-      meters: metersOut(s, today, from),
+      meters: metersOut(s, today, from, st.subscriptions),
       // 生命周期净成本 = 服务付款 + 买入 − 卖出；持有期从最早买入（早于开始时）到最后一次卖出
       net_cost: (() => {
         const c = netCost(st, s, today, out ?? st.settings.baseCurrency);

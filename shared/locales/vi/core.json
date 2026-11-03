@@ -49,6 +49,8 @@
     "transfer": "Chuyển nhượng không hợp lệ: cần loại, ngày, số tiền dương và tiền tệ",
     "meter": "Chỉ số không hợp lệ: cần id duy nhất và tên",
     "reading": "Bản ghi sử dụng không hợp lệ: cần id duy nhất, ngày hợp lệ và giá trị số",
+    "meterLink": "Chỉ số được liên kết không tồn tại hoặc cũng đang liên kết đến chỉ số khác",
+    "meterLinkUsed": "“{meter}” đang được “{name}” liên kết đến; hãy xóa liên kết ở đó trước",
     "readingMeter": "Một bản ghi sử dụng tham chiếu đến chỉ số chưa được định nghĩa"
   },
   "phase": {

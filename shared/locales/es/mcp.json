@@ -85,6 +85,7 @@
     "badMonth": "El mes debe tener el formato YYYY-MM: {month}",
     "meterNotFound": "Ningún medidor coincide con «{q}». Medidores: {list}",
     "readingNotFound": "No hay ningún registro de uso con el id «{q}»",
+    "meterLinked": "«{name}» está vinculado desde «{owner}»: registra los valores y cambia su nombre allí",
     "noMeters": "Esta suscripción aún no tiene medidores; defínelos primero con set_meters"
   },
   "tool": {

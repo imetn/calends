@@ -3,8 +3,8 @@ import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { Plus } from 'lucide-react';
 import { chargeDay, chargeServicePeriod, isPostpaid, phaseSubs, type Charge } from '../../../../shared/billing.ts';
-import { meterDecimals, meterRows } from '../../../../shared/meters.ts';
-import { chargeUsage, fixedQty, periodLabel, withUnit } from './ChargeTip.tsx';
+import { meterDecimals, meterRows, meterView } from '../../../../shared/meters.ts';
+import { chargesUsage, chargeUsage, fixedQty, periodLabel, withUnit } from './ChargeTip.tsx';
 import { flow, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
 import { transfersOf, transferSign, transferValue } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
@@ -99,13 +99,14 @@ export function Charges({
   const wholeBase = wholeCurrencies(rows.map((r) => ({ amount: r.b, currency: base })));
   const cost = (v: number) => flow(v, base, wholeOpts(v, base, wholeBase));
   // 有用量指标时多一列：每笔扣款覆盖的服务期内记下的用量（第一个指标），失败、退款不算；窄屏收起
-  const meter = sub.meters?.[0];
-  const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(sub, meter, today) : undefined;
+  const usageSub = meterView(sub, state.subscriptions);
+  const meter = usageSub.meters?.[0];
+  const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(usageSub, meter, today) : undefined;
   const usageOf = (c: Charge) => chargeUsage(readings, c);
   const post = (c: Charge) => !c.kind && isPostpaid(c.sub);
   // 表头按行走：周期账单全是后付费时写「周期」，与预付费阶段混在一起时写「日期」
   const regular = rows.filter((r) => !r.c.kind);
-  const usageFmt = meter && fixedQty(meterDecimals(sub, meter.id));
+  const usageFmt = meter && fixedQty(meterDecimals(usageSub, meter.id));
   const usageCell = (v: number | undefined) => (v != null ? withUnit(v, meter!.unit, usageFmt) : '—');
   return (
     <Panel
@@ -143,10 +144,10 @@ export function Charges({
               extra:
                 readings &&
                 usageCell(
-                  ys.reduce<number | undefined>((a, r) => {
-                    const v = usageOf(r.c);
-                    return v == null ? a : (a ?? 0) + v;
-                  }, undefined),
+                  chargesUsage(
+                    readings,
+                    ys.map((r) => r.c),
+                  ),
                 ),
               // 卡上实扣按原币合计；一年里有几种币种时逐个列出，不留空
               orig: copyParts(

@@ -29,8 +29,8 @@ import { t } from '../../../../shared/i18n.ts';
 import { ChargeBars, type ChartLane } from '../DetailChart.tsx';
 import { detailForecast, detailHistoryEnd } from '../detail-data.ts';
 import { Panel } from '../../components/DetailKit.tsx';
-import { meterDecimals, meterRows } from '../../../../shared/meters.ts';
-import { ChargeTip, chargeUsage } from './ChargeTip.tsx';
+import { meterDecimals, meterRows, meterView } from '../../../../shared/meters.ts';
+import { ChargeTip, chargeOpen, chargeUsage } from './ChargeTip.tsx';
 import { LANE_COLORS } from './shared.tsx';
 import { Region } from './shared.tsx';
 import { methodOf } from './shared.tsx';
@@ -184,8 +184,9 @@ export function Timeline({
   const fmt = (v: number) => money(v, ccy, wholeOpts(v, ccy, wholeChart));
   const spent = (total: FxTotal) => formatTotal(total, ccy, { direction: -1, ...(wholeChart.has(ccy) ? { decimals: 0 } : {}) });
   // 有用量指标时提示框带上这一笔结算期内的用量（第一个指标，与扣款记录的用量列一致）
-  const meter = sub.meters?.[0];
-  const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(sub, meter, today) : undefined;
+  const usageSub = meterView(sub, state.subscriptions);
+  const meter = usageSub.meters?.[0];
+  const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(usageSub, meter, today) : undefined;
   const lanesSrc = phaseSubs(sub);
   const laneIdx = phaseLanes(lanesSrc);
   const methodIds = [...new Set(lanesSrc.map((v) => v.methodId ?? ''))];
@@ -308,8 +309,9 @@ export function Timeline({
               converted={r.c.currency !== ccy ? spent(chartTotal([r.c])) : undefined}
               full={r.full != null ? money(r.full, ccy) : undefined}
               usage={chargeUsage(readings, r.c)}
+              open={chargeOpen(readings, r.c)}
               meter={meter}
-              decimals={meter && meterDecimals(sub, meter.id)}
+              decimals={meter && meterDecimals(usageSub, meter.id)}
             />
           );
         }}

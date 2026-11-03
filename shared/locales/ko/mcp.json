@@ -82,6 +82,7 @@
     "badMonth": "월은 YYYY-MM 형식이어야 합니다: {month}",
     "meterNotFound": "“{q}”와 일치하는 지표가 없습니다. 지표: {list}",
     "readingNotFound": "id가 “{q}”인 사용량 기록이 없습니다",
+    "meterLinked": "“{name}”은(는) “{owner}”에서 연결한 지표입니다. 값 기록과 이름 변경은 원본 구독에서 하세요",
     "noMeters": "이 구독에는 아직 지표가 없습니다. 먼저 set_meters로 정의하세요"
   },
   "tool": {
