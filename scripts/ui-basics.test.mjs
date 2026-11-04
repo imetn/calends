@@ -285,6 +285,13 @@ test('chart tooltip placement fits narrow viewports and flips at the top edge', 
   assert.equal(tooltipPosition({ x: 100, top: 0, bottom: 32 }, { width: 180, height: 40 }, { width: 390, height: 844 }).top, 40);
 });
 
+test('chart tooltips anchor to the drawn mark, not the full-height hit column', () => {
+  const source = readFileSync(new URL('components/charts.tsx', root), 'utf8');
+  assert.doesNotMatch(source, /tipProps\(\(\) => tip\(\w+\)\)/);
+  assert.match(source, /el\.querySelector\('\.act-stack'\)!\.getBoundingClientRect\(\)/);
+  assert.match(source, /\.\.\.markTop\(i, col\)/);
+});
+
 test('title and icon primitives preserve heading semantics, accessible names and non-submitting actions', () => {
   const [, ast, source] = sources.find(([file]) => file === 'components/ui.tsx');
   const functions = [];

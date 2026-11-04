@@ -116,7 +116,16 @@ export function AreaChart({
       {end && <i className="area-end" style={{ left: `${(x(end.at) / W) * 100}%`, top: y(end.value) }} />}
       <div className="area-hit">
         {values.map((_, i) => (
-          <span key={i} {...tipProps(() => tip(i))} />
+          <span
+            key={i}
+            {...tipProps(
+              () => tip(i),
+              (el) => {
+                const point = el.getBoundingClientRect().top + y(values[i]);
+                return { top: point, bottom: point };
+              },
+            )}
+          />
         ))}
       </div>
       <XAxis labels={labels} months={months} w={w} pos={(i) => x(i) / W} fallback={labels.flatMap((_, i) => (i % step === 0 || i === n - 1 ? [i] : []))} />
@@ -183,13 +192,19 @@ export function BarLine({
     tipSet?.(null);
     onPick?.(i);
   };
+  // 提示贴着这一列最高的图形（柱顶或折线点），不跑到整列热区顶部
+  const markTop = (i: number, col: HTMLElement) => {
+    const c = col.getBoundingClientRect();
+    return { top: c.top + Math.min(y(Math.max(0, bars[i])), y(line[i] ?? bars[i])), bottom: c.bottom };
+  };
   // 手指按住左右滑动：浮窗换到手指下的那根（鼠标靠各柱自己的悬停）
   const slide = (e: { pointerType: string; clientX: number; currentTarget: HTMLElement }) => {
     if (e.pointerType === 'mouse' || !n) return;
     const r = e.currentTarget.getBoundingClientRect();
     const i = Math.min(n - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * n)));
-    const c = (e.currentTarget.children[i] as HTMLElement).getBoundingClientRect();
-    tipSet?.({ x: c.left + c.width / 2, top: c.top, bottom: c.bottom, html: tip(i) });
+    const col = e.currentTarget.children[i] as HTMLElement;
+    const c = col.getBoundingClientRect();
+    tipSet?.({ x: c.left + c.width / 2, ...markTop(i, col), html: tip(i) });
     // 滑到哪根停下，再点它就算点中
     if (armed.current !== i) ready.current = false;
     armed.current = i;
@@ -210,7 +225,10 @@ export function BarLine({
             key={i}
             className={`bl-col ${future[i] ? 'future' : ''}`}
             style={{ position: 'relative' }}
-            {...tipProps(() => tip(i))}
+            {...tipProps(
+              () => tip(i),
+              (el) => markTop(i, el),
+            )}
             {...(onPick
               ? {
                   type: 'button' as const,
@@ -323,7 +341,12 @@ export function Activity({
             className={`act-col ${showLabel(i) ? '' : 'odd'} ${b.future ? 'future' : ''} ${b.current ? 'current' : ''} ${(selected ?? current) === b.key ? 'sel' : ''} ${selected && selected !== b.key ? 'dim' : ''}`}
             onClick={() => onSelect(b.key)}
             aria-label={`${b.label} ${fmt(b.total)}`}
-            {...(tip && b.total > 0 ? tipProps(() => tip(b)) : {})}
+            {...(tip && b.total > 0
+              ? tipProps(
+                  () => tip(b),
+                  (el) => el.querySelector('.act-stack')!.getBoundingClientRect(),
+                )
+              : {})}
           >
             <div className="act-stack" style={{ height: `${(b.total / top) * 100}%` }}>
               {/* 颜色传 pending 的一段是还没扣的（本月待扣）：与全站「预计」同一种斜纹 */}

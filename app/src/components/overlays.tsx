@@ -262,10 +262,13 @@ export function TipTable({
   );
 }
 
-export function tipProps(html: () => ComponentChildren) {
+/** anchor：触发区比图形高时（图表的整列热区），提示贴着图形本身而不是热区顶部 */
+export function tipProps(html: () => ComponentChildren, anchor?: (el: HTMLElement) => { top: number; bottom: number }) {
   const show = (e: { currentTarget: EventTarget }) => {
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    tipSet?.({ x: r.left + r.width / 2, top: r.top, bottom: r.bottom, html: html() });
+    const el = e.currentTarget as HTMLElement;
+    const r = el.getBoundingClientRect();
+    const { top, bottom } = anchor?.(el) ?? r;
+    tipSet?.({ x: r.left + r.width / 2, top, bottom, html: html() });
   };
   const hide = () => tipSet?.(null);
   return { onMouseEnter: show, onMouseLeave: hide, onFocus: show, onBlur: hide };
