@@ -9,6 +9,8 @@ services:
       dockerfile: docker/Dockerfile
     image: calends:local
     restart: unless-stopped
+    # 正常占用约 100–150MB；超限只重启这个容器，不拖累整台机器
+    mem_limit: 512m
     ports:
       - '8787:8787'
     volumes:

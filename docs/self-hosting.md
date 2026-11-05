@@ -10,7 +10,7 @@ Pull and run the image without a source checkout or local build:
 
 ```bash
 docker pull xizozhe/calends:latest
-docker run -d --name calends -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
+docker run -d --name calends --restart unless-stopped -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
 docker logs calends
 ```
 
@@ -24,7 +24,7 @@ To upgrade an installation using `latest`, pull the new image, then recreate the
 docker pull xizozhe/calends:latest
 docker stop calends
 docker rm calends
-docker run -d --name calends -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
+docker run -d --name calends --restart unless-stopped -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
 docker logs calends
 ```
 
@@ -85,7 +85,13 @@ docker logs calends
 
 Choose one method for an installation: Compose uses the volume `calends_calends-data`, while the `docker run` example uses `calends-data`.
 
-The image builds the frontend, then runs the same Worker through Wrangler's local workerd runtime with SQLite. The entrypoint applies migrations and triggers scheduled work every 15 minutes, matching the Cloudflare cron. No Cloudflare account is required. Persist all of `/data`, which includes the database state and generated setup token. The frontend is built without personal files from `local/`.
+The image runs the same Worker in a single Node process with SQLite. It applies migrations at startup and runs scheduled work every 15 minutes, matching the Cloudflare cron. No Cloudflare account is required.
+
+A ledger uses about 100–150 MB of memory and no CPU when idle, so a 1 CPU, 1 GB VPS is enough. The JavaScript heap is capped at 192 MB; backups up to 20 MB can be restored. To change the heap cap, set `NODE_OPTIONS` and keep `--disable-warning=ExperimentalWarning`. Building the image needs far more memory than running it, so use the prebuilt image on small servers. Upgrades keep the data in place, and you can return to an earlier version by running its tag on the same volume, as long as the schema has not moved past that version.
+
+The container refuses to start, and keeps restarting with an explanation in `docker logs`, if the database is missing while other databases or the `setup-token` file are still in `/data`. This usually means the volume or `DATA_DIR` changed. Fix the mount; to start over on purpose, delete `setup-token` as well.
+
+Persist all of `/data`, which includes the database state and generated setup token. The frontend is built without personal files from `local/`.
 
 ## Configuration
 
@@ -101,7 +107,6 @@ For Cloudflare, set variables and bindings in your Wrangler configuration and us
 | `BASE_PATH`                            | Variable                    | Build argument and environment variable  | Optional subpath without a trailing slash, e.g. `/calends`. Use the same value at build time and runtime; see [subpath deployment](#subpath-deployment). |
 | `DATA_DIR`                             | —                           | Environment variable                     | SQLite data directory; default `/data`. Persist this directory in a volume.                                                                              |
 | `PORT`                                 | —                           | Environment variable                     | Listening port; default `8787`.                                                                                                                          |
-| `INTERNAL_PORT`                        | —                           | Environment variable                     | Container-loopback port of the Worker runtime behind the entrypoint's front listener; default `PORT + 1`. Change it only if that port is taken.          |
 
 ### Personal Cloudflare configuration
 

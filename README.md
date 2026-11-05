@@ -77,7 +77,7 @@ Use a long random string for `SETUP_TOKEN`. The deploy command builds the app, p
 Run the prebuilt image directly:
 
 ```bash
-docker run -d --name calends -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
+docker run -d --name calends --restart unless-stopped -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
 docker logs calends
 ```
 

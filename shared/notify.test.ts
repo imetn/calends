@@ -215,8 +215,7 @@ test('12. 半小时/45 分钟/负偏移时区在本地 09:00 首轮发送，一�
 test('12. Cloudflare 与 Docker 都为每刻钟；维护任务每小时只执行一次', async () => {
   const config = (file: string) => readFileSync(new URL(file, import.meta.url), 'utf8');
   assert.ok(config('../wrangler.jsonc').includes('"*/15 * * * *"'));
-  assert.ok(config('../docker/wrangler.docker.jsonc').includes('"*/15 * * * *"'));
-  assert.ok(config('../docker/entrypoint.mjs').includes("encodeURIComponent('*/15 * * * *')"));
+  assert.ok(config('../docker/entrypoint.mjs').includes("const CRON = '*/15 * * * *'"));
   registerHooks({
     load(url, ctx, next) {
       if (url.endsWith('.json')) return { format: 'module', source: `export default ${readFileSync(new URL(url), 'utf8')}`, shortCircuit: true };

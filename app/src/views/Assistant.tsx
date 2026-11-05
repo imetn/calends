@@ -25,6 +25,7 @@ import {
 import { locale, t } from '../../../shared/i18n.ts';
 import { confirmInOrder, type WriteVerification } from '../../../shared/assistant-result.ts';
 import type { ApiMessage, AssistantConfigView, ErrorKind } from '../../../shared/deepseek.ts';
+import { dropOldImages } from '../../../shared/deepseek.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { IconButton, Toolbar } from '../components/ui.tsx';
 import { api, getState, refresh } from '../store.ts';
@@ -157,7 +158,8 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
         if (e.type === 'done') added = e.messages;
         setChat((c) => ({ ...c, turns: c.turns.map((x) => (x.id === bot.id ? bot : x)) }));
       };
-      await stream({ history, text, images }, ctrl.signal, on);
+      // 服务端只看最新一条的图片；旧图不再上传，否则连纯文字提问也可能超出请求体上限
+      await stream({ history: dropOldImages(history, 0), text, images }, ctrl.signal, on);
     } catch (err) {
       const aborted = ctrl.signal.aborted;
       bot = aborted

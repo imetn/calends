@@ -77,7 +77,7 @@ npm run deploy
 直接运行预构建镜像：
 
 ```bash
-docker run -d --name calends -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
+docker run -d --name calends --restart unless-stopped -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
 docker logs calends
 ```
 

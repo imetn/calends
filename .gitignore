@@ -10,3 +10,4 @@ local/
 .claude/
 # 本地预览产物（npm run email:preview）
 .preview/
+/build

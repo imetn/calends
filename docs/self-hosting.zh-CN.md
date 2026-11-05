@@ -10,7 +10,7 @@
 
 ```bash
 docker pull xizozhe/calends:latest
-docker run -d --name calends -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
+docker run -d --name calends --restart unless-stopped -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
 docker logs calends
 ```
 
@@ -24,7 +24,7 @@ docker logs calends
 docker pull xizozhe/calends:latest
 docker stop calends
 docker rm calends
-docker run -d --name calends -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
+docker run -d --name calends --restart unless-stopped -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
 docker logs calends
 ```
 
@@ -85,7 +85,13 @@ docker logs calends
 
 一次部署选择一种方式：Compose 使用数据卷 `calends_calends-data`，`docker run` 示例使用 `calends-data`，切换方式时需核对。
 
-镜像先构建前端，再通过 Wrangler 本地 workerd 运行时执行同一套 Worker，以 SQLite 存储数据。入口脚本会执行迁移，并每 15 分钟触发一次定时任务（与 Cloudflare 上的定时一致），无需 Cloudflare 账号。请持久化整个 `/data`，其中包含数据库状态与自动生成的初始化令牌。前端构建不包含 `local/` 中的个人文件。
+镜像在单个 Node 进程里运行同一套 Worker，以 SQLite 存储数据。启动时执行迁移，每 15 分钟运行一次定时任务（与 Cloudflare 上的定时一致），无需 Cloudflare 账号。
+
+空闲时内存约 100–150 MB、CPU 占用接近零，1 核 1 GB 的 VPS 足够。JavaScript 堆上限为 192 MB，可恢复不超过 20 MB 的备份。如需调整堆上限，设置 `NODE_OPTIONS`，并保留 `--disable-warning=ExperimentalWarning`。构建镜像比运行镜像耗内存得多，小内存服务器请直接使用预构建镜像。升级时数据原地保留；只要数据库结构没有超过旧版本，在同一数据卷上运行旧版本标签即可回退。
+
+如果数据库不见了，而 `/data` 里还有其他数据库或 `setup-token` 文件，容器会拒绝启动并反复重启，原因写在 `docker logs` 里。这通常说明数据卷或 `DATA_DIR` 变了，请改回正确的挂载；确实要重新开始，把 `setup-token` 一并删除。
+
+请持久化整个 `/data`，其中包含数据库状态与自动生成的初始化令牌。前端构建不包含 `local/` 中的个人文件。
 
 ## 配置项
 

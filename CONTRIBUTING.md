@@ -6,7 +6,7 @@ Read the relevant section of [ARCHITECTURE.md](ARCHITECTURE.md) and the [code st
 
 ## Getting started
 
-Use a current Node.js 22.x release, matching CI and Docker. Add `DEV_BYPASS_AUTH=1` to a local `.dev.vars` file without replacing existing values; it skips login only for development. Then run:
+Use a current Node.js 24.x release, matching CI and Docker. Add `DEV_BYPASS_AUTH=1` to a local `.dev.vars` file without replacing existing values; it skips login only for development. Then run:
 
 ```bash
 npm ci
