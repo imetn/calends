@@ -339,6 +339,12 @@ test('镜像：不再依赖 wrangler，探活不新起 Node，堆有上限', () 
   assert.match(readFileSync(new URL('../docker/docker-compose.yml', import.meta.url), 'utf8'), /mem_limit:/);
 });
 
+test('镜像：构建阶段只跑一次，运行阶段没有 RUN，多架构不依赖 QEMU', () => {
+  const [build, runtime] = readFileSync(new URL('../docker/Dockerfile', import.meta.url), 'utf8').split(/^FROM node:/m);
+  assert.match(build, /^FROM --platform=\$BUILDPLATFORM /m);
+  assert.doesNotMatch(runtime, /^RUN /m);
+});
+
 test('压缩包：目录与镜像相同，解压后不靠环境变量就能找到前端', async () => {
   const repo = join(root, 'tarball-repo');
   mkdirSync(join(repo, 'build', 'docker'), { recursive: true });

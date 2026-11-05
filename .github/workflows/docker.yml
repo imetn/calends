@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+    # 只作用于分支；打 tag 必定构建
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - LICENSE
   workflow_dispatch:
 
 permissions:
@@ -15,8 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
+        with:
+          cleanup: false
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -50,4 +56,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # tag 写的缓存只有同一个 tag 能读，只占额度
+          cache-to: ${{ github.ref_type == 'branch' && 'type=gha,mode=max' || '' }}

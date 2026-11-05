@@ -8,3 +8,8 @@ seed
 .claude
 *.local
 .worktree
+build
+marketing
+docs
+.github
+*.md

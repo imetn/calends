@@ -1,13 +1,14 @@
 # Calends 自托管镜像：Worker 打成单文件，跑在一个 Node 进程里，数据是 /data 下的 SQLite 文件。
 # 构建（在仓库根目录执行）：docker build -f docker/Dockerfile -t calends .
 # 运行：docker run -d --restart unless-stopped -p 8787:8787 -v calends-data:/data calends
-FROM node:24-bookworm-slim AS build
+# 产物是纯 JS，与架构无关：只在构建机的架构上跑一次，arm64 不必走 QEMU。下方运行阶段不能有 RUN
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
 ARG BASE_PATH=""
-RUN rm -rf local && BASE_PATH="$BASE_PATH" npm run build && npm run build:docker
+RUN BASE_PATH="$BASE_PATH" npm run build && npm run build:docker
 
 FROM node:24-bookworm-slim
 WORKDIR /app
