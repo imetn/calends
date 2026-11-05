@@ -93,6 +93,8 @@ docker compose logs calends
 
 [Compose 配置](docker/docker-compose.yml) 会通过挂载到 `/data` 的命名卷持久化 SQLite 数据。本地构建无需已发布的 Calends 镜像或 Cloudflare 账号。镜像仓库、升级与 Compose 用法见 [Docker 部署指南](docs/self-hosting.zh-CN.md#使用预构建镜像)。
 
+不想装 Docker 的小内存 VPS，可以用 [systemd 和发布压缩包](docs/self-hosting.zh-CN.md#不用-dockersystemd)。
+
 公网访问时，通过反向代理启用 HTTPS，并设置 `TRUST_PROXY=1`。初始化后可在「设置 → 安全」中添加 Passkey。
 
 自定义域名、配置项、邮件提醒、子路径部署，以及交给 AI 部署的提示词，见[自托管指南](docs/self-hosting.zh-CN.md)。

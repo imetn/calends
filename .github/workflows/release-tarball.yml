@@ -1,0 +1,44 @@
+name: Release tarball
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, e.g. v1.26.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  tarball:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run package:tarball
+      - name: Start the packaged app
+        run: |
+          VERSION="${TAG#v}"
+          test -f "build/release/calends-$VERSION.tar.gz"
+          work="$(mktemp -d)"
+          tar -xzf "build/release/calends-$VERSION.tar.gz" -C "$work" --strip-components=1
+          DATA_DIR="$work/data" PORT=18787 NODE_OPTIONS=--disable-warning=ExperimentalWarning node "$work/docker/entrypoint.mjs" &
+          curl -fsS --retry 20 --retry-delay 1 --retry-connrefused http://127.0.0.1:18787/healthz
+          curl -fsS http://127.0.0.1:18787/ | grep -q '<div id="app"'
+          kill $!
+      # 写权限只给上传这一步，安装依赖和构建时拿不到
+      - run: gh release upload "$TAG" build/release/*.tar.gz build/release/*.sha256 --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}

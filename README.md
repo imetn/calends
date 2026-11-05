@@ -93,6 +93,8 @@ docker compose logs calends
 
 The [Compose configuration](docker/docker-compose.yml) persists SQLite data in a named volume mounted at `/data`. Building locally does not require a published Calends image or a Cloudflare account. See the [Docker guide](docs/self-hosting.md#using-prebuilt-images) for image registries, upgrades and Compose options.
 
+On a small VPS without Docker, use the [release tarball with systemd](docs/self-hosting.md#without-docker-systemd).
+
 For public access, enable HTTPS through a reverse proxy and set `TRUST_PROXY=1`. Add a passkey after setup in **Settings → Security**.
 
 See the [self-hosting guide](docs/self-hosting.md) for custom domains, configuration, email reminders, subpath deployment and a prompt to delegate deployment to your AI agent.

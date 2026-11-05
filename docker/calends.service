@@ -1,0 +1,24 @@
+# Calends 的 systemd 服务，和镜像跑同一份代码。安装步骤见 docs/self-hosting.zh-CN.md
+[Unit]
+Description=Calends subscription ledger
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/env node /opt/calends/docker/entrypoint.mjs
+Environment=NODE_ENV=production
+Environment=PORT=8787
+Environment=DATA_DIR=/var/lib/calends
+Environment="NODE_OPTIONS=--max-old-space-size=192 --disable-warning=ExperimentalWarning"
+# 自己的配置写这里，升级不会覆盖
+EnvironmentFile=-/etc/calends.env
+# 不用建账号：systemd 给一个临时用户，并把数据目录的属主改对
+DynamicUser=yes
+StateDirectory=calends
+MemoryMax=512M
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

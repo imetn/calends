@@ -74,7 +74,7 @@ const server = createFront({
   handle: (req) => worker.fetch(req, env, ctx),
   healthy: () => Boolean(db.ping()),
   trustProxy: process.env.TRUST_PROXY === '1',
-}).listen(PORT, '0.0.0.0');
+}).listen(PORT, process.env.HOST || '0.0.0.0');
 log(`listening on port ${PORT} — open ${BASE}/ in your browser`);
 if (status.needsSetup) {
   log(`first run: create your password at ${BASE}/ with this setup token:`);

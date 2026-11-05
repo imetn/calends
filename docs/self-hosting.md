@@ -95,20 +95,67 @@ The container refuses to start, and keeps restarting with an explanation in `doc
 
 Persist all of `/data`, which includes the database state and generated setup token. The frontend is built without personal files from `local/`.
 
+## Without Docker (systemd)
+
+A small VPS doesn't need Docker. Since 1.26.0, each [release](https://github.com/imetn/calends/releases) includes a tarball that runs the same code as the image, needs no npm install, and works on x86 and ARM. It requires Linux, systemd and a system-wide Node 24 (check with `node -v`); the service can't read a Node installed under a home directory, such as with nvm.
+
+```bash
+VERSION=1.26.0
+curl -fLO https://github.com/imetn/calends/releases/download/v$VERSION/calends-$VERSION.tar.gz
+curl -fLO https://github.com/imetn/calends/releases/download/v$VERSION/calends-$VERSION.tar.gz.sha256
+sha256sum -c calends-$VERSION.tar.gz.sha256
+sudo mkdir -p /opt/calends
+sudo tar -xzf calends-$VERSION.tar.gz -C /opt/calends --strip-components=1 --no-same-owner
+sudo cp /opt/calends/calends.service /etc/systemd/system/
+sudo systemctl daemon-reload
+```
+
+If you're moving from Docker, copy the data now (replace `calends` with your container name) and put the container's environment variables in `/etc/calends.env`, described below. Don't copy over a service that has already started, and don't move a subpath deployment this way. Skip this step on a fresh install:
+
+```bash
+sudo docker stop calends
+sudo mkdir -p -m 700 /var/lib/private
+sudo docker cp calends:/data/. /var/lib/private/calends/
+```
+
+Then start the service:
+
+```bash
+sudo systemctl enable --now calends
+sudo journalctl -u calends -n 20
+```
+
+Don't send the setup token and password over the public internet in plain text. Forward the port first with `ssh -L 8787:localhost:8787 user@your-server`, open `http://localhost:8787/` and set your password with the setup token from the log. Data lives in `/var/lib/calends`, memory is capped at 512 MB, and the service restarts if the process exits unexpectedly.
+
+Put settings from [Configuration](#configuration) in `/etc/calends.env`, one `NAME=value` per line and protected with `sudo chmod 600`, then run `sudo systemctl restart calends`. Behind a reverse proxy, set `HOST=127.0.0.1` and `TRUST_PROXY=1`. Leave `DATA_DIR` unchanged and keep `PORT` above 1024. The tarball is built for the root path; use Docker to deploy under a subpath.
+
+To upgrade or roll back, replace the code and leave the data alone. You can only roll back to a version whose database schema is no older than your data, so export a backup in Settings first. Set `VERSION` to the version you want, download and verify its tarball, then run:
+
+```bash
+sudo systemctl stop calends
+sudo rm -rf /opt/calends
+sudo mkdir -p /opt/calends
+sudo tar -xzf calends-$VERSION.tar.gz -C /opt/calends --strip-components=1 --no-same-owner
+sudo cp /opt/calends/calends.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl start calends
+```
+
 ## Configuration
 
 For Cloudflare, set variables and bindings in your Wrangler configuration and use secrets for credentials. For Docker, pass supported environment variables with `-e` or through Compose.
 
-| Setting                                | Cloudflare                  | Docker                                   | Purpose                                                                                                                                                  |
-| -------------------------------------- | --------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SETUP_TOKEN`                          | Secret                      | Environment variable; generated if unset | Used to set the owner password on a fresh install.                                                                                                       |
-| `SITE_URL`                             | Variable                    | Environment variable                     | Public URL used in reminders and calendar links; auto-detected if unset.                                                                                 |
-| `TRUST_PROXY`                          | Variable                    | Environment variable                     | Set to `1` behind a trusted reverse proxy so login rate limiting uses the visitor's forwarded IP.                                                        |
-| `EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME` | Email binding and variables | Not configured by the image entrypoint   | Optional email delivery; see below. Other notification channels are configured in the app.                                                               |
-| `OLD_HOSTS`                            | Variable                    | Not forwarded by the image entrypoint    | Comma-separated old domains. With `SITE_URL` set, pages on these hosts redirect there with HTTP 301; API, MCP and calendar feeds remain accessible.      |
-| `BASE_PATH`                            | Variable                    | Build argument and environment variable  | Optional subpath without a trailing slash, e.g. `/calends`. Use the same value at build time and runtime; see [subpath deployment](#subpath-deployment). |
-| `DATA_DIR`                             | —                           | Environment variable                     | SQLite data directory; default `/data`. Persist this directory in a volume.                                                                              |
-| `PORT`                                 | —                           | Environment variable                     | Listening port; default `8787`.                                                                                                                          |
+| Setting                                | Cloudflare                  | Docker                                   | Purpose                                                                                                                                                        |
+| -------------------------------------- | --------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SETUP_TOKEN`                          | Secret                      | Environment variable; generated if unset | Used to set the owner password on a fresh install.                                                                                                             |
+| `SITE_URL`                             | Variable                    | Environment variable                     | Public URL used in reminders and calendar links; auto-detected if unset.                                                                                       |
+| `TRUST_PROXY`                          | Variable                    | Environment variable                     | Set to `1` behind a trusted reverse proxy so login rate limiting uses the visitor's forwarded IP.                                                              |
+| `EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME` | Email binding and variables | Not configured by the image entrypoint   | Optional email delivery; see below. Other notification channels are configured in the app.                                                                     |
+| `OLD_HOSTS`                            | Variable                    | Not forwarded by the image entrypoint    | Comma-separated old domains. With `SITE_URL` set, pages on these hosts redirect there with HTTP 301; API, MCP and calendar feeds remain accessible.            |
+| `BASE_PATH`                            | Variable                    | Build argument and environment variable  | Optional subpath without a trailing slash, e.g. `/calends`. Use the same value at build time and runtime; see [subpath deployment](#subpath-deployment).       |
+| `DATA_DIR`                             | —                           | Environment variable                     | SQLite data directory; default `/data`. Persist this directory in a volume.                                                                                    |
+| `PORT`                                 | —                           | Environment variable                     | Listening port; default `8787`.                                                                                                                                |
+| `HOST`                                 | —                           | Environment variable                     | Listening address; default `0.0.0.0`. Without Docker, set `127.0.0.1` behind a reverse proxy. With Docker, leave it and publish with `-p 127.0.0.1:8787:8787`. |
 
 ### Personal Cloudflare configuration
 

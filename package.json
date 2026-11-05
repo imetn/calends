@@ -8,6 +8,7 @@
     "dev:worker": "node scripts/wrangler.mjs dev --port 8787 --local",
     "build": "node scripts/migrations.mjs && node scripts/i18n.mjs && tsc --noEmit && vite build app",
     "build:docker": "esbuild docker/entrypoint.mjs --bundle --platform=node --format=esm --target=node24 --outfile=build/docker/entrypoint.mjs --log-level=warning \"--banner:js=import{createRequire}from'node:module';const require=createRequire(import.meta.url);\"",
+    "package:tarball": "npm run build && npm run build:docker && node scripts/package-tarball.mjs",
     "test": "node --experimental-strip-types --test shared/*.test.ts scripts/*.test.mjs",
     "lint": "oxlint --deny-warnings app shared worker scripts docker",
     "format": "node scripts/format.mjs --write",

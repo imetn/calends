@@ -95,20 +95,67 @@ docker logs calends
 
 请持久化整个 `/data`，其中包含数据库状态与自动生成的初始化令牌。前端构建不包含 `local/` 中的个人文件。
 
+## 不用 Docker（systemd）
+
+小内存 VPS 可以不装 Docker。从 1.26.0 起，每个版本的 [Release](https://github.com/imetn/calends/releases) 附带一个压缩包，运行代码和镜像相同，不需要安装 npm 依赖，x86 和 ARM 通用。需要 Linux、systemd 和系统级安装的 Node 24（`node -v` 确认）；装在用户目录的 Node（如 nvm）服务读不到。
+
+```bash
+VERSION=1.26.0
+curl -fLO https://github.com/imetn/calends/releases/download/v$VERSION/calends-$VERSION.tar.gz
+curl -fLO https://github.com/imetn/calends/releases/download/v$VERSION/calends-$VERSION.tar.gz.sha256
+sha256sum -c calends-$VERSION.tar.gz.sha256
+sudo mkdir -p /opt/calends
+sudo tar -xzf calends-$VERSION.tar.gz -C /opt/calends --strip-components=1 --no-same-owner
+sudo cp /opt/calends/calends.service /etc/systemd/system/
+sudo systemctl daemon-reload
+```
+
+从 Docker 迁移时，这里先复制数据（`calends` 换成你的容器名），并把容器的环境变量写进下面说的 `/etc/calends.env`；数据已经写过的服务不能这样覆盖。子路径部署不能迁移。全新安装跳过这一步：
+
+```bash
+sudo docker stop calends
+sudo mkdir -p -m 700 /var/lib/private
+sudo docker cp calends:/data/. /var/lib/private/calends/
+```
+
+然后启动：
+
+```bash
+sudo systemctl enable --now calends
+sudo journalctl -u calends -n 20
+```
+
+首次设置密码前不要让令牌和密码明文经过公网：先用 `ssh -L 8787:localhost:8787 用户@服务器` 转发，再打开 `http://localhost:8787/`，用日志里的初始化令牌设置密码。数据在 `/var/lib/calends`，内存上限 512MB，进程异常退出后自动重启。
+
+[配置项](#配置项)里的环境变量写到 `/etc/calends.env`（每行 `名称=值`，用 `sudo chmod 600` 保护），再执行 `sudo systemctl restart calends`。放在反向代理后面时写 `HOST=127.0.0.1` 和 `TRUST_PROXY=1`。`DATA_DIR` 不要改，`PORT` 要大于 1024。压缩包按根路径构建；要部署到子路径请用 Docker。
+
+升级和回滚都是换目录里的代码，数据不用动。回滚只能回到数据库结构没有超过该版本的版本，操作前先在设置里导出备份。把 `VERSION` 换成要安装的版本号，下载并校验压缩包，再执行：
+
+```bash
+sudo systemctl stop calends
+sudo rm -rf /opt/calends
+sudo mkdir -p /opt/calends
+sudo tar -xzf calends-$VERSION.tar.gz -C /opt/calends --strip-components=1 --no-same-owner
+sudo cp /opt/calends/calends.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl start calends
+```
+
 ## 配置项
 
 Cloudflare 的变量和绑定写在 Wrangler 配置中，凭据使用 secret。Docker 支持的环境变量通过 `-e` 或 Compose 传入。
 
-| 配置项                                 | Cloudflare     | Docker                   | 用途                                                                                                    |
-| -------------------------------------- | -------------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `SETUP_TOKEN`                          | Secret         | 环境变量；不设时自动生成 | 新部署首次设置密码时使用。                                                                              |
-| `SITE_URL`                             | 变量           | 环境变量                 | 提醒和日历链接使用的站点地址；不设时自动识别。                                                          |
-| `TRUST_PROXY`                          | 变量           | 环境变量                 | 位于可信反向代理后时设为 `1`，让登录限速使用转发的访客 IP。                                             |
-| `EMAIL`、`MAIL_FROM`、`MAIL_FROM_NAME` | 邮件绑定与变量 | 镜像入口未配置           | 可选的邮件发送配置，见下文。其他通知渠道在应用内设置。                                                  |
-| `OLD_HOSTS`                            | 变量           | 镜像入口未透传           | 逗号分隔的旧域名。设置 `SITE_URL` 后，旧域名的页面以 HTTP 301 跳转到新站；API、MCP 和日历订阅保持可用。 |
-| `BASE_PATH`                            | 变量           | 构建参数和环境变量       | 可选子路径（如 `/calends`，不带结尾斜杠），构建与运行时须一致，见[子路径部署](#子路径部署)。            |
-| `DATA_DIR`                             | —              | 环境变量                 | SQLite 数据目录，默认 `/data`，需挂载持久化卷。                                                         |
-| `PORT`                                 | —              | 环境变量                 | 监听端口，默认 `8787`。                                                                                 |
+| 配置项                                 | Cloudflare     | Docker                   | 用途                                                                                                                   |
+| -------------------------------------- | -------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `SETUP_TOKEN`                          | Secret         | 环境变量；不设时自动生成 | 新部署首次设置密码时使用。                                                                                             |
+| `SITE_URL`                             | 变量           | 环境变量                 | 提醒和日历链接使用的站点地址；不设时自动识别。                                                                         |
+| `TRUST_PROXY`                          | 变量           | 环境变量                 | 位于可信反向代理后时设为 `1`，让登录限速使用转发的访客 IP。                                                            |
+| `EMAIL`、`MAIL_FROM`、`MAIL_FROM_NAME` | 邮件绑定与变量 | 镜像入口未配置           | 可选的邮件发送配置，见下文。其他通知渠道在应用内设置。                                                                 |
+| `OLD_HOSTS`                            | 变量           | 镜像入口未透传           | 逗号分隔的旧域名。设置 `SITE_URL` 后，旧域名的页面以 HTTP 301 跳转到新站；API、MCP 和日历订阅保持可用。                |
+| `BASE_PATH`                            | 变量           | 构建参数和环境变量       | 可选子路径（如 `/calends`，不带结尾斜杠），构建与运行时须一致，见[子路径部署](#子路径部署)。                           |
+| `DATA_DIR`                             | —              | 环境变量                 | SQLite 数据目录，默认 `/data`，需挂载持久化卷。                                                                        |
+| `PORT`                                 | —              | 环境变量                 | 监听端口，默认 `8787`。                                                                                                |
+| `HOST`                                 | —              | 环境变量                 | 监听地址，默认 `0.0.0.0`。不用 Docker 时可在反向代理后设为 `127.0.0.1`；Docker 用 `-p 127.0.0.1:8787:8787`，不要改它。 |
 
 ### Cloudflare 个人配置
 

@@ -1,13 +1,14 @@
 // 自托管运行时：起打包后的真实入口，走 HTTP 验证 Worker 在 Node 上的行为（虚构数据、临时目录）。
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, existsSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, existsSync, rmSync, writeFileSync } from 'node:fs';
 import { Agent, request } from 'node:http';
 import { createServer as netServer } from 'node:net';
-import { tmpdir } from 'node:os';
+import { networkInterfaces, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { after, before, test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { openD1 } from '../docker/d1.mjs';
 import { createFront, maxBodyFor } from '../docker/front.mjs';
@@ -40,9 +41,9 @@ function send(port, { path = '/', method = 'GET', headers = {}, body }) {
 
 const children = new Set();
 
-async function start(data, env = {}) {
+async function start(data, env = {}, entry = bundle) {
   const port = await freePort();
-  const child = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', bundle], {
+  const child = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', entry], {
     env: { PATH: process.env.PATH, PORT: String(port), DATA_DIR: data, ASSETS_DIR: dist, ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -335,4 +336,66 @@ test('镜像：不再依赖 wrangler，探活不新起 Node，堆有上限', () 
   assert.match(file, /--max-old-space-size=/);
   assert.match(file, /HEALTHCHECK .*CMD bash -c .*\/healthz/);
   assert.match(readFileSync(new URL('../docker/docker-compose.yml', import.meta.url), 'utf8'), /mem_limit:/);
+});
+
+test('压缩包：目录与镜像相同，解压后不靠环境变量就能找到前端', async () => {
+  const repo = join(root, 'tarball-repo');
+  mkdirSync(join(repo, 'build', 'docker'), { recursive: true });
+  mkdirSync(join(repo, 'docker'));
+  cpSync(dist, join(repo, 'dist'), { recursive: true });
+  cpSync(bundle, join(repo, 'build', 'docker', 'entrypoint.mjs'));
+  for (const f of ['docker/calends.service', 'LICENSE']) cpSync(new URL(`../${f}`, import.meta.url), join(repo, f));
+  writeFileSync(join(repo, 'package.json'), '{"version":"9.8.0"}');
+
+  const packer = fileURLToPath(new URL('./package-tarball.mjs', import.meta.url));
+  const pack = (env = {}) => spawnSync(process.execPath, [packer, repo], { encoding: 'utf8', env: { PATH: process.env.PATH, ...env } });
+  mkdirSync(join(repo, 'local'));
+  assert.notEqual(pack().status, 0, '有个人配置的目录不能打包');
+  rmSync(join(repo, 'local'), { recursive: true });
+  assert.notEqual(pack({ BASE_PATH: '/calends' }).status, 0, '子路径构建不能打包');
+  assert.notEqual(pack({ CALENDS_LOCAL: '../personal' }).status, 0, '个人部署不能打包');
+  const packed = pack();
+  assert.equal(packed.status, 0, packed.stderr);
+
+  const out = join(repo, 'build', 'release');
+  assert.match(readFileSync(join(out, 'calends-9.8.0.tar.gz.sha256'), 'utf8'), /^[0-9a-f]{64} {2}calends-9\.8\.0\.tar\.gz\n$/);
+  const extracted = join(root, 'tarball-out');
+  mkdirSync(extracted);
+  assert.equal(spawnSync('tar', ['-xzf', join(out, 'calends-9.8.0.tar.gz'), '-C', extracted, '--strip-components=1']).status, 0);
+  assert.deepEqual(readdirSync(extracted).sort(), ['LICENSE', 'calends.service', 'dist', 'docker']);
+  assert.deepEqual(readdirSync(join(extracted, 'docker')), ['entrypoint.mjs']);
+
+  const data = join(root, 'tarball-data');
+  const run = await start(data, { ASSETS_DIR: undefined, SETUP_TOKEN: 'fictional-token' }, join(extracted, 'docker', 'entrypoint.mjs'));
+  assert.equal((await send(run.port, { path: '/manifest.webmanifest' })).text(), '{"name":"calends"}');
+  assert.ok(existsSync(join(data, DB_NAME)));
+  assert.equal(await stop(run), 0);
+});
+
+test('systemd 配置：数据目录、堆上限与内存上限和镜像一致', () => {
+  const unit = readFileSync(new URL('../docker/calends.service', import.meta.url), 'utf8');
+  const heap = /--max-old-space-size=\d+/.exec(readFileSync(new URL('../docker/Dockerfile', import.meta.url), 'utf8'))[0];
+  assert.match(unit, new RegExp(`${heap} `));
+  assert.match(unit, /^ExecStart=\/usr\/bin\/env node \/opt\/calends\/docker\/entrypoint\.mjs$/m);
+  assert.match(unit, /^DynamicUser=yes$/m);
+  const limit = /mem_limit: (\d+)m/.exec(readFileSync(new URL('../docker/docker-compose.yml', import.meta.url), 'utf8'))[1];
+  assert.match(unit, new RegExp(`^MemoryMax=${limit}M$`, 'm'));
+  assert.match(unit, /^StateDirectory=calends$/m);
+  assert.match(unit, /^Environment=DATA_DIR=\/var\/lib\/calends$/m);
+  assert.match(unit, /^EnvironmentFile=-\/etc\/calends\.env$/m);
+});
+
+test('HOST：反向代理后可以只监听本机', async (t) => {
+  const outside = Object.values(networkInterfaces())
+    .flat()
+    .find((n) => n.family === 'IPv4' && !n.internal)?.address;
+  if (!outside) return t.skip('本机没有外部网卡');
+  const data = join(root, 'host-data');
+  const run = await start(data, { HOST: '127.0.0.1', SETUP_TOKEN: 'fictional-token' });
+  assert.equal((await send(run.port, { path: '/healthz' })).status, 200);
+  await assert.rejects(
+    new Promise((resolve, reject) => request({ host: outside, port: run.port, path: '/healthz' }, resolve).on('error', reject).end()),
+    /ECONNREFUSED/,
+  );
+  await stop(run);
 });
