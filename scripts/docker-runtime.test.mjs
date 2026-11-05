@@ -11,7 +11,7 @@ import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { openD1 } from '../docker/d1.mjs';
-import { createFront, maxBodyFor } from '../docker/front.mjs';
+import { clientIp, createFront, maxBodyFor, proxyHops } from '../docker/front.mjs';
 
 const DB_NAME = join('v3', 'd1', 'miniflare-D1DatabaseObject', '9ba2b04bf514d9facfd57ed57d849e77241a7adc99d1c1545d06688b43d84248.sqlite');
 const root = mkdtempSync(join(tmpdir(), 'calends-runtime-'));
@@ -397,5 +397,35 @@ test('HOST：反向代理后可以只监听本机', async (t) => {
     new Promise((resolve, reject) => request({ host: outside, port: run.port, path: '/healthz' }, resolve).on('error', reject).end()),
     /ECONNREFUSED/,
   );
+  await stop(run);
+});
+
+test('访客 IP：客户端自带的 X-Forwarded-For 不算数', () => {
+  const ip = (forwarded, hops) => clientIp({ headers: { 'x-forwarded-for': forwarded }, socket: { remoteAddress: '::ffff:10.0.0.1' } }, hops);
+  assert.equal(ip('203.0.113.9', 1), '203.0.113.9');
+  assert.equal(ip('6.6.6.6, 203.0.113.9', 1), '203.0.113.9', 'Nginx 把真实地址追加在最右边');
+  assert.equal(ip('6.6.6.6, 203.0.113.9, 198.51.100.1', 2), '203.0.113.9', '两层代理');
+  assert.equal(ip('203.0.113.9', 2), '10.0.0.1', '项数不够说明没走完代理');
+  assert.equal(ip('6.6.6.6,', 1), '10.0.0.1');
+  assert.equal(ip(undefined, 1), '10.0.0.1');
+  assert.equal(ip('2001:db8::1', 1), '2001:db8::1');
+  assert.equal(ip('<b>not-ip</b>', 1), '10.0.0.1', '不是 IP 的值不进限速表');
+  assert.equal(ip('1.2.3.4:999', 1), '10.0.0.1');
+  assert.equal(ip('6.6.6.6', 0), '10.0.0.1', '没设 TRUST_PROXY 就不看这个头');
+  for (const v of [undefined, '', '0', 'true', '-1', '1.5', '10']) assert.equal(proxyHops(v), 0, String(v));
+  assert.equal(proxyHops('1'), 1);
+  assert.equal(proxyHops('2'), 2);
+});
+
+test('运行时：换着伪造 X-Forwarded-For 绕不过登录限速，别的访客不受影响', async () => {
+  const run = await start(join(root, 'spoof-data'), { SETUP_TOKEN: 'fictional-token', TRUST_PROXY: '1' });
+  assert.equal((await json(run.port, '/api/auth/setup', { setupToken: 'fictional-token', password: 'fictional-password-1' })).status, 200);
+  const statuses = [];
+  for (let i = 0; i < 7; i++) {
+    const res = await json(run.port, '/api/login', { password: `wrong-${i}` }, { 'x-forwarded-for': `6.6.6.${i}, 203.0.113.9` });
+    statuses.push(res.status);
+  }
+  assert.equal(statuses.at(-1), 429, statuses.join());
+  assert.equal((await json(run.port, '/api/login', { password: 'fictional-password-1' }, { 'x-forwarded-for': '203.0.113.10' })).status, 200);
   await stop(run);
 });

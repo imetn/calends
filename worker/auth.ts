@@ -100,7 +100,7 @@ export async function isAuthed(req: Request, env: Env): Promise<boolean> {
   const now = Date.now();
   if (!row || row.expires_at <= now) return false;
   if (!row.last_seen_at || now - row.last_seen_at > TOUCH_MS)
-    await env.DB.prepare('UPDATE sessions SET last_seen_at = ?1, ip = ?2 WHERE token_hash = ?3').bind(now, clientIp(req, env), hash).run();
+    await env.DB.prepare('UPDATE sessions SET last_seen_at = ?1, ip = ?2 WHERE token_hash = ?3').bind(now, clientIp(req), hash).run();
   return true;
 }
 
@@ -110,9 +110,8 @@ async function sessionHash(req: Request): Promise<string> {
   return token ? sha256(token) : '';
 }
 
-/** 访客 IP：Cloudflare 上取 cf-connecting-ip；自托管在反向代理后面时，设 TRUST_PROXY=1 才信任 X-Forwarded-For（否则可被伪造来绕过限速） */
-const clientIp = (req: Request, env: Env) =>
-  req.headers.get('cf-connecting-ip') ?? (env.TRUST_PROXY === '1' ? req.headers.get('x-forwarded-for')?.split(',')[0].trim() : undefined) ?? '';
+/** 访客 IP：Cloudflare 自己写 cf-connecting-ip；自托管由 docker/front.mjs 按 TRUST_PROXY 算好后写入，这里不读 X-Forwarded-For */
+const clientIp = (req: Request) => req.headers.get('cf-connecting-ip') ?? '';
 
 /** 只有 https 访问时才给 Cookie 加 Secure，否则局域网里用 http 自托管时浏览器存不下登录状态 */
 const secure = (req: Request) => (new URL(req.url).protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https' ? '; Secure' : '');
@@ -134,7 +133,7 @@ async function startSession(req: Request, env: Env, method: 'password' | 'passke
       await sha256(token),
       now + SESSION_DAYS * 86_400_000,
       (req.headers.get('user-agent') ?? '').slice(0, 300),
-      clientIp(req, env),
+      clientIp(req),
       locationOf(req),
       method,
       now,
@@ -156,11 +155,11 @@ const NO_IP_DELAY_MS = 750;
 
 /**
  * 按 IP 限速：15 分钟内失败 6 次就先锁住。
- * Cloudflare 总带 cf-connecting-ip，Docker 由前置转发按真实连接写入；只有直接跑 wrangler dev 等情况取不到。
+ * Cloudflare 总带 cf-connecting-ip，Docker 由 docker/front.mjs 写入；只有直接跑 wrangler dev 等情况取不到。
  * 取不到时所有人会落进同一个桶，锁定会让任何人都能把站长锁在门外，所以不锁，只在每次失败后等一会儿（PBKDF2 本身也有开销）。
  */
 async function throttle(req: Request, env: Env) {
-  const ip = clientIp(req, env);
+  const ip = clientIp(req);
   if (!ip)
     return {
       blocked: false,

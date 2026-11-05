@@ -18,7 +18,8 @@ services:
     environment:
       # 对外访问地址（提醒、日历订阅里的链接），可选
       # SITE_URL: https://calends.example.com
-      # 在 Caddy / Nginx / Traefik 等反向代理后面时设为 1，限速才能拿到真实访客 IP
+      # 经反向代理访问时设为 1，限速才能拿到真实访客 IP；同时把上面的端口改成 127.0.0.1:8787:8787，别让人绕过代理直连
+      # CDN 加反向代理的情况见 docs/self-hosting.zh-CN.md
       # TRUST_PROXY: "1"
       TZ: UTC
 

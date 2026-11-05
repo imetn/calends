@@ -95,7 +95,7 @@ The [Compose configuration](docker/docker-compose.yml) persists SQLite data in a
 
 On a small VPS without Docker, use the [release tarball with systemd](docs/self-hosting.md#without-docker-systemd).
 
-For public access, enable HTTPS through a reverse proxy and set `TRUST_PROXY=1`. Add a passkey after setup in **Settings → Security**.
+For public access, enable HTTPS through a reverse proxy and set `TRUST_PROXY` ([how](docs/self-hosting.md#custom-domains-and-https)). Add a passkey after setup in **Settings → Security**.
 
 See the [self-hosting guide](docs/self-hosting.md) for custom domains, configuration, email reminders, subpath deployment and a prompt to delegate deployment to your AI agent.
 

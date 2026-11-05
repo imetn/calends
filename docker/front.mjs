@@ -1,7 +1,8 @@
 // 容器对外的 HTTP 层：把 Node 请求转成 Worker 的 Request，把 Response 写回去，并补上 Cloudflare 平台在 Worker 之外做的事。
-// - 访客 IP 按真实连接（TRUST_PROXY=1 时取 X-Forwarded-For 第一项）写进 CF-Connecting-IP，客户端自带的同名头作废，避免伪造 IP 绕过登录限速。
+// - 访客 IP 按真实连接（设了 TRUST_PROXY 时从 X-Forwarded-For 右边数）写进 CF-Connecting-IP，客户端自带的同名头作废，避免伪造 IP 绕过登录限速。
 // - 文本响应按 Accept-Encoding 压缩；请求体设上限，超大请求不能把进程内存撑爆。
 import { createServer } from 'node:http';
+import { isIP } from 'node:net';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGzip } from 'node:zlib';
@@ -17,13 +18,18 @@ export const maxBodyFor = (pathname) => {
 };
 const COMPRESSIBLE = /^(text\/(?!event-stream)|application\/(json|javascript|manifest\+json|xml)|image\/svg\+xml)/i;
 
-/** 写给 Worker 的访客 IP */
-export function clientIp(req, trustProxy) {
-  if (trustProxy) {
-    const first = String(req.headers['x-forwarded-for'] ?? '')
-      .split(',')[0]
-      .trim();
-    if (first) return first;
+/** TRUST_PROXY 是可信代理的层数；其他写法都当作不信任 */
+export const proxyHops = (value) => (/^[1-9]$/.test(value ?? '') ? Number(value) : 0);
+
+/**
+ * 写给 Worker 的访客 IP。只有最右边那几项是可信代理写的，左边的都可能是客户端自带的，
+ * 所以 N 层代理取右数第 N 项；项数不够说明请求没走完这些代理，退回真实连接，不是 IP 的值同样不用。
+ */
+export function clientIp(req, trustedHops) {
+  if (trustedHops) {
+    const forwarded = String(req.headers['x-forwarded-for'] ?? '').split(',');
+    const ip = forwarded.at(-trustedHops)?.trim();
+    if (forwarded.length >= trustedHops && isIP(ip)) return ip;
   }
   return (req.socket.remoteAddress ?? '').replace(/^::ffff:(?=\d+\.\d+\.\d+\.\d+$)/, '');
 }
@@ -57,13 +63,13 @@ function drain(req, limiter, limit) {
   req.resume();
 }
 
-function toRequest(req, res, url, trustProxy, limit) {
+function toRequest(req, res, url, trustedHops, limit) {
   const headers = new Headers();
   for (const [k, v] of Object.entries(req.headers)) {
     if (k === 'cf-connecting-ip') continue;
     for (const item of Array.isArray(v) ? v : [v]) headers.append(k, item);
   }
-  const ip = clientIp(req, trustProxy);
+  const ip = clientIp(req, trustedHops);
   if (ip) headers.set('cf-connecting-ip', ip);
   // 对方断开时通知 Worker，助手才会停止继续调用模型
   const aborter = new AbortController();
@@ -111,7 +117,7 @@ async function writeResponse(req, res, response) {
 }
 
 /** handle 是 Worker 的 fetch；healthy 只在进程内查一次数据库，健康检查因此不经过 Worker */
-export function createFront({ handle, healthy, trustProxy = false, maxBody = maxBodyFor }) {
+export function createFront({ handle, healthy, trustedHops = 0, maxBody = maxBodyFor }) {
   return createServer(async (req, res) => {
     if (req.url === '/healthz') {
       let ok = false;
@@ -127,7 +133,7 @@ export function createFront({ handle, healthy, trustProxy = false, maxBody = max
       const url = requestUrl(req);
       const limit = maxBody(url.pathname);
       if (Number(req.headers['content-length']) > limit) return plain(res, 413, 'payload too large');
-      request = toRequest(req, res, url, trustProxy, limit);
+      request = toRequest(req, res, url, trustedHops, limit);
     } catch {
       return plain(res, 400, 'bad request');
     }

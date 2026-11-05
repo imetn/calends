@@ -145,17 +145,17 @@ sudo systemctl start calends
 
 For Cloudflare, set variables and bindings in your Wrangler configuration and use secrets for credentials. For Docker, pass supported environment variables with `-e` or through Compose.
 
-| Setting                                | Cloudflare                  | Docker                                   | Purpose                                                                                                                                                        |
-| -------------------------------------- | --------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SETUP_TOKEN`                          | Secret                      | Environment variable; generated if unset | Used to set the owner password on a fresh install.                                                                                                             |
-| `SITE_URL`                             | Variable                    | Environment variable                     | Public URL used in reminders and calendar links; auto-detected if unset.                                                                                       |
-| `TRUST_PROXY`                          | Variable                    | Environment variable                     | Set to `1` behind a trusted reverse proxy so login rate limiting uses the visitor's forwarded IP.                                                              |
-| `EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME` | Email binding and variables | Not configured by the image entrypoint   | Optional email delivery; see below. Other notification channels are configured in the app.                                                                     |
-| `OLD_HOSTS`                            | Variable                    | Not forwarded by the image entrypoint    | Comma-separated old domains. With `SITE_URL` set, pages on these hosts redirect there with HTTP 301; API, MCP and calendar feeds remain accessible.            |
-| `BASE_PATH`                            | Variable                    | Build argument and environment variable  | Optional subpath without a trailing slash, e.g. `/calends`. Use the same value at build time and runtime; see [subpath deployment](#subpath-deployment).       |
-| `DATA_DIR`                             | —                           | Environment variable                     | SQLite data directory; default `/data`. Persist this directory in a volume.                                                                                    |
-| `PORT`                                 | —                           | Environment variable                     | Listening port; default `8787`.                                                                                                                                |
-| `HOST`                                 | —                           | Environment variable                     | Listening address; default `0.0.0.0`. Without Docker, set `127.0.0.1` behind a reverse proxy. With Docker, leave it and publish with `-p 127.0.0.1:8787:8787`. |
+| Setting                                | Cloudflare                  | Docker                                   | Purpose                                                                                                                                                               |
+| -------------------------------------- | --------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SETUP_TOKEN`                          | Secret                      | Environment variable; generated if unset | Used to set the owner password on a fresh install.                                                                                                                    |
+| `SITE_URL`                             | Variable                    | Environment variable                     | Public URL used in reminders and calendar links; auto-detected if unset.                                                                                              |
+| `TRUST_PROXY`                          | —                           | Environment variable                     | Number of proxies that append to `X-Forwarded-For`, usually `1`. Login rate limiting uses it to find the visitor IP; see [Custom domains](#custom-domains-and-https). |
+| `EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME` | Email binding and variables | Not configured by the image entrypoint   | Optional email delivery; see below. Other notification channels are configured in the app.                                                                            |
+| `OLD_HOSTS`                            | Variable                    | Not forwarded by the image entrypoint    | Comma-separated old domains. With `SITE_URL` set, pages on these hosts redirect there with HTTP 301; API, MCP and calendar feeds remain accessible.                   |
+| `BASE_PATH`                            | Variable                    | Build argument and environment variable  | Optional subpath without a trailing slash, e.g. `/calends`. Use the same value at build time and runtime; see [subpath deployment](#subpath-deployment).              |
+| `DATA_DIR`                             | —                           | Environment variable                     | SQLite data directory; default `/data`. Persist this directory in a volume.                                                                                           |
+| `PORT`                                 | —                           | Environment variable                     | Listening port; default `8787`.                                                                                                                                       |
+| `HOST`                                 | —                           | Environment variable                     | Listening address; default `0.0.0.0`. Without Docker, set `127.0.0.1` behind a reverse proxy. With Docker, leave it and publish with `-p 127.0.0.1:8787:8787`.        |
 
 ### Personal Cloudflare configuration
 
@@ -215,6 +215,8 @@ For Cloudflare, add your domain to the active Wrangler configuration before depl
 
 Merge `SITE_URL` into any existing `vars` object. For Docker, put the service behind Caddy, Nginx or Traefik with HTTPS, set `SITE_URL` to the external URL and set `TRUST_PROXY=1`. Passkeys require a secure context, so use HTTPS for public access.
 
+Set `TRUST_PROXY` to the number of proxies that append to `X-Forwarded-For`, and publish the port only to the proxy (`-p 127.0.0.1:8787:8787`): anyone who reaches Calends directly can choose the IP used for login rate limiting. Use `1` for one proxy, including Cloudflare Tunnel connected straight to Calends. Use `2` for a CDN or Cloudflare Tunnel in front of Nginx with `$proxy_add_x_forwarded_for`, and let that Nginx accept connections only from that layer. Caddy and Traefik drop the previous layer's entry until you list it as trusted (`trusted_proxies`, `trustedIPs`); list it, then use `2`. If the value is wrong, rate limiting sees the CDN, tunnel or proxy address, and visitors sharing it can lock each other out, the owner included.
+
 ### Email reminders
 
 Cloudflare deployments can send email through the `EMAIL` binding. The repository's `wrangler.jsonc` contains commented examples for `send_email`, `MAIL_FROM` and `MAIL_FROM_NAME`; enable these with a verified sender. Then configure the notification channel in the app.
@@ -247,7 +249,7 @@ To serve Calends under a path such as `https://example.com/calends/`, build and 
 
 ```bash
 docker build -f docker/Dockerfile --build-arg BASE_PATH=/calends -t calends:local .
-docker run -d --name calends -p 8787:8787 -v calends-data:/data \
+docker run -d --name calends -p 127.0.0.1:8787:8787 -v calends-data:/data \
   -e BASE_PATH=/calends -e SITE_URL=https://example.com/calends -e TRUST_PROXY=1 calends:local
 ```
 

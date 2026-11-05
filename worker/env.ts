@@ -16,8 +16,6 @@ export interface Env {
   OWNER_PASSCODE?: string;
   /** 首次设置密码时需要提供的一次性令牌（wrangler secret put SETUP_TOKEN） */
   SETUP_TOKEN?: string;
-  /** 自托管在反向代理后面时设为 1，才信任 X-Forwarded-For 作为访客 IP */
-  TRUST_PROXY?: string;
   /** 换过域名时填旧域名（逗号分隔）：在这些域名上打开页面会 301 到 SITE_URL；接口、MCP、日历订阅照常可用，已有的订阅和客户端不受影响 */
   OLD_HOSTS?: string;
   /** 仅本地：.dev.vars 设为 1 时跳过登录（不要在线上配置） */

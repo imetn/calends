@@ -8,7 +8,7 @@ import { normalizeBasePath } from '../shared/base.ts';
 import { ensureMigrated } from '../worker/migrate.ts';
 import { createAssets } from './assets.mjs';
 import { openD1 } from './d1.mjs';
-import { createFront } from './front.mjs';
+import { createFront, proxyHops } from './front.mjs';
 
 // Cloudflare 上的 Worker 永远是 UTC；账务日期不能随容器的 TZ 变化
 process.env.TZ = 'UTC';
@@ -50,7 +50,7 @@ if (!setupToken) {
 // 3. 传给 Worker 的绑定和变量
 const assetsDir = process.env.ASSETS_DIR || fileURLToPath(new URL('../dist', import.meta.url));
 const env = { DB: db, ASSETS: createAssets(assetsDir), SETUP_TOKEN: setupToken };
-for (const k of ['SITE_URL', 'OWNER_PASSCODE', 'TRUST_PROXY', 'BASE_PATH']) if (process.env[k]) env[k] = process.env[k];
+for (const k of ['SITE_URL', 'OWNER_PASSCODE', 'BASE_PATH']) if (process.env[k]) env[k] = process.env[k];
 
 const pending = new Set();
 const ctx = {
@@ -73,7 +73,7 @@ const status = await (await worker.fetch(new Request(statusUrl), env, ctx)).json
 const server = createFront({
   handle: (req) => worker.fetch(req, env, ctx),
   healthy: () => Boolean(db.ping()),
-  trustProxy: process.env.TRUST_PROXY === '1',
+  trustedHops: proxyHops(process.env.TRUST_PROXY),
 }).listen(PORT, process.env.HOST || '0.0.0.0');
 log(`listening on port ${PORT} — open ${BASE}/ in your browser`);
 if (status.needsSetup) {

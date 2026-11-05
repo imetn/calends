@@ -149,7 +149,7 @@ Cloudflare 的变量和绑定写在 Wrangler 配置中，凭据使用 secret。D
 | -------------------------------------- | -------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | `SETUP_TOKEN`                          | Secret         | 环境变量；不设时自动生成 | 新部署首次设置密码时使用。                                                                                             |
 | `SITE_URL`                             | 变量           | 环境变量                 | 提醒和日历链接使用的站点地址；不设时自动识别。                                                                         |
-| `TRUST_PROXY`                          | 变量           | 环境变量                 | 位于可信反向代理后时设为 `1`，让登录限速使用转发的访客 IP。                                                            |
+| `TRUST_PROXY`                          | —              | 环境变量                 | 追加 `X-Forwarded-For` 的代理层数，通常是 `1`。登录限速靠它找到访客 IP，见[自定义域名](#自定义域名与-https)。          |
 | `EMAIL`、`MAIL_FROM`、`MAIL_FROM_NAME` | 邮件绑定与变量 | 镜像入口未配置           | 可选的邮件发送配置，见下文。其他通知渠道在应用内设置。                                                                 |
 | `OLD_HOSTS`                            | 变量           | 镜像入口未透传           | 逗号分隔的旧域名。设置 `SITE_URL` 后，旧域名的页面以 HTTP 301 跳转到新站；API、MCP 和日历订阅保持可用。                |
 | `BASE_PATH`                            | 变量           | 构建参数和环境变量       | 可选子路径（如 `/calends`，不带结尾斜杠），构建与运行时须一致，见[子路径部署](#子路径部署)。                           |
@@ -215,6 +215,8 @@ Cloudflare 部署前，在实际使用的 Wrangler 配置中添加域名：
 
 如果已有 `vars`，将 `SITE_URL` 合并进去。Docker 请通过 Caddy、Nginx 或 Traefik 等反向代理启用 HTTPS，将 `SITE_URL` 设为外部访问地址，并设置 `TRUST_PROXY=1`。Passkey 需要安全上下文，公网访问应使用 HTTPS。
 
+`TRUST_PROXY` 设为追加 `X-Forwarded-For` 的代理层数，端口只开放给代理（`-p 127.0.0.1:8787:8787`）：能直连 Calends 的人可以任意指定登录限速使用的 IP。一层代理设为 `1`，Cloudflare Tunnel 直连 Calends 也算一层。CDN 或 Cloudflare Tunnel 后面是使用 `$proxy_add_x_forwarded_for` 的 Nginx 时设为 `2`，并让该 Nginx 只接受前一层的连接。Caddy 和 Traefik 默认丢弃前一层写的那一项，要先把它配成可信来源（`trusted_proxies`、`trustedIPs`），再设为 `2`。设错时限速看到的是 CDN、隧道或代理的地址，共用这个地址的访客会互相锁定，站长也不例外。
+
 ### 邮件提醒
 
 Cloudflare 部署可通过 `EMAIL` 绑定发邮件。仓库的 `wrangler.jsonc` 已提供注释示例，使用经过验证的发件地址启用 `send_email`、`MAIL_FROM` 和 `MAIL_FROM_NAME`，然后在应用内设置通知渠道。
@@ -247,7 +249,7 @@ Telegram、飞书、钉钉、企业微信、Slack、Discord、Bark、ntfy、Serv
 
 ```bash
 docker build -f docker/Dockerfile --build-arg BASE_PATH=/calends -t calends:local .
-docker run -d --name calends -p 8787:8787 -v calends-data:/data \
+docker run -d --name calends -p 127.0.0.1:8787:8787 -v calends-data:/data \
   -e BASE_PATH=/calends -e SITE_URL=https://example.com/calends -e TRUST_PROXY=1 calends:local
 ```
 
