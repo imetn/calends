@@ -3,20 +3,43 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore: &docs
+      - '**.md'
+      - 'docs/**'
+      - LICENSE
   pull_request:
+    paths-ignore: *docs
+
+# PR 只跑最新一次；main 按提交分组，每个提交都完整跑完
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: static
+            run: npm run lint && npm run format:check && npm run i18n:check
+          - name: test 1/2
+            run: npm test
+            shard: --test-shard=1/2
+          - name: test 2/2
+            run: npm test
+            shard: --test-shard=2/2
+          - name: build
+            run: npm run build
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm run i18n:check
-      - run: npm test
-      - run: npm run build
+      - run: npm ci --no-audit --no-fund
+      - run: ${{ matrix.run }}
+        env:
+          NODE_OPTIONS: ${{ matrix.shard }}
