@@ -4,6 +4,21 @@
 
 首次部署请先看 [Cloudflare 或 Docker 快速开始](../README.zh-CN.md#快速开始)。本指南说明初始化之后的配置和其他部署选项。
 
+从 `/` 打开 Calends，在 `/login` 登录。登录后，`/` 跳转到设置中的启动页，默认是 `/overview`（概览）。在设置中开启公开页后，访客可通过 `/public` 查看只读账本。路由与登录回跳规则见[架构说明](../ARCHITECTURE.md#web-requests-and-state)。 初始化后可在「设置 → 安全」中添加 Passkey。
+
+## 从源码部署 Cloudflare
+
+```bash
+git clone https://github.com/imetn/calends
+cd calends
+npm ci
+npx wrangler login
+node scripts/wrangler.mjs secret put SETUP_TOKEN
+npm run deploy
+```
+
+`SETUP_TOKEN` 请填写一串足够长的随机字符串。部署命令会构建应用、在首次部署时创建 D1 数据库并执行迁移。打开 `https://<你的 worker>.workers.dev/`，在登录页输入令牌并设置密码。
+
 ## 使用预构建镜像
 
 无需克隆源码或本地构建，直接拉取并运行：
@@ -17,6 +32,8 @@ docker logs calends
 打开 `http://localhost:8787/`，在登录页使用日志中的初始化令牌设置密码。命名卷 `calends-data` 持久化整个 `/data`，包括 SQLite 数据库状态与自动生成的初始化令牌，无需 Cloudflare 账号。
 
 生产环境建议固定完整版本标签，如 `xizozhe/calends:1.27.0`，升级时再主动修改。`latest` 跟随 main 分支，`1.27` 跟随该次版本系列的发布；这类浮动标签方便更新，但不锁定某次发布。以下命令中的 `xizozhe/calends` 也可替换为 `ghcr.io/imetn/calends`。
+
+如果用的是[快速开始里的 Compose 文件](../README.zh-CN.md#docker)，升级执行 `docker compose pull && docker compose up -d`。
 
 使用 `latest` 部署时，先拉取新版镜像，再用同一数据卷重建容器：
 
@@ -53,26 +70,9 @@ docker compose logs calends
 
 Compose 会构建 `calends:local`，在 8787 端口启动服务，并用命名卷 `calends_calends-data` 持久化 `/data`。打开 `http://localhost:8787/`，在登录页使用日志中的初始化令牌设置密码。取得新版源码后，在 `docker/` 下再运行 `docker compose up -d --build` 即可重建并更新。`docker compose down` 保留数据卷；`docker compose down -v` 会删除账本数据卷。
 
-仓库中的 `docker/docker-compose.yml` 默认从源码构建。如需使用预构建镜像，将整个 `build:` 块及原有的 `image: calends:local` 一行替换为 `image: xizozhe/calends:latest`，保留其他配置。例如：
+仓库中的 `docker/docker-compose.yml` 从源码构建。要使用预构建镜像，改用 [`docker/compose.prebuilt.yml`](../docker/compose.prebuilt.yml)。
 
-```yaml
-name: calends
-services:
-  calends:
-    image: xizozhe/calends:latest
-    restart: unless-stopped
-    ports:
-      - '8787:8787'
-    volumes:
-      - calends-data:/data
-    environment:
-      TZ: UTC
-
-volumes:
-  calends-data:
-```
-
-也可改用 `ghcr.io/imetn/calends:latest`，或固定 `1.27.0` 等版本标签。在 `docker/` 下依次运行 `docker compose pull` 和 `docker compose up -d`，即可启动或升级此配置。镜像变化时，Compose 会重建容器并保留 `calends_calends-data` 数据卷。
+也可改用 `ghcr.io/imetn/calends:latest`，或固定 `1.27.0` 等版本标签。在 `docker/` 下依次运行 `docker compose -f compose.prebuilt.yml pull` 和 `docker compose -f compose.prebuilt.yml up -d`，即可启动或升级此配置。镜像变化时，Compose 会重建容器并保留 `calends_calends-data` 数据卷。
 
 不使用 Compose 时，也可以在仓库根目录直接构建和运行：
 

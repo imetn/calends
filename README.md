@@ -17,9 +17,10 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/overview.png" alt="Calends overview" width="880" />
+  <img src="docs/screenshots/overview.png" alt="Calends overview" width="49%" />
+  <img src="docs/screenshots/timeline.png" alt="Calends subscription timeline with billing periods, plan changes and payment methods" width="49%" />
 </p>
-<p align="center"><sub>Overview · Fictional demo data</sub></p>
+<p align="center"><sub>Overview and subscription timeline · Fictional demo data</sub></p>
 
 ---
 
@@ -41,63 +42,35 @@ Track what you pay, when it renews, and who owes you. Calends brings subscriptio
 - **Public page editor** — arrange widgets on a grid canvas and customize the header of your read-only public page.
 - **Storage and access** — password and passkey sign-in, remote device sign-out, optional public sharing with server-side masking, JSON backup/restore and CSV import/export. Available in 14 languages.
 
-<details>
-<summary>Explore the subscription timeline</summary>
-
-<p align="center">
-  <img src="docs/screenshots/timeline.png" alt="Calends subscription timeline with billing periods, plan changes and payment methods" width="880" />
-</p>
-<p align="center"><sub>Billing periods and subscription history · Fictional demo data</sub></p>
-
-</details>
-
 ## Quick start
 
-[Try the live demo](https://demo.calends.date) to explore before deploying. It is shared by all visitors and resets daily; external notifications are disabled.
+Want a look first? [Try the live demo](https://demo.calends.date).
 
-Open Calends at `/` and sign in at `/login`. After signing in, `/` redirects to your configured start page, defaulting to `/overview`. Public sharing is optional: enable it in Settings to make the read-only page available at `/public`. See [routes and login redirects](ARCHITECTURE.md#web-requests-and-state) for details.
+### Cloudflare
 
-### Cloudflare Workers
-
-Use [one-click deployment](https://deploy.workers.cloudflare.com/?url=https://github.com/imetn/calends) with Workers and D1, or deploy from source:
-
-```bash
-git clone https://github.com/imetn/calends
-cd calends
-npm ci
-npx wrangler login
-node scripts/wrangler.mjs secret put SETUP_TOKEN
-npm run deploy
-```
-
-Use a long random string for `SETUP_TOKEN`. The deploy command builds the app, provisions D1 on first deployment and applies migrations. Open `https://<your-worker>.workers.dev/`, enter the token on the login page and set your password.
+[Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https://github.com/imetn/calends), add a long random `SETUP_TOKEN` secret to the Worker, then open its URL, enter the token and set your password. To deploy from source, see the [Cloudflare guide](docs/self-hosting.md#cloudflare-from-source).
 
 ### Docker
 
-Run the prebuilt image directly:
-
 ```bash
-docker run -d --name calends --restart unless-stopped -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
-docker logs calends
-```
-
-Open `http://localhost:8787/` and use the setup token printed in the logs on the login page. The named volume `calends-data` persists SQLite data at `/data`. You can also use `ghcr.io/imetn/calends:latest`. For production, pin a version tag such as `1.20.0` instead of `latest`.
-
-Alternatively, build from source with Compose. From a source checkout, Compose (in `docker/`) builds the included [Dockerfile](docker/Dockerfile) and starts the app:
-
-```bash
-cd docker
-docker compose up -d --build
+curl -fsSL https://raw.githubusercontent.com/imetn/calends/main/docker/compose.prebuilt.yml -o compose.yml
+docker compose up -d
 docker compose logs calends
 ```
 
-The [Compose configuration](docker/docker-compose.yml) persists SQLite data in a named volume mounted at `/data`. Building locally does not require a published Calends image or a Cloudflare account. See the [Docker guide](docs/self-hosting.md#using-prebuilt-images) for image registries, upgrades and Compose options.
+Open `http://localhost:8787/`, enter the setup token from the logs and set your password.
 
-On a small VPS without Docker, use the [release tarball with systemd](docs/self-hosting.md#without-docker-systemd).
+### One-line install
 
-For public access, enable HTTPS through a reverse proxy ([how](docs/self-hosting.md#custom-domains-and-https)). Add a passkey after setup in **Settings → Security**.
+On Debian or Ubuntu with systemd:
 
-See the [self-hosting guide](docs/self-hosting.md) for custom domains, configuration, email reminders, subpath deployment and a prompt to delegate deployment to your AI agent.
+```bash
+curl -fsSL https://calends.date/install.sh | sudo bash
+```
+
+Calends starts on `127.0.0.1:8787`; point your own reverse proxy at it. Run the same command to upgrade.
+
+For upgrades, HTTPS, configuration and other options, see the [self-hosting guide](docs/self-hosting.md).
 
 ## AI & MCP
 

@@ -4,6 +4,21 @@
 
 Start with the [Cloudflare or Docker quick start](../README.md#quick-start). This guide covers configuration and deployment options beyond the first launch.
 
+Open Calends at `/` and sign in at `/login`. After signing in, `/` redirects to your configured start page, defaulting to `/overview`. Public sharing is optional: enable it in Settings to make the read-only page available at `/public`. See [routes and login redirects](../ARCHITECTURE.md#web-requests-and-state) for details. Add a passkey after setup in **Settings → Security**.
+
+## Cloudflare from source
+
+```bash
+git clone https://github.com/imetn/calends
+cd calends
+npm ci
+npx wrangler login
+node scripts/wrangler.mjs secret put SETUP_TOKEN
+npm run deploy
+```
+
+Use a long random string for `SETUP_TOKEN`. The deploy command builds the app, provisions D1 on first deployment and applies migrations. Open `https://<your-worker>.workers.dev/`, enter the token on the login page and set your password.
+
 ## Using prebuilt images
 
 Pull and run the image without a source checkout or local build:
@@ -17,6 +32,8 @@ docker logs calends
 Open `http://localhost:8787/` and use the setup token printed in the logs on the login page. The named volume `calends-data` persists all of `/data`, including the SQLite database state and generated setup token. No Cloudflare account is required.
 
 For production, pin a full version tag such as `xizozhe/calends:1.27.0` and change it deliberately when upgrading. `latest` follows the main branch; `1.27` follows releases in that minor series. These moving tags are convenient for updates but do not pin a specific release. You can replace `xizozhe/calends` with `ghcr.io/imetn/calends` in these commands.
+
+If you use the [Compose file from the quick start](../README.md#docker), upgrade with `docker compose pull && docker compose up -d`.
 
 To upgrade an installation using `latest`, pull the new image, then recreate the container with the same volume:
 
@@ -53,26 +70,9 @@ docker compose logs calends
 
 Compose builds `calends:local`, starts the service on port 8787 and mounts the named volume `calends_calends-data` at `/data`. Open `http://localhost:8787/` and use the setup token from the logs on the login page. To update after obtaining newer source, run `docker compose up -d --build` in `docker/` again. `docker compose down` preserves the volume; `docker compose down -v` deletes the ledger volume.
 
-The supplied `docker/docker-compose.yml` builds from source by default. To use a prebuilt image instead, replace the entire `build:` block and the existing `image: calends:local` line with `image: xizozhe/calends:latest`, keeping the remaining settings. For example:
+The supplied `docker/docker-compose.yml` builds from source. To use a prebuilt image instead, use [`docker/compose.prebuilt.yml`](../docker/compose.prebuilt.yml).
 
-```yaml
-name: calends
-services:
-  calends:
-    image: xizozhe/calends:latest
-    restart: unless-stopped
-    ports:
-      - '8787:8787'
-    volumes:
-      - calends-data:/data
-    environment:
-      TZ: UTC
-
-volumes:
-  calends-data:
-```
-
-Use `ghcr.io/imetn/calends:latest` as an alternative, or pin a version such as `1.27.0`. In `docker/`, run `docker compose pull` followed by `docker compose up -d` to start or upgrade this configuration. Compose recreates the container when the image changes and retains `calends_calends-data`.
+Use `ghcr.io/imetn/calends:latest` as an alternative, or pin a version such as `1.27.0`. In `docker/`, run `docker compose -f compose.prebuilt.yml pull` followed by `docker compose -f compose.prebuilt.yml up -d` to start or upgrade this configuration. Compose recreates the container when the image changes and retains `calends_calends-data`.
 
 To build and run without Compose, from the repository root:
 

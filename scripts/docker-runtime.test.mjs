@@ -381,6 +381,9 @@ test('systemd 配置：数据目录、堆上限与内存上限和镜像一致', 
   assert.match(unit, /^DynamicUser=yes$/m);
   const limit = /mem_limit: (\d+)m/.exec(readFileSync(new URL('../docker/docker-compose.yml', import.meta.url), 'utf8'))[1];
   assert.match(unit, new RegExp(`^MemoryMax=${limit}M$`, 'm'));
+  const prebuilt = readFileSync(new URL('../docker/compose.prebuilt.yml', import.meta.url), 'utf8');
+  assert.match(prebuilt, new RegExp(`mem_limit: ${limit}m`));
+  assert.match(prebuilt, /image: xizozhe\/calends:latest/);
   assert.match(unit, /^StateDirectory=calends$/m);
   assert.match(unit, /^Environment=DATA_DIR=\/var\/lib\/calends$/m);
   assert.match(unit, /^EnvironmentFile=-\/etc\/calends\.env$/m);

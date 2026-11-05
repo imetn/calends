@@ -17,9 +17,10 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/overview.zh-CN.png" alt="Calends 概览" width="880" />
+  <img src="docs/screenshots/overview.zh-CN.png" alt="Calends 概览" width="49%" />
+  <img src="docs/screenshots/timeline.zh-CN.png" alt="Calends 订阅时间轴：计费时段、套餐变更与支付方式" width="49%" />
 </p>
-<p align="center"><sub>概览 · 虚构演示数据</sub></p>
+<p align="center"><sub>概览与订阅时间轴 · 虚构演示数据</sub></p>
 
 ---
 
@@ -41,63 +42,35 @@
 - **公开页编辑器**：在网格画布中排列组件，自定义只读公开页的页头。
 - **存储与访问**：密码与 Passkey 登录、设备远程下线、可选的服务端脱敏公开页、JSON 备份恢复和 CSV 导入导出，支持 14 种语言。
 
-<details>
-<summary>查看订阅时间轴</summary>
-
-<p align="center">
-  <img src="docs/screenshots/timeline.zh-CN.png" alt="Calends 订阅时间轴：计费时段、套餐变更与支付方式" width="880" />
-</p>
-<p align="center"><sub>计费时段与订阅历程 · 虚构演示数据</sub></p>
-
-</details>
-
 ## 快速开始
 
-可以先试用[在线演示](https://demo.calends.date)。演示账本由所有访客共用，每日重置，对外通知等功能不可用。
+想先看看，可以试用[在线演示](https://demo.calends.date)。
 
-从 `/` 打开 Calends，在 `/login` 登录。登录后，`/` 跳转到设置中的启动页，默认是 `/overview`（概览）。在设置中开启公开页后，访客可通过 `/public` 查看只读账本。路由与登录回跳规则见[架构说明](ARCHITECTURE.md#web-requests-and-state)。
+### Cloudflare
 
-### Cloudflare Workers
-
-使用 Workers 和 D1，可[一键部署](https://deploy.workers.cloudflare.com/?url=https://github.com/imetn/calends)，也可以从源码部署：
-
-```bash
-git clone https://github.com/imetn/calends
-cd calends
-npm ci
-npx wrangler login
-node scripts/wrangler.mjs secret put SETUP_TOKEN
-npm run deploy
-```
-
-`SETUP_TOKEN` 请填写一串足够长的随机字符串。部署命令会构建应用、在首次部署时创建 D1 数据库并执行迁移。打开 `https://<你的 worker>.workers.dev/`，在登录页输入令牌并设置密码。
+[一键部署到 Cloudflare](https://deploy.workers.cloudflare.com/?url=https://github.com/imetn/calends)，给 Worker 添加一个足够长的随机密钥 `SETUP_TOKEN`，然后打开它的地址，输入令牌并设置密码。从源码部署见 [Cloudflare 指南](docs/self-hosting.zh-CN.md#从源码部署-cloudflare)。
 
 ### Docker
 
-直接运行预构建镜像：
-
 ```bash
-docker run -d --name calends --restart unless-stopped -p 8787:8787 -v calends-data:/data xizozhe/calends:latest
-docker logs calends
-```
-
-打开 `http://localhost:8787/`，在登录页使用日志中的初始化令牌设置密码。命名卷 `calends-data` 将 SQLite 数据持久化到 `/data`。也可使用 `ghcr.io/imetn/calends:latest`。生产环境建议固定版本标签，如 `1.20.0`，而不是使用 `latest`。
-
-也可以通过 Compose 从源码构建。在源码目录的 `docker/` 下执行，Compose 会使用仓库中的 [Dockerfile](docker/Dockerfile) 构建并启动应用：
-
-```bash
-cd docker
-docker compose up -d --build
+curl -fsSL https://raw.githubusercontent.com/imetn/calends/main/docker/compose.prebuilt.yml -o compose.yml
+docker compose up -d
 docker compose logs calends
 ```
 
-[Compose 配置](docker/docker-compose.yml) 会通过挂载到 `/data` 的命名卷持久化 SQLite 数据。本地构建无需已发布的 Calends 镜像或 Cloudflare 账号。镜像仓库、升级与 Compose 用法见 [Docker 部署指南](docs/self-hosting.zh-CN.md#使用预构建镜像)。
+打开 `http://localhost:8787/`，输入日志中的初始化令牌并设置密码。
 
-不想装 Docker 的小内存 VPS，可以用 [systemd 和发布压缩包](docs/self-hosting.zh-CN.md#不用-dockersystemd)。
+### 一键部署
 
-公网访问时，通过反向代理启用 HTTPS（[设置方法](docs/self-hosting.zh-CN.md#自定义域名与-https)）。初始化后可在「设置 → 安全」中添加 Passkey。
+Debian 或 Ubuntu（systemd）：
 
-自定义域名、配置项、邮件提醒、子路径部署，以及交给 AI 部署的提示词，见[自托管指南](docs/self-hosting.zh-CN.md)。
+```bash
+curl -fsSL https://calends.date/install.sh | sudo bash
+```
+
+Calends 会在 `127.0.0.1:8787` 启动，反向代理由你自己配置。重复运行同一条命令即可升级。
+
+升级、HTTPS、配置项和其他部署方式见[自托管指南](docs/self-hosting.zh-CN.md)。
 
 ## AI 与 MCP
 

@@ -1,0 +1,19 @@
+# 用预构建镜像启动：docker compose up -d，然后打开 http://localhost:8787
+# 首次设置密码需要的初始化令牌：docker compose logs calends
+# 固定项目名，数据卷始终叫 calends_calends-data，不随所在目录名变化
+name: calends
+services:
+  calends:
+    image: xizozhe/calends:latest
+    restart: unless-stopped
+    # 正常占用约 100–150MB；超限只重启这个容器，不拖累整台机器
+    mem_limit: 512m
+    ports:
+      - '8787:8787'
+    volumes:
+      - calends-data:/data
+    environment:
+      TZ: UTC
+
+volumes:
+  calends-data:
