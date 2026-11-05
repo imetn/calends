@@ -16,7 +16,7 @@ docker logs calends
 
 打开 `http://localhost:8787/`，在登录页使用日志中的初始化令牌设置密码。命名卷 `calends-data` 持久化整个 `/data`，包括 SQLite 数据库状态与自动生成的初始化令牌，无需 Cloudflare 账号。
 
-生产环境建议固定完整版本标签，如 `xizozhe/calends:1.24.0`，升级时再主动修改。`latest` 跟随 main 分支，`1.24` 跟随该次版本系列的发布；这类浮动标签方便更新，但不锁定某次发布。以下命令中的 `xizozhe/calends` 也可替换为 `ghcr.io/imetn/calends`。
+生产环境建议固定完整版本标签，如 `xizozhe/calends:1.25.0`，升级时再主动修改。`latest` 跟随 main 分支，`1.25` 跟随该次版本系列的发布；这类浮动标签方便更新，但不锁定某次发布。以下命令中的 `xizozhe/calends` 也可替换为 `ghcr.io/imetn/calends`。
 
 使用 `latest` 部署时，先拉取新版镜像，再用同一数据卷重建容器：
 
@@ -37,7 +37,7 @@ docker logs calends
 - Docker Hub：`xizozhe/calends`（等同于 `docker.io/xizozhe/calends`）。
 - GitHub Container Registry（GHCR）：`ghcr.io/imetn/calends`。
 
-两处均提供 `linux/amd64` 和 `linux/arm64` 多架构镜像。[镜像工作流](../.github/workflows/docker.yml) 为 main 分支构建发布 `latest`，为版本发布生成版本标签，例如 `v1.24.0` 对应 `1.24.0` 和 `1.24`。
+两处均提供 `linux/amd64` 和 `linux/arm64` 多架构镜像。[镜像工作流](../.github/workflows/docker.yml) 为 main 分支构建发布 `latest`，为版本发布生成版本标签，例如 `v1.25.0` 对应 `1.25.0` 和 `1.25`。
 
 从源码构建不依赖已发布的 Calends 镜像，但仍需下载基础镜像与构建依赖。
 
@@ -72,7 +72,7 @@ volumes:
   calends-data:
 ```
 
-也可改用 `ghcr.io/imetn/calends:latest`，或固定 `1.24.0` 等版本标签。在 `docker/` 下依次运行 `docker compose pull` 和 `docker compose up -d`，即可启动或升级此配置。镜像变化时，Compose 会重建容器并保留 `calends_calends-data` 数据卷。
+也可改用 `ghcr.io/imetn/calends:latest`，或固定 `1.25.0` 等版本标签。在 `docker/` 下依次运行 `docker compose pull` 和 `docker compose up -d`，即可启动或升级此配置。镜像变化时，Compose 会重建容器并保留 `calends_calends-data` 数据卷。
 
 不使用 Compose 时，也可以在仓库根目录直接构建和运行：
 
@@ -87,7 +87,9 @@ docker logs calends
 
 镜像在单个 Node 进程里运行同一套 Worker，以 SQLite 存储数据。启动时执行迁移，每 15 分钟运行一次定时任务（与 Cloudflare 上的定时一致），无需 Cloudflare 账号。
 
-空闲时内存约 100–150 MB、CPU 占用接近零，1 核 1 GB 的 VPS 足够。JavaScript 堆上限为 192 MB，可恢复不超过 20 MB 的备份。如需调整堆上限，设置 `NODE_OPTIONS`，并保留 `--disable-warning=ExperimentalWarning`。构建镜像比运行镜像耗内存得多，小内存服务器请直接使用预构建镜像。升级时数据原地保留；只要数据库结构没有超过旧版本，在同一数据卷上运行旧版本标签即可回退。
+通常账本内存占用约 100–150 MB，空闲 CPU 占用接近零。这些是测试环境的观察值，不保证适用于所有负载；尚未在真实 1 核 1 GB VPS 上验证长期运行。Compose 默认容器内存上限为 512 MB。JavaScript 堆上限为 192 MB，可恢复不超过 20 MB 的备份。如需调整堆上限，设置 `NODE_OPTIONS`，并保留 `--disable-warning=ExperimentalWarning`。构建镜像比运行镜像耗内存得多，小内存服务器请直接使用预构建镜像。升级时数据原地保留；只要数据库结构没有超过旧版本，在同一数据卷上运行旧版本标签即可回退。
+
+请求体上限为：登录接口 64 KB，备份、导入与助手对话 20 MB，其余 4 MB。声明超过上限的请求返回 413。旧的 `INTERNAL_PORT` 配置不再使用，`PORT` 是唯一监听端口。
 
 如果数据库不见了，而 `/data` 里还有其他数据库或 `setup-token` 文件，容器会拒绝启动并反复重启，原因写在 `docker logs` 里。这通常说明数据卷或 `DATA_DIR` 变了，请改回正确的挂载；确实要重新开始，把 `setup-token` 一并删除。
 
@@ -184,7 +186,7 @@ Telegram、飞书、钉钉、企业微信、Slack、Discord、Bark、ntfy、Serv
    用 node scripts/wrangler.mjs secret put SETUP_TOKEN 设置，再执行 npm run deploy。
    如果我需要自定义域名，部署前加到实际使用的 Wrangler 配置中。
 3. Docker：优先使用 xizozhe/calends（或 ghcr.io/imetn/calends）的预构建镜像。
-   生产环境固定 1.24.0 等版本标签，拉取后在 8787 端口运行，将 calends-data 挂载到 /data。
+   生产环境固定 1.25.0 等版本标签，拉取后在 8787 端口运行，将 calends-data 挂载到 /data。
    用 docker logs calends 读取初始化令牌。
    仅在需要时从源码构建，例如部署到子路径。
    需要公网访问时，用我选择的反向代理配置 HTTPS。

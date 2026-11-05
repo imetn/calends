@@ -16,7 +16,7 @@ docker logs calends
 
 Open `http://localhost:8787/` and use the setup token printed in the logs on the login page. The named volume `calends-data` persists all of `/data`, including the SQLite database state and generated setup token. No Cloudflare account is required.
 
-For production, pin a full version tag such as `xizozhe/calends:1.24.0` and change it deliberately when upgrading. `latest` follows the main branch; `1.24` follows releases in that minor series. These moving tags are convenient for updates but do not pin a specific release. You can replace `xizozhe/calends` with `ghcr.io/imetn/calends` in these commands.
+For production, pin a full version tag such as `xizozhe/calends:1.25.0` and change it deliberately when upgrading. `latest` follows the main branch; `1.25` follows releases in that minor series. These moving tags are convenient for updates but do not pin a specific release. You can replace `xizozhe/calends` with `ghcr.io/imetn/calends` in these commands.
 
 To upgrade an installation using `latest`, pull the new image, then recreate the container with the same volume:
 
@@ -37,7 +37,7 @@ Since v1.1.0, prebuilt images are published to both registries and can be pulled
 - Docker Hub: `xizozhe/calends` (equivalently `docker.io/xizozhe/calends`).
 - GitHub Container Registry (GHCR): `ghcr.io/imetn/calends`.
 
-Both provide multi-architecture images for `linux/amd64` and `linux/arm64`. [The image workflow](../.github/workflows/docker.yml) publishes `latest` for main-branch builds and version tags such as `1.24.0` and `1.24` for a `v1.24.0` release.
+Both provide multi-architecture images for `linux/amd64` and `linux/arm64`. [The image workflow](../.github/workflows/docker.yml) publishes `latest` for main-branch builds and version tags such as `1.25.0` and `1.25` for a `v1.25.0` release.
 
 Building from source does not depend on a published Calends image; it still downloads base images and build dependencies.
 
@@ -72,7 +72,7 @@ volumes:
   calends-data:
 ```
 
-Use `ghcr.io/imetn/calends:latest` as an alternative, or pin a version such as `1.24.0`. In `docker/`, run `docker compose pull` followed by `docker compose up -d` to start or upgrade this configuration. Compose recreates the container when the image changes and retains `calends_calends-data`.
+Use `ghcr.io/imetn/calends:latest` as an alternative, or pin a version such as `1.25.0`. In `docker/`, run `docker compose pull` followed by `docker compose up -d` to start or upgrade this configuration. Compose recreates the container when the image changes and retains `calends_calends-data`.
 
 To build and run without Compose, from the repository root:
 
@@ -87,7 +87,9 @@ Choose one method for an installation: Compose uses the volume `calends_calends-
 
 The image runs the same Worker in a single Node process with SQLite. It applies migrations at startup and runs scheduled work every 15 minutes, matching the Cloudflare cron. No Cloudflare account is required.
 
-A ledger uses about 100–150 MB of memory and no CPU when idle, so a 1 CPU, 1 GB VPS is enough. The JavaScript heap is capped at 192 MB; backups up to 20 MB can be restored. To change the heap cap, set `NODE_OPTIONS` and keep `--disable-warning=ExperimentalWarning`. Building the image needs far more memory than running it, so use the prebuilt image on small servers. Upgrades keep the data in place, and you can return to an earlier version by running its tag on the same volume, as long as the schema has not moved past that version.
+A typical ledger uses about 100–150 MB of memory with near-zero idle CPU. These are test-environment observations, not a guarantee for every workload; sustained operation on a 1 CPU, 1 GB VPS has not been verified. Compose defaults to a 512 MB container memory limit. The JavaScript heap is capped at 192 MB; backups up to 20 MB can be restored. To change the heap cap, set `NODE_OPTIONS` and keep `--disable-warning=ExperimentalWarning`. Building the image needs far more memory than running it, so use the prebuilt image on small servers. Upgrades keep the data in place, and you can return to an earlier version by running its tag on the same volume, as long as the schema has not moved past that version.
+
+Request bodies are limited to 64 KB for login routes, 20 MB for backups, imports and assistant chat, and 4 MB otherwise. A declared oversized request returns 413. The former `INTERNAL_PORT` setting is no longer used; `PORT` is the only listening port.
 
 The container refuses to start, and keeps restarting with an explanation in `docker logs`, if the database is missing while other databases or the `setup-token` file are still in `/data`. This usually means the volume or `DATA_DIR` changed. Fix the mount; to start over on purpose, delete `setup-token` as well.
 
@@ -184,7 +186,7 @@ Read the README and docs/self-hosting.md first.
    set it with node scripts/wrangler.mjs secret put SETUP_TOKEN, then run npm run deploy.
    Configure my custom domain in the active Wrangler configuration before deploying, if requested.
 3. Docker: prefer a prebuilt image from xizozhe/calends (or ghcr.io/imetn/calends).
-   Pin a version such as 1.24.0 for production, pull it, then run it on port 8787 with
+   Pin a version such as 1.25.0 for production, pull it, then run it on port 8787 with
    calends-data mounted at /data. Read the setup token with docker logs calends.
    Build from source only when needed, for example for subpath deployment.
    For public access, configure HTTPS with my chosen proxy.
