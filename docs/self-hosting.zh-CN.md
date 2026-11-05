@@ -97,6 +97,16 @@ docker logs calends
 
 ## 不用 Docker（systemd）
 
+Debian 和 Ubuntu 一条命令安装，自带一份 Node，并询问是否配置域名和 HTTPS：
+
+```bash
+curl -fsSL https://calends.date/install.sh | sudo bash
+```
+
+升级也运行这条命令：先备份数据，配置不动，新版本起不来时自动恢复旧版本和数据。`--version 1.27.0` 安装指定版本，`--domain subs.example.com` 或 `--no-domain` 跳过提问，`--uninstall` 只删程序，保留数据和配置。机器上已有 Web 服务时脚本不会改动，只打印需要加的配置。想先看脚本内容，可以下载后用 `sudo bash install.sh` 运行。
+
+本节后面是同样的手动安装步骤，适用于其他发行版。
+
 小内存 VPS 可以不装 Docker。从 1.26.0 起，每个版本的 [Release](https://github.com/imetn/calends/releases) 附带一个压缩包，运行代码和镜像相同，不需要安装 npm 依赖，x86 和 ARM 通用。需要 Linux、systemd 和系统级安装的 Node 24（`node -v` 确认）；装在用户目录的 Node（如 nvm）服务读不到。
 
 ```bash

@@ -472,3 +472,14 @@ test('访客 IP：Caddy 把 XFF 换成 Cloudflare 边缘地址时，用边缘写
   assert.equal(clientIp(peer('203.0.113.5', { 'cf-connecting-ip': '198.51.100.1' }), trust), '203.0.113.5');
   assert.equal(clientIp(peer('127.0.0.1', { ...viaCaddy, 'cf-worker': 'evil.example' }), trust), '104.16.0.1');
 });
+
+test('安装脚本：下载中断不会执行半截，随版本发布，只信任校验过的包', () => {
+  const script = readFileSync(new URL('../install.sh', import.meta.url), 'utf8');
+  assert.equal(spawnSync('bash', ['-n', fileURLToPath(new URL('../install.sh', import.meta.url))]).status, 0);
+  assert.equal(script.trimEnd().split('\n').at(-1), 'main "$@"');
+  // 函数外只允许赋值和 set，防止顶层命令在截断时跑掉
+  const top = script.replace(/^[a-z_]+\(\) \{ .* \}$/gm, '').replace(/^[a-z_]+\(\) \{\n[\s\S]*?^\}$/gm, '');
+  for (const line of top.split('\n').filter((x) => x && !x.startsWith('#'))) assert.match(line, /^(set -euo pipefail|[A-Z_]+=.*|main "\$@")$/);
+  assert.match(script, /sha256sum -c --quiet "\$file\.sha256"/);
+  assert.match(readFileSync(new URL('../.github/workflows/release-tarball.yml', import.meta.url), 'utf8'), /gh release upload .* install\.sh/);
+});

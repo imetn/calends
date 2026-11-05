@@ -39,6 +39,6 @@ jobs:
           curl -fsS http://127.0.0.1:18787/ | grep -q '<div id="app"'
           kill $!
       # 写权限只给上传这一步，安装依赖和构建时拿不到
-      - run: gh release upload "$TAG" build/release/*.tar.gz build/release/*.sha256 --clobber
+      - run: gh release upload "$TAG" build/release/*.tar.gz build/release/*.sha256 install.sh --clobber
         env:
           GH_TOKEN: ${{ github.token }}

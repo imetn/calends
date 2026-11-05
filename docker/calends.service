@@ -1,4 +1,4 @@
-# Calends 的 systemd 服务，和镜像跑同一份代码。安装步骤见 docs/self-hosting.zh-CN.md
+# Calends 的 systemd 服务，和镜像跑同一份代码。由 install.sh 安装，手动步骤见 docs/self-hosting.zh-CN.md
 [Unit]
 Description=Calends subscription ledger
 After=network-online.target
