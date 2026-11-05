@@ -270,3 +270,4 @@ docker run -d --name calends -p 127.0.0.1:8787:8787 -v calends-data:/data \
 ```
 
 Open `https://example.com/calends/`; after login, it redirects to the configured start page (default `/calends/overview`). Login is at `/calends/login`, AI access at `/calends/connect` and the optional read-only public page at `/calends/public`. MCP clients use `/calends/mcp`. For Cloudflare, set `BASE_PATH` in the environment when running `npm run deploy` and in the Worker's `vars`. See [routes and login redirects](../ARCHITECTURE.md#web-requests-and-state) for access rules.
+
