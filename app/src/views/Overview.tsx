@@ -542,11 +542,13 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
   const live = useMemo(
     () =>
       state.subscriptions
-        .map((s) => ({ s, v: contributionOn(state, s, today) }))
+        // 和左边的当月扣款同一口径：合租按全额，成员分担多少都不影响
+        .map((s) => ({ s, v: contributionOn(state, s, today, undefined, true) }))
         .filter((x) => x.v > 0)
         .sort((a, b) => b.v - a.v),
     [state, today],
   );
+  const liveTotal = live.reduce((a, x) => a + x.v, 0);
   const bubbles = useMemo(() => packCircles(live.map((x) => x.v)) as Array<{ x: number; y: number; r: number; i: number; h: number }>, [live]);
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
@@ -635,7 +637,7 @@ function Statement({ state, today, onOpen }: { state: AppState; today: string; o
               {copyParts(
                 tot.incomplete
                   ? flow(-hv.v, base, { compact: true })
-                  : t('overview.stmt.share', { amount: flow(-hv.v, base, { compact: true }), pct: Math.round((hv.v / tot.mrr) * 100) }),
+                  : t('overview.stmt.share', { amount: flow(-hv.v, base, { compact: true }), pct: Math.round((hv.v / liveTotal) * 100) }),
               )}
             </>
           ) : null}

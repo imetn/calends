@@ -32,11 +32,11 @@ import { transferRows, transferredStop } from './transfers.ts';
 
 const MONTH = DAYS_PER_MONTH;
 
-/** day 当天这个订阅贡献的月成本（本位币，我承担的部分）；不在计费状态则为 0 */
-export function contributionOn(state: AppState, s: Subscription, day: string, fxDate?: string): number {
+/** day 当天这个订阅贡献的月成本（本位币，我承担的部分；full 为合租全额）；不在计费状态则为 0 */
+export function contributionOn(state: AppState, s: Subscription, day: string, fxDate?: string, full = false): number {
   if (s.proxy) return 0;
   // 多阶段：当天在跑的各段相加（换区后新旧两段并行时两边都在付钱）
-  if (s.phases?.length) return activePhases(s, day).reduce((a, v) => a + contributionOn(state, v, day, fxDate), 0);
+  if (s.phases?.length) return activePhases(s, day).reduce((a, v) => a + contributionOn(state, v, day, fxDate, full), 0);
   if (s.cycle.unit === 'lifetime') return 0;
   if (s.start > day) return 0;
   if (s.stop && s.stop.date <= day) return 0;
@@ -45,7 +45,7 @@ export function contributionOn(state: AppState, s: Subscription, day: string, fx
   if (s.status === 'paused' && (s.pausedAt ?? day) <= day) return 0;
   if (s.stop?.pausedAt && s.stop.pausedAt <= day) return 0;
   if (s.status === 'trial' && s.trialEnd && s.trialEnd > day) return 0;
-  return toBaseOrNaN(state, monthlyGross(s, day), s.currency, fxDate) * myShareFactor(s, day);
+  return toBaseOrNaN(state, monthlyGross(s, day), s.currency, fxDate) * (full ? 1 : myShareFactor(s, day));
 }
 
 /** The same contribution rules, retaining original phase currencies when FX is unavailable. */

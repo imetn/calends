@@ -5,6 +5,7 @@ import {
   cancelSavings,
   cashVsAccrual,
   chartMonths,
+  contributionOn,
   events,
   monthMovement,
   mrrChangeSinceLastMonth,
@@ -358,4 +359,22 @@ test('图表区间不早于账本第一笔数据所在月，至少 2 个月', ()
   assert.equal(chartMonths('2025-10-01', '2026-10-01', 36), 13);
   // 本月才开始的账本也保留 2 个月
   assert.equal(chartMonths('2026-10-27', '2026-10-27', 36), 2);
+});
+
+test('合租全额口径不受成员分担影响，代付仍不计入', () => {
+  const st: AppState = {
+    subscriptions: [],
+    payments: [],
+    settings: { ...DEFAULT_SETTINGS, baseCurrency: 'USD' },
+    fx: { base: 'USD', date: '2026-10-01', rates: { USD: 1 } },
+  } as unknown as AppState;
+  const base = { price: 30, currency: 'USD', cycle: { unit: 'month', every: 1 }, startDate: '2026-01-01' } as Partial<Subscription>;
+  const carpool = sub({ ...base, share: { role: 'owner', seats: 2, members: [{ id: 'm', name: 'A', share: 30 }] } });
+  const proxy = sub({ ...base, proxy: { forName: 'B' } } as Partial<Subscription>);
+  assert.equal(contributionOn(st, carpool, '2026-10-15', undefined, true), 30);
+  assert.equal(contributionOn(st, carpool, '2026-10-15'), 0);
+  assert.equal(contributionOn(st, proxy, '2026-10-15', undefined, true), 0);
+  const phased = sub({ ...carpool, phases: [{ ...carpool, phases: undefined, startDate: '2026-01-01' }] } as unknown as Partial<Subscription>);
+  assert.equal(contributionOn(st, phased, '2026-10-15', undefined, true), 30);
+  assert.equal(contributionOn(st, phased, '2026-10-15'), 0);
 });
