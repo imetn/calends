@@ -97,13 +97,13 @@ Persist all of `/data`, which includes the database state and generated setup to
 
 ## Without Docker (systemd)
 
-On Debian or Ubuntu, one command installs Calends with its own copy of Node, and asks whether to set up a domain with HTTPS:
+On Debian or Ubuntu, one command installs Calends with its own copy of Node and starts it on `127.0.0.1:8787`. Point your own reverse proxy at that port:
 
 ```bash
 curl -fsSL https://calends.date/install.sh | sudo bash
 ```
 
-Run the same command to upgrade. It backs up your data, keeps your settings, and restores the previous version and its data if the new one doesn't start. `--version 1.27.0` installs a specific version, `--domain subs.example.com` or `--no-domain` skips the question, and `--uninstall` removes the program but keeps your data and settings. If the machine already has a web server, the script leaves it alone and prints the configuration to add. To read the script first, download it and run it with `sudo bash install.sh`.
+Run the same command to upgrade. It backs up your data, keeps your settings, and restores the previous version and its data if the new one doesn't start. `--version 1.27.0` installs a specific version, and `--uninstall` removes the program but keeps your data and settings. To read the script first, download it and run it with `sudo bash install.sh`.
 
 The rest of this section is the same installation done by hand, for other distributions.
 

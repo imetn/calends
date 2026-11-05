@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Calends 安装与升级（Debian、Ubuntu + systemd）。重复运行就是升级：先备份，不覆盖数据和配置。
 #   curl -fsSL https://calends.date/install.sh | sudo bash
-#   sudo bash install.sh [--domain example.com | --no-domain] [--version 1.27.0] [--uninstall]
+#   sudo bash install.sh [--version 1.27.0] [--uninstall]
 # 整个脚本包在 main 里、最后一行才调用：下载中断时不会执行半截。
 set -euo pipefail
 
@@ -49,7 +49,6 @@ check_system() {
 
 # 版本号只来自命令行或 GitHub 跳转，进路径前先校验
 valid_version() { [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; }
-valid_domain() { [[ "$1" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; }
 
 latest_version() {
   local url
@@ -267,59 +266,6 @@ upgrade() {
   say "Calends $VERSION is running. Backup: ${BACKUP:-none}"
 }
 
-ask_domain() {
-  [ "$DOMAIN_CHOSEN" = 0 ] || return 0
-  # 通过管道运行时 stdin 是脚本本身，要从终端读
-  if ! { exec 3</dev/tty; } 2>/dev/null; then
-    DOMAIN=""
-    return 0
-  fi
-  local answer
-  printf 'Domain for HTTPS, e.g. subs.example.com (press Enter to skip): ' >/dev/tty
-  IFS= read -r answer <&3 || answer=""
-  exec 3<&-
-  while [ -n "$answer" ] && ! valid_domain "$answer"; do
-    printf 'That is not a domain name. Try again, or press Enter to skip: ' >/dev/tty
-    IFS= read -r answer </dev/tty || answer=""
-  done
-  DOMAIN="$answer"
-}
-
-# 只有 Caddy 是这次装的才写它的配置；机器上已有的 Web 服务不动，把配置片段交给用户
-setup_https() {
-  local port snippet
-  port="$(app_port)"
-  snippet="$DOMAIN {
-    reverse_proxy 127.0.0.1:$port
-}"
-  if command -v caddy >/dev/null || port_busy 80 || port_busy 443; then
-    warn "a web server is already installed, so its configuration was left alone."
-    printf 'Send %s to 127.0.0.1:%s. For Caddy:\n\n%s\n\nFor Nginx, also set: proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\n' "$DOMAIN" "$port" "$snippet"
-    return
-  fi
-  say "Installing Caddy for HTTPS"
-  if ! { apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq caddy >/dev/null; }; then
-    warn "cannot install Caddy from the system repositories. Calends is running on 127.0.0.1:$port; add a reverse proxy yourself."
-    return
-  fi
-  printf '%s\n' "$snippet" >/etc/caddy/Caddyfile
-  if ! caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1; then
-    warn "the generated Caddyfile did not validate; see /etc/caddy/Caddyfile"
-    return
-  fi
-  systemctl enable caddy >/dev/null 2>&1 || true
-  systemctl restart caddy || {
-    warn "Caddy did not start; see: journalctl -u caddy"
-    return
-  }
-  say "Waiting for the HTTPS certificate"
-  for _ in $(seq 1 30); do
-    curl -fsS -m 3 -o /dev/null "https://$DOMAIN/healthz" 2>/dev/null && return
-    sleep 2
-  done
-  warn "https://$DOMAIN is not reachable yet. Point the domain's DNS at this server and open ports 80 and 443; Caddy keeps retrying."
-}
-
 fresh_install() {
   local port
   [ -d "$DATA" ] && say "Found existing data in $DATA; it will be kept"
@@ -329,7 +275,6 @@ fresh_install() {
     port="$(app_port)"
   fi
   port_busy "$port" && die "port $port is already in use. If Calends runs in Docker here, see the migration steps: https://github.com/imetn/calends/blob/main/docs/self-hosting.md#without-docker-systemd"
-  ask_domain
   download_app
   download_node
   install_node
@@ -340,17 +285,13 @@ fresh_install() {
   if [ ! -e "$ENV_FILE" ]; then
     (
       umask 077
-      {
-        printf 'HOST=127.0.0.1\n'
-        [ -z "$DOMAIN" ] || printf 'SITE_URL=https://%s\n' "$DOMAIN"
-      } >"$ENV_FILE"
+      printf 'HOST=127.0.0.1\n' >"$ENV_FILE"
     )
   fi
   install_unit
   say "Starting Calends"
   systemctl enable --now calends >/dev/null 2>&1 || die "cannot start Calends; see: journalctl -u calends"
   wait_healthy || die "Calends did not become healthy; see: journalctl -u calends"
-  [ -z "$DOMAIN" ] || setup_https
   print_next_steps
 }
 
@@ -361,12 +302,10 @@ print_next_steps() {
     token="$(cat "$DATA/setup-token" 2>/dev/null || true)"
     [ -z "$(env_value SETUP_TOKEN)" ] || token="(the SETUP_TOKEN in $ENV_FILE)"
   fi
-  printf '\nCalends %s is running.\n' "$VERSION"
-  if [ -n "$DOMAIN" ]; then
-    printf 'Open: https://%s/\n' "$DOMAIN"
-  else
-    printf 'It only listens on this server. To open it from your computer:\n  ssh -L %s:localhost:%s user@this-server\n  then visit http://localhost:%s/\n' "$port" "$port" "$port"
-  fi
+  printf '\nCalends %s is running on %s\n' "$VERSION" "$(app_url)"
+  printf 'Point your reverse proxy there, and in Nginx also set:\n  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n'
+  printf 'Then set SITE_URL in %s to your public address and run: systemctl restart calends\n' "$ENV_FILE"
+  printf 'To open it before that: ssh -L %s:localhost:%s user@this-server, then visit http://localhost:%s/\n' "$port" "$port" "$port"
   [ -z "$token" ] || printf 'Setup token: %s\n' "$token"
   printf 'Upgrade: run this script again. Settings: %s\n' "$ENV_FILE"
 }
@@ -379,13 +318,11 @@ uninstall() {
   rmdir "$(dirname "$DROPIN")" 2>/dev/null || true
   systemctl daemon-reload
   rm -rf "$APP" "$APP.previous" "$APP.new" "$NODE_DIR" "$NODE_DIR.previous" "$NODE_DIR.new"
-  printf 'Removed. Your data and settings were kept: %s, %s\nDelete them yourself if you no longer need them. Caddy, if installed, was left alone.\n' "$DATA" "$ENV_FILE"
+  printf 'Removed. Your data and settings were kept: %s, %s\nDelete them yourself if you no longer need them.\n' "$DATA" "$ENV_FILE"
 }
 
 main() {
   VERSION=""
-  DOMAIN=""
-  DOMAIN_CHOSEN=0
   FORCE_VERSION=0
   NEW_NODE=""
   BACKUP=""
@@ -404,16 +341,6 @@ main() {
         FORCE_VERSION=1
         shift 2
         ;;
-      --domain)
-        [ $# -ge 2 ] || die "--domain needs a value"
-        DOMAIN="$2"
-        DOMAIN_CHOSEN=1
-        shift 2
-        ;;
-      --no-domain)
-        DOMAIN_CHOSEN=1
-        shift
-        ;;
       --uninstall)
         action=uninstall
         shift
@@ -421,7 +348,6 @@ main() {
       *) die "unknown option: $1" ;;
     esac
   done
-  [ -z "$DOMAIN" ] || valid_domain "$DOMAIN" || die "not a domain name: $DOMAIN"
   check_system
   if [ "$action" = uninstall ]; then
     uninstall
@@ -436,7 +362,6 @@ main() {
   trap '' PIPE
   recover_interrupted
   if is_installed; then
-    [ -z "$DOMAIN" ] || warn "--domain only applies to a fresh install; existing settings were left alone"
     upgrade
   else
     fresh_install

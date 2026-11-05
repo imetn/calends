@@ -97,13 +97,13 @@ docker logs calends
 
 ## 不用 Docker（systemd）
 
-Debian 和 Ubuntu 一条命令安装，自带一份 Node，并询问是否配置域名和 HTTPS：
+Debian 和 Ubuntu 一条命令安装，自带一份 Node，并在 `127.0.0.1:8787` 启动。反向代理指向这个端口即可：
 
 ```bash
 curl -fsSL https://calends.date/install.sh | sudo bash
 ```
 
-升级也运行这条命令：先备份数据，配置不动，新版本起不来时自动恢复旧版本和数据。`--version 1.27.0` 安装指定版本，`--domain subs.example.com` 或 `--no-domain` 跳过提问，`--uninstall` 只删程序，保留数据和配置。机器上已有 Web 服务时脚本不会改动，只打印需要加的配置。想先看脚本内容，可以下载后用 `sudo bash install.sh` 运行。
+升级也运行这条命令：先备份数据，配置不动，新版本起不来时自动恢复旧版本和数据。`--version 1.27.0` 安装指定版本，`--uninstall` 只删程序，保留数据和配置。想先看脚本内容，可以下载后用 `sudo bash install.sh` 运行。
 
 本节后面是同样的手动安装步骤，适用于其他发行版。
 
