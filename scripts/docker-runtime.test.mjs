@@ -11,7 +11,8 @@ import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { openD1 } from '../docker/d1.mjs';
-import { clientIp, createFront, maxBodyFor, proxyHops } from '../docker/front.mjs';
+import { clientIp, proxyTrust } from '../docker/client-ip.mjs';
+import { createFront, maxBodyFor } from '../docker/front.mjs';
 
 const DB_NAME = join('v3', 'd1', 'miniflare-D1DatabaseObject', '9ba2b04bf514d9facfd57ed57d849e77241a7adc99d1c1545d06688b43d84248.sqlite');
 const root = mkdtempSync(join(tmpdir(), 'calends-runtime-'));
@@ -400,25 +401,57 @@ test('HOST：反向代理后可以只监听本机', async (t) => {
   await stop(run);
 });
 
-test('访客 IP：客户端自带的 X-Forwarded-For 不算数', () => {
-  const ip = (forwarded, hops) => clientIp({ headers: { 'x-forwarded-for': forwarded }, socket: { remoteAddress: '::ffff:10.0.0.1' } }, hops);
-  assert.equal(ip('203.0.113.9', 1), '203.0.113.9');
-  assert.equal(ip('6.6.6.6, 203.0.113.9', 1), '203.0.113.9', 'Nginx 把真实地址追加在最右边');
-  assert.equal(ip('6.6.6.6, 203.0.113.9, 198.51.100.1', 2), '203.0.113.9', '两层代理');
-  assert.equal(ip('203.0.113.9', 2), '10.0.0.1', '项数不够说明没走完代理');
-  assert.equal(ip('6.6.6.6,', 1), '10.0.0.1');
-  assert.equal(ip(undefined, 1), '10.0.0.1');
-  assert.equal(ip('2001:db8::1', 1), '2001:db8::1');
-  assert.equal(ip('<b>not-ip</b>', 1), '10.0.0.1', '不是 IP 的值不进限速表');
-  assert.equal(ip('1.2.3.4:999', 1), '10.0.0.1');
-  assert.equal(ip('6.6.6.6', 0), '10.0.0.1', '没设 TRUST_PROXY 就不看这个头');
-  for (const v of [undefined, '', '0', 'true', '-1', '1.5', '10']) assert.equal(proxyHops(v), 0, String(v));
-  assert.equal(proxyHops('1'), 1);
-  assert.equal(proxyHops('2'), 2);
+test('访客 IP：不用配置，按连接方和 X-Forwarded-For 判断', () => {
+  const auto = proxyTrust(undefined);
+  const ip = (peer, forwarded, headers = {}, trust = auto) =>
+    clientIp({ headers: { 'x-forwarded-for': forwarded, ...headers }, socket: { remoteAddress: peer } }, trust);
+  // 公网直连：头不算数
+  assert.equal(ip('198.51.100.7', '6.6.6.6'), '198.51.100.7');
+  assert.equal(ip('::ffff:198.51.100.7', '6.6.6.6'), '198.51.100.7');
+  // 本机或内网的代理（Nginx、Caddy、Traefik、cloudflared）：真实地址在最右边，左边是客户端写的
+  assert.equal(ip('127.0.0.1', '203.0.113.9'), '203.0.113.9');
+  assert.equal(ip('::ffff:172.18.0.1', '6.6.6.6, 203.0.113.9'), '203.0.113.9');
+  assert.equal(ip('::1', '6.6.6.6, 2001:db8::1'), '2001:db8::1');
+  // 两层本地代理：cloudflared → Nginx → Calends
+  assert.equal(ip('127.0.0.1', '6.6.6.6, 203.0.113.9, 127.0.0.1'), '203.0.113.9');
+  // Cloudflare CDN → Nginx，或 CDN 直连
+  assert.equal(ip('127.0.0.1', '6.6.6.6, 203.0.113.9, 104.16.0.1'), '203.0.113.9');
+  assert.equal(ip('162.158.0.1', '6.6.6.6, 203.0.113.9'), '203.0.113.9');
+  assert.equal(ip('127.0.0.1', '2001:db8::1, 2606:4700::1'), '2001:db8::1');
+  // Cloudflare Worker 发来的请求，头是写脚本的人定的，停在边缘地址
+  assert.equal(ip('162.158.0.1', '6.6.6.6', { 'cf-worker': 'evil.example' }), '162.158.0.1');
+  assert.equal(ip('127.0.0.1', '6.6.6.6, 162.158.0.1', { 'cf-worker': 'evil.example' }), '162.158.0.1');
+  // 没有头、全是内网、夹着不是 IP 的项
+  assert.equal(ip('127.0.0.1', undefined), '127.0.0.1');
+  assert.equal(ip('127.0.0.1', '192.168.1.5'), '192.168.1.5');
+  assert.equal(ip('127.0.0.1', '6.6.6.6, 192.168.1.5, 10.0.0.2'), '6.6.6.6', '跳过内网地址后的第一个公网地址');
+  assert.equal(ip('127.0.0.1', '<b>not-ip</b>'), '127.0.0.1');
+  assert.equal(ip('127.0.0.1', '6.6.6.6, 1.2.3.4:999'), '127.0.0.1');
+  assert.equal(ip('127.0.0.1', '6.6.6.6,'), '127.0.0.1');
+  assert.equal(ip('10.0.0.1', '6.6.6.6, <b>x</b>, 192.168.1.5'), '192.168.1.5');
+  assert.equal(ip('fe80::1%eth0', '203.0.113.9'), '203.0.113.9');
+});
+
+test('TRUST_PROXY：留空和旧的层数都是自动，可以关闭或追加其他 CDN', () => {
+  const ip = (trust, peer, forwarded) => clientIp({ headers: { 'x-forwarded-for': forwarded }, socket: { remoteAddress: peer } }, trust);
+  for (const v of [undefined, '', '1', '2', 'auto', 'true']) {
+    assert.equal(ip(proxyTrust(v), '127.0.0.1', '6.6.6.6, 203.0.113.9'), '203.0.113.9', String(v));
+    assert.equal(ip(proxyTrust(v), '198.51.100.7', '6.6.6.6'), '198.51.100.7', String(v));
+  }
+  for (const v of ['off', 'false', 'OFF', '0']) assert.equal(proxyTrust(v), null, v);
+  assert.equal(ip(null, '127.0.0.1', '203.0.113.9'), '127.0.0.1');
+  const custom = proxyTrust('198.18.0.0/15, 2001:db8:aa::1');
+  assert.equal(ip(custom, '127.0.0.1', '203.0.113.9, 198.18.0.1'), '203.0.113.9');
+  assert.equal(ip(custom, '2001:db8:aa::1', '203.0.113.9'), '203.0.113.9');
+  assert.equal(ip(custom, '127.0.0.1', '203.0.113.9, 198.20.0.1'), '198.20.0.1');
+  const bad = [];
+  const partial = proxyTrust('nonsense, 198.18.0.0/99, 198.18.0.1/x, 198.18.0.1/1/1, 192.0.2.0/24', (item) => bad.push(item));
+  assert.deepEqual(bad, ['nonsense', '198.18.0.0/99', '198.18.0.1/x', '198.18.0.1/1/1']);
+  assert.equal(ip(partial, '127.0.0.1', '203.0.113.9, 192.0.2.1'), '203.0.113.9');
 });
 
 test('运行时：换着伪造 X-Forwarded-For 绕不过登录限速，别的访客不受影响', async () => {
-  const run = await start(join(root, 'spoof-data'), { SETUP_TOKEN: 'fictional-token', TRUST_PROXY: '1' });
+  const run = await start(join(root, 'spoof-data'), { SETUP_TOKEN: 'fictional-token' });
   assert.equal((await json(run.port, '/api/auth/setup', { setupToken: 'fictional-token', password: 'fictional-password-1' })).status, 200);
   const statuses = [];
   for (let i = 0; i < 7; i++) {
@@ -428,4 +461,14 @@ test('运行时：换着伪造 X-Forwarded-For 绕不过登录限速，别的访
   assert.equal(statuses.at(-1), 429, statuses.join());
   assert.equal((await json(run.port, '/api/login', { password: 'fictional-password-1' }, { 'x-forwarded-for': '203.0.113.10' })).status, 200);
   await stop(run);
+});
+
+test('访客 IP：Caddy 把 XFF 换成 Cloudflare 边缘地址时，用边缘写的访客地址；非边缘的同名头不可信', () => {
+  const trust = proxyTrust('', () => {});
+  const peer = (ip, headers) => ({ socket: { remoteAddress: ip }, headers });
+  const viaCaddy = { 'x-forwarded-for': '104.16.0.1', 'cf-connecting-ip': '203.0.113.9' };
+  assert.equal(clientIp(peer('127.0.0.1', viaCaddy), trust), '203.0.113.9');
+  assert.equal(clientIp(peer('127.0.0.1', { 'x-forwarded-for': '203.0.113.5', 'cf-connecting-ip': '198.51.100.1' }), trust), '203.0.113.5');
+  assert.equal(clientIp(peer('203.0.113.5', { 'cf-connecting-ip': '198.51.100.1' }), trust), '203.0.113.5');
+  assert.equal(clientIp(peer('127.0.0.1', { ...viaCaddy, 'cf-worker': 'evil.example' }), trust), '104.16.0.1');
 });

@@ -95,7 +95,7 @@ docker compose logs calends
 
 不想装 Docker 的小内存 VPS，可以用 [systemd 和发布压缩包](docs/self-hosting.zh-CN.md#不用-dockersystemd)。
 
-公网访问时，通过反向代理启用 HTTPS，并设置 `TRUST_PROXY`（[设置方法](docs/self-hosting.zh-CN.md#自定义域名与-https)）。初始化后可在「设置 → 安全」中添加 Passkey。
+公网访问时，通过反向代理启用 HTTPS（[设置方法](docs/self-hosting.zh-CN.md#自定义域名与-https)）。初始化后可在「设置 → 安全」中添加 Passkey。
 
 自定义域名、配置项、邮件提醒、子路径部署，以及交给 AI 部署的提示词，见[自托管指南](docs/self-hosting.zh-CN.md)。
 

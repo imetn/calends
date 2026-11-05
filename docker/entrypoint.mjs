@@ -8,7 +8,8 @@ import { normalizeBasePath } from '../shared/base.ts';
 import { ensureMigrated } from '../worker/migrate.ts';
 import { createAssets } from './assets.mjs';
 import { openD1 } from './d1.mjs';
-import { createFront, proxyHops } from './front.mjs';
+import { proxyTrust } from './client-ip.mjs';
+import { createFront } from './front.mjs';
 
 // Cloudflare 上的 Worker 永远是 UTC；账务日期不能随容器的 TZ 变化
 process.env.TZ = 'UTC';
@@ -73,7 +74,7 @@ const status = await (await worker.fetch(new Request(statusUrl), env, ctx)).json
 const server = createFront({
   handle: (req) => worker.fetch(req, env, ctx),
   healthy: () => Boolean(db.ping()),
-  trustedHops: proxyHops(process.env.TRUST_PROXY),
+  trust: proxyTrust(process.env.TRUST_PROXY, (item) => log(`TRUST_PROXY: ignoring "${item}", expected an IP or CIDR`)),
 }).listen(PORT, process.env.HOST || '0.0.0.0');
 log(`listening on port ${PORT} — open ${BASE}/ in your browser`);
 if (status.needsSetup) {

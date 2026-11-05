@@ -127,7 +127,7 @@ sudo journalctl -u calends -n 20
 
 首次设置密码前不要让令牌和密码明文经过公网：先用 `ssh -L 8787:localhost:8787 用户@服务器` 转发，再打开 `http://localhost:8787/`，用日志里的初始化令牌设置密码。数据在 `/var/lib/calends`，内存上限 512MB，进程异常退出后自动重启。
 
-[配置项](#配置项)里的环境变量写到 `/etc/calends.env`（每行 `名称=值`，用 `sudo chmod 600` 保护），再执行 `sudo systemctl restart calends`。放在反向代理后面时写 `HOST=127.0.0.1` 和 `TRUST_PROXY=1`。`DATA_DIR` 不要改，`PORT` 要大于 1024。压缩包按根路径构建；要部署到子路径请用 Docker。
+[配置项](#配置项)里的环境变量写到 `/etc/calends.env`（每行 `名称=值`，用 `sudo chmod 600` 保护），再执行 `sudo systemctl restart calends`。放在反向代理后面时写 `HOST=127.0.0.1`。`DATA_DIR` 不要改，`PORT` 要大于 1024。压缩包按根路径构建；要部署到子路径请用 Docker。
 
 升级和回滚都是换目录里的代码，数据不用动。回滚只能回到数据库结构没有超过该版本的版本，操作前先在设置里导出备份。把 `VERSION` 换成要安装的版本号，下载并校验压缩包，再执行：
 
@@ -145,17 +145,17 @@ sudo systemctl start calends
 
 Cloudflare 的变量和绑定写在 Wrangler 配置中，凭据使用 secret。Docker 支持的环境变量通过 `-e` 或 Compose 传入。
 
-| 配置项                                 | Cloudflare     | Docker                   | 用途                                                                                                                   |
-| -------------------------------------- | -------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `SETUP_TOKEN`                          | Secret         | 环境变量；不设时自动生成 | 新部署首次设置密码时使用。                                                                                             |
-| `SITE_URL`                             | 变量           | 环境变量                 | 提醒和日历链接使用的站点地址；不设时自动识别。                                                                         |
-| `TRUST_PROXY`                          | —              | 环境变量                 | 追加 `X-Forwarded-For` 的代理层数，通常是 `1`。登录限速靠它找到访客 IP，见[自定义域名](#自定义域名与-https)。          |
-| `EMAIL`、`MAIL_FROM`、`MAIL_FROM_NAME` | 邮件绑定与变量 | 镜像入口未配置           | 可选的邮件发送配置，见下文。其他通知渠道在应用内设置。                                                                 |
-| `OLD_HOSTS`                            | 变量           | 镜像入口未透传           | 逗号分隔的旧域名。设置 `SITE_URL` 后，旧域名的页面以 HTTP 301 跳转到新站；API、MCP 和日历订阅保持可用。                |
-| `BASE_PATH`                            | 变量           | 构建参数和环境变量       | 可选子路径（如 `/calends`，不带结尾斜杠），构建与运行时须一致，见[子路径部署](#子路径部署)。                           |
-| `DATA_DIR`                             | —              | 环境变量                 | SQLite 数据目录，默认 `/data`，需挂载持久化卷。                                                                        |
-| `PORT`                                 | —              | 环境变量                 | 监听端口，默认 `8787`。                                                                                                |
-| `HOST`                                 | —              | 环境变量                 | 监听地址，默认 `0.0.0.0`。不用 Docker 时可在反向代理后设为 `127.0.0.1`；Docker 用 `-p 127.0.0.1:8787:8787`，不要改它。 |
+| 配置项                                 | Cloudflare     | Docker                   | 用途                                                                                                                                        |
+| -------------------------------------- | -------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SETUP_TOKEN`                          | Secret         | 环境变量；不设时自动生成 | 新部署首次设置密码时使用。                                                                                                                  |
+| `SITE_URL`                             | 变量           | 环境变量                 | 提醒和日历链接使用的站点地址；不设时自动识别。                                                                                              |
+| `TRUST_PROXY`                          | —              | 环境变量                 | 通常不用设。`off` 表示不读 `X-Forwarded-For`；逗号分隔的 IP 或 CIDR 用来追加信任的代理，比如其他 CDN。见[自定义域名](#自定义域名与-https)。 |
+| `EMAIL`、`MAIL_FROM`、`MAIL_FROM_NAME` | 邮件绑定与变量 | 镜像入口未配置           | 可选的邮件发送配置，见下文。其他通知渠道在应用内设置。                                                                                      |
+| `OLD_HOSTS`                            | 变量           | 镜像入口未透传           | 逗号分隔的旧域名。设置 `SITE_URL` 后，旧域名的页面以 HTTP 301 跳转到新站；API、MCP 和日历订阅保持可用。                                     |
+| `BASE_PATH`                            | 变量           | 构建参数和环境变量       | 可选子路径（如 `/calends`，不带结尾斜杠），构建与运行时须一致，见[子路径部署](#子路径部署)。                                                |
+| `DATA_DIR`                             | —              | 环境变量                 | SQLite 数据目录，默认 `/data`，需挂载持久化卷。                                                                                             |
+| `PORT`                                 | —              | 环境变量                 | 监听端口，默认 `8787`。                                                                                                                     |
+| `HOST`                                 | —              | 环境变量                 | 监听地址，默认 `0.0.0.0`。不用 Docker 时可在反向代理后设为 `127.0.0.1`；Docker 用 `-p 127.0.0.1:8787:8787`，不要改它。                      |
 
 ### Cloudflare 个人配置
 
@@ -213,9 +213,15 @@ Cloudflare 部署前，在实际使用的 Wrangler 配置中添加域名：
 "vars": { "SITE_URL": "https://calends.example.com" }
 ```
 
-如果已有 `vars`，将 `SITE_URL` 合并进去。Docker 请通过 Caddy、Nginx 或 Traefik 等反向代理启用 HTTPS，将 `SITE_URL` 设为外部访问地址，并设置 `TRUST_PROXY=1`。Passkey 需要安全上下文，公网访问应使用 HTTPS。
+如果已有 `vars`，将 `SITE_URL` 合并进去。Docker 请通过 Caddy、Nginx 或 Traefik 等反向代理启用 HTTPS，并将 `SITE_URL` 设为外部访问地址。Passkey 需要安全上下文，公网访问应使用 HTTPS。
 
-`TRUST_PROXY` 设为追加 `X-Forwarded-For` 的代理层数，端口只开放给代理（`-p 127.0.0.1:8787:8787`）：能直连 Calends 的人可以任意指定登录限速使用的 IP。一层代理设为 `1`，Cloudflare Tunnel 直连 Calends 也算一层。CDN 或 Cloudflare Tunnel 后面是使用 `$proxy_add_x_forwarded_for` 的 Nginx 时设为 `2`，并让该 Nginx 只接受前一层的连接。Caddy 和 Traefik 默认丢弃前一层写的那一项，要先把它配成可信来源（`trusted_proxies`、`trustedIPs`），再设为 `2`。设错时限速看到的是 CDN、隧道或代理的地址，共用这个地址的访客会互相锁定，站长也不例外。
+登录限速用到的访客 IP 由 Calends 自动判断：只有来自本机、内网地址或 Cloudflare 的连接，`X-Forwarded-For` 才算数，从右往左第一个不受信任的地址就是访客。Caddy、Traefik 和 Cloudflare Tunnel 不用配置。Nginx 必须追加这个头，否则任何人都能指定限速用的 IP：
+
+```nginx
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+```
+
+端口只开放给代理（`-p 127.0.0.1:8787:8787`）。不经代理也能连到 Calends 时，请设 `TRUST_PROXY=off`：同一内网的访客能伪造这个头；Docker 把连接显示成来自网关时（Docker Desktop、rootless Docker、部分 IPv6 端口映射），公网访客也能。使用 Cloudflare 以外的 CDN 时，把它的地址段加进来，比如 `TRUST_PROXY=192.0.2.0/24,198.51.100.7`；不加的话，所有访客会共用 CDN 的地址。
 
 ### 邮件提醒
 
@@ -250,7 +256,7 @@ Telegram、飞书、钉钉、企业微信、Slack、Discord、Bark、ntfy、Serv
 ```bash
 docker build -f docker/Dockerfile --build-arg BASE_PATH=/calends -t calends:local .
 docker run -d --name calends -p 127.0.0.1:8787:8787 -v calends-data:/data \
-  -e BASE_PATH=/calends -e SITE_URL=https://example.com/calends -e TRUST_PROXY=1 calends:local
+  -e BASE_PATH=/calends -e SITE_URL=https://example.com/calends calends:local
 ```
 
 打开 `https://example.com/calends/`；登录后跳转到设置中的启动页（默认 `/calends/overview`）。登录页为 `/calends/login`，「连接」页为 `/calends/connect`，可选的只读公开页为 `/calends/public`。MCP 客户端使用 `/calends/mcp`。Cloudflare 部署时，在运行 `npm run deploy` 的环境变量和 Worker 的 `vars` 中都设置 `BASE_PATH`。访问与登录回跳规则见[架构说明](../ARCHITECTURE.md#web-requests-and-state)。

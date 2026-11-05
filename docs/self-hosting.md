@@ -127,7 +127,7 @@ sudo journalctl -u calends -n 20
 
 Don't send the setup token and password over the public internet in plain text. Forward the port first with `ssh -L 8787:localhost:8787 user@your-server`, open `http://localhost:8787/` and set your password with the setup token from the log. Data lives in `/var/lib/calends`, memory is capped at 512 MB, and the service restarts if the process exits unexpectedly.
 
-Put settings from [Configuration](#configuration) in `/etc/calends.env`, one `NAME=value` per line and protected with `sudo chmod 600`, then run `sudo systemctl restart calends`. Behind a reverse proxy, set `HOST=127.0.0.1` and `TRUST_PROXY=1`. Leave `DATA_DIR` unchanged and keep `PORT` above 1024. The tarball is built for the root path; use Docker to deploy under a subpath.
+Put settings from [Configuration](#configuration) in `/etc/calends.env`, one `NAME=value` per line and protected with `sudo chmod 600`, then run `sudo systemctl restart calends`. Behind a reverse proxy, set `HOST=127.0.0.1`. Leave `DATA_DIR` unchanged and keep `PORT` above 1024. The tarball is built for the root path; use Docker to deploy under a subpath.
 
 To upgrade or roll back, replace the code and leave the data alone. You can only roll back to a version whose database schema is no older than your data, so export a backup in Settings first. Set `VERSION` to the version you want, download and verify its tarball, then run:
 
@@ -145,17 +145,17 @@ sudo systemctl start calends
 
 For Cloudflare, set variables and bindings in your Wrangler configuration and use secrets for credentials. For Docker, pass supported environment variables with `-e` or through Compose.
 
-| Setting                                | Cloudflare                  | Docker                                   | Purpose                                                                                                                                                               |
-| -------------------------------------- | --------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SETUP_TOKEN`                          | Secret                      | Environment variable; generated if unset | Used to set the owner password on a fresh install.                                                                                                                    |
-| `SITE_URL`                             | Variable                    | Environment variable                     | Public URL used in reminders and calendar links; auto-detected if unset.                                                                                              |
-| `TRUST_PROXY`                          | —                           | Environment variable                     | Number of proxies that append to `X-Forwarded-For`, usually `1`. Login rate limiting uses it to find the visitor IP; see [Custom domains](#custom-domains-and-https). |
-| `EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME` | Email binding and variables | Not configured by the image entrypoint   | Optional email delivery; see below. Other notification channels are configured in the app.                                                                            |
-| `OLD_HOSTS`                            | Variable                    | Not forwarded by the image entrypoint    | Comma-separated old domains. With `SITE_URL` set, pages on these hosts redirect there with HTTP 301; API, MCP and calendar feeds remain accessible.                   |
-| `BASE_PATH`                            | Variable                    | Build argument and environment variable  | Optional subpath without a trailing slash, e.g. `/calends`. Use the same value at build time and runtime; see [subpath deployment](#subpath-deployment).              |
-| `DATA_DIR`                             | —                           | Environment variable                     | SQLite data directory; default `/data`. Persist this directory in a volume.                                                                                           |
-| `PORT`                                 | —                           | Environment variable                     | Listening port; default `8787`.                                                                                                                                       |
-| `HOST`                                 | —                           | Environment variable                     | Listening address; default `0.0.0.0`. Without Docker, set `127.0.0.1` behind a reverse proxy. With Docker, leave it and publish with `-p 127.0.0.1:8787:8787`.        |
+| Setting                                | Cloudflare                  | Docker                                   | Purpose                                                                                                                                                                              |
+| -------------------------------------- | --------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SETUP_TOKEN`                          | Secret                      | Environment variable; generated if unset | Used to set the owner password on a fresh install.                                                                                                                                   |
+| `SITE_URL`                             | Variable                    | Environment variable                     | Public URL used in reminders and calendar links; auto-detected if unset.                                                                                                             |
+| `TRUST_PROXY`                          | —                           | Environment variable                     | Usually leave unset. `off` ignores `X-Forwarded-For`; a comma-separated IP or CIDR list adds proxies to trust, such as another CDN. See [Custom domains](#custom-domains-and-https). |
+| `EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME` | Email binding and variables | Not configured by the image entrypoint   | Optional email delivery; see below. Other notification channels are configured in the app.                                                                                           |
+| `OLD_HOSTS`                            | Variable                    | Not forwarded by the image entrypoint    | Comma-separated old domains. With `SITE_URL` set, pages on these hosts redirect there with HTTP 301; API, MCP and calendar feeds remain accessible.                                  |
+| `BASE_PATH`                            | Variable                    | Build argument and environment variable  | Optional subpath without a trailing slash, e.g. `/calends`. Use the same value at build time and runtime; see [subpath deployment](#subpath-deployment).                             |
+| `DATA_DIR`                             | —                           | Environment variable                     | SQLite data directory; default `/data`. Persist this directory in a volume.                                                                                                          |
+| `PORT`                                 | —                           | Environment variable                     | Listening port; default `8787`.                                                                                                                                                      |
+| `HOST`                                 | —                           | Environment variable                     | Listening address; default `0.0.0.0`. Without Docker, set `127.0.0.1` behind a reverse proxy. With Docker, leave it and publish with `-p 127.0.0.1:8787:8787`.                       |
 
 ### Personal Cloudflare configuration
 
@@ -213,9 +213,15 @@ For Cloudflare, add your domain to the active Wrangler configuration before depl
 "vars": { "SITE_URL": "https://calends.example.com" }
 ```
 
-Merge `SITE_URL` into any existing `vars` object. For Docker, put the service behind Caddy, Nginx or Traefik with HTTPS, set `SITE_URL` to the external URL and set `TRUST_PROXY=1`. Passkeys require a secure context, so use HTTPS for public access.
+Merge `SITE_URL` into any existing `vars` object. For Docker, put the service behind Caddy, Nginx or Traefik with HTTPS and set `SITE_URL` to the external URL. Passkeys require a secure context, so use HTTPS for public access.
 
-Set `TRUST_PROXY` to the number of proxies that append to `X-Forwarded-For`, and publish the port only to the proxy (`-p 127.0.0.1:8787:8787`): anyone who reaches Calends directly can choose the IP used for login rate limiting. Use `1` for one proxy, including Cloudflare Tunnel connected straight to Calends. Use `2` for a CDN or Cloudflare Tunnel in front of Nginx with `$proxy_add_x_forwarded_for`, and let that Nginx accept connections only from that layer. Caddy and Traefik drop the previous layer's entry until you list it as trusted (`trusted_proxies`, `trustedIPs`); list it, then use `2`. If the value is wrong, rate limiting sees the CDN, tunnel or proxy address, and visitors sharing it can lock each other out, the owner included.
+Calends finds the visitor IP for login rate limiting on its own: `X-Forwarded-For` counts only when the connection comes from a local or private address or from Cloudflare, and the visitor is the first untrusted address reading from the right. Caddy, Traefik and Cloudflare Tunnel work as they are. Nginx must add the header, or anyone can choose the IP used for rate limiting:
+
+```nginx
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+```
+
+Publish the port only to the proxy (`-p 127.0.0.1:8787:8787`). If Calends is reachable without a proxy, set `TRUST_PROXY=off`: visitors on the same private network can set this header, and so can anyone on the internet when Docker shows connections as coming from its gateway, as Docker Desktop, rootless Docker and some IPv6 port mappings do. Behind a CDN other than Cloudflare, add its address ranges, such as `TRUST_PROXY=192.0.2.0/24,198.51.100.7`; without them all visitors share the CDN's address.
 
 ### Email reminders
 
@@ -250,7 +256,7 @@ To serve Calends under a path such as `https://example.com/calends/`, build and 
 ```bash
 docker build -f docker/Dockerfile --build-arg BASE_PATH=/calends -t calends:local .
 docker run -d --name calends -p 127.0.0.1:8787:8787 -v calends-data:/data \
-  -e BASE_PATH=/calends -e SITE_URL=https://example.com/calends -e TRUST_PROXY=1 calends:local
+  -e BASE_PATH=/calends -e SITE_URL=https://example.com/calends calends:local
 ```
 
 Open `https://example.com/calends/`; after login, it redirects to the configured start page (default `/calends/overview`). Login is at `/calends/login`, AI access at `/calends/connect` and the optional read-only public page at `/calends/public`. MCP clients use `/calends/mcp`. For Cloudflare, set `BASE_PATH` in the environment when running `npm run deploy` and in the Worker's `vars`. See [routes and login redirects](../ARCHITECTURE.md#web-requests-and-state) for access rules.

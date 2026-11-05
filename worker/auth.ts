@@ -110,7 +110,7 @@ async function sessionHash(req: Request): Promise<string> {
   return token ? sha256(token) : '';
 }
 
-/** 访客 IP：Cloudflare 自己写 cf-connecting-ip；自托管由 docker/front.mjs 按 TRUST_PROXY 算好后写入，这里不读 X-Forwarded-For */
+/** 访客 IP：Cloudflare 自己写 cf-connecting-ip；自托管由 docker/front.mjs 算好后写入，这里不读 X-Forwarded-For */
 const clientIp = (req: Request) => req.headers.get('cf-connecting-ip') ?? '';
 
 /** 只有 https 访问时才给 Cookie 加 Secure，否则局域网里用 http 自托管时浏览器存不下登录状态 */
