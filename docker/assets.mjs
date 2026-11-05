@@ -18,6 +18,7 @@ const TYPES = {
   '.svg': 'image/svg+xml',
   '.ttf': 'font/ttf',
   '.txt': 'text/plain; charset=utf-8',
+  '.wasm': 'application/wasm',
   '.webmanifest': 'application/manifest+json',
   '.webp': 'image/webp',
   '.woff': 'font/woff',

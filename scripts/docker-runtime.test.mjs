@@ -93,6 +93,7 @@ before(() => {
   mkdirSync(join(dist, 'assets'), { recursive: true });
   writeFileSync(join(dist, 'index.html'), `<!doctype html><title>calends</title>${'<!-- x -->'.repeat(300)}`);
   writeFileSync(join(dist, 'assets', 'app-abc123.js'), `console.log(1);${' '.repeat(3000)}`);
+  writeFileSync(join(dist, 'assets', 'sql-abc123.wasm'), Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]));
   writeFileSync(join(dist, 'manifest.webmanifest'), '{"name":"calends"}');
 });
 after(() => {
@@ -282,6 +283,19 @@ test('运行时：静态资源的缓存、压缩与单页回退', async () => {
   const cdn = await send(run.port, { path: '/cdn-cgi/local/scheduled?cron=x', headers: { host: 'localhost' } });
   assert.match(cdn.text(), /<title>calends/, '没有 Miniflare 之后，外部不存在触发定时任务的入口');
   assert.equal(await stop(run), 0);
+});
+
+test('运行时：WASM 资源使用正确类型，可直接流式实例化', async () => {
+  const run = await start(join(root, 'wasm-data'), { SETUP_TOKEN: 'fictional-token' });
+  try {
+    const response = await fetch(`http://127.0.0.1:${run.port}/assets/sql-abc123.wasm`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('content-type'), 'application/wasm');
+    const { instance } = await WebAssembly.instantiateStreaming(response);
+    assert.ok(instance instanceof WebAssembly.Instance);
+  } finally {
+    await stop(run);
+  }
 });
 
 test('运行时：BASE_PATH 的写法不规范也能启动', async () => {
