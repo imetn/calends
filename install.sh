@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Calends 安装与升级（Debian、Ubuntu + systemd）。重复运行就是升级：先备份，不覆盖数据和配置。
 #   curl -fsSL https://calends.date/install.sh | sudo bash
-#   sudo bash install.sh [--version 1.27.0] [--uninstall]
+#   sudo bash install.sh [--version 1.28.0] [--uninstall]
 # 整个脚本包在 main 里、最后一行才调用：下载中断时不会执行半截。
 set -euo pipefail
 
