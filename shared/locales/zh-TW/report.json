@@ -172,5 +172,10 @@
     "proxyEven": "代付持平",
     "proxyNet": "代付盈虧",
     "empty": "與去年同期持平。"
+  },
+  "daily": {
+    "title": "逐日",
+    "flat": "平面",
+    "bars": "立體"
   }
 }

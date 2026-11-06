@@ -722,6 +722,27 @@ export interface SpendRank {
   partial: FxTotal;
 }
 
+export interface DayCash extends CashSpan {
+  date: string;
+  /** Subscriptions with cash that day, largest absolute amount first. */
+  subs: Subscription[];
+}
+
+/** One calendar year day by day on the yearOutlook basis: 365 or 366 entries, January 1 first; the days add up to `yearOutlook().current`. */
+export function yearDays(state: AppState, today: string, year: number): DayCash[] {
+  const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
+  const byDay = new Map<string, CashRow[]>();
+  for (const r of cashRows(scoped, `${year}-01-01`, `${year}-12-31`, today)) byDay.set(r.date, [...(byDay.get(r.date) ?? []), r]);
+  const out: DayCash[] = [];
+  for (let d = `${year}-01-01`; d.startsWith(String(year)); d = addDays(d, 1)) {
+    const rows = byDay.get(d) ?? [];
+    const bySub = new Map<Subscription, number>();
+    for (const r of rows) bySub.set(r.sub, (bySub.get(r.sub) ?? 0) + Math.abs(r.amount));
+    out.push({ date: d, ...cashSpan(rows, today), subs: [...bySub].sort((a, b) => b[1] - a[1]).map(([s]) => s) });
+  }
+  return out;
+}
+
 /** All-time net cash on the yearOutlook basis (my share, refunds and transfers, proxies excluded), through today. */
 export function allOutlook(state: AppState, today: string): AllOutlook {
   const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };

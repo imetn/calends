@@ -11,6 +11,7 @@ import {
   subscriptionTenure,
   monthReport,
   scopeReport,
+  yearDays,
   yearOutlook,
   type Block,
   type ScopeReport,
@@ -731,4 +732,34 @@ test('year trend: the solid line runs through today, forecast only after it', ()
   assert.equal(cumulativeTrend(yearOutlook(st, '2026-01-05').months, '2026-01-05').now?.at, 0);
   assert.equal(cumulativeTrend(yearOutlook(st, day, 2025).months, day).now, undefined);
   assert.equal(cumulativeTrend(yearOutlook(st, day, 2027).months, day).now?.at, -1);
+});
+
+test('year days: every day of the year on the year outlook basis, adding up to its total', () => {
+  const st = state([
+    sub('Base'),
+    sub('New', { price: 120, cycle: { unit: 'year', every: 1 }, start: '2026-03-15' }),
+    sub('Gone', { price: 5, status: 'cancelled', end: '2025-12-31' }),
+  ]);
+  const days = yearDays(st, today, 2026);
+  assert.equal(days.length, 365);
+  assert.deepEqual([days[0].date, days[364].date], ['2026-01-01', '2026-12-31']);
+  const r = yearOutlook(st, today);
+  for (const k of ['total', 'paid', 'pending'] as const) assert.ok(Math.abs(days.reduce((a, d) => a + d[k], 0) - r.current[k]) < 1e-9, k);
+  // 今天之后的日子只有预计，之前只有已付
+  assert.ok(days.every((d) => (d.date > today ? d.paid === 0 : d.pending === 0)));
+  const big = days.find((d) => d.date === '2026-03-15')!;
+  assert.deepEqual(
+    big.subs.map((s) => s.name),
+    ['New'],
+  );
+  assert.equal(yearDays(st, today, 2028).length, 366);
+  // 退款日是净流入，保持负值；缺汇率的日子标为不完整，不当作没花钱
+  const refunded = yearDays(state([sub('R', { payments: [{ date: '2026-05-03', amount: -30, kind: 'refund' }] })]), today, 2026);
+  assert.equal(refunded.find((d) => d.date === '2026-05-03')!.total, -30);
+  const missing = yearDays(state([sub('A', { currency: 'XXX' })]), today, 2026).find((d) => d.date === '2026-03-01')!;
+  assert.ok(missing.partial.total.incomplete);
+  assert.deepEqual(
+    missing.subs.map((s) => s.id),
+    ['A'],
+  );
 });

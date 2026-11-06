@@ -187,5 +187,10 @@
     "proxyEven": "Pour d’autres : équilibre",
     "proxyNet": "Pour d’autres : solde",
     "empty": "Identique à la même période l’an dernier."
+  },
+  "daily": {
+    "title": "Jour par jour",
+    "flat": "Grille",
+    "bars": "3D"
   }
 }

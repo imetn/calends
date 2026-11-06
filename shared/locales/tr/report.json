@@ -184,5 +184,10 @@
     "proxyEven": "Başkaları için başa baş",
     "proxyNet": "Başkaları için net",
     "empty": "Geçen yılın aynı dönemiyle aynı."
+  },
+  "daily": {
+    "title": "Gün gün",
+    "flat": "Izgara",
+    "bars": "3D"
   }
 }

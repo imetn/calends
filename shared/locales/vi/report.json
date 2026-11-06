@@ -180,5 +180,10 @@
     "proxyEven": "Trả hộ: hòa vốn",
     "proxyNet": "Trả hộ: lãi/lỗ",
     "empty": "Bằng cùng kỳ năm ngoái."
+  },
+  "daily": {
+    "title": "Theo ngày",
+    "flat": "Lưới",
+    "bars": "3D"
   }
 }

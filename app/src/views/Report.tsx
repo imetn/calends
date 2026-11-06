@@ -32,11 +32,12 @@ import { Icon } from '../components/icons.tsx';
 import { tipProps } from '../components/overlays.tsx';
 import { allCharges, toBase, firstStart } from '../derive.ts';
 import { SpendingDelta } from '../components/ScopeReport.tsx';
-import { allOutlook, cumulativeTrend, spendPiecesBetween, subscriptionTenure, yearOutlook, type YearDriver } from '../../../shared/scope-report.ts';
+import { allOutlook, cumulativeTrend, spendPiecesBetween, subscriptionTenure, yearDays, yearOutlook, type YearDriver } from '../../../shared/scope-report.ts';
 import { Picker } from '../components/Picker.tsx';
 import { carpoolYear } from '../../../shared/carpool.ts';
 import { proxyYear } from '../../../shared/proxy.ts';
 import { go } from '../router.ts';
+import { DayHeat, type DayHeatMode } from '../components/DayHeat.tsx';
 
 const mLabel = (m: string) => (m.endsWith('-01') ? t('report.axis.year', { yy: m.slice(2, 4), year: m.slice(0, 4) }) : monthLabel(m, { year: false }));
 const perMonth = (amount: string) => t('report.perMonth', { amount });
@@ -103,6 +104,7 @@ export function Report({
             <Hero state={state} today={today} year={year} />
             <YearCard state={state} today={today} year={year} onOpen={onOpen} />
             <CashCard state={state} today={today} year={year} />
+            <DailyCard state={state} today={today} year={year} />
             <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} hint={t('report.comp.basisYear')} />
             {now ? (
               <div className="grid g-2">
@@ -682,6 +684,34 @@ function YearCard({ state, today, year, onOpen }: { state: AppState; today: stri
 }
 
 const ownState = (state: AppState): AppState => ({ ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) });
+
+/** 所选年份逐日净支出：平面热力格与立体柱两种看法 */
+function DailyCard({ state, today, year }: { state: AppState; today: string; year: number }) {
+  const [mode, setMode] = useState<DayHeatMode>('flat');
+  const days = useMemo(() => yearDays(state, today, year), [state, today, year]);
+  return (
+    <div className="card copy-card" data-copy-card>
+      <div className="card-h">
+        <CardTitle as="h3" hint={t('report.year.basis')}>
+          {t('report.daily.title')}
+        </CardTitle>
+        <div className="copy-tools">
+          <CopyImageButton hover />
+          <Seg
+            small
+            value={mode}
+            onChange={setMode}
+            options={[
+              ['flat', t('report.daily.flat')],
+              ['bars', t('report.daily.bars')],
+            ]}
+          />
+        </div>
+      </div>
+      <DayHeat days={days} base={state.settings.baseCurrency} today={today} weekStart={state.settings.weekStart ?? 1} mode={mode} />
+    </div>
+  );
+}
 
 /** 现金 vs 权责：所选年份 1–12 月；全部（year 为 null）按年合并，从第一年到本月。预付余值与未来 90 天只在今年出现 */
 function CashCard({ state, today, year }: { state: AppState; today: string; year: number | null }) {

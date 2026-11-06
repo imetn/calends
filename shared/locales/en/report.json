@@ -187,5 +187,10 @@
     "proxyEven": "Paid for others even",
     "proxyNet": "Paid for others net",
     "empty": "Level with the same period last year."
+  },
+  "daily": {
+    "title": "Day by day",
+    "flat": "Grid",
+    "bars": "3D"
   }
 }

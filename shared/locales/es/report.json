@@ -187,5 +187,10 @@
     "proxyEven": "Por otros: sin cambio",
     "proxyNet": "Por otros: saldo",
     "empty": "Igual que el mismo periodo del año pasado."
+  },
+  "daily": {
+    "title": "Día a día",
+    "flat": "Cuadrícula",
+    "bars": "3D"
   }
 }

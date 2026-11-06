@@ -1,0 +1,69 @@
+.dh {
+  width: 100%;
+  overflow: hidden;
+}
+.dh svg {
+  display: block;
+}
+.dh-label {
+  font-size: var(--fs-1);
+  fill: var(--label-3);
+}
+.dh-day {
+  --c: var(--fill-2);
+  outline: none;
+}
+.dh-l1 {
+  --c: color-mix(in oklab, var(--chart-ink) 22%, var(--fill-2));
+}
+.dh-l2 {
+  --c: color-mix(in oklab, var(--chart-ink) 45%, var(--fill-2));
+}
+.dh-l3 {
+  --c: color-mix(in oklab, var(--chart-ink) 68%, var(--fill-2));
+}
+.dh-l4 {
+  --c: color-mix(in oklab, var(--chart-ink) 88%, var(--fill-2));
+}
+.dh-top {
+  fill: var(--c);
+}
+/* 立体时左前面比顶面深一档、右侧面再深一档；各档、深浅色主题都朝黑色混，光照方向一致 */
+.dh-s1 {
+  fill: color-mix(in oklab, var(--c) 80%, black);
+}
+.dh-s2 {
+  fill: color-mix(in oklab, var(--c) 62%, black);
+}
+.dh-over {
+  pointer-events: none;
+}
+/* 预计柱随立体过渡变半透明，描边留出轮廓，后面的柱子透过来 */
+.dh-day.pending :is(.dh-top, .dh-s1, .dh-s2) {
+  fill-opacity: calc(1 - 0.7 * var(--k, 0));
+  stroke: color-mix(in oklab, var(--c) 70%, var(--chart-ink));
+  stroke-opacity: var(--k, 0);
+  stroke-width: 0.75;
+}
+/* 斜纹：平面压在色块上用底色，立体压在半透明柱上逐渐换成墨色 */
+.dh-stripe {
+  fill: color-mix(in oklab, var(--chart-ink) calc(var(--k, 0) * 60%), var(--card));
+  opacity: 0.7;
+}
+.dh-day.inflow .dh-top {
+  fill: var(--gain-3);
+  stroke: var(--gain);
+  stroke-width: 0.75;
+}
+.dh-day.missing .dh-top {
+  stroke: var(--label-3);
+  stroke-width: 1;
+  stroke-dasharray: 2 1.5;
+}
+.dh-day.today .dh-top {
+  stroke: var(--orange);
+  stroke-width: 1.5;
+}
+.dh-day:is(:not(.dh-l0), .inflow, .missing):hover .dh-top {
+  opacity: 0.75;
+}

@@ -180,5 +180,10 @@
     "proxyEven": "Talangan: impas",
     "proxyNet": "Talangan: neto",
     "empty": "Sama dengan periode yang sama tahun lalu."
+  },
+  "daily": {
+    "title": "Per hari",
+    "flat": "Kisi",
+    "bars": "3D"
   }
 }
