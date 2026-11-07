@@ -54,7 +54,7 @@
     "refundExceedsPaid": "O total reembolsado não pode exceder o valor pago no período.",
     "refundCurrency": "A moeda do reembolso deve ser a da assinatura. Use settled para o cartão.",
     "subscriptionEnded": "A assinatura já terminou. Adicione uma nova fase para assinar novamente.",
-    "terminatedReactivate": "Uma assinatura desativada pelo provedor não pode ser reativada. Use change_plan (resume / nova fase).",
+    "terminatedReactivate": "Uma desativação pelo provedor só pode ser desfeita por inteiro, não trocada por outro tipo de encerramento. Use change_plan (resume / nova fase) se o serviço voltou.",
     "needStop": "Uma assinatura desativada exige informações de interrupção.",
     "invalidPaidThrough": "A data paga deve corresponder ao período de cobrança original.",
     "invalidStop": "A interrupção deve coincidir com o último dia de serviço; apenas a desativação pelo provedor aceita motivo.",

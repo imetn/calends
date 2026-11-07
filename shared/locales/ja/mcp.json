@@ -54,7 +54,7 @@
     "refundExceedsPaid": "返金総額は当期の支払額を超えられません。",
     "refundCurrency": "返金通貨は契約通貨と同じにしてください。カード返金は settled を使用します。",
     "subscriptionEnded": "契約は終了しています。新しい期間で再契約してください。",
-    "terminatedReactivate": "提供元が停止した契約は再開できません。change_plan（resume / 新しい期間）で再契約してください。",
+    "terminatedReactivate": "提供元による停止は丸ごと取り消すことしかできず、他の停止方法には変更できません。実際に再開した場合は change_plan（resume / 新しい期間）を使ってください。",
     "needStop": "利用停止には停止情報が必要です。",
     "invalidPaidThrough": "支払済み終了日は元の請求期間と一致する必要があります。",
     "invalidStop": "停止情報は最終利用日と一致させてください。理由は提供元による停止のみ設定できます。",

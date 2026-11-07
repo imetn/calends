@@ -118,6 +118,6 @@ test('editStop keeps omitted stop fields, moves a stop-day refund with the date 
   assert.throws(() => editStop(sub, { mode: 'cancel', date: '2026-10-12' }, today), /not stopped/);
   const terminated = stopSubscription(sub, today, 'terminate', '2026-10-10', 'Policy');
   assert.equal(editStop(terminated, { mode: 'terminate', reason: 'Revised' }, today).stop?.reason, 'Revised');
-  assert.throws(() => editStop(terminated, { mode: 'cancel' }, today), /cannot reactivate/);
+  assert.throws(() => editStop(terminated, { mode: 'cancel' }, today), /another stop type/);
   assert.throws(() => editStop(stopped, { mode: 'cancel', reason: 'x' }, today));
 });

@@ -255,12 +255,20 @@ test('三种停止状态与恢复边界', () => {
   assert.equal(normal.stop, undefined);
   assert.equal(effectiveStatus(normal, today), 'ending');
   assert.equal(effectiveStatus(normal, '2026-11-05'), 'ended');
-  const restored = reactivate(cancel, today);
+  const restored = reactivate(cancel);
   assert.equal(restored.end, undefined);
   assert.equal(restored.stop, undefined);
   assert.equal(effectiveStatus(restored, today), 'active');
-  assert.throws(() => reactivate(terminate, today), { message: t('mcp.error.terminatedReactivate') });
-  assert.equal(statusChangeError(terminate, { ...terminate, end: undefined, stop: undefined, status: 'active' }, today), t('mcp.error.terminatedReactivate'));
+  // 用户反馈回归：误记的被服务方停用可以撤销，停用连同损失一起消失；但不能改成别的停用方式
+  const undone = reactivate(terminate);
+  assert.equal(undone.stop, undefined);
+  assert.equal(undone.end, undefined);
+  assert.equal(effectiveStatus(undone, today), 'active');
+  assert.equal(statusChangeError(terminate, undone, today), undefined);
+  assert.equal(
+    statusChangeError(terminate, { ...terminate, end: undefined, stop: undefined, status: 'cancelled' }, today),
+    t('mcp.error.terminatedReactivate'),
+  );
   assert.equal(
     statusChangeError(terminate, { ...terminate, stop: { ...terminate.stop!, kind: 'cancel' }, status: 'cancelled' }, today),
     t('mcp.error.terminatedReactivate'),
@@ -498,21 +506,85 @@ test('MCP pause / reactivate / 默认到期不续，不生成 stop', async () =>
   }
 });
 
-test('MCP dry_run 叠加层可查询并恢复提前退订；停用不能恢复', async () => {
+test('MCP dry_run 叠加层可查询并恢复提前退订与误记的停用', async () => {
   for (const action of ['cancel', 'terminate']) {
     const f = fixture();
     f.ctx.overlay = new Map();
     try {
       await f.run('set_status', { action, immediate: true, dry_run: true });
       assert.equal((await f.run('get_subscription')).status, action === 'cancel' ? 'ended' : 'terminated');
-      if (action === 'terminate')
-        await assert.rejects(() => f.run('set_status', { action: 'reactivate', dry_run: true }), { message: t('mcp.error.terminatedReactivate') });
-      else assert.equal((await f.run('set_status', { action: 'reactivate', dry_run: true })).subscription.stop, null);
+      assert.equal((await f.run('set_status', { action: 'reactivate', dry_run: true })).subscription.stop, null);
       assert.equal(f.saved().stop, undefined);
     } finally {
       f.db.close();
     }
   }
+});
+
+test('用户反馈回归：MCP 可撤销误记的被服务方停用，原记录恢复且不再算停用损失', async () => {
+  const f = fixture();
+  try {
+    await f.run('set_status', { action: 'terminate', reason: 'mistake' });
+    assert.equal(f.saved().stop?.kind, 'terminate');
+    await f.run('set_status', { action: 'reactivate' });
+    const s = f.saved();
+    assert.equal(s.stop, undefined);
+    assert.equal(s.end, undefined);
+    assert.equal(s.status, 'active');
+    assert.equal(s.phases?.length ?? 0, f.sub.phases?.length ?? 0);
+    assert.equal(stopLosses(state(s), todayIn('UTC')).items.length, 0);
+  } finally {
+    f.db.close();
+  }
+});
+
+test('审查回归：撤销服务方停用不能在同一次保存里另加阶段或停用，变相改成别的停用方式', () => {
+  const base: Subscription = {
+    id: 'u',
+    name: 'U',
+    category: '工具',
+    tags: [],
+    price: 20,
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-08-01',
+    status: 'active',
+  };
+  const phased = switchPlan(base, '2026-10-01', { price: 30, currency: 'USD', cycle: { unit: 'month', every: 1 } });
+  const stopped = stopSubscription(phased, '2026-11-07', 'terminate', '2026-11-07', 'mistake');
+  assert.equal(statusChangeError(stopped, reactivate(stopped), '2026-11-07'), undefined);
+  const open = reactivate(stopped);
+  const sneaky: Subscription = {
+    ...open,
+    phases: [
+      ...open.phases!,
+      {
+        start: '2026-11-08',
+        end: '2026-11-08',
+        price: 30,
+        currency: 'USD',
+        cycle: { unit: 'month', every: 1 },
+        stop: { kind: 'cancel', date: '2026-11-08', paidThrough: '2026-12-07' },
+      },
+    ],
+  };
+  assert.equal(statusChangeError(stopped, sneaky, '2026-11-07'), t('mcp.error.terminatedReactivate'));
+  const restop = {
+    ...open,
+    phases: open.phases!.map((p, i, all) =>
+      i === all.length - 1 ? { ...p, stop: { kind: 'cancel' as const, date: '2026-11-07', paidThrough: '2026-11-30' } } : p,
+    ),
+  };
+  assert.equal(statusChangeError(stopped, restop, '2026-11-07'), t('mcp.error.terminatedReactivate'));
+  // 审查回归：较早阶段合法的停用保留时，仍能撤销最后一次误记
+  const history = resume(stopSubscription(base, '2026-09-15', 'terminate', '2026-09-10'), '2026-10-01', {
+    price: 30,
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+  });
+  const again = stopSubscription(history, '2026-11-07', 'terminate', '2026-11-07', 'mistake');
+  assert.equal(statusChangeError(again, reactivate(again), '2026-11-07'), undefined);
+  assert.equal(reactivate(again).phases![0].stop?.kind, 'terminate');
 });
 
 test('MCP 全部新增业务错误不写库', async () => {
@@ -536,7 +608,6 @@ test('MCP 全部新增业务错误不写库', async () => {
     await f.run('set_status', { action: 'terminate' });
     await assert.rejects(() => f.run('set_status', { action: 'terminate' }), { message: t('mcp.error.subscriptionEnded') });
     await assert.rejects(() => f.run('set_status', { action: 'cancel' }), { message: t('mcp.error.subscriptionEnded') });
-    await assert.rejects(() => f.run('set_status', { action: 'reactivate' }), { message: t('mcp.error.terminatedReactivate') });
     await assert.rejects(() => f.run('record_payment', { kind: 'refund', amount: 32 }), { message: t('mcp.error.refundExceedsPaid') });
     await assert.rejects(() => f.run('record_payment', { kind: 'refund', amount: 1, currency: 'EUR' }), { message: t('mcp.error.refundCurrency') });
     await f.run('record_payment', { kind: 'refund', amount: 10 });
@@ -590,7 +661,7 @@ test('月末实付与退款固化后仍保留 31 日锚点，年付与自定义�
   });
   assert.equal(billingPeriod(monthEnd, '2026-03-01').paidThrough, '2026-03-30');
   const stopped = stopSubscription(base({ start: '2026-01-31' }), '2026-02-15', 'cancel', '2026-02-15', undefined, { amount: 1 });
-  const restored = reactivate(stopped, '2026-02-15');
+  const restored = reactivate(stopped);
   assert.deepEqual(
     chargesBetween(restored, '2026-02-16', '2026-04-30', '2026-02-15').map((c) => c.date),
     ['2026-02-28', '2026-03-31', '2026-04-30'],
@@ -657,7 +728,7 @@ test('API 编辑器保存复用停止与退款校验、禁止恢复停用订阅�
     const s = stopSubscription(f.sub, now, 'terminate', now, 'PRIVATE', { amount: 3 });
     let response = await request(s);
     assert.equal(response.status, 200);
-    response = await request({ ...s, status: 'active', stop: undefined, end: undefined });
+    response = await request({ ...s, status: 'cancelled', stop: { ...s.stop!, kind: 'cancel', reason: undefined } });
     assert.equal(response.status, 400);
     assert.equal((await response.json()).error, t('mcp.error.terminatedReactivate'));
     response = await request({ ...s, payments: [...s.payments!, { date: now, amount: -100, kind: 'refund' }] }, 'zh-CN');

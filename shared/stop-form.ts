@@ -1,6 +1,6 @@
 // Transient stop fields owned by the editor or the standalone stop dialog.
 import { nonrenewalDate, pausedFromOf, stopBillingPeriod, currentPhase, effectiveStatus, stopSummary, subError } from './billing.ts';
-import { cancelAtEnd, reactivate, reopenStopped, statusChangeError, stopSubscription } from './phases.ts';
+import { cancelAtEnd, reopenStopped, statusChangeError, stopSubscription } from './phases.ts';
 import { t } from './i18n.ts';
 import { settlementCurrencyOf } from './fx.ts';
 import { DEFAULT_SETTINGS, type AppState } from './types.ts';
@@ -57,7 +57,7 @@ export function applyStopForm(sub: Subscription, form: StopForm, today: string):
   let open = sub;
   if (sub.stop || sub.end || sub.status === 'cancelled' || sub.status === 'terminated') {
     // Reopen only this local calculation; the resulting record must still pass the provider-termination constraint.
-    open = terminated ? reopenStopped(sub) : reactivate(sub, today);
+    open = reopenStopped(sub);
     // 只是改停用信息，不是恢复订阅：暂停的事实留着
     const pausedAt = pausedFromOf(sub);
     if (pausedAt) open = { ...open, status: 'paused', pausedAt };

@@ -179,12 +179,11 @@ export function StatusFields({ context }: { context: ReturnType<typeof useEditor
       <div className="cell">
         <Seg<EditorStatus>
           value={stop ? 'stop' : (f.status as EditorStatus)}
-          disabledKeys={f.stop?.kind === 'terminate' || f.status === 'terminated' ? ['active', 'trial', 'paused'] : undefined}
           onChange={(v) => {
             if (v === 'stop') {
               setStop(stopForm(syncPhase(f, today), today, state));
             } else {
-              const next = reactivate(f, today);
+              const next = reactivate(f);
               up({ ...next, status: v as SubStatus, pausedAt: v === 'paused' ? (f.pausedAt ?? today) : undefined });
               setStop(undefined);
             }

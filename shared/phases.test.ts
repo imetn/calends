@@ -567,7 +567,7 @@ test('暂停中停用：暂停期间没发生的扣款不复活，停用日按�
   const edited = editStop(fromForm, { mode: 'cancel', date: '2026-07-20' }, '2026-07-25');
   assert.equal(edited.stop!.date, '2026-07-20');
   assert.deepEqual(after(edited), []);
-  assert.equal(reactivate(fromForm, '2026-06-20').pausedAt, undefined);
+  assert.equal(reactivate(fromForm).pausedAt, undefined);
   // 已覆盖期内停用：未用天数照算，暂停不再留
   const early = stopSubscription(paused, '2026-05-20', 'cancel', '2026-05-20');
   assert.equal(early.stop!.pausedAt, undefined);
@@ -692,7 +692,7 @@ test('恢复暂停：暂停中停用后重新激活同样不复活', () => {
     end: '2026-08-01',
     stop: { kind: 'cancel', date: '2026-08-01', paidThrough: '2026-08-09', pausedAt: '2026-07-15' },
   });
-  const s = write(stopped, reactivate(stopped, '2026-09-20'), '2026-09-20');
+  const s = write(stopped, reactivate(stopped), '2026-09-20');
   assert.deepEqual(s.pauses, [{ from: '2026-07-15', to: '2026-09-20' }]);
   assert.equal(nextCharge(s, '2026-09-20'), '2026-10-10');
 });
@@ -772,7 +772,7 @@ test('恢复暂停：暂停中停用后改回暂停，前一段照样记下', ()
     end: '2026-08-01',
     stop: { kind: 'cancel', date: '2026-08-01', paidThrough: '2026-08-09', pausedAt: '2026-07-15' },
   });
-  const again = write(stopped, { ...reactivate(stopped, '2026-09-20'), status: 'paused', pausedAt: '2026-09-20' }, '2026-09-20');
+  const again = write(stopped, { ...reactivate(stopped), status: 'paused', pausedAt: '2026-09-20' }, '2026-09-20');
   assert.deepEqual(again.pauses, [{ from: '2026-07-15', to: '2026-09-20' }]);
   const s = write(again, running(again), '2026-10-20');
   assert.deepEqual(days(s, '2026-10-20'), ['2026-06-10', '2026-07-10']);

@@ -54,7 +54,7 @@
     "refundExceedsPaid": "Tổng hoàn tiền không được vượt quá số thực trả kỳ này.",
     "refundCurrency": "Đơn vị tiền hoàn phải giống gói đăng ký. Dùng settled cho thẻ.",
     "subscriptionEnded": "Gói đã kết thúc. Hãy đăng ký lại bằng giai đoạn mới.",
-    "terminatedReactivate": "Không thể kích hoạt lại gói bị nhà cung cấp vô hiệu hóa. Dùng change_plan (resume / giai đoạn mới).",
+    "terminatedReactivate": "Việc nhà cung cấp vô hiệu hóa chỉ có thể hoàn tác toàn bộ, không đổi sang kiểu dừng khác. Nếu dịch vụ thực sự mở lại, dùng change_plan (resume / giai đoạn mới).",
     "needStop": "Gói bị vô hiệu hóa cần thông tin dừng.",
     "invalidPaidThrough": "Ngày đã trả phải khớp kỳ thanh toán ban đầu.",
     "invalidStop": "Thông tin dừng phải khớp ngày dịch vụ cuối; chỉ nhà cung cấp vô hiệu hóa mới có lý do.",

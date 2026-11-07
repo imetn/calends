@@ -886,8 +886,8 @@ export function reopenStopped(s: Subscription): Subscription {
   return { ...s, phases, status: 'active', pausedAt: undefined, end: undefined, stop: undefined };
 }
 
-export function reactivate(s: Subscription, today: string): Subscription {
-  if (s.stop?.kind === 'terminate' || effectiveStatus(s, today) === 'terminated') throw new Error(t('mcp.error.terminatedReactivate'));
+/** 恢复：清掉停用（含被服务方停用）、暂停与结束日，当作这次停用没发生过。服务真的中断后又重新订阅时用 resume 另起新阶段。 */
+export function reactivate(s: Subscription): Subscription {
   return reopenStopped(s);
 }
 
@@ -905,6 +905,14 @@ export function statusChangeError(previous: Subscription | undefined, next: Subs
   }
   if (previous && (previous.stop?.kind === 'terminate' || previous.status === 'terminated') && next.stop?.kind !== 'terminate') {
     const old = phaseSubs(previous).at(-1)!;
+    // 撤销误记的停用：整段停用连同结束日一起清掉，不允许改成别的停用方式
+    // 阶段原样保留、较早阶段的停用与结束日不变、误记那段清空，才算撤销；同时换阶段或另加停用的仍按改停用方式拒绝
+    const starts = (x: Subscription) => (x.phases ?? []).map((p) => p.start).join();
+    const same = next.phases?.find((p) => p.start === old.start);
+    const cleared = !next.stop && !next.end && next.status !== 'cancelled' && next.status !== 'terminated';
+    const earlier = (x: Subscription) => JSON.stringify((x.phases ?? []).filter((p) => p.start !== old.start).map((p) => [p.start, p.end, p.stop]));
+    if (cleared && starts(next) === starts(previous) && earlier(next) === earlier(previous) && (!next.phases?.length || (same && !same.stop && !same.end)))
+      return undefined;
     const history = next.phases?.find((p) => p.start === old.start);
     const newPhase = next.phases?.some((p) => p.start > old.end!);
     if (history?.stop?.date !== old.stop?.date || history?.end !== old.end) return t('mcp.error.terminatedReactivate');

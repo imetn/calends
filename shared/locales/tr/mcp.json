@@ -54,7 +54,7 @@
     "refundExceedsPaid": "Toplam iadeler bu dönem ödenen tutarı aşamaz.",
     "refundCurrency": "İade para birimi abonelikle aynı olmalıdır. Kart için settled kullanın.",
     "subscriptionEnded": "Bu abonelik sona erdi. Yeni bir dönemle tekrar abone olun.",
-    "terminatedReactivate": "Sağlayıcı tarafından kapatılan abonelik yeniden etkinleştirilemez. change_plan (resume / yeni dönem) kullanın.",
+    "terminatedReactivate": "Sağlayıcı kapatması yalnızca tamamen geri alınabilir, başka bir durdurma türüne çevrilemez. Hizmet gerçekten yeniden başladıysa change_plan (resume / yeni dönem) kullanın.",
     "needStop": "Kapatılan abonelik için durdurma bilgisi gerekir.",
     "invalidPaidThrough": "Ödenmiş son tarih asıl fatura dönemiyle eşleşmelidir.",
     "invalidStop": "Durdurma son hizmet günüyle eşleşmelidir; yalnızca sağlayıcı kapatması neden içerebilir.",

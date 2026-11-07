@@ -99,7 +99,7 @@ export function StopPanel({ sub, today, onApply }: { sub: Subscription; today: s
         toast(error instanceof Error ? error.message : String(error), 'error');
       }
     });
-  const restore = () => submit(() => onApply(reactivate(sub, today)));
+  const restore = () => submit(() => onApply(reactivate(sub)));
   if (sub.stop || ended)
     return (
       <div className="stop-panel">
@@ -109,13 +109,11 @@ export function StopPanel({ sub, today, onApply }: { sub: Subscription; today: s
             {!isPostpaid(p) && <small>{t('core.stop.paidThrough', { date: cnDateFull(p.stop!.paidThrough) })}</small>}
           </div>
         ))}
-        {sub.stop?.kind !== 'terminate' && sub.status !== 'terminated' && (
-          <div className="cell">
-            <button type="button" className="btn" disabled={busy} onClick={restore}>
-              {t('core.stop.restore')}
-            </button>
-          </div>
-        )}
+        <div className="cell">
+          <button type="button" className="btn" disabled={busy} onClick={restore}>
+            {t('core.stop.restore')}
+          </button>
+        </div>
       </div>
     );
   return (

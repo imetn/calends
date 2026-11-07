@@ -171,7 +171,11 @@ test('真实停止表单：三种模式、日期默认值、币种锁定、按�
   assert.equal(saved.stop!.reason, 'abuse');
   assert.equal(saved.payments!.at(-1)!.amount, -6);
   assert.deepEqual(saved.payments!.at(-1)!.settled, { amount: -40, currency: 'CNY' });
-  assert.ok(!render(saved).some((e) => e.type === 'button' && e.children.includes(t('core.stop.restore'))));
+  // 用户反馈回归：误记的被服务方停用也能一键恢复
+  render(saved)
+    .find((e) => e.type === 'button' && e.children.includes(t('core.stop.restore')))!
+    .props.onClick();
+  assert.equal(applied.at(-1)!.stop, undefined);
   const cancelled = phases.stopSubscription(sub, today, 'cancel');
   const restore = render(cancelled).find((e) => e.type === 'button' && e.children.includes(t('core.stop.restore')))!;
   restore.props.onClick();
@@ -604,7 +608,7 @@ test('编辑状态：已有到期不续、试用、暂停、服务方停用及�
   assert.equal(paused.saved[0].pausedAt, '2026-10-18');
   assert.equal(paused.saved[0].status, 'paused');
   const terminated = editorRuntime(phases.stopSubscription(sub, today, 'terminate'));
-  assert.deepEqual(statusControl(terminated.render()).props.disabledKeys, ['active', 'trial', 'paused']);
+  assert.equal(statusControl(terminated.render()).props.disabledKeys, undefined);
   assert.deepEqual(
     terminated
       .render()

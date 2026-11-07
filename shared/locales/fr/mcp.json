@@ -54,7 +54,7 @@
     "refundExceedsPaid": "Le total remboursé ne peut pas dépasser le montant payé pour cette période.",
     "refundCurrency": "La devise du remboursement doit être celle de l’abonnement. Utilisez settled pour la carte.",
     "subscriptionEnded": "Cet abonnement est déjà terminé. Ajoutez une nouvelle période pour vous réabonner.",
-    "terminatedReactivate": "Un abonnement désactivé par le fournisseur ne peut pas être réactivé. Utilisez change_plan (resume / nouvelle période).",
+    "terminatedReactivate": "Une désactivation par le fournisseur ne peut qu'être annulée entièrement, pas changée en un autre type d'arrêt. Utilisez change_plan (resume / nouvelle période) si le service a repris.",
     "needStop": "Un abonnement désactivé nécessite les informations d’arrêt.",
     "invalidPaidThrough": "La date payée doit correspondre à la période de facturation initiale.",
     "invalidStop": "L’arrêt doit correspondre au dernier jour de service ; seul le fournisseur peut motiver une désactivation.",

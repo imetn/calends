@@ -54,7 +54,7 @@
     "refundExceedsPaid": "退款合计不能超过当期实付。",
     "refundCurrency": "退款币种必须与订阅币种一致，卡上实退请使用 settled。",
     "subscriptionEnded": "订阅已结束，请通过新阶段重新订阅。",
-    "terminatedReactivate": "已停用订阅不能恢复，请通过 change_plan（resume / 新阶段）重新订阅。",
+    "terminatedReactivate": "被服务方停用只能整体撤销，不能改成其他停用方式；确实重新开通的，请通过 change_plan（resume / 新阶段）续订。",
     "needStop": "已停用订阅必须填写停止信息。",
     "invalidPaidThrough": "本期付到日必须与原计费周期一致。",
     "invalidStop": "停止信息必须与最后服务日一致，只有服务方停用可填写原因。",
