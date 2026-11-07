@@ -64,7 +64,8 @@
     "endOnNextStart": "Tanggal berakhir adalah hari layanan terakhir dan tidak boleh sama dengan awal fase berikutnya; kosongkan atau pakai sehari sebelumnya untuk melanjutkan",
     "startOrder": "Tanggal mulai harus berada di antara tanggal mulai tahap sebelumnya dan berikutnya.",
     "priceDuplicate": "Harga sudah ada pada tanggal ini",
-    "priceInitial": "Harga awal tidak dapat dihapus"
+    "priceInitial": "Harga awal tidak dapat dihapus",
+    "upgradeUnavailable": "Peralihan ini tidak bisa mengkreditkan paket lama: harus sudah berlaku, memakai mata uang yang sama dan prabayar, serta paket lama masih punya hari yang belum terpakai. Mempertahankan tanggal tagihan juga butuh siklus yang sama."
   },
   "event": {
     "label": "{region}{price}/{per}",

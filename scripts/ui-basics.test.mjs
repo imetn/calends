@@ -353,7 +353,7 @@ async function priceEditorHarness() {
     t,
     useState(initial) {
       const index = cursor++;
-      if (!(index in hooks)) hooks[index] = initial;
+      if (!(index in hooks)) hooks[index] = typeof initial === 'function' ? initial() : initial;
       return [
         hooks[index],
         (value) => {

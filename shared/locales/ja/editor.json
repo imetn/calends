@@ -181,7 +181,13 @@
     "newPrice": "新価格（{currency}）",
     "priceLabel": "価格",
     "planned": "未確定（予定のみ）",
-    "plannedHint": "予測には含まれ、詳細では「予定」と表示されます。あとでワンタップで確定またはキャンセルできます。"
+    "plannedHint": "予測には含まれ、詳細では「予定」と表示されます。あとでワンタップで確定またはキャンセルできます。",
+    "credit": "旧プランの未使用分 {amount} を充当",
+    "renewal": "請求日",
+    "renewalReset": "切り替え日から数え直す",
+    "renewalKeep": "現在の請求日を維持（{date}）",
+    "firstPay": "初回支払額（{currency}）",
+    "adjustPay": "日割り差額（{currency}）"
   },
   "history": {
     "gapMonths": {

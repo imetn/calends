@@ -1927,6 +1927,44 @@ test('MCP 改开始日与网页 movePhaseStart 一致：默认保留扣款锚点
   assert.equal((await f.call('get_subscription', { subscription: 's' })).structuredContent.next_charge.slice(8), '15');
 });
 
+test('change_plan 升级抵扣：预览给出报价不写入，读令牌拒绝，reset 记首期实付，keep 记补差，参数不合法报错', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const today = todayIn('UTC');
+  const s: Subscription = { ...sub(), price: 30, start: addDays(today, -1), share: undefined, proxy: undefined };
+  await upsert(f.env, 'subscriptions', 's', s);
+  const args = { subscription: 's', action: 'switch', at: today, plan: { price: 100, currency: 'USD', cycle: { unit: 'month', every: 1 } } };
+  const before = await f.snapshot();
+  const preview = await f.call('change_plan', { ...args, dry_run: true });
+  assert.equal(preview.isError, undefined, JSON.stringify(preview));
+  const q = preview.structuredContent.upgrade_quote;
+  assert.equal(q.paid, 30);
+  assert.ok(q.credit > 0 && q.credit < 30);
+  assert.equal(q.reset_first_payment, Math.round((100 - q.credit) * 100) / 100);
+  assert.ok(q.keep && q.keep.adjustment > 0 && q.keep.next_charge > today);
+  for (const bad of [
+    { ...args, action: 'resume', upgrade: { renewal: 'reset' } },
+    { subscription: 's', action: 'edit', at: s.start, set: { note: 'x' }, upgrade: { renewal: 'reset' } },
+    { ...args, keep_previous_until: addDays(today, 5), upgrade: { renewal: 'reset' } },
+    { ...args, upgrade: { renewal: 'later' } },
+    { ...args, plan: { ...args.plan, currency: 'EUR' }, upgrade: { renewal: 'reset' } },
+  ])
+    assert.equal((await f.call('change_plan', { ...bad, dry_run: true })).isError, true, JSON.stringify(bad));
+  assert.equal((await f.call('change_plan', { ...args, upgrade: { renewal: 'reset' } }, f.read)).isError, true);
+  assert.deepEqual(await f.snapshot(), before);
+  const reset = await f.call('change_plan', { ...args, upgrade: { renewal: 'reset', amount: 70 } });
+  assert.equal(reset.isError, undefined, JSON.stringify(reset));
+  let stored = (await f.snapshot()).subscriptions.find((x) => x.id === 's')!;
+  assert.deepEqual(stored.phases!.at(-1)!.payments, [{ date: today, amount: 70 }]);
+  await upsert(f.env, 'subscriptions', 's', s);
+  const keep = await f.call('change_plan', { ...args, upgrade: { renewal: 'keep' } });
+  assert.equal(keep.isError, undefined, JSON.stringify(keep));
+  stored = (await f.snapshot()).subscriptions.find((x) => x.id === 's')!;
+  assert.deepEqual(stored.phases!.at(-1)!.payments, [{ date: today, amount: q.keep.adjustment, kind: 'adjust' }]);
+  assert.equal(stored.phases!.at(-1)!.billingStart, s.start);
+  assert.equal((await f.call('get_subscription', { subscription: 's' })).structuredContent.next_charge, q.keep.next_charge);
+});
+
 test('MCP 改开始日：已有扣款新落到服务期之外时返回警告，dry_run 同样返回，不拦写入', async (t) => {
   const f = await setup();
   t.after(() => f.db.close());

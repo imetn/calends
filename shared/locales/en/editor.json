@@ -188,7 +188,13 @@
     "newPrice": "New price ({currency})",
     "priceLabel": "Price",
     "planned": "Not final, just planned",
-    "plannedHint": "Still counted in forecasts and marked “Planned” in details. Confirm or cancel it with one tap later."
+    "plannedHint": "Still counted in forecasts and marked “Planned” in details. Confirm or cancel it with one tap later.",
+    "credit": "Credit unused {amount} from the old plan",
+    "renewal": "Billing date",
+    "renewalReset": "Restart from the switch date",
+    "renewalKeep": "Keep the current date ({date})",
+    "firstPay": "First payment ({currency})",
+    "adjustPay": "Prorated difference ({currency})"
   },
   "history": {
     "gapMonths": {

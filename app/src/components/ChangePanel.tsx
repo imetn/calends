@@ -14,7 +14,11 @@ import {
   resume,
   setPhaseEnd,
   switchPlan,
+  upgradePlan,
+  upgradeQuote,
+  type UpgradeMode,
 } from '../../../shared/phases.ts';
+import { cnDate, money } from '../../../shared/format.ts';
 import type { AppState, Cycle, Subscription } from '../../../shared/types.ts';
 import { DatePicker } from './DatePicker.tsx';
 import { History } from './History.tsx';
@@ -105,6 +109,10 @@ export function ChangePanel({
   // 换区时旧的继续用到某天（已预付、还没到期），两段并行
   const [keep, setKeep] = useState(false);
   const [keepUntil, setKeepUntil] = useState(today);
+  // 升级抵扣旧套餐剩余：扣款日重算或保持，实付金额默认按折算，可改；改过的金额只对同一组条件有效
+  const [credit, setCredit] = useState(false);
+  const [renewal, setRenewal] = useState<UpgradeMode>('reset');
+  const [payEdit, setPayEdit] = useState<Record<string, string>>({});
   const ended = !!f.end || f.status === 'cancelled' || f.status === 'terminated';
   const phases = phaseSubs(f).length;
 
@@ -121,6 +129,9 @@ export function ChangePanel({
     setRegion(f.region ?? '');
     setPlanned(false);
     setKeep(false);
+    setCredit(false);
+    setRenewal('reset');
+    setPayEdit({});
   };
   /** 旧的默认用到哪天：切换日之后它下一次扣款的前一天（已付到那天；结束日含当天，填扣款日会再扣一期），没有就用满一个月 */
   const paidThrough = (at: string) => {
@@ -152,6 +163,16 @@ export function ChangePanel({
       toast(e instanceof Error ? e.message : String(e), 'error');
     }
   };
+  const planCycle = options.find(([k]) => k === cycle)![1];
+  const quote =
+    mode === 'switch' && !keep && !planned && price !== '' && Number(price) >= 0
+      ? upgradeQuote(f, date, { price: Number(price), currency, cycle: planCycle, billing: billing === 'postpaid' ? 'postpaid' : undefined }, today)
+      : undefined;
+  const useCredit = credit && !!quote;
+  const renewalMode: UpgradeMode = renewal === 'keep' && quote?.keep ? 'keep' : 'reset';
+  const payKey = [date, price, currency, cycle, billing, renewalMode].join('|');
+  const pay = payEdit[payKey] ?? String(quote ? (renewalMode === 'keep' ? quote.keep!.amount : quote.reset) : '');
+
   const apply = () => {
     const n = Number(price);
     if (!(n >= 0) || price === '') return toast(t('editor.change.needPrice'), 'error');
@@ -159,14 +180,21 @@ export function ChangePanel({
       const plan = {
         price: n,
         currency,
-        cycle: options.find(([k]) => k === cycle)![1],
+        cycle: planCycle,
         billing: billing === 'postpaid' ? ('postpaid' as const) : undefined,
         methodId: methodId || undefined,
         region: region.trim().toUpperCase() || undefined,
         planned: mode === 'switch' && planned ? true : undefined,
       };
+      if (useCredit && !(pay.trim() !== '' && Number(pay) >= 0)) return toast(t('editor.change.needPrice'), 'error');
       const next =
-        mode === 'price' ? changePrice(f, date, n) : mode === 'switch' ? switchPlan(f, date, plan, keep ? keepUntil : undefined) : resume(f, date, plan);
+        mode === 'price'
+          ? changePrice(f, date, n)
+          : mode === 'switch'
+            ? useCredit
+              ? upgradePlan(f, date, plan, today, renewalMode, Number(pay))
+              : switchPlan(f, date, plan, keep ? keepUntil : undefined)
+            : resume(f, date, plan);
       setF(next);
       setMode(null);
       toast(
@@ -302,7 +330,7 @@ export function ChangePanel({
                   ariaLabel={t('editor.field.cycle')}
                 />
               </label>
-              {options.find(([k]) => k === cycle)![1].unit !== 'lifetime' && (
+              {planCycle.unit !== 'lifetime' && (
                 <label>
                   {t('editor.field.billing')}
                   <Picker
@@ -335,7 +363,37 @@ export function ChangePanel({
                   ]}
                 />
               </label>
-              {mode === 'switch' && (
+              {quote && (
+                <div className="change-keep">
+                  <div className="change-keep-row">
+                    <span>{t('editor.change.credit', { amount: money(quote.credit, currency) })}</span>
+                    <Toggle checked={credit} onChange={setCredit} label={t('editor.change.credit', { amount: money(quote.credit, currency) })} />
+                  </div>
+                  {credit && (
+                    <div className="change-credit">
+                      {quote.keep && (
+                        <label>
+                          {t('editor.change.renewal')}
+                          <Picker
+                            value={renewalMode}
+                            onChange={setRenewal}
+                            options={[
+                              { value: 'reset', label: t('editor.change.renewalReset') },
+                              { value: 'keep', label: t('editor.change.renewalKeep', { date: cnDate(quote.keep.nextCharge) }) },
+                            ]}
+                            ariaLabel={t('editor.change.renewal')}
+                          />
+                        </label>
+                      )}
+                      <label>
+                        {t(renewalMode === 'keep' ? 'editor.change.adjustPay' : 'editor.change.firstPay', { currency })}
+                        <input inputMode="decimal" value={pay} onChange={(e) => setPayEdit({ ...payEdit, [payKey]: (e.target as HTMLInputElement).value })} />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+              {mode === 'switch' && !useCredit && (
                 <div className="change-keep">
                   <div className="change-keep-row">
                     <span>
@@ -352,7 +410,7 @@ export function ChangePanel({
                   )}
                 </div>
               )}
-              {mode === 'switch' && (
+              {mode === 'switch' && !useCredit && (
                 <div className="change-plan">
                   <span>
                     {t('editor.change.planned')}

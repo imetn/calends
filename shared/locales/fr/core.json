@@ -69,7 +69,8 @@
     "endOnNextStart": "La date de fin est le dernier jour de service et ne peut pas tomber le jour où commence la phase suivante ; laissez-la vide ou choisissez la veille pour enchaîner",
     "startOrder": "Le début doit rester strictement entre les débuts des phases voisines.",
     "priceDuplicate": "Un prix existe déjà à cette date",
-    "priceInitial": "Le prix initial ne peut pas être supprimé"
+    "priceInitial": "Le prix initial ne peut pas être supprimé",
+    "upgradeUnavailable": "Ce changement ne peut pas créditer l’ancienne formule : il doit déjà être effectif, dans la même devise et en prépaiement, et l’ancienne formule doit avoir des jours non utilisés. Garder la date de prélèvement exige aussi le même cycle."
   },
   "event": {
     "label": "{region}{price}/{per}",

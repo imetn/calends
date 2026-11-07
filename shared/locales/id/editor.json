@@ -181,7 +181,13 @@
     "newPrice": "Harga baru ({currency})",
     "priceLabel": "Harga",
     "planned": "Belum pasti, baru rencana",
-    "plannedHint": "Tetap dihitung dalam perkiraan dan ditandai “Rencana” di detail. Nanti cukup satu ketukan untuk mengonfirmasi atau membatalkan."
+    "plannedHint": "Tetap dihitung dalam perkiraan dan ditandai “Rencana” di detail. Nanti cukup satu ketukan untuk mengonfirmasi atau membatalkan.",
+    "credit": "Kreditkan sisa {amount} dari paket lama",
+    "renewal": "Tanggal tagihan",
+    "renewalReset": "Mulai ulang dari tanggal peralihan",
+    "renewalKeep": "Pertahankan tanggal sekarang ({date})",
+    "firstPay": "Pembayaran pertama ({currency})",
+    "adjustPay": "Selisih prorata ({currency})"
   },
   "history": {
     "gapMonths": {

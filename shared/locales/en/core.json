@@ -69,7 +69,8 @@
     "endOnNextStart": "The end date is the last day of service and can't be the next phase's start date; leave it empty or use the day before to continue into the next phase",
     "startOrder": "Phase starts must stay strictly between the adjacent phase starts.",
     "priceDuplicate": "A price point already exists on this date",
-    "priceInitial": "The initial price cannot be deleted"
+    "priceInitial": "The initial price cannot be deleted",
+    "upgradeUnavailable": "This switch can’t credit the old plan: it must already be in effect, use the same currency and prepaid billing, and the old plan must have unused days left. Keeping the billing date also needs the same cycle."
   },
   "event": {
     "label": "{region}{price}/{per}",

@@ -188,7 +188,13 @@
     "newPrice": "Nuevo precio ({currency})",
     "priceLabel": "Precio",
     "planned": "No es definitivo, solo previsto",
-    "plannedHint": "Se sigue contando en las previsiones y aparece como «Previsto» en los detalles. Podrás confirmarlo o cancelarlo con un toque más adelante."
+    "plannedHint": "Se sigue contando en las previsiones y aparece como «Previsto» en los detalles. Podrás confirmarlo o cancelarlo con un toque más adelante.",
+    "credit": "Acreditar {amount} sin usar del plan anterior",
+    "renewal": "Fecha de cobro",
+    "renewalReset": "Reiniciar desde la fecha del cambio",
+    "renewalKeep": "Mantener la fecha actual ({date})",
+    "firstPay": "Primer pago ({currency})",
+    "adjustPay": "Diferencia prorrateada ({currency})"
   },
   "history": {
     "gapMonths": {

@@ -69,7 +69,8 @@
     "endOnNextStart": "Bitiş tarihi hizmetin son günüdür ve sonraki dönemin başlangıcıyla aynı olamaz; kesintisiz geçiş için boş bırakın ya da bir önceki günü seçin",
     "startOrder": "Başlangıç tarihi, önceki ve sonraki aşamaların başlangıç tarihleri arasında olmalıdır.",
     "priceDuplicate": "Bu tarihte zaten bir fiyat var",
-    "priceInitial": "Başlangıç fiyatı silinemez"
+    "priceInitial": "Başlangıç fiyatı silinemez",
+    "upgradeUnavailable": "Bu geçiş eski planı mahsup edemez: geçiş yürürlüğe girmiş, aynı para birimi ve ön ödemeli olmalı, eski planda kullanılmamış gün kalmalı. Ödeme tarihini korumak için döngü de aynı olmalı."
   },
   "event": {
     "label": "{region}{price}/{per}",

@@ -6669,6 +6669,17 @@ a.car-toggle {
 .change-keep-date {
   max-width: 240px;
 }
+/* 升级抵扣：扣款日选项带日期，给它宽的一栏放得下全文；窄屏上下排 */
+.change-credit {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 8px;
+}
+@media (max-width: 560px) {
+  .change-credit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
 .list-report {
   margin-top: 24px;

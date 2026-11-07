@@ -69,7 +69,8 @@
     "endOnNextStart": "Das Enddatum ist der letzte Leistungstag und darf nicht auf den Beginn der nächsten Phase fallen; zum nahtlosen Übergang leer lassen oder den Vortag wählen",
     "startOrder": "Der Beginn muss nach dem Beginn der vorherigen und vor dem der nächsten Phase liegen.",
     "priceDuplicate": "An diesem Datum gibt es bereits einen Preis",
-    "priceInitial": "Der Anfangspreis kann nicht gelöscht werden"
+    "priceInitial": "Der Anfangspreis kann nicht gelöscht werden",
+    "upgradeUnavailable": "Dieser Wechsel kann das alte Abo nicht anrechnen: Er muss bereits gelten, dieselbe Währung und Vorauszahlung nutzen, und im alten Abo müssen ungenutzte Tage übrig sein. Für das alte Abrechnungsdatum muss auch der Zyklus gleich bleiben."
   },
   "event": {
     "label": "{region}{price}/{per}",

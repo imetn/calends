@@ -181,7 +181,13 @@
     "newPrice": "Giá mới ({currency})",
     "priceLabel": "Giá",
     "planned": "Chưa chắc chắn, chỉ là dự định",
-    "plannedHint": "Vẫn được tính vào dự báo và đánh dấu “Dự định” trong chi tiết. Sau này chỉ cần một chạm để xác nhận hoặc hủy."
+    "plannedHint": "Vẫn được tính vào dự báo và đánh dấu “Dự định” trong chi tiết. Sau này chỉ cần một chạm để xác nhận hoặc hủy.",
+    "credit": "Khấu trừ {amount} chưa dùng của gói cũ",
+    "renewal": "Ngày thanh toán",
+    "renewalReset": "Tính lại từ ngày chuyển",
+    "renewalKeep": "Giữ ngày hiện tại ({date})",
+    "firstPay": "Lần thanh toán đầu ({currency})",
+    "adjustPay": "Phần chênh lệch theo ngày ({currency})"
   },
   "history": {
     "gapMonths": {

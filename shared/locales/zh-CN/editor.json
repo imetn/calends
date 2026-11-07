@@ -169,7 +169,13 @@
     "newPrice": "新价格（{currency}）",
     "priceLabel": "价格",
     "planned": "还没确定，只是计划",
-    "plannedHint": "照常算进预测，详情里会标「计划」，到时一键确认或取消"
+    "plannedHint": "照常算进预测，详情里会标「计划」，到时一键确认或取消",
+    "credit": "抵扣原套餐剩余 {amount}",
+    "renewal": "扣款日",
+    "renewalReset": "从生效日重新起算",
+    "renewalKeep": "保持原扣款日（{date}）",
+    "firstPay": "首期实付（{currency}）",
+    "adjustPay": "补差（{currency}）"
   },
   "history": {
     "gapMonths": "断更 {count} 个月",

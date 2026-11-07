@@ -54,7 +54,8 @@
     "endOnNextStart": "结束日期是服务的最后一天，不能和下一阶段的开始日期相同；要接上下一阶段，请留空或填前一天",
     "startOrder": "开始日必须晚于上一段开始日、早于下一段开始日。",
     "priceDuplicate": "该日期已有价格记录",
-    "priceInitial": "起始价不可删除"
+    "priceInitial": "起始价不可删除",
+    "upgradeUnavailable": "这次切换不能抵扣旧套餐：需要已生效、同币种、先付费，旧套餐当期还有没用完的天数；保持原扣款日还要周期不变"
   },
   "event": {
     "label": "{region}{price}/{per}",

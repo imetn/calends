@@ -1,15 +1,19 @@
 // 订阅历程的编辑操作：调价、换区/换套餐、断更、续订。全部为纯函数，返回新的订阅对象。
 import {
   addDays,
+  billingPeriod,
   chargesBetween,
   collectionAnchor,
   currentPhase,
   chargeBefore,
   chargeOfService,
   cycleDays,
+  diffDays,
   effectiveStatus,
   isPostpaid,
   isStopped,
+  nextCharge,
+  nthCharge,
   pausedFromOf,
   phaseSubs,
   settleLegacyEarly,
@@ -21,6 +25,7 @@ import {
 import type { Cycle, Payment, Phase, PricePoint, Stop, Subscription, RenewalRules } from './types.ts';
 import { t } from './i18n.ts';
 import { applyFields } from './ledger-edit.ts';
+import { currencyDecimals } from './format.ts';
 
 export interface PlanChange extends RenewalRules {
   price: number;
@@ -149,6 +154,106 @@ export function switchPlan(s: Subscription, at: string, next: PlanChange, keepUn
   endBefore(phases, at, last);
   phases.push({ start: at, ...next });
   return { ...mirror(s, phases), status: 'active', pausedAt: undefined };
+}
+
+/** 升级时旧套餐剩余怎么处理：reset 抵扣剩余、从生效日重新起算周期；keep 保持原扣款日，只补剩余天数的差价 */
+export type UpgradeMode = 'reset' | 'keep';
+
+export interface UpgradeQuote {
+  /** 旧套餐当期实付、本期天数、生效日起没用到的天数 */
+  paid: number;
+  days: number;
+  unusedDays: number;
+  /** 没用到的部分按天折算的钱，reset 时从新套餐首期里扣 */
+  credit: number;
+  /** reset：新套餐首期实付 */
+  reset: number;
+  /** keep：今天补的差价和原来的下次扣款日；换了周期时没有 */
+  keep?: { amount: number; nextCharge: string; anchor: string };
+}
+
+const roundIn = (n: number, ccy: string) => {
+  const f = 10 ** currencyDecimals(ccy);
+  return Math.round(n * f) / f;
+};
+
+/**
+ * 在 at 升级到 next 时旧套餐的抵扣：只算已经发生的切换（at 不晚于今天），新旧都是先付费、同一币种，旧套餐当期付过钱且还有没用完的天数。
+ * 抵扣额 = 当期净付（含当期补差、退款）× 剩余天数 / 本期天数；保持原扣款日时补差 = (新价 − 当期净付) × 剩余天数 / 本期天数，只在周期不变、旧套餐没有续费规则且推得出原扣款日时提供。
+ * 已排定停用、生效日后已有续费、当期本身是一次升级、赠送期并进当期时不提供。
+ */
+export function upgradeQuote(
+  s: Subscription,
+  at: string,
+  next: Pick<PlanChange, 'price' | 'currency' | 'cycle' | 'billing'>,
+  today: string,
+): UpgradeQuote | undefined {
+  if (!validDay(at) || at > today || !(next.price >= 0)) return undefined;
+  const phases = phaseSubs(s);
+  const old = phases[phases.length - 1];
+  // 已有停用（含排定在以后的）走停用与退款，不在这里抵扣
+  if (at <= old.start || (old.end && old.end < at) || old.stop || old.planned) return undefined;
+  if (isPostpaid(old) || old.cycle.unit === 'lifetime' || next.billing === 'postpaid' || next.cycle.unit === 'lifetime') return undefined;
+  if (old.currency !== next.currency) return undefined;
+  // 生效日之后旧套餐已有续费或提前续费（补记过去的切换），剩余价值不止当期，不在这里折算
+  if (old.payments?.some((p) => !p.kind && (p.date >= at || (p.serviceDate ?? '') >= at))) return undefined;
+  const period = billingPeriod(s, addDays(at, -1));
+  // 当期本身就是一次抵扣升级（无缝接在上一段后面，保持了旧扣款日，或首期实付低于全价）：实付不代表整期价值，不再叠加抵扣
+  const seamless = period.from <= old.start && phases.some((p) => p !== old && p.end === addDays(old.start, -1));
+  if (seamless && ((old.billingStart ?? old.start) < old.start || period.paid < old.price)) return undefined;
+  // 赠送期并进当期时按天折算会把赠送天数也算成钱，不在这里折算
+  if (old.bonus && old.bonus.from <= period.paidThrough && old.bonus.until > period.from) return undefined;
+  const unusedDays = Math.min(period.days, Math.max(0, diffDays(at, period.paidThrough) + 1));
+  // 当期实付已含补差；退款是负数不在其中，按日期落在当期的计入：退过一部分钱，能抵的也相应变少
+  const paid = roundIn(
+    period.paid + (old.payments ?? []).filter((p) => p.kind === 'refund' && p.date >= period.from && p.date < at).reduce((n, p) => n + p.amount, 0),
+    next.currency,
+  );
+  if (!(paid > 0) || !unusedDays) return undefined;
+  const ratio = unusedDays / period.days;
+  const credit = roundIn(paid * ratio, next.currency);
+  const quote: UpgradeQuote = { paid, days: period.days, unusedDays, credit, reset: roundIn(Math.max(0, next.price - credit), next.currency) };
+  if (next.cycle.unit !== old.cycle.unit || (next.cycle.every ?? 1) !== (old.cycle.every ?? 1)) return quote;
+  // 旧套餐有提前扣款、偏移等续费规则时新阶段不带，之后的扣款日会漂，不提供保持
+  if ((old.chargeLeadDays ?? 0) > 0 || old.renewalOffsetDays || old.renewalHistory?.length) return quote;
+  const open = { ...old, end: undefined, stop: undefined, status: 'active' as const, pausedAt: undefined };
+  const oldNext = nextCharge(open, at);
+  if (!oldNext) return quote;
+  // 沿用旧套餐的计费锚点（保留月底日号）；扣款日漂移过、原锚点推不出下次扣款日时，改用下次扣款日往前一期。
+  // 用真正切换后的订阅核对：旧套餐的续费规则（提前扣款、偏移）新阶段不带，推不出同一天就不提供
+  const anchor = [old.billingStart ?? old.start, nthCharge(oldNext, old.cycle, -1)].find((a) => a < at && keptNext(s, at, next, a) === oldNext);
+  if (!anchor) return quote;
+  quote.keep = { amount: roundIn(Math.max(0, (next.price - paid) * ratio), next.currency), nextCharge: oldNext, anchor };
+  return quote;
+}
+
+function withAnchor(s: Subscription, anchor: string): Subscription {
+  const last = s.phases!.length - 1;
+  return { ...s, phases: s.phases!.map((p, i) => (i === last ? { ...p, billingStart: anchor } : p)) };
+}
+
+function keptNext(s: Subscription, at: string, next: Pick<PlanChange, 'price' | 'currency' | 'cycle' | 'billing'>, anchor: string) {
+  try {
+    return nextCharge(withAnchor(switchPlan(s, at, next as PlanChange), anchor), at);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * 升级并处理旧套餐剩余：reset 在生效日记一笔首期实付（默认新价减抵扣额），新周期从生效日起算；
+ * keep 新阶段沿用旧的扣款日，生效日记一笔补差（默认按剩余天数折算，为 0 时不记）。amount 可改成实际付的钱
+ */
+export function upgradePlan(s: Subscription, at: string, next: PlanChange, today: string, mode: UpgradeMode, amount?: number): Subscription {
+  if (next.planned) throw new Error(t('core.phase.upgradeUnavailable'));
+  const q = upgradeQuote(s, at, next, today);
+  if (!q || (mode === 'keep' && !q.keep)) throw new Error(t('core.phase.upgradeUnavailable'));
+  const pay = amount ?? (mode === 'keep' ? q.keep!.amount : q.reset);
+  if (!Number.isFinite(pay) || pay < 0) throw new Error(t('core.subError.price'));
+  const out = mode === 'keep' ? withAnchor(switchPlan(s, at, next), q.keep!.anchor) : switchPlan(s, at, next);
+  const last = out.phases!.length - 1;
+  const payment: Payment | undefined = mode === 'reset' ? { date: at, amount: pay } : pay > 0 ? { date: at, amount: pay, kind: 'adjust' } : undefined;
+  return payment ? { ...out, phases: out.phases!.map((p, i) => (i === last ? { ...p, payments: [payment] } : p)) } : out;
 }
 
 /**

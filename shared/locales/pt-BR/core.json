@@ -69,7 +69,8 @@
     "endOnNextStart": "A data de término é o último dia de serviço e não pode ser o início da próxima fase; deixe em branco ou use o dia anterior para continuar",
     "startOrder": "O início deve ficar estritamente entre os inícios das fases vizinhas.",
     "priceDuplicate": "Já existe um preço nesta data",
-    "priceInitial": "O preço inicial não pode ser excluído"
+    "priceInitial": "O preço inicial não pode ser excluído",
+    "upgradeUnavailable": "Esta troca não pode creditar o plano anterior: ela precisa já estar em vigor, usar a mesma moeda e pagamento antecipado, e o plano anterior precisa ter dias não usados. Manter a data de cobrança também exige o mesmo ciclo."
   },
   "event": {
     "label": "{region}{price}/{per}",

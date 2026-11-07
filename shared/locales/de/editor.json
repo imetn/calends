@@ -188,7 +188,13 @@
     "newPrice": "Neuer Preis ({currency})",
     "priceLabel": "Preis",
     "planned": "Noch nicht fix, nur geplant",
-    "plannedHint": "Wird weiterhin in Prognosen berücksichtigt und in den Details als „Geplant“ markiert. Später mit einem Tipp bestätigen oder verwerfen."
+    "plannedHint": "Wird weiterhin in Prognosen berücksichtigt und in den Details als „Geplant“ markiert. Später mit einem Tipp bestätigen oder verwerfen.",
+    "credit": "Ungenutzte {amount} des alten Abos anrechnen",
+    "renewal": "Abrechnungsdatum",
+    "renewalReset": "Ab Wechseldatum neu beginnen",
+    "renewalKeep": "Bisheriges Datum behalten ({date})",
+    "firstPay": "Erste Zahlung ({currency})",
+    "adjustPay": "Anteilige Differenz ({currency})"
   },
   "history": {
     "gapMonths": {

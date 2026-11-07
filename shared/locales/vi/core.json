@@ -64,7 +64,8 @@
     "endOnNextStart": "Ngày kết thúc là ngày dịch vụ cuối cùng, không được trùng ngày bắt đầu của giai đoạn tiếp theo; để trống hoặc chọn ngày trước đó để nối tiếp",
     "startOrder": "Ngày bắt đầu phải nằm giữa ngày bắt đầu của hai giai đoạn liền kề.",
     "priceDuplicate": "Đã có giá vào ngày này",
-    "priceInitial": "Không thể xóa giá ban đầu"
+    "priceInitial": "Không thể xóa giá ban đầu",
+    "upgradeUnavailable": "Lần chuyển này không thể khấu trừ gói cũ: phải đã có hiệu lực, cùng tiền tệ và trả trước, và gói cũ còn ngày chưa dùng. Giữ ngày thanh toán cũng cần cùng chu kỳ."
   },
   "event": {
     "label": "{region}{price}/{per}",

@@ -13,6 +13,8 @@ import {
   resume,
   savePayment,
   switchPlan,
+  upgradePlan,
+  upgradeQuote,
   syncPhase,
   toEditForm,
   stopSubscription,
@@ -399,7 +401,7 @@ export const change_plan: Tool = {
   name: 'change_plan',
   destructive: true,
   description:
-    'Correct an existing phase using action=edit, at=its exact start date, set=only changed fields (camelCase; null clears); preserves unrelated phases and payments. set.start moves the phase start like the web editor: recorded payments, stops and the billing anchor stay, so future charge dates are unchanged (preview next_charges); shift_billing=true moves the anchor too. action=remove deletes that phase and its payments, requires at least two phases; remove and drop accept only the subscription id or exact full name. Preview before rewriting history. Start a new phase of the same subscription: switch plan, region, currency or payment method from a date (action=switch), resubscribe after a gap or provider termination (action=resume, preserves the stopped phase), add missing history BEFORE the subscription’s start (action=earlier: at = when that earlier phase began, e.g. a one-time purchase before it became a subscription; it runs until the current first phase starts, or until earlier_until if there was a gap), or confirm / drop a planned future phase (action=confirm|drop, at = that phase’s start). Set plan.planned=true for an uncertain future switch. For action=switch, keep_previous_until keeps the previous phase running (and billing) in parallel until that date — e.g. a new Turkey account while the prepaid US one runs out; omit it for a seamless switch.',
+    'Correct an existing phase using action=edit, at=its exact start date, set=only changed fields (camelCase; null clears); preserves unrelated phases and payments. set.start moves the phase start like the web editor: recorded payments, stops and the billing anchor stay, so future charge dates are unchanged (preview next_charges); shift_billing=true moves the anchor too. action=remove deletes that phase and its payments, requires at least two phases; remove and drop accept only the subscription id or exact full name. Preview before rewriting history. Start a new phase of the same subscription: switch plan, region, currency or payment method from a date (action=switch), resubscribe after a gap or provider termination (action=resume, preserves the stopped phase), add missing history BEFORE the subscription’s start (action=earlier: at = when that earlier phase began, e.g. a one-time purchase before it became a subscription; it runs until the current first phase starts, or until earlier_until if there was a gap), or confirm / drop a planned future phase (action=confirm|drop, at = that phase’s start). Set plan.planned=true for an uncertain future switch. For action=switch, keep_previous_until keeps the previous phase running (and billing) in parallel until that date — e.g. a new Turkey account while the prepaid US one runs out; omit it for a seamless switch. A seamless switch effective on or before today between prepaid plans in the same currency returns upgrade_quote when the old plan has paid, unused days: credit (paid × unused days / period days), reset_first_payment and keep (prorated adjustment and the unchanged next charge date; null when the cycle changes or the old date cannot be kept). Providers differ, so ask the user which happened instead of guessing: upgrade.renewal=reset credits the unused value against the new plan’s first payment and restarts the cycle on `at`; upgrade.renewal=keep keeps the old billing date and records the prorated difference on `at` as an adjust payment (none when zero). upgrade.amount replaces the computed amount with what was actually paid. Without upgrade the new plan charges its full price from `at`.',
   write: true,
   inputSchema: obj(
     {
@@ -450,6 +452,13 @@ export const change_plan: Tool = {
         description: 'action=switch only: the previous phase keeps running until this date (after `at`), overlapping the new one.',
       },
       earlier_until: { ...DATE, description: 'action=earlier only: the earlier phase ended on this date (a gap before the next one).' },
+      upgrade: obj(
+        {
+          renewal: { type: 'string', enum: ['reset', 'keep'] },
+          amount: { type: 'number', minimum: 0, description: 'What was actually paid on `at`, in the plan currency; defaults to upgrade_quote.' },
+        },
+        ['renewal'],
+      ),
       shift_billing: SHIFT_BILLING,
       dry_run: drySchema,
     },
@@ -460,6 +469,9 @@ export const change_plan: Tool = {
     const act = String(a.action);
     const s = findSub(st, a.subscription, { exact: act === 'remove' || act === 'drop' });
     const at = date(a.at, 'at');
+    const up = a.upgrade as { renewal?: unknown; amount?: unknown } | undefined;
+    if (up && (act !== 'switch' || a.keep_previous_until != null || (up.renewal !== 'reset' && up.renewal !== 'keep')))
+      throw new Error(t('mcp.error.invalidInput', { field: 'upgrade (action=switch without keep_previous_until; renewal reset|keep)' }));
     if (act === 'edit' || act === 'remove') {
       const phases = s.phases?.length ? s.phases : [{ ...s, phases: undefined }];
       const index = phases.findIndex((p) => p.start === at);
@@ -506,14 +518,28 @@ export const change_plan: Tool = {
     if (act === 'earlier')
       return commit(ctx, st, today, prependPlan(s, at, plan, a.earlier_until != null ? date(a.earlier_until, 'earlier_until') : undefined), a.dry_run, [act]);
     const keep = act === 'switch' && a.keep_previous_until != null ? date(a.keep_previous_until, 'keep_previous_until') : undefined;
-    return commit(
-      ctx,
-      st,
-      today,
-      act === 'resume' ? resume(s, at, plan) : switchPlan(s, at, plan, keep),
-      a.dry_run,
-      keep ? [act, 'keep_previous_until'] : [act],
-    );
+    const quote = act === 'switch' && !keep && !plan.planned ? upgradeQuote(s, at, plan, today) : undefined;
+    const after =
+      act === 'resume'
+        ? resume(s, at, plan)
+        : up
+          ? upgradePlan(s, at, plan, today, up.renewal as 'reset' | 'keep', up.amount != null ? num(up.amount, 'upgrade.amount') : undefined)
+          : switchPlan(s, at, plan, keep);
+    return {
+      ...(await commit(ctx, st, today, after, a.dry_run, keep ? [act, 'keep_previous_until'] : up ? [act, 'upgrade'] : [act])),
+      ...(quote
+        ? {
+            upgrade_quote: {
+              paid: quote.paid,
+              period_days: quote.days,
+              unused_days: quote.unusedDays,
+              credit: quote.credit,
+              reset_first_payment: quote.reset,
+              keep: quote.keep ? { adjustment: quote.keep.amount, next_charge: quote.keep.nextCharge } : null,
+            },
+          }
+        : {}),
+    };
   },
 };
 

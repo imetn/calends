@@ -69,7 +69,8 @@
     "endOnNextStart": "La fecha de fin es el último día de servicio y no puede coincidir con el inicio de la siguiente fase; déjala vacía o usa el día anterior para continuar",
     "startOrder": "El inicio debe ser posterior al de la fase anterior y anterior al de la siguiente.",
     "priceDuplicate": "Ya existe un precio en esta fecha",
-    "priceInitial": "No se puede eliminar el precio inicial"
+    "priceInitial": "No se puede eliminar el precio inicial",
+    "upgradeUnavailable": "Este cambio no puede acreditar el plan anterior: debe estar ya en vigor, usar la misma moneda y pago por adelantado, y al plan anterior deben quedarle días sin usar. Mantener la fecha de cobro también requiere el mismo ciclo."
   },
   "event": {
     "label": "{region}{price}/{per}",

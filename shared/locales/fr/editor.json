@@ -188,7 +188,13 @@
     "newPrice": "Nouveau prix ({currency})",
     "priceLabel": "Prix",
     "planned": "Pas définitif, simplement prévu",
-    "plannedHint": "Toujours pris en compte dans les prévisions et marqué « Prévu » dans les détails. Confirmez ou annulez-le plus tard en un geste."
+    "plannedHint": "Toujours pris en compte dans les prévisions et marqué « Prévu » dans les détails. Confirmez ou annulez-le plus tard en un geste.",
+    "credit": "Créditer {amount} non utilisés de l’ancienne formule",
+    "renewal": "Date de prélèvement",
+    "renewalReset": "Repartir de la date du changement",
+    "renewalKeep": "Garder la date actuelle ({date})",
+    "firstPay": "Premier paiement ({currency})",
+    "adjustPay": "Différence au prorata ({currency})"
   },
   "history": {
     "gapMonths": {
