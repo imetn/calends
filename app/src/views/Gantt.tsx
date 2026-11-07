@@ -23,6 +23,7 @@ import {
   GANTT_STEP,
   ganttLabelBounds,
   ganttOpenEnd,
+  ganttPaidUntil,
   ganttTicks,
   ganttWindow,
   isGanttZoom,
@@ -615,6 +616,7 @@ export function Gantt({
                       const renewals = chargesBetween(g.v, g.from, to, today)
                         .filter((c) => c.amount > 0 && c.date > g.from && c.date < to)
                         .map((c) => c.date);
+                      const paidUntil = ganttPaidUntil(g.v, g.from, today);
                       const cycleCuts = new Set(renewals);
                       const cuts = [
                         ...new Set([g.from, ...(g.v.priceHistory ?? []).map((p) => p.from), ...(g.v.intro ? [g.v.intro.until] : []), ...cycleCuts, to]),
@@ -664,7 +666,7 @@ export function Gantt({
                             const intro = g.v.intro && a < g.v.intro.until;
                             const price = priceAt(g.v, a);
                             const last = n === cuts.length - 2;
-                            const pnow = Math.min(pw, Math.max(0, x(today) - pl));
+                            const pnow = paidUntil >= b ? pw : paidUntil <= a ? 0 : Math.min(pw, Math.max(0, x(paidUntil) - pl));
                             // 同价的一串只标一次：标在窗口内第一截放得下的
                             const run = `${price}|${intro ? 1 : 0}`;
                             const seen = visible(pl, pw);

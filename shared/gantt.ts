@@ -8,6 +8,7 @@ import {
   cycleDays,
   diffDays,
   effectiveStatus,
+  isPostpaid,
   isStopped,
   parseDay,
   phaseLanes,
@@ -29,6 +30,19 @@ export function ganttOpenEnd(v: Subscription, today: string): string {
   const from = v.start > today ? v.start : addDays(today, 1);
   const next = chargesBetween(v, from, addDays(from, days * 2 + 31), today).find((c) => !c.kind);
   return next ? chargeServicePeriod(v, next.date).until : addDays(from, days);
+}
+
+/**
+ * 时间线深色画到哪天：今天及以前最后一笔正常扣款所覆盖服务期的终点。后付费的账单结清的是上一期，暂停、停用后不再扣款，
+ * 都按实际覆盖期算；还没开始的阶段整段未付。从未有过正向扣款的免费订阅照旧按今天分界，后付费首期未出账则整段未付。
+ */
+export function ganttPaidUntil(v: Subscription, from: string, today: string): string {
+  if (from > today) return from;
+  const last = chargesBetween(v, from, today, today)
+    .filter((c) => !c.kind && c.amount > 0)
+    .at(-1);
+  if (!last) return isPostpaid(v) && v.price > 0 ? from : today;
+  return chargeServicePeriod(v, last.date, last.serviceDate).until;
 }
 
 /** 名称列以图标为下限、最长名称为上限，至少给轨道留出一半容器。 */

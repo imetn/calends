@@ -6886,7 +6886,7 @@ a.car-toggle {
   text-overflow: ellipsis;
   text-shadow: none;
 }
-/* 整段都在今天之后：底色变浅，文字改用正文色 */
+/* 整段都还没付款：底色变浅，文字改用正文色 */
 .gt-seg.ahead em,
 .gt-seg.planned em {
   color: var(--label);

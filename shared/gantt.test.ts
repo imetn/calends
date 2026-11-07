@@ -715,3 +715,33 @@ test('订阅年表的时间轴至少有一个年份刻度', () => {
     ['2026'],
   );
 });
+
+test('用户反馈回归：时间线按付款着色，当天付过款的首期整期深色', () => {
+  const s: Subscription = {
+    id: 'g',
+    name: 'G',
+    category: '工具',
+    tags: [],
+    price: 200,
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-11-07',
+    status: 'active',
+  };
+  const at = (v: Subscription, today: string, from = v.start) => gantt.ganttPaidUntil(v, from, today);
+  // 今天开始并已扣款：深色画到下次扣款日；期中不变；续费当天已扣：延到再下一次
+  assert.equal(at(s, '2026-11-07'), '2026-12-07');
+  assert.equal(at(s, '2026-11-20'), '2026-12-07');
+  assert.equal(at(s, '2026-12-07'), '2027-01-07');
+  // 还没开始的阶段整段浅色
+  assert.equal(at({ ...s, start: '2026-12-01' }, '2026-11-07'), '2026-12-01');
+  // 审查回归：后付费的账单结清上一期，当期浅色；首期还没出账整段浅色
+  const post: Subscription = { ...s, start: '2026-09-10', billing: 'postpaid' };
+  assert.equal(at(post, '2026-11-07'), '2026-10-10');
+  assert.equal(at({ ...post, start: '2026-11-01' }, '2026-11-07'), '2026-11-01');
+  // 审查回归：暂停后不再扣款，深色停在最后一期付到的地方
+  const paused: Subscription = { ...s, start: '2026-09-10', status: 'paused', pausedAt: '2026-10-20' };
+  assert.equal(at(paused, '2026-11-20'), '2026-11-10');
+  // 审查回归：免费订阅没有付款，照旧按今天分界
+  assert.equal(at({ ...s, price: 0 }, '2026-11-20'), '2026-11-20');
+});
