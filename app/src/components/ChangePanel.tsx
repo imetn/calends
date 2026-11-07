@@ -1,7 +1,7 @@
 import { ConfirmButton } from './ConfirmButton.tsx';
 import { popupOpen, sheetSubmitKey } from '../keyboard.ts';
 import { useId, useState } from 'react';
-import { addDays, addMonths, cycleLabel, nextCharge, phaseSubs } from '../../../shared/billing.ts';
+import { addDays, addMonths, cycleLabel, nextCharge, nthCharge, phaseSubs } from '../../../shared/billing.ts';
 import {
   changePrice,
   editPricePoint,
@@ -18,7 +18,7 @@ import {
   upgradeQuote,
   type UpgradeMode,
 } from '../../../shared/phases.ts';
-import { cnDate, money } from '../../../shared/format.ts';
+import { cnDateAuto, money } from '../../../shared/format.ts';
 import type { AppState, Cycle, Subscription } from '../../../shared/types.ts';
 import { DatePicker } from './DatePicker.tsx';
 import { History } from './History.tsx';
@@ -170,6 +170,9 @@ export function ChangePanel({
       : undefined;
   const useCredit = credit && !!quote;
   const renewalMode: UpgradeMode = renewal === 'keep' && quote?.keep ? 'keep' : 'reset';
+  const renewalLabel = quote
+    ? t('editor.change.renewal', { date: cnDateAuto(renewalMode === 'keep' && quote.keep ? quote.keep.nextCharge : nthCharge(date, planCycle, 1), today) })
+    : '';
   const payKey = [date, price, currency, cycle, billing, renewalMode].join('|');
   const pay = payEdit[payKey] ?? String(quote ? (renewalMode === 'keep' ? quote.keep!.amount : quote.reset) : '');
 
@@ -303,6 +306,7 @@ export function ChangePanel({
           <label>
             {t(mode === 'price' ? 'editor.change.priceDate' : mode === 'switch' ? 'editor.change.switchDate' : 'editor.change.resumeDate')}
             <DatePicker
+              compact
               value={date}
               onChange={(v) => {
                 const d = v ?? today;
@@ -369,29 +373,27 @@ export function ChangePanel({
                     <span>{t('editor.change.credit', { amount: money(quote.credit, currency) })}</span>
                     <Toggle checked={credit} onChange={setCredit} label={t('editor.change.credit', { amount: money(quote.credit, currency) })} />
                   </div>
-                  {credit && (
-                    <div className="change-credit">
-                      {quote.keep && (
-                        <label>
-                          {t('editor.change.renewal')}
-                          <Picker
-                            value={renewalMode}
-                            onChange={setRenewal}
-                            options={[
-                              { value: 'reset', label: t('editor.change.renewalReset') },
-                              { value: 'keep', label: t('editor.change.renewalKeep', { date: cnDate(quote.keep.nextCharge) }) },
-                            ]}
-                            ariaLabel={t('editor.change.renewal')}
-                          />
-                        </label>
-                      )}
-                      <label>
-                        {t(renewalMode === 'keep' ? 'editor.change.adjustPay' : 'editor.change.firstPay', { currency })}
-                        <input inputMode="decimal" value={pay} onChange={(e) => setPayEdit({ ...payEdit, [payKey]: (e.target as HTMLInputElement).value })} />
-                      </label>
-                    </div>
-                  )}
                 </div>
+              )}
+              {useCredit && quote && (
+                <>
+                  <label>
+                    {renewalLabel}
+                    <Picker
+                      value={renewalMode}
+                      onChange={setRenewal}
+                      options={[
+                        { value: 'reset', label: t('editor.change.renewalReset') },
+                        ...(quote.keep ? [{ value: 'keep' as const, label: t('editor.change.renewalKeep') }] : []),
+                      ]}
+                      ariaLabel={renewalLabel}
+                    />
+                  </label>
+                  <label>
+                    {t(renewalMode === 'keep' ? 'editor.change.adjustPay' : 'editor.change.firstPay', { currency })}
+                    <input inputMode="decimal" value={pay} onChange={(e) => setPayEdit({ ...payEdit, [payKey]: (e.target as HTMLInputElement).value })} />
+                  </label>
+                </>
               )}
               {mode === 'switch' && !useCredit && (
                 <div className="change-keep">
@@ -405,7 +407,7 @@ export function ChangePanel({
                   {keep && (
                     <label className="change-keep-date">
                       {t('editor.overlap.keepUntil')}
-                      <DatePicker value={keepUntil} min={addDays(date, 1)} onChange={(v) => v && setKeepUntil(v)} />
+                      <DatePicker compact value={keepUntil} min={addDays(date, 1)} onChange={(v) => v && setKeepUntil(v)} />
                     </label>
                   )}
                 </div>

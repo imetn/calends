@@ -183,11 +183,11 @@
     "planned": "Belum pasti, baru rencana",
     "plannedHint": "Tetap dihitung dalam perkiraan dan ditandai “Rencana” di detail. Nanti cukup satu ketukan untuk mengonfirmasi atau membatalkan.",
     "credit": "Kreditkan sisa {amount} dari paket lama",
-    "renewal": "Tanggal tagihan",
-    "renewalReset": "Mulai ulang dari tanggal peralihan",
-    "renewalKeep": "Pertahankan tanggal sekarang ({date})",
+    "renewal": "Tagihan berikutnya {date}",
+    "renewalReset": "Mulai ulang",
+    "renewalKeep": "Tetap tanggal",
     "firstPay": "Pembayaran pertama ({currency})",
-    "adjustPay": "Selisih prorata ({currency})"
+    "adjustPay": "Selisih ({currency})"
   },
   "history": {
     "gapMonths": {

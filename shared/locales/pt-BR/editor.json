@@ -190,11 +190,11 @@
     "planned": "Ainda não definido, só planejado",
     "plannedHint": "Continua nas previsões e aparece como “Planejada” nos detalhes. Depois, confirme ou cancele com um toque.",
     "credit": "Creditar {amount} não usados do plano anterior",
-    "renewal": "Data de cobrança",
-    "renewalReset": "Recomeçar na data da troca",
-    "renewalKeep": "Manter a data atual ({date})",
+    "renewal": "Próxima cobrança {date}",
+    "renewalReset": "Recomeçar ciclo",
+    "renewalKeep": "Manter data",
     "firstPay": "Primeiro pagamento ({currency})",
-    "adjustPay": "Diferença proporcional ({currency})"
+    "adjustPay": "Diferença ({currency})"
   },
   "history": {
     "gapMonths": {

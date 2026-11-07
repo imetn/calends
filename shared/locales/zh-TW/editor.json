@@ -171,9 +171,9 @@
     "planned": "尚未確定，只是計畫",
     "plannedHint": "照常計入預測，詳情中會標示「計畫」，屆時一鍵確認或取消",
     "credit": "折抵原方案剩餘 {amount}",
-    "renewal": "扣款日",
-    "renewalReset": "從生效日重新起算",
-    "renewalKeep": "保持原扣款日（{date}）",
+    "renewal": "下次扣款 {date}",
+    "renewalReset": "從生效日重算",
+    "renewalKeep": "保持原扣款日",
     "firstPay": "首期實付（{currency}）",
     "adjustPay": "補差額（{currency}）"
   },

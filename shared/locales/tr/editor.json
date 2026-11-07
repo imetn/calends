@@ -190,11 +190,11 @@
     "planned": "Kesin değil, yalnızca planlanan",
     "plannedHint": "Tahminlere yine dahil edilir ve ayrıntılarda “Planlandı” olarak işaretlenir. Daha sonra tek dokunuşla onaylayabilir veya iptal edebilirsiniz.",
     "credit": "Eski planın kullanılmayan {amount} tutarını mahsup et",
-    "renewal": "Ödeme tarihi",
-    "renewalReset": "Geçiş tarihinden yeniden başlat",
-    "renewalKeep": "Mevcut tarihi koru ({date})",
+    "renewal": "Sonraki ödeme {date}",
+    "renewalReset": "Yeniden başlat",
+    "renewalKeep": "Tarihi koru",
     "firstPay": "İlk ödeme ({currency})",
-    "adjustPay": "Kalan günlerin farkı ({currency})"
+    "adjustPay": "Fark ({currency})"
   },
   "history": {
     "gapMonths": {

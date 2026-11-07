@@ -3764,21 +3764,28 @@ button.h-price-row:focus-visible {
   font-size: var(--fs-1);
   color: var(--label-2);
 }
+/* 标签换行时，同一行的控件仍然底边对齐 */
+.change-form > label > :last-child {
+  margin-top: auto;
+}
+/* 与同一网格里的选择器同款：胶囊、浅灰底 */
 .change-form input {
   height: var(--ctl-h-md);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   border: 0;
-  box-shadow: inset 0 0 0 var(--hairline) var(--line);
-  background: var(--card);
-  padding: 0 10px;
+  background: var(--fill-2);
+  padding: 0 11px;
   font-size: var(--fs-2);
   color: var(--label);
   outline: 0;
+  transition: background var(--duration) var(--ease);
+}
+.change-form input:hover {
+  background: var(--fill);
 }
 .change-form input:focus {
-  box-shadow: none;
-  outline: var(--hairline) solid var(--focus-ring);
-  outline-offset: 2px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 var(--hairline) var(--ink);
 }
 
 /* ================================================================
@@ -6631,6 +6638,7 @@ a.car-toggle {
 .change-plan > span {
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 .change-plan small {
   font-size: var(--fs-1);
@@ -6650,8 +6658,6 @@ a.car-toggle {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  font-size: var(--fs-1);
-  color: var(--label-2);
 }
 .change-keep-row > span {
   display: flex;
@@ -6668,17 +6674,6 @@ a.car-toggle {
 }
 .change-keep-date {
   max-width: 240px;
-}
-/* 升级抵扣：扣款日选项带日期，给它宽的一栏放得下全文；窄屏上下排 */
-.change-credit {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 8px;
-}
-@media (max-width: 560px) {
-  .change-credit {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 .list-report {

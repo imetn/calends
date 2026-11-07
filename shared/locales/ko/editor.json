@@ -183,11 +183,11 @@
     "planned": "미확정, 계획만",
     "plannedHint": "예측에는 포함되며 상세 정보에 ‘예정’으로 표시됩니다. 나중에 탭 한 번으로 확정하거나 취소할 수 있습니다.",
     "credit": "이전 요금제 미사용분 {amount} 차감",
-    "renewal": "결제일",
-    "renewalReset": "전환일부터 다시 계산",
-    "renewalKeep": "현재 결제일 유지({date})",
+    "renewal": "다음 결제 {date}",
+    "renewalReset": "다시 계산",
+    "renewalKeep": "결제일 유지",
     "firstPay": "첫 결제 금액({currency})",
-    "adjustPay": "일할 차액({currency})"
+    "adjustPay": "차액({currency})"
   },
   "history": {
     "gapMonths": {
