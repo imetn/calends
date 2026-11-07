@@ -30,7 +30,7 @@ Track what you pay, when it renews, and who owes you. Calends brings subscriptio
 
 - **Flexible billing** — monthly, yearly, custom cycles and lifetime purchases, with trials, intro prices, bonus periods, pauses, postpaid billing, advance charging and cancellation deadlines.
 - **Usage meters** — track per-period usage or cumulative readings in any unit, with shared meters across subscriptions, usage metrics, aligned charts and usage in charge records.
-- **Billing history** — keep price, plan and region changes, gaps and overlapping subscriptions. See total spent, actual monthly cost and every charge.
+- **Billing history** — keep price, plan and region changes, gaps and overlapping subscriptions; upgrades can credit the unused part of the old plan. See total spent, actual monthly cost and every charge.
 - **Transfers and split payments** — count second-hand takeovers and resales in net cost, and split a charge across multiple payment methods.
 - **Multiple currencies** — historical exchange rates for past charges, current rates for forecasts, and your choice of display currency.
 - **Balances and shared plans** — track prepaid credit and gift cards, estimate when balances run out, and manage payments for friends. Shared plans have dated collection rules, member overrides, per-period receipts with skipped-period collection, prepayments and waivers, overdue tracking and exit refunds; the member sheet uses a monthly period grid with receipt details on click, prepayments and waivers, while people have private avatars, custom colors and a separate account for each plan.
