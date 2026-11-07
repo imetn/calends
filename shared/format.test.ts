@@ -193,3 +193,11 @@ test('整千的金额刻度不带多余的 .0', () => {
   assert.equal(moneyTick(999_950_000, 'USD'), '$1B');
   assert.equal(moneyTick(Number.NaN, 'USD'), '—');
 });
+
+test('用户反馈：澳门元 MOP 可选，有符号，汇率同步会保留', async () => {
+  const { CURRENCIES } = await import('./format.ts');
+  const { keepSet } = await import('../worker/fx.ts');
+  assert.ok(CURRENCIES.includes('MOP'));
+  assert.equal(symbol('MOP'), 'MOP$');
+  assert.ok(keepSet({ subscriptions: [], methods: [], settings: DEFAULT_SETTINGS }).has('MOP'));
+});

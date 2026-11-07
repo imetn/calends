@@ -180,6 +180,7 @@ const CCY_REGION: Record<string, string> = {
   PHP: 'PH',
   JPY: 'JP',
   HKD: 'HK',
+  MOP: 'MO',
   TWD: 'TW',
   KRW: 'KR',
   INR: 'IN',

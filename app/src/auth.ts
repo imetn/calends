@@ -50,6 +50,7 @@ export function createAuth(core: {
       US: 'USD',
       GB: 'GBP',
       HK: 'HKD',
+      MO: 'MOP',
       TW: 'TWD',
       JP: 'JPY',
       KR: 'KRW',
