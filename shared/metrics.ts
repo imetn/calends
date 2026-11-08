@@ -26,8 +26,8 @@ import {
   undatedStop,
 } from './billing.ts';
 import { chargeBaseOrNaN, chargeValue, convertOn, toBaseAt, toBaseOrNaN } from './fx.ts';
-import { cnDateAuto, money } from './format.ts';
-import { intlLocale, t } from './i18n.ts';
+import { ccyName, cnDateAuto, money } from './format.ts';
+import { t } from './i18n.ts';
 import type { AppState, PaymentMethod, Subscription } from './types.ts';
 import { transferRows, transferredStop } from './transfers.ts';
 
@@ -636,15 +636,6 @@ function baseName(name: string): string {
     .trim();
 }
 
-/** 货币中文名，取不到时用代码 */
-function ccyLabel(c: string): string {
-  try {
-    return new Intl.DisplayNames([intlLocale()], { type: 'currency' }).of(c) ?? c;
-  } catch {
-    return c;
-  }
-}
-
 export function insights(state: AppState, today: string): Insight[] {
   const out: Insight[] = [];
   const unused = stopLosses(state, today);
@@ -757,7 +748,7 @@ export function insights(state: AppState, today: string): Insight[] {
       id: 'fx',
       tone: 'info',
       title: t('core.insight.fx.title', { pct: Math.round(share * 100) }),
-      body: t('core.insight.fx.body', { ccy: ccyLabel(foreign[0][0]), share: Math.round((foreign[0][1] / total) * 100) }),
+      body: t('core.insight.fx.body', { ccy: ccyName(foreign[0][0]), share: Math.round((foreign[0][1] / total) * 100) }),
     });
   }
 

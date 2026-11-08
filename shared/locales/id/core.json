@@ -1,4 +1,9 @@
 {
+  "currency": {
+    "SLE": "Leone Sierra Leone",
+    "XCG": "Gulden Karibia",
+    "ZWG": "Emas Zimbabwe"
+  },
   "bill": {
     "m1": "Bulanan",
     "m3": "Triwulanan",

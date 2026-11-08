@@ -11,10 +11,6 @@
     "dark": "Dunkel",
     "system": "System"
   },
-  "currency": {
-    "XCG": "Karibischer Gulden",
-    "ZWG": "Zimbabwe Gold"
-  },
   "method": {
     "none": "Nicht festgelegt"
   },

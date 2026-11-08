@@ -11,10 +11,6 @@
     "dark": "Gelap",
     "system": "Sistem"
   },
-  "currency": {
-    "XCG": "Gulden Karibia",
-    "ZWG": "Emas Zimbabwe"
-  },
   "method": {
     "none": "Belum diatur"
   },

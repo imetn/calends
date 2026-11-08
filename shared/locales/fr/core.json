@@ -1,4 +1,9 @@
 {
+  "currency": {
+    "SLE": "leone sierra-léonais",
+    "XCG": "Florin caribéen",
+    "ZWG": "Zimbabwe Gold"
+  },
   "bill": {
     "m1": "Mensuel",
     "m3": "Trimestriel",

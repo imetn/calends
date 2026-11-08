@@ -11,10 +11,6 @@
     "dark": "Dark",
     "system": "System"
   },
-  "currency": {
-    "XCG": "Caribbean guilder",
-    "ZWG": "Zimbabwe Gold"
-  },
   "method": {
     "none": "Not set"
   },
