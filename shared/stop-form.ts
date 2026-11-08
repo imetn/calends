@@ -16,6 +16,8 @@ export interface StopForm {
   reason: string;
   settled: string;
   settledCurrency: string;
+  /** 日期未知时表单里的日期只是占位，用户动过才算数 */
+  dateUnset?: boolean;
 }
 
 /** Existing refunds remain ordinary payment records; the fields edit the latest stop refund. */
@@ -36,6 +38,7 @@ export function stopForm(
     reason: sub.stop?.reason ?? '',
     settled: payment?.settled ? String(-payment.settled.amount) : '',
     settledCurrency: payment?.settled?.currency ?? settlementCurrencyOf(state, cur.currency, payment?.methodId ?? cur.methodId),
+    dateUnset: undatedStop(sub) && !sub.stop ? true : undefined,
   };
 }
 
@@ -50,9 +53,8 @@ export function stopPreview(sub: Subscription, form: StopForm, today: string) {
 }
 
 /** 结算币种只是默认值，随设置变化；没填实退金额时不算改动 */
-const sameStopForm = (a: StopForm, b: StopForm) =>
-  JSON.stringify({ ...a, settledCurrency: a.settled ? a.settledCurrency : '' }) ===
-  JSON.stringify({ ...b, settledCurrency: b.settled ? b.settledCurrency : '' });
+const stopFormKey = (f: StopForm) => JSON.stringify({ ...f, settledCurrency: f.settled ? f.settledCurrency : '', date: f.dateUnset ? '' : f.date });
+const sameStopForm = (a: StopForm, b: StopForm) => stopFormKey(a) === stopFormKey(b);
 
 /** Validate only on the owner's submit. Never persist partial date or amount inputs. */
 export function applyStopForm(sub: Subscription, form: StopForm, today: string): Subscription {
@@ -129,6 +131,7 @@ export function editStop(sub: Subscription, edit: StopEdit, today: string): Subs
     ...form,
     mode: edit.mode,
     date: edit.date ?? form.date,
+    dateUnset: edit.date === undefined ? form.dateUnset : undefined,
     reason: edit.mode !== 'terminate' ? '' : edit.reason === undefined ? form.reason : (edit.reason ?? ''),
   };
   // A kept refund dated on the stop day moves with the stop date; other refund dates stay as recorded.

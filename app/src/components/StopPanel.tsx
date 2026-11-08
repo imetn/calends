@@ -136,7 +136,7 @@ export function StopPanel({ sub, today, onApply }: { sub: Subscription; today: s
 /** Controlled fields: the editor owns this draft and submits it with Done. */
 export function StopFields({ sub, today, value, onChange }: { sub: Subscription; today: string; value: StopForm; onChange: (value: StopForm) => void }) {
   const { mode, date, refund, amount, refundDate, reason, settled, settledCurrency } = value;
-  const up = (patch: Partial<StopForm>) => onChange({ ...value, ...patch });
+  const up = (patch: Partial<StopForm>) => onChange({ ...value, ...patch, dateUnset: 'date' in patch ? undefined : value.dateUnset });
   const { cur, period, summary: preview } = stopPreview(sub, value, today);
   const priorRefunds = cur.stop ? (cur.payments?.filter((p) => p.kind === 'refund' && p.date >= cur.stop!.date).length ?? 0) : 0;
   const terminated = sub.stop?.kind === 'terminate' || sub.status === 'terminated';

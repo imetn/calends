@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { chargesBetween, effectiveStatus, nextCharge } from './billing.ts';
-import { cancelAtEnd, deletePayment, resume, savePayment, statusChangeError, stopSubscription, stopUndated, switchPlan } from './phases.ts';
+import { cancelAtEnd, deletePayment, dropPlan, resume, savePayment, statusChangeError, stopSubscription, stopUndated, switchPlan } from './phases.ts';
 import { applyStopForm, editStop, stopForm } from './stop-form.ts';
 import type { Subscription } from './types.ts';
 
@@ -120,4 +120,76 @@ test('a pause before the start date is rejected; an existing one is left alone',
 
 test('a stop dated today is already ended', () => {
   assert.equal(effectiveStatus(stopSubscription(base(), today, 'cancel', today), today), 'ended');
+});
+
+test('an older phase is materialized with its own status, trial, end and renewal rules', () => {
+  const trial = twoPhases({});
+  Object.assign(trial, { status: 'trial', trialEnd: '2027-01-01' });
+  const old = savePayment(trial, today, { date: '2024-02-15', amount: 9 }, { date: '2024-02-15', index: 0 }).phases![0];
+  assert.equal(old.payments!.length, 29);
+
+  const legacy = json(twoPhases({}));
+  Object.assign(legacy, { expires: '2026-12-05', chargeLeadDays: 0 });
+  const kept = deletePayment(legacy, today, '2024-02-15', 0).phases![0];
+  assert.equal(kept.payments!.at(-1)!.date, '2026-05-15');
+
+  const open = json(twoPhases({}));
+  delete open.phases![0].end;
+  const bounded = savePayment(open, today, { date: '2024-02-15', amount: 9 }, { date: '2024-02-15', index: 0 }).phases![0];
+  assert.equal(bounded.payments!.at(-1)!.date, '2026-05-15');
+});
+
+test('an unknown stop on a later phase does not cut an older phase', () => {
+  const s = stopUndated(twoPhases({}), 'terminate', today);
+  delete s.phases![0].end;
+  const old = savePayment(s, today, { date: '2024-02-15', amount: 9 }, { date: '2024-02-15', index: 0 }).phases![0];
+  assert.equal(old.payments!.at(-1)!.date, '2026-05-15');
+});
+
+test('an undated stop also ends a parallel older phase', () => {
+  const next = stopUndated(switchPlan(base(), '2026-06-01', plan, '2027-03-31'), 'cancel', today);
+  assert.equal(next.phases![0].end, undefined);
+  assert.equal(nextCharge(next, today), undefined);
+});
+
+test('an undated stop clears an end dated today', () => {
+  const s = json(switchPlan(base(), '2026-06-01', plan));
+  s.phases!.at(-1)!.end = today;
+  assert.equal(stopUndated(s, 'cancel', today).phases!.at(-1)!.end, undefined);
+});
+
+test('dropping a phase does not date an unknown stop', () => {
+  const s = stopUndated(json(switchPlan(base(), '2026-06-01', plan)), 'cancel', today);
+  delete s.phases![0].end;
+  assert.equal(dropPlan(s, '2026-06-01').end, undefined);
+});
+
+test('a date the owner really chose is written, even today', () => {
+  const s = stopUndated(base(), 'cancel', today);
+  assert.equal(editStop(s, { mode: 'nonrenew', date: today }, today).end, today);
+  const form = stopForm(s, today);
+  assert.equal(applyStopForm(s, { ...form, date: today, dateUnset: undefined }, today).end, today);
+});
+
+test('a stop form drafted on an earlier day still counts as untouched', () => {
+  const s = stopUndated(base(), 'cancel', today);
+  assert.equal(applyStopForm(s, { ...stopForm(s, '2026-11-07') }, today).end, undefined);
+});
+
+test('an undated termination cannot gain a phase through a full replace', () => {
+  const s = stopUndated(base(), 'terminate', today);
+  const added = {
+    ...s,
+    phases: [
+      { start: s.start, price: 10, currency: 'USD', cycle: month },
+      { start: today, ...plan },
+    ],
+  };
+  assert.ok(statusChangeError(s, added, today));
+});
+
+test('restoring a record with an old pause is not rejected; moving the start past it is', () => {
+  const s = base({ status: 'paused', pausedAt: '2024-02-01' });
+  assert.equal(statusChangeError(undefined, s, today), undefined);
+  assert.ok(statusChangeError(s, { ...s, start: '2024-03-01' }, today));
 });

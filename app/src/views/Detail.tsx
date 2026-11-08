@@ -158,7 +158,10 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
           label={paused ? t('detail.action.resume') : t('detail.action.pause')}
           onClick={() =>
             run(
-              () => saveSub(paused ? { ...sub, status: 'active', pausedAt: undefined } : { ...sub, status: 'paused', pausedAt: today }),
+              () =>
+                saveSub(
+                  paused ? { ...sub, status: 'active', pausedAt: undefined } : { ...sub, status: 'paused', pausedAt: today < sub.start ? sub.start : today },
+                ),
               paused ? t('detail.toast.resumed') : t('detail.toast.paused'),
             )
           }

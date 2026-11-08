@@ -232,7 +232,7 @@ function details(
       sub.trialEnd &&
       sub.trialEnd >= from &&
       sub.trialEnd <= to &&
-      (sub.status !== 'cancelled' || sub.end) &&
+      !undatedStop(sub) &&
       (!sub.end || sub.end >= sub.trialEnd) &&
       (!sub.stop || sub.stop.date >= sub.trialEnd)
     )

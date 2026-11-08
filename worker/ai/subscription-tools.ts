@@ -589,6 +589,9 @@ export const set_status: Tool = {
     const s = findSub(st, a.subscription);
     const act = String(a.action);
     const stopping = act === 'cancel' || act === 'terminate';
+    // 买断没有续费：不存在暂停或到期不续；要记录停用须走带日期的 terminate / 立即 cancel
+    if (s.cycle.unit === 'lifetime' && (act === 'pause' || (stopping && a.at === null) || (act === 'cancel' && a.immediate !== true)))
+      throw new Error(t('mcp.error.lifetimeNoRenewal'));
     // 修改已有停用：与网页停用表单同一套（先重开再停用），省略的字段保留原值
     if (a.edit === true) {
       if (!stopping) throw new Error(t('mcp.error.invalidStop'));
@@ -610,9 +613,6 @@ export const set_status: Tool = {
       const paid = allPayments(s).some((p) => p.date < today);
       if (paid || s.start < today) throw new Error(t('mcp.error.stopDateRequired'));
     }
-    // 买断没有续费：不存在暂停或到期不续；要记录停用须走带日期的 terminate / 立即 cancel
-    if (s.cycle.unit === 'lifetime' && (act === 'pause' || (stopping && a.at === null) || (act === 'cancel' && a.immediate !== true)))
-      throw new Error(t('mcp.error.lifetimeNoRenewal'));
     if (stopping && a.at === null) {
       if (a.refund || a.reason) throw new Error(t('mcp.error.unknownStopDetails'));
       return commit(ctx, st, today, stopUndated(s, act === 'terminate' ? 'terminate' : 'cancel', today), a.dry_run, [act, 'date_unknown']);

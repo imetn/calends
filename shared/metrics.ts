@@ -287,7 +287,7 @@ function coverage(c: Charge): [string, string] {
   }
   const horizon = addDays(c.date, Math.round(cycleDays(s.cycle) * 3) + 31);
   const next = chargesBetween(
-    { ...s, stop: undefined, end: undefined, status: s.status === 'paused' ? 'active' : s.status },
+    { ...s, stop: undefined, end: undefined, status: s.status === 'paused' || s.status === 'terminated' ? 'active' : s.status },
     addDays(c.date, 1),
     horizon,
     '9999-12-31',

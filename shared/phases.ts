@@ -97,6 +97,8 @@ function phaseBase(sub: Subscription): Subscription {
   return {
     ...sub,
     phases: undefined,
+    // 旧版续费规则只属于单段订阅，多段时不能拿来重算某一段
+    expires: sub.phases?.length ? undefined : sub.expires,
     billingStart: undefined,
     chargeLeadDays: undefined,
     cancelLeadDays: undefined,
@@ -306,7 +308,8 @@ export function confirmPlan(s: Subscription, start: string): Subscription {
 export function dropPlan(s: Subscription, start: string): Subscription {
   const phases = phasesOf(s).filter((p) => p.start !== start);
   const last = phases[phases.length - 1];
-  if (!last.end || last.end < start) last.end = addDays(start, -1);
+  // 日期未知的停用不因撤掉一段而得到结束日
+  if (!undatedStop(s) && (!last.end || last.end < start)) last.end = addDays(start, -1);
   if (phases.length === 1) return phaseToTop(s, phases[0]);
   return mirror({ ...s, start: phases[0].start }, phases);
 }
@@ -576,12 +579,13 @@ function phaseIndexAt(phases: Phase[], date: string, sub?: Subscription, phase?:
  * 把推算出来的历史扣款固化成记录：一段一旦有了扣款记录，就完全以记录为准，
  * 所以第一次手动改之前，先把到今天为止推算出的扣款写进去，并记下原本的下次扣款日，未来照旧。
  */
-function materialize(p: Phase, sub: Subscription, today: string, target?: string): Phase {
+function materialize(phases: Phase[], k: number, sub: Subscription, today: string, target?: string): Phase {
+  const p = phases[k];
   if (p.cycle.unit === 'lifetime') return p;
   const recorded = p.payments ?? [];
   // 已有记录且要改的那笔就在记录里：保持原样，不额外改写其他推算
   if (recorded.length && (!target || recorded.some((r) => r.date === target))) return p;
-  const v: Subscription = { ...phaseBase(sub), ...p, end: p.end };
+  const v = phaseView(phases, k, sub);
   const past = chargesBetween(v, p.start, today, today);
   const next = p.stop ? addDays(p.stop.paidThrough, 1) : chargesBetween(v, addDays(today, 1), addDays(today, 800), today).find((c) => !c.kind)?.date;
   // 要改的是记录之后推算出的扣款（如结束日当天的一期）：把推算的过去扣款补成记录，这一行才能修改或删除
@@ -594,6 +598,9 @@ function materialize(p: Phase, sub: Subscription, today: string, target?: string
 /** 这一段的计费视图：没写结束日时到下一段开始前为止 */
 function phaseView(phases: Phase[], k: number, sub: Subscription): Subscription {
   const p = phases[k];
+  // 多段时与读取同一套视图：状态、试用、暂停、结束日都按这一段算
+  const own = phases.length > 1 || sub.phases?.length ? phaseSubs({ ...sub, phases }).find((v) => v.start === p.start) : undefined;
+  if (own) return own;
   return { ...phaseBase(sub), ...p, end: p.end ?? (k + 1 < phases.length ? addDays(phases[k + 1].start, -1) : undefined) };
 }
 
@@ -727,7 +734,7 @@ export function savePayment(s: Subscription, today: string, pay: Payment, old?: 
   let sameDay = false;
   if (old) {
     const oi = phaseIndexAt(phases, old.date, s, phase, true);
-    phases[oi] = materialize(phases[oi], s, today, old.date);
+    phases[oi] = materialize(phases, oi, s, today, old.date);
     originalPhase = oi;
     const list = (phases[oi].payments ?? []).filter((x) => x.date === old.date);
     const target = list[old.index];
@@ -757,7 +764,7 @@ export function savePayment(s: Subscription, today: string, pay: Payment, old?: 
   const fresh = i !== originalPhase;
   const prepare = (k: number) => {
     const bare = !phases[k].payments?.length;
-    const p = materialize(phases[k], s, today);
+    const p = materialize(phases, k, s, today);
     const v = phaseView(phases, k, s);
     return bare && settles(v, pay) ? dropSettledEstimate(p, v, pay, today) : { phase: p };
   };
@@ -801,7 +808,7 @@ export function deletePayment(s: Subscription, today: string, date: string, inde
   const phases = phasesOf(s);
   settleLegacyPhases(phases, s);
   const i = phaseIndexAt(phases, date, s, phase, true);
-  phases[i] = materialize(phases[i], s, today, date);
+  phases[i] = materialize(phases, i, s, today, date);
   const list = (phases[i].payments ?? []).filter((x) => x.date === date);
   const target = list[index];
   if (!target) throw new Error(t('mcp.error.invalidTarget'));
@@ -922,7 +929,14 @@ export function reactivate(s: Subscription): Subscription {
 
 /** API 与 MCP 共用的状态迁移约束；重新订阅必须保留原停用阶段并新增阶段。调用方已先做 subError 整体校验。 */
 export function statusChangeError(previous: Subscription | undefined, next: Subscription, today: string): string | undefined {
-  if (next.status === 'paused' && next.pausedAt && next.pausedAt !== previous?.pausedAt && next.pausedAt < next.start) return t('mcp.error.stopBeforeStart');
+  if (
+    previous &&
+    next.status === 'paused' &&
+    next.pausedAt &&
+    next.pausedAt < next.start &&
+    (next.pausedAt !== previous.pausedAt || next.start !== previous.start)
+  )
+    return t('mcp.error.stopBeforeStart');
   if (previous && !previous.stop && next.stop) {
     // An existing end date can be corrected into an explicit stop by the full editor.
     // Action-based MCP callers still reject ended subscriptions before reaching this validator.
@@ -934,7 +948,9 @@ export function statusChangeError(previous: Subscription | undefined, next: Subs
     if (next.stop.date > period.paidThrough) return t('mcp.error.stopAfterPaidThrough');
   }
   // 日期未知的被停用：改别的字段时仍是同一状态，不算改停用方式
-  if (previous && previous.status === 'terminated' && undatedStop(previous) && next.status === 'terminated' && undatedStop(next)) return undefined;
+  const startsOf = (x: Subscription) => (x.phases ?? []).map((p) => p.start).join();
+  if (previous?.status === 'terminated' && undatedStop(previous) && next.status === 'terminated' && undatedStop(next) && startsOf(previous) === startsOf(next))
+    return undefined;
   if (previous && (previous.stop?.kind === 'terminate' || previous.status === 'terminated') && next.stop?.kind !== 'terminate') {
     const old = phaseSubs(previous).at(-1)!;
     // 撤销误记的停用：整段停用连同结束日一起清掉，不允许改成别的停用方式
@@ -961,10 +977,10 @@ export function stopUndated(s: Subscription, kind: Stop['kind'], today: string):
   if (s.stop || isStopped(effectiveStatus(s, today))) throw new Error(t('mcp.error.subscriptionEnded'));
   // 直接去掉未来阶段，不用 dropPlan：它会给前一段补一个结束日，那就成了编造的停用日期
   const kept = s.phases?.length ? phasesOf(s).filter((p) => p.start <= today) : [];
-  // 最后一段原定的未来结束日也作废，否则仍会显示到期不续并继续预测
-  const lastKept = kept.at(-1);
-  const futureEnd = !!lastKept?.end && lastKept.end > today;
-  if (futureEnd) lastKept!.end = undefined;
+  // 原定今天及以后的结束日也作废（含并行的旧段），否则仍会显示到期不续并继续预测
+  const open = kept.filter((p) => p.end && p.end >= today);
+  const futureEnd = open.length > 0;
+  for (const p of open) p.end = undefined;
   const c = kept.length && (futureEnd || kept.length < s.phases!.length) ? mirror(s, kept) : s;
   return { ...c, status: kind === 'terminate' ? 'terminated' : 'cancelled', pausedAt: undefined, end: undefined, stop: undefined };
 }
