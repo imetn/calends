@@ -1,8 +1,20 @@
 // 订阅生命周期的回归用例：阶段隔离、日期未知的停用、试用到期后的提前续费、暂停日
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chargesBetween, effectiveStatus, nextCharge, pauseDay } from './billing.ts';
-import { cancelAtEnd, deletePayment, dropPlan, reactivate, resume, savePayment, statusChangeError, stopSubscription, stopUndated, switchPlan } from './phases.ts';
+import { addDays, chargesBetween, effectiveStatus, nextCharge, pauseDay } from './billing.ts';
+import {
+  cancelAtEnd,
+  deletePayment,
+  dropPlan,
+  reactivate,
+  removePhase,
+  resume,
+  savePayment,
+  statusChangeError,
+  stopSubscription,
+  stopUndated,
+  switchPlan,
+} from './phases.ts';
 import { applyStopForm, editStop, stopForm } from './stop-form.ts';
 import type { Subscription } from './types.ts';
 
@@ -152,7 +164,10 @@ test('an undated stop keeps a parallel older phase end and its past charges but 
   assert.equal(next.phases![0].end, '2027-03-31');
   assert.equal(nextCharge(next, today), undefined);
   assert.ok(past(next).some((c) => c.date === '2026-10-15'));
-  assert.deepEqual(reactivate(next).phases![0].end, '2027-03-31');
+  const back = reactivate(next);
+  assert.equal(back.phases![0].end, '2027-03-31');
+  assert.equal(back.phases![0].nextDue, undefined);
+  assert.ok(chargesBetween(back, addDays(today, 1), '2027-03-31', today).some((c) => c.date === '2026-11-15'));
 });
 
 test('an untouched form leaves an undated stop as is', () => {
@@ -192,10 +207,24 @@ test('a new subscription cannot be paused before it starts, and the default paus
 });
 
 test('deleting the last charge of a phase without an end does not bring it back', () => {
-  const s = json(switchPlan(base({ payments: [{ date: '2026-04-15', amount: 10 }, { date: '2026-05-15', amount: 10 }] }), '2026-06-01', plan));
+  const s = json(
+    switchPlan(
+      base({
+        payments: [
+          { date: '2026-04-15', amount: 10 },
+          { date: '2026-05-15', amount: 10 },
+        ],
+      }),
+      '2026-06-01',
+      plan,
+    ),
+  );
   delete s.phases![0].end;
   const next = deletePayment(s, today, '2026-05-15', 0, s.phases![0].start);
-  assert.equal(past(next).some((c) => c.date === '2026-05-15'), false);
+  assert.equal(
+    past(next).some((c) => c.date === '2026-05-15'),
+    false,
+  );
   assert.equal(next.phases![0].nextDue, '2026-06-01');
 });
 
@@ -239,4 +268,37 @@ test('restoring a record with an old pause is not rejected; moving the start pas
   const s = base({ status: 'paused', pausedAt: '2024-02-01' });
   assert.equal(statusChangeError(undefined, s, today), undefined);
   assert.ok(statusChangeError(s, { ...s, start: '2024-03-01' }, today));
+});
+
+test('removing the later phase of an undated stop keeps the earlier phase charges', () => {
+  const s = stopUndated(json(switchPlan(base(), '2026-06-01', plan)), 'terminate', today);
+  for (const next of [dropPlan(s, '2026-06-01'), removePhase(s, 1)]) {
+    assert.equal(next.end, undefined);
+    assert.equal(next.status, 'terminated');
+    assert.ok(past(next).some((c) => c.date === '2026-05-15'));
+    assert.equal(nextCharge(next, today), undefined);
+  }
+});
+
+test('an undated termination cannot move a phase into the future, but a single phase can be corrected', () => {
+  const s = stopUndated(json(switchPlan(base(), '2026-06-01', plan)), 'terminate', today);
+  const moved = json(s);
+  moved.phases![1].start = '2027-06-01';
+  assert.ok(statusChangeError(s, moved, today));
+  const one = stopUndated(base(), 'terminate', today);
+  assert.equal(statusChangeError(one, { ...one, phases: [{ start: one.start, price: 12, currency: 'USD', cycle: month }] }, today), undefined);
+});
+
+test('deleting a charge of a running older phase keeps its later forecasts', () => {
+  const s = json(switchPlan(base({ payments: [{ date: '2026-10-15', amount: 10 }], nextDue: '2026-11-15' }), '2026-12-20', { ...plan, planned: true }));
+  delete s.phases![0].end;
+  const next = deletePayment(s, today, '2026-10-15', 0, s.phases![0].start);
+  assert.equal(next.phases![0].nextDue, '2026-11-15');
+});
+
+test('a future planned switch date is not written as the next charge date', () => {
+  const s = json(switchPlan(base({ start: '2026-10-15' }), '2026-11-12', { ...plan, planned: true }));
+  delete s.phases![0].end;
+  const next = savePayment(s, today, { date: '2026-10-15', amount: 9 }, { date: '2026-10-15', index: 0 });
+  assert.notEqual(next.phases![0].nextDue, '2026-11-12');
 });

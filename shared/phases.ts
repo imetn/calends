@@ -304,13 +304,30 @@ export function confirmPlan(s: Subscription, start: string): Subscription {
   );
 }
 
+/** 日期未知的停用撤掉后一段：上一段成为末段，结束日不能变成停用日；清掉前固化它已发生的扣款，否则只剩首笔 */
+function reopenUndatedLast(s: Subscription, last: Phase, removedStart: string): Phase {
+  const all = phasesOf(s);
+  const until = addDays(removedStart, -1);
+  return {
+    ...materialize(
+      all,
+      all.findIndex((p) => p.start === last.start),
+      s,
+      until,
+      until,
+    ),
+    end: undefined,
+  };
+}
+
 /** 不切换了：删掉这个计划阶段，上一阶段就在原定的切换日结束（到期不续）；原本就打算并行跑得更久的，保留它自己的结束日 */
 export function dropPlan(s: Subscription, start: string): Subscription {
   const phases = phasesOf(s).filter((p) => p.start !== start);
   const last = phases[phases.length - 1];
   // 日期未知的停用不因撤掉一段而得到结束日：上一段的切换边界也不能变成停用日
-  if (undatedStop(s)) last.end = undefined;
-  else if (!last.end || last.end < start) last.end = addDays(start, -1);
+  if (undatedStop(s)) {
+    if (last.start < start) phases[phases.length - 1] = reopenUndatedLast(s, last, start);
+  } else if (!last.end || last.end < start) last.end = addDays(start, -1);
   if (phases.length === 1) return phaseToTop(s, phases[0]);
   return mirror({ ...s, start: phases[0].start }, phases);
 }
@@ -543,7 +560,8 @@ export function removePhase(s: Subscription, index: number): Subscription {
   const [removed] = phases.splice(index, 1);
   // 撤回最后一次换区：上一阶段只是因为换区才结束（或换区时选了继续跑到某天）的，恢复为进行中
   const prev = phases[phases.length - 1];
-  if (index === phases.length && !prev.stop && prev.end && prev.end >= addDays(removed.start, -1)) prev.end = undefined;
+  if (index === phases.length && undatedStop(s)) phases[phases.length - 1] = reopenUndatedLast(s, prev, removed.start);
+  else if (index === phases.length && !prev.stop && prev.end && prev.end >= addDays(removed.start, -1)) prev.end = undefined;
   if (phases.length === 1) return phaseToTop(s, phases[0]);
   return mirror({ ...s, start: phases[0].start }, phases);
 }
@@ -593,7 +611,7 @@ function materialize(phases: Phase[], k: number, sub: Subscription, today: strin
   const inferred = past.filter((c) => !c.kind && !recorded.some((r) => r.date === c.date));
   const payments = [...recorded, ...inferred.map((c) => ({ date: c.date, amount: c.amount }))].sort((a, b) => a.date.localeCompare(b.date));
   // 到期前不会再扣（比如并行中快到期的旧段）：下次扣款记到结束日之后，既不多出一笔，删掉最后一笔也不会被重新推算出来
-  return { ...p, payments, nextDue: p.nextDue ?? next ?? (v.end && addDays(v.end, 1)) };
+  return { ...p, payments, nextDue: p.nextDue ?? next ?? (p.end ? addDays(p.end, 1) : v.end && v.end < today ? addDays(v.end, 1) : undefined) };
 }
 
 /** 这一段的计费视图：没写结束日时到下一段开始前为止 */
@@ -816,7 +834,9 @@ export function deletePayment(s: Subscription, today: string, date: string, inde
   const payments = (phases[i].payments ?? []).filter((x) => x !== target);
   // 删掉已结束阶段的最后一笔：这笔本就不该有，下次扣款推到结束日之后，不再被推算回来
   const end = phaseView(phases, i, s).end;
-  const last = end && !payments.some((x) => x.date >= date);
+  const due = phases[i].nextDue;
+  // 旧段还在跑、下次扣款仍在结束日前：删的只是其中一期，后面的预测不动
+  const last = end && (end < today || !due || due > end) && !payments.some((x) => x.date >= date);
   phases[i] = { ...unsettleRenewal({ ...phases[i], payments }, phaseView(phases, i, s), target), ...(last ? { nextDue: addDays(end, 1) } : {}) };
   return fromPhases(s, phases);
 }
@@ -925,12 +945,21 @@ export function reopenStopped(s: Subscription): Subscription {
 
 /** 恢复：清掉停用（含被服务方停用）、暂停与结束日，当作这次停用没发生过。服务真的中断后又重新订阅时用 resume 另起新阶段。 */
 export function reactivate(s: Subscription): Subscription {
-  return reopenStopped(s);
+  const open = reopenStopped(s);
+  if (!undatedStop(s) || !open.phases) return open;
+  // 未知日期停用时为并行旧段停掉的预测（下次扣款推到结束日后），恢复时还原
+  const phases = open.phases.map((p, i, all) => (i < all.length - 1 && p.end && p.nextDue === addDays(p.end, 1) ? { ...p, nextDue: undefined } : p));
+  return { ...open, phases };
 }
 
 /** API 与 MCP 共用的状态迁移约束；重新订阅必须保留原停用阶段并新增阶段。调用方已先做 subError 整体校验。 */
 export function statusChangeError(previous: Subscription | undefined, next: Subscription, today: string): string | undefined {
-  if (next.status === 'paused' && next.pausedAt && next.pausedAt < next.start && (!previous || next.pausedAt !== previous.pausedAt || next.start !== previous.start))
+  if (
+    next.status === 'paused' &&
+    next.pausedAt &&
+    next.pausedAt < next.start &&
+    (!previous || next.pausedAt !== previous.pausedAt || next.start !== previous.start)
+  )
     return t('mcp.error.stopBeforeStart');
   if (previous && !previous.stop && next.stop) {
     // An existing end date can be corrected into an explicit stop by the full editor.
@@ -943,8 +972,17 @@ export function statusChangeError(previous: Subscription | undefined, next: Subs
     if (next.stop.date > period.paidThrough) return t('mcp.error.stopAfterPaidThrough');
   }
   // 日期未知的被停用：改别的字段时仍是同一状态，不算改停用方式
-  const added = (next.phases?.length ?? 0) > (previous?.phases?.length ?? 0);
-  if (previous?.status === 'terminated' && undatedStop(previous) && next.status === 'terminated' && undatedStop(next) && !added) return undefined;
+  const segments = (x?: Subscription) => Math.max(x?.phases?.length ?? 0, 1);
+  // 只放行修正：不能新增阶段，也不能把阶段挪到将来，否则已停用的订阅又开始预测
+  if (
+    previous?.status === 'terminated' &&
+    undatedStop(previous) &&
+    next.status === 'terminated' &&
+    undatedStop(next) &&
+    segments(next) <= segments(previous) &&
+    !next.phases?.some((p) => p.start > today)
+  )
+    return undefined;
   if (previous && (previous.stop?.kind === 'terminate' || previous.status === 'terminated') && next.stop?.kind !== 'terminate') {
     const old = phaseSubs(previous).at(-1)!;
     // 撤销误记的停用：整段停用连同结束日一起清掉，不允许改成别的停用方式
