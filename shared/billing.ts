@@ -293,6 +293,9 @@ function pausedOn(s: Pick<Subscription, 'pauses'>, day: string): boolean {
   return !!s.pauses?.some((p) => p.from <= day && day < p.to);
 }
 
+/** 已停用但日期未知：只有 cancelled / terminated 状态，没有 end 与 stop；之后不再预测，也不把任何一天当停用日 */
+export const undatedStop = (s: Pick<Subscription, 'status' | 'end'>): boolean => (s.status === 'cancelled' || s.status === 'terminated') && !s.end;
+
 /**
  * 把多阶段订阅展开成若干个单阶段的「虚拟订阅」，id 不变；无阶段时返回自身。
  * 阶段缺省在下一阶段开始前一天结束；显式的 end 可以晚于下一阶段的开始日（换区后旧区域预付到期前仍在跑），两段在时间上并行。
@@ -312,7 +315,7 @@ export function phaseSubs(s: Subscription): Subscription[] {
     // 并行中的旧阶段跑过了暂停日：同样在暂停日停下
     const paused = !last && (s.status === 'paused' || !!pausedAt) && !!natural && natural > lastStart && (!pausedAt || natural > pausedAt);
     // 已退订但没写结束日：与最后一段并行的旧阶段也一并视为退订
-    const cancelled = !last && s.status === 'cancelled' && !s.end && !!natural && natural > lastStart;
+    const cancelled = !last && undatedStop(s) && !!natural && natural > lastStart;
     return {
       ...s,
       phases: undefined,
@@ -416,7 +419,7 @@ export function currentPhase(s: Subscription, day: string): Subscription {
 
 /** 订阅在 day 当天是否仍处于计费关系中（不考虑暂停） */
 function isLive(s: Subscription, day: string): boolean {
-  if (s.status === 'cancelled' && !s.end) return false;
+  if (undatedStop(s)) return false;
   if (s.end && s.end < day) return false;
   return true;
 }
@@ -447,7 +450,8 @@ export function effectiveStatus(s: Subscription, today: string): 'upcoming' | 'a
   if (s.stop && s.stop.date <= today) return s.stop.kind === 'terminate' ? 'terminated' : 'ended';
   if (s.status === 'terminated' && !s.stop) return 'terminated';
   if (s.cycle.unit === 'lifetime') return 'lifetime';
-  if (s.status === 'paused') return 'paused';
+  // 暂停日还没到：这之前照常计费，状态也照常
+  if (s.status === 'paused' && (!s.pausedAt || s.pausedAt <= today)) return 'paused';
   if (!isLive(s, today)) return 'ended';
   if (s.status === 'trial' && s.trialEnd && s.trialEnd > today) return 'trial';
   if (s.end) return 'ending';
@@ -602,13 +606,15 @@ export function chargeOfService(s: Subscription, service: string): string {
  * 只影响计算，不改存储；下次保存这一段时才写入记录。付款较早的识别不了，重新保存那一笔即可；确实是额外费用的改记成补差。
  */
 export function settleLegacyEarly(s: Subscription): Subscription {
-  if (!s.nextDue || !s.payments?.length || s.status === 'trial' || s.cycle.unit === 'lifetime' || isPostpaid(s)) return s;
+  if (!s.nextDue || !s.payments?.length || s.cycle.unit === 'lifetime' || isPostpaid(s)) return s;
   const renewals = s.payments.filter((p) => !p.kind).sort((a, b) => a.date.localeCompare(b.date));
   const last = renewals.at(-1);
   const stopped = s.stop?.date ?? pausedFromOf(s);
   if (!last || last.serviceDate || (stopped && last.date >= stopped)) return s;
+  // 存储的 trial 到期后不会自动改写：按试用结束日判断这笔是否已在计费期
+  if (s.status === 'trial' && !(s.trialEnd && last.date >= s.trialEnd)) return s;
   // 没写日期的暂停、退订算不出账期，不动
-  if (!stopped && (s.status === 'paused' || (s.status === 'cancelled' && !s.end))) return s;
+  if (!stopped && (s.status === 'paused' || undatedStop(s))) return s;
   // 按没有停止、暂停和结束日的账期走：停用后已结清的一期也不能再冒出来
   const open: Subscription = { ...s, stop: undefined, end: undefined, pausedAt: undefined, pauses: undefined, status: 'active' };
   const half = cycleDays(s.cycle) / 2;
@@ -669,7 +675,7 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
       if (d > to) continue;
       if (s.stop && serviceDate > s.stop.date) break;
       if (s.end && serviceDate > s.end) break;
-      if (s.status === 'cancelled' && !s.end && serviceDate > original) break;
+      if (undatedStop(s) && serviceDate > original) break;
       if (pausedFrom && serviceDate >= pausedFrom) break;
       if (serviceDate < s.start || d < from || d <= after || (cashAnchor && d < begin)) continue;
       if (s.status === 'trial' && s.trialEnd && serviceDate < s.trialEnd) continue;
@@ -691,7 +697,7 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
     if (s.stop && d > s.stop.date) break;
     // end is inclusive service coverage; no purchase of service starting after it.
     if (s.end && serviceDate > s.end) break;
-    if (s.status === 'cancelled' && !s.end && boundary > original) break;
+    if (undatedStop(s) && boundary > original) break;
     if (serviceDate < s.start || d < s.start || d < from || d <= after || (cashAnchor && d < begin)) continue;
     if (s.status === 'trial' && s.trialEnd && d < s.trialEnd) continue;
     if (pausedFrom && d >= pausedFrom) break;
@@ -1662,7 +1668,7 @@ export function memberDues(s: Subscription, today: string, collectCurrency: stri
   const stop = [
     shareLastDay(s),
     s.status === 'paused' && !s.pausedAt ? addDays(today, -1) : undefined,
-    s.status === 'cancelled' && !s.end ? (lastCharge(s, today) ?? s.start) : undefined,
+    undatedStop(s) ? (lastCharge(s, today) ?? s.start) : undefined,
     today,
   ]
     .filter((d): d is string => !!d)

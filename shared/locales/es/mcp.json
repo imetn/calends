@@ -54,6 +54,7 @@
     "refundExceedsPaid": "Los reembolsos no pueden superar lo pagado en este período.",
     "refundCurrency": "La moneda del reembolso debe ser la de la suscripción. Usa settled para la tarjeta.",
     "subscriptionEnded": "La suscripción ya terminó. Añade una nueva fase para volver a suscribirte.",
+    "lifetimeNoRenewal": "Las compras de por vida no tienen renovación que pausar o cancelar; usa terminate o una cancelación inmediata con fecha",
     "terminatedReactivate": "Una desactivación del proveedor solo se puede deshacer por completo, no cambiar a otro tipo de baja. Usa change_plan (resume / nueva fase) si el servicio se reanudó.",
     "needStop": "La suscripción desactivada requiere información de cese.",
     "invalidPaidThrough": "La fecha pagada debe coincidir con el período de facturación original.",

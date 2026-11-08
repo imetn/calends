@@ -1,5 +1,5 @@
 // Transient stop fields owned by the editor or the standalone stop dialog.
-import { nonrenewalDate, pausedFromOf, stopBillingPeriod, currentPhase, effectiveStatus, stopSummary, subError } from './billing.ts';
+import { nonrenewalDate, pausedFromOf, stopBillingPeriod, currentPhase, effectiveStatus, stopSummary, subError, undatedStop } from './billing.ts';
 import { cancelAtEnd, reopenStopped, statusChangeError, stopSubscription } from './phases.ts';
 import { t } from './i18n.ts';
 import { settlementCurrencyOf } from './fx.ts';
@@ -28,8 +28,8 @@ export function stopForm(
   const paid = nonrenewalDate(cur, today);
   const payment = cur.stop ? cur.payments?.filter((p) => p.kind === 'refund' && p.date >= cur.stop!.date).at(-1) : undefined;
   return {
-    mode: sub.stop?.kind ?? 'nonrenew',
-    date: sub.stop?.date ?? sub.end ?? (sub.status === 'cancelled' ? today : paid),
+    mode: sub.stop?.kind ?? (sub.status === 'terminated' ? 'terminate' : 'nonrenew'),
+    date: sub.stop?.date ?? sub.end ?? (undatedStop(sub) ? today : paid),
     refund: !!payment,
     amount: payment ? String(-payment.amount) : undefined,
     refundDate: payment?.date,
@@ -49,9 +49,15 @@ export function stopPreview(sub: Subscription, form: StopForm, today: string) {
   };
 }
 
+/** 结算币种只是默认值，随设置变化；没填实退金额时不算改动 */
+const sameStopForm = (a: StopForm, b: StopForm) =>
+  JSON.stringify({ ...a, settledCurrency: a.settled ? a.settledCurrency : '' }) ===
+  JSON.stringify({ ...b, settledCurrency: b.settled ? b.settledCurrency : '' });
+
 /** Validate only on the owner's submit. Never persist partial date or amount inputs. */
 export function applyStopForm(sub: Subscription, form: StopForm, today: string): Subscription {
-  if (JSON.stringify(form) === JSON.stringify(stopForm(sub, today)) && (sub.stop || (sub.status === 'cancelled' && sub.end))) return sub;
+  // 表单没动就不写：日期未知的停用尤其不能因为保存别的字段变成今天
+  if (sameStopForm(form, stopForm(sub, today)) && (sub.stop || undatedStop(sub) || (sub.status === 'cancelled' && sub.end))) return sub;
   const terminated = sub.stop?.kind === 'terminate' || sub.status === 'terminated';
   if (terminated && form.mode !== 'terminate') throw new Error(t('mcp.error.terminatedReactivate'));
   let open = sub;

@@ -23,6 +23,7 @@ import {
   type Charge,
   DAYS_PER_MONTH,
   pausedFromOf,
+  undatedStop,
 } from './billing.ts';
 import { chargeBaseOrNaN, chargeValue, convertOn, toBaseAt, toBaseOrNaN } from './fx.ts';
 import { cnDateAuto, money } from './format.ts';
@@ -41,7 +42,7 @@ export function contributionOn(state: AppState, s: Subscription, day: string, fx
   if (s.start > day) return 0;
   if (s.stop && s.stop.date <= day) return 0;
   if (s.end && s.end < day) return 0;
-  if (s.status === 'cancelled' && !s.end) return 0;
+  if (undatedStop(s)) return 0;
   if (s.status === 'paused' && (s.pausedAt ?? day) <= day) return 0;
   if (s.stop?.pausedAt && s.stop.pausedAt <= day) return 0;
   if (s.status === 'trial' && s.trialEnd && s.trialEnd > day) return 0;

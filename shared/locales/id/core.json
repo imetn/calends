@@ -55,6 +55,7 @@
   },
   "phase": {
     "switchTooEarly": "Tanggal berlaku harus setelah fase saat ini dimulai",
+    "resumeNeedsStopDate": "Masukkan tanggal berhenti yang sebenarnya dan simpan sebelum melanjutkan",
     "resumeTooEarly": "Tanggal lanjut tidak boleh sebelum tanggal berakhir terakhir",
     "prependTooLate": "Fase sebelumnya harus dimulai sebelum tanggal mulai langganan",
     "prependUntil": "Fase sebelumnya harus berakhir setelah dimulai dan sebelum tanggal mulai semula",

@@ -60,6 +60,7 @@
   },
   "phase": {
     "switchTooEarly": "La date d’effet doit être postérieure au début de la phase actuelle",
+    "resumeNeedsStopDate": "Saisissez la date d'arrêt réelle et enregistrez avant de reprendre",
     "resumeTooEarly": "La date de reprise ne peut pas précéder la dernière date de fin",
     "prependTooLate": "La phase antérieure doit commencer avant le début de l'abonnement",
     "prependUntil": "La phase antérieure doit se terminer après son début et avant la date de début d'origine",

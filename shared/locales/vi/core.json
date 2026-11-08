@@ -55,6 +55,7 @@
   },
   "phase": {
     "switchTooEarly": "Ngày hiệu lực phải sau ngày bắt đầu giai đoạn hiện tại",
+    "resumeNeedsStopDate": "Nhập ngày dừng thực tế và lưu trước khi tiếp tục",
     "resumeTooEarly": "Ngày tiếp tục không được sớm hơn ngày kết thúc gần nhất",
     "prependTooLate": "Giai đoạn trước phải bắt đầu trước ngày bắt đầu gói",
     "prependUntil": "Giai đoạn trước phải kết thúc sau khi bắt đầu và trước ngày bắt đầu ban đầu",

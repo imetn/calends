@@ -45,6 +45,7 @@
   },
   "phase": {
     "switchTooEarly": "生效日期要晚于当前阶段的开始日期",
+    "resumeNeedsStopDate": "请先填写实际停用日期并保存，再续订",
     "resumeTooEarly": "续订日期不能早于上次结束的日期",
     "prependTooLate": "补的这段要早于订阅的开始日期",
     "prependUntil": "补的这段的结束日期要在它开始之后、原来的开始日期之前",

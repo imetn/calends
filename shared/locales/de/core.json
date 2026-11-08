@@ -60,6 +60,7 @@
   },
   "phase": {
     "switchTooEarly": "Das Gültigkeitsdatum muss nach dem Beginn der aktuellen Phase liegen",
+    "resumeNeedsStopDate": "Gib vor dem Fortsetzen das tatsächliche Stoppdatum ein und speichere es",
     "resumeTooEarly": "Das Fortsetzungsdatum darf nicht vor dem letzten Enddatum liegen",
     "prependTooLate": "Die frühere Phase muss vor dem Abo-Beginn starten",
     "prependUntil": "Die frühere Phase muss nach ihrem Beginn und vor dem ursprünglichen Startdatum enden",

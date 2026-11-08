@@ -55,6 +55,7 @@
   },
   "phase": {
     "switchTooEarly": "적용일은 현재 구간의 시작일 이후여야 합니다",
+    "resumeNeedsStopDate": "재개하기 전에 실제 중지일을 입력하고 저장하세요",
     "resumeTooEarly": "재개일은 마지막 종료일보다 빠를 수 없습니다",
     "prependTooLate": "추가할 기간은 구독 시작일보다 앞서야 합니다",
     "prependUntil": "추가할 기간의 종료일은 시작일 이후, 원래 시작일 이전이어야 합니다",

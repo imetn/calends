@@ -2,7 +2,7 @@ import { amountTotal, chargeTotal, convertedTotal, dueTotal, emptyTotal, scaleTo
 import { contributionTotal, mrrTotal } from './metrics.ts';
 import { memberCashFlows, memberFlowValue } from './carpool.ts';
 import { addDays, addMonths, chargesBetween, collectCurrencyOf, memberDues, myShareFactor, phaseSubs, totals, type Charge, chargeSources } from './billing.ts';
-import { diffDays, effectiveStatus, isStopped, lastCharge, servedTime } from './billing.ts';
+import { diffDays, effectiveStatus, isStopped, lastCharge, servedTime, undatedStop } from './billing.ts';
 import { chargeValue, toBaseOrNaN } from './fx.ts';
 import {
   stopHistory,
@@ -841,8 +841,7 @@ const current = (s: Subscription, day: string) => !['upcoming', 'paused', 'ended
  * 换成有结束日的订阅：暂停到暂停日前一天，退订到最后一次扣款（与成员应收同一约定）。
  */
 function asDated(s: Subscription, today: string): Subscription {
-  const until =
-    s.status === 'paused' ? addDays(s.pausedAt ?? today, -1) : s.status === 'cancelled' && !s.end && !s.stop ? (lastCharge(s, today) ?? s.start) : undefined;
+  const until = s.status === 'paused' ? addDays(s.pausedAt ?? today, -1) : undatedStop(s) && !s.stop ? (lastCharge(s, today) ?? s.start) : undefined;
   if (!until) return s;
   return { ...s, status: 'active', pausedAt: undefined, end: s.end && s.end < until ? s.end : until };
 }

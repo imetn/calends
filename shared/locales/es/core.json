@@ -60,6 +60,7 @@
   },
   "phase": {
     "switchTooEarly": "La fecha de entrada en vigor debe ser posterior al inicio de la fase actual",
+    "resumeNeedsStopDate": "Introduce la fecha real de baja y guarda antes de reanudar",
     "resumeTooEarly": "La fecha de reanudación no puede ser anterior a la última fecha de fin",
     "prependTooLate": "La fase anterior debe empezar antes del inicio de la suscripción",
     "prependUntil": "La fase anterior debe terminar después de empezar y antes de la fecha de inicio original",

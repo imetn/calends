@@ -101,7 +101,8 @@ test('stop fields show the exact stored nonrenewal date, including prepaid futur
   assert.equal(applyStopForm(future, stopForm(future, today), today), future);
   const legacy = { ...sub, status: 'cancelled' as const };
   assert.equal(stopForm(legacy, today).date, today);
-  assert.equal(applyStopForm(legacy, stopForm(legacy, today), today).end, today);
+  // 日期未知：表单没动就不把今天写成停用日
+  assert.equal(applyStopForm(legacy, stopForm(legacy, today), today).end, undefined);
 });
 
 test('editStop keeps omitted stop fields, moves a stop-day refund with the date and never turns termination into cancel', () => {

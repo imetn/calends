@@ -54,6 +54,7 @@
     "refundExceedsPaid": "총 환불액은 이번 기간 실결제액을 초과할 수 없습니다.",
     "refundCurrency": "환불 통화는 구독 통화와 같아야 합니다. 카드 환불에는 settled를 사용하세요.",
     "subscriptionEnded": "이미 종료된 구독입니다. 새 단계로 다시 구독하세요.",
+    "lifetimeNoRenewal": "평생 구매는 갱신이 없어 일시 중지하거나 갱신 해지할 수 없습니다. 날짜를 지정한 강제 중지나 즉시 해지를 사용하세요",
     "terminatedReactivate": "제공업체 중지는 통째로 취소만 할 수 있고 다른 중지 방식으로 바꿀 수 없습니다. 실제로 다시 시작했다면 change_plan의 resume로 새 단계를 추가하세요.",
     "needStop": "사용 중지된 구독에는 중지 정보가 필요합니다.",
     "invalidPaidThrough": "결제된 마지막 날은 원래 청구 기간과 같아야 합니다.",

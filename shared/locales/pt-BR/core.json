@@ -60,6 +60,7 @@
   },
   "phase": {
     "switchTooEarly": "A data de vigência deve ser posterior ao início da fase atual",
+    "resumeNeedsStopDate": "Informe a data real de interrupção e salve antes de retomar",
     "resumeTooEarly": "A data de retomada não pode ser anterior à última data de término",
     "prependTooLate": "A fase anterior deve começar antes do início da assinatura",
     "prependUntil": "A fase anterior deve terminar depois de começar e antes da data de início original",

@@ -54,6 +54,7 @@
     "refundExceedsPaid": "Total refunds cannot exceed the amount paid for this period.",
     "refundCurrency": "Refund currency must match the subscription currency. Use settled for the card refund.",
     "subscriptionEnded": "This subscription has already ended. Resubscribe with a new phase.",
+    "lifetimeNoRenewal": "Lifetime purchases have no renewal to pause or cancel; use terminate or an immediate cancel with a date",
     "terminatedReactivate": "A provider termination can only be undone as a whole, not changed to another stop type. Use change_plan (resume / new phase) when service really restarted.",
     "needStop": "A terminated subscription requires stop information.",
     "invalidPaidThrough": "Paid-through date must match the original billing period.",

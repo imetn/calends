@@ -1,5 +1,6 @@
 // 订阅历程的编辑操作：调价、换区/换套餐、断更、续订。全部为纯函数，返回新的订阅对象。
 import {
+  undatedStop,
   addDays,
   billingPeriod,
   chargesBetween,
@@ -91,6 +92,28 @@ function phaseToTop(s: Subscription, p: Phase): Subscription {
   };
 }
 
+/** 顶层只镜像最后一段：算某一段时，这一段没有的项不能从顶层继承，否则历史会按最后一段的优惠、节奏计算 */
+function phaseBase(sub: Subscription): Subscription {
+  return {
+    ...sub,
+    phases: undefined,
+    billingStart: undefined,
+    chargeLeadDays: undefined,
+    cancelLeadDays: undefined,
+    renewalHistory: undefined,
+    renewalOffsetDays: undefined,
+    stop: undefined,
+    billing: undefined,
+    methodId: undefined,
+    region: undefined,
+    priceHistory: undefined,
+    intro: undefined,
+    bonus: undefined,
+    payments: undefined,
+    nextDue: undefined,
+  };
+}
+
 function phasesOf(s: Subscription): Phase[] {
   return s.phases?.length ? s.phases.map((p) => ({ ...p })).sort((a, b) => a.start.localeCompare(b.start)) : [fromTop(s, s.start)];
 }
@@ -150,7 +173,9 @@ export function switchPlan(s: Subscription, at: string, next: PlanChange, keepUn
   if (at <= last.start) throw new Error(t('core.phase.switchTooEarly'));
   if (keepUntil && keepUntil <= at) throw new Error(t('core.phase.keepTooEarly'));
   if (last.stop && at <= last.stop.date) throw new Error(t('core.phase.resumeTooEarly'));
-  if (!last.stop) last.end = keepUntil ?? addDays(at, -1);
+  if (undatedStop(s)) throw new Error(t('core.phase.resumeNeedsStopDate'));
+  // 已经结束的段保持原结束日，中间的空档就是断更期
+  if (!last.stop && !(last.end && last.end < at)) last.end = keepUntil ?? addDays(at, -1);
   endBefore(phases, at, last);
   phases.push({ start: at, ...next });
   return { ...mirror(s, phases), status: 'active', pausedAt: undefined };
@@ -290,6 +315,7 @@ export function dropPlan(s: Subscription, start: string): Subscription {
 export function resume(s: Subscription, at: string, next: PlanChange): Subscription {
   const phases = phasesOf(s);
   const last = phases[phases.length - 1];
+  if (undatedStop(s)) throw new Error(t('core.phase.resumeNeedsStopDate'));
   if (!last.end) last.end = addDays(s.pausedAt && s.pausedAt < at ? s.pausedAt : at, -1);
   if (at <= last.end) throw new Error(t('core.phase.resumeTooEarly'));
   phases.push({ start: at, ...next });
@@ -555,7 +581,7 @@ function materialize(p: Phase, sub: Subscription, today: string, target?: string
   const recorded = p.payments ?? [];
   // 已有记录且要改的那笔就在记录里：保持原样，不额外改写其他推算
   if (recorded.length && (!target || recorded.some((r) => r.date === target))) return p;
-  const v: Subscription = { ...sub, phases: undefined, ...p, end: p.end };
+  const v: Subscription = { ...phaseBase(sub), ...p, end: p.end };
   const past = chargesBetween(v, p.start, today, today);
   const next = p.stop ? addDays(p.stop.paidThrough, 1) : chargesBetween(v, addDays(today, 1), addDays(today, 800), today).find((c) => !c.kind)?.date;
   // 要改的是记录之后推算出的扣款（如结束日当天的一期）：把推算的过去扣款补成记录，这一行才能修改或删除
@@ -568,12 +594,15 @@ function materialize(p: Phase, sub: Subscription, today: string, target?: string
 /** 这一段的计费视图：没写结束日时到下一段开始前为止 */
 function phaseView(phases: Phase[], k: number, sub: Subscription): Subscription {
   const p = phases[k];
-  return { ...sub, phases: undefined, ...p, end: p.end ?? (k + 1 < phases.length ? addDays(phases[k + 1].start, -1) : undefined) };
+  return { ...phaseBase(sub), ...p, end: p.end ?? (k + 1 < phases.length ? addDays(phases[k + 1].start, -1) : undefined) };
 }
+
+/** 存储的 trial 到期后不会自动改写：这笔付款已在试用结束之后，就是正常计费 */
+const isPastTrial = (v: Subscription, pay: Payment) => v.status === 'trial' && !!v.trialEnd && pay.date >= v.trialEnd;
 
 /** 只有计费中的预付订阅才有「提前结清」；试用、暂停、停止、后付费、买断不动 */
 function settles(v: Subscription, pay: Payment): boolean {
-  return !pay.kind && v.cycle.unit !== 'lifetime' && !isPostpaid(v) && !v.stop && !v.pausedAt && v.status === 'active';
+  return !pay.kind && v.cycle.unit !== 'lifetime' && !isPostpaid(v) && !v.stop && !v.pausedAt && (v.status === 'active' || isPastTrial(v, pay));
 }
 
 const renewalsOf = (p: Phase) => (p.payments ?? []).filter((x) => !x.kind);
@@ -893,6 +922,7 @@ export function reactivate(s: Subscription): Subscription {
 
 /** API 与 MCP 共用的状态迁移约束；重新订阅必须保留原停用阶段并新增阶段。调用方已先做 subError 整体校验。 */
 export function statusChangeError(previous: Subscription | undefined, next: Subscription, today: string): string | undefined {
+  if (next.status === 'paused' && next.pausedAt && next.pausedAt !== previous?.pausedAt && next.pausedAt < next.start) return t('mcp.error.stopBeforeStart');
   if (previous && !previous.stop && next.stop) {
     // An existing end date can be corrected into an explicit stop by the full editor.
     // Action-based MCP callers still reject ended subscriptions before reaching this validator.
@@ -903,6 +933,8 @@ export function statusChangeError(previous: Subscription | undefined, next: Subs
     const period = stopBillingPeriod(currentPhase(previous, next.stop.date), next.stop.date, today);
     if (next.stop.date > period.paidThrough) return t('mcp.error.stopAfterPaidThrough');
   }
+  // 日期未知的被停用：改别的字段时仍是同一状态，不算改停用方式
+  if (previous && previous.status === 'terminated' && undatedStop(previous) && next.status === 'terminated' && undatedStop(next)) return undefined;
   if (previous && (previous.stop?.kind === 'terminate' || previous.status === 'terminated') && next.stop?.kind !== 'terminate') {
     const old = phaseSubs(previous).at(-1)!;
     // 撤销误记的停用：整段停用连同结束日一起清掉，不允许改成别的停用方式
@@ -929,7 +961,11 @@ export function stopUndated(s: Subscription, kind: Stop['kind'], today: string):
   if (s.stop || isStopped(effectiveStatus(s, today))) throw new Error(t('mcp.error.subscriptionEnded'));
   // 直接去掉未来阶段，不用 dropPlan：它会给前一段补一个结束日，那就成了编造的停用日期
   const kept = s.phases?.length ? phasesOf(s).filter((p) => p.start <= today) : [];
-  const c = kept.length && kept.length < s.phases!.length ? mirror(s, kept) : s;
+  // 最后一段原定的未来结束日也作废，否则仍会显示到期不续并继续预测
+  const lastKept = kept.at(-1);
+  const futureEnd = !!lastKept?.end && lastKept.end > today;
+  if (futureEnd) lastKept!.end = undefined;
+  const c = kept.length && (futureEnd || kept.length < s.phases!.length) ? mirror(s, kept) : s;
   return { ...c, status: kind === 'terminate' ? 'terminated' : 'cancelled', pausedAt: undefined, end: undefined, stop: undefined };
 }
 

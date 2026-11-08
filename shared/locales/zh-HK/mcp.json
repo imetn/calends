@@ -54,6 +54,7 @@
     "refundExceedsPaid": "退款總額不能超過本期實付。",
     "refundCurrency": "退款貨幣必須與訂閱貨幣一致，卡上實退請使用 settled。",
     "subscriptionEnded": "訂閱已結束，請透過新階段重新訂閱。",
+    "lifetimeNoRenewal": "買斷沒有續費，不能暫停或到期不續；請用帶日期的被停用或立即取消",
     "terminatedReactivate": "被服務方停用只能整體撤銷，不能改成其他停用方式；確實重新開通的，請透過 change_plan（resume / 新階段）續訂。",
     "needStop": "已停用訂閱必須填寫停止資料。",
     "invalidPaidThrough": "本期已付至日期必須與原計費週期一致。",

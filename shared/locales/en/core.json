@@ -60,6 +60,7 @@
   },
   "phase": {
     "switchTooEarly": "The effective date must be after the current phase starts",
+    "resumeNeedsStopDate": "Enter the actual stop date and save before resuming",
     "resumeTooEarly": "The resume date can't be earlier than the last end date",
     "prependTooLate": "The earlier phase must start before the subscription's start date",
     "prependUntil": "The earlier phase must end after it starts and before the original start date",

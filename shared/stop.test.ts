@@ -489,6 +489,21 @@ test('MCP 缺少汇率时返回 null 与 incomplete 标记，原币损失仍可�
   }
 });
 
+test('MCP 买断不能暂停或到期不续，带日期的立即停用照常', async () => {
+  const f = fixture(base({ start: addDays(todayIn('UTC'), -14), cycle: { unit: 'lifetime', every: 1 } }));
+  const at = addDays(todayIn('UTC'), -1);
+  try {
+    await assert.rejects(f.run('set_status', { action: 'pause' }));
+    await assert.rejects(f.run('set_status', { action: 'cancel', at }));
+    await assert.rejects(f.run('set_status', { action: 'terminate', at: null }));
+    assert.equal(f.saved().status, 'active');
+    await f.run('set_status', { action: 'cancel', immediate: true, at });
+    assert.equal(f.saved().stop?.date, at);
+  } finally {
+    f.db.close();
+  }
+});
+
 test('MCP pause / reactivate / 默认到期不续，不生成 stop', async () => {
   const f = fixture();
   try {

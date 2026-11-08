@@ -60,6 +60,7 @@
   },
   "phase": {
     "switchTooEarly": "Geçerlilik tarihi mevcut dönemin başlangıcından sonra olmalı",
+    "resumeNeedsStopDate": "Devam etmeden önce gerçek durdurma tarihini girip kaydedin",
     "resumeTooEarly": "Devam tarihi son bitiş tarihinden önce olamaz",
     "prependTooLate": "Önceki dönem, aboneliğin başlangıcından önce başlamalı",
     "prependUntil": "Önceki dönem başladıktan sonra ve ilk başlangıç tarihinden önce bitmeli",

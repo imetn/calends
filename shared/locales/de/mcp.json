@@ -54,6 +54,7 @@
     "refundExceedsPaid": "Erstattungen dürfen die Zahlung für diesen Zeitraum nicht überschreiten.",
     "refundCurrency": "Die Erstattungswährung muss der Abowährung entsprechen. Für die Karte settled verwenden.",
     "subscriptionEnded": "Dieses Abo ist bereits beendet. Bitte eine neue Phase anlegen.",
+    "lifetimeNoRenewal": "Einmalkäufe haben keine Verlängerung zum Pausieren oder Kündigen; nutze terminate oder eine sofortige Kündigung mit Datum",
     "terminatedReactivate": "Eine Sperre durch den Anbieter kann nur vollständig rückgängig gemacht, nicht in eine andere Beendigungsart geändert werden. Bei echtem Neustart change_plan (resume / neue Phase) verwenden.",
     "needStop": "Ein gesperrtes Abo benötigt Angaben zur Beendigung.",
     "invalidPaidThrough": "Das Bezahlt-bis-Datum muss dem ursprünglichen Abrechnungszeitraum entsprechen.",

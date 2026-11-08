@@ -54,6 +54,7 @@
     "refundExceedsPaid": "Total pengembalian tidak boleh melebihi pembayaran periode ini.",
     "refundCurrency": "Mata uang pengembalian harus sama dengan langganan. Gunakan settled untuk kartu.",
     "subscriptionEnded": "Langganan sudah berakhir. Berlangganan lagi dengan fase baru.",
+    "lifetimeNoRenewal": "Pembelian seumur hidup tidak punya perpanjangan untuk dijeda atau dibatalkan; gunakan terminate atau pembatalan langsung dengan tanggal",
     "terminatedReactivate": "Penonaktifan oleh penyedia hanya dapat dibatalkan seluruhnya, tidak diubah ke jenis penghentian lain. Gunakan change_plan (resume / fase baru) jika layanan benar-benar dimulai lagi.",
     "needStop": "Langganan nonaktif memerlukan informasi penghentian.",
     "invalidPaidThrough": "Tanggal dibayar harus sesuai periode tagihan awal.",

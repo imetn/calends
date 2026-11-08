@@ -55,6 +55,7 @@
   },
   "phase": {
     "switchTooEarly": "適用日は現在の期間の開始日より後にしてください",
+    "resumeNeedsStopDate": "再開する前に実際の停止日を入力して保存してください",
     "resumeTooEarly": "再開日は前回の終了日より前にできません",
     "prependTooLate": "追加する期間は購読の開始日より前にしてください",
     "prependUntil": "追加する期間の終了日は、その開始日より後、元の開始日より前にしてください",
