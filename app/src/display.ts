@@ -1,26 +1,6 @@
 import { base } from './base.ts';
 // 金额显示偏好：列表里显示原币，还是折算成本位币。只存在本机，侧边栏与列表共用
-import { intlLocale, t } from '../../shared/i18n.ts';
 import { usePref, writePref } from './prefs.ts';
-
-/** 按当前语言缓存一份货币名称表 */
-let namesLoc = '';
-let namesObj: Intl.DisplayNames | undefined;
-function names(): Intl.DisplayNames | undefined {
-  const loc = intlLocale();
-  if (loc !== namesLoc) {
-    namesLoc = loc;
-    try {
-      namesObj = new Intl.DisplayNames([loc], { type: 'currency' });
-    } catch {
-      namesObj = undefined;
-    }
-  }
-  return namesObj;
-}
-
-/** 浏览器名称表里还没有的新货币 */
-const NAME_FIX = new Set(['XCG', 'ZWG']);
 
 /**
  * 不放进货币列表的代码：特别提款权、智利记账单位这类不是真正流通的货币；离岸人民币与人民币重复；
@@ -29,15 +9,7 @@ const NAME_FIX = new Set(['XCG', 'ZWG']);
  */
 export const HIDDEN_CCY = new Set(['XDR', 'CLF', 'CNH', 'JEP', 'IMP', 'GGP', 'FOK', 'KID', 'TVD', 'HRK', 'SLL', 'ZWL']);
 
-/** 货币名称：用浏览器自带的名称表（按当前语言），汇率接口里的每种货币都有 */
-export function ccyName(code: string): string {
-  if (NAME_FIX.has(code)) return t(`ui.currency.${code}`);
-  try {
-    return names()?.of(code) ?? code;
-  } catch {
-    return code;
-  }
-}
+export { ccyName } from '../../shared/format.ts';
 
 export function setOrig(orig: boolean) {
   writePref('list-ccy', orig ? 'orig' : 'base');

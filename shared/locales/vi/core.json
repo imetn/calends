@@ -1,4 +1,9 @@
 {
+  "currency": {
+    "SLE": "Leone Sierra Leone",
+    "XCG": "Guilder Caribe",
+    "ZWG": "Vàng Zimbabwe"
+  },
   "bill": {
     "m1": "Hằng tháng",
     "m3": "Hằng quý",

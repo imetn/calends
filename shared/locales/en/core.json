@@ -1,4 +1,9 @@
 {
+  "currency": {
+    "SLE": "Sierra Leonean Leone",
+    "XCG": "Caribbean guilder",
+    "ZWG": "Zimbabwe Gold"
+  },
   "bill": {
     "m1": "Monthly",
     "m3": "Quarterly",

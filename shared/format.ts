@@ -3,6 +3,35 @@ import { LIFETIME_BILL_MONTHS } from './types.ts';
 import { intlLocale, t } from './i18n.ts';
 import { dateFormat, numberFormat, relativeFormat } from './intl.ts';
 
+/** 按当前语言缓存一份货币名称表 */
+let namesLoc = '';
+let namesObj: Intl.DisplayNames | undefined;
+function names(): Intl.DisplayNames | undefined {
+  const loc = intlLocale();
+  if (loc !== namesLoc) {
+    namesLoc = loc;
+    try {
+      namesObj = new Intl.DisplayNames([loc], { type: 'currency' });
+    } catch {
+      namesObj = undefined;
+    }
+  }
+  return namesObj;
+}
+
+/** Chrome 精简版 ICU 里没有的新货币，名称放进 core 文案，Worker 也能取到 */
+const NAME_FIX = new Set(['SLE', 'XCG', 'ZWG']);
+
+/** 货币名称（按当前语言），取不到时用代码 */
+export function ccyName(code: string): string {
+  if (NAME_FIX.has(code)) return t(`core.currency.${code}`);
+  try {
+    return names()?.of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
 const SYMBOL: Record<string, string> = {
   CNY: '¥',
   USD: '$',

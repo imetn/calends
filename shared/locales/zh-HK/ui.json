@@ -11,10 +11,6 @@
     "dark": "深色",
     "system": "跟隨系統"
   },
-  "currency": {
-    "XCG": "加勒比盾",
-    "ZWG": "辛巴威金元"
-  },
   "method": {
     "none": "未指定"
   },

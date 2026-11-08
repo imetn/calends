@@ -1,4 +1,9 @@
 {
+  "currency": {
+    "SLE": "Sierra Leone leonesi",
+    "XCG": "Karayip guldeni",
+    "ZWG": "Zimbabve altını"
+  },
   "bill": {
     "m1": "Aylık",
     "m3": "Üç aylık",

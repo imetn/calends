@@ -11,10 +11,6 @@
     "dark": "Escuro",
     "system": "Sistema"
   },
-  "currency": {
-    "XCG": "Florim do Caribe",
-    "ZWG": "Ouro do Zimbábue"
-  },
   "method": {
     "none": "Não definido"
   },

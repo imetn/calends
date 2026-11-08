@@ -11,10 +11,6 @@
     "dark": "Sombre",
     "system": "Système"
   },
-  "currency": {
-    "XCG": "Florin caribéen",
-    "ZWG": "Zimbabwe Gold"
-  },
   "method": {
     "none": "Non défini"
   },

@@ -11,10 +11,6 @@
     "dark": "Oscuro",
     "system": "Sistema"
   },
-  "currency": {
-    "XCG": "Florín caribeño",
-    "ZWG": "Oro de Zimbabue"
-  },
   "method": {
     "none": "Sin definir"
   },

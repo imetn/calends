@@ -201,3 +201,22 @@ test('用户反馈：澳门元 MOP 可选，有符号，汇率同步会保留', 
   assert.equal(symbol('MOP'), 'MOP$');
   assert.ok(keepSet({ subscriptions: [], methods: [], settings: DEFAULT_SETTINGS }).has('MOP'));
 });
+
+test('Chrome 缺名称的新货币在每种语言都有名称，文案放在 Worker 也加载的命名空间', async () => {
+  const { readdirSync, readFileSync } = await import('node:fs');
+  const { ccyName } = await import('./format.ts');
+  const { flatten } = await import('./i18n.ts');
+  const root = new URL('./locales/', import.meta.url);
+  const locales = readdirSync(root, { withFileTypes: true }).filter((e) => e.isDirectory());
+  assert.equal(locales.length, 14);
+  assert.match(readFileSync(new URL('../scripts/i18n.mjs', import.meta.url), 'utf8'), /SERVER_NS = \[[^\]]*'core'/);
+  for (const { name } of locales) {
+    const core = JSON.parse(readFileSync(new URL(`${name}/core.json`, root), 'utf8'));
+    for (const code of ['SLE', 'XCG', 'ZWG']) assert.ok(core.currency?.[code] && core.currency[code] !== code, `${name} ${code}`);
+    if (name !== 'zh-TW') continue;
+    const messages = {};
+    flatten('core', core, messages);
+    setLocale('zh-TW', [messages]);
+    assert.equal(ccyName('SLE'), '獅子山利昂');
+  }
+});

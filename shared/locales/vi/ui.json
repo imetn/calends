@@ -11,10 +11,6 @@
     "dark": "Tối",
     "system": "Hệ thống"
   },
-  "currency": {
-    "XCG": "Guilder Caribe",
-    "ZWG": "Vàng Zimbabwe"
-  },
   "method": {
     "none": "Chưa đặt"
   },

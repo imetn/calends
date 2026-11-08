@@ -11,10 +11,6 @@
     "dark": "Koyu",
     "system": "Sistem"
   },
-  "currency": {
-    "XCG": "Karayip guldeni",
-    "ZWG": "Zimbabve altını"
-  },
   "method": {
     "none": "Belirtilmedi"
   },
