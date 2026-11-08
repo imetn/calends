@@ -37,7 +37,10 @@
     "sub": "{date}까지 {left}만 남아 {sub}({amount})에 부족합니다",
     "subSince": "{asOf}에 {calibrated}(으)로 설정, 이후 {spent} 결제됨. {date}까지 {left}만 남아 {sub}({amount})에 부족합니다",
     "subOver": "잔액이 이미 {left}(으)로 {date}의 {sub}({amount})에 부족합니다",
-    "headline": "{name} 잔액 부족"
+    "subForfeit": "{expires}에 {forfeit} 소멸, {date}에는 {left}만 남아 {sub}({amount})에 부족합니다",
+    "headline": "{name} 잔액 부족",
+    "expiring": "{date} 만료, 약 {amount} 소멸 예정",
+    "expiringHeadline": "{name} 잔액 만료 예정"
   },
   "section": {
     "renew": "예정된 결제",

@@ -36,6 +36,7 @@
     "goTopup": "去儲值",
     "site": "官網",
     "projection": "扣款推算",
+    "forfeit": "到期作廢",
     "linked": "關聯訂閱\n{count}",
     "none": "暫無",
     "notes": "備註"
@@ -97,7 +98,9 @@
     "balance": "目前餘額",
     "optional": "選填",
     "asOf": "校正日",
+    "expires": "餘額到期",
     "spentSince": "校準之後已扣 {spent}，現在約 {current}。",
+    "spentForfeit": "校準之後已扣 {spent}，{date} 到期作廢 {forfeit}，現在約 {current}。",
     "nextCharge": "{date} 的 {name}（{amount}）還會從這個餘額扣，扣完剩 {after}；已經扣了的話，請先記帳。",
     "todayIncluded": "今天的 {name}（{amount}）算已包含在這個餘額裡；還沒扣的話，明天再校準。",
     "lowAlert": "不足提醒",

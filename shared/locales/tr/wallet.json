@@ -36,6 +36,7 @@
     "goTopup": "Bakiye yükle",
     "site": "Web sitesi",
     "projection": "Yaklaşan ödemeler",
+    "forfeit": "Süre sonunda yanar",
     "linked": "Bağlı abonelikler\n{count}",
     "none": "Yok",
     "notes": "Notlar"
@@ -97,7 +98,9 @@
     "balance": "Güncel bakiye",
     "optional": "İsteğe bağlı",
     "asOf": "Tarih itibarıyla",
+    "expires": "Bakiye son kullanma",
     "spentSince": "Bakiye ayarlandıktan sonra {spent} çekildi, şu an yaklaşık {current}.",
+    "spentForfeit": "Bakiye ayarlandıktan sonra {spent} çekildi, {date} tarihinde {forfeit} yandı, şu an yaklaşık {current}.",
     "nextCharge": "{date} tarihli {name} ({amount}) da bu bakiyeden çekilecek, geriye {after} kalacak. Zaten çekildiyse önce kaydedin.",
     "todayIncluded": "Bugünkü {name} ({amount}) bu bakiyeye dahil sayılır. Henüz çekilmediyse yarın güncelleyin.",
     "lowAlert": "Düşük bakiye uyarısı",

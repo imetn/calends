@@ -39,7 +39,10 @@
     "sub": "Solo quedarán {left} para {date}, no alcanza para {sub} ({amount})",
     "subSince": "Fijado en {calibrated} el {asOf}, {spent} cobrados desde entonces. Solo quedarán {left} para {date}, no alcanza para {sub} ({amount})",
     "subOver": "El saldo ya está en {left}, no alcanza para {sub} ({amount}) el {date}",
-    "headline": "Saldo bajo en {name}"
+    "subForfeit": "{forfeit} vencidos el {expires}; solo quedarán {left} el {date}, no alcanza para {sub} ({amount})",
+    "headline": "Saldo bajo en {name}",
+    "expiring": "Vence el {date}; se perderán unos {amount}",
+    "expiringHeadline": "El saldo de {name} vence pronto"
   },
   "section": {
     "renew": "Próximos cobros",

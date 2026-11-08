@@ -39,7 +39,10 @@
     "sub": "Bis {date} bleiben nur {left}, zu wenig für {sub} ({amount})",
     "subSince": "Am {asOf} auf {calibrated} gesetzt, seitdem {spent} abgebucht. Bis {date} bleiben nur {left}, zu wenig für {sub} ({amount})",
     "subOver": "Guthaben liegt bereits bei {left}, zu wenig für {sub} ({amount}) am {date}",
-    "headline": "Guthaben von {name} wird knapp"
+    "subForfeit": "{forfeit} am {expires} verfallen; am {date} nur noch {left}, reicht nicht für {sub} ({amount})",
+    "headline": "Guthaben von {name} wird knapp",
+    "expiring": "Verfällt am {date}; etwa {amount} gehen verloren",
+    "expiringHeadline": "Guthaben von {name} verfällt bald"
   },
   "section": {
     "renew": "Anstehende Abbuchungen",

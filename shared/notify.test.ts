@@ -308,3 +308,47 @@ test('合租提醒与首期应收一致，免费首期跳至统一收款日', ()
   assert.ok(JSON.stringify(buildDaily(st, '2027-01-14')).includes('Test JJ'));
   assert.ok(!JSON.stringify(buildDaily(st, '2027-01-20') ?? null).includes('Test JJ'));
 });
+
+test('余额到期作废：提前天数当天提醒，写明到期日与作废金额', () => {
+  const st = state();
+  st.methods = [{ id: 'sim', name: 'Fictional SIM', kind: 'phone', currency: 'PHP', balance: 300, balanceAsOf: '2026-01-01', balanceExpires: '2026-01-31' }];
+  const due = JSON.stringify(buildDaily(st, '2026-01-01'));
+  assert.ok(due.includes('Fictional SIM balance expiring'), due);
+  assert.match(due, /about ₱300\.00 will be forfeited/);
+  // 30/14/7/3/1/0 天档提醒，其余日子与到期后不提醒
+  const on = (d: string) => JSON.stringify(buildDaily(st, d) ?? '').includes('balance expiring');
+  assert.deepEqual(['2026-01-02', '2026-01-17', '2026-01-24', '2026-01-28', '2026-01-30', '2026-01-31', '2026-02-01'].map(on), [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+  ]);
+
+  // 到期后的余额不足提醒：写明作废的钱，不把它说成已扣
+  st.subscriptions = [
+    {
+      id: 'plan',
+      name: 'Fictional data plan',
+      category: 'Tools',
+      tags: [],
+      price: 100,
+      currency: 'PHP',
+      cycle: { unit: 'month', every: 1 },
+      start: '2025-12-05',
+      status: 'active',
+      methodId: 'sim',
+    },
+  ];
+  const short = JSON.stringify(buildDaily(st, '2026-02-02'));
+  assert.match(short, /₱200\.00 expired on Jan 31/, short);
+  assert.doesNotMatch(short, /charged since/);
+
+  // 到期日还没到、断供在到期之后：不足提醒不说「已作废」，也不说「已扣」
+  st.methods[0] = { ...st.methods[0], balanceExpires: '2026-02-10' };
+  const ahead = JSON.stringify(buildDaily(st, '2026-02-03'));
+  assert.match(ahead, /left by Mar 5/, ahead);
+  assert.doesNotMatch(ahead, /expired on|charged since/);
+});

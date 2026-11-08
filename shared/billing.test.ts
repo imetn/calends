@@ -868,3 +868,66 @@ test('issue #11：旧版提前记账不改数据也按提前续费算', async ()
   });
   assert.equal(settleLegacyEarly(afterBonus), afterBonus);
 });
+
+const topUpPlanOf = async (st: AppState, today: string, months?: number) => (await import('./metrics.ts')).topUpPlan(st, today, months)[0];
+
+test('余额到期：到期日当天照扣，之后剩余作废，后续扣款从 0 起算不足', async () => {
+  // 虚构话费卡：每月 5 日扣 100，余额 350 于 12-05 到期
+  const method = { id: 'sim', name: 'SIM', kind: 'phone' as const, currency: 'PHP', balance: 350, balanceAsOf: '2026-10-01', balanceExpires: '2026-12-05' };
+  const state: AppState = {
+    subscriptions: [base({ price: 100, currency: 'PHP', start: '2026-01-05', methodId: 'sim' })],
+    methods: [method],
+    settings: DEFAULT_SETTINGS,
+    fx: FALLBACK_FX,
+  };
+  const r = runwayFor(method, state, '2026-10-19')!;
+  assert.equal(r.current, 250);
+  // 11-05、12-05 照扣，剩 50 在 12-05 之后作废；01-05 从 0 起扣，不足
+  assert.deepEqual(r.expiring, { date: '2026-12-05', amount: 50 });
+  assert.equal(r.coveredCharges, 2);
+  assert.equal(r.runsOutOn, '2027-01-05');
+  assert.equal(r.forecast.find((c) => c.date === '2027-01-05')!.balanceAfter, -100);
+  // 撑满一年要补 01-05 到 10-05 的 10 期，作废的 50 不算可用
+  assert.equal(r.topUp12m, 1000);
+  assert.equal(-r.partial.topUp12m.value, -1000);
+
+  // 没设到期日的同一张卡：余额能多撑一期，补得少 50
+  const plain = runwayFor({ ...method, balanceExpires: undefined }, state, '2026-10-19')!;
+  assert.equal(plain.expiring, undefined);
+  assert.equal(plain.topUp12m, 950);
+
+  // 充值计划：作废的 50 不能付 01-05，最少要补 100、6 个月共补 400，和 12 个月口径一致
+  const plan = await topUpPlanOf(state, '2026-10-19');
+  assert.equal(plan.deadline, '2027-01-05');
+  assert.equal(plan.minNeed, 100);
+  assert.equal(plan.need, 400);
+  assert.equal(plan.partial.need.value, 400);
+  // 6 个月内到期后没有扣款时，作废不影响要补的钱
+  const late = { ...method, balanceExpires: '2027-03-06' };
+  const latePlan = await topUpPlanOf({ ...state, methods: [late] }, '2026-10-19', 5);
+  assert.equal(latePlan.need, 250);
+});
+
+test('余额到期：已过期的余额今天为 0；早于校准日的到期日不再生效；用完了不报作废', () => {
+  const method = { id: 'sim', name: 'SIM', kind: 'phone' as const, currency: 'PHP', balance: 350, balanceAsOf: '2026-10-01', balanceExpires: '2026-10-10' };
+  const st = (m: typeof method): AppState => ({
+    subscriptions: [base({ price: 100, currency: 'PHP', start: '2026-01-05', methodId: 'sim' })],
+    methods: [m],
+    settings: DEFAULT_SETTINGS,
+    fx: FALLBACK_FX,
+  });
+  const expired = runwayFor(method, st(method), '2026-10-19')!;
+  assert.equal(expired.current, 0);
+  assert.deepEqual(expired.expiring, { date: '2026-10-10', amount: 250 });
+  assert.equal(expired.runsOutOn, '2026-11-05');
+
+  // 充值后校准日晚于旧到期日：旧日期失效，按无到期计
+  const topped = { ...method, balance: 500, balanceAsOf: '2026-10-19' };
+  const after = runwayFor(topped, st(topped), '2026-10-19')!;
+  assert.equal(after.current, 500);
+  assert.equal(after.expiring, undefined);
+
+  // 到期前已经花光：没有可作废的钱
+  const spent = { ...method, balance: 150, balanceExpires: '2027-03-01' };
+  assert.equal(runwayFor(spent, st(spent), '2026-10-19')!.expiring, undefined);
+});

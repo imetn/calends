@@ -36,6 +36,7 @@
     "goTopup": "Nạp tiền",
     "site": "Trang web",
     "projection": "Khoản phí sắp tới",
+    "forfeit": "Mất khi hết hạn",
     "linked": "Gói đăng ký liên kết\n{count}",
     "none": "Không có",
     "notes": "Ghi chú"
@@ -97,7 +98,9 @@
     "balance": "Số dư hiện tại",
     "optional": "Tùy chọn",
     "asOf": "Tính đến",
+    "expires": "Hạn dùng số dư",
     "spentSince": "Đã trừ {spent} kể từ khi đặt số dư, hiện khoảng {current}.",
+    "spentForfeit": "Đã trừ {spent} kể từ khi đặt số dư và mất {forfeit} khi hết hạn ngày {date}, hiện khoảng {current}.",
     "nextCharge": "{name} ({amount}) vào {date} cũng sẽ trừ từ số dư này, còn lại {after}. Nếu đã trừ rồi, hãy ghi lại trước.",
     "todayIncluded": "{name} ({amount}) hôm nay được xem là đã tính trong số dư này. Nếu chưa trừ, hãy cập nhật vào ngày mai.",
     "lowAlert": "Cảnh báo số dư thấp",

@@ -39,7 +39,10 @@
     "sub": "Only {left} left by {date}, not enough for {sub} ({amount})",
     "subSince": "Set to {calibrated} on {asOf}, {spent} charged since. Only {left} left by {date}, not enough for {sub} ({amount})",
     "subOver": "Balance is already {left}, not enough for {sub} ({amount}) on {date}",
-    "headline": "{name} balance running low"
+    "subForfeit": "{forfeit} expired on {expires}; only {left} left by {date}, not enough for {sub} ({amount})",
+    "headline": "{name} balance running low",
+    "expiring": "Expires {date}; about {amount} will be forfeited",
+    "expiringHeadline": "{name} balance expiring"
   },
   "section": {
     "renew": "Upcoming charges",

@@ -82,7 +82,7 @@ function iconOf(s: Pick<Subscription, 'icon' | 'url'>): string | undefined {
 }
 
 /** 写明校准值和之后扣掉的钱：用户刚填的余额和提醒里的数对得上 */
-function balanceNote(r: Runway, m: PaymentMethod): string {
+function balanceNote(r: Runway, m: PaymentMethod, today: string): string {
   const short = r.shortfall!;
   const left = r.beforeShortfall ?? r.current;
   const note = {
@@ -92,6 +92,10 @@ function balanceNote(r: Runway, m: PaymentMethod): string {
     left: money(left, m.currency),
   };
   if (left < 0) return t('notify.balance.subOver', note);
+  // 余额已到期作废：说清楚钱是作废没的，不是扣掉的；还没到期的作废另有到期提醒，这里不提「已扣」免得对不上
+  if (r.expiring && r.expiring.date < today)
+    return t('notify.balance.subForfeit', { ...note, expires: cnDate(r.expiring.date), forfeit: money(r.expiring.amount, m.currency) });
+  if (r.expiring && r.expiring.date < short.date) return t('notify.balance.sub', note);
   if (!m.balanceAsOf || !(r.spentSince > 0.005)) return t('notify.balance.sub', note);
   return t('notify.balance.subSince', {
     ...note,
@@ -239,13 +243,25 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
 
   for (const m of state.methods) {
     const r = runwayFor(m, state, today);
+    const lead = m.lowRunwayDays ?? 30;
+    // 余额到期作废：和不足提醒同一组提前天数
+    const left = r?.expiring && r.expiring.date >= today ? diffDays(today, r.expiring.date) : -1;
+    if (r?.expiring && [lead, 14, 7, 3, 1, 0].includes(left)) {
+      balance.push({
+        title: m.name,
+        sub: t('notify.balance.expiring', { date: cnDate(r.expiring.date), amount: money(r.expiring.amount, m.currency) }),
+        amount: relDays(left),
+        tone: 'warn',
+        icon: m.logo && !m.logo.startsWith('data:') ? m.logo : undefined,
+      });
+      headline.push(t('notify.balance.expiringHeadline', { name: m.name }));
+    }
     if (!r?.shortfall) continue;
     const d = diffDays(today, r.shortfall.date);
-    const lead = m.lowRunwayDays ?? 30;
     if (d === lead || d === 14 || d === 7 || d === 3 || d === 1 || d === 0) {
       balance.push({
         title: m.name,
-        sub: balanceNote(r, m),
+        sub: balanceNote(r, m, today),
         amount: relDays(d),
         tone: 'warn',
         icon: m.logo && !m.logo.startsWith('data:') ? m.logo : undefined,

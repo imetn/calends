@@ -35,7 +35,7 @@ export const paymentMethodTool: Tool = {
   write: true,
   destructive: true,
   description:
-    'Create (action=create), update (default), or delete (action=delete) a payment method/wallet. set uses PaymentMethod fields: name, kind, currency, balance/balanceAsOf, logo, notes, card details, order, etc. Create requires name/kind/currency in set. Delete blocks ALL subscription/phase/default-method references unless migrate_to names an existing target; returns references and lost top-up history. top_up appends and recalibrates current balance; top_up_action=update|delete with zero-based top_up_index edits stored history only, preserving the calibrated balance unless balance/set.balance is explicitly supplied. Read stored records and indices with list_payment_methods. Currency edits relabel the wallet, never convert historical amounts. Preview first.',
+    'Create (action=create), update (default), or delete (action=delete) a payment method/wallet. set uses PaymentMethod fields: name, kind, currency, balance/balanceAsOf, balanceExpires (day the whole balance expires; later balance is forfeited; null clears), logo, notes, card details, order, etc. Create requires name/kind/currency in set. Delete blocks ALL subscription/phase/default-method references unless migrate_to names an existing target; returns references and lost top-up history. top_up appends and recalibrates current balance; top_up_action=update|delete with zero-based top_up_index edits stored history only, preserving the calibrated balance unless balance/set.balance is explicitly supplied. Read stored records and indices with list_payment_methods. Currency edits relabel the wallet, never convert historical amounts. Preview first.',
   inputSchema: obj({
     action: action(['create', 'update', 'delete']),
     id: { ...text, description: 'Stable new id when confirming a create draft.' },
@@ -82,6 +82,7 @@ export const paymentMethodTool: Tool = {
     if (a.balance !== undefined) next.balance = Number(a.balance);
     if (a.balance !== undefined || 'balance' in set)
       next.balanceAsOf = next.balance == null ? undefined : typeof set.balanceAsOf === 'string' ? set.balanceAsOf : today;
+    if (next.balance == null) delete next.balanceExpires;
     validateMethod(st, next);
     const topAction = a.top_up_action ?? 'add';
     if (a.top_up || topAction !== 'add') {
@@ -118,7 +119,7 @@ export const paymentMethodTool: Tool = {
       [],
       {
         before: old ?? null,
-        method: { ...next, balance_as_of: next.balanceAsOf ?? null, top_ups: next.topUps?.length ?? 0 },
+        method: { ...next, balance_as_of: next.balanceAsOf ?? null, balance_expires: next.balanceExpires ?? null, top_ups: next.topUps?.length ?? 0 },
         after: next,
         ...(creating ? { created: { id } } : {}),
       },

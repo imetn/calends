@@ -39,7 +39,10 @@
     "sub": "Plus que {left} d'ici le {date}, insuffisant pour {sub} ({amount})",
     "subSince": "Défini à {calibrated} le {asOf}, {spent} débités depuis. Plus que {left} d'ici le {date}, insuffisant pour {sub} ({amount})",
     "subOver": "Le solde est déjà à {left}, insuffisant pour {sub} ({amount}) le {date}",
-    "headline": "Solde de {name} bientôt insuffisant"
+    "subForfeit": "{forfeit} expirés le {expires} ; il ne restera que {left} le {date}, insuffisant pour {sub} ({amount})",
+    "headline": "Solde de {name} bientôt insuffisant",
+    "expiring": "Expire le {date} ; environ {amount} seront perdus",
+    "expiringHeadline": "Le solde {name} expire bientôt"
   },
   "section": {
     "renew": "Prélèvements à venir",

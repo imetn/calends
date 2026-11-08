@@ -1725,5 +1725,5 @@ test('汇率缺失时充值不能保存估算出来的空余额；校准日不�
   const wallet = readFileSync(new URL('../app/src/views/Wallet.tsx', import.meta.url), 'utf8');
   assert.match(wallet, /disabled=\{!val \|\| !Number\.isFinite\(n\) \|\| !Number\.isFinite\(next\)\}/);
   assert.match(wallet, /<DatePicker\s+value=\{f\.balanceAsOf\}\s+max=\{day\}/);
-  assert.match(wallet, /up\(editedBalance\(m, n, day, pickedAsOf\)\)/);
+  assert.match(wallet, /up\(\{ \.\.\.editedBalance\(m, n, day, pickedAsOf\), \.\.\.\(n == null \? \{ balanceExpires: undefined \} : \{\}\) \}\)/);
 });

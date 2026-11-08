@@ -33,7 +33,10 @@
     "sub": "到 {date} 只剩 {left}，不够付 {sub}（{amount}）",
     "subSince": "{asOf} 校准为 {calibrated}，之后已扣 {spent}。到 {date} 只剩 {left}，不够付 {sub}（{amount}）",
     "subOver": "余额已是 {left}，不够付 {date} 的 {sub}（{amount}）",
-    "headline": "{name} 余额将不足"
+    "subForfeit": "{expires} 到期作废 {forfeit}，到 {date} 只剩 {left}，不够付 {sub}（{amount}）",
+    "headline": "{name} 余额将不足",
+    "expiring": "{date} 到期，届时约 {amount} 作废",
+    "expiringHeadline": "{name} 余额将到期作废"
   },
   "section": {
     "renew": "即将扣款",

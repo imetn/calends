@@ -505,6 +505,7 @@ export const list_payment_methods: Tool = {
           region: m.region ?? null,
           balance: r ? fin(r.current) : (m.balance ?? null),
           balance_as_of: m.balanceAsOf ?? null,
+          balance_expires: m.balanceExpires ?? null,
           subscriptions: st.subscriptions
             .filter(
               (s) =>
@@ -522,6 +523,8 @@ export const list_payment_methods: Tool = {
                 covered_charges: r.coveredCharges,
                 runs_out_on: r.runsOutOn ?? null,
                 shortfall: r.shortfall ? { date: r.shortfall.date, name: r.shortfall.sub.name, amount: fin(r.shortfall.amount) } : null,
+                // 到期时还剩、将作废（或已作废）的余额，账户币种
+                expiring: r.expiring ? { date: r.expiring.date, amount: fin(r.expiring.amount) } : null,
               }
             : null,
           topup:

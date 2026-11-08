@@ -57,6 +57,7 @@
     "goTopup": "Aufladen",
     "site": "Website",
     "projection": "Anstehende Abbuchungen",
+    "forfeit": "Verfällt bei Ablauf",
     "linked": "Verknüpfte Abos\n{count}",
     "none": "Keine",
     "notes": "Notizen"
@@ -118,7 +119,9 @@
     "balance": "Aktuelles Guthaben",
     "optional": "Optional",
     "asOf": "Stand",
+    "expires": "Guthaben verfällt am",
     "spentSince": "Seit dem Festlegen {spent} abgebucht, aktuell etwa {current}.",
+    "spentForfeit": "Seit dem Festlegen {spent} abgebucht und am {date} {forfeit} verfallen, aktuell etwa {current}.",
     "nextCharge": "{name} ({amount}) am {date} wird noch von diesem Guthaben abgebucht, danach bleiben {after}. Falls bereits abgebucht, zuerst erfassen.",
     "todayIncluded": "Das heutige {name} ({amount}) gilt als in diesem Guthaben enthalten. Falls noch nicht abgebucht, morgen aktualisieren.",
     "lowAlert": "Warnung bei niedrigem Guthaben",

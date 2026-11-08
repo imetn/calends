@@ -16,6 +16,7 @@ import {
   effectiveStatus,
   monthlyTotal,
   editedBalance,
+  liveExpiry,
   runwayFor,
   uid,
   type Runway,
@@ -124,7 +125,9 @@ function projRows(r: Runway) {
   return first < 0 ? r.upcoming.slice(0, 10) : r.upcoming.slice(0, Math.min(first + 1, 10));
 }
 function projFoot(r: Runway, m: PaymentMethod): string | undefined {
-  if (!r.shortfall) return undefined;
+  // 列表截断在不足那一期之前（如余额到期后才断供）时，不能说「之后都不够扣」
+  const rows = projRows(r);
+  if (!r.shortfall || !(rows[rows.length - 1]?.balanceAfter < 0)) return undefined;
   return t('wallet.runway.projFoot', { amount: money(r.topUp12m, m.currency, { compact: true }) });
 }
 
@@ -402,6 +405,12 @@ function MethodSheet({
             <RunwayCard r={r} today={today} state={state} flat />
           </div>
         )}
+        {r && liveExpiry(m, today) && (
+          <Group>
+            <Cell label={t('wallet.editor.expires')}>{cnDateAuto(m.balanceExpires!, today)}</Cell>
+            {r.expiring && <Cell label={t('wallet.sheet.forfeit')}>{money(r.expiring.amount, m.currency, { compact: true })}</Cell>}
+          </Group>
+        )}
         {r && r.upcoming.length > 0 && (
           <Group title={t('wallet.sheet.projection')} foot={projFoot(r, m)}>
             {projRows(r).map((c, i) => (
@@ -468,8 +477,19 @@ function MethodSheet({
 function calibrationNote(after: Runway | undefined, m: PaymentMethod, today: string, included: Runway['dueToday'] = []) {
   if (!after) return undefined;
   const notes: string[] = [];
-  const spent = (after.method.balance ?? 0) - after.current;
-  if (spent > 0.005) notes.push(t('wallet.editor.spentSince', { spent: money(spent, m.currency), current: money(after.current, m.currency) }));
+  // 已过期作废的钱不算「已扣」，单独写出来，校准值 = 已扣 + 作废 + 现在
+  const gone = after.expiring && after.expiring.date < today ? after.expiring : undefined;
+  const spent = (after.method.balance ?? 0) - after.current - (gone?.amount ?? 0);
+  if (gone)
+    notes.push(
+      t('wallet.editor.spentForfeit', {
+        spent: money(Math.max(0, spent), m.currency),
+        date: cnDateAuto(gone.date, today),
+        forfeit: money(gone.amount, m.currency),
+        current: money(after.current, m.currency),
+      }),
+    );
+  else if (spent > 0.005) notes.push(t('wallet.editor.spentSince', { spent: money(spent, m.currency), current: money(after.current, m.currency) }));
   const includedTotal = included.reduce((a, c) => a + c.amountInMethod, 0);
   if (included.length && Number.isFinite(includedTotal))
     notes.push(
@@ -503,6 +523,7 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
   const [cost, setCost] = useState('');
   const [costCcy, setCostCcy] = useState(state.settings.baseCurrency);
   const [note, setNote] = useState('');
+  const [expires, setExpires] = useState(liveExpiry(m, today));
   const n = Number(val);
   const next = mode === 'add' ? current + (n || 0) : n || 0;
   const tops = (m.topUps ?? []).slice().sort((a, b) => b.date.localeCompare(a.date));
@@ -511,7 +532,7 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
   const balanceNote =
     val && Number.isFinite(saved)
       ? calibrationNote(
-          runwayFor({ ...m, balance: saved, balanceAsOf: today }, state, today),
+          runwayFor({ ...m, balance: saved, balanceAsOf: today, balanceExpires: expires }, state, today),
           m,
           today,
           mode === 'set' ? dueTodayOf(m, saved, state, today) : undefined,
@@ -527,7 +548,7 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
           mode === 'add' && n > 0
             ? { date, amount: n, cost: cost === '' ? undefined : Number(cost), costCurrency: cost === '' ? undefined : costCcy, note: note.trim() || undefined }
             : undefined;
-        await saveMethod({ ...m, balance: saved, balanceAsOf: today, topUps: top ? [...(m.topUps ?? []), top] : m.topUps });
+        await saveMethod({ ...m, balance: saved, balanceAsOf: today, balanceExpires: expires, topUps: top ? [...(m.topUps ?? []), top] : m.topUps });
         onClose();
       },
       mode === 'add' ? t('wallet.topup.toastAdd') : t('wallet.topup.toastSet'),
@@ -573,6 +594,9 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
           <Cell label={t('wallet.topup.estimate')}>{money(current, m.currency)}</Cell>
           <Cell label={t('wallet.topup.after')}>
             <b style={{ color: 'var(--label)' }}>{money(next, m.currency)}</b>
+          </Cell>
+          <Cell label={t('wallet.editor.expires')}>
+            <DatePicker value={expires} onChange={setExpires} clearable />
           </Cell>
         </Group>
         {mode === 'add' && (
@@ -712,7 +736,8 @@ function MethodDeleteSheet({ m, state, onClose, onDeleted }: { m: PaymentMethod;
 }
 
 function MethodEditor({ m, state, onClose }: { m: PaymentMethod; state: AppState; onClose: () => void }) {
-  const [f, setF] = useState<PaymentMethod>(m);
+  // 已失效的到期日不带进表单：改早校准日时不会让它重新生效
+  const [f, setF] = useState<PaymentMethod>(() => (m.balanceExpires && !liveExpiry(m, today()) ? { ...m, balanceExpires: undefined } : m));
   const [deleting, setDeleting] = useState(false);
   const [pickedAsOf, setPickedAsOf] = useState<string>();
   // 打开时决定：编辑期间这张卡在别处被删，保存时报错而不是当新卡建回来
@@ -893,7 +918,7 @@ function MethodEditor({ m, state, onClose }: { m: PaymentMethod; state: AppState
                 ccy={f.currency}
                 value={f.balance}
                 placeholder={t('wallet.editor.optional')}
-                onValue={(n) => up(editedBalance(m, n, day, pickedAsOf))}
+                onValue={(n) => up({ ...editedBalance(m, n, day, pickedAsOf), ...(n == null ? { balanceExpires: undefined } : {}) })}
               />
             </Cell>
             <Cell label={t('wallet.editor.asOf')}>
@@ -906,6 +931,11 @@ function MethodEditor({ m, state, onClose }: { m: PaymentMethod; state: AppState
                 }}
               />
             </Cell>
+            {f.balance != null && (
+              <Cell label={t('wallet.editor.expires')}>
+                <DatePicker value={liveExpiry(f, day)} onChange={(v) => up({ balanceExpires: v })} clearable />
+              </Cell>
+            )}
             <Cell label={t('wallet.editor.lowAlert')}>
               <Picker
                 value={f.lowRunwayDays ?? 30}

@@ -39,7 +39,10 @@
     "sub": "Restarão só {left} até {date}, não cobre {sub} ({amount})",
     "subSince": "Definido como {calibrated} em {asOf}, {spent} cobrados desde então. Restarão só {left} até {date}, não cobre {sub} ({amount})",
     "subOver": "O saldo já está em {left}, não cobre {sub} ({amount}) em {date}",
-    "headline": "Saldo de {name} acabando"
+    "subForfeit": "{forfeit} expirados em {expires}; restarão só {left} em {date}, não basta para {sub} ({amount})",
+    "headline": "Saldo de {name} acabando",
+    "expiring": "Vence em {date}; cerca de {amount} serão perdidos",
+    "expiringHeadline": "Saldo de {name} vencendo"
   },
   "section": {
     "renew": "Próximas cobranças",

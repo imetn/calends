@@ -36,6 +36,7 @@
     "goTopup": "Top up",
     "site": "Situs web",
     "projection": "Tagihan mendatang",
+    "forfeit": "Hangus saat kedaluwarsa",
     "linked": "Langganan terhubung\n{count}",
     "none": "Tidak ada",
     "notes": "Catatan"
@@ -97,7 +98,9 @@
     "balance": "Saldo saat ini",
     "optional": "Opsional",
     "asOf": "Per tanggal",
+    "expires": "Saldo berlaku sampai",
     "spentSince": "{spent} terpotong sejak saldo ini diatur, sekarang sekitar {current}.",
+    "spentForfeit": "{spent} terpotong sejak saldo ini diatur dan {forfeit} hangus pada {date}, sekarang sekitar {current}.",
     "nextCharge": "{name} ({amount}) pada {date} juga akan dipotong dari saldo ini, sisa {after}. Jika sudah terpotong, catat dulu.",
     "todayIncluded": "{name} ({amount}) hari ini dianggap sudah termasuk dalam saldo ini. Jika belum terpotong, perbarui besok.",
     "lowAlert": "Peringatan saldo rendah",

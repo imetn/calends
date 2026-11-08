@@ -36,6 +36,7 @@
     "goTopup": "去充值",
     "site": "官网",
     "projection": "扣款推演",
+    "forfeit": "到期作废",
     "linked": "关联订阅\n{count}",
     "none": "暂无",
     "notes": "备注"
@@ -97,7 +98,9 @@
     "balance": "当前余额",
     "optional": "可选",
     "asOf": "校准日",
+    "expires": "余额到期",
     "spentSince": "校准之后已扣 {spent}，现在约 {current}。",
+    "spentForfeit": "校准之后已扣 {spent}，{date} 到期作废 {forfeit}，现在约 {current}。",
     "nextCharge": "{date} 的 {name}（{amount}）还会从这个余额扣，扣完剩 {after}；已经扣了的话，请先记账。",
     "todayIncluded": "今天的 {name}（{amount}）算已包含在这个余额里；还没扣的话，明天再校准。",
     "lowAlert": "不足提醒",

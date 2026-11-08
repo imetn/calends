@@ -1339,6 +1339,8 @@ export interface Runway {
   /** 完整推演，供充值计划使用；明细单独截断 */
   forecast: Array<Charge & { balanceAfter: number; amountInMethod: number; partial: FxTotal; balancePartial: FxTotal }>;
   upcoming: Runway['forecast'];
+  /** 设了余额到期日、到期时还有余额：那天作废多少（账户币种）；早于今天的表示已经作废 */
+  expiring?: { date: string; amount: number };
 }
 
 /**
@@ -1349,6 +1351,13 @@ export function editedBalance(m: Pick<PaymentMethod, 'balance' | 'balanceAsOf'>,
   if (balance == null) return { balance: undefined, balanceAsOf: undefined };
   const balanceAsOf = picked ?? (balance === m.balance ? m.balanceAsOf : undefined) ?? today;
   return { balance, balanceAsOf };
+}
+
+/** 仍有效的余额到期日：早于校准日（未来校准日按今天算）的视为已失效，返回 undefined */
+export function liveExpiry(m: Pick<PaymentMethod, 'balance' | 'balanceAsOf' | 'balanceExpires'>, today: string): string | undefined {
+  if (m.balance == null || !m.balanceExpires) return undefined;
+  const asOf = m.balanceAsOf && m.balanceAsOf < today ? m.balanceAsOf : today;
+  return m.balanceExpires >= asOf ? m.balanceExpires : undefined;
 }
 
 export function runwayFor(method: PaymentMethod, state: AppState, today: string, horizonMonths = 36): Runway | undefined {
@@ -1381,7 +1390,30 @@ export function runwayFor(method: PaymentMethod, state: AppState, today: string,
   let incomplete = false;
   let balancePartial = amountTotal(method.balance, method.currency, method.balance);
   let currentPartial = balancePartial;
+  // 余额到期：到期日当天的扣款照常，之后剩余的正余额作废；欠着的（负数）和算不出的（NaN）不动。早于校准日的到期日已失效
+  const expires = liveExpiry(method, today);
+  let expiring: Runway['expiring'];
+  const yearOut = addMonths(today, 12);
+  let yearBal = bal;
+  let yearPartial = balancePartial;
+  const expire = () => {
+    if (expiring || !expires) return;
+    expiring = { date: expires, amount: Number.isFinite(bal) ? Math.max(0, bal) : NaN };
+    if (bal > 0) {
+      bal = 0;
+      balancePartial = amountTotal(0, method.currency, 0);
+    }
+    if (expires < today) {
+      current = bal;
+      currentPartial = balancePartial;
+    }
+    if (expires <= yearOut) {
+      yearBal = bal;
+      yearPartial = balancePartial;
+    }
+  };
   for (const { c, share } of charges) {
+    if (expires && c.date > expires) expire();
     const entry = proxyCharges.get(c.sub.id)?.get(c.date);
     const settled = c.kind === 'failed' ? undefined : entry?.amount != null ? { amount: entry.amount, currency: entry.currency ?? c.currency } : c.settled;
     const amt = chargeBaseOrNaN(state, { ...c, settled }, method.currency) * share;
@@ -1400,14 +1432,19 @@ export function runwayFor(method: PaymentMethod, state: AppState, today: string,
       currentPartial = balancePartial;
       bal -= amt;
       current = bal;
+      yearBal = bal;
+      yearPartial = balancePartial;
       continue;
     }
     bal -= amt;
     if (!shortfall && Number.isFinite(bal)) covered++;
     forecast.push({ ...c, balanceAfter: bal, amountInMethod: amt, partial, balancePartial });
+    if (c.date <= yearOut) {
+      yearBal = bal;
+      yearPartial = balancePartial;
+    }
   }
-  const yearOut = addMonths(today, 12);
-  const need12 = forecast.filter((c) => c.date <= yearOut).reduce((a, c) => a + c.amountInMethod, 0);
+  if (expires && expires <= horizon) expire();
   let monthlyDrain = 0;
   for (const s of subs) {
     const st = effectiveStatus(s, today);
@@ -1422,7 +1459,8 @@ export function runwayFor(method: PaymentMethod, state: AppState, today: string,
           .filter((s) => ['active', 'ending'].includes(effectiveStatus(s, today)))
           .map((s) => amountTotal(monthlyGross(s, today), s.currency, convert(monthlyGross(s, today), s.currency, method.currency, state.fx))),
       ),
-      topUp12m: sumTotals([sumTotals(forecast.filter((c) => c.date <= yearOut).map((c) => c.partial)), scaleTotal(currentPartial, -1)]),
+      // 撑满 12 个月要补的 = 12 个月后的余额缺口；余额到期作废也算在里面
+      topUp12m: scaleTotal(yearPartial, -1),
     },
     method,
     current,
@@ -1434,9 +1472,10 @@ export function runwayFor(method: PaymentMethod, state: AppState, today: string,
     dueToday,
     coveredCharges: covered,
     runsOutOn: shortfall?.date,
-    topUp12m: Math.max(0, need12 - current),
+    topUp12m: Number.isFinite(yearBal) ? Math.max(0, -yearBal) : NaN,
     forecast,
     upcoming: forecast.slice(0, 60),
+    ...(expiring && expiring.amount > 0.005 ? { expiring } : {}),
   };
 }
 

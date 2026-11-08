@@ -37,7 +37,10 @@
     "sub": "Hanya tersisa {left} pada {date}, tidak cukup untuk {sub} ({amount})",
     "subSince": "Diatur ke {calibrated} pada {asOf}, {spent} terpotong sejak itu. Hanya tersisa {left} pada {date}, tidak cukup untuk {sub} ({amount})",
     "subOver": "Saldo sudah {left}, tidak cukup untuk {sub} ({amount}) pada {date}",
-    "headline": "Saldo {name} menipis"
+    "subForfeit": "{forfeit} hangus pada {expires}; pada {date} hanya tersisa {left}, tidak cukup untuk {sub} ({amount})",
+    "headline": "Saldo {name} menipis",
+    "expiring": "Kedaluwarsa {date}; sekitar {amount} akan hangus",
+    "expiringHeadline": "Saldo {name} akan kedaluwarsa"
   },
   "section": {
     "renew": "Tagihan mendatang",

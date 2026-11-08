@@ -39,6 +39,7 @@
     "goTopup": "Recargar",
     "site": "Sitio web",
     "projection": "Próximos cobros",
+    "forfeit": "Se pierde al vencer",
     "linked": "Suscripciones vinculadas\n{count}",
     "none": "Ninguna",
     "notes": "Notas"
@@ -100,7 +101,9 @@
     "balance": "Saldo actual",
     "optional": "Opcional",
     "asOf": "A fecha de",
+    "expires": "Vencimiento del saldo",
     "spentSince": "{spent} cobrados desde que se fijó este saldo, ahora unos {current}.",
+    "spentForfeit": "{spent} cobrados desde que se fijó este saldo y {forfeit} perdidos el {date}, ahora unos {current}.",
     "nextCharge": "{name} ({amount}) del {date} también saldrá de este saldo y quedarán {after}. Si ya se cobró, regístralo primero.",
     "todayIncluded": "El cobro de hoy de {name} ({amount}) se considera incluido en este saldo. Si aún no se ha cobrado, actualízalo mañana.",
     "lowAlert": "Alerta de saldo bajo",

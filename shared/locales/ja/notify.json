@@ -37,7 +37,10 @@
     "sub": "{date} までに残り {left} となり、{sub}（{amount}）に足りません",
     "subSince": "{asOf} に {calibrated} に設定、以降 {spent} を引き落とし。{date} までに残り {left} となり、{sub}（{amount}）に足りません",
     "subOver": "残高はすでに {left} で、{date} の {sub}（{amount}）に足りません",
-    "headline": "{name}の残高が少なくなっています"
+    "subForfeit": "{expires} に {forfeit} が失効し、{date} には {left} しか残らず {sub}（{amount}）に足りません",
+    "headline": "{name}の残高が少なくなっています",
+    "expiring": "{date} に期限切れ、約 {amount} が失効",
+    "expiringHeadline": "{name} の残高が期限切れ間近"
   },
   "section": {
     "renew": "今後の請求",

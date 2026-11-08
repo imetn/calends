@@ -36,6 +36,7 @@
     "goTopup": "Top up",
     "site": "Website",
     "projection": "Upcoming charges",
+    "forfeit": "Forfeited at expiry",
     "linked": "Linked subscriptions\n{count}",
     "none": "None",
     "notes": "Notes"
@@ -97,7 +98,9 @@
     "balance": "Current balance",
     "optional": "Optional",
     "asOf": "As of",
+    "expires": "Balance expires",
     "spentSince": "{spent} charged since this balance was set, about {current} now.",
+    "spentForfeit": "{spent} charged since this balance was set and {forfeit} forfeited on {date}, about {current} now.",
     "nextCharge": "{name} ({amount}) on {date} will still come out of this balance, leaving {after}. If it has already been charged, record it first.",
     "todayIncluded": "Today's {name} ({amount}) counts as already included in this balance. If it hasn't been charged yet, update the balance tomorrow.",
     "lowAlert": "Low balance alert",

@@ -52,6 +52,7 @@
     "goTopup": "チャージ",
     "site": "Web サイト",
     "projection": "今後の請求",
+    "forfeit": "期限切れで失効",
     "linked": "紐づいたサブスク\n{count}",
     "none": "なし",
     "notes": "メモ"
@@ -113,7 +114,9 @@
     "balance": "現在の残高",
     "optional": "任意",
     "asOf": "基準日",
+    "expires": "残高の有効期限",
     "spentSince": "設定後に {spent} 引き落とし済み、現在約 {current} です。",
+    "spentForfeit": "設定後に {spent} 引き落とし済み、{date} に {forfeit} 失効し、現在約 {current} です。",
     "nextCharge": "{date} の {name}（{amount}）もこの残高から引き落とされ、残りは {after} です。すでに引き落とし済みなら先に記録してください。",
     "todayIncluded": "今日の {name}（{amount}）はこの残高に反映済みとして扱います。まだ引き落とされていない場合は、明日更新してください。",
     "lowAlert": "残高不足アラート",

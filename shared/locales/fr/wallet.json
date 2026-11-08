@@ -57,6 +57,7 @@
     "goTopup": "Recharger",
     "site": "Site web",
     "projection": "Prélèvements à venir",
+    "forfeit": "Perdu à l’expiration",
     "linked": "Abonnements associés\n{count}",
     "none": "Aucun",
     "notes": "Notes"
@@ -118,7 +119,9 @@
     "balance": "Solde actuel",
     "optional": "Facultatif",
     "asOf": "Au",
+    "expires": "Expiration du solde",
     "spentSince": "{spent} débités depuis la mise à jour, environ {current} maintenant.",
+    "spentForfeit": "{spent} débités depuis la mise à jour et {forfeit} perdus le {date}, environ {current} maintenant.",
     "nextCharge": "{name} ({amount}) du {date} sera encore prélevé sur ce solde, il restera {after}. S'il a déjà été débité, enregistrez-le d'abord.",
     "todayIncluded": "Le {name} ({amount}) du jour est considéré comme inclus dans ce solde. S'il n'a pas encore été débité, mettez à jour demain.",
     "lowAlert": "Alerte de solde faible",

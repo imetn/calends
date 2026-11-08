@@ -39,7 +39,10 @@
     "sub": "{date} itibarıyla yalnızca {left} kalacak, {sub} ({amount}) için yetmez",
     "subSince": "{asOf} tarihinde {calibrated} olarak ayarlandı, o günden beri {spent} çekildi. {date} itibarıyla yalnızca {left} kalacak, {sub} ({amount}) için yetmez",
     "subOver": "Bakiye zaten {left}, {date} tarihli {sub} ({amount}) için yetmez",
-    "headline": "{name} bakiyesi azalıyor"
+    "subForfeit": "{forfeit} {expires} tarihinde yandı; {date} itibarıyla yalnızca {left} kalıyor, {sub} ({amount}) için yetmez",
+    "headline": "{name} bakiyesi azalıyor",
+    "expiring": "{date} tarihinde sona erer; yaklaşık {amount} yanacak",
+    "expiringHeadline": "{name} bakiyesinin süresi doluyor"
   },
   "section": {
     "renew": "Yaklaşan ödemeler",

@@ -548,8 +548,13 @@ export function topUpPlan(state: AppState, today: string, months = 6): TopUp[] {
     const r = runwayFor(m, state, today, Math.max(12, months));
     if (!r || (!r.forecast.length && !r.shortfall)) continue;
     const horizon = addMonths(today, months);
-    const due = r.forecast.filter((c) => c.date <= horizon).reduce((a, c) => a + c.amountInMethod, 0);
-    const need = Math.max(0, due - r.current);
+    const inRange = r.forecast.filter((c) => c.date <= horizon);
+    // 到期作废发生在之后某笔扣款之前，那笔钱就不能拿来付后面的扣款，要当成一笔支出
+    const ex = r.expiring && r.expiring.date >= today ? r.expiring : undefined;
+    const lostBy = (date: string) => (ex && date > ex.date ? ex.amount : 0);
+    const lost = inRange.length ? lostBy(inRange[inRange.length - 1].date) : 0;
+    const due = inRange.reduce((a, c) => a + c.amountInMethod, 0);
+    const need = Math.max(0, due + lost - r.current);
     // 最少补多少：累计到第一笔付不起的扣款为止
     let acc = 0;
     // 今天那笔已经不够：先补上今天的缺口，和截止日说的是同一笔
@@ -557,16 +562,16 @@ export function topUpPlan(state: AppState, today: string, months = 6): TopUp[] {
     if (!minNeed) {
       for (const c of r.forecast) {
         acc += c.amountInMethod;
-        if (acc > r.current) {
-          minNeed = acc - r.current;
+        if (acc + lostBy(c.date) > r.current) {
+          minNeed = acc + lostBy(c.date) - r.current;
           break;
         }
       }
     }
     const byCard = ['appstore', 'googleplay', 'giftcard', 'phone'].includes(m.kind);
     const denoms = DENOMS[m.currency] ?? [Math.pow(10, Math.max(1, Math.round(Math.log10(Math.max(10, need)))))];
-    const duePartial = sumTotals(r.forecast.filter((c) => c.date <= horizon).map((c) => c.partial));
-    const needPartial = sumTotals([duePartial, scaleTotal(r.partial.current, -1)]);
+    const duePartial = sumTotals(inRange.map((c) => c.partial));
+    const needPartial = sumTotals([duePartial, amountTotal(lost, m.currency, lost), scaleTotal(r.partial.current, -1)]);
     out.push({
       incomplete: r.incomplete,
       partial: {

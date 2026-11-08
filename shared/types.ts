@@ -377,6 +377,8 @@ export interface PaymentMethod {
   /** 余额类账户才有：asOf 当天的余额 */
   balance?: number;
   balanceAsOf?: string;
+  /** 余额到期日（含当天）：之后剩下的余额作废，如话费余额；早于校准日的视为已失效不再计 */
+  balanceExpires?: string;
   last4?: string;
   color?: string;
   region?: string;

@@ -43,7 +43,10 @@
     "sub": "К {date} останется только {left}, не хватит на {sub} ({amount})",
     "subSince": "{asOf} установлено {calibrated}, с тех пор списано {spent}. К {date} останется только {left}, не хватит на {sub} ({amount})",
     "subOver": "Баланс уже {left}, не хватит на {sub} ({amount}) {date}",
-    "headline": "У {name} заканчивается баланс"
+    "subForfeit": "{forfeit} сгорело {expires}; к {date} останется {left}, не хватит на {sub} ({amount})",
+    "headline": "У {name} заканчивается баланс",
+    "expiring": "Истекает {date}; сгорит около {amount}",
+    "expiringHeadline": "Баланс {name} скоро сгорит"
   },
   "section": {
     "renew": "Ближайшие списания",

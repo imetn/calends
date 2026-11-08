@@ -20,6 +20,7 @@ export const METHOD_FIELDS = objectSchema({
   currency: textSchema,
   balance: nullable({ type: 'number' }),
   balanceAsOf: nullable(daySchema),
+  balanceExpires: nullable(daySchema),
   ...Object.fromEntries(['last4', 'color', 'region', 'notes', 'brand', 'logo', 'bank', 'phone', 'url'].map((k) => [k, nullable(textSchema)])),
   network: nullable({ type: 'string', enum: ['visa', 'mastercard', 'unionpay', 'jcb', 'american-express', 'discover', 'diners', 'maestro'] }),
   logoWide: { type: 'boolean' },
