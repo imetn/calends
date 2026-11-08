@@ -288,6 +288,9 @@ export function pausedFromOf(s: Pick<Subscription, 'status' | 'pausedAt' | 'stop
   return s.status === 'paused' ? s.pausedAt : s.stop?.pausedAt;
 }
 
+/** 暂停默认从今天起；订阅还没开始时从开始日起 */
+export const pauseDay = (s: Pick<Subscription, 'start'>, today: string): string => (today < s.start ? s.start : today);
+
 /** day 是否落在已结束的暂停里：这段时间没发生的扣款，恢复后不再推算 */
 function pausedOn(s: Pick<Subscription, 'pauses'>, day: string): boolean {
   return !!s.pauses?.some((p) => p.from <= day && day < p.to);

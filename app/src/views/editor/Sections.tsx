@@ -4,7 +4,7 @@ import { MemberSheet } from '../Members.tsx';
 import { isDataIcon } from '../../../../shared/icon.ts';
 
 import { StopFields } from '../../components/StopPanel.tsx';
-import { addDays, addMonths, nextCharge, nthCharge } from '../../../../shared/billing.ts';
+import { addDays, addMonths, nextCharge, nthCharge, pauseDay } from '../../../../shared/billing.ts';
 import { cnDateFull, flow, money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
 import type { Cycle, SubStatus } from '../../../../shared/types.ts';
@@ -184,7 +184,7 @@ export function StatusFields({ context }: { context: ReturnType<typeof useEditor
               setStop(stopForm(syncPhase(f, today), today, state));
             } else {
               const next = reactivate(f);
-              up({ ...next, status: v as SubStatus, pausedAt: v === 'paused' ? (f.pausedAt ?? today) : undefined });
+              up({ ...next, status: v as SubStatus, pausedAt: v === 'paused' ? (f.pausedAt ?? pauseDay(f, today)) : undefined });
               setStop(undefined);
             }
           }}
@@ -198,7 +198,7 @@ export function StatusFields({ context }: { context: ReturnType<typeof useEditor
       )}
       {!stop && f.status === 'paused' && (
         <Cell label={t('editor.field.pausedAt')}>
-          <DatePicker value={f.pausedAt ?? today} onChange={(v) => up({ pausedAt: v ?? today })} />
+          <DatePicker value={f.pausedAt ?? pauseDay(f, today)} onChange={(v) => up({ pausedAt: v ?? pauseDay(f, today) })} />
         </Cell>
       )}
       {stop && <StopFields sub={syncPhase(f, today)} today={today} value={stop} onChange={setStop} />}

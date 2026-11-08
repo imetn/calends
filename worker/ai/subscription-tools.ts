@@ -1,4 +1,4 @@
-import { preserveRenewalHistory, chargesBetween, currentPhase, effectiveStatus, phaseSubs, uid } from '../../shared/billing.ts';
+import { preserveRenewalHistory, chargesBetween, currentPhase, effectiveStatus, pauseDay, phaseSubs, uid } from '../../shared/billing.ts';
 import {
   editPhase,
   removePhase,
@@ -631,7 +631,7 @@ export const set_status: Tool = {
           pausedAt: undefined,
           trialEnd: 'trial_end' in a ? (a.trial_end == null ? undefined : date(a.trial_end, 'trial_end')) : s.trialEnd,
         };
-      else if (act === 'pause') next = { ...s, status: 'paused', pausedAt: at };
+      else if (act === 'pause') next = { ...s, status: 'paused', pausedAt: a.at == null ? pauseDay(s, today) : at };
       else if (act === 'cancel') {
         if (a.refund) throw new Error(t('mcp.error.invalidStop'));
         next = cancelAtEnd(s, at, today);

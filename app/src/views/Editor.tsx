@@ -9,6 +9,7 @@ import type { AppState, Subscription } from '../../../shared/types.ts';
 import { ask, Sheet } from '../components/overlays.tsx';
 import { useSubmit } from '../components/inputs.tsx';
 
+import { pauseDay } from '../../../shared/billing.ts';
 import { affectedPriceCharges } from '../../../shared/phases.ts';
 import { ChangePanel } from '../components/ChangePanel.tsx';
 
@@ -48,7 +49,7 @@ export function Editor({ sub, state, today, onClose }: { sub: Subscription; stat
     if (affected && !(await ask(t('editor.history.repriceCharges', { count: affected })))) return;
     await run(
       async () => {
-        if (out.status === 'paused' && !out.pausedAt) out.pausedAt = today;
+        if (out.status === 'paused' && !out.pausedAt) out.pausedAt = pauseDay(out, today);
         if (out.status !== 'paused') delete out.pausedAt;
         // 代付对象：新的人先建档，已有的人改了资料等订阅保存后再同步
         const px = out.proxy;

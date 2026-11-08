@@ -1,5 +1,5 @@
 import { CopyImageButton } from '../components/CopyImageButton.tsx';
-import { isStopped } from '../../../shared/billing.ts';
+import { isStopped, pauseDay } from '../../../shared/billing.ts';
 import { meterView } from '../../../shared/meters.ts';
 import { createPortal } from 'react-dom';
 import { useRef, useState } from 'react';
@@ -160,7 +160,7 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
             run(
               () =>
                 saveSub(
-                  paused ? { ...sub, status: 'active', pausedAt: undefined } : { ...sub, status: 'paused', pausedAt: today < sub.start ? sub.start : today },
+                  paused ? { ...sub, status: 'active', pausedAt: undefined } : { ...sub, status: 'paused', pausedAt: pauseDay(sub, today) },
                 ),
               paused ? t('detail.toast.resumed') : t('detail.toast.paused'),
             )

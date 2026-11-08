@@ -148,6 +148,7 @@ export function StopFields({ sub, today, value, onChange }: { sub: Subscription;
         <Picker
           value={mode}
           onChange={(v) => {
+            if (v === mode) return;
             up({
               mode: v as StopMode,
               date: v === 'nonrenew' ? nonrenewalDate(sub, today) : today,
