@@ -30,6 +30,7 @@ export const PREF_KEYS = [
   'proxy-view',
   'proxy-sort',
   'proxy-dir',
+  'report-daily',
 ] as const;
 export type PrefKey = (typeof PREF_KEYS)[number];
 

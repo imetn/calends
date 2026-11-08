@@ -1727,3 +1727,11 @@ test('汇率缺失时充值不能保存估算出来的空余额；校准日不�
   assert.match(wallet, /<DatePicker\s+value=\{f\.balanceAsOf\}\s+max=\{day\}/);
   assert.match(wallet, /up\(\{ \.\.\.editedBalance\(m, n, day, pickedAsOf\), \.\.\.\(n == null \? \{ balanceExpires: undefined \} : \{\}\) \}\)/);
 });
+
+test('报告逐日热力图的平面 / 立体选择存进同步偏好，刷新和换设备都保留', () => {
+  const report = readFileSync(new URL('../app/src/views/Report.tsx', import.meta.url), 'utf8');
+  const prefs = readFileSync(new URL('../shared/prefs.ts', import.meta.url), 'utf8');
+  assert.match(report, /usePref<DayHeatMode>\('report-daily', 'flat',/);
+  assert.doesNotMatch(report, /useState<DayHeatMode>/);
+  assert.match(prefs, /'report-daily',/);
+});

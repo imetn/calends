@@ -38,6 +38,7 @@ import { carpoolYear } from '../../../shared/carpool.ts';
 import { proxyYear } from '../../../shared/proxy.ts';
 import { go } from '../router.ts';
 import { DayHeat, type DayHeatMode } from '../components/DayHeat.tsx';
+import { usePref } from '../prefs.ts';
 
 const mLabel = (m: string) => (m.endsWith('-01') ? t('report.axis.year', { yy: m.slice(2, 4), year: m.slice(0, 4) }) : monthLabel(m, { year: false }));
 const perMonth = (amount: string) => t('report.perMonth', { amount });
@@ -687,7 +688,8 @@ const ownState = (state: AppState): AppState => ({ ...state, subscriptions: stat
 
 /** 所选年份逐日净支出：平面热力格与立体柱两种看法 */
 function DailyCard({ state, today, year }: { state: AppState; today: string; year: number }) {
-  const [mode, setMode] = useState<DayHeatMode>('flat');
+  // 平面 / 立体的选择随账本同步，换设备也保留
+  const [mode, setMode] = usePref<DayHeatMode>('report-daily', 'flat', (v): v is DayHeatMode => v === 'flat' || v === 'bars');
   const days = useMemo(() => yearDays(state, today, year), [state, today, year]);
   return (
     <div className="card copy-card" data-copy-card>
