@@ -745,3 +745,63 @@ test('用户反馈回归：时间线按付款着色，当天付过款的首期�
   // 审查回归：免费订阅没有付款，照旧按今天分界
   assert.equal(at({ ...s, price: 0 }, '2026-11-20'), '2026-11-20');
 });
+
+test('图例只列可见窗口里实际画出的标记，颜色、公开页与缓冲区都按画面判断', () => {
+  const v = (over: Partial<Subscription>): Subscription => ({
+    id: 'x',
+    name: 'X',
+    category: 'Tools',
+    tags: [],
+    price: 10,
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+    start: '2025-01-01',
+    status: 'active',
+    ...over,
+  });
+  const today = '2026-06-15';
+  const start = '2026-03-01';
+  const end = '2026-07-01';
+  const seg = (s: Subscription, to = s.end) => ({ v: s, from: s.start, to: to ?? '2026-12-15', open: !to });
+  const marks = (rows: gantt.GanttLegendRow[], readonly = false, compact = false) =>
+    gantt.ganttLegendMarks(rows, start, end, today, { readonly, compact, keyOf: (s) => s.methodId ?? 'none' });
+  const summary = (m: ReturnType<typeof marks>) => [m.unused, m.terminate, m.planned, m.gap, [...m.colors]];
+
+  const plain = { segs: [seg(v({ methodId: 'cmb' }))], gaps: [] };
+  assert.deepEqual(summary(marks([plain])), [false, false, false, false, ['cmb']]);
+
+  // 窗口外的段：图例不列它的颜色，紧贴窗口右缘开始的也算窗口外
+  const old = { segs: [seg(v({ methodId: 'old', start: '2024-01-01', end: '2024-06-01' }))], gaps: [] };
+  const later = { segs: [seg(v({ methodId: 'later', start: end }))], gaps: [] };
+  assert.deepEqual(summary(marks([plain, old, later])), [false, false, false, false, ['cmb']]);
+
+  // 断订：只有落在窗口内才列，窗口外（包括平移缓冲区）不列
+  assert.equal(marks([{ ...plain, gaps: [{ from: '2026-04-01', to: '2026-05-01' }] }]).gap, true);
+  assert.equal(marks([{ ...plain, gaps: [{ from: '2026-02-01', to: start }] }]).gap, false);
+
+  // 计划中只看窗口内的段；买断画成圆点，不算斜纹
+  assert.equal(marks([{ segs: [seg(v({ planned: true, start: '2026-05-01' }))], gaps: [] }]).planned, true);
+  assert.equal(marks([{ segs: [seg(v({ planned: true, start: '2026-09-01' }))], gaps: [] }]).planned, false);
+  assert.equal(marks([{ segs: [seg(v({ planned: true, start: '2026-05-01', cycle: { unit: 'lifetime', every: 1 } }))], gaps: [] }]).planned, false);
+
+  // 服务方停用与未退款段：窗口内才列；公开页不画未退款，图例也不列
+  const stop = v({ status: 'terminated', start: '2026-01-01', end: '2026-04-10', stop: { kind: 'terminate', date: '2026-04-10', paidThrough: '2026-05-01' } });
+  const stopped = { segs: [seg(stop)], gaps: [] };
+  assert.deepEqual(summary(marks([stopped])).slice(0, 2), [true, true]);
+  assert.deepEqual(summary(marks([stopped], true)).slice(0, 2), [false, true]);
+  const stopOld = v({
+    status: 'terminated',
+    start: '2025-01-01',
+    end: '2025-04-10',
+    stop: { kind: 'terminate', date: '2025-04-10', paidThrough: '2025-05-01' },
+  });
+  assert.deepEqual(summary(marks([{ segs: [seg(stopOld)], gaps: [] }])), [false, false, false, false, []]);
+});
+
+test('图例按 marks 渲染，颜色下标沿用完整列表，窗口内没有标记时不留空白', () => {
+  const source = read('../app/src/views/Gantt.tsx');
+  assert.match(source, /ganttLegendMarks\(rows, start, end, today,/);
+  assert.match(source, /\{legendShown && \(\s*<div className="gt-legend">/);
+  assert.match(source, /keys\.map\(\s*\(key, i\) =>\s*legend\.colors\.has\(key\) &&/);
+  assert.doesNotMatch(source, /keys\.filter\([^)]*legend/);
+});

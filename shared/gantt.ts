@@ -13,7 +13,9 @@ import {
   parseDay,
   phaseLanes,
   phaseSubs,
+  stopSummary,
 } from './billing.ts';
+import { transferredStop } from './transfers.ts';
 import type { Subscription } from './types.ts';
 import { dateFormat } from './intl.ts';
 
@@ -191,4 +193,44 @@ export function yearsTimeline(subs: Subscription[], today: string): { rows: Year
   const latest = rows.reduce((m, r) => r.bars.reduce((n, b) => (b.to > n ? b.to : n), m), earliest);
   const ongoing = rows.some((r) => r.bars.some((b) => b.ongoing));
   return { rows, ongoing, ...ganttWindow('all', today, `${earliest.slice(0, 4)}-01-01`, latest, ongoing) };
+}
+
+/** 一段的停用标记：卖出时剩余服务随转让收回，公开页不展示损失，这两种都不画未退款段 */
+export function ganttStopMark(v: Subscription, today: string, readonly: boolean) {
+  const stopped = stopSummary(v, today);
+  const unused = !readonly && !!stopped && stopped.wastedDays > 0 && !transferredStop(v);
+  return { stopped, unused, wastedUntil: unused ? addDays(stopped.date, stopped.wastedDays) : '' };
+}
+
+export interface GanttLegendRow {
+  segs: Array<{ v: Subscription; from: string; to: string; open: boolean }>;
+  gaps: Array<{ from: string; to: string }>;
+}
+
+/** 图例只列当前可见窗口 [start, end) 里实际画出来的标记；不含窗口外用来平移的缓冲区 */
+export function ganttLegendMarks(
+  rows: GanttLegendRow[],
+  start: string,
+  end: string,
+  today: string,
+  { readonly, compact, keyOf }: { readonly: boolean; compact: boolean; keyOf: (v: Subscription) => string },
+) {
+  const marks = { unused: false, terminate: false, planned: false, gap: false, colors: new Set<string>() };
+  const seen = (from: string, to: string) => from < end && to > start;
+  for (const row of rows) {
+    if (row.gaps.some((g) => seen(g.from, g.to))) marks.gap = true;
+    for (const g of row.segs) {
+      const lifetime = g.v.cycle.unit === 'lifetime';
+      // 买断是开始日上的一个圆点，有结束日时再拉一条细线；其余按没有结束日的画法算到下一期末尾
+      const drawn = lifetime ? (g.from >= start && g.from < end) || (!g.open && seen(g.from, g.to)) : seen(g.from, g.open ? ganttOpenEnd(g.v, today) : g.to);
+      if (drawn) {
+        marks.colors.add(keyOf(g.v));
+        if (g.v.planned && !lifetime) marks.planned = true;
+      }
+      const { stopped, unused, wastedUntil } = ganttStopMark(g.v, today, readonly);
+      if (stopped?.kind === 'terminate' && stopped.date >= start && stopped.date < end) marks.terminate = true;
+      if (unused && seen(stopped!.date, compact && wastedUntil > today ? today : wastedUntil)) marks.unused = true;
+    }
+  }
+  return marks;
 }

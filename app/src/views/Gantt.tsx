@@ -24,6 +24,8 @@ import {
   ganttLabelBounds,
   ganttOpenEnd,
   ganttPaidUntil,
+  ganttLegendMarks,
+  ganttStopMark,
   ganttTicks,
   ganttWindow,
   isGanttZoom,
@@ -429,6 +431,8 @@ export function Gantt({
   const keyOf = (v: Subscription) => colorKey(v, colorBy);
   const keys = useMemo(() => [...new Set(rows.flatMap((r) => r.segs.map((g) => colorKey(g.v, colorBy))))], [rows, colorBy]);
   const color = (v: Subscription) => PALETTE[keys.indexOf(keyOf(v)) % PALETTE.length];
+  const legend = ganttLegendMarks(rows, start, end, today, { readonly: !!state.readonly, compact, keyOf: (v) => colorKey(v, colorBy) });
+  const legendShown = legend.unused || legend.terminate || legend.planned || legend.gap || legend.colors.size > 0;
   const labelOf = (key: string) =>
     colorBy === 'method' ? (state.methods.find((m) => m.id === key)?.name ?? t('list.unassigned')) : key === '—' ? t('list.gantt.noRegion') : key;
 
@@ -582,10 +586,7 @@ export function Gantt({
                       const left = x(g.from);
                       const top = 8 + r.lanes[gi] * LANE;
 
-                      const stopped = stopSummary(g.v, today);
-                      // 卖出时剩余服务随转让收回，不画已付未用
-                      const unused = !state.readonly && !!stopped && stopped.wastedDays > 0 && !transferredStop(g.v);
-                      const wastedUntil = unused ? addDays(stopped!.date, stopped!.wastedDays) : '';
+                      const { stopped, unused, wastedUntil } = ganttStopMark(g.v, today, !!state.readonly);
                       const unusedWidth = unused ? Math.max(compact ? 0 : BAR, x(compact && wastedUntil > today ? today : wastedUntil) - x(stopped!.date)) : 0;
                       const unusedSeen = unused ? visible(x(stopped!.date), unusedWidth) : { l: 0, r: 0 };
                       // 按实际字体量文字宽度，加左右各 9px 内边距；服务方停用时，停用日右侧被标志盖住的半个圆不计入文字空间。
@@ -757,33 +758,47 @@ export function Gantt({
           </div>
         </div>
       </div>
-      <div className="gt-legend">
-        <span>
-          <i className="lg-unused" />
-          {t('core.stop.unusedTitle')}
-        </span>
-        <span>
-          <svg className="lg-stop" viewBox="0 0 20 20" aria-hidden="true">
-            <circle cx="10" cy="10" r="8.75" />
-            <path d="M4.7 15.3 15.3 4.7" />
-          </svg>
-          {t('core.stop.terminate')}
-        </span>
-        {keys.map((key, i) => (
-          <span key={key}>
-            <i style={{ background: PALETTE[i % PALETTE.length] }} />
-            {labelOf(key)}
-          </span>
-        ))}
-        <span>
-          <i className="lg-planned" />
-          {t('list.gantt.planned')}
-        </span>
-        <span>
-          <i className="lg-gap" />
-          {t('list.gantt.gap')}
-        </span>
-      </div>
+      {legendShown && (
+        <div className="gt-legend">
+          {legend.unused && (
+            <span>
+              <i className="lg-unused" />
+              {t('core.stop.unusedTitle')}
+            </span>
+          )}
+          {legend.terminate && (
+            <span>
+              <svg className="lg-stop" viewBox="0 0 20 20" aria-hidden="true">
+                <circle cx="10" cy="10" r="8.75" />
+                <path d="M4.7 15.3 15.3 4.7" />
+              </svg>
+              {t('core.stop.terminate')}
+            </span>
+          )}
+          {/* 颜色按全部行的固定顺序分配，这里只过滤显示，平移时颜色不跳 */}
+          {keys.map(
+            (key, i) =>
+              legend.colors.has(key) && (
+                <span key={key}>
+                  <i style={{ background: PALETTE[i % PALETTE.length] }} />
+                  {labelOf(key)}
+                </span>
+              ),
+          )}
+          {legend.planned && (
+            <span>
+              <i className="lg-planned" />
+              {t('list.gantt.planned')}
+            </span>
+          )}
+          {legend.gap && (
+            <span>
+              <i className="lg-gap" />
+              {t('list.gantt.gap')}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
