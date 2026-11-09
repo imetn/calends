@@ -38,7 +38,9 @@
       "extended": "18개월",
       "year": "올해",
       "past12": "지난 12개월",
-      "next12": "향후 12개월"
+      "next12": "향후 12개월",
+      "lastYear": "작년",
+      "nextYear": "내년"
     }
   },
   "due": {

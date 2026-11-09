@@ -38,7 +38,9 @@
       "extended": "18 bulan",
       "year": "Tahun ini",
       "past12": "12 bulan terakhir",
-      "next12": "12 bulan ke depan"
+      "next12": "12 bulan ke depan",
+      "lastYear": "Tahun lalu",
+      "nextYear": "Tahun depan"
     }
   },
   "due": {

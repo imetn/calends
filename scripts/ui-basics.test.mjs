@@ -1735,3 +1735,11 @@ test('报告逐日热力图的平面 / 立体选择存进同步偏好，刷新�
   assert.doesNotMatch(report, /useState<DayHeatMode>/);
   assert.match(prefs, /'report-daily',/);
 });
+
+test('概览月度支出图的时间范围存进同步偏好，刷新和换设备都保留', () => {
+  const overview = readFileSync(new URL('../app/src/views/Overview.tsx', import.meta.url), 'utf8');
+  const prefs = readFileSync(new URL('../shared/prefs.ts', import.meta.url), 'utf8');
+  assert.match(overview, /usePref<SpendingPeriod>\('overview-period', 'extended', isSpendingPeriod\)/);
+  assert.doesNotMatch(overview, /useState<SpendingPeriod>/);
+  assert.match(prefs, /'overview-period',/);
+});

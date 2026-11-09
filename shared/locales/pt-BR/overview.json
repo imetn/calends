@@ -41,7 +41,9 @@
       "extended": "18 meses",
       "year": "Este ano",
       "past12": "Últimos 12 meses",
-      "next12": "Próximos 12 meses"
+      "next12": "Próximos 12 meses",
+      "lastYear": "Ano passado",
+      "nextYear": "Próximo ano"
     }
   },
   "due": {

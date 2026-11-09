@@ -41,7 +41,9 @@
       "extended": "18 ay",
       "year": "Bu yıl",
       "past12": "Son 12 ay",
-      "next12": "Sonraki 12 ay"
+      "next12": "Sonraki 12 ay",
+      "lastYear": "Geçen yıl",
+      "nextYear": "Gelecek yıl"
     }
   },
   "due": {

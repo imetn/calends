@@ -12,7 +12,9 @@ import {
   movement,
   mrrOn,
   prepaidValue,
+  spendingFocus,
   spendingMonths,
+  isSpendingPeriod,
   topUpPlan,
 } from './metrics.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
@@ -380,7 +382,7 @@ test('合租全额口径不受成员分担影响，代付仍不计入', () => {
   assert.equal(contributionOn(st, phased, '2026-10-15'), 0);
 });
 
-test('月度支出图窗口：四种范围的起止月，且都含当月（#15）', () => {
+test('月度支出图窗口：六种范围的起止月（#15）', () => {
   const edges = (today: string, period: Parameters<typeof spendingMonths>[1]) => {
     const months = spendingMonths(today, period);
     return [months.length, months[0], months[months.length - 1]];
@@ -389,13 +391,28 @@ test('月度支出图窗口：四种范围的起止月，且都含当月（#15�
   assert.deepEqual(edges('2026-11-09', 'year'), [12, '2026-01-01', '2026-12-01']);
   assert.deepEqual(edges('2026-11-09', 'past12'), [12, '2025-12-01', '2026-11-01']);
   assert.deepEqual(edges('2026-11-09', 'next12'), [12, '2026-11-01', '2027-10-01']);
+  assert.deepEqual(edges('2026-11-09', 'lastYear'), [12, '2025-01-01', '2025-12-01']);
+  assert.deepEqual(edges('2026-11-09', 'nextYear'), [12, '2027-01-01', '2027-12-01']);
+  // 记住的是相对含义：跨年后「今年」自动变成新的一年
+  assert.deepEqual(edges('2027-01-01', 'year'), [12, '2027-01-01', '2027-12-01']);
+  assert.deepEqual(edges('2027-01-01', 'lastYear'), [12, '2026-01-01', '2026-12-01']);
   // 月末不漂移，跨年不重复不跳月
   assert.deepEqual(edges('2027-01-31', 'past12'), [12, '2026-02-01', '2027-01-01']);
   assert.deepEqual(edges('2026-12-31', 'next12'), [12, '2026-12-01', '2027-11-01']);
-  for (const period of ['extended', 'year', 'past12', 'next12'] as const) {
+  for (const period of ['extended', 'year', 'past12', 'next12'] as const) assert.ok(spendingMonths('2028-02-29', period).includes('2028-02-01'), period);
+  for (const period of ['extended', 'past12', 'next12', 'lastYear', 'year', 'nextYear'] as const) {
+    assert.ok(isSpendingPeriod(period), period);
     const months = spendingMonths('2028-02-29', period);
-    assert.ok(months.includes('2028-02-01'), period);
     assert.equal(new Set(months).size, months.length, period);
     assert.deepEqual([...months].sort(), months, period);
   }
+});
+
+test('月度支出图默认选中：含当月选当月，去年选 12 月，明年选 1 月，存值无效不当范围（#15）', () => {
+  const keys = (today: string, period: Parameters<typeof spendingMonths>[1]) => spendingMonths(today, period).map((m) => m.slice(0, 7));
+  assert.equal(spendingFocus(keys('2026-11-09', 'past12'), '2026-11'), '2026-11');
+  assert.equal(spendingFocus(keys('2026-11-09', 'lastYear'), '2026-11'), '2025-12');
+  assert.equal(spendingFocus(keys('2026-11-09', 'nextYear'), '2026-11'), '2027-01');
+  assert.equal(isSpendingPeriod('2026'), false);
+  assert.equal(isSpendingPeriod(''), false);
 });

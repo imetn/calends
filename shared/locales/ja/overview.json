@@ -38,7 +38,9 @@
       "extended": "18か月",
       "year": "今年",
       "past12": "過去12か月",
-      "next12": "今後12か月"
+      "next12": "今後12か月",
+      "lastYear": "昨年",
+      "nextYear": "来年"
     }
   },
   "due": {

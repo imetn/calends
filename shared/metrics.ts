@@ -636,20 +636,30 @@ function baseName(name: string): string {
     .trim();
 }
 
-export type SpendingPeriod = 'extended' | 'year' | 'past12' | 'next12';
+export const SPENDING_PERIODS = ['extended', 'past12', 'next12', 'lastYear', 'year', 'nextYear'] as const;
+export type SpendingPeriod = (typeof SPENDING_PERIODS)[number];
+export const isSpendingPeriod = (v: string): v is SpendingPeriod => (SPENDING_PERIODS as readonly string[]).includes(v);
 
-/** 月度支出图的窗口：各月 1 号，按时间升序；四种窗口都含当月 */
+/** 月度支出图的窗口：各月 1 号，按时间升序。自然年窗口按相对含义计算，记住「今年」跨年后仍是当年 */
 export function spendingMonths(today: string, period: SpendingPeriod): string[] {
   const cur = `${today.slice(0, 7)}-01`;
-  const [from, count] =
-    period === 'year'
-      ? [`${today.slice(0, 4)}-01-01`, 12]
-      : period === 'past12'
-        ? [addMonths(cur, -11), 12]
-        : period === 'next12'
-          ? [cur, 12]
-          : [addMonths(cur, -11), 18];
+  const year = Number(today.slice(0, 4));
+  const windows: Record<SpendingPeriod, [string, number]> = {
+    extended: [addMonths(cur, -11), 18],
+    past12: [addMonths(cur, -11), 12],
+    next12: [cur, 12],
+    lastYear: [`${year - 1}-01-01`, 12],
+    year: [`${year}-01-01`, 12],
+    nextYear: [`${year + 1}-01-01`, 12],
+  };
+  const [from, count] = windows[period];
   return Array.from({ length: count }, (_, i) => addMonths(from, i));
+}
+
+/** 默认选中哪一格：窗口含当期就选当期，否则选离今天最近的一格 */
+export function spendingFocus(keys: string[], cur: string): string {
+  if (!keys.length || keys.includes(cur)) return cur;
+  return keys[keys.length - 1] < cur ? keys[keys.length - 1] : keys[0];
 }
 
 export function insights(state: AppState, today: string): Insight[] {

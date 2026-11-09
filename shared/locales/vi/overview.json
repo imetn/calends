@@ -38,7 +38,9 @@
       "extended": "18 tháng",
       "year": "Năm nay",
       "past12": "12 tháng qua",
-      "next12": "12 tháng tới"
+      "next12": "12 tháng tới",
+      "lastYear": "Năm ngoái",
+      "nextYear": "Năm sau"
     }
   },
   "due": {

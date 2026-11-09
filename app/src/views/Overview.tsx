@@ -9,7 +9,7 @@ import { addDays, addMonths, cycleLabel, diffDays, perLabel, runwayFor, totals, 
 import { moneyTick, flow, cnDate, cnDateAuto, money, monthLabel, nearDate } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue } from '../../../shared/fx.ts';
-import { contributionOn, insights, spendingMonths, type SpendingPeriod } from '../../../shared/metrics.ts';
+import { contributionOn, insights, isSpendingPeriod, spendingFocus, spendingMonths, SPENDING_PERIODS, type SpendingPeriod } from '../../../shared/metrics.ts';
 import { BALANCE_KINDS, type AppState, type Subscription } from '../../../shared/types.ts';
 import { Activity, packCircles, type Bucket } from '../components/charts.tsx';
 import { Timeline, type TimelineGroup } from '../components/Timeline.tsx';
@@ -23,6 +23,7 @@ import { Icon } from '../components/icons.tsx';
 import { allCharges, catColor, sortValue, sumBaseOrNaN, firstStart } from '../derive.ts';
 import { useMoneyPair } from '../components/MoneyPair.tsx';
 import { Layers } from 'lucide-react';
+import { usePref } from '../prefs.ts';
 
 type Scale = 'month' | 'year';
 const PROJ = '__proj';
@@ -103,7 +104,13 @@ function ChargeTimeline({ state, today, onOpen }: { state: AppState; today: stri
 function Spending({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
   const base = state.settings.baseCurrency;
   const [scale, setScale] = useState<Scale>('month');
-  const [period, setPeriod] = useState<SpendingPeriod>('extended');
+  // 时间范围随账本同步，换设备也保留；账本没有去年的扣款时不提供「去年」
+  const [saved, setPeriod] = usePref<SpendingPeriod>('overview-period', 'extended', isSpendingPeriod);
+  const hasLastYear = useMemo(() => {
+    const year = Number(today.slice(0, 4)) - 1;
+    return allCharges(state, `${year}-01-01`, `${year}-12-31`, today).some((c) => c.amount !== 0);
+  }, [state, today]);
+  const period = saved === 'lastYear' && !hasLastYear ? 'extended' : saved;
   // 图例筛选：空 = 全部；点分类先单选，再点其他分类多选，全选或全取消回到全部
   const [picked, setPicked] = useState<string[]>([]);
   const [selKey, setSelKey] = useState<string | undefined>();
@@ -162,7 +169,13 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
     return { key: r.key, label: r.label, parts: arr, total: arr.reduce((a, p) => a + p.v, 0), future: r.key > curKey, current: r.key === curKey };
   });
 
-  const sel = selKey && buckets.some((b) => b.key === selKey) ? selKey : curKey;
+  const sel =
+    selKey && buckets.some((b) => b.key === selKey)
+      ? selKey
+      : spendingFocus(
+          buckets.map((b) => b.key),
+          curKey,
+        );
   const selData = data.find((d) => d.r.key === sel);
   const selPart = chargesTotal(state, selData?.cs ?? []);
   const selTotal = selPart.value;
@@ -217,7 +230,7 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
                 setPeriod(v);
                 setSelKey(undefined);
               }}
-              options={(['extended', 'year', 'past12', 'next12'] as const).map((v) => ({ value: v, label: t(`overview.spending.period.${v}`) }))}
+              options={SPENDING_PERIODS.filter((v) => v !== 'lastYear' || hasLastYear).map((v) => ({ value: v, label: t(`overview.spending.period.${v}`) }))}
             />
           )}
           <Seg

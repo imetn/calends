@@ -375,6 +375,7 @@ test('概览每月花了多少：默认全部，点分类先单选再多选，�
     '../app/src/views/Overview.tsx',
     {
       React: renderedReact,
+      usePref: (_key: string, initial: unknown) => [initial, () => {}],
       allCharges: () => charges,
       firstStart: () => today,
       Activity: 'Activity',
@@ -406,6 +407,62 @@ test('概览每月花了多少：默认全部，点分类先单选再多选，�
   click('Music');
   click(t('list.all'));
   assert.deepEqual(off(), [false, false, false, false]);
+});
+
+test('概览月度支出图的范围：去年默认选 12 月、明年选 1 月，没有去年扣款时隐藏去年且不改写记住的选择（#15）', () => {
+  const charge = (date: string, amount: number) =>
+    ({ sub: { ...sub, id: date, category: 'AI', currency: 'CNY' }, date, amount, currency: 'CNY', projected: false }) as unknown as billing.Charge;
+  const open = (charges: billing.Charge[], stored: string) => {
+    const writes: string[] = [];
+    const r = runtime(
+      '../app/src/views/Overview.tsx',
+      {
+        React: renderedReact,
+        usePref: () => [stored, (v: string) => writes.push(v)],
+        allCharges: (_: unknown, from: string, to: string) => charges.filter((c) => c.date >= from && c.date <= to),
+        firstStart: () => today,
+        Activity: 'Activity',
+        TipTable: 'TipTable',
+        CatIcon: 'CatIcon',
+        Layers: 'Layers',
+        catColor: () => '',
+      },
+      'Spending',
+    );
+    const state = { subscriptions: [], methods: [], settings: { ...DEFAULT_SETTINGS, baseCurrency: 'CNY' }, fx: billing.FALLBACK_FX };
+    const nodes = all(r.render('Spending', { state, today, onOpen() {} }));
+    const picker = nodes.find((e) => e.type === 'Picker')!;
+    const chart = nodes.find((e) => e.type === 'Activity')!;
+    const edges = chart.props.buckets as { key: string }[];
+    return {
+      value: picker.props.value,
+      options: picker.props.options as { value: string; label: string }[],
+      current: chart.props.current,
+      first: edges[0].key,
+      last: edges[edges.length - 1].key,
+      writes,
+    };
+  };
+  const paid = [charge('2025-06-01', 30)];
+  const all6 = open(paid, 'extended');
+  assert.deepEqual(
+    all6.options.map((o) => o.value),
+    ['extended', 'past12', 'next12', 'lastYear', 'year', 'nextYear'],
+  );
+  for (const o of all6.options) assert.ok(o.label && o.label !== `overview.spending.period.${o.value}`, o.value);
+  assert.deepEqual([open(paid, 'lastYear').first, open(paid, 'lastYear').last, open(paid, 'lastYear').current], ['2025-01', '2025-12', '2025-12']);
+  assert.deepEqual([open(paid, 'nextYear').first, open(paid, 'nextYear').last, open(paid, 'nextYear').current], ['2027-01', '2027-12', '2027-01']);
+  assert.equal(open(paid, 'year').current, today.slice(0, 7));
+  // 去年只有 0 元记录（失败付款、免费账期）也算没有扣款
+  for (const empty of [[], [charge('2025-06-01', 0)]]) {
+    const fallback = open(empty, 'lastYear');
+    assert.equal(fallback.value, 'extended');
+    assert.equal(
+      fallback.options.some((o) => o.value === 'lastYear'),
+      false,
+    );
+    assert.deepEqual(fallback.writes, []);
+  }
 });
 
 test('时间轴金额：宽段显示紧凑负金额，窄段仅保留悬停说明，停用半圆避让且公开隐藏', () => {

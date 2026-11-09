@@ -32,7 +32,9 @@
       "extended": "18 個月",
       "year": "今年",
       "past12": "過去 12 個月",
-      "next12": "未來 12 個月"
+      "next12": "未來 12 個月",
+      "lastYear": "去年",
+      "nextYear": "明年"
     }
   },
   "due": {
