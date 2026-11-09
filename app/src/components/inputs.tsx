@@ -1,7 +1,7 @@
 import { numberFormat } from '../../../shared/intl.ts';
 import './ui.css';
 import type { JSX, ReactNode } from 'react';
-import { Switch as AriaSwitch, ToggleButton, ToggleButtonGroup } from 'react-aria-components';
+import { SelectionIndicator, Switch as AriaSwitch, ToggleButton, ToggleButtonGroup } from 'react-aria-components';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { currencyDecimals, moneyDecimals, flowSign, symbol } from '../../../shared/format.ts';
 import { intlLocale, t } from '../../../shared/i18n.ts';
@@ -66,6 +66,7 @@ export function Seg<T extends string>({
     >
       {options.map(([k, l]) => (
         <ToggleButton key={k} id={k} isDisabled={disabledKeys?.includes(k)} className={({ isSelected }) => (isSelected ? 'on' : '')}>
+          <SelectionIndicator className="seg-thumb" />
           {l}
         </ToggleButton>
       ))}

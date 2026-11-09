@@ -214,6 +214,7 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     use: () => false,
     Fragment: 'Fragment',
     Timeline: 'Timeline',
+    GlidePath: 'GlidePath',
     Amount: 'Amount',
     Eye: 'Eye',
     EyeOff: 'EyeOff',

@@ -1,8 +1,59 @@
 import { useSnapshotRender } from '../snapshot-render.tsx';
-import { useLayoutEffect, useRef, useState, type ReactNode as ComponentChildren } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode as ComponentChildren, type SVGProps } from 'react';
 import { tipProps, tipSet } from './overlays.tsx';
 import { useWidth } from './inputs.tsx';
 import { monthTicks } from '../../../shared/format.ts';
+import { morphPath } from '../path-morph.ts';
+
+/** 与 --duration 一致 */
+const GLIDE_MS = 250;
+
+/** 自定宽度的图（无 viewBox）容器变宽时坐标跟着变，这种变化不算数据切换 */
+const plotWidth = (el: SVGPathElement) => {
+  const svg = el.ownerSVGElement;
+  return svg && !svg.hasAttribute('viewBox') ? svg.clientWidth : 0;
+};
+
+/**
+ * 数据变化时形状从旧路径过渡到新路径。逐帧直接写 d，不触发 React 渲染；
+ * 中途再切换从当前形状接着走；首次挂载（含复制为图片的重新渲染）和减少动效时直接到位。
+ */
+export function GlidePath({ d, ...rest }: SVGProps<SVGPathElement> & { d: string }) {
+  const ref = useRef<SVGPathElement>(null);
+  const shown = useRef(d);
+  const width = useRef(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const w = plotWidth(el);
+    const resized = w !== width.current;
+    width.current = w;
+    const morph = shown.current === d || resized || matchMedia('(prefers-reduced-motion: reduce)').matches ? null : morphPath(shown.current, d);
+    if (!morph) {
+      shown.current = d;
+      return;
+    }
+    const start = performance.now();
+    const paint = (t: number) => {
+      shown.current = morph(t);
+      el.setAttribute('d', shown.current);
+    };
+    const frame = (now: number) => {
+      const p = Math.min(1, (now - start) / GLIDE_MS);
+      if (p < 1) {
+        paint(1 - (1 - p) ** 2);
+        raf = requestAnimationFrame(frame);
+      } else {
+        shown.current = d;
+        el.setAttribute('d', d);
+      }
+    };
+    paint(0);
+    let raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [d]);
+  return <path ref={ref} d={d} {...rest} />;
+}
 
 /** 每个刻度标签至少留这么宽，窄屏自动换到更稀的一档；宽屏最多 12 个 */
 const TICK_PX = 48;
@@ -98,10 +149,18 @@ export function AreaChart({
             strokeDasharray="3 4"
           />
         ))}
-        {area && <path d={area} fill="url(#area-fill)" />}
-        {line && <path d={line} fill="none" stroke="var(--chart-ink)" strokeWidth="2.2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />}
+        {area && <GlidePath d={area} fill="url(#area-fill)" />}
+        {line && <GlidePath d={line} fill="none" stroke="var(--chart-ink)" strokeWidth="2.2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />}
         {rest && (
-          <path d={rest} fill="none" stroke="var(--label-3)" strokeWidth="2.2" strokeDasharray="4 5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+          <GlidePath
+            d={rest}
+            fill="none"
+            stroke="var(--label-3)"
+            strokeWidth="2.2"
+            strokeDasharray="4 5"
+            vectorEffect="non-scaling-stroke"
+            strokeLinejoin="round"
+          />
         )}
       </svg>
       {markers?.map((i) => (
@@ -250,7 +309,15 @@ export function BarLine({
       </div>
       <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="none" style={{ height }} className="bl-line">
         {min < 0 && <line x1="0" x2={W} y1={y(0)} y2={y(0)} stroke="var(--sep)" vectorEffect="non-scaling-stroke" />}
-        <path d={path} fill="none" stroke="var(--chart-ink)" strokeWidth="2.4" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+        <GlidePath
+          d={path}
+          fill="none"
+          stroke="var(--chart-ink)"
+          strokeWidth="2.4"
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
       </svg>
       <XAxis labels={labels} months={months} w={w} pos={(i) => cx(i) / W} fallback={labels.flatMap((_, i) => (i % step === 0 ? [i] : []))} />
     </div>

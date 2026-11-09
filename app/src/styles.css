@@ -375,8 +375,6 @@ a {
   outline-offset: -2px;
 }
 .seg button.on {
-  background: var(--card);
-  box-shadow: 0 0 0 var(--hairline) var(--line);
   font-weight: 600;
 }
 .seg.sm button {
@@ -1952,6 +1950,9 @@ a {
   background: var(--card);
   box-shadow: 0 0 0 1px var(--chart-ink);
   pointer-events: none;
+  transition:
+    left var(--duration) var(--ease),
+    top var(--duration) var(--ease);
 }
 .area-end {
   position: absolute;
@@ -1962,6 +1963,9 @@ a {
   background: var(--chart-ink);
   box-shadow: 0 0 0 var(--hairline) color-mix(in srgb, var(--chart-ink) 20%, transparent);
   pointer-events: none;
+  transition:
+    left var(--duration) var(--ease),
+    top var(--duration) var(--ease);
 }
 .area-hit {
   position: absolute;
@@ -2272,6 +2276,9 @@ a {
   border-radius: var(--bar-radius) var(--bar-radius) 0 0;
   background: var(--chart-ink-2);
   min-height: 1px;
+  transition:
+    top var(--duration) var(--ease),
+    height var(--duration) var(--ease);
 }
 /* 窄屏柱子窄，圆角跟着收，不做成半圆头 */
 @media (max-width: 700px) {
@@ -2298,6 +2305,7 @@ a {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
+  transition: top var(--duration) var(--ease);
 }
 /* 报告「现金与真实成本」里未来几个月的应付：同一种「预计」斜纹，见下方 .bl-col.future i */
 
@@ -2855,9 +2863,38 @@ button.bl-col {
   color: var(--label-2);
 }
 .seg button.on {
-  background: var(--card);
   color: var(--label);
+}
+/* 选中高亮放在选中按钮里，切换时由 react-aria 从旧位置过渡；宽度写死 100%，auto 无法过渡 */
+.seg {
+  isolation: isolate;
+}
+.seg button {
+  position: relative;
+  transition: color var(--duration) var(--ease);
+}
+.seg-thumb {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 100%;
+  z-index: -1;
+  border-radius: var(--radius-pill);
+  background: var(--card);
   box-shadow: 0 0 0 var(--hairline) var(--line);
+  transition:
+    translate var(--duration) var(--ease),
+    width var(--duration) var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .seg button,
+  .seg-thumb,
+  .area-mark,
+  .area-end,
+  .bl-col i,
+  .bl-val {
+    transition: none;
+  }
 }
 /* 工具栏外框与图标操作使用同一尺寸档。 */
 .tb-actions .seg {

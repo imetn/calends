@@ -4,7 +4,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { addMonths, diffDays } from '../../../shared/billing.ts';
 import { cnDate, monthLabel } from '../../../shared/format.ts';
 import { useWidth } from '../components/inputs.tsx';
-import { BAR, niceTicks } from '../components/charts.tsx';
+import { BAR, GlidePath, niceTicks } from '../components/charts.tsx';
 import { HatchPattern } from '../components/hatch.tsx';
 
 export interface ChartBar {
@@ -306,9 +306,9 @@ export function ChargeBars({
                   <g key={gi}>
                     {/* 首期优惠：先画一整根原价高度的未扣柱（与预测同一种斜纹），实际扣的实色柱从底部涨到它的金额为止 */}
                     {ok && full != null && full > sum && (
-                      <path className={`cc-bar future ${on}`} style={{ fill: `url(#${hatch})` }} d={barPath(g.x - bw / 2, y(full), bw, y(0) - y(full))} />
+                      <GlidePath className={`cc-bar future ${on}`} style={{ fill: `url(#${hatch})` }} d={barPath(g.x - bw / 2, y(full), bw, y(0) - y(full))} />
                     )}
-                    <path
+                    <GlidePath
                       className={`cc-bar ${g.future ? 'future' : ''} ${ok ? '' : 'unknown'} ${on}`}
                       style={g.future && ok ? { fill: `url(#${hatch})` } : undefined}
                       d={barPath(g.x - bw / 2, by, bw, y(0) - by)}
@@ -323,7 +323,7 @@ export function ChargeBars({
                 const ok = Number.isFinite(bars[i].v);
                 const by = ok ? Math.min(y(val(i)), y(0) - 2) : y(0) - 4;
                 return (
-                  <path
+                  <GlidePath
                     key={i}
                     className={`cc-bar ${g.future ? 'future' : ''} ${ok ? '' : 'unknown'} ${on}`}
                     style={g.future && ok ? { fill: `url(#${hatch})` } : undefined}
@@ -348,9 +348,9 @@ export function ChargeBars({
                 d += prev == null ? `M${x0},${ry}H${x1}` : `L${x0},${prev}L${x0},${ry}H${x1}`;
                 prev = ry;
               });
-              return d && <path className="cc-ref" d={d} />;
+              return d && <GlidePath className="cc-ref" d={d} />;
             })()}
-            {lineD && <path className="cc-line" d={lineD} />}
+            {lineD && <GlidePath className="cc-line" d={lineD} />}
             {!axis && peak >= 0 && (
               <PeakLabel
                 x={groups[peak].x}
