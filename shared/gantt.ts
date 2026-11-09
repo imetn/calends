@@ -15,6 +15,7 @@ import {
   phaseSubs,
   stopSummary,
 } from './billing.ts';
+import type { Charge } from './billing.ts';
 import { transferredStop } from './transfers.ts';
 import type { Subscription } from './types.ts';
 import { dateFormat } from './intl.ts';
@@ -45,6 +46,60 @@ export function ganttPaidUntil(v: Subscription, from: string, today: string): st
     .at(-1);
   if (!last) return isPostpaid(v) && v.price > 0 ? from : today;
   return chargeServicePeriod(v, last.date, last.serviceDate).until;
+}
+
+/** 这一截的时长是否超过一个周期 */
+export const ganttCutSpansCycles = (v: Subscription, from: string, to: string) => diffDays(from, to) > cycleDays(v.cycle) * 1.5;
+
+/**
+ * 柱上每一截的实际账单。已发生的账单按净额归到对应周期：预付看扣款日所在的一截；后付费的账单结清刚结束的一期，
+ * 切点就是账单日，所以归到以账单日收尾的一截；窗口末段之后才出的账单归最后一截。退款、补差跟随上一笔账单，
+ * 不在现金日落到下一期。一截盖住多个周期时只有设定价有意义，不给实际金额。
+ */
+export function ganttCutBills(v: Subscription, cuts: string[], today: string): { actual?: number; multiCycle: boolean; pending?: boolean }[] {
+  const last = cuts.length - 1;
+  const to = cuts[last];
+  const postpaid = isPostpaid(v);
+  const days = cycleDays(v.cycle);
+  const totals: (number | undefined)[] = Array.from({ length: last }, () => undefined);
+  const billDates: string[][] = Array.from({ length: last }, () => []);
+  const pending = new Set<number>();
+  const pad = Math.ceil(days) + 31;
+  const cutOf = (c: Charge) => {
+    const i = cuts.findIndex((a, n) => n < last && (postpaid ? a < c.date && c.date <= cuts[n + 1] : a <= c.date && c.date < cuts[n + 1]));
+    if (i >= 0) return i;
+    const period = chargeServicePeriod(c.sub, c.date, c.serviceDate);
+    if (postpaid && c.date > to && period.from < to) return last - 1;
+    // 提前付款的日期早于本段起点，归到它覆盖的首截；更早的账单属于暂停前的那段
+    return !postpaid && c.date < cuts[0] && period.until > cuts[0] ? 0 : -1;
+  };
+  let bill = -1;
+  // 多查一段：提前付的首期在起点之前；后付费的末期账单、停用或窗口末端之后才到的退款都在 to 之后
+  for (const c of chargesBetween(v, addDays(cuts[0], -pad), addDays(to, pad), today)) {
+    if (c.kind === 'failed') continue;
+    if (c.projected) {
+      if (!c.kind && cutOf(c) >= 0) pending.add(cutOf(c));
+      continue;
+    }
+    if (c.kind) {
+      if (bill >= 0) totals[bill] = (totals[bill] ?? 0) + c.amount;
+      continue;
+    }
+    bill = cutOf(c);
+    if (bill >= 0) {
+      totals[bill] = (totals[bill] ?? 0) + c.amount;
+      billDates[bill].push(c.date);
+    }
+  }
+  return totals.map((total, i) => {
+    const dates = billDates[i];
+    // 时长超过一个周期，或截内账单相隔半个周期以上（相邻切点太窄被并入），都算盖住多个周期；同一周期内的重复扣款仍合计
+    const multiCycle = ganttCutSpansCycles(v, cuts[i], cuts[i + 1]) || (dates.length > 1 && diffDays(dates[0], dates[dates.length - 1]) >= days / 2);
+    // 去掉累加的浮点残差，也去掉 -0，避免显示成 -¥0.00
+    return multiCycle
+      ? { multiCycle }
+      : { actual: total == null ? undefined : Math.round(total * 1e6) / 1e6 + 0, multiCycle, ...(pending.has(i) ? { pending: true } : {}) };
+  });
 }
 
 /** 名称列以图标为下限、最长名称为上限，至少给轨道留出一半容器。 */

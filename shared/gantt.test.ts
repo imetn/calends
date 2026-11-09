@@ -883,3 +883,261 @@ test('图例按 marks 渲染，颜色下标沿用完整列表，窗口内没有�
   assert.match(source, /keys\.map\(\s*\(key, i\) =>\s*legend\.colors\.has\(key\) &&/);
   assert.doesNotMatch(source, /keys\.filter\([^)]*legend/);
 });
+
+test('柱上账单：后付费归服务月，退款并入上一笔净额，失败和预测不算实际', () => {
+  const today = '2026-11-09';
+  const base: Subscription = {
+    id: 'fictional-bill',
+    name: 'Fictional bill',
+    category: 'Tools',
+    tags: [],
+    price: 100,
+    currency: 'CNY',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-08-01',
+    status: 'active',
+  };
+  const postpaid: Subscription = {
+    ...base,
+    billing: 'postpaid',
+    payments: [
+      { date: '2026-09-01', amount: 165.4 },
+      { date: '2026-09-03', amount: -15.4, kind: 'refund' },
+      { date: '2026-10-01', amount: 0 },
+      { date: '2026-11-01', amount: 615.8 },
+    ],
+  };
+  const cuts = ['2026-08-01', '2026-09-01', '2026-10-01', '2026-11-01', '2026-12-01'];
+  assert.deepEqual(
+    gantt.ganttCutBills(postpaid, cuts, today).map((b) => b.actual),
+    [150, 0, 615.8, undefined],
+  );
+  // 窗口末段之后才出的账单仍属于最后一截
+  assert.deepEqual(
+    gantt.ganttCutBills(postpaid, ['2026-08-01', '2026-09-01', '2026-10-01'], today).map((b) => b.actual),
+    [150, 0],
+  );
+
+  const prepaid: Subscription = {
+    ...base,
+    payments: [
+      { date: '2026-08-01', amount: 80 },
+      { date: '2026-09-01', amount: 0, kind: 'failed' },
+      { date: '2026-10-01', amount: 90 },
+      { date: '2026-10-05', amount: 12, kind: 'adjust' },
+    ],
+  };
+  assert.deepEqual(
+    gantt.ganttCutBills(prepaid, cuts, today).map((b) => b.actual),
+    [80, undefined, 102, 100],
+  );
+
+  const merged = gantt.ganttCutBills(prepaid, ['2026-08-01', '2026-11-01'], today);
+  assert.deepEqual(merged, [{ multiCycle: true }]);
+});
+
+test('柱上文字：实际金额取整不带单位，同额只标一次，窄到放不下就不标，合并多周期才带单位', () => {
+  const today = '2026-11-09';
+  const labels = (nodes: Element[]) =>
+    nodes
+      .filter((el) => el.type === 'em')
+      .flatMap(all)
+      .filter((el) => el.type === 'span')
+      .map((el) => (el.children as unknown[]).join(''));
+  const seg = (nodes: Element[]) => nodes.filter((el) => el.props.className?.split(' ').includes('gt-seg'));
+  const payments = [
+    { date: '2026-09-01', amount: 165.4 },
+    { date: '2026-10-01', amount: 197.35 },
+    { date: '2026-11-01', amount: 0.4 },
+  ];
+  const host = mount('1y', 1200, today);
+  const sub: Subscription = { ...host.sub, id: 'fictional-usage', currency: 'CNY', start: '2026-08-01', price: 67.75, billing: 'postpaid', payments };
+  const nodes = host.render([sub]);
+  assert.deepEqual(
+    labels(nodes)
+      .slice(0, 3)
+      .map((s) => s.replace(/[^\d.]/g, '')),
+    ['165', '197', '0.40'],
+  );
+  assert.ok(
+    labels(nodes).every((s) => !s.includes('/mo')),
+    'one cut is one cycle: no unit on the bar',
+  );
+  const exact = seg(nodes).find((el) => el.props.title.includes('197.35'));
+  assert.ok(exact, 'tooltip keeps the exact amount');
+
+  // 相同金额只标一次（取整后相同也算）
+  const flat = host.render([
+    {
+      ...sub,
+      payments: payments
+        .slice(0, 2)
+        .map((p) => ({ ...p, amount: 165.4 }))
+        .concat({ date: '2026-11-01', amount: 165.2 }),
+    },
+  ]);
+  assert.equal(labels(flat).filter((s) => s.replace(/[^\d.]/g, '') === '165').length, 1);
+
+  // 每截窄到放不下：不标文字，悬停提示仍在
+  const tiny = mount('1y', 150, today);
+  const narrow = tiny.render([{ ...sub, price: 1234567 }]);
+  assert.equal(labels(narrow).length, 0);
+  assert.ok(seg(narrow).every((el) => el.props.title));
+
+  // 周付在短窗口被合并的一截：不是一个周期，保留单位
+  const short = mount('6m', 214, '2026-10-26');
+  const weekly = short.render([{ ...short.sub, start: '2026-01-01', cycle: { unit: 'week', every: 1 }, price: 1234 }]);
+  assert.ok(
+    labels(weekly).some((s) => s.endsWith('/mo')),
+    `merged cut keeps its unit: ${labels(weekly)}`,
+  );
+});
+
+test('柱上账单边界：窗口后的退款计入净额，浮点残差归零，半周期外的两笔算多周期', () => {
+  const today = '2026-11-09';
+  const base: Subscription = {
+    id: 'fictional-edge',
+    name: 'Fictional edge',
+    category: 'Tools',
+    tags: [],
+    price: 100,
+    currency: 'CNY',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-10-01',
+    status: 'active',
+  };
+  assert.deepEqual(
+    gantt.ganttCutBills(
+      {
+        ...base,
+        payments: [
+          { date: '2026-10-01', amount: 100 },
+          { date: '2026-10-20', amount: -100, kind: 'refund' },
+        ],
+      },
+      ['2026-10-01', '2026-10-15'],
+      today,
+    ),
+    [{ actual: 0, multiCycle: false }],
+  );
+  const [residual] = gantt.ganttCutBills(
+    {
+      ...base,
+      payments: [
+        { date: '2026-10-01', amount: 100.1 },
+        { date: '2026-10-05', amount: -33.37, kind: 'refund' },
+        { date: '2026-10-06', amount: -66.73, kind: 'refund' },
+      ],
+    },
+    ['2026-10-01', '2026-10-28'],
+    today,
+  );
+  assert.equal(Object.is(residual.actual, 0), true);
+  const two = {
+    ...base,
+    start: '2026-09-01',
+    payments: [
+      { date: '2026-09-01', amount: 100 },
+      { date: '2026-10-01', amount: 100 },
+    ],
+  };
+  assert.deepEqual(gantt.ganttCutBills(two, ['2026-09-01', '2026-10-05'], today), [{ multiCycle: true }]);
+  // 同一周期内重复扣款仍是一期的合计
+  const dup = {
+    ...base,
+    payments: [
+      { date: '2026-10-01', amount: 100 },
+      { date: '2026-10-02', amount: 100 },
+    ],
+  };
+  assert.deepEqual(gantt.ganttCutBills(dup, ['2026-10-01', '2026-10-28'], today), [{ actual: 200, multiCycle: false }]);
+});
+
+test('柱上文字边界：并入的账单不相加，补差不切周期，试用不标金额，周付短窗口仍有文字', () => {
+  const today = '2026-11-09';
+  const texts = (nodes: Element[]) =>
+    nodes
+      .filter((el) => el.type === 'em')
+      .flatMap(all)
+      .filter((el) => el.type === 'span')
+      .map((el) => (el.children as unknown[]).join(''));
+  const segs = (nodes: Element[]) => nodes.filter((el) => el.props.className?.split(' ').includes('gt-seg'));
+  const host = mount('1y', 1200, today);
+  const sub: Subscription = { ...host.sub, id: 'fictional-edge', currency: 'CNY', price: 100, start: '2026-09-01' };
+
+  const merged = host.render([
+    {
+      ...sub,
+      end: '2026-10-05',
+      payments: [
+        { date: '2026-09-01', amount: 100 },
+        { date: '2026-10-01', amount: 100 },
+      ],
+    },
+  ]);
+  assert.ok(!texts(merged).some((s) => s.includes('200')), `two bills in a merged cut are not one amount: ${texts(merged)}`);
+
+  const range = gantt.ganttWindow('1y', today);
+  const scale = 1200 / billing.diffDays(range.start, range.end);
+  const adjusted = segs(
+    host.render([
+      {
+        ...sub,
+        payments: [
+          { date: '2026-09-01', amount: 100 },
+          { date: '2026-10-01', amount: 90 },
+          { date: '2026-10-15', amount: 12, kind: 'adjust' },
+        ],
+      },
+    ]),
+  );
+  const october = adjusted.find((el) => el.props.title.includes('102'));
+  assert.ok(october, 'adjustment joins its bill');
+  assert.ok(october.props.style.width > 28 * scale, 'adjustment must not split the cycle');
+
+  const trial = host.render([{ ...sub, start: '2026-08-01', trialEnd: '2026-09-01', payments: [{ date: '2026-09-01', amount: 77 }] }]);
+  assert.equal(texts(trial)[0]?.replace(/[^\d.]/g, ''), '77', `past cut without a bill stays blank: ${texts(trial)}`);
+
+  const short = mount('3m', 214, today);
+  const weekly = texts(short.render([{ ...short.sub, start: '2026-09-01', cycle: { unit: 'week', every: 1 }, price: 10 }]));
+  assert.ok(
+    weekly.some((s) => s.endsWith('/mo')),
+    `merged weekly bars keep a label: ${weekly}`,
+  );
+});
+
+test('柱上账单：后付费待出账标记为 pending，提前付的首期归首截，暂停前的账单不串段', () => {
+  const today = '2026-11-09';
+  const base: Subscription = {
+    id: 'fictional-pending',
+    name: 'Fictional pending',
+    category: 'Tools',
+    tags: [],
+    price: 100,
+    currency: 'CNY',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-08-15',
+    status: 'active',
+  };
+  const postpaid: Subscription = {
+    ...base,
+    billing: 'postpaid',
+    end: '2026-11-05',
+    payments: [
+      { date: '2026-09-15', amount: 101 },
+      { date: '2026-10-15', amount: 102 },
+    ],
+  };
+  const bills = gantt.ganttCutBills(postpaid, ['2026-08-15', '2026-09-15', '2026-10-15', '2026-11-05'], today);
+  assert.deepEqual(
+    bills.map((b) => b.actual),
+    [101, 102, undefined],
+  );
+  assert.equal(bills[2].pending, true);
+
+  const early: Subscription = { ...base, start: '2026-09-01', payments: [{ date: '2026-08-29', amount: 300 }] };
+  assert.equal(gantt.ganttCutBills(early, ['2026-09-01', '2026-09-29'], today)[0].actual, 300);
+
+  const resumed: Subscription = { ...base, start: '2026-06-01', end: '2026-09-10', payments: [{ date: '2026-08-15', amount: 100 }] };
+  assert.equal(gantt.ganttCutBills(resumed, ['2026-09-20', '2026-10-15'], today)[0].actual, undefined);
+});

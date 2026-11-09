@@ -23,6 +23,8 @@ import { flow, cnDate, money, monthLabel } from '../../../shared/format.ts';
 import { intlLocale, t } from '../../../shared/i18n.ts';
 import {
   GANTT_STEP,
+  ganttCutBills,
+  ganttCutSpansCycles,
   ganttLabelBounds,
   ganttOpenEnd,
   ganttPaidUntil,
@@ -81,7 +83,7 @@ const BAR = 22;
 /** 停用标志直径：与胶囊同高，圆心落在停用日 */
 const STOP_CAP = BAR;
 
-/** 损失金额（.gt-unused-amount：11px、600）的实际宽度；无法测量时按每字 7px 保守估算 */
+/** 柱上文字（--fs-1；按较宽的 600 字重量，偏保守）的实际宽度；无法测量时按每字 7px 保守估算 */
 let measureCtx: CanvasRenderingContext2D | null | undefined;
 function amountWidth(text: string): number {
   if (measureCtx === undefined) {
@@ -92,9 +94,15 @@ function amountWidth(text: string): number {
     }
   }
   if (!measureCtx) return [...text].length * 7;
-  measureCtx.font = `600 11px ${getComputedStyle(document.body).fontFamily}`;
+  measureCtx.font = `600 12px ${getComputedStyle(document.body).fontFamily}`;
   return Math.ceil(measureCtx.measureText(text).width) + 1;
 }
+/** 柱上文字只看大概：取整；不足 1 的金额保留小数，避免取整成 0。精确值在悬停提示里 */
+const barAmount = (n: number, currency: string) => money(n, currency, Math.abs(n) >= 1 || n === 0 ? { decimals: 0 } : { compact: true });
+/** 柱上文字左右各 9px 内边距 */
+const LABEL_PAD = 18;
+/** 首截的国旗及其间距 */
+const FLAG_ROOM = 18;
 const NARROW = '(max-width: 700px)';
 const PORTRAIT = '(max-width: 700px) and (orientation: portrait)';
 
@@ -630,7 +638,7 @@ export function Gantt({
                             (c) => !c.kind && c.amount === 0 && !recordedDates.has(c.date) && !recordedPeriods.has(periodKey(c)),
                           )
                         : [];
-                      const renewals = [...charges.filter((c) => c.amount > 0 || (!c.kind && c.amount === 0)), ...zeroCycles]
+                      const renewals = [...charges.filter((c) => !c.kind && c.amount >= 0), ...zeroCycles]
                         .filter((c) => c.date > g.from && c.date < to)
                         .map((c) => c.date);
                       const paidUntil = ganttPaidUntil(g.v, g.from, today);
@@ -646,6 +654,14 @@ export function Gantt({
                           return kept;
                         }, []);
                       const priceRun = (d: string) => `${priceAt(g.v, d)}|${g.v.intro && d < g.v.intro.until ? 1 : 0}`;
+                      const labelRoom = (d: string, unit: boolean) => {
+                        const prefix = g.v.intro && d < g.v.intro.until ? t('list.gantt.introShort') : '';
+                        return (
+                          amountWidth(`${prefix}${barAmount(priceAt(g.v, d), g.v.currency)}${unit ? `/${perLabel(g.v)}` : ''}`) +
+                          LABEL_PAD +
+                          (d === g.from && g.v.region ? FLAG_ROOM : 0)
+                        );
+                      };
                       // 短窗口中同价的一串若没有一截放得下价格，只合并第一处可见标签需要的相邻周期。
                       // 调价/优惠边界不为标签合并；已有足够宽的截时保留全部周期切点。
                       if (zoom === '3m' || zoom === '6m') {
@@ -656,12 +672,14 @@ export function Gantt({
                             const seen = visible(x(a), x(b) - x(a));
                             return seen.r - seen.l;
                           };
-                          const hasRoom = cuts.slice(first, until).some((a, i) => seenWidth(a, cuts[first + i + 1]) > 70);
+                          const hasRoom = cuts
+                            .slice(first, until)
+                            .some((a, i) => seenWidth(a, cuts[first + i + 1]) >= labelRoom(a, ganttCutSpansCycles(g.v, a, cuts[first + i + 1])));
                           if (!hasRoom) {
                             let a = first;
                             while (a < until && seenWidth(cuts[a], cuts[a + 1]) <= 0) a++;
                             let b = a + 1;
-                            while (b <= until && seenWidth(cuts[a], cuts[b]) <= 70) b++;
+                            while (b <= until && seenWidth(cuts[a], cuts[b]) < labelRoom(cuts[a], true)) b++;
                             if (b <= until && b > a + 1) {
                               cuts.splice(a + 1, b - a - 1);
                               until -= b - a - 1;
@@ -670,6 +688,7 @@ export function Gantt({
                           first = until;
                         }
                       }
+                      const bills = ganttCutBills(g.v, cuts, today);
                       let labeled = '';
                       return (
                         <Fragment key={g.from}>
@@ -684,12 +703,18 @@ export function Gantt({
                             const price = priceAt(g.v, a);
                             const last = n === cuts.length - 2;
                             const pnow = paidUntil >= b ? pw : paidUntil <= a ? 0 : Math.min(pw, Math.max(0, x(paidUntil) - pl));
-                            // 同价的一串只标一次：标在窗口内第一截放得下的
-                            const run = `${price}|${intro ? 1 : 0}`;
+                            // 已发生的账单标实际净额；柱子本身就是周期，只有一截盖住多个周期时才带单位
+                            const { actual, multiCycle, pending } = bills[n];
+                            const amount = actual ?? price;
+                            const text = `${intro ? t('list.gantt.introShort') : ''}${barAmount(amount, g.v.currency)}${multiCycle ? `/${perLabel(g.v)}` : ''}`;
+                            // 金额相同的一串只标一次：标在窗口内第一截放得下的
                             const seen = visible(pl, pw);
-                            const label = seen.r - seen.l > 70 && labeled !== run;
-                            if (label) labeled = run;
-                            const ptip = `${intro ? t('list.gantt.introPrefix') : ''}${money(price, g.v.currency)}/${perLabel(g.v)}\n${cnDate(a)} – ${last && g.open ? t('list.gantt.present') : cnDate(b)}${g.v.region ? `\n${g.v.region}` : ''}${g.v.planned ? t('list.gantt.plannedSuffix') : ''}`;
+                            // 已过去却没有账单的账期（试用、扣款失败）不标金额，免得看起来扣过款；待出账和零元账期照常标
+                            const known = actual != null || multiCycle || !!pending || b > today || price === 0;
+                            const label =
+                              known && seen.r - seen.l >= amountWidth(text) + LABEL_PAD + (n === 0 && g.v.region ? FLAG_ROOM : 0) && labeled !== text;
+                            if (label) labeled = text;
+                            const ptip = `${intro ? t('list.gantt.introPrefix') : ''}${money(amount, g.v.currency)}/${perLabel(g.v)}\n${cnDate(a)} – ${last && g.open ? t('list.gantt.present') : cnDate(b)}${g.v.region ? `\n${g.v.region}` : ''}${g.v.planned ? t('list.gantt.plannedSuffix') : ''}`;
                             return (
                               <span
                                 key={a}
@@ -703,10 +728,7 @@ export function Gantt({
                                 {label && (
                                   <em className="icon-text" style={seen.l > pl ? { marginLeft: seen.l - pl } : undefined}>
                                     {n === 0 && g.v.region ? <FlagImg cc={g.v.region} /> : null}
-                                    <span>
-                                      {intro ? t('list.gantt.introShort') : ''}
-                                      {money(price, g.v.currency, { compact: true })}/{perLabel(g.v)}
-                                    </span>
+                                    <span>{text}</span>
                                   </em>
                                 )}
                               </span>
