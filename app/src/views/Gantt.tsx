@@ -7,6 +7,7 @@ import { Fragment, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, 
 import {
   addDays,
   addMonths,
+  chargeServicePeriod,
   chargesBetween,
   coveredUntil,
   diffDays,
@@ -16,6 +17,7 @@ import {
   phaseLanes,
   phaseSubs,
   priceAt,
+  type Charge,
 } from '../../../shared/billing.ts';
 import { flow, cnDate, money, monthLabel } from '../../../shared/format.ts';
 import { intlLocale, t } from '../../../shared/i18n.ts';
@@ -614,8 +616,22 @@ export function Gantt({
                       // 段内按调价、首期优惠切成几截，每截标自己的价格；
                       // 按每次续费切开；有实付记录时 chargesBetween 使用实际日期。
                       // 逐个合并不足一个正圆宽的切点，不用最初的间隔决定整段是否切分。
-                      const renewals = chargesBetween(g.v, g.from, to, today)
-                        .filter((c) => c.amount > 0 && c.date > g.from && c.date < to)
+                      const charges = chargesBetween(g.v, g.from, to, today);
+                      // 零元账期同样保留周期边界。导入记录可能只存非零付款；补显示切点，不补账本或改变付款着色。
+                      const hasZeroPrice = g.v.price === 0 || g.v.intro?.price === 0 || g.v.priceHistory?.some((p) => p.amount === 0);
+                      const recordedDates = new Set(charges.map((c) => c.date));
+                      const periodKey = (c: Charge) => {
+                        const p = chargeServicePeriod(c.sub, c.date, c.serviceDate);
+                        return `${p.from}|${p.until}`;
+                      };
+                      const recordedPeriods = new Set(hasZeroPrice ? charges.map(periodKey) : []);
+                      const zeroCycles = hasZeroPrice
+                        ? chargesBetween({ ...g.v, payments: undefined, estimateFrom: undefined }, g.from, to, today).filter(
+                            (c) => !c.kind && c.amount === 0 && !recordedDates.has(c.date) && !recordedPeriods.has(periodKey(c)),
+                          )
+                        : [];
+                      const renewals = [...charges.filter((c) => c.amount > 0 || (!c.kind && c.amount === 0)), ...zeroCycles]
+                        .filter((c) => c.date > g.from && c.date < to)
                         .map((c) => c.date);
                       const paidUntil = ganttPaidUntil(g.v, g.from, today);
                       const cycleCuts = new Set(renewals);

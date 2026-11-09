@@ -599,6 +599,84 @@ test('短窗口只合并价格所需切点，同价仍只标一次且保留其�
   }
 });
 
+test('零元预算的月付导入记录在最后一次非零付款之后仍按月分段，付款与着色不变', () => {
+  const today = '2026-11-09';
+  const host = mount('1y', 900, today);
+  const sub: Subscription = {
+    ...host.sub,
+    id: 'fictional-zero-utility',
+    start: '2025-10-01',
+    price: 0,
+    billing: 'postpaid',
+    estimateFrom: '2026-12-01',
+    nextDue: '2026-12-01',
+    payments: ['2025-11-01', '2025-12-01', '2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01', '2026-05-01', '2026-06-01'].map((date) => ({
+      date,
+      amount: 10,
+    })),
+  };
+  const original = JSON.stringify(sub);
+  const history = JSON.stringify(billing.chargesBetween(sub, sub.start, today, today));
+  const parts = host.render([sub]).filter((el) => el.props.className?.split(' ').includes('gt-seg'));
+  const range = gantt.ganttWindow('1y', today);
+  const scale = 900 / billing.diffDays(range.start, range.end);
+  for (const date of ['2026-07-01', '2026-08-01', '2026-09-01', '2026-10-01', '2026-11-01']) {
+    const part = parts.find((el) => Math.abs(el.props.style.left - billing.diffDays(range.start, date) * scale) < 0.001);
+    assert.ok(part, `zero-price cycle boundary ${date} must split the long capsule`);
+    assert.equal(part.props.style['--now'], '0px', 'splitting does not claim payment coverage');
+  }
+  assert.equal(gantt.ganttPaidUntil(sub, sub.start, today), '2026-06-01');
+  assert.equal(JSON.stringify(sub), original, 'rendering must not change subscription records');
+  assert.equal(JSON.stringify(billing.chargesBetween(sub, sub.start, today, today)), history, 'no charges are created by display cuts');
+});
+
+test('明确记录的零元账期也分段，但失败扣款、退款和补差不增加零元分段', () => {
+  const today = '2026-11-09';
+  const host = mount('1y', 900, today);
+  const sub: Subscription = {
+    ...host.sub,
+    start: '2026-01-01',
+    estimateFrom: '2026-12-01',
+    nextDue: '2026-12-01',
+    payments: [
+      { date: '2026-06-01', amount: 10 },
+      { date: '2026-07-01', amount: 0 },
+      { date: '2026-08-01', amount: 0, kind: 'failed' },
+      { date: '2026-09-01', amount: 0, kind: 'refund' },
+      { date: '2026-10-01', amount: 0, kind: 'adjust' },
+    ],
+  };
+  const parts = host.render([sub]).filter((el) => el.props.className?.split(' ').includes('gt-seg'));
+  const range = gantt.ganttWindow('1y', today);
+  const scale = 900 / billing.diffDays(range.start, range.end);
+  const hasCut = (date: string) => parts.some((el) => Math.abs(el.props.style.left - billing.diffDays(range.start, date) * scale) < 0.001);
+  assert.equal(hasCut('2026-07-01'), true);
+  for (const date of ['2026-08-01', '2026-09-01', '2026-10-01']) assert.equal(hasCut(date), false, date);
+});
+
+test('零元预算不在已有晚付账单的同一账期额外插入月初切点', () => {
+  const today = '2026-11-09';
+  const host = mount('1y', 900, today);
+  const sub: Subscription = {
+    ...host.sub,
+    start: '2026-01-01',
+    price: 0,
+    billing: 'postpaid',
+    estimateFrom: '2026-12-15',
+    nextDue: '2026-12-15',
+    payments: ['2026-02-15', '2026-03-15', '2026-04-15', '2026-05-15', '2026-06-15'].map((date) => ({ date, amount: 10 })),
+  };
+  const parts = host.render([sub]).filter((el) => el.props.className?.split(' ').includes('gt-seg'));
+  const range = gantt.ganttWindow('1y', today);
+  const scale = 900 / billing.diffDays(range.start, range.end);
+  const hasCut = (date: string) => parts.some((el) => Math.abs(el.props.style.left - billing.diffDays(range.start, date) * scale) < 0.001);
+  for (const month of ['02', '03', '04', '05', '06']) {
+    assert.equal(hasCut(`2026-${month}-15`), true, 'actual payment date is preserved');
+    assert.equal(hasCut(`2026-${month}-01`), false, 'same service period must not get a synthetic second cut');
+  }
+  assert.equal(hasCut('2026-07-01'), true, 'later zero-price periods still split');
+});
+
 test('all-history scope distinguishes ended service from future unused paid coverage', () => {
   assert.deepEqual(Reflect.apply(gantt.ganttWindow, null, ['all', '2026-10-19', '2026-10-05', '2026-11-04', false]), {
     start: '2026-10-01',
