@@ -544,6 +544,12 @@
   gap: 8px;
   flex: 0 0 auto;
 }
+/* 长语言下选择器放不进一行时换行，不撑出卡片 */
+.copy-controls {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
 .copy-controls .seg.sm {
   height: var(--ctl-h-md);
 }

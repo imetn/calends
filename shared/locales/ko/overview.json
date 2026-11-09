@@ -31,7 +31,15 @@
     "projected": "\n예측",
     "inProgress": "\n진행 중",
     "paid": "\n{amount} 결제 완료",
-    "empty": "이 기간에는 결제가 없습니다"
+    "empty": "이 기간에는 결제가 없습니다",
+    "range": "{from} – {to}",
+    "period": {
+      "label": "기간",
+      "extended": "18개월",
+      "year": "올해",
+      "past12": "지난 12개월",
+      "next12": "향후 12개월"
+    }
   },
   "due": {
     "title": "예정된 결제",

@@ -25,7 +25,15 @@
     "projected": "\n预计",
     "inProgress": "\n进行中",
     "paid": "\n已扣款 {amount}",
-    "empty": "这段时间没有扣款"
+    "empty": "这段时间没有扣款",
+    "range": "{from} – {to}",
+    "period": {
+      "label": "时间范围",
+      "extended": "18 个月",
+      "year": "今年",
+      "past12": "过去 12 个月",
+      "next12": "未来 12 个月"
+    }
   },
   "due": {
     "title": "即将扣款",

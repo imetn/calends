@@ -34,7 +34,15 @@
     "projected": "\nProjected",
     "inProgress": "\nIn progress",
     "paid": "\n{amount} charged",
-    "empty": "No charges in this period"
+    "empty": "No charges in this period",
+    "range": "{from} – {to}",
+    "period": {
+      "label": "Time range",
+      "extended": "18 months",
+      "year": "This year",
+      "past12": "Last 12 months",
+      "next12": "Next 12 months"
+    }
   },
   "due": {
     "title": "Upcoming charges",

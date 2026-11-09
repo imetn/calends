@@ -34,7 +34,15 @@
     "projected": "\nPrevisto",
     "inProgress": "\nEn curso",
     "paid": "\n{amount} cobrado",
-    "empty": "No hay cobros en este periodo"
+    "empty": "No hay cobros en este periodo",
+    "range": "{from} – {to}",
+    "period": {
+      "label": "Periodo",
+      "extended": "18 meses",
+      "year": "Este año",
+      "past12": "Últimos 12 meses",
+      "next12": "Próximos 12 meses"
+    }
   },
   "due": {
     "title": "Próximos cargos",

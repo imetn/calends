@@ -31,7 +31,15 @@
     "projected": "\n予測",
     "inProgress": "\n進行中",
     "paid": "\n{amount}請求済み",
-    "empty": "この期間の請求はありません"
+    "empty": "この期間の請求はありません",
+    "range": "{from} – {to}",
+    "period": {
+      "label": "期間",
+      "extended": "18か月",
+      "year": "今年",
+      "past12": "過去12か月",
+      "next12": "今後12か月"
+    }
   },
   "due": {
     "title": "今後の請求",

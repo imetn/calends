@@ -31,7 +31,15 @@
     "projected": "\nPerkiraan",
     "inProgress": "\nBerjalan",
     "paid": "\n{amount} sudah ditagih",
-    "empty": "Tidak ada tagihan dalam periode ini"
+    "empty": "Tidak ada tagihan dalam periode ini",
+    "range": "{from} – {to}",
+    "period": {
+      "label": "Periode",
+      "extended": "18 bulan",
+      "year": "Tahun ini",
+      "past12": "12 bulan terakhir",
+      "next12": "12 bulan ke depan"
+    }
   },
   "due": {
     "title": "Tagihan mendatang",

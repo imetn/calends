@@ -34,7 +34,15 @@
     "projected": "\nPrognose",
     "inProgress": "\nLaufend",
     "paid": "\n{amount} abgebucht",
-    "empty": "Keine Abbuchungen in diesem Zeitraum"
+    "empty": "Keine Abbuchungen in diesem Zeitraum",
+    "range": "{from} – {to}",
+    "period": {
+      "label": "Zeitraum",
+      "extended": "18 Monate",
+      "year": "Dieses Jahr",
+      "past12": "Letzte 12 Monate",
+      "next12": "Nächste 12 Monate"
+    }
   },
   "due": {
     "title": "Anstehende Abbuchungen",

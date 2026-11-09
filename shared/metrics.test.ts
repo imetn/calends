@@ -12,6 +12,7 @@ import {
   movement,
   mrrOn,
   prepaidValue,
+  spendingMonths,
   topUpPlan,
 } from './metrics.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
@@ -377,4 +378,24 @@ test('合租全额口径不受成员分担影响，代付仍不计入', () => {
   const phased = sub({ ...carpool, phases: [{ ...carpool, phases: undefined, startDate: '2026-01-01' }] } as unknown as Partial<Subscription>);
   assert.equal(contributionOn(st, phased, '2026-10-15', undefined, true), 30);
   assert.equal(contributionOn(st, phased, '2026-10-15'), 0);
+});
+
+test('月度支出图窗口：四种范围的起止月，且都含当月（#15）', () => {
+  const edges = (today: string, period: Parameters<typeof spendingMonths>[1]) => {
+    const months = spendingMonths(today, period);
+    return [months.length, months[0], months[months.length - 1]];
+  };
+  assert.deepEqual(edges('2026-11-09', 'extended'), [18, '2025-12-01', '2027-05-01']);
+  assert.deepEqual(edges('2026-11-09', 'year'), [12, '2026-01-01', '2026-12-01']);
+  assert.deepEqual(edges('2026-11-09', 'past12'), [12, '2025-12-01', '2026-11-01']);
+  assert.deepEqual(edges('2026-11-09', 'next12'), [12, '2026-11-01', '2027-10-01']);
+  // 月末不漂移，跨年不重复不跳月
+  assert.deepEqual(edges('2027-01-31', 'past12'), [12, '2026-02-01', '2027-01-01']);
+  assert.deepEqual(edges('2026-12-31', 'next12'), [12, '2026-12-01', '2027-11-01']);
+  for (const period of ['extended', 'year', 'past12', 'next12'] as const) {
+    const months = spendingMonths('2028-02-29', period);
+    assert.ok(months.includes('2028-02-01'), period);
+    assert.equal(new Set(months).size, months.length, period);
+    assert.deepEqual([...months].sort(), months, period);
+  }
 });

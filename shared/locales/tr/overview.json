@@ -34,7 +34,15 @@
     "projected": "\nTahmini",
     "inProgress": "\nDevam ediyor",
     "paid": "\n{amount} çekildi",
-    "empty": "Bu dönemde ödeme yok"
+    "empty": "Bu dönemde ödeme yok",
+    "range": "{from} – {to}",
+    "period": {
+      "label": "Dönem",
+      "extended": "18 ay",
+      "year": "Bu yıl",
+      "past12": "Son 12 ay",
+      "next12": "Sonraki 12 ay"
+    }
   },
   "due": {
     "title": "Yaklaşan ödemeler",

@@ -636,6 +636,22 @@ function baseName(name: string): string {
     .trim();
 }
 
+export type SpendingPeriod = 'extended' | 'year' | 'past12' | 'next12';
+
+/** 月度支出图的窗口：各月 1 号，按时间升序；四种窗口都含当月 */
+export function spendingMonths(today: string, period: SpendingPeriod): string[] {
+  const cur = `${today.slice(0, 7)}-01`;
+  const [from, count] =
+    period === 'year'
+      ? [`${today.slice(0, 4)}-01-01`, 12]
+      : period === 'past12'
+        ? [addMonths(cur, -11), 12]
+        : period === 'next12'
+          ? [cur, 12]
+          : [addMonths(cur, -11), 18];
+  return Array.from({ length: count }, (_, i) => addMonths(from, i));
+}
+
 export function insights(state: AppState, today: string): Insight[] {
   const out: Insight[] = [];
   const unused = stopLosses(state, today);

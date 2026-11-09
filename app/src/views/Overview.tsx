@@ -9,13 +9,14 @@ import { addDays, addMonths, cycleLabel, diffDays, perLabel, runwayFor, totals, 
 import { moneyTick, flow, cnDate, cnDateAuto, money, monthLabel, nearDate } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue } from '../../../shared/fx.ts';
-import { contributionOn, insights } from '../../../shared/metrics.ts';
+import { contributionOn, insights, spendingMonths, type SpendingPeriod } from '../../../shared/metrics.ts';
 import { BALANCE_KINDS, type AppState, type Subscription } from '../../../shared/types.ts';
 import { Activity, packCircles, type Bucket } from '../components/charts.tsx';
 import { Timeline, type TimelineGroup } from '../components/Timeline.tsx';
 import { TailName } from '../components/TailName.tsx';
 import { MetricCards, Metric, IconButton, CardTitle, Toolbar } from '../components/ui.tsx';
 import { Seg } from '../components/inputs.tsx';
+import { Picker } from '../components/Picker.tsx';
 import { CatIcon, MethodMark, SubIcon } from '../components/marks.tsx';
 import { TipTable } from '../components/overlays.tsx';
 import { Icon } from '../components/icons.tsx';
@@ -102,6 +103,7 @@ function ChargeTimeline({ state, today, onOpen }: { state: AppState; today: stri
 function Spending({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
   const base = state.settings.baseCurrency;
   const [scale, setScale] = useState<Scale>('month');
+  const [period, setPeriod] = useState<SpendingPeriod>('extended');
   // 图例筛选：空 = 全部；点分类先单选，再点其他分类多选，全选或全取消回到全部
   const [picked, setPicked] = useState<string[]>([]);
   const [selKey, setSelKey] = useState<string | undefined>();
@@ -110,12 +112,11 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
   const ranges = useMemo(() => {
     const out: Array<{ key: string; label: string; from: string; to: string }> = [];
     if (scale === 'month') {
-      for (let i = -11; i <= 6; i++) {
-        const m = addMonths(today.slice(0, 8) + '01', i);
+      for (const m of spendingMonths(today, period)) {
         out.push({
           key: m.slice(0, 7),
           label:
-            i === 0 || m.endsWith('-01-01')
+            m.slice(0, 7) === today.slice(0, 7) || m.endsWith('-01-01')
               ? t('overview.axis.yearMonth', { yy: m.slice(2, 4), m: Number(m.slice(5, 7)), mon: monthLabel(m.slice(0, 7), { year: false }) })
               : monthLabel(m.slice(0, 7), { year: false }),
           from: m,
@@ -127,15 +128,26 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
         out.push({ key: String(yy), label: String(yy), from: `${yy}-01-01`, to: `${yy}-12-31` });
     }
     return out;
-  }, [scale, today, first]);
+  }, [scale, period, today, first]);
 
+  const allCs = useMemo(() => allRanges(state, ranges, today).flatMap((r) => r.cs), [state, ranges, today]);
+  // 换窗口后，新窗口里没有扣款的分类没有图例可点，不能留着把图筛空；剩下的恰好全选时回到全部
+  const active = useMemo(() => {
+    const present = new Set(allCs.map((c) => c.sub.category));
+    const kept = picked.filter((k) => present.has(k));
+    return kept.length >= present.size ? [] : kept;
+  }, [picked, allCs]);
+  // 失效的选择直接清掉，否则切回原窗口时筛选会自己复活
+  useEffect(() => {
+    if (active.length !== picked.length) setPicked(active);
+  }, [active, picked]);
   const data = useMemo(
     () =>
       ranges.map((r) => {
-        const cs = allCharges(state, r.from, r.to, today).filter((c) => !picked.length || picked.includes(c.sub.category));
+        const cs = allCharges(state, r.from, r.to, today).filter((c) => !active.length || active.includes(c.sub.category));
         return { r, cs };
       }),
-    [state, ranges, picked, today],
+    [state, ranges, active, today],
   );
 
   const curKey = scale === 'month' ? today.slice(0, 7) : today.slice(0, 4);
@@ -172,16 +184,16 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
 
   // 图例：所选区间（全部柱子）里各分类的合计
   const catTotals = new Map<string, number>();
-  for (const { cs } of allRanges(state, ranges, today))
-    for (const c of cs) catTotals.set(c.sub.category, (catTotals.get(c.sub.category) ?? 0) + chargeBaseOrNaN(state, c));
+  for (const c of allCs) catTotals.set(c.sub.category, (catTotals.get(c.sub.category) ?? 0) + chargeBaseOrNaN(state, c));
   const cats = [...catTotals.entries()].sort((a, b) => sortValue(b[1]) - sortValue(a[1]));
-  const allCs = allRanges(state, ranges, today).flatMap((r) => r.cs);
   const pick = (k: string) => {
-    const next = picked.includes(k) ? picked.filter((x) => x !== k) : [...picked, k];
+    const next = active.includes(k) ? active.filter((x) => x !== k) : [...active, k];
     setPicked(next.length >= cats.length ? [] : next);
   };
   const selLabel = scale === 'month' ? monthLabel(sel) : t('overview.spending.year', { year: sel });
   const isFuture = sel > curKey;
+  const edge = (r?: { key: string; label: string }) => (r ? (scale === 'month' ? monthLabel(r.key) : r.label) : '');
+  const rangeLabel = t('overview.spending.range', { from: edge(ranges[0]), to: edge(ranges[ranges.length - 1]) });
 
   return (
     <div className="card copy-card" data-copy-card style={{ padding: '22px 24px 20px' }}>
@@ -191,9 +203,23 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
           <CardTitle as="h3" className="sec-title" hint={`${t('report.cash.fullPaidHint')}\n${totalNote(selPart) || t('overview.spending.sub')}`}>
             {t('overview.spending.title')}
           </CardTitle>
+          <div className="sec-sub">{rangeLabel}</div>
         </div>
         <div className="copy-controls">
           <CopyImageButton hover />
+          {scale === 'month' && (
+            <Picker
+              variant="btn"
+              value={period}
+              search={false}
+              ariaLabel={t('overview.spending.period.label')}
+              onChange={(v) => {
+                setPeriod(v);
+                setSelKey(undefined);
+              }}
+              options={(['extended', 'year', 'past12', 'next12'] as const).map((v) => ({ value: v, label: t(`overview.spending.period.${v}`) }))}
+            />
+          )}
           <Seg
             value={scale}
             onChange={(v) => {
@@ -238,7 +264,7 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
       />
 
       <div className="legend-chips">
-        <button data-snapshot-keep className={`lc ${picked.length ? 'off' : ''}`} aria-pressed={!picked.length} onClick={() => setPicked([])}>
+        <button data-snapshot-keep className={`lc ${active.length ? 'off' : ''}`} aria-pressed={!active.length} onClick={() => setPicked([])}>
           <Layers size={13} />
           {t('list.all')}
           <b>{formatTotal(chargesTotal(state, allCs), base, { direction: -1, compact: true })}</b>
@@ -247,8 +273,8 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
           <button
             key={k}
             data-snapshot-keep
-            className={`lc ${picked.length && !picked.includes(k) ? 'off' : ''}`}
-            aria-pressed={picked.includes(k)}
+            className={`lc ${active.length && !active.includes(k) ? 'off' : ''}`}
+            aria-pressed={active.includes(k)}
             onClick={() => pick(k)}
           >
             <CatIcon cat={k} size={13} />

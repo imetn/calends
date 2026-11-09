@@ -31,7 +31,15 @@
     "projected": "\nDự kiến",
     "inProgress": "\nĐang diễn ra",
     "paid": "\nđã trừ {amount}",
-    "empty": "Không có khoản phí trong kỳ này"
+    "empty": "Không có khoản phí trong kỳ này",
+    "range": "{from} – {to}",
+    "period": {
+      "label": "Khoảng thời gian",
+      "extended": "18 tháng",
+      "year": "Năm nay",
+      "past12": "12 tháng qua",
+      "next12": "12 tháng tới"
+    }
   },
   "due": {
     "title": "Khoản trừ sắp tới",

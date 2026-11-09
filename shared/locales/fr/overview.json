@@ -34,7 +34,15 @@
     "projected": "\nPrévu",
     "inProgress": "\nEn cours",
     "paid": "\n{amount} prélevés",
-    "empty": "Aucun prélèvement sur cette période"
+    "empty": "Aucun prélèvement sur cette période",
+    "range": "{from} – {to}",
+    "period": {
+      "label": "Période",
+      "extended": "18 mois",
+      "year": "Cette année",
+      "past12": "12 derniers mois",
+      "next12": "12 prochains mois"
+    }
   },
   "due": {
     "title": "Prélèvements à venir",
