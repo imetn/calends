@@ -29,7 +29,7 @@
     "range": "{from} – {to}",
     "period": {
       "label": "時間範圍",
-      "extended": "18 個月",
+      "extended": "近期 18 個月",
       "year": "今年",
       "past12": "過去 12 個月",
       "next12": "未來 12 個月",
