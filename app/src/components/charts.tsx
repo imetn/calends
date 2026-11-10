@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode as ComponentChildren,
 import { tipProps, tipSet } from './overlays.tsx';
 import { useWidth } from './inputs.tsx';
 import { monthTicks } from '../../../shared/format.ts';
+import { spendingYearMark } from '../../../shared/metrics.ts';
 import { morphPath } from '../path-morph.ts';
 
 /** 与 --duration 一致 */
@@ -339,6 +340,8 @@ export function niceTicks(max: number, count = 4): number[] {
 export interface Bucket {
   key: string;
   label: string;
+  /** 月度格带年份的写法；给了就由图按实际显示的标签决定写哪种（见 spendingYearMark） */
+  yearLabel?: string;
   parts: Array<{ k: string; v: number }>;
   total: number;
   future: boolean;
@@ -391,6 +394,11 @@ export function Activity({
   const stride = pitch > 0 && lw > 0 ? Math.max(1, Math.ceil((lw + 6) / pitch)) : 1;
   const ci = buckets.findIndex((b) => b.current);
   const showLabel = (i: number) => buckets[i].current || ((buckets.length - 1 - i) % stride === 0 && (ci < 0 || Math.abs(i - ci) >= stride));
+  const marks = spendingYearMark(
+    buckets.map((b) => b.key),
+    showLabel,
+  );
+  const labelOf = (b: Bucket, i: number) => (marks[i] && b.yearLabel) || b.label;
   return (
     <div className="act" style={{ '--h': `${height}px` } as Record<string, string>}>
       <div className="act-grid">
@@ -407,7 +415,7 @@ export function Activity({
             data-snapshot-keep
             className={`act-col ${showLabel(i) ? '' : 'odd'} ${b.future ? 'future' : ''} ${b.current ? 'current' : ''} ${(selected ?? current) === b.key ? 'sel' : ''} ${selected && selected !== b.key ? 'dim' : ''}`}
             onClick={() => onSelect(b.key)}
-            aria-label={`${b.label} ${fmt(b.total)}`}
+            aria-label={`${b.yearLabel ?? b.label} ${fmt(b.total)}`}
             {...(tip && b.total > 0
               ? tipProps(
                   () => tip(b),
@@ -425,7 +433,7 @@ export function Activity({
                 ),
               )}
             </div>
-            <span className="act-label">{b.label}</span>
+            <span className="act-label">{labelOf(b, i)}</span>
           </button>
         ))}
       </div>

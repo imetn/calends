@@ -656,6 +656,20 @@ export function spendingMonths(today: string, period: SpendingPeriod): string[] 
   return Array.from({ length: count }, (_, i) => addMonths(from, i));
 }
 
+/**
+ * 月度横轴哪几格带年份：只在年份开始的地方——显示出来的第一个标签，以及跨年后显示的第一个；
+ * 当月靠加粗标出，不另写年份。shown 是窄屏抽稀后实际显示的格，抽掉一月时年份落在下一个显示的格上
+ */
+export function spendingYearMark(months: string[], shown: (i: number) => boolean = () => true): boolean[] {
+  let prev = '';
+  return months.map((m, i) => {
+    if (!shown(i)) return false;
+    const mark = m.slice(0, 4) !== prev;
+    prev = m.slice(0, 4);
+    return mark;
+  });
+}
+
 /** 默认选中哪一格：窗口含当期就选当期，否则选离今天最近的一格 */
 export function spendingFocus(keys: string[], cur: string): string {
   if (!keys.length || keys.includes(cur)) return cur;

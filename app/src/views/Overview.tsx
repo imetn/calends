@@ -117,15 +117,14 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
   const first = firstStart(state, today);
 
   const ranges = useMemo(() => {
-    const out: Array<{ key: string; label: string; from: string; to: string }> = [];
+    const out: Array<{ key: string; label: string; yearLabel?: string; from: string; to: string }> = [];
     if (scale === 'month') {
+      // 带不带年份由柱状图按实际显示的标签决定（见 spendingYearMark）
       for (const m of spendingMonths(today, period)) {
         out.push({
           key: m.slice(0, 7),
-          label:
-            m.slice(0, 7) === today.slice(0, 7) || m.endsWith('-01-01')
-              ? t('overview.axis.yearMonth', { yy: m.slice(2, 4), m: Number(m.slice(5, 7)), mon: monthLabel(m.slice(0, 7), { year: false }) })
-              : monthLabel(m.slice(0, 7), { year: false }),
+          label: monthLabel(m.slice(0, 7), { year: false }),
+          yearLabel: t('overview.axis.yearMonth', { yy: m.slice(2, 4), m: Number(m.slice(5, 7)), mon: monthLabel(m.slice(0, 7), { year: false }) }),
           from: m,
           to: addDays(addMonths(m, 1), -1),
         });
@@ -166,7 +165,7 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
       parts.set(k, (parts.get(k) ?? 0) + chargeValue(state, c));
     }
     const arr = [...parts.entries()].map(([k, v]) => ({ k, v })).sort((a, b) => (a.k === PROJ ? 1 : b.k === PROJ ? -1 : b.v - a.v));
-    return { key: r.key, label: r.label, parts: arr, total: arr.reduce((a, p) => a + p.v, 0), future: r.key > curKey, current: r.key === curKey };
+    return { key: r.key, label: r.label, yearLabel: r.yearLabel, parts: arr, total: arr.reduce((a, p) => a + p.v, 0), future: r.key > curKey, current: r.key === curKey };
   });
 
   const sel =
@@ -256,7 +255,7 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
         fmt={(v) => moneyTick(v, base)}
         tip={(b) => (
           <TipTable
-            head={[b.label, formatTotal(chargesTotal(state, data.find((d) => d.r.key === b.key)?.cs ?? []), base, { direction: -1, compact: true })]}
+            head={[b.yearLabel ?? b.label, formatTotal(chargesTotal(state, data.find((d) => d.r.key === b.key)?.cs ?? []), base, { direction: -1, compact: true })]}
             rows={b.parts
               .filter((p) => p.k !== PROJ)
               .slice(0, 5)

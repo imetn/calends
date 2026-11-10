@@ -14,6 +14,7 @@ import {
   prepaidValue,
   spendingFocus,
   spendingMonths,
+  spendingYearMark,
   isSpendingPeriod,
   topUpPlan,
 } from './metrics.ts';
@@ -415,4 +416,18 @@ test('月度支出图默认选中：含当月选当月，去年选 12 月，明�
   assert.equal(spendingFocus(keys('2026-11-09', 'nextYear'), '2026-11'), '2027-01');
   assert.equal(isSpendingPeriod('2026'), false);
   assert.equal(isSpendingPeriod(''), false);
+});
+
+test('月度支出横轴：年份只写在显示出来的第一格和跨年后第一格，当月不另带年份', () => {
+  // 用户反馈：「今年」范围里 26/1、2月…10月、26/11、12月，当月格式与左右不一致
+  const marked = (today: string, period: Parameters<typeof spendingMonths>[1], shown?: (i: number) => boolean) => {
+    const months = spendingMonths(today, period);
+    const marks = spendingYearMark(months, shown);
+    return months.filter((_, i) => marks[i]).map((m) => m.slice(0, 7));
+  };
+  assert.deepEqual(marked('2026-11-10', 'year'), ['2026-01']);
+  assert.deepEqual(marked('2026-11-10', 'extended'), ['2025-12', '2026-01', '2027-01']);
+  assert.deepEqual(marked('2026-11-10', 'next12'), ['2026-11', '2027-01']);
+  // 手机抽稀（每 3 格显示一个）抽掉了一月：年份落在跨年后显示的第一格，不能整排都没有年份
+  assert.deepEqual(marked('2026-11-10', 'extended', (i) => (17 - i) % 3 === 0), ['2026-02', '2027-02']);
 });
