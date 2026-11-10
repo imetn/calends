@@ -246,3 +246,15 @@ test('变动瀑布图：两端合计柱用图表墨色，与中间涨跌柱区�
   const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
   assert.match(css, /\.mv-wf-plot i \{[^}]*background: var\(--chart-ink\);/);
 });
+
+test('河流图复制成图片：按导出宽度重画，未来月份淡化不依赖 clipPath', () => {
+  const charts = readFileSync(new URL('../app/src/components/charts.tsx', import.meta.url), 'utf8');
+  const act = charts.slice(charts.indexOf('export function Activity('), charts.indexOf('/** 最近一次指针是不是触摸'));
+  assert.match(act, /useSnapshotRender\(root, \(\) => \(\s*<Activity\s/);
+  assert.match(act, /<div ref=\{root\} className=\{`act /);
+  const layers = charts.slice(charts.indexOf('function StreamLayers('));
+  assert.doesNotMatch(layers.slice(0, layers.indexOf('</svg>')), /clipPath/);
+  assert.match(layers, /<rect className="act-stream-future" x=\{split\}/);
+  const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\.act-stream-future \{[^}]*fill: var\(--card\);[^}]*fill-opacity: 0\.6;/);
+});

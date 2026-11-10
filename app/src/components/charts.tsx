@@ -455,8 +455,24 @@ export function Activity({
     },
     [!!stream],
   );
+  // 复制成图片时按导出宽度重画：河流图的路径和未来淡化都由列宽算出，直接拷像素会裁掉右侧
+  const root = useRef<HTMLDivElement>(null);
+  useSnapshotRender(root, () => (
+    <Activity
+      buckets={buckets}
+      color={color}
+      selected={selected}
+      current={current}
+      onSelect={onSelect}
+      height={height}
+      fmt={fmt}
+      tip={tip}
+      stream={stream}
+      hot={hot}
+    />
+  ));
   return (
-    <div className={`act ${stream ? 'stream' : ''}`} style={{ '--h': `${height}px` } as Record<string, string>}>
+    <div ref={root} className={`act ${stream ? 'stream' : ''}`} style={{ '--h': `${height}px` } as Record<string, string>}>
       {!stream && (
         <div className="act-grid">
           {ticks.map((t) => (
@@ -542,24 +558,14 @@ function StreamLayers({
   const fi = buckets.findIndex((b) => b.future);
   const split = fi < 0 ? width : fi === 0 ? 0 : (cx(fi - 1) + cx(fi)) / 2;
   const si = selected ? buckets.findIndex((b) => b.key === selected) : -1;
-  const id = `stream-${n}-${Math.round(width)}`;
   const lit = hot && keys.includes(hot) ? hot : undefined;
   const fill = (k: string) => (lit && k !== lit ? `color-mix(in oklab, ${stream.color(k)} 30%, var(--card))` : stream.color(k));
   const layers = keys.map((k, i) => <path key={k} d={paths[i]} className="act-stream-layer" style={{ fill: fill(k) }} />).reverse();
   return (
     <svg className="act-stream" width={width} height={height} aria-hidden="true">
-      <defs>
-        <clipPath id={`${id}-p`}>
-          <rect x={0} y={0} width={split} height={height} />
-        </clipPath>
-        <clipPath id={`${id}-f`}>
-          <rect x={split} y={0} width={width - split} height={height} />
-        </clipPath>
-      </defs>
-      <g clipPath={`url(#${id}-p)`}>{layers}</g>
-      <g clipPath={`url(#${id}-f)`} opacity={0.4}>
-        {layers}
-      </g>
+      {layers}
+      {/* 未来月份盖一层半透明卡片底色淡化 */}
+      {split < width && <rect className="act-stream-future" x={split} y={0} width={width - split} height={height} />}
       {si >= 0 && <line x1={cx(si)} x2={cx(si)} y1={0} y2={height} className="act-stream-sel" />}
     </svg>
   );

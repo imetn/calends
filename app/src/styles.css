@@ -11284,6 +11284,11 @@ button.name-edit:focus-visible {
 .act-stream-layer {
   transition: fill var(--duration) var(--ease);
 }
+.act-stream-future {
+  fill: var(--card);
+  fill-opacity: 0.6;
+  pointer-events: none;
+}
 .act-stream-sel {
   stroke: var(--label-2);
   stroke-width: 1;
