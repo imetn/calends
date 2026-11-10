@@ -31,7 +31,7 @@ docker logs calends
 
 Open `http://localhost:8787/` and use the setup token printed in the logs on the login page. The named volume `calends-data` persists all of `/data`, including the SQLite database state and generated setup token. No Cloudflare account is required.
 
-For production, pin a full version tag such as `xizozhe/calends:1.31.0` and change it deliberately when upgrading. `latest` follows the main branch; `1.30` follows releases in that minor series. These moving tags are convenient for updates but do not pin a specific release. You can replace `xizozhe/calends` with `ghcr.io/imetn/calends` in these commands.
+For production, pin a full version tag such as `xizozhe/calends:1.32.0` and change it deliberately when upgrading. `latest` follows the main branch; `1.32` follows releases in that minor series. These moving tags are convenient for updates but do not pin a specific release. You can replace `xizozhe/calends` with `ghcr.io/imetn/calends` in these commands.
 
 If you use the [Compose file from the quick start](../README.md#docker), upgrade with `docker compose pull && docker compose up -d`.
 
@@ -54,7 +54,7 @@ Since v1.1.0, prebuilt images are published to both registries and can be pulled
 - Docker Hub: `xizozhe/calends` (equivalently `docker.io/xizozhe/calends`).
 - GitHub Container Registry (GHCR): `ghcr.io/imetn/calends`.
 
-Both provide multi-architecture images for `linux/amd64` and `linux/arm64`. [The image workflow](../.github/workflows/docker.yml) publishes `latest` for main-branch builds and version tags such as `1.31.0` and `1.30` for a `v1.31.0` release.
+Both provide multi-architecture images for `linux/amd64` and `linux/arm64`. [The image workflow](../.github/workflows/docker.yml) publishes `latest` for main-branch builds and version tags such as `1.32.0` and `1.32` for a `v1.32.0` release.
 
 Building from source does not depend on a published Calends image; it still downloads base images and build dependencies.
 
@@ -72,7 +72,7 @@ Compose builds `calends:local`, starts the service on port 8787 and mounts the n
 
 The supplied `docker/docker-compose.yml` builds from source. To use a prebuilt image instead, use [`docker/compose.prebuilt.yml`](../docker/compose.prebuilt.yml).
 
-Use `ghcr.io/imetn/calends:latest` as an alternative, or pin a version such as `1.31.0`. In `docker/`, run `docker compose -f compose.prebuilt.yml pull` followed by `docker compose -f compose.prebuilt.yml up -d` to start or upgrade this configuration. Compose recreates the container when the image changes and retains `calends_calends-data`.
+Use `ghcr.io/imetn/calends:latest` as an alternative, or pin a version such as `1.32.0`. In `docker/`, run `docker compose -f compose.prebuilt.yml pull` followed by `docker compose -f compose.prebuilt.yml up -d` to start or upgrade this configuration. Compose recreates the container when the image changes and retains `calends_calends-data`.
 
 To build and run without Compose, from the repository root:
 
@@ -103,14 +103,14 @@ On Debian or Ubuntu, one command installs Calends with its own copy of Node and 
 curl -fsSL https://calends.date/install.sh | sudo bash
 ```
 
-Run the same command to upgrade. It backs up your data, keeps your settings, and restores the previous version and its data if the new one doesn't start. `--version 1.31.0` installs a specific version, and `--uninstall` removes the program but keeps your data and settings. To read the script first, download it and run it with `sudo bash install.sh`.
+Run the same command to upgrade. It backs up your data, keeps your settings, and restores the previous version and its data if the new one doesn't start. `--version 1.32.0` installs a specific version, and `--uninstall` removes the program but keeps your data and settings. To read the script first, download it and run it with `sudo bash install.sh`.
 
 The rest of this section is the same installation done by hand, for other distributions.
 
 A small VPS doesn't need Docker. Since 1.26.0, each [release](https://github.com/imetn/calends/releases) includes a tarball that runs the same code as the image, needs no npm install, and works on x86 and ARM. It requires Linux, systemd and a system-wide Node 24 (check with `node -v`); the service can't read a Node installed under a home directory, such as with nvm.
 
 ```bash
-VERSION=1.31.0
+VERSION=1.32.0
 curl -fLO https://github.com/imetn/calends/releases/download/v$VERSION/calends-$VERSION.tar.gz
 curl -fLO https://github.com/imetn/calends/releases/download/v$VERSION/calends-$VERSION.tar.gz.sha256
 sha256sum -c calends-$VERSION.tar.gz.sha256
@@ -251,7 +251,7 @@ Read the README and docs/self-hosting.md first.
    set it with node scripts/wrangler.mjs secret put SETUP_TOKEN, then run npm run deploy.
    Configure my custom domain in the active Wrangler configuration before deploying, if requested.
 3. Docker: prefer a prebuilt image from xizozhe/calends (or ghcr.io/imetn/calends).
-   Pin a version such as 1.31.0 for production, pull it, then run it on port 8787 with
+   Pin a version such as 1.32.0 for production, pull it, then run it on port 8787 with
    calends-data mounted at /data. Read the setup token with docker logs calends.
    Build from source only when needed, for example for subpath deployment.
    For public access, configure HTTPS with my chosen proxy.
