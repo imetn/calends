@@ -17,7 +17,7 @@ import { useMedia } from './components/inputs.tsx';
 import { authStatus, boot, login, loginPasskey, saveSettings, setupPassword, startPasskeyAutofill, today, useStore } from './store.ts';
 import { run } from './toast.ts';
 import { usePref } from './prefs.ts';
-import { HIDDEN_CCY, setOrig, useOrig } from './display.ts';
+import { allCurrencies, setOrig, usedCurrencies, useOrig } from './display.ts';
 import { syncCategories } from './derive.ts';
 import { CurrencyPicker } from './components/CurrencyPicker.tsx';
 import { THEME_LABEL, ThemeIcon, useThemeMode, type ThemeMode } from './theme.tsx';
@@ -363,13 +363,9 @@ function CurrencyItem({ state, arc }: { state: AppState; arc?: boolean }) {
   const orig = useOrig();
   const base = state.settings.baseCurrency;
   const value = orig ? 'orig' : base;
-  // 常用：美元、人民币，再加订阅里实际用到的币种（含各个分段），按出现次数排；其余按代码排序，汇率接口支持的全部列出
-  const count = new Map<string, number>();
-  for (const s of state.subscriptions) for (const c of new Set([s.currency, ...(s.phases ?? []).map((p) => p.currency)])) count.set(c, (count.get(c) ?? 0) + 1);
-  const used = [...new Set(['USD', 'CNY', ...[...count].sort((a, b) => b[1] - a[1]).map(([c]) => c)])].filter((c) => state.fx.rates[c]);
-  const rest = Object.keys(state.fx.rates)
-    .filter((c) => !used.includes(c) && !HIDDEN_CCY.has(c))
-    .sort();
+  // 常用在前；其余按代码排序，汇率接口支持的全部列出
+  const used = usedCurrencies(state).filter((c) => state.fx.rates[c]);
+  const rest = allCurrencies(state.fx.rates).filter((c) => !used.includes(c));
   const pick = (v: string) => {
     if (v === 'orig') return setOrig(true);
     setOrig(false);

@@ -40,6 +40,7 @@ const SYMBOL: Record<string, string> = {
   JPY: 'JP¥',
   HKD: 'HK$',
   MOP: 'MOP$',
+  MXN: 'MX$',
   TWD: 'NT$',
   TRY: '₺',
   NGN: '₦',
@@ -101,9 +102,23 @@ export function symbol(ccy: string): string {
   return SYMBOL[ccy] ?? ccy + ' ';
 }
 
-/** 展示精度；不改变计算、存储或历史原值。 */
+const ZERO_DECIMALS = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'HUF', 'TWD', 'PYG', 'MGA', 'BIF'];
+const intlDecimals = new Map<string, number>();
+
+/** 展示精度；不改变计算、存储或历史原值。只分 0 位和 2 位：常用货币按固定列表，其余 Intl 记为无小数的（如 ISK、UGX）取 0 */
 export function currencyDecimals(ccy: string): number {
-  return ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'HUF', 'TWD', 'PYG', 'MGA', 'BIF'].includes(ccy) ? 0 : 2;
+  if (ZERO_DECIMALS.includes(ccy)) return 0;
+  if (CURRENCIES.includes(ccy)) return 2;
+  let d = intlDecimals.get(ccy);
+  if (d === undefined) {
+    try {
+      d = new Intl.NumberFormat('en', { style: 'currency', currency: ccy }).resolvedOptions().maximumFractionDigits === 0 ? 0 : 2;
+    } catch {
+      d = 2;
+    }
+    intlDecimals.set(ccy, d);
+  }
+  return d;
 }
 
 type MoneyOptions = { compact?: boolean; sign?: boolean; decimals?: number };

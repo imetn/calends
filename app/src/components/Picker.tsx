@@ -2,9 +2,9 @@ import { copyParts } from './copy.tsx';
 import { base } from '../base.ts';
 import type { ReactNode as ComponentChildren } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CURRENCIES } from '../../../shared/format.ts';
 import { locale, t } from '../../../shared/i18n.ts';
-import { ccyFlag, ccyName, FLAGS } from '../display.ts';
+import { allCurrencies, ccyFlag, ccyName, FLAGS, usedCurrencies } from '../display.ts';
+import { useStore } from '../store.ts';
 import { Icon } from './icons.tsx';
 import { touchFirst } from './inputs.tsx';
 import { Pop } from './Pop.tsx';
@@ -163,9 +163,10 @@ function CcyFlag({ code }: { code: string }) {
   return <span className="cp-flag">{src ? <img src={src} alt="" loading="lazy" /> : <b>{code.slice(0, 2)}</b>}</span>;
 }
 
-/** 货币选择：国旗 + 中文名 + 代码，人民币、美元置顶 */
+/** 货币选择：国旗 + 名称 + 代码；与侧边栏同一份清单：常用在前，其余为汇率接口支持的全部货币 */
 export function CurrencySelect({ value, onChange, ariaLabel = t('picker.currency') }: { value: string; onChange: (v: string) => void; ariaLabel?: string }) {
-  const list = [...new Set(['CNY', 'USD', ...CURRENCIES, value])];
+  const { state } = useStore();
+  const list = [...new Set([...(state ? usedCurrencies(state) : ['USD', 'CNY']), value, ...allCurrencies(state?.fx.rates)])];
   return (
     <Picker
       value={value}

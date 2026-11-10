@@ -1,4 +1,6 @@
 import { base } from './base.ts';
+import { CURRENCIES } from '../../shared/format.ts';
+import type { AppState } from '../../shared/types.ts';
 // 金额显示偏好：列表里显示原币，还是折算成本位币。只存在本机，侧边栏与列表共用
 import { usePref, writePref } from './prefs.ts';
 
@@ -10,6 +12,19 @@ import { usePref, writePref } from './prefs.ts';
 export const HIDDEN_CCY = new Set(['XDR', 'CLF', 'CNH', 'JEP', 'IMP', 'GGP', 'FOK', 'KID', 'TVD', 'HRK', 'SLL', 'ZWL']);
 
 export { ccyName } from '../../shared/format.ts';
+
+/** 货币下拉的候选：汇率接口里的全部货币（去掉上面这些），按代码排序；汇率表还没取到时退回常用列表 */
+export function allCurrencies(rates: Record<string, number> | undefined): string[] {
+  const codes = Object.keys(rates ?? {}).filter((c) => !HIDDEN_CCY.has(c));
+  return (codes.length ? codes : CURRENCIES).slice().sort();
+}
+
+/** 常用货币：美元、人民币，再加订阅里实际用到的币种（含各个分段），按出现次数排 */
+export function usedCurrencies(state: Pick<AppState, 'subscriptions'>): string[] {
+  const count = new Map<string, number>();
+  for (const s of state.subscriptions) for (const c of new Set([s.currency, ...(s.phases ?? []).map((p) => p.currency)])) count.set(c, (count.get(c) ?? 0) + 1);
+  return [...new Set(['USD', 'CNY', ...[...count].sort((a, b) => b[1] - a[1]).map(([c]) => c)])];
+}
 
 export function setOrig(orig: boolean) {
   writePref('list-ccy', orig ? 'orig' : 'base');

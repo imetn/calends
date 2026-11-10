@@ -64,22 +64,22 @@ export function convertOn(amount: number, from: string, to: string, date: string
 }
 
 /** 解析两个数据源的响应，统一为大写币种、USD 基准 */
-export function parseCurrencyApi(body: unknown, keep: Set<string>): Record<string, number> | undefined {
+export function parseCurrencyApi(body: unknown, keep?: Set<string>): Record<string, number> | undefined {
   const usd = (body as { usd?: Record<string, number> })?.usd;
   if (!usd) return undefined;
   const out: Record<string, number> = { USD: 1 };
   for (const [k, v] of Object.entries(usd)) {
     const c = k.toUpperCase();
-    if (keep.has(c) && typeof v === 'number' && v > 0) out[c] = v;
+    if ((!keep || keep.has(c)) && typeof v === 'number' && v > 0) out[c] = v;
   }
   return out;
 }
 
-export function parseFrankfurter(body: unknown, keep: Set<string>): Record<string, number> | undefined {
+export function parseFrankfurter(body: unknown, keep?: Set<string>): Record<string, number> | undefined {
   const rates = (body as { rates?: Record<string, number> })?.rates;
   if (!rates) return undefined;
   const out: Record<string, number> = { USD: 1 };
-  for (const [c, v] of Object.entries(rates)) if (keep.has(c) && v > 0) out[c] = v;
+  for (const [c, v] of Object.entries(rates)) if ((!keep || keep.has(c)) && v > 0) out[c] = v;
   return out;
 }
 

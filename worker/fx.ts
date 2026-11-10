@@ -7,16 +7,25 @@ import { t } from '../shared/i18n.ts';
 import { edgeCache } from './http.ts';
 import { getSettings, putKv } from './store.ts';
 
-/** 需要保存的币种：常用列表 + 订阅和账户实际用到的 */
-export function keepSet(state: Pick<AppState, 'subscriptions' | 'methods' | 'settings'>): Set<string> {
-  return new Set([
-    ...CURRENCIES,
-    'USD',
-    'CNY',
-    state.settings.baseCurrency,
-    ...state.subscriptions.map((s) => s.currency),
-    ...state.methods.map((m) => m.currency),
-  ]);
+/** 账本里任何金额字段用到的币种（订阅、分段、实扣、成员、代付、账户、合租收款币种等），按字段名收集，新增字段不会漏 */
+function usedCodes(v: unknown, out: Set<string>, key = ''): void {
+  if (typeof v === 'string') {
+    if (/(currency|ccy)$/i.test(key) && /^[A-Z]{3}$/.test(v)) out.add(v);
+  } else if (Array.isArray(v)) for (const x of v) usedCodes(x, out, key);
+  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) usedCodes(x, out, k);
+}
+
+/** 下发给客户端的历史币种：常用列表 + 账本里实际用到的全部币种 */
+export function keepSet(state: Pick<AppState, 'subscriptions' | 'methods' | 'settings'> & { people?: AppState['people'] }): Set<string> {
+  const out = new Set([...CURRENCIES, 'USD', 'CNY', state.settings.baseCurrency]);
+  usedCodes([state.subscriptions, state.methods, state.people ?? [], state.settings], out);
+  return out;
+}
+
+/** 入库的币种：汇率接口当前支持的全部 + 已用到的；汇率表不全（兜底表）时不过滤，免得之后反复重抓 */
+export function storeSet(state: AppState): Set<string> | undefined {
+  const codes = Object.keys(state.fx.rates);
+  return codes.length >= 100 ? new Set([...codes, ...keepSet(state)]) : undefined;
 }
 
 /** 需要历史汇率的日期：所有已发生的扣款日、每个月末（MRR 走势）、余额校准日 */
@@ -60,8 +69,8 @@ async function getJson(url: string): Promise<unknown> {
   return res.json();
 }
 
-/** 抓取某一天的汇率：2024-03-02 之后用全币种源，之前用欧洲央行 */
-async function fetchDay(date: string, keep: Set<string>): Promise<{ rates: Record<string, number>; source: string } | undefined> {
+/** 抓取某一天的汇率：2024-03-02 之后用全币种源，之前用欧洲央行；汇率接口支持的币种全部入库，之后新用的币种不必重抓 */
+async function fetchDay(date: string, keep?: Set<string>): Promise<{ rates: Record<string, number>; source: string } | undefined> {
   if (date >= FX_SOURCES.currencyApiSince) {
     for (const url of FX_SOURCES.currencyApi(date)) {
       try {
@@ -81,10 +90,18 @@ async function fetchDay(date: string, keep: Set<string>): Promise<{ rates: Recor
   return undefined;
 }
 
+/** 旧版只存常用币种的行（不足 100 种）缺了已用币种时需要重抓；欧洲央行源本就只有约 30 种，重抓也补不上，不算 */
+export function staleRow(row: { source: string; rates: string }, used: Set<string>): boolean {
+  if (row.source === 'ecb') return false;
+  const rates = JSON.parse(row.rates) as Record<string, number>;
+  return Object.keys(rates).length < 100 && [...used].some((c) => !rates[c]);
+}
+
 export async function fxStatus(env: Env, state: AppState) {
   const need = neededDates(state);
-  const rows = await env.DB.prepare('SELECT date, source FROM fx_daily').all<{ date: string; source: string }>();
-  const have = new Map(rows.results.map((r) => [r.date, r.source]));
+  const rows = await env.DB.prepare('SELECT date, source, rates FROM fx_daily').all<{ date: string; source: string; rates: string }>();
+  const used = keepSet(state);
+  const have = new Map(rows.results.filter((r) => !staleRow(r, used)).map((r) => [r.date, r.source]));
   const missing = need.filter((d) => !have.has(d));
   const sources: Record<string, number> = {};
   for (const d of need) {
@@ -97,9 +114,9 @@ export async function fxStatus(env: Env, state: AppState) {
 /** 每次补齐一批，避免单次请求子请求过多；前端循环调用直到 remaining 为 0 */
 export async function backfill(env: Env, state: AppState, batch = 24) {
   const st = await fxStatus(env, state);
-  const keep = keepSet(state);
   // 新的日期优先：最近的账单最常看
   const todo = st.missing.slice().reverse().slice(0, batch);
+  const keep = storeSet(state);
   let filled = 0;
   const failed: string[] = [];
   for (let i = 0; i < todo.length; i += 6) {

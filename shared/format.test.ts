@@ -220,3 +220,57 @@ test('Chrome 缺名称的新货币在每种语言都有名称，文案放在 Wor
     assert.equal(ccyName('SLE'), '獅子山利昂');
   }
 });
+
+test('用户反馈：墨西哥比索等货币可选，货币选择器与侧边栏同一份清单，取汇率接口的全部货币', async () => {
+  const { readFileSync } = await import('node:fs');
+  const picker = readFileSync(new URL('../app/src/components/Picker.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(picker, /CURRENCIES/);
+  assert.match(picker, /allCurrencies\(state\?\.fx\.rates\)/);
+  const app = readFileSync(new URL('../app/src/app.tsx', import.meta.url), 'utf8');
+  assert.match(app, /allCurrencies\(state\.fx\.rates\)/);
+  const display = readFileSync(new URL('../app/src/display.ts', import.meta.url), 'utf8');
+  assert.match(display, /Object\.keys\(rates \?\? \{\}\)\.filter\(\(c\) => !HIDDEN_CCY\.has\(c\)\)/);
+  assert.equal(symbol('MXN'), 'MX$');
+  assert.equal(money(199, 'MXN'), 'MX$199.00');
+});
+
+test('非常用货币里 Intl 记为无小数的显示 0 位，其余 2 位；常用货币精度不变', async () => {
+  const { currencyDecimals } = await import('./format.ts');
+  assert.equal(currencyDecimals('ISK'), 0);
+  assert.equal(currencyDecimals('UGX'), 0);
+  assert.equal(currencyDecimals('KWD'), 2);
+  assert.equal(currencyDecimals('MXN'), 2);
+  assert.equal(currencyDecimals('PKR'), 2);
+  assert.equal(currencyDecimals('TWD'), 0);
+  assert.equal(currencyDecimals('USD'), 2);
+});
+
+test('历史汇率入库汇率接口支持的全部币种；下发覆盖账本里所有金额字段的币种；旧的精简行缺已用币种时重抓', async () => {
+  const { parseCurrencyApi, parseFrankfurter } = await import('./fx.ts');
+  const { keepSet, staleRow, storeSet } = await import('../worker/fx.ts');
+  assert.deepEqual(parseCurrencyApi({ usd: { mxn: 18.4, isk: 138 } }), { USD: 1, MXN: 18.4, ISK: 138 });
+  assert.deepEqual(parseFrankfurter({ rates: { MXN: 18.4 } }), { USD: 1, MXN: 18.4 });
+  assert.deepEqual(parseCurrencyApi({ usd: { mxn: 18.4, btc: 0.00001 } }, new Set(['MXN'])), { USD: 1, MXN: 18.4 });
+  // 主币种 USD 的订阅加了 MXN 分段、UGX 实扣，账户有 ISK 成本：都要下发历史
+  const state = {
+    subscriptions: [{ currency: 'USD', phases: [{ currency: 'MXN' }], payments: [{ settledCurrency: 'UGX' }] }],
+    methods: [{ currency: 'USD', costCcy: 'ISK' }],
+    people: [],
+    settings: { ...DEFAULT_SETTINGS, collectCurrency: 'PEN' },
+  } as never;
+  const keep = keepSet(state);
+  for (const c of ['MXN', 'UGX', 'ISK', 'PEN', 'USD', 'CNY']) assert.ok(keep.has(c), c);
+  // 入库：汇率接口的全部币种 + 已用，不含加密货币；兜底表时不过滤
+  const rates = Object.fromEntries(
+    Array.from({ length: 120 }, (_, i) => [`A${String.fromCharCode(65 + (i % 26))}${String.fromCharCode(65 + Math.floor(i / 26))}`, 1]),
+  );
+  const store = storeSet({ ...(state as object), fx: { base: 'USD', rates, fetchedAt: '' } } as never)!;
+  assert.ok(store.has('MXN') && store.has('AAA') && !store.has('BTC'));
+  assert.equal(storeSet({ ...(state as object), fx: { base: 'USD', rates: { USD: 1, CNY: 7 }, fetchedAt: '' } } as never), undefined);
+  // 旧版精简行缺 MXN → 重抓；完整行、欧洲央行行不重抓，免得循环
+  const slim = JSON.stringify({ USD: 1, CNY: 7 });
+  assert.equal(staleRow({ source: 'currency-api', rates: slim }, keep), true);
+  assert.equal(staleRow({ source: 'ecb', rates: slim }, keep), false);
+  assert.equal(staleRow({ source: 'currency-api', rates: JSON.stringify(rates) }, keep), false);
+  assert.equal(staleRow({ source: 'currency-api', rates: JSON.stringify(Object.fromEntries([...keep].map((c) => [c, 1]))) }, keep), false);
+});
