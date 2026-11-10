@@ -1,6 +1,17 @@
 import { DAYS_PER_MONTH, durationLabel } from '../../../shared/billing.ts';
 import { copyParts } from '../components/copy.tsx';
-import { chargesBetween, currentPhase, cycleLabel, diffDays, effectiveStatus, paidServedDays, phaseSubs, priceAt, servedTime, isStopped } from '../../../shared/billing.ts';
+import {
+  chargesBetween,
+  currentPhase,
+  cycleLabel,
+  diffDays,
+  effectiveStatus,
+  paidServedDays,
+  phaseSubs,
+  priceAt,
+  servedTime,
+  isStopped,
+} from '../../../shared/billing.ts';
 import { cnDate, cnDateFull, money } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 

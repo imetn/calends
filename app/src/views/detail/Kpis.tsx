@@ -77,9 +77,7 @@ export function Kpis({
   const young = !!sub.estimateFrom || active < 30 || (regular(history).length < 2 && !transferred);
   // 均摊分母与 MCP 同一口径：预付费算到已付那期结束，有转让时按持有期（见 netCost）
   const spreadMonths = Math.max(1, cost.spreadDays / DAYS_PER_MONTH);
-  const perMonth = young
-    ? toBase(state, monthlyGross(currentPhase(sub, today), today, state.fx), currentPhase(sub, today).currency)
-    : total / spreadMonths;
+  const perMonth = young ? toBase(state, monthlyGross(currentPhase(sub, today), today, state.fx), currentPhase(sub, today).currency) : total / spreadMonths;
   const perTrend = !cost.incomplete && !young && per.length > 1 && per[0] > 0 ? per[per.length - 1] / per[0] - 1 : undefined;
   const duration =
     active < 1
