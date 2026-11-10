@@ -647,7 +647,14 @@ function MoveBars({
   const { lo, hi } = waterfallDomain([from, to, ...cols.map((c) => c.b)]);
   const y = (v: number) => ((Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo)) * 100;
   return (
-    <div className="mv-wf" role="img" aria-label={cols.map((c) => `${c.k} ${money(c.v, base)}`).join(', ')}>
+    <div
+      className="mv-wf"
+      role="img"
+      aria-label={cols.map((c) => `${c.k} ${money(c.v, base)}`).join(', ')}
+      style={{ '--wf-ref': String(1 - y(from) / 100) } as Record<string, string>}
+    >
+      {/* 上月末参考线：从上月末柱顶横贯到期末柱，一眼看出期末比上月末高还是低 */}
+      <em className="mv-wf-ref" aria-hidden />
       {cols.map((c, i) => {
         const top = y(Math.max(c.a, c.b));
         const bottom = c.kind === 'total' ? 0 : y(Math.min(c.a, c.b));

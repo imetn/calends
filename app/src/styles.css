@@ -11103,10 +11103,21 @@ button.name-edit:focus-visible {
 
 /* 报告 · 月度变动瀑布：纵轴截断，两端合计中性色，增加支出红、减少支出绿 */
 .mv-wf {
+  position: relative;
   display: flex;
   gap: 6px;
   padding: 28px 0 12px;
   border-top: var(--hairline) solid var(--sep);
+}
+/* 上月末参考线：与 .mv-wf-plot 同一纵向区间（上内边距 28px、高 120px），横贯整个图；画在柱子后面 */
+.mv-wf-ref {
+  position: absolute;
+  z-index: 0;
+  top: calc(28px + 120px * var(--wf-ref));
+  left: 0;
+  right: 0;
+  border-top: var(--hairline) dashed var(--label-3);
+  pointer-events: none;
 }
 .hero-delta + .mv-wf {
   margin-top: 16px;
@@ -11120,6 +11131,7 @@ button.name-edit:focus-visible {
 }
 .mv-wf-plot {
   position: relative;
+  z-index: 1;
   height: 120px;
   border-bottom: var(--hairline) solid var(--sep);
 }

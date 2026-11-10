@@ -202,3 +202,18 @@ test('河流图：层之间不留缝，指针下的层可命中并高亮，提�
   const ov = readFileSync(new URL('../app/src/views/Overview.tsx', import.meta.url), 'utf8');
   assert.match(ov, /onPointerEnter=\{\(e\) => e\.pointerType === 'mouse' && setHot\(k\)\}/);
 });
+
+test('变动瀑布图：上月末虚线参考线横贯到期末；报告卡标题不再挂口径说明 ⓘ', () => {
+  const report = readFileSync(new URL('../app/src/views/Report.tsx', import.meta.url), 'utf8');
+  assert.match(report, /'--wf-ref': String\(1 - y\(from\) \/ 100\)/);
+  assert.match(report, /<em className="mv-wf-ref" aria-hidden \/>/);
+  const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\.mv-wf-ref \{[^}]*top: calc\(28px \+ 120px \* var\(--wf-ref\)\);[^}]*left: 0;\s*right: 0;[^}]*dashed/);
+  assert.match(css, /\.mv-wf-ref \{[^}]*z-index: 0;/);
+  assert.match(css, /\.mv-wf-plot \{[^}]*z-index: 1;/);
+  const comp = readFileSync(new URL('../app/src/components/Composition.tsx', import.meta.url), 'utf8');
+  for (const src of [report, comp]) {
+    assert.doesNotMatch(src, /hint=\{t\(/);
+    assert.doesNotMatch(src, /\bbasis(All|Year)?['"]/);
+  }
+});
