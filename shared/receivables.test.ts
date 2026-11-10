@@ -290,3 +290,37 @@ test('收款表单勾选的期只能连成一段：勾远处补齐中间，取�
   assert.deepEqual(togglePeriodRange(order, ['2025-12-15', '2026-02'], '2025-12-15'), ['2026-02']);
   assert.deepEqual(togglePeriodRange(order, ['2025-12-15', '2026-01'], '2026-02'), ['2025-12-15', '2026-01', '2026-02']);
 });
+
+test('ISO 无小数展示不改变历史 ISK/UGX 收款的分摊、删期与拆期金额', () => {
+  for (const currency of ['ISK', 'UGX']) {
+    const ps = [p('2026-01-01', '2026-01-31', 60, currency), p('2026-02-01', '2026-02-28', 60, currency)];
+    const r = {
+      receipts: [{ id: 'fractional', date: '2026-01-01', amount: 101.5, currency, periods: ps.map((x) => x.key) }],
+    };
+    const ledger = settle(ps, r, '2026-03-01').periods;
+    assert.deepEqual(
+      ledger.map((x) => x.share),
+      [50.75, 50.75],
+      currency,
+    );
+    assert.equal(
+      ledger.reduce((sum, x) => sum + x.share!, 0),
+      101.5,
+      currency,
+    );
+    const removed = removeRecordPeriod(r, 'fractional', ledger[0], ps);
+    assert.equal(removed.receipts[0].amount, 50.75, currency);
+    assert.equal(settle(ps, removed, '2026-03-01').periods[1].share, 50.75, currency);
+    const edited = editRecordPeriod(r, 'fractional', ledger[0], { date: '2026-01-02', note: 'corrected date' }, ps, 'split');
+    assert.equal(
+      edited.receipts.reduce((sum, x) => sum + x.amount, 0),
+      101.5,
+      currency,
+    );
+    assert.deepEqual(
+      edited.receipts.map((x) => x.amount),
+      [50.75, 50.75],
+      currency,
+    );
+  }
+});

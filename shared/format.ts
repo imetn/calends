@@ -103,10 +103,15 @@ export function symbol(ccy: string): string {
 }
 
 const ZERO_DECIMALS = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'HUF', 'TWD', 'PYG', 'MGA', 'BIF'];
+/** 账务计算与金额输入沿用既有精度；展示规则不能改变历史分摊、退款或实扣。 */
+export function currencyDecimals(ccy: string): number {
+  return ZERO_DECIMALS.includes(ccy) ? 0 : 2;
+}
+
 const intlDecimals = new Map<string, number>();
 
 /** 展示精度；不改变计算、存储或历史原值。只分 0 位和 2 位：常用货币按固定列表，其余 Intl 记为无小数的（如 ISK、UGX）取 0 */
-export function currencyDecimals(ccy: string): number {
+export function displayCurrencyDecimals(ccy: string): number {
   if (ZERO_DECIMALS.includes(ccy)) return 0;
   if (CURRENCIES.includes(ccy)) return 2;
   let d = intlDecimals.get(ccy);
@@ -125,7 +130,7 @@ type MoneyOptions = { compact?: boolean; sign?: boolean; decimals?: number };
 
 /** 金额文本和分段金额组件共用；显式精度和紧凑显示也不能为零小数货币添加小数。 */
 export function moneyDecimals(n: number, ccy: string, opts: MoneyOptions = {}): number {
-  const digits = currencyDecimals(ccy);
+  const digits = displayCurrencyDecimals(ccy);
   return digits === 0 ? 0 : (opts.decimals ?? (opts.compact && (Math.abs(n) >= 1000 || Number.isInteger(n)) ? 0 : digits));
 }
 

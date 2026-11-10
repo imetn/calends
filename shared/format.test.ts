@@ -235,14 +235,18 @@ test('用户反馈：墨西哥比索等货币可选，货币选择器与侧边�
 });
 
 test('非常用货币里 Intl 记为无小数的显示 0 位，其余 2 位；常用货币精度不变', async () => {
-  const { currencyDecimals } = await import('./format.ts');
-  assert.equal(currencyDecimals('ISK'), 0);
-  assert.equal(currencyDecimals('UGX'), 0);
-  assert.equal(currencyDecimals('KWD'), 2);
-  assert.equal(currencyDecimals('MXN'), 2);
-  assert.equal(currencyDecimals('PKR'), 2);
-  assert.equal(currencyDecimals('TWD'), 0);
-  assert.equal(currencyDecimals('USD'), 2);
+  const { displayCurrencyDecimals } = await import('./format.ts');
+  assert.equal(displayCurrencyDecimals('ISK'), 0);
+  assert.equal(displayCurrencyDecimals('UGX'), 0);
+  assert.equal(displayCurrencyDecimals('KWD'), 2);
+  assert.equal(displayCurrencyDecimals('MXN'), 2);
+  assert.equal(displayCurrencyDecimals('PKR'), 2);
+  assert.equal(displayCurrencyDecimals('TWD'), 0);
+  assert.equal(displayCurrencyDecimals('USD'), 2);
+  for (const c of ['ISK', 'UGX']) {
+    assert.equal(currencyDecimals(c), 2);
+    assert.doesNotMatch(money(101.5, c), /[.,]\d/);
+  }
 });
 
 test('历史汇率入库汇率接口支持的全部币种；下发覆盖账本里所有金额字段的币种；旧的精简行缺已用币种时重抓', async () => {
