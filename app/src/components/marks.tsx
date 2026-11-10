@@ -7,8 +7,9 @@ import { FLAGS } from '../display.ts';
 import type { CardNetwork, PaymentMethod, Subscription } from '../../../shared/types.ts';
 import { bankOf, BRANDS, brandOf, catColor, catIcon, faviconOf, isDomainCat, KIND_BG, paletteColor, methodLogo, methodRegion, NETWORKS } from '../derive.ts';
 import { CatGlyph } from './CatGlyph.tsx';
-import { intlLocale, t } from '../../../shared/i18n.ts';
+import { t } from '../../../shared/i18n.ts';
 import { Icon } from './icons.tsx';
+import { regionLabel } from '../region.ts';
 
 // ---------- 订阅图标：emoji > 图片 URL > 站点图标 > 渐变首字母 ----------
 export const failed = new Set<string>();
@@ -92,30 +93,6 @@ export function PayBadge({ m }: { m?: PaymentMethod }) {
       <span className="pay-name">{store ? t(`core.methodKind.${m.kind}`) : m.name}</span>
     </span>
   );
-}
-
-/** 地区名跟随当前语言 */
-export const regionNameCache = new Map<string, Intl.DisplayNames | undefined>();
-
-export function regionLabel(cc: string): string {
-  const loc = intlLocale();
-  if (!regionNameCache.has(loc)) {
-    try {
-      regionNameCache.set(loc, new Intl.DisplayNames([loc], { type: 'region' }));
-    } catch {
-      regionNameCache.set(loc, undefined);
-    }
-  }
-  try {
-    return regionNameCache.get(loc)?.of(cc.toUpperCase()) ?? cc.toUpperCase();
-  } catch {
-    return cc.toUpperCase();
-  }
-}
-
-/** 订阅的地区：订阅自己填的优先，没填时用支付账户的地区（商店账户、手机卡等） */
-export function subRegion(sub: { region?: string }, m?: PaymentMethod): string | undefined {
-  return sub.region || (m ? methodRegion(m) : undefined) || undefined;
 }
 
 /** 地区胶囊：国旗 + 地区名，和分类、支付方式并排独立显示 */

@@ -97,7 +97,7 @@ function addWidget(d: Draft, id: string): Draft {
 /** 组件库的分组：同一类放一起，主人按想展示什么来找 */
 const LIBRARY: { title: string; ids: string[] }[] = [
   { title: 'metrics', ids: ['stats', ...PUBLIC_METRIC_TEMPLATES] },
-  { title: 'charts', ids: ['chart', 'composition', 'treemap', 'waterfall', 'fx'] },
+  { title: 'charts', ids: ['chart', 'composition', 'treemap', 'globe', 'waterfall', 'fx'] },
   { title: 'lists', ids: ['timeline', 'calendar', 'years', 'list', 'tenure', 'changes', 'ended', 'lifetime'] },
   { title: 'bottom', ids: ['footer', 'pile'] },
 ];

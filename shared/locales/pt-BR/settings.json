@@ -463,6 +463,10 @@
       "pile": {
         "name": "Pilha de ícones",
         "desc": "Ícones caindo no fim da página"
+      },
+      "globe": {
+        "name": "Globo",
+        "desc": "Regiões das assinaturas ativas"
       }
     }
   }

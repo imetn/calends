@@ -1,7 +1,21 @@
 import { amountTotal, chargeTotal, convertedTotal, dueTotal, emptyTotal, scaleTotal, sumTotals, totalRatio, type FxTotal } from './fx-total.ts';
 import { contributionTotal, mrrTotal } from './metrics.ts';
 import { memberCashFlows, memberFlowValue } from './carpool.ts';
-import { addDays, addMonths, chargesBetween, collectCurrencyOf, memberDues, myShareFactor, phaseSubs, totals, type Charge, chargeSources } from './billing.ts';
+import {
+  activePhases,
+  addDays,
+  addMonths,
+  chargesBetween,
+  collectCurrencyOf,
+  currentPhase,
+  memberDues,
+  monthlyTotal,
+  myShareFactor,
+  phaseSubs,
+  totals,
+  type Charge,
+  chargeSources,
+} from './billing.ts';
 import { diffDays, effectiveStatus, isStopped, lastCharge, servedTime, undatedStop } from './billing.ts';
 import { chargeValue, toBaseOrNaN } from './fx.ts';
 import {
@@ -873,4 +887,39 @@ export function subscriptionTenure(state: AppState, today: string): Tenure {
     longest: live.sort((a, b) => b.days - a.days || a.sub.id.localeCompare(b.sub.id)).map(({ sub, since, days }) => ({ sub, since, days })),
     byMonth,
   };
+}
+
+export interface RegionRow {
+  cc: string;
+  /** 在这个地区计费的订阅（同一订阅换区后新旧两段并行时两边各算一次） */
+  subs: Subscription[];
+  /** 每月折算到本位币、我承担的部分 */
+  monthly: FxTotal;
+}
+
+/**
+ * 在用订阅按地区汇总。口径与「订阅中」一致：不含代付和试用期；每个计费中的阶段按自己的地区归类，
+ * 金额用 monthlyTotal（缺汇率时保留原币，不当成 0）。地区由调用方推断（阶段/订阅填的优先，没填用支付方式），推断不出的不计入。
+ * 按每月金额从高到低，金额相同（或都折算不了）按订阅数
+ */
+export function regionSpread(state: AppState, today: string, regionOf: (v: Subscription) => string | undefined): RegionRow[] {
+  const map = new Map<string, { subs: Subscription[]; totals: FxTotal[] }>();
+  for (const s of state.subscriptions) {
+    if (s.proxy || !['active', 'ending'].includes(effectiveStatus(s, today))) continue;
+    const live = activePhases(s, today).filter((v) => ['active', 'ending'].includes(effectiveStatus(v, today)));
+    for (const v of live.length ? live : [currentPhase(s, today)]) {
+      const cc = regionOf(v)?.toUpperCase();
+      if (!cc) continue;
+      const row = map.get(cc) ?? { subs: [], totals: [] };
+      if (!row.subs.includes(s)) row.subs.push(s);
+      row.totals.push(monthlyTotal(state, v, today));
+      map.set(cc, row);
+    }
+  }
+  return [...map]
+    .map(([cc, r]) => ({ cc, subs: r.subs, monthly: sumTotals(r.totals) }))
+    .sort(
+      (a, b) =>
+        (b.monthly.known ? b.monthly.value : -1) - (a.monthly.known ? a.monthly.value : -1) || b.subs.length - a.subs.length || a.cc.localeCompare(b.cc),
+    );
 }

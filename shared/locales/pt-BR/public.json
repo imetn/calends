@@ -131,5 +131,8 @@
     "fxEffect": "Efeito cambial (mensal)",
     "vsPrev": "vs. ano passado",
     "shareOf": "Participação no gasto mensal"
+  },
+  "globe": {
+    "title": "Regiões das assinaturas"
   }
 }

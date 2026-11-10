@@ -463,6 +463,10 @@
       "pile": {
         "name": "Montón de iconos",
         "desc": "Iconos que caen al final de la página"
+      },
+      "globe": {
+        "name": "Globo",
+        "desc": "Regiones de las suscripciones activas"
       }
     }
   }

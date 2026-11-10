@@ -445,6 +445,10 @@
       "pile": {
         "name": "Tumpukan ikon",
         "desc": "Ikon berjatuhan di bawah halaman"
+      },
+      "globe": {
+        "name": "Bola dunia",
+        "desc": "Wilayah langganan aktif"
       }
     }
   }

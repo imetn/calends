@@ -83,6 +83,16 @@ const SHAPES: Record<string, React.ReactNode> = {
       <Bar x={50} y={25} w={8} h={13} o={0.16} />
     </>
   ),
+  globe: (
+    <>
+      <circle cx={32} cy={22} r={15} fill="none" stroke={FILL} strokeOpacity={0.35} />
+      <ellipse cx={32} cy={22} rx={6} ry={15} fill="none" stroke={FILL} strokeOpacity={0.22} />
+      <Bar x={17} y={21.5} w={30} h={1} o={0.22} />
+      <circle cx={26} cy={16} r={2.5} fill={FILL} opacity={0.6} />
+      <circle cx={38} cy={26} r={1.8} fill={FILL} opacity={0.45} />
+      <circle cx={30} cy={29} r={1.2} fill={FILL} opacity={0.3} />
+    </>
+  ),
   waterfall: (
     <>
       <Bar x={8} y={22} w={7} h={14} o={0.6} />

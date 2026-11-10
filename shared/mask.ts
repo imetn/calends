@@ -137,6 +137,8 @@ const NEEDS_NAMES: PublicPart[] = ['timeline', 'list', 'ended', 'lifetime', 'pil
 const NEEDS_HISTORY: PublicPart[] = ['stats', 'timeline', 'chart', 'list', 'calendar', 'years', 'tenure', 'changes', 'waterfall'];
 const NEEDS_ENDED: PublicPart[] = ['stats', 'timeline', 'chart', 'ended', 'calendar', 'years', 'tenure', 'changes', 'waterfall'];
 const NEEDS_CATEGORIES: PublicPart[] = ['composition', 'list', ...NEEDS_NAMES];
+/** 用到地区的部分：地球只要地区和金额，不要名字 */
+const NEEDS_REGIONS: PublicPart[] = ['globe', ...NEEDS_NAMES];
 /** 用到金额的部分（订阅堆按金额筛选）：全部隐藏后订阅和付款来源都不下发 */
 const NEEDS_AMOUNTS: PublicPart[] = [
   'stats',
@@ -154,6 +156,7 @@ const NEEDS_AMOUNTS: PublicPart[] = [
   'treemap',
   'changes',
   'waterfall',
+  'globe',
 ];
 
 /** 去掉扣款和价格历史，只留算出 day 当天价格所需的一条 */
@@ -182,6 +185,7 @@ export function maskForPublic(state: AppState, opts: { untrimmed?: boolean } = {
   const used = new Set(keepCategories ? subs.map((s) => s.category) : []);
   const keepNames = needs(NEEDS_NAMES);
   const keepHistory = needs(NEEDS_HISTORY);
+  const keepRegions = needs(NEEDS_REGIONS);
   const trimSub = (s: Subscription, i: number): Subscription => {
     // 已结束的订阅按结束那天的价格算「原来每月多少」，结束日在未来也一样（已付至未来）
     const day = isStopped(effectiveStatus(s, today)) ? (s.end ?? today) : today;
@@ -190,9 +194,8 @@ export function maskForPublic(state: AppState, opts: { untrimmed?: boolean } = {
       : { ...withoutHistory(s, day), ...(s.cycle.unit === 'lifetime' ? { price: s.price } : {}), phases: s.phases?.map((p) => withoutHistory(p, day)) };
     return {
       ...flat,
-      ...(keepNames
-        ? {}
-        : { id: `s${i}`, name: '', icon: undefined, url: undefined, region: undefined, phases: flat.phases?.map((p) => ({ ...p, region: undefined })) }),
+      ...(keepNames ? {} : { id: `s${i}`, name: '', icon: undefined, url: undefined }),
+      ...(keepRegions ? {} : { region: undefined, phases: flat.phases?.map((p) => ({ ...p, region: undefined })) }),
       ...(keepCategories ? {} : { category: '' }),
     };
   };
@@ -223,8 +226,13 @@ export function maskForPublic(state: AppState, opts: { untrimmed?: boolean } = {
         .filter((c) => used.has(c.name))
         .map((c) => ({ name: c.name, icon: c.icon, color: c.color, preset: c.preset === 'domains' ? c.preset : undefined })),
     },
-    // 不展示名字时，付款来源的地区也不能留：methodId 连着它就能还原订阅的地区
-    methods: keepAmounts ? state.methods.map(publicMethod).map((m) => (keepNames ? m : { ...m, name: '', region: undefined })) : [],
+    // 不展示名字时付款来源的名字不留；不展示地区时地区也不能留：methodId 连着它就能还原订阅的地区
+    methods: keepAmounts
+      ? state.methods
+          .map(publicMethod)
+          .map((m) => (keepNames ? m : { ...m, name: '' }))
+          .map((m) => (keepRegions ? m : { ...m, region: undefined }))
+      : [],
     subscriptions: subs.map((s, i) => trimSub(publicSub(s, cats), i)),
   };
 }

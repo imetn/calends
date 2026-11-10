@@ -38,6 +38,7 @@ import { MetricCard, yearBefore } from './widgets/metric.tsx';
 import type { WidgetProps } from './widgets/props.ts';
 import { CalendarCard } from './widgets/calendar.tsx';
 import { YearsCard } from './widgets/years.tsx';
+import { GlobeCard, hasGlobe } from './widgets/globe.tsx';
 import { TenureCard } from './widgets/tenure.tsx';
 import { TreemapCard } from './widgets/treemap.tsx';
 import { ChangesCard } from './widgets/changes.tsx';
@@ -396,6 +397,7 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
     treemap: optional('treemap', () => { const m = spendingMap(state, today); return m.groups.length || m.missing; }) && <TreemapCard {...widget} />,
     changes: optional('changes', () => publicChanges(state, today, ccy).length) && <ChangesCard {...widget} />,
     waterfall: optional('waterfall', () => waterfallFirstMonth(state, today)) && <WaterfallCard {...widget} />,
+    globe: optional('globe', () => hasGlobe(state, today)) && <GlobeCard {...widget} />,
   };
   const grid = publicGrid(config);
   const canvas = view.canvas;

@@ -445,6 +445,10 @@
       "pile": {
         "name": "Đống biểu tượng",
         "desc": "Biểu tượng rơi xuống cuối trang"
+      },
+      "globe": {
+        "name": "Quả địa cầu",
+        "desc": "Khu vực của các gói đang dùng"
       }
     }
   }

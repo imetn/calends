@@ -128,5 +128,8 @@
     "fxEffect": "Ảnh hưởng tỷ giá (hằng tháng)",
     "vsPrev": "so với năm ngoái",
     "shareOf": "Tỷ trọng trong chi tiêu hằng tháng"
+  },
+  "globe": {
+    "title": "Khu vực đăng ký"
   }
 }

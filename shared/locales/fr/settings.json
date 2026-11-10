@@ -463,6 +463,10 @@
       "pile": {
         "name": "Pile d'icônes",
         "desc": "Icônes qui tombent en bas de page"
+      },
+      "globe": {
+        "name": "Globe",
+        "desc": "Régions des abonnements actifs"
       }
     }
   }

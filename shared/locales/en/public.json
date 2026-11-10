@@ -131,5 +131,8 @@
     "fxEffect": "Exchange-rate effect (monthly)",
     "vsPrev": "vs last year",
     "shareOf": "Share of monthly spend"
+  },
+  "globe": {
+    "title": "Subscription regions"
   }
 }

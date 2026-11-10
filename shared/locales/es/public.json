@@ -131,5 +131,8 @@
     "fxEffect": "Efecto del tipo de cambio (mensual)",
     "vsPrev": "vs. año pasado",
     "shareOf": "Proporción del gasto mensual"
+  },
+  "globe": {
+    "title": "Regiones de suscripción"
   }
 }

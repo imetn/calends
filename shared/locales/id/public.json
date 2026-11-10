@@ -128,5 +128,8 @@
     "fxEffect": "Dampak kurs (bulanan)",
     "vsPrev": "vs tahun lalu",
     "shareOf": "Porsi dari pengeluaran bulanan"
+  },
+  "globe": {
+    "title": "Wilayah langganan"
   }
 }

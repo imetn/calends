@@ -463,6 +463,10 @@
       "pile": {
         "name": "Symbolhaufen",
         "desc": "Symbole, die am Seitenende herabfallen"
+      },
+      "globe": {
+        "name": "Globus",
+        "desc": "Regionen aktiver Abos"
       }
     }
   }

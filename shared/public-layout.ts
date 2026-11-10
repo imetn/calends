@@ -26,6 +26,7 @@ export const PUBLIC_GRID_SECTIONS: readonly { id: PublicGridId; x: number; y: nu
   { id: 'treemap', x: 0, y: 69, w: 6, h: 8, min: 4, off: true },
   { id: 'changes', x: 0, y: 77, w: 6, h: 13, min: 4, off: true },
   { id: 'waterfall', x: 0, y: 90, w: 6, h: 6, min: 5, off: true },
+  { id: 'globe', x: 0, y: 96, w: 6, h: 12, min: 4, off: true },
 ];
 /** 固定在页面底部的组件：只能隐藏，不参与摆放 */
 export const PUBLIC_BOTTOM_SECTIONS = ['footer', 'pile'] as const;
@@ -54,7 +55,21 @@ export const PUBLIC_METRIC_CARDS_MAX = 24;
 export const PUBLIC_METRIC_ROWS_MAX = 4;
 
 export type PublicGridId =
-  'stats' | 'timeline' | 'chart' | 'composition' | 'fx' | 'list' | 'ended' | 'lifetime' | 'calendar' | 'years' | 'tenure' | 'treemap' | 'changes' | 'waterfall';
+  | 'stats'
+  | 'timeline'
+  | 'chart'
+  | 'composition'
+  | 'fx'
+  | 'list'
+  | 'ended'
+  | 'lifetime'
+  | 'calendar'
+  | 'years'
+  | 'tenure'
+  | 'treemap'
+  | 'changes'
+  | 'waterfall'
+  | 'globe';
 export type PublicBottomId = (typeof PUBLIC_BOTTOM_SECTIONS)[number];
 /** 决定下发哪些数据的最小单位 */
 export type PublicPart = PublicGridId | PublicBottomId;
