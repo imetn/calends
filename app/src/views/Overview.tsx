@@ -106,6 +106,8 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
   const [scale, setScale] = useState<Scale>('month');
   // 柱状 / 河流：同一组区间与分类筛选，只换画法；不记偏好
   const [view, setView] = useState<'bars' | 'stream'>('bars');
+  // 河流图高亮的分类：指针下的层，或悬停的分类图例
+  const [hot, setHot] = useState<string>();
   // 时间范围随账本同步，换设备也保留；账本没有去年的扣款时不提供「去年」
   const [saved, setPeriod] = usePref<SpendingPeriod>('overview-period', 'extended', isSpendingPeriod);
   const hasLastYear = useMemo(() => {
@@ -160,6 +162,7 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
 
   const curKey = scale === 'month' ? today.slice(0, 7) : today.slice(0, 4);
   // 河流图按分类分层（本月待扣不单列，归回各自分类）
+  const streamColor = (k: string) => catColor(k, 8);
   const streamCols = useMemo(
     () =>
       view === 'stream'
@@ -293,30 +296,38 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
         current={sel}
         onSelect={(k) => setSelKey(k === selKey ? undefined : k)}
         fmt={(v) => moneyTick(v, base)}
-        stream={streamCols && { cols: streamCols, color: (k) => catColor(k, 8) }}
-        tip={(b) => {
-          const cs = data.find((d) => d.r.key === b.key)?.cs ?? [];
+        stream={streamCols && { cols: streamCols, color: streamColor }}
+        hot={streamCols ? hot : undefined}
+        onHot={setHot}
+        tip={(b, lit) => {
+          const at = data.findIndex((d) => d.r.key === b.key);
+          const cs = data[at]?.cs ?? [];
           const total = chargesTotal(state, cs);
+          // 河流图的层含本月待扣，表里按同样的分类列出；柱状图的待扣单独一段，不进表
+          const col = streamCols?.[at];
+          const parts = col ? [...col.entries()].map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v) : b.parts.filter((p) => p.k !== PROJ);
+          // 前五名之外的层被指着时，也补进表里
+          const shown = parts.slice(0, 5);
+          if (lit && !shown.some((p) => p.k === lit)) shown.push(...parts.filter((p) => p.k === lit));
           return (
             <TipTable
               head={[b.yearLabel ?? b.label, formatTotal(total, base, { direction: -1, compact: true })]}
-              rows={b.parts
-                .filter((p) => p.k !== PROJ)
-                .slice(0, 5)
-                .map((p) => {
-                  const part = chargesTotal(
-                    state,
-                    cs.filter((c) => c.sub.category === p.k),
-                  );
-                  // 缺汇率时占比不可信，不写
-                  const ratio = totalRatio(part, total);
-                  return {
-                    key: p.k,
-                    label: p.k,
-                    value: formatTotal(part, base, { direction: -1, compact: true }),
-                    share: Number.isFinite(ratio) && total.value > 0 ? `${Math.round(ratio * 100)}%` : undefined,
-                  };
-                })}
+              rows={shown.map((p) => {
+                const part = chargesTotal(
+                  state,
+                  cs.filter((c) => c.sub.category === p.k),
+                );
+                // 缺汇率时占比不可信，不写
+                const ratio = totalRatio(part, total);
+                return {
+                  key: p.k,
+                  label: p.k,
+                  value: formatTotal(part, base, { direction: -1, compact: true }),
+                  share: Number.isFinite(ratio) && total.value > 0 ? `${Math.round(ratio * 100)}%` : undefined,
+                  color: streamCols ? streamColor(p.k) : undefined,
+                  hot: lit === p.k,
+                };
+              })}
             />
           );
         }}
@@ -335,6 +346,8 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
             className={`lc ${active.length && !active.includes(k) ? 'off' : ''}`}
             aria-pressed={active.includes(k)}
             onClick={() => pick(k)}
+            onPointerEnter={(e) => e.pointerType === 'mouse' && setHot(k)}
+            onPointerLeave={() => setHot(undefined)}
           >
             <CatIcon cat={k} size={13} />
             {k}

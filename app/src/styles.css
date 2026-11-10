@@ -1748,6 +1748,22 @@ a {
 .tip-table span:not(.num) {
   color: var(--label-2);
 }
+/* 图上高亮的一行：字加粗、色点照常；其余行淡下去 */
+.tip-table .tip-hot {
+  color: var(--label) !important;
+  font-weight: 600;
+}
+.tip-table .tip-dim {
+  opacity: 0.45;
+}
+.tip-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: 0;
+}
 .tip {
   position: fixed;
   z-index: 80;
@@ -11269,6 +11285,9 @@ button.name-edit:focus-visible {
   left: 0;
   top: 0;
   pointer-events: none;
+}
+.act-stream-layer {
+  transition: fill var(--duration) var(--ease);
 }
 .act-stream-sel {
   stroke: var(--label-2);

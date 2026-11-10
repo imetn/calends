@@ -236,10 +236,22 @@ export function TipTable({
   rows,
 }: {
   head: [ComponentChildren, ComponentChildren];
-  rows: Array<{ key: string; label: ComponentChildren; value: ComponentChildren; wide?: boolean; share?: string }>;
+  rows: Array<{
+    key: string;
+    label: ComponentChildren;
+    value: ComponentChildren;
+    wide?: boolean;
+    share?: string;
+    /** 行首色点（图上对应的颜色） */
+    color?: string;
+    /** 图上高亮的那一行：加粗，其余行变淡 */
+    hot?: boolean;
+  }>;
 }) {
   // 有占比的表多一列，占比靠右、灰字；没有占比的行该列留空
   const shared = rows.some((r) => r.share);
+  const lit = rows.some((r) => r.hot);
+  const cls = (r: { hot?: boolean }) => (lit ? (r.hot ? 'tip-hot' : 'tip-dim') : undefined);
   return (
     <div className={shared ? 'tip-table with-share' : 'tip-table'}>
       <div className="tip-head">
@@ -255,9 +267,12 @@ export function TipTable({
           </div>
         ) : (
           <Fragment key={r.key}>
-            <span>{r.label}</span>
-            <span className="num">{r.value}</span>
-            {shared && <span className="num tip-share">{r.share}</span>}
+            <span className={cls(r)}>
+              {r.color && <i className="tip-dot" style={{ background: r.color }} />}
+              {r.label}
+            </span>
+            <span className={`num ${cls(r) ?? ''}`}>{r.value}</span>
+            {shared && <span className={`num tip-share ${cls(r) ?? ''}`}>{r.share}</span>}
           </Fragment>
         ),
       )}

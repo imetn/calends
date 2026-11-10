@@ -147,3 +147,58 @@ test('订阅地区卡：图例紧凑一行一组，地球只给前五名标国�
   const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
   assert.match(css, /\.tm-group > \.tm-cell:hover \{\n  background-color/);
 });
+
+test('河流图：层之间不留缝，指针下的层可命中并高亮，提示框标出该行', async () => {
+  const src = readFileSync(new URL('../app/src/components/stream-geom.ts', import.meta.url), 'utf8');
+  const charts = readFileSync(new URL('../app/src/components/charts.tsx', import.meta.url), 'utf8');
+  // 每层铺到最底下一层的下沿、从上往下倒序画，相邻层之间不会漏出卡片底色
+  assert.match(src, /line\(y1\[i\], false\)\}\$\{line\(y0\[0\], true\)\}Z/);
+  assert.doesNotMatch(charts, /opacity=\{0\.85\}/);
+  const { streamGeom } = await import('../app/src/components/stream-geom.ts');
+  const cols = [
+    new Map([
+      ['A', 60],
+      ['B', 40],
+    ]),
+    new Map([
+      ['A', 60],
+      ['B', 40],
+    ]),
+  ];
+  const g = streamGeom(cols, 206, 200);
+  const x = g.cx(0);
+  // 中线在 100px；总高 100 映射到 184px：A 占下方 −50…10，B 占 10…50
+  assert.equal(g.hit(x, 130).key, 'A');
+  assert.equal(g.hit(x, 70).key, 'B');
+  assert.equal(g.hit(x, 2).key, undefined);
+  assert.equal(g.hit(g.cx(1), 130).col, 1);
+  // 宽度取整造成指针越过右缘时仍按最后一段算，不跳回第一列
+  const edge = streamGeom([new Map([['A', 100]]), new Map([['B', 100]])], 206, 200);
+  assert.deepEqual(edge.hit(206.5, 150), { col: 1, key: 'B' });
+  // 列间过渡带里插值出的细层：最近那列没有金额就不算命中
+  const fade = streamGeom(
+    [
+      new Map([['A', 100]]),
+      new Map([
+        ['A', 100],
+        ['B', 100],
+      ]),
+    ],
+    206,
+    200,
+  );
+  const keysAt = (x: number) => new Set(Array.from({ length: 200 }, (_, y) => fade.hit(x, y).key));
+  assert.ok(!keysAt(fade.cx(0) + 40).has('B'));
+  assert.ok(keysAt(fade.cx(1)).has('B'));
+  const charts2 = readFileSync(new URL('../app/src/components/charts.tsx', import.meta.url), 'utf8');
+  // 触摸点按仍弹提示框；切换视图清掉高亮；同列同层不重建提示框
+  assert.match(charts2, /touchTap && p\.onMouseEnter\(e\)/);
+  assert.match(charts2, /onPointerDown: streamMove/);
+  assert.match(charts2, /matches\(':focus-visible'\) && p\.onFocus\(e\)/);
+  assert.match(charts2, /if \(id === last\.current\) return;/);
+  assert.match(charts2, /\[!!stream\],\n  \);/);
+  const tip = readFileSync(new URL('../app/src/components/overlays.tsx', import.meta.url), 'utf8');
+  assert.match(tip, /r\.hot \? 'tip-hot' : 'tip-dim'/);
+  const ov = readFileSync(new URL('../app/src/views/Overview.tsx', import.meta.url), 'utf8');
+  assert.match(ov, /onPointerEnter=\{\(e\) => e\.pointerType === 'mouse' && setHot\(k\)\}/);
+});
