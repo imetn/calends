@@ -241,3 +241,8 @@ test('资金流向桑基图按分类着色，与「钱花在哪」同一套分�
   assert.match(flow, /style=\{\{ fill: color\(cat\(lv, nd\.key\)\) \}\}/);
   assert.doesNotMatch(flow, /methodTint|methodColor/);
 });
+
+test('变动瀑布图：两端合计柱用图表墨色，与中间涨跌柱区分', () => {
+  const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\.mv-wf-plot i \{[^}]*background: var\(--chart-ink\);/);
+});

@@ -11084,7 +11084,7 @@ button.name-edit:focus-visible {
   }
 }
 
-/* 报告 · 月度变动瀑布：纵轴截断，两端合计中性色，增加支出红、减少支出绿 */
+/* 报告 · 月度变动瀑布：纵轴截断，两端合计用图表墨色（与其他柱状图一致），增加支出红、减少支出绿 */
 .mv-wf {
   position: relative;
   display: flex;
@@ -11123,7 +11123,7 @@ button.name-edit:focus-visible {
   left: 18%;
   right: 18%;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  background: var(--label-3);
+  background: var(--chart-ink);
 }
 .mv-wf-col.up .mv-wf-plot i {
   background: var(--loss);
