@@ -1,6 +1,6 @@
 import { DAYS_PER_MONTH, durationLabel } from '../../../shared/billing.ts';
 import { copyParts } from '../components/copy.tsx';
-import { chargesBetween, currentPhase, cycleLabel, diffDays, effectiveStatus, phaseSubs, priceAt, servedTime, isStopped } from '../../../shared/billing.ts';
+import { chargesBetween, currentPhase, cycleLabel, diffDays, effectiveStatus, paidServedDays, phaseSubs, priceAt, servedTime, isStopped } from '../../../shared/billing.ts';
 import { cnDate, cnDateFull, money } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 
@@ -32,6 +32,8 @@ function story(state: AppState, sub: Subscription, today: string) {
   const vs = phaseSubs(sub);
   // 并行的阶段不重复计天数；断档只算前面各段都已结束的空档
   const { days: active, gaps } = servedTime(sub, today);
+  // 均摊分母：预付费算到已付那期结束
+  const paid = paidServedDays(sub, charges, today);
   const years = new Map<string, number>();
   charges.forEach((c, i) => years.set(c.date.slice(0, 4), (years.get(c.date.slice(0, 4)) ?? 0) + values[i]));
   const yearMissing = new Set(charges.filter((c) => !Number.isFinite(chargeBaseOrNaN(state, c))).map((c) => c.date.slice(0, 4)));
@@ -60,8 +62,8 @@ function story(state: AppState, sub: Subscription, today: string) {
       : mo
         ? t('share.dur.m', { count: mo })
         : t('share.dur.d', { count: active }),
-    perMonth: active > 0 ? total / Math.max(1, active / DAYS_PER_MONTH) : 0,
-    perDay: active > 0 ? total / active : 0,
+    perMonth: active > 0 ? total / Math.max(1, paid / DAYS_PER_MONTH) : 0,
+    perDay: active > 0 ? total / Math.max(1, paid) : 0,
     change: same ? p1 / p0 - 1 : undefined,
     p0,
     p1,

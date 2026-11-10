@@ -401,6 +401,22 @@ export function servedTime(s: Subscription, today: string): { days: number; gaps
   return { days, gaps };
 }
 
+/**
+ * 已付款覆盖的在订天数：预付费的扣款买的是之后一期，均摊时分母要算到已付那期结束，
+ * 不然扣款当天会把整期费用摊进已过去的日子（订满 1 个月、付了 2 期，算成每月 2 期）。后付费、买断不受影响
+ */
+export function paidServedDays(s: Subscription, charges: Array<Pick<Charge, 'sub' | 'date' | 'serviceDate' | 'kind' | 'projected'>>, today: string): number {
+  let through = today;
+  for (const c of charges) {
+    if (c.kind || c.projected || c.date > today || isPostpaid(c.sub) || c.sub.cycle.unit === 'lifetime') continue;
+    let until = chargeServicePeriod(c.sub, c.date, c.serviceDate).until;
+    // 阶段提前结束：覆盖期截到阶段末，不把之后另一段的日子算进这笔钱
+    if (c.sub.end && until > addDays(c.sub.end, 1)) until = addDays(c.sub.end, 1);
+    if (until > through) through = until;
+  }
+  return servedTime(s, through).days;
+}
+
 /** day 当天同时在跑的所有阶段，按开始日排列（换区后旧区域还没到期时会有多个）；无阶段的订阅总是返回自身 */
 export function activePhases(s: Subscription, day: string): Subscription[] {
   if (!s.phases?.length) return [s];

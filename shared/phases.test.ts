@@ -15,6 +15,7 @@ import {
   nextCharge,
   phaseAt,
   phaseLanes,
+  paidServedDays,
   phaseSubs,
   servedTime,
   shareLastDay,
@@ -47,6 +48,7 @@ import {
   toEditForm,
 } from './phases.ts';
 import { prepareSubWrite } from './sub-write.ts';
+import { netCost } from './transfers.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 
 const base = (o: Partial<Subscription> = {}): Subscription => ({
@@ -245,6 +247,28 @@ test('并行期间实际在订的天数不重复计，没有断档', () => {
     servedTime(gap, '2026-07-15').gaps.map((g) => g.days),
     [46],
   );
+});
+
+test('实际每月的分母：预付费算到已付那期结束，扣款当天不按两期计', () => {
+  // 线上反馈：10/10 起月付，11/10 刚付了 11/10–12/09，「实际每月」显示约两期月费
+  const s = base({ start: '2026-10-10', price: 124.99 });
+  const today = '2026-11-10';
+  const paid = chargesBetween(s, s.start, today, today);
+  assert.equal(paid.length, 2);
+  assert.equal(servedTime(s, today).days, 31);
+  const days = paidServedDays(s, paid, today);
+  assert.equal(days, 61); // 10/10 → 12/10
+  // 后付费：账单结清的是过去的一期，分母不变
+  const post = base({ start: '2026-10-10', billing: 'postpaid' });
+  assert.equal(paidServedDays(post, chargesBetween(post, post.start, today, today), today), 31);
+  // 已停止：不超过结束日
+  const ended = base({ start: '2026-10-10', end: '2026-11-20', status: 'ended' });
+  assert.equal(paidServedDays(ended, chargesBetween(ended, ended.start, today, today), today), 42);
+  // MCP net_cost 与详情页同一口径
+  near(netCost(stateOf([s]), s, today, 'USD').perMonth, (2 * 124.99) / (61 / 30.4375));
+  // 旧阶段 11/24 结束、新阶段 11/25 起：11/10 那笔的覆盖期截到 11/24
+  const moved = switchPlan(base({ start: '2026-10-10' }), '2026-11-25', TR);
+  assert.equal(paidServedDays(moved, chargesBetween(moved, moved.start, '2026-11-12', '2026-11-12'), '2026-11-12'), 46);
 });
 
 test('预付余值：并行中旧区域没用完的部分也算', () => {

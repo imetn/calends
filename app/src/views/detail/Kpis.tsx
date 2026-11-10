@@ -75,9 +75,11 @@ export function Kpis({
   // 订了不到一个月（或只有一笔）时，「实际每月」没有意义：改用标价折算的预计每月
   // An incomplete imported history cannot establish an average over the original service lifetime.
   const young = !!sub.estimateFrom || active < 30 || (regular(history).length < 2 && !transferred);
+  // 均摊分母与 MCP 同一口径：预付费算到已付那期结束，有转让时按持有期（见 netCost）
+  const spreadMonths = Math.max(1, cost.spreadDays / DAYS_PER_MONTH);
   const perMonth = young
     ? toBase(state, monthlyGross(currentPhase(sub, today), today, state.fx), currentPhase(sub, today).currency)
-    : total / Math.max(1, active / DAYS_PER_MONTH);
+    : total / spreadMonths;
   const perTrend = !cost.incomplete && !young && per.length > 1 && per[0] > 0 ? per[per.length - 1] / per[0] - 1 : undefined;
   const duration =
     active < 1
@@ -91,12 +93,12 @@ export function Kpis({
           : t('detail.stats.days', { count: active });
   const cumulative = formatTotal(cost.partial, base, { direction: -1, compact: true, main: true });
   // 每月：买断按订了多久平摊，其余按实际（或刚开始时按标价预计）
-  const monthly = lifetime ? total / Math.max(1, active / DAYS_PER_MONTH) : perMonth;
+  const monthly = lifetime ? total / spreadMonths : perMonth;
 
   const monthlyPartial =
     !lifetime && young
       ? amountTotal(monthlyGross(currentPhase(sub, today), today, state.fx), currentPhase(sub, today).currency, perMonth)
-      : scaleTotal(cost.partial, 1 / Math.max(1, active / DAYS_PER_MONTH));
+      : scaleTotal(cost.partial, 1 / spreadMonths);
   const monthlyAmount = formatTotal(monthlyPartial, base, { direction: -1, compact: true, main: true, average: true });
   const postpaid = isPostpaid(currentPhase(sub, today));
   // 后付费停止、暂停后仍有最后一张账单

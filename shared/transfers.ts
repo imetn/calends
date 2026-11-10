@@ -2,7 +2,7 @@ import { amountTotal, chargesTotal, scaleTotal, sumTotals, type FxTotal } from '
 import { DAYS_PER_MONTH } from './billing.ts';
 // 转让收付：二手买入时付给原主的钱、卖出时收到的钱。都是实际现金，不推算剩余服务价值。
 // 不是服务商扣款：不进 MRR、续费预测、余额消耗、退款与扣款笔数；只进生命周期净成本和年度、月度现金流。
-import { chargesBetween, CURRENCY_CODE, diffDays, servedTime, validDay } from './billing.ts';
+import { chargesBetween, CURRENCY_CODE, diffDays, paidServedDays, servedTime, validDay } from './billing.ts';
 import { chargeBaseOrNaN, convertOn } from './fx.ts';
 import { t } from './i18n.ts';
 import type { AppState, Subscription, Transfer } from './types.ts';
@@ -56,6 +56,8 @@ export interface NetCost {
   from: string;
   until: string;
   days: number;
+  /** 月均、日均的分母：有转让时同持有期，否则算到预付已付那期结束（见 paidServedDays） */
+  spreadDays: number;
   perMonth: number;
   perDay: number;
   /** 有服务扣款或转让缺少可用汇率：本位币合计不可用 */
@@ -76,7 +78,8 @@ export function netCost(state: AppState, s: Subscription, today: string, to = st
   }
   const net = service + bought - sold;
   const held = holdingPeriod(s, today);
-  const perMonth = net / Math.max(1, held.days / DAYS_PER_MONTH);
+  const spreadDays = transfersOf(s).some((tr) => tr.date <= today) ? held.days : paidServedDays(s, history, today);
+  const perMonth = net / Math.max(1, spreadDays / DAYS_PER_MONTH);
   return {
     partial: sumTotals([
       chargesTotal(state, history, to),
@@ -91,6 +94,7 @@ export function netCost(state: AppState, s: Subscription, today: string, to = st
     sold,
     net,
     ...held,
+    spreadDays,
     perMonth,
     perDay: perMonth / DAYS_PER_MONTH,
     incomplete: !Number.isFinite(service) || !Number.isFinite(bought) || !Number.isFinite(sold),

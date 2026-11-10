@@ -241,7 +241,7 @@
                                 "key": 0,
                                 "className": "nowrap"
                               },
-                              "children": ["−$20.71"]
+                              "children": ["−$20.02"]
                             }
                           ]
                         ]
@@ -498,7 +498,7 @@
                             "key": 0,
                             "className": "nowrap"
                           },
-                          "children": ["−$20.71"]
+                          "children": ["−$20.02"]
                         }
                       ]
                     ]
@@ -742,7 +742,7 @@
                         "key": 0,
                         "className": "nowrap"
                       },
-                      "children": ["−$20.71"]
+                      "children": ["−$20.02"]
                     }
                   ]
                 ]
@@ -1213,7 +1213,7 @@
                   "key": 0,
                   "className": "nowrap"
                 },
-                "children": ["−$20.71"]
+                "children": ["−$20.02"]
               }
             ]
           ]
@@ -1272,7 +1272,7 @@
               "key": 0,
               "className": "nowrap"
             },
-            "children": ["−$20.71"]
+            "children": ["−$20.02"]
           }
         ]
       ]
@@ -1283,7 +1283,7 @@
         "key": 0,
         "className": "nowrap"
       },
-      "children": ["−$20.71"]
+      "children": ["−$20.02"]
     },
     {
       "type": "div",
@@ -8775,7 +8775,7 @@
                                 "key": 2,
                                 "className": "nowrap"
                               },
-                              "children": ["20.71"]
+                              "children": ["20.02"]
                             }
                           ]
                         ]
@@ -9048,7 +9048,7 @@
                             "key": 2,
                             "className": "nowrap"
                           },
-                          "children": ["20.71"]
+                          "children": ["20.02"]
                         }
                       ]
                     ]
@@ -9308,7 +9308,7 @@
                         "key": 2,
                         "className": "nowrap"
                       },
-                      "children": ["20.71"]
+                      "children": ["20.02"]
                     }
                   ]
                 ]
@@ -9812,7 +9812,7 @@
                   "key": 2,
                   "className": "nowrap"
                 },
-                "children": ["20.71"]
+                "children": ["20.02"]
               }
             ]
           ]
@@ -9876,7 +9876,7 @@
               "key": 2,
               "className": "nowrap"
             },
-            "children": ["20.71"]
+            "children": ["20.02"]
           }
         ]
       ]
@@ -9895,7 +9895,7 @@
         "key": 2,
         "className": "nowrap"
       },
-      "children": ["20.71"]
+      "children": ["20.02"]
     },
     {
       "type": "div",
