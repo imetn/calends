@@ -44,6 +44,10 @@
       "next12": "Sonraki 12 ay",
       "lastYear": "Geçen yıl",
       "nextYear": "Gelecek yıl"
+    },
+    "view": {
+      "bars": "Sütun grafik",
+      "stream": "Akış grafiği"
     }
   },
   "due": {

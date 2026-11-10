@@ -2,11 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FALLBACK_FX, memberDues } from './billing.ts';
 import { chargeValue } from './fx.ts';
+import { amountTotal } from './fx-total.ts';
 import { cashVsAccrual, contributionOn, movement, mrrOn, stopLosses, yearReview } from './metrics.ts';
 import {
   allOutlook,
   compactComposition,
   cumulativeTrend,
+  regionSpend,
   spendPiecesBetween,
   subscriptionTenure,
   monthReport,
@@ -762,4 +764,35 @@ test('year days: every day of the year on the year outlook basis, adding up to i
     missing.subs.map((s) => s.id),
     ['A'],
   );
+});
+
+test('报告地区卡：按扣款所在阶段的地区归类，同地区先按订阅净额，退款为负的丢掉', () => {
+  const st = state([
+    sub('Moved', {
+      region: 'tr',
+      phases: [
+        { start: '2026-01-01', end: '2026-06-30', price: 10, currency: 'USD', cycle: { unit: 'month', every: 1 }, region: 'us' },
+        { start: '2026-07-01', price: 10, currency: 'USD', cycle: { unit: 'month', every: 1 }, region: 'tr' },
+      ],
+    } as Partial<Subscription>),
+    sub('Plain', { start: '2026-01-01' }),
+  ]);
+  const pieces = spendPiecesBetween(st, '2026-01-01', '2026-12-31', today);
+  const rows = regionSpend(pieces, (p) => p.region || undefined);
+  assert.deepEqual(
+    rows.map((r) => [r.cc, r.total.value]),
+    [
+      ['TR', 60],
+      ['US', 60],
+    ],
+  );
+  // 同一订阅同一地区退款超过扣款：净额为负，不计入
+  const neg = regionSpend(
+    [
+      { sub: st.subscriptions[1], methodId: '', currency: 'USD', region: 'jp', amount: 10, partial: amountTotal(10, 'USD', 10) },
+      { sub: st.subscriptions[1], methodId: 'x', currency: 'USD', region: 'jp', amount: -15, partial: amountTotal(-15, 'USD', -15) },
+    ],
+    (p) => p.region,
+  );
+  assert.deepEqual(neg, []);
 });

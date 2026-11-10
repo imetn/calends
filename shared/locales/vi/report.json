@@ -185,5 +185,17 @@
     "title": "Theo ngày",
     "flat": "Lưới",
     "bars": "3D"
+  },
+  "region": {
+    "title": "Khu vực đăng ký",
+    "basis": "Dùng khu vực của gói, nếu trống thì của phương thức thanh toán."
+  },
+  "flow": {
+    "title": "Dòng tiền"
+  },
+  "profile": {
+    "title": "Cơ cấu chi tiêu",
+    "recent": "12 tháng gần nhất",
+    "before": "12 tháng trước đó"
   }
 }

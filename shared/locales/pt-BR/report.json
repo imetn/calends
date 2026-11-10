@@ -192,5 +192,17 @@
     "title": "Dia a dia",
     "flat": "Grade",
     "bars": "3D"
+  },
+  "region": {
+    "title": "Regiões das assinaturas",
+    "basis": "Usa a região da assinatura ou, se vazia, a do meio de pagamento."
+  },
+  "flow": {
+    "title": "Fluxo de dinheiro"
+  },
+  "profile": {
+    "title": "Composição dos gastos",
+    "recent": "Últimos 12 meses",
+    "before": "12 meses anteriores"
   }
 }

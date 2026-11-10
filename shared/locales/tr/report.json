@@ -189,5 +189,17 @@
     "title": "Gün gün",
     "flat": "Izgara",
     "bars": "3D"
+  },
+  "region": {
+    "title": "Abonelik bölgeleri",
+    "basis": "Aboneliğin bölgesi, yoksa ödeme yönteminin bölgesi."
+  },
+  "flow": {
+    "title": "Para akışı"
+  },
+  "profile": {
+    "title": "Harcama dağılımı",
+    "recent": "Son 12 ay",
+    "before": "Önceki 12 ay"
   }
 }

@@ -35,6 +35,10 @@
       "next12": "未来 12 个月",
       "lastYear": "去年",
       "nextYear": "明年"
+    },
+    "view": {
+      "bars": "柱状图",
+      "stream": "河流图"
     }
   },
   "due": {

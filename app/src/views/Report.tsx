@@ -5,7 +5,8 @@ import { CopyImageButton } from '../components/CopyImageButton.tsx';
 import { snapshotCard } from '../snapshot.ts';
 import { copyParts } from '../components/copy.tsx';
 import { base as appPath } from '../base.ts';
-import { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { canUseSingleKey } from '../keyboard.ts';
 import { addDays, addMonths, diffDays, effectiveStatus, isStopped } from '../../../shared/billing.ts';
 import { flow, cnDate, money, moneyTick, monthLabel, servedSpan } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
@@ -27,18 +28,33 @@ import type { AppState, Subscription } from '../../../shared/types.ts';
 import { AreaChart, BarLine } from '../components/charts.tsx';
 import { MetricCards, Metric, IconButton, CardTitle, Toolbar } from '../components/ui.tsx';
 import { Seg, useMedia } from '../components/inputs.tsx';
-import { MethodMark, SubIcon } from '../components/marks.tsx';
+import { FlagImg, MethodMark, SubIcon } from '../components/marks.tsx';
+import { regionLabel, subRegion } from '../region.ts';
+import { Globe, useGlobeFocus } from '../components/Globe.tsx';
 import { Icon } from '../components/icons.tsx';
 import { tipProps } from '../components/overlays.tsx';
 import { allCharges, toBase, firstStart } from '../derive.ts';
 import { SpendingDelta } from '../components/ScopeReport.tsx';
-import { allOutlook, cumulativeTrend, spendPiecesBetween, subscriptionTenure, yearDays, yearOutlook, type YearDriver } from '../../../shared/scope-report.ts';
+import {
+  allOutlook,
+  cumulativeTrend,
+  regionSpend,
+  type RegionSpend,
+  spendPiecesBetween,
+  subscriptionTenure,
+  yearDays,
+  yearOutlook,
+  type YearDriver,
+} from '../../../shared/scope-report.ts';
 import { Picker } from '../components/Picker.tsx';
+import { waterfallDomain } from '../../../shared/chart-data.ts';
+import { FlowCard, ProfileCard } from '../components/ReportCharts.tsx';
 import { carpoolYear } from '../../../shared/carpool.ts';
 import { proxyYear } from '../../../shared/proxy.ts';
 import { go } from '../router.ts';
 import { DayHeat, type DayHeatMode } from '../components/DayHeat.tsx';
 import { usePref } from '../prefs.ts';
+import { isReportPick, resolvePick, stepPick } from './report-pick.ts';
 
 const mLabel = (m: string) => (m.endsWith('-01') ? t('report.axis.year', { yy: m.slice(2, 4), year: m.slice(0, 4) }) : monthLabel(m, { year: false }));
 const perMonth = (amount: string) => t('report.perMonth', { amount });
@@ -59,19 +75,66 @@ export function Report({
   // 可选：全部，或账本第一年到明年（新的在前）
   // 代付不算自己的支出，起始年与累计口径一致地排除
   const first = Math.min(cur, Number(firstStart(ownState(state), today).slice(0, 4)));
-  const [pick, setPick] = useState(String(cur));
+  // 记在服务端，各设备同步；选今年时清掉记忆，跨年后自动跟到新的一年
+  const [saved, setSaved] = usePref<string>('report-pick', '', isReportPick);
+  const options = [
+    { value: 'all', label: t('report.pick.all') },
+    ...Array.from({ length: cur + 2 - first }, (_, i) => String(cur + 1 - i)).map((y) => ({ value: y, label: t('report.pick.year', { year: y }) })),
+  ];
+  const pick = resolvePick(saved, options, cur);
+  const setPick = (v: string) => setSaved(v === String(cur) ? null : v);
+  // ←/→ 切换年份，与日历一致
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!canUseSingleKey(e) || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+      e.preventDefault();
+      setPick(stepPick(pick, options, e.key === 'ArrowLeft' ? -1 : 1));
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  });
   const all = pick === 'all';
   const pieces = useMemo(
     () => (all ? allOutlook(state, today).pieces : spendPiecesBetween(state, `${pick}-01-01`, `${pick}-12-31`, today)),
     [all, pick, state, today],
   );
+  // 地区按所选期间实付汇总，与构成卡同口径；地区取扣款所在阶段填写的，没填用这笔扣款的支付方式
+  const regions = useMemo(
+    () =>
+      regionSpend(pieces, (p) =>
+        subRegion(
+          { region: p.region },
+          state.methods.find((m) => m.id === (p.methodId || p.sub.methodId)),
+        ),
+      ),
+    [pieces, state.methods],
+  );
+  // 雷达图比结构：选年份时和上一年比，全部时近 12 个月和再前 12 个月比
+  const prevPieces = useMemo(
+    () =>
+      all
+        ? spendPiecesBetween(state, addDays(addMonths(today, -24), 1), addMonths(today, -12), today)
+        : spendPiecesBetween(state, `${Number(pick) - 1}-01-01`, `${Number(pick) - 1}-12-31`, today),
+    [all, pick, state, today],
+  );
+  const recentPieces = useMemo(() => (all ? spendPiecesBetween(state, addDays(addMonths(today, -12), 1), today, today) : pieces), [all, pieces, state, today]);
   const year = all ? cur : Number(pick);
   const now = !all && year === cur;
   const future = !all && year > cur;
-  const options = [
-    { value: 'all', label: t('report.pick.all') },
-    ...Array.from({ length: cur + 2 - first }, (_, i) => String(cur + 1 - i)).map((y) => ({ value: y, label: t('report.pick.year', { year: y }) })),
-  ];
+  // 年份与全部共用同一组图：资金流向占满一行，结构对比与地区各占一半（任一张没内容时另一张占满，.g-2 > :only-child）
+  const charts = (
+    <>
+      <FlowCard state={state} pieces={pieces} />
+      <div className="grid g-2">
+        <ProfileCard
+          pieces={recentPieces}
+          prev={prevPieces}
+          names={all ? [t('report.profile.recent'), t('report.profile.before')] : [String(year), String(year - 1)]}
+        />
+        <RegionCard state={state} rows={regions} hint={t(all ? 'report.comp.basisAll' : 'report.comp.basisYear')} />
+      </div>
+    </>
+  );
   const pageRef = useRef<HTMLDivElement>(null);
   // 手机一行放不下长文案，只写「分享」
   const narrow = useMedia('(max-width: 860px)');
@@ -96,6 +159,7 @@ export function Report({
             <AllHero state={state} today={today} />
             <AllCard state={state} today={today} first={first} onOpen={onOpen} />
             <CashCard state={state} today={today} year={null} />
+            {charts}
             <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} hint={t('report.comp.basisAll')} />
             <TenureCard state={state} today={today} onOpen={onOpen} />
             <StopsCard state={state} today={today} year={null} onOpen={onOpen} />
@@ -106,6 +170,7 @@ export function Report({
             <YearCard state={state} today={today} year={year} onOpen={onOpen} />
             <CashCard state={state} today={today} year={year} />
             <DailyCard state={state} today={today} year={year} />
+            {charts}
             <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} hint={t('report.comp.basisYear')} />
             {now ? (
               <div className="grid g-2">
@@ -134,21 +199,9 @@ export function Report({
   );
 }
 
-/** 年份胶囊：两侧淡色箭头逐个切换，中间仍可下拉；按时间顺序循环，最晚一年之后是全部，再回到第一年 */
+/** 年份胶囊：两侧淡色箭头逐个切换，中间仍可下拉 */
 function YearStep({ value, options, onChange }: { value: string; options: Array<{ value: string; label: string }>; onChange: (v: string) => void }) {
-  // 下拉里最新的在上；循环按时间从早到晚，全部排在最后
-  const order = [
-    ...options
-      .filter((o) => o.value !== 'all')
-      .map((o) => o.value)
-      .reverse(),
-    'all',
-  ];
-  // 当前值不在列表里（如最早的年份已被删掉）时，下一个从第一年起，上一个从全部起
-  const step = (d: number) => {
-    const i = order.indexOf(value);
-    onChange(order[i < 0 ? (d > 0 ? 0 : order.length - 1) : (i + d + order.length) % order.length]);
-  };
+  const step = (d: number) => onChange(stepPick(value, options, d));
   return (
     <span className="year-step">
       <button type="button" className="year-step-arrow" aria-label={t('report.pick.prev')} title={t('report.pick.prev')} onClick={() => step(-1)}>
@@ -357,6 +410,52 @@ function AllCard({ state, today, first, onOpen }: { state: AppState; today: stri
   );
 }
 
+/** 订阅地区：左边点阵地球，右边地区列表；标记大小是所选期间的支出，悬停或点一行地球转到那个地区。不到两个地区时不出现 */
+function RegionCard({ state, rows, hint }: { state: AppState; rows: RegionSpend[]; hint: string }) {
+  const base = state.settings.baseCurrency;
+  const { focus, list, row } = useGlobeFocus();
+  const max = Math.max(0, ...rows.map((r) => (r.total.known ? r.total.value : 0)));
+  const points = useMemo(() => rows.map((r) => ({ cc: r.cc, weight: max > 0 && r.total.known ? r.total.value / max : 0 })), [rows, max]);
+  if (rows.length < 2) return null;
+  return (
+    <div className="card copy-card region-card" data-copy-card>
+      <div className="card-h">
+        <CardTitle as="h3" hint={[hint, t('report.region.basis'), totalNote(sumTotals(rows.map((r) => r.total)))].filter(Boolean).join('\n')}>
+          {t('report.region.title')}
+        </CardTitle>
+        <div className="copy-tools">
+          <CopyImageButton hover />
+        </div>
+      </div>
+      <div className="region-body">
+        <div className="region-globe">
+          <Globe points={points} focus={focus} label={t('report.region.title')} />
+        </div>
+        <div className="region-list" data-snapshot-list {...list}>
+          {rows.map((r) => (
+            <button type="button" className={`stop-row${focus === r.cc ? ' on' : ''}`} data-snapshot-keep key={r.cc} {...row(r.cc)}>
+              <span className="stop-name">
+                <span className="region-flag">
+                  <FlagImg cc={r.cc} />
+                </span>
+                <b>{regionLabel(r.cc)}</b>
+              </span>
+              <span className="stop-meta">
+                <span>{t('report.year.count', { count: r.subs.length })}</span>
+              </span>
+              <span className="stop-amount">
+                <b className="num">
+                  <FxAmount total={r.total} ccy={base} direction={-1} decimals={0} />
+                </b>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** 全部：订阅能留多久——平均使用时长、试了就停、在用订阅数走势和用得最久的几个 */
 function TenureCard({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
   const r = useMemo(() => subscriptionTenure(state, today), [state, today]);
@@ -452,10 +551,8 @@ function Waterfall({ state, today, year, onOpen }: { state: AppState; today: str
     { k: t('report.wf.fx'), v: mv.fx, kind: mv.fx >= 0 ? 'up' : 'down' },
     { k: offset === 0 ? t('report.wf.now') : t('report.wf.monthEnd'), v: mv.to, kind: 'total' },
   ];
-  // 不画瀑布：总额两千多、变化几十上百，放在一根轴上变化量只剩几条细线。
-  // 改成「一句结论 + 变化来源清单」，清单的横条只在各项之间比大小
+  // 只画有变化的来源；总额远大于变化量，纵轴截断（见 MoveBars）
   const drivers = steps.filter((x) => x.kind !== 'total' && Math.abs(x.v) >= 0.5);
-  const peak = Math.max(1, ...drivers.map((x) => Math.abs(x.v)));
   const delta = mv.to - mv.from;
   const singleDriver = drivers.length === 1 && Math.abs(drivers[0].v - delta) < 0.005;
   const pct = mv.from > 0 ? delta / mv.from : 0;
@@ -493,19 +590,7 @@ function Waterfall({ state, today, year, onOpen }: { state: AppState; today: str
         />
       </MetricCards>
       {drivers.length > 0 && !singleDriver && (
-        <div className="mv-rows">
-          {drivers.map((x) => (
-            <div key={x.k} className="mv-row">
-              <span>{x.k}</span>
-              <div className="mv-bar">
-                <i style={{ width: `${(Math.abs(x.v) / peak) * 100}%` }} />
-              </div>
-              <b className={`num ${x.v > 0 ? 'loss' : 'gain'}`}>
-                {x.v > 0 ? '↑' : '↓'} {money(Math.abs(x.v), base)}
-              </b>
-            </div>
-          ))}
-        </div>
+        <MoveBars from={mv.from} to={mv.to} toLabel={steps[steps.length - 1].k} fromLabel={steps[0].k} drivers={drivers} base={base} />
       )}
       <div className="wf-items">
         {mv.items.length === 0 && (
@@ -525,6 +610,58 @@ function Waterfall({ state, today, year, onOpen }: { state: AppState; today: str
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * 月度变动瀑布：上月末 → 各项变化 → 期末。纵轴不从 0 起（waterfallDomain），否则变化量只剩细线；
+ * 两端合计用中性色且不标金额（上方 Metric 已写），增加支出红、减少支出绿，与上方结论同一配色
+ */
+function MoveBars({
+  from,
+  to,
+  fromLabel,
+  toLabel,
+  drivers,
+  base,
+}: {
+  from: number;
+  to: number;
+  fromLabel: string;
+  toLabel: string;
+  drivers: Array<{ k: string; v: number }>;
+  base: string;
+}) {
+  // 每项变化后的累计值；不在 map 里改外部变量（React Compiler）
+  const ends = drivers.map((_, i) => drivers.slice(0, i + 1).reduce((a, x) => a + x.v, from));
+  const cols = [
+    { k: fromLabel, a: 0, b: from, v: from, kind: 'total' },
+    ...drivers.map((x, i) => ({ k: x.k, a: i ? ends[i - 1] : from, b: ends[i], v: x.v, kind: x.v > 0 ? 'up' : 'down' })),
+    { k: toLabel, a: 0, b: to, v: to, kind: 'total' },
+  ];
+  const { lo, hi } = waterfallDomain([from, to, ...cols.map((c) => c.b)]);
+  const y = (v: number) => ((Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo)) * 100;
+  return (
+    <div className="mv-wf" role="img" aria-label={cols.map((c) => `${c.k} ${money(c.v, base)}`).join(', ')}>
+      {cols.map((c, i) => {
+        const top = y(Math.max(c.a, c.b));
+        const bottom = c.kind === 'total' ? 0 : y(Math.min(c.a, c.b));
+        return (
+          <div key={i} className={`mv-wf-col ${c.kind}`}>
+            <div className="mv-wf-plot">
+              <i style={{ bottom: `${bottom}%`, height: `${Math.max(top - bottom, 1.5)}%` }} />
+              {/* 两端合计上方 Metric 已写，这里只画柱 */}
+              {c.kind !== 'total' && (
+                <b className="num" style={{ bottom: `${top}%` }}>
+                  {`${c.v > 0 ? '↑' : '↓'} ${money(Math.abs(c.v), base, { compact: true })}`}
+                </b>
+              )}
+            </div>
+            <span>{c.k}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -755,11 +892,11 @@ function CashCard({ state, today, year }: { state: AppState; today: string; year
           <CopyImageButton hover />
           <div className="legend-inline">
             <span>
-              <i style={{ background: 'var(--chart-ink-2)' }} />
+              <i style={{ background: 'var(--chart-ink)' }} />
               {t('report.cash.legendCash')}
             </span>
             <span>
-              <i style={{ background: 'var(--chart-ink)', height: 3 }} />
+              <i style={{ background: 'var(--chart-ink-2)', height: 3 }} />
               {t('report.cash.legendAccrual')}
             </span>
           </div>

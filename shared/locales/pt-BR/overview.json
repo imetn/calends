@@ -44,6 +44,10 @@
       "next12": "Próximos 12 meses",
       "lastYear": "Ano passado",
       "nextYear": "Próximo ano"
+    },
+    "view": {
+      "bars": "Gráfico de barras",
+      "stream": "Gráfico de fluxo"
     }
   },
   "due": {

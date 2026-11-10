@@ -236,10 +236,12 @@ export function TipTable({
   rows,
 }: {
   head: [ComponentChildren, ComponentChildren];
-  rows: Array<{ key: string; label: ComponentChildren; value: ComponentChildren; wide?: boolean }>;
+  rows: Array<{ key: string; label: ComponentChildren; value: ComponentChildren; wide?: boolean; share?: string }>;
 }) {
+  // 有占比的表多一列，占比靠右、灰字；没有占比的行该列留空
+  const shared = rows.some((r) => r.share);
   return (
-    <div className="tip-table">
+    <div className={shared ? 'tip-table with-share' : 'tip-table'}>
       <div className="tip-head">
         <b>{head[0]}</b>
         <b className="num">{head[1]}</b>
@@ -255,6 +257,7 @@ export function TipTable({
           <Fragment key={r.key}>
             <span>{r.label}</span>
             <span className="num">{r.value}</span>
+            {shared && <span className="num tip-share">{r.share}</span>}
           </Fragment>
         ),
       )}

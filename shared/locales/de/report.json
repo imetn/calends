@@ -192,5 +192,17 @@
     "title": "Tag für Tag",
     "flat": "Raster",
     "bars": "3D"
+  },
+  "region": {
+    "title": "Abo-Regionen",
+    "basis": "Region des Abos, sonst die der Zahlungsmethode."
+  },
+  "flow": {
+    "title": "Geldfluss"
+  },
+  "profile": {
+    "title": "Ausgabenmix",
+    "recent": "Letzte 12 Monate",
+    "before": "Vorherige 12 Monate"
   }
 }

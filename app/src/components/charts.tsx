@@ -5,6 +5,7 @@ import { useWidth } from './inputs.tsx';
 import { monthTicks } from '../../../shared/format.ts';
 import { spendingYearMark } from '../../../shared/metrics.ts';
 import { morphPath } from '../path-morph.ts';
+import { streamLayers } from '../../../shared/chart-data.ts';
 
 /** 与 --duration 一致 */
 const GLIDE_MS = 250;
@@ -310,10 +311,11 @@ export function BarLine({
       </div>
       <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="none" style={{ height }} className="bl-line">
         {min < 0 && <line x1="0" x2={W} y1={y(0)} y2={y(0)} stroke="var(--sep)" vectorEffect="non-scaling-stroke" />}
+        <GlidePath d={path} fill="none" stroke="var(--card)" strokeWidth="5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
         <GlidePath
           d={path}
           fill="none"
-          stroke="var(--chart-ink)"
+          stroke="var(--chart-ink-2)"
           strokeWidth="2.4"
           vectorEffect="non-scaling-stroke"
           strokeLinejoin="round"
@@ -370,6 +372,7 @@ export function Activity({
   height = 220,
   fmt,
   tip,
+  stream,
 }: {
   buckets: Bucket[];
   color: (k: string) => string;
@@ -380,6 +383,8 @@ export function Activity({
   fmt: (v: number) => string;
   /** 悬停柱子时的明细；柱子统一单色，构成靠这里读 */
   tip?: (b: Bucket) => ComponentChildren;
+  /** 给了就画河流图：每列各分类的金额，和柱子同一横轴、同一选中；中线对称，不画纵轴刻度 */
+  stream?: { cols: Array<Map<string, number>>; color: (k: string) => string };
 }) {
   const ticks = niceTicks(Math.max(1, ...buckets.map((b) => b.total)));
   const top = ticks[ticks.length - 1];
@@ -400,15 +405,18 @@ export function Activity({
   );
   const labelOf = (b: Bucket, i: number) => (marks[i] && b.yearLabel) || b.label;
   return (
-    <div className="act" style={{ '--h': `${height}px` } as Record<string, string>}>
-      <div className="act-grid">
-        {ticks.map((t) => (
-          <div key={t} className="act-tick" style={{ bottom: `${(t / top) * 100}%` }}>
-            <span>{fmt(t)}</span>
-          </div>
-        ))}
-      </div>
+    <div className={`act ${stream ? 'stream' : ''}`} style={{ '--h': `${height}px` } as Record<string, string>}>
+      {!stream && (
+        <div className="act-grid">
+          {ticks.map((t) => (
+            <div key={t} className="act-tick" style={{ bottom: `${(t / top) * 100}%` }}>
+              <span>{fmt(t)}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="act-bars" ref={bars}>
+        {stream && bw > 0 && <StreamLayers stream={stream} width={bw} height={height} buckets={buckets} selected={selected} />}
         {buckets.map((b, i) => (
           <button
             key={b.key}
@@ -416,28 +424,82 @@ export function Activity({
             className={`act-col ${showLabel(i) ? '' : 'odd'} ${b.future ? 'future' : ''} ${b.current ? 'current' : ''} ${(selected ?? current) === b.key ? 'sel' : ''} ${selected && selected !== b.key ? 'dim' : ''}`}
             onClick={() => onSelect(b.key)}
             aria-label={`${b.yearLabel ?? b.label} ${fmt(b.total)}`}
-            {...(tip && b.total > 0
-              ? tipProps(
-                  () => tip(b),
-                  (el) => el.querySelector('.act-stack')!.getBoundingClientRect(),
-                )
-              : {})}
+            {...(tip && b.total > 0 ? tipProps(() => tip(b), stream ? undefined : (el) => el.querySelector('.act-stack')!.getBoundingClientRect()) : {})}
           >
-            <div className="act-stack" style={{ height: `${(b.total / top) * 100}%` }}>
-              {/* 颜色传 pending 的一段是还没扣的（本月待扣）：与全站「预计」同一种斜纹 */}
-              {mergeByColor(b.parts, color).map((p) =>
-                p.c === 'pending' ? (
-                  <i key={p.k} className="act-pending" style={{ flexGrow: p.v }} />
-                ) : (
-                  <i key={p.k} style={{ flexGrow: p.v, background: p.c }} />
-                ),
-              )}
-            </div>
+            {!stream && (
+              <div className="act-stack" style={{ height: `${(b.total / top) * 100}%` }}>
+                {/* 颜色传 pending 的一段是还没扣的（本月待扣）：与全站「预计」同一种斜纹 */}
+                {mergeByColor(b.parts, color).map((p) =>
+                  p.c === 'pending' ? (
+                    <i key={p.k} className="act-pending" style={{ flexGrow: p.v }} />
+                  ) : (
+                    <i key={p.k} style={{ flexGrow: p.v, background: p.c }} />
+                  ),
+                )}
+              </div>
+            )}
             <span className="act-label">{labelOf(b, i)}</span>
           </button>
         ))}
       </div>
     </div>
+  );
+}
+
+/** 河流图的层：列中心之间用水平切线的三次曲线连起来，两端延伸到边缘；未来的列淡一些 */
+function StreamLayers({
+  stream,
+  width,
+  height,
+  buckets,
+  selected,
+}: {
+  stream: { cols: Array<Map<string, number>>; color: (k: string) => string };
+  width: number;
+  height: number;
+  buckets: Bucket[];
+  selected?: string;
+}) {
+  const n = stream.cols.length;
+  const { keys, y0, y1, peak } = streamLayers(stream.cols);
+  if (!n || !(peak > 0)) return null;
+  // 与 .act-bars 的列一致：列宽 = (总宽 − 间隙) / 列数；间隙 6px，窄屏 3px（styles.css 同一断点）
+  const gap = typeof matchMedia === 'function' && matchMedia('(max-width: 680px)').matches ? 3 : 6;
+  const cw = (width - gap * (n - 1)) / n;
+  const cx = (i: number) => i * (cw + gap) + cw / 2;
+  const xs = [0, ...Array.from({ length: n }, (_, i) => cx(i)), width];
+  const Y = (v: number) => height / 2 - (v / peak) * height * 0.92;
+  const ext = (row: number[]) => [row[0], ...row, row[n - 1]];
+  const line = (row: number[], back: boolean) => {
+    const pts = ext(row).map((v, i) => [xs[i], Y(v)] as const);
+    if (back) pts.reverse();
+    return pts
+      .map(([x, y], i) => (i ? `C${(pts[i - 1][0] + x) / 2},${pts[i - 1][1]} ${(pts[i - 1][0] + x) / 2},${y} ${x},${y}` : `${back ? 'L' : 'M'}${x},${y}`))
+      .join('');
+  };
+  const fi = buckets.findIndex((b) => b.future);
+  const split = fi < 0 ? width : fi === 0 ? 0 : (cx(fi - 1) + cx(fi)) / 2;
+  const si = selected ? buckets.findIndex((b) => b.key === selected) : -1;
+  const id = `stream-${n}-${Math.round(width)}`;
+  const layers = keys.map((k, i) => <path key={k} d={`${line(y1[i], false)}${line(y0[i], true)}Z`} style={{ fill: stream.color(k) }} />);
+  return (
+    <svg className="act-stream" width={width} height={height} aria-hidden="true">
+      <defs>
+        <clipPath id={`${id}-p`}>
+          <rect x={0} y={0} width={split} height={height} />
+        </clipPath>
+        <clipPath id={`${id}-f`}>
+          <rect x={split} y={0} width={width - split} height={height} />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${id}-p)`} opacity={0.85}>
+        {layers}
+      </g>
+      <g clipPath={`url(#${id}-f)`} opacity={0.35}>
+        {layers}
+      </g>
+      {si >= 0 && <line x1={cx(si)} x2={cx(si)} y1={0} y2={height} className="act-stream-sel" />}
+    </svg>
   );
 }
 

@@ -41,6 +41,10 @@
       "next12": "향후 12개월",
       "lastYear": "작년",
       "nextYear": "내년"
+    },
+    "view": {
+      "bars": "막대 그래프",
+      "stream": "스트림 그래프"
     }
   },
   "due": {

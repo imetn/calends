@@ -11,6 +11,7 @@ import { loadSearch, matchText, searchIndex } from '../app/src/search.ts';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { waterfallDomain } from './chart-data.ts';
 import { transformSync } from 'oxc-transform-react';
 import * as billing from './billing.ts';
 import * as format from './format.ts';
@@ -204,6 +205,8 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     brandOf: () => undefined,
     methodLogo: (m: { logo?: string }) => m.logo,
     catColor: (cat: string) => `color-${cat}`,
+    tint: (color: string, step: number) => `${color}-${step}`,
+    methodTint: (m: { color?: string } | undefined, i: number) => m?.color ?? `c${i}`,
     Toolbar: 'Toolbar',
     ScopeReport: 'ScopeReport',
     Gantt: 'Gantt',
@@ -440,16 +443,14 @@ test('report changes use unsigned spending direction and omit the current total 
     nodes.some((n) => n.children.includes('−$80.00')),
     false,
   );
-  assert.equal(
-    nodes.some((n) => n.props.className === 'mv-row down'),
-    false,
-    'a single driver must not repeat the overall delta',
-  );
+  const moveBars = (ns: typeof nodes) => ns.find((n) => typeof n.type === 'function' && (n.type as { name: string }).name === 'MoveBars');
+  assert.equal(moveBars(nodes), undefined, 'a single driver must not repeat the overall delta');
   const mixed = harness(
     '../app/src/views/Report.tsx',
-    'Waterfall',
+    'Waterfall, MoveBars',
     {},
     {
+      waterfallDomain,
       monthMovement: () => ({
         partial: { from: fxTotals.amountTotal(100, 'USD', 100), to: fxTotals.amountTotal(80, 'USD', 80) },
         from: 100,
@@ -464,17 +465,21 @@ test('report changes use unsigned spending direction and omit the current total 
     },
   );
   const mixedNodes = mixed.render('Waterfall', { state: st, today, year: Number(today.slice(0, 4)), onOpen() {} });
-  // 行本身不分涨跌底色；金额与日历月度变动同一写法（红涨绿跌 + 方向符号）
-  assert.ok(!mixedNodes.some((n) => /mv-row (up|down)/.test(n.props.className ?? '')));
-  const driver = mixedNodes.find((n) => n.props.className === 'mv-row' && all(n).some((c) => c.children.includes('report.wf.churned')))!;
-  assert.equal(
-    all(driver).some((n) => n.children.includes('↓')),
-    true,
+  // 瀑布只画有变化的来源，按上月末 → 新增 → 停用 → 期末的顺序；金额与日历月度变动同一写法（方向符号，不写正负号）
+  const bars = moveBars(mixedNodes)!;
+  assert.deepEqual(
+    (bars.props.drivers as Array<{ k: string; v: number }>).map((d) => [d.k, d.v]),
+    [
+      ['report.wf.added', 30],
+      ['report.wf.churned', -20],
+    ],
   );
-  assert.equal(
-    all(driver).some((n) => n.children.includes('+')),
-    false,
-  );
+  assert.equal(bars.props.from, 100);
+  assert.equal(bars.props.to, 110);
+  const cols = mixed.render('MoveBars', bars.props);
+  const churned = cols.find((n) => n.props.className === 'mv-wf-col down')!;
+  assert.ok(all(churned).some((n) => n.children.some((c) => typeof c === 'string' && c.startsWith('↓'))));
+  assert.ok(!all(churned).some((n) => n.children.some((c) => typeof c === 'string' && /^[+−-]/.test(c))));
 });
 
 test('scope presentation gives single refunds/receipts one numeric owner and avoids repeated upcoming/top charge rows', () => {
@@ -4169,4 +4174,24 @@ test('TipLayer 语言重挂载时，旧实例清理不能注销新实例的提�
   cleanups[1]();
   props.onFocus({ currentTarget: { getBoundingClientRect: () => ({ left: 10, width: 20, top: 30, bottom: 40 }) } });
   assert.equal(changes[2].length, 1, 'the active instance unregisters itself on final unmount');
+});
+
+test('报告年份选择记在服务端偏好，←/→ 与箭头同样按时间循环', async () => {
+  const { stepPick, resolvePick, isReportPick } = await import('../app/src/views/report-pick.ts');
+  const { PREF_KEYS } = await import('./prefs.ts');
+  assert.ok((PREF_KEYS as readonly string[]).includes('report-pick'));
+  const opts = [{ value: 'all' }, { value: '2027' }, { value: '2026' }, { value: '2025' }];
+  assert.equal(stepPick('2026', opts, 1), '2027');
+  assert.equal(stepPick('2027', opts, 1), 'all');
+  assert.equal(stepPick('all', opts, 1), '2025');
+  assert.equal(stepPick('2025', opts, -1), 'all');
+  assert.equal(stepPick('2020', opts, 1), '2025');
+  // 记忆的年份已不在可选范围（或没有记忆）时回到今年
+  assert.equal(resolvePick('2019', opts, 2026), '2026');
+  assert.equal(resolvePick('', opts, 2026), '2026');
+  assert.equal(resolvePick('all', opts, 2026), 'all');
+  assert.ok(isReportPick('all') && isReportPick('2025') && !isReportPick('this'));
+  const src = readFileSync(new URL('../app/src/views/Report.tsx', import.meta.url), 'utf8');
+  assert.match(src, /usePref<string>\('report-pick'/);
+  assert.match(src, /canUseSingleKey\(e\)[\s\S]{0,120}ArrowLeft/);
 });

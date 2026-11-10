@@ -192,5 +192,17 @@
     "title": "Día a día",
     "flat": "Cuadrícula",
     "bars": "3D"
+  },
+  "region": {
+    "title": "Regiones de suscripción",
+    "basis": "Se usa la región de la suscripción o, si falta, la del método de pago."
+  },
+  "flow": {
+    "title": "Flujo de dinero"
+  },
+  "profile": {
+    "title": "Distribución del gasto",
+    "recent": "Últimos 12 meses",
+    "before": "12 meses anteriores"
   }
 }

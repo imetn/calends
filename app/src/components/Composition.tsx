@@ -15,7 +15,7 @@ import { CatIcon, SubIcon } from './marks.tsx';
 import { Seg, useWidth } from './inputs.tsx';
 import { squarify } from '../../../shared/treemap.ts';
 import { tipProps } from './overlays.tsx';
-import { catColor, paletteColor, KIND_BG } from '../derive.ts';
+import { catColor, methodTint, tint, type Step } from '../derive.ts';
 const perMonth = (amount: string) => t('report.perMonth', { amount });
 type Dim = 'cat' | 'pay' | 'ccy' | 'cycle';
 
@@ -93,16 +93,19 @@ export function Composition({
   const total = entries.reduce((a, e) => a + e.v, 0);
   const color = (k: string, i: number) => {
     if (dim === 'cat') return catColor(k);
-    if (dim === 'pay') {
-      const m = state.methods.find((x) => x.id === k);
-      return m ? paletteColor(m.color, KIND_BG[m.kind]) : 'var(--c9)';
-    }
+    if (dim === 'pay')
+      return k
+        ? methodTint(
+            state.methods.find((x) => x.id === k),
+            i,
+          )
+        : 'var(--gray-9)';
     return `var(--c${(i % 10) + 1})`;
   };
   const sel = focus ? entries.find((e) => e.k === focus) : undefined;
   const rects = squarify(entries.map((e) => e.v));
-  /** 每个订阅一块，图标按块的大小放大，空间够再写名称和金额 */
-  const tiles = (xs: Item[], b: { x: number; y: number; w: number; h: number }, bg: (cat: string) => string, onPick?: () => void) =>
+  /** 每个订阅一块，图标按块的大小放大，空间够再写名称和金额；同组按金额从深到浅取同一色系的浅色级，字用该色系最深一级 */
+  const tiles = (xs: Item[], b: { x: number; y: number; w: number; h: number }, hue: (cat: string) => string, onPick?: () => void) =>
     squarify(
       xs.map((x) => x.v),
       b.x,
@@ -114,12 +117,13 @@ export function Composition({
       const side = Math.min(r.w, r.h);
       const label = r.w > 76 && r.h > 70;
       const ico = Math.floor(Math.min(96, side * (label ? 0.4 : 0.6)));
+      const step = (6 - Math.min(3, Math.floor((r.i / xs.length) * 4))) as Step;
       return (
         <button
           key={x.s.id}
           data-snapshot-keep
           className={`tm-cell ${side > 200 ? 'lg' : ''}`}
-          style={{ left: r.x, top: r.y, width: r.w, height: r.h, background: bg(x.s.category) }}
+          style={{ left: r.x, top: r.y, width: r.w, height: r.h, background: tint(hue(x.s.category), step), color: tint(hue(x.s.category), 12) }}
           onClick={() => (onPick ? onPick() : onOpen(x.s))}
           {...tipProps(() => `${x.s.name}\n${fmt(flow(-x.v, base))}`)}
         >
@@ -170,7 +174,7 @@ export function Composition({
                 const head = g.w > 70 && g.h > 64 ? 22 : 0;
                 const bg = color(e.k, r.i);
                 return (
-                  <div key={e.k} className="tm-group" style={{ left: g.x, top: g.y, width: g.w, height: g.h, background: bg }}>
+                  <div key={e.k} className="tm-group" style={{ left: g.x, top: g.y, width: g.w, height: g.h, background: tint(bg, 4), color: tint(bg, 12) }}>
                     {head > 0 && (
                       <button
                         className="tm-head"

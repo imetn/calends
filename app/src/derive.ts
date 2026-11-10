@@ -23,14 +23,14 @@ export const categories = (): Category[] => REG;
 const catOf = (name: string): Category | undefined => findCategory(REG, name);
 /** 分类图标：Lucide 图标名或 emoji */
 export const catIcon = (name: string): string => catOf(name)?.icon ?? 'tag';
-export const catColor = (name: string, step: 3 | 9 | 11 = 9): string => {
-  const color = paletteColor(categoryColor(catOf(name), name));
-  if (step === 9) return color;
-  const families = ['indigo', 'red', 'purple', 'green', 'orange', 'teal', 'pink', 'iris', 'gray', 'gold'];
-  const category = /^var\(--c(\d+)\)$/.exec(color);
-  const family = category ? families[Number(category[1]) - 1] : /var\(--([a-z]+)-9\)/.exec(color)?.[1];
-  return `var(--${family ?? 'gray'}-${step})`;
-};
+export type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+/** 调色板颜色换到浅一级或深一级：1–8 级与卡片底色混合用来铺底，10–12 级与正文色混合用来写字；深浅模式自动跟随 */
+const MIX: Record<Step, number> = { 1: 6, 2: 10, 3: 16, 4: 24, 5: 34, 6: 46, 7: 60, 8: 78, 9: 100, 10: 88, 11: 55, 12: 35 };
+export const tint = (color: string, step: Step): string =>
+  step === 9 ? color : `color-mix(in oklab, ${color} ${MIX[step]}%, var(${step < 9 ? '--card' : '--gray-12'}))`;
+export const catColor = (name: string, step: Step = 9): string => tint(swatch(categoryColor(catOf(name), name)), step);
+/** 支付方式的图表色：设了颜色用它，没设按顺序取调色板；构成卡与资金流向一致 */
+export const methodTint = (m: { color?: string } | undefined, i: number): string => (m?.color ? swatch(m.color) : `var(--c${(i % 10) + 1})`);
 /** 「域名」分类：域名用注册商图标、可在公开页打码；改过名也认得 */
 export const isDomainCat = (name: string): boolean => isDomainCategory(REG, name);
 /** 某个内置分类现在的名称（用户可能改过名），新建订阅的默认分类、App Store 类别映射用它 */
@@ -98,6 +98,21 @@ const rgb = (hex: string) => {
   const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex;
   return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
 };
+/** 分类色板 c1–c10 的色值，与 design-tokens.css 一致；旧的自定义颜色按最接近的一格换算 */
+const PALETTE = ['6c8ebf', 'd9776f', '9c83c9', '5f9f7a', 'd0864a', '5fa8a8', 'd682a6', '8e9350', '9aa0a6', 'b99a46'];
+/** 图表与分类标记用色：c1–c10 原样，自定义十六进制或渐变（取第一个色）换成色板里最接近的一格，保证浅深级都能混出 */
+export function swatch(value: string | undefined): string {
+  if (value && /^var\(--c(?:10|[1-9])\)$/.test(value)) return value;
+  const hex = value?.match(/#([\da-f]{6}|[\da-f]{3})\b/i)?.[1];
+  if (!hex) return 'var(--c9)';
+  const source = rgb(hex);
+  if (Math.max(...source) - Math.min(...source) < 20) return 'var(--c9)';
+  const distance = (h: string) => rgb(h).reduce((sum, c, i) => sum + (c - source[i]) ** 2, 0);
+  const best = PALETTE.map((h, i) => [distance(h), i] as const)
+    .filter(([, i]) => i !== 8)
+    .sort((a, b) => a[0] - b[0])[0][1];
+  return `var(--c${best + 1})`;
+}
 export function paletteColor(value: string | undefined, fallback = 'var(--c9)'): string {
   if (!value) return fallback;
   // Category colors already refer to the shared c1–c10 aliases.

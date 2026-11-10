@@ -726,6 +726,8 @@ export interface SpendPiece {
   /** '' when unassigned or a transfer. */
   methodId: string;
   currency: string;
+  /** Region recorded on the charged phase (or subscription); '' when none. */
+  region: string;
   amount: number;
   partial: FxTotal;
 }
@@ -797,19 +799,20 @@ export function spendPiecesBetween(state: AppState, from: string, to: string, to
 
 function spendPieces(rows: CashRow[]): SpendPiece[] {
   const out = new Map<string, SpendPiece>();
-  const add = (r: CashRow, methodId: string, currency: string, share: number) => {
-    const k = `${r.sub.id}|${methodId}|${currency}`;
-    const e = out.get(k) ?? { sub: r.sub, methodId, currency, amount: 0, partial: emptyTotal() };
+  const keyOf = (p: { sub: Subscription; methodId: string; currency: string; region: string }) => `${p.sub.id}|${p.methodId}|${p.currency}|${p.region}`;
+  const add = (r: CashRow, methodId: string, currency: string, region: string, share: number) => {
+    const k = keyOf({ sub: r.sub, methodId, currency, region });
+    const e = out.get(k) ?? { sub: r.sub, methodId, currency, region, amount: 0, partial: emptyTotal() };
     e.amount += r.amount * share;
     e.partial = sumTotals([e.partial, scaleTotal(rowTotal([r]), share)]);
     out.set(k, e);
   };
   const charged = rows.filter((r): r is ChargeRow => 'original' in r);
-  for (const r of charged) for (const src of chargeSources(r.original)) add(r, src.methodId ?? '', r.original.currency, src.share);
+  for (const r of charged) for (const src of chargeSources(r.original)) add(r, src.methodId ?? '', r.original.currency, r.original.sub.region || '', src.share);
   // 转让不经过卡，记到该订阅扣款最多的那一块，与扣款相抵；从没扣过款就按订阅自己的支付方式与币种
   for (const r of rows.filter((r) => !('original' in r))) {
     const main = [...out.values()].filter((p) => p.sub.id === r.sub.id).sort((a, b) => b.amount - a.amount)[0];
-    add(r, main?.methodId ?? r.sub.methodId ?? '', main?.currency ?? r.sub.currency, 1);
+    add(r, main?.methodId ?? r.sub.methodId ?? '', main?.currency ?? r.sub.currency, main?.region ?? r.sub.region ?? '', 1);
   }
   // 退款记到别的卡或币种时会单独成负数块，构成图按分组丢掉负数后各视角合计就对不上；并入该订阅最大的正数块
   for (const neg of [...out.values()].filter((p) => p.amount < 0)) {
@@ -817,7 +820,7 @@ function spendPieces(rows: CashRow[]): SpendPiece[] {
     if (!main) continue;
     main.amount += neg.amount;
     main.partial = sumTotals([main.partial, neg.partial]);
-    out.delete(`${neg.sub.id}|${neg.methodId}|${neg.currency}`);
+    out.delete(keyOf(neg));
   }
   return [...out.values()];
 }
@@ -887,6 +890,41 @@ export function subscriptionTenure(state: AppState, today: string): Tenure {
     longest: live.sort((a, b) => b.days - a.days || a.sub.id.localeCompare(b.sub.id)).map(({ sub, since, days }) => ({ sub, since, days })),
     byMonth,
   };
+}
+
+export interface RegionSpend {
+  cc: string;
+  subs: Subscription[];
+  /** 所选期间我的净现金，与构成卡同口径 */
+  total: FxTotal;
+}
+
+/**
+ * 所选期间的支出按地区汇总：同一订阅在同一地区先算净额，净额不为正的丢掉（缺汇率的保留，不当成 0）。
+ * 地区由调用方按每块支出的订阅与实际扣款的支付方式推断。
+ */
+export function regionSpend(pieces: readonly SpendPiece[], regionOf: (p: SpendPiece) => string | undefined): RegionSpend[] {
+  const bySub = new Map<string, { cc: string; sub: Subscription; totals: FxTotal[] }>();
+  for (const p of pieces) {
+    const cc = regionOf(p)?.toUpperCase();
+    if (!cc) continue;
+    const k = `${p.sub.id}|${cc}`;
+    const e = bySub.get(k) ?? { cc, sub: p.sub, totals: [] };
+    e.totals.push(p.partial);
+    bySub.set(k, e);
+  }
+  const map = new Map<string, { subs: Subscription[]; totals: FxTotal[] }>();
+  for (const e of bySub.values()) {
+    const total = sumTotals(e.totals);
+    if (!total.incomplete && !(total.value > 0.005)) continue;
+    const row = map.get(e.cc) ?? { subs: [], totals: [] };
+    row.subs.push(e.sub);
+    row.totals.push(total);
+    map.set(e.cc, row);
+  }
+  return [...map]
+    .map(([cc, r]) => ({ cc, subs: r.subs, total: sumTotals(r.totals) }))
+    .sort((a, b) => (b.total.known ? b.total.value : -1) - (a.total.known ? a.total.value : -1) || b.subs.length - a.subs.length || a.cc.localeCompare(b.cc));
 }
 
 export interface RegionRow {

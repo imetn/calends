@@ -1,5 +1,5 @@
 import { useSnapshotRender } from '../snapshot-render.tsx';
-import { chargeTotal, chargesTotal, formatTotal, scaleTotal, totalDifference, totalNote } from '../../../shared/fx-total.ts';
+import { chargeTotal, chargesTotal, formatTotal, scaleTotal, totalDifference, totalNote, totalRatio } from '../../../shared/fx-total.ts';
 import { FxAmount } from '../components/FxAmount.tsx';
 import { CopyImageButton } from '../components/CopyImageButton.tsx';
 import { copyParts } from '../components/copy.tsx';
@@ -22,7 +22,7 @@ import { TipTable } from '../components/overlays.tsx';
 import { Icon } from '../components/icons.tsx';
 import { allCharges, catColor, sortValue, sumBaseOrNaN, firstStart } from '../derive.ts';
 import { useMoneyPair } from '../components/MoneyPair.tsx';
-import { Layers } from 'lucide-react';
+import { ChartColumnStacked, Layers, Waves } from 'lucide-react';
 import { usePref } from '../prefs.ts';
 
 type Scale = 'month' | 'year';
@@ -104,6 +104,8 @@ function ChargeTimeline({ state, today, onOpen }: { state: AppState; today: stri
 function Spending({ state, today, onOpen }: { state: AppState; today: string; onOpen: (s: Subscription) => void }) {
   const base = state.settings.baseCurrency;
   const [scale, setScale] = useState<Scale>('month');
+  // 柱状 / 河流：同一组区间与分类筛选，只换画法；不记偏好
+  const [view, setView] = useState<'bars' | 'stream'>('bars');
   // 时间范围随账本同步，换设备也保留；账本没有去年的扣款时不提供「去年」
   const [saved, setPeriod] = usePref<SpendingPeriod>('overview-period', 'extended', isSpendingPeriod);
   const hasLastYear = useMemo(() => {
@@ -157,6 +159,18 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
   );
 
   const curKey = scale === 'month' ? today.slice(0, 7) : today.slice(0, 4);
+  // 河流图按分类分层（本月待扣不单列，归回各自分类）
+  const streamCols = useMemo(
+    () =>
+      view === 'stream'
+        ? data.map(({ cs }) => {
+            const m = new Map<string, number>();
+            for (const c of cs) m.set(c.sub.category, (m.get(c.sub.category) ?? 0) + chargeValue(state, c));
+            return m;
+          })
+        : undefined,
+    [view, data, state],
+  );
   // 柱高用缺汇率按 0 的值（图表几何必须是有限数）；提示框里显示的金额用缺汇率为 NaN 的值，显示「—」
   const buckets: Bucket[] = data.map(({ r, cs }) => {
     const parts = new Map<string, number>();
@@ -165,7 +179,15 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
       parts.set(k, (parts.get(k) ?? 0) + chargeValue(state, c));
     }
     const arr = [...parts.entries()].map(([k, v]) => ({ k, v })).sort((a, b) => (a.k === PROJ ? 1 : b.k === PROJ ? -1 : b.v - a.v));
-    return { key: r.key, label: r.label, yearLabel: r.yearLabel, parts: arr, total: arr.reduce((a, p) => a + p.v, 0), future: r.key > curKey, current: r.key === curKey };
+    return {
+      key: r.key,
+      label: r.label,
+      yearLabel: r.yearLabel,
+      parts: arr,
+      total: arr.reduce((a, p) => a + p.v, 0),
+      future: r.key > curKey,
+      current: r.key === curKey,
+    };
   });
 
   const sel =
@@ -242,7 +264,25 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
               ['month', t('overview.spending.month')],
               ['year', t('overview.spending.yearly')],
             ]}
-          />{' '}
+          />
+          <Seg
+            value={view}
+            onChange={setView}
+            options={[
+              [
+                'bars',
+                <span key="bars" className="seg-icon" role="img" aria-label={t('overview.spending.view.bars')}>
+                  <ChartColumnStacked size={14} />
+                </span>,
+              ],
+              [
+                'stream',
+                <span key="stream" className="seg-icon" role="img" aria-label={t('overview.spending.view.stream')}>
+                  <Waves size={14} />
+                </span>,
+              ],
+            ]}
+          />
         </div>
       </div>
 
@@ -253,26 +293,33 @@ function Spending({ state, today, onOpen }: { state: AppState; today: string; on
         current={sel}
         onSelect={(k) => setSelKey(k === selKey ? undefined : k)}
         fmt={(v) => moneyTick(v, base)}
-        tip={(b) => (
-          <TipTable
-            head={[b.yearLabel ?? b.label, formatTotal(chargesTotal(state, data.find((d) => d.r.key === b.key)?.cs ?? []), base, { direction: -1, compact: true })]}
-            rows={b.parts
-              .filter((p) => p.k !== PROJ)
-              .slice(0, 5)
-              .map((p) => ({
-                key: p.k,
-                label: p.k,
-                value: formatTotal(
-                  chargesTotal(
+        stream={streamCols && { cols: streamCols, color: (k) => catColor(k, 8) }}
+        tip={(b) => {
+          const cs = data.find((d) => d.r.key === b.key)?.cs ?? [];
+          const total = chargesTotal(state, cs);
+          return (
+            <TipTable
+              head={[b.yearLabel ?? b.label, formatTotal(total, base, { direction: -1, compact: true })]}
+              rows={b.parts
+                .filter((p) => p.k !== PROJ)
+                .slice(0, 5)
+                .map((p) => {
+                  const part = chargesTotal(
                     state,
-                    (data.find((d) => d.r.key === b.key)?.cs ?? []).filter((c) => c.sub.category === p.k),
-                  ),
-                  base,
-                  { direction: -1, compact: true },
-                ),
-              }))}
-          />
-        )}
+                    cs.filter((c) => c.sub.category === p.k),
+                  );
+                  // 缺汇率时占比不可信，不写
+                  const ratio = totalRatio(part, total);
+                  return {
+                    key: p.k,
+                    label: p.k,
+                    value: formatTotal(part, base, { direction: -1, compact: true }),
+                    share: Number.isFinite(ratio) && total.value > 0 ? `${Math.round(ratio * 100)}%` : undefined,
+                  };
+                })}
+            />
+          );
+        }}
       />
 
       <div className="legend-chips">

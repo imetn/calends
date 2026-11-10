@@ -104,3 +104,23 @@ test('视图合计：缺汇率不按 0 计，显示用合计为 NaN（金额显�
   assert.equal(sumBaseOrNaN(state, charges.slice(0, 1)), 10);
   assert.deepEqual([3, NaN, 5].sort((a, b) => sortValue(b) - sortValue(a)).map(String), ['5', '3', 'NaN']);
 });
+
+test('分类色板：色值与 CSS 一致，旧自定义色与渐变换到最近一格，浅深级都由同一色混出', async () => {
+  const { swatch, tint } = await import('../app/src/derive.ts');
+  const css = readFileSync(new URL('../app/src/design-tokens.css', import.meta.url), 'utf8');
+  const src = readFileSync(new URL('../app/src/derive.ts', import.meta.url), 'utf8');
+  const palette = JSON.parse(/const PALETTE = (\[[^\]]+\])/.exec(src)![1].replaceAll("'", '"')) as string[];
+  palette.forEach((hex, i) => assert.match(css, new RegExp(`--c${i + 1}: #${hex};`), `c${i + 1}`));
+  assert.equal(swatch('var(--c3)'), 'var(--c3)');
+  assert.equal(swatch('#d9776f'), 'var(--c2)');
+  assert.equal(swatch('#e5484d'), 'var(--c2)');
+  assert.equal(swatch('linear-gradient(135deg,#2fbf71,#0f7d55)'), 'var(--c4)');
+  assert.equal(swatch('#888888'), 'var(--c9)');
+  assert.equal(swatch(undefined), 'var(--c9)');
+  assert.equal(tint('var(--c1)', 9), 'var(--c1)');
+  assert.match(tint('var(--c1)', 4), /color-mix\(in oklab, var\(--c1\) \d+%, var\(--card\)\)/);
+  assert.match(tint('var(--c1)', 11), /color-mix\(in oklab, var\(--c1\) \d+%, var\(--gray-12\)\)/);
+  // 资金流向：未指定支付方式用灰色，不占色板
+  const flow = readFileSync(new URL('../app/src/components/ReportCharts.tsx', import.meta.url), 'utf8');
+  assert.match(flow, /key === OTHER \|\| !key\s*\? 'var\(--gray-9\)'/);
+});

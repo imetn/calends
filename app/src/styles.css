@@ -428,6 +428,13 @@ a {
 .g-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+/* 两栏里一张卡没有内容时，另一张占满整行；都没有时不留空行 */
+.g-2 > :only-child {
+  grid-column: 1 / -1;
+}
+.grid:empty {
+  display: none;
+}
 @media (max-width: 680px) {
   .g-2 {
     grid-template-columns: 1fr;
@@ -1695,6 +1702,13 @@ a {
 .tip-table b {
   font-weight: 600;
 }
+/* 带占比：第三列放百分比 */
+.tip-table.with-share {
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+}
+.tip-table .tip-share {
+  color: var(--label-3);
+}
 /* 表头横跨两列，长日期不撑宽标签列；与下面的字段隔一条细线 */
 .tip-head {
   grid-column: 1 / -1;
@@ -2137,6 +2151,58 @@ a {
 .stop-list {
   margin-top: 12px;
 }
+/* 订阅地区：半宽卡片，左边地球，右边地区列表；窄卡片上下排 */
+.region-card {
+  container-type: inline-size;
+}
+.region-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px 32px;
+  align-items: center;
+  margin-top: 12px;
+}
+.region-globe {
+  width: min(100%, 240px);
+  justify-self: center;
+}
+.globe-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  cursor: grab;
+  touch-action: pan-y;
+}
+.globe-canvas:active {
+  cursor: grabbing;
+}
+.region-list .stop-row {
+  border-radius: var(--radius-sm);
+  cursor: default;
+}
+.region-list .stop-row.on .stop-name > b {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.region-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+.region-flag .flag-img {
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 var(--hairline) var(--line);
+}
+@container (min-width: 460px) {
+  .region-body {
+    grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  }
+}
+
 /* 名称和金额一行，日期、方式、退款、天数排在下一行，原因再下一行 */
 .stop-row {
   display: grid;
@@ -2274,7 +2340,8 @@ a {
 .bl-col i {
   width: min(var(--bar-ratio), var(--bar-max));
   border-radius: var(--bar-radius) var(--bar-radius) 0 0;
-  background: var(--chart-ink-2);
+  /* 与概览月度柱同色；成本折线改用浅灰并描一圈卡片底色，压在柱子上也看得清 */
+  background: var(--chart-ink);
   min-height: 1px;
   transition:
     top var(--duration) var(--ease),
@@ -2318,7 +2385,7 @@ button.bl-col {
   cursor: pointer;
 }
 .bl-col:hover i {
-  background: var(--gray-9);
+  background: var(--gray-11);
 }
 .bl-line {
   position: relative;
@@ -2353,7 +2420,7 @@ button.bl-col {
   border-radius: var(--radius-md);
   overflow: hidden;
 }
-/* 分组：底色铺满，标题条在上，订阅小块之间留出细缝 */
+/* 分组：同一色系的浅色级铺底、最深一级写字（见 Composition 的 tiles），标题条在上，订阅小块之间留出细缝 */
 .tm-group {
   position: absolute;
   box-shadow: inset 0 0 0 var(--hairline) var(--card);
@@ -2365,8 +2432,8 @@ button.bl-col {
   height: 22px;
   padding: 0 8px;
   border: 0;
-  background: color-mix(in srgb, var(--black-a12) 14%, transparent);
-  color: var(--white-a12);
+  background: transparent;
+  color: inherit;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2395,7 +2462,6 @@ button.bl-col {
   position: absolute;
   border: 0;
   padding: 4px;
-  color: var(--white-a12);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2405,18 +2471,13 @@ button.bl-col {
   box-shadow: inset 0 0 0 var(--hairline) var(--line);
   transition: none;
 }
-.tm-group > .tm-cell {
-  background: transparent !important;
-}
 .tm-cell:hover {
-  filter: brightness(1.1) saturate(1.1);
-  background-color: color-mix(in srgb, var(--white-a12) 8%, transparent) !important;
+  filter: brightness(0.96);
 }
 .tm-cell b {
   font-size: var(--fs-1);
   font-weight: 650;
   line-height: 1.2;
-  text-shadow: 0 1px 2px color-mix(in srgb, var(--black-a12) 18%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -10967,4 +11028,210 @@ button.name-edit:focus-visible {
   .cell-r .cell-unit {
     font-size: var(--fs-3);
   }
+}
+
+/* 报告 · 月度变动瀑布：纵轴截断，两端合计中性色，增加支出红、减少支出绿 */
+.mv-wf {
+  display: flex;
+  gap: 6px;
+  padding: 28px 0 12px;
+  border-top: var(--hairline) solid var(--sep);
+}
+.hero-delta + .mv-wf {
+  margin-top: 16px;
+}
+.mv-wf-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mv-wf-plot {
+  position: relative;
+  height: 120px;
+  border-bottom: var(--hairline) solid var(--sep);
+}
+.mv-wf-plot i {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--label-3);
+}
+.mv-wf-col.up .mv-wf-plot i {
+  background: var(--loss);
+  border-radius: var(--radius-sm);
+}
+.mv-wf-col.down .mv-wf-plot i {
+  background: var(--gain);
+  border-radius: var(--radius-sm);
+}
+.mv-wf-plot b {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -4px);
+  font-size: var(--fs-1);
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--label-2);
+}
+.mv-wf-col.up b {
+  color: var(--loss);
+}
+.mv-wf-col.down b {
+  color: var(--gain);
+}
+.mv-wf-col > span {
+  font-size: var(--fs-1);
+  color: var(--label-2);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 报告 · 资金流向（三层桑基）：支付方式 → 分类 → 订阅；第一层着色，后两层灰色 */
+.flow-chart {
+  position: relative;
+  margin-top: 12px;
+}
+.flow-chart svg {
+  display: block;
+}
+.flow-chart path {
+  transition: fill-opacity var(--duration) var(--ease);
+}
+.flow-label {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-2);
+  line-height: 1.3;
+  cursor: default;
+}
+.flow-label.l {
+  text-align: right;
+  align-items: flex-end;
+}
+/* 中间一列和竖排的标签压在带子上，描一圈卡片底色保证可读 */
+.flow-label.m,
+.flow-label.v {
+  text-shadow:
+    0 0 2px var(--card),
+    0 0 4px var(--card);
+}
+.flow-label.v {
+  transform: translateX(-50%);
+  align-items: center;
+  text-align: center;
+}
+.flow-label span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flow-label .flow-name {
+  font-weight: 500;
+}
+.flow-label .num {
+  font-size: var(--fs-1);
+  color: var(--label-2);
+}
+
+/* 报告 · 支出结构对比（雷达）：今年实线浅填充，上一年灰色虚线 */
+.profile-chart {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+.profile-plot {
+  position: relative;
+}
+.profile-plot svg {
+  display: block;
+  overflow: visible;
+}
+.profile-ring {
+  fill: none;
+  stroke: var(--sep);
+  stroke-width: 1;
+}
+.profile-prev {
+  fill: none;
+  stroke: var(--label-3);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.profile-now {
+  fill: color-mix(in srgb, var(--chart-ink) 10%, transparent);
+  stroke: var(--chart-ink);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.profile-dot {
+  fill: var(--chart-ink);
+}
+.profile-label {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  max-width: 84px;
+  font-size: var(--fs-1);
+  line-height: 1.3;
+  cursor: default;
+}
+.profile-label b,
+.profile-label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-label b {
+  font-weight: 500;
+  color: var(--label);
+}
+.profile-label span {
+  color: var(--label-2);
+}
+.profile-legend {
+  justify-content: center;
+  margin-top: 8px;
+}
+.profile-key {
+  overflow: visible;
+}
+
+/* 概览 · 支出河流图：和柱状图同一横轴与选中，层在列按钮下面 */
+.act.stream {
+  padding-left: 0;
+}
+.act-stream {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+.act-stream-sel {
+  stroke: var(--label-2);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.act.stream .act-col:hover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: var(--hairline) solid var(--label-3);
+}
+.seg-icon {
+  display: flex;
+  align-items: center;
+}
+.seg button:has(> .seg-icon) {
+  padding: 4px 10px;
 }

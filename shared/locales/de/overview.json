@@ -44,6 +44,10 @@
       "next12": "Nächste 12 Monate",
       "lastYear": "Letztes Jahr",
       "nextYear": "Nächstes Jahr"
+    },
+    "view": {
+      "bars": "Balkendiagramm",
+      "stream": "Streamgraph"
     }
   },
   "due": {

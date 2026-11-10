@@ -192,5 +192,17 @@
     "title": "Day by day",
     "flat": "Grid",
     "bars": "3D"
+  },
+  "region": {
+    "title": "Subscription regions",
+    "basis": "Uses the subscription's region, or the payment method's when none is set."
+  },
+  "flow": {
+    "title": "Money flow"
+  },
+  "profile": {
+    "title": "Spending mix",
+    "recent": "Last 12 months",
+    "before": "Previous 12 months"
   }
 }

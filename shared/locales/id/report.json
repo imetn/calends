@@ -185,5 +185,17 @@
     "title": "Per hari",
     "flat": "Kisi",
     "bars": "3D"
+  },
+  "region": {
+    "title": "Wilayah langganan",
+    "basis": "Memakai wilayah langganan, atau wilayah metode pembayaran bila kosong."
+  },
+  "flow": {
+    "title": "Aliran dana"
+  },
+  "profile": {
+    "title": "Komposisi pengeluaran",
+    "recent": "12 bulan terakhir",
+    "before": "12 bulan sebelumnya"
   }
 }

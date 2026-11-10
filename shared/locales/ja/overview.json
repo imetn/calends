@@ -41,6 +41,10 @@
       "next12": "今後12か月",
       "lastYear": "昨年",
       "nextYear": "来年"
+    },
+    "view": {
+      "bars": "棒グラフ",
+      "stream": "ストリームグラフ"
     }
   },
   "due": {

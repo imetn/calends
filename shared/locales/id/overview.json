@@ -41,6 +41,10 @@
       "next12": "12 bulan ke depan",
       "lastYear": "Tahun lalu",
       "nextYear": "Tahun depan"
+    },
+    "view": {
+      "bars": "Diagram batang",
+      "stream": "Diagram aliran"
     }
   },
   "due": {

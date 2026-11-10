@@ -41,6 +41,10 @@
       "next12": "12 tháng tới",
       "lastYear": "Năm ngoái",
       "nextYear": "Năm sau"
+    },
+    "view": {
+      "bars": "Biểu đồ cột",
+      "stream": "Biểu đồ dòng chảy"
     }
   },
   "due": {

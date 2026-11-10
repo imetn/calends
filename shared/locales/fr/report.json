@@ -192,5 +192,17 @@
     "title": "Jour par jour",
     "flat": "Grille",
     "bars": "3D"
+  },
+  "region": {
+    "title": "Régions d'abonnement",
+    "basis": "Région de l'abonnement, sinon celle du moyen de paiement."
+  },
+  "flow": {
+    "title": "Flux d'argent"
+  },
+  "profile": {
+    "title": "Répartition des dépenses",
+    "recent": "12 derniers mois",
+    "before": "12 mois précédents"
   }
 }
