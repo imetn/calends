@@ -6,7 +6,7 @@ import { sumTotals, totalNote } from '../../../shared/fx-total.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { SpendPiece } from '../../../shared/scope-report.ts';
 import type { AppState } from '../../../shared/types.ts';
-import { methodTint, tint } from '../derive.ts';
+import { catColor } from '../derive.ts';
 import { CardTitle } from './ui.tsx';
 import { CopyImageButton } from './CopyImageButton.tsx';
 import { useWidth } from './inputs.tsx';
@@ -24,7 +24,7 @@ function spread(ys: number[], gap: number, lo: number, hi: number) {
 }
 
 /**
- * 钱从哪张卡、经哪个分类、流到哪个订阅：三层桑基。第一层按支付方式着色，后两层灰色；
+ * 钱从哪张卡、经哪个分类、流到哪个订阅：三层桑基。按分类着色，与「钱花在哪」同一套分类色；支付方式一层用中性灰；
  * 宽屏横排（左到右），窄屏竖排（上到下），标签在节点条下方，可以压在带子上。
  */
 export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiece[] }) {
@@ -95,15 +95,14 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
   }
   const label = (lv: number, nd: { key: string; label: string }) =>
     nd.key.startsWith(OTHER) ? t('common.other') : lv === 1 ? nd.label || t('scope.uncategorized') : nd.label;
-  const methodIdx = new Map(g.levels[0].map((x, i) => [x.key, i]));
-  // 未指定支付方式和「其他」不算一张卡，用灰色，与构成卡一致
-  const methodColor = (key: string) =>
-    key === OTHER || !key
-      ? 'var(--gray-9)'
-      : methodTint(
-          state.methods.find((m) => m.id === key),
-          methodIdx.get(key)!,
-        );
+  // 分类、订阅两层和所有带子都用所属分类的颜色；「其他」和跨分类合并的块用灰色
+  const catOfNode = new Map<string, string | null>();
+  for (const p of g.paths) {
+    const k = p.path[2];
+    catOfNode.set(k, catOfNode.has(k) && catOfNode.get(k) !== p.path[1] ? null : p.path[1]);
+  }
+  const cat = (lv: number, key: string) => (lv === 0 ? null : lv === 1 ? key : (catOfNode.get(key) ?? null));
+  const color = (c: string | null, step?: 7) => (c == null || c.startsWith(OTHER) ? 'var(--gray-9)' : catColor(c, step));
   const lit = (r: { level: number; from: string; to: string }) => !litPaths || litPaths.some((p) => p.path[r.level] === r.from && p.path[r.level + 1] === r.to);
   const path = (r: (typeof ribbons)[number]) => {
     const a = cross[r.level] + bar;
@@ -169,7 +168,7 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
                     key={`${r.level}\u0001${r.from}\u0001${r.to}`}
                     d={path(r)}
                     style={{
-                      fill: r.level === 0 ? tint(methodColor(r.from), 7) : 'var(--gray-6)',
+                      fill: color(r.level === 0 ? r.to : r.from, 7),
                       fillOpacity: on ? (hover ? 0.85 : 0.55) : 0.15,
                     }}
                     {...tipProps(() => `${label(r.level, from)} → ${label(r.level + 1, to)}\n${flow(-r.value, base)}`)}
@@ -188,7 +187,7 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
                       width={vertical ? len : bar}
                       height={vertical ? bar : len}
                       rx={2}
-                      style={{ fill: lv === 0 ? methodColor(nd.key) : 'var(--gray-9)' }}
+                      style={{ fill: color(cat(lv, nd.key)) }}
                       {...nodeProps(lv, nd.key, label(lv, nd), nd.value)}
                     />
                   );

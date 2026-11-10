@@ -127,9 +127,11 @@ test('分类色板：色值与 CSS 一致，旧自定义色与渐变换到最近
   assert.equal(tint('var(--c1)', 4), 'var(--indigo-4)');
   assert.equal(tint('var(--c10)', 11), 'var(--gold-11)');
   assert.equal(tint('var(--gray-9)', 7), 'var(--gray-7)');
-  // 资金流向：未指定支付方式用灰色，不占色板
+  // 资金流向：支付方式一层与「其他」用灰色，不占色板；带子按所连分类取淡色
   const flow = readFileSync(new URL('../app/src/components/ReportCharts.tsx', import.meta.url), 'utf8');
-  assert.match(flow, /key === OTHER \|\| !key\s*\? 'var\(--gray-9\)'/);
+  assert.match(flow, /c == null \|\| c\.startsWith\(OTHER\) \? 'var\(--gray-9\)'/);
+  assert.match(flow, /lv === 0 \? null/);
+  assert.match(flow, /fill: color\(r\.level === 0 \? r\.to : r\.from, 7\)/);
 });
 
 test('订阅地区卡：占比只标在图例里且每个地区都标，地球不再挂标签，缺汇率不标占比', () => {
@@ -230,4 +232,12 @@ test('柱线图：摊到每月的成本线与瀑布图参考线同为灰色虚�
   assert.match(css, /\.bl-line \{[^}]*z-index: 0;/);
   const report = readFileSync(new URL('../app/src/views/Report.tsx', import.meta.url), 'utf8');
   assert.match(report, /<i className="legend-dash" \/>/);
+});
+
+test('资金流向桑基图按分类着色，与「钱花在哪」同一套分类色；支付方式不再按方式配色', () => {
+  const src = readFileSync(new URL('../app/src/components/ReportCharts.tsx', import.meta.url), 'utf8');
+  const flow = src.slice(src.indexOf('function FlowCard'));
+  assert.match(src, /import \{ catColor \} from '\.\.\/derive\.ts';/);
+  assert.match(flow, /style=\{\{ fill: color\(cat\(lv, nd\.key\)\) \}\}/);
+  assert.doesNotMatch(flow, /methodTint|methodColor/);
 });
