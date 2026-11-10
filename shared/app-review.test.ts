@@ -110,17 +110,40 @@ test('分类色板：色值与 CSS 一致，旧自定义色与渐变换到最近
   const css = readFileSync(new URL('../app/src/design-tokens.css', import.meta.url), 'utf8');
   const src = readFileSync(new URL('../app/src/derive.ts', import.meta.url), 'utf8');
   const palette = JSON.parse(/const PALETTE = (\[[^\]]+\])/.exec(src)![1].replaceAll("'", '"')) as string[];
-  palette.forEach((hex, i) => assert.match(css, new RegExp(`--c${i + 1}: #${hex};`), `c${i + 1}`));
+  const families = JSON.parse(/const FAMILIES = (\[[^\]]+\])/.exec(src)![1].replaceAll("'", '"')) as string[];
+  families.forEach((f, i) => assert.match(css, new RegExp(`--c${i + 1}: var\\(--${f}-9\\);`), `c${i + 1}`));
+  // 色值取自 Radix 浅色 9 级，供旧自定义色换算
+  const radix = readFileSync(new URL('../node_modules/@radix-ui/colors/indigo.css', import.meta.url), 'utf8');
+  assert.match(radix, new RegExp(`--indigo-9: #${palette[0]};`, 'i'));
+  assert.equal(palette.length, families.length);
   assert.equal(swatch('var(--c3)'), 'var(--c3)');
   assert.equal(swatch('#d9776f'), 'var(--c2)');
+  assert.equal(swatch('#3e63dd'), 'var(--c1)');
   assert.equal(swatch('#e5484d'), 'var(--c2)');
   assert.equal(swatch('linear-gradient(135deg,#2fbf71,#0f7d55)'), 'var(--c4)');
   assert.equal(swatch('#888888'), 'var(--c9)');
   assert.equal(swatch(undefined), 'var(--c9)');
   assert.equal(tint('var(--c1)', 9), 'var(--c1)');
-  assert.match(tint('var(--c1)', 4), /color-mix\(in oklab, var\(--c1\) \d+%, var\(--card\)\)/);
-  assert.match(tint('var(--c1)', 11), /color-mix\(in oklab, var\(--c1\) \d+%, var\(--gray-12\)\)/);
+  assert.equal(tint('var(--c1)', 4), 'var(--indigo-4)');
+  assert.equal(tint('var(--c10)', 11), 'var(--gold-11)');
+  assert.equal(tint('var(--gray-9)', 7), 'var(--gray-7)');
   // 资金流向：未指定支付方式用灰色，不占色板
   const flow = readFileSync(new URL('../app/src/components/ReportCharts.tsx', import.meta.url), 'utf8');
   assert.match(flow, /key === OTHER \|\| !key\s*\? 'var\(--gray-9\)'/);
+});
+
+test('订阅地区卡：图例紧凑一行一组，地球只给前五名标国旗与占比，缺汇率不标占比', () => {
+  const src = readFileSync(new URL('../app/src/views/Report.tsx', import.meta.url), 'utf8');
+  const card = src.slice(src.indexOf('function RegionCard('), src.indexOf('\n}\n', src.indexOf('function RegionCard(')));
+  assert.match(card, /className="region-legend"/);
+  assert.doesNotMatch(card, /stop-row/);
+  assert.match(card, /rows\.every\(\(r\) => r\.total\.known && !r\.total\.incomplete\)/);
+  assert.match(card, /known && sum > 0 && i < 5 \?/);
+  const globe = readFileSync(new URL('../app/src/components/Globe.tsx', import.meta.url), 'utf8');
+  assert.match(globe, /className="globe-tag"/);
+  assert.match(globe, /tag\.style\.opacity/);
+  // 有无标签都包同一层，切换时画布不被替换
+  assert.doesNotMatch(globe, /if \(!tagged\.length\) return/);
+  const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\.tm-group > \.tm-cell:hover \{\n  background-color/);
 });

@@ -24,10 +24,15 @@ const catOf = (name: string): Category | undefined => findCategory(REG, name);
 /** 分类图标：Lucide 图标名或 emoji */
 export const catIcon = (name: string): string => catOf(name)?.icon ?? 'tag';
 export type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
-/** 调色板颜色换到浅一级或深一级：1–8 级与卡片底色混合用来铺底，10–12 级与正文色混合用来写字；深浅模式自动跟随 */
-const MIX: Record<Step, number> = { 1: 6, 2: 10, 3: 16, 4: 24, 5: 34, 6: 46, 7: 60, 8: 78, 9: 100, 10: 88, 11: 55, 12: 35 };
-export const tint = (color: string, step: Step): string =>
-  step === 9 ? color : `color-mix(in oklab, ${color} ${MIX[step]}%, var(${step < 9 ? '--card' : '--gray-12'}))`;
+/** 色板 c1–c10 对应的 Radix 色系（与 design-tokens.css 一致） */
+const FAMILIES = ['indigo', 'red', 'purple', 'green', 'orange', 'teal', 'pink', 'iris', 'gray', 'gold'];
+/** 调色板颜色换到同一色系的另一级（Radix 1–12 级，深浅模式自动跟随）；不是色板色时原样返回 */
+export const tint = (color: string, step: Step): string => {
+  if (step === 9) return color;
+  const c = /^var\(--c(\d+)\)$/.exec(color);
+  const family = c ? FAMILIES[Number(c[1]) - 1] : /^var\(--([a-z]+)-9\)$/.exec(color)?.[1];
+  return family ? `var(--${family}-${step})` : color;
+};
 export const catColor = (name: string, step: Step = 9): string => tint(swatch(categoryColor(catOf(name), name)), step);
 /** 支付方式的图表色：设了颜色用它，没设按顺序取调色板；构成卡与资金流向一致 */
 export const methodTint = (m: { color?: string } | undefined, i: number): string => (m?.color ? swatch(m.color) : `var(--c${(i % 10) + 1})`);
@@ -98,8 +103,8 @@ const rgb = (hex: string) => {
   const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex;
   return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
 };
-/** 分类色板 c1–c10 的色值，与 design-tokens.css 一致；旧的自定义颜色按最接近的一格换算 */
-const PALETTE = ['6c8ebf', 'd9776f', '9c83c9', '5f9f7a', 'd0864a', '5fa8a8', 'd682a6', '8e9350', '9aa0a6', 'b99a46'];
+/** 分类色板 c1–c10 的浅色模式色值（Radix 9 级）；旧的自定义颜色按最接近的一格换算 */
+const PALETTE = ['3e63dd', 'e5484d', '8e4ec6', '30a46c', 'f76b15', '12a594', 'd6409f', '5b5bd6', '8d8d8d', '978365'];
 /** 图表与分类标记用色：c1–c10 原样，自定义十六进制或渐变（取第一个色）换成色板里最接近的一格，保证浅深级都能混出 */
 export function swatch(value: string | undefined): string {
   if (value && /^var\(--c(?:10|[1-9])\)$/.test(value)) return value;

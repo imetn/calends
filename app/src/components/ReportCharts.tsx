@@ -243,12 +243,15 @@ export function ProfileCard({ pieces, prev, names }: { pieces: SpendPiece[]; pre
   const pad = 14 + labelMax;
   const R = Math.max(40, S / 2 - pad);
   const c = S / 2;
+  // 上下只需留出标签的两行高度，不按正方形留白
+  const cy = R + 14 + 34;
+  const H = cy * 2;
   const peak = Math.max(...axes.flatMap((x) => [x.a, x.b]));
   const top = Math.min(1, Math.ceil(peak * 10) / 10);
   const angle = (i: number) => -Math.PI / 2 + (i / axes.length) * Math.PI * 2;
   const pt = (i: number, v: number) => {
     const r = (v / top) * R;
-    return [c + Math.cos(angle(i)) * r, c + Math.sin(angle(i)) * r] as const;
+    return [c + Math.cos(angle(i)) * r, cy + Math.sin(angle(i)) * r] as const;
   };
   const poly = (f: (x: (typeof axes)[number]) => number) => axes.map((x, i) => pt(i, f(x)).join(',')).join(' ');
   const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -266,17 +269,17 @@ export function ProfileCard({ pieces, prev, names }: { pieces: SpendPiece[]; pre
         {W > 0 && (
           <div
             className="profile-plot"
-            style={{ width: S, height: S }}
+            style={{ width: S, height: H }}
             role="img"
             aria-label={axes.map((x) => `${otherLabel(x.key, x.key)} ${now} ${pct(x.a)} ${before} ${pct(x.b)}`).join(', ')}
           >
-            <svg width={S} height={S} aria-hidden="true">
+            <svg width={S} height={H} aria-hidden="true">
               {[0.25, 0.5, 0.75, 1].map((f) => (
                 <polygon key={f} points={axes.map((_, i) => pt(i, top * f).join(',')).join(' ')} className="profile-ring" />
               ))}
               {axes.map((_, i) => {
                 const [x, y] = pt(i, top);
-                return <line key={i} x1={c} y1={c} x2={x} y2={y} className="profile-ring" />;
+                return <line key={i} x1={c} y1={cy} x2={x} y2={y} className="profile-ring" />;
               })}
               <polygon points={poly((x) => x.b)} className="profile-prev" />
               <polygon points={poly((x) => x.a)} className="profile-now" />
@@ -296,7 +299,7 @@ export function ProfileCard({ pieces, prev, names }: { pieces: SpendPiece[]; pre
                   className="profile-label"
                   style={{
                     left: c + cos * r,
-                    top: c + sin * r,
+                    top: cy + sin * r,
                     transform: `translate(${cos > 0.3 ? '0' : cos < -0.3 ? '-100%' : '-50%'}, ${sin > 0.3 ? '0' : sin < -0.3 ? '-100%' : '-50%'})`,
                     textAlign: cos > 0.3 ? 'left' : cos < -0.3 ? 'right' : 'center',
                     maxWidth: labelMax,

@@ -2151,19 +2151,19 @@ a {
 .stop-list {
   margin-top: 12px;
 }
-/* 订阅地区：半宽卡片，左边地球，右边地区列表；窄卡片上下排 */
+/* 订阅地区：半宽卡片，地球在上、图例在下；卡片够宽时左右排 */
 .region-card {
   container-type: inline-size;
 }
 .region-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 8px 32px;
+  gap: 12px 24px;
   align-items: center;
   margin-top: 12px;
 }
 .region-globe {
-  width: min(100%, 240px);
+  width: min(100%, 220px);
   justify-self: center;
 }
 .globe-canvas {
@@ -2176,30 +2176,76 @@ a {
 .globe-canvas:active {
   cursor: grabbing;
 }
-.region-list .stop-row {
-  border-radius: var(--radius-sm);
-  cursor: default;
+.globe-wrap {
+  position: relative;
 }
-.region-list .stop-row.on .stop-name > b {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.region-flag {
+/* 地球标记上的国旗与占比：位置由 Globe 每帧写入 */
+.globe-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
+  gap: 4px;
+  padding: 2px 6px 2px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  font-size: var(--fs-1);
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
 }
-.region-flag .flag-img {
-  width: 20px;
-  height: 14px;
+.globe-tag .flag-img {
+  width: 14px;
+  height: 10px;
+  border-radius: 1px;
+}
+.globe-tag b {
+  font-weight: 600;
+}
+/* 图例：国旗、地区、金额，自动换行 */
+.region-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  justify-content: center;
+}
+.region-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  font-size: var(--fs-1);
+  cursor: default;
+}
+.region-key .flag-img {
+  width: 16px;
+  height: 11px;
   border-radius: 2px;
   box-shadow: 0 0 0 var(--hairline) var(--line);
+}
+.region-key b {
+  color: var(--label);
+  font-weight: 600;
+}
+.region-key.on .region-name {
+  color: var(--label);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 @container (min-width: 460px) {
   .region-body {
     grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  }
+  .region-legend {
+    justify-content: flex-start;
   }
 }
 
@@ -2420,7 +2466,7 @@ button.bl-col {
   border-radius: var(--radius-md);
   overflow: hidden;
 }
-/* 分组：同一色系的浅色级铺底、最深一级写字（见 Composition 的 tiles），标题条在上，订阅小块之间留出细缝 */
+/* 分组：底色铺满，标题条在上，订阅小块之间留出细缝 */
 .tm-group {
   position: absolute;
   box-shadow: inset 0 0 0 var(--hairline) var(--card);
@@ -2432,8 +2478,8 @@ button.bl-col {
   height: 22px;
   padding: 0 8px;
   border: 0;
-  background: transparent;
-  color: inherit;
+  background: color-mix(in srgb, var(--black-a12) 14%, transparent);
+  color: var(--white-a12);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2462,6 +2508,7 @@ button.bl-col {
   position: absolute;
   border: 0;
   padding: 4px;
+  color: var(--white-a12);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2471,13 +2518,21 @@ button.bl-col {
   box-shadow: inset 0 0 0 var(--hairline) var(--line);
   transition: none;
 }
+.tm-group > .tm-cell {
+  background: transparent !important;
+}
 .tm-cell:hover {
-  filter: brightness(0.96);
+  filter: brightness(1.1) saturate(1.1);
+}
+/* 分组里的格子本身透明，悬停时才铺一层亮色；单独铺色的格子只靠 filter */
+.tm-group > .tm-cell:hover {
+  background-color: color-mix(in srgb, var(--white-a12) 8%, transparent) !important;
 }
 .tm-cell b {
   font-size: var(--fs-1);
   font-weight: 650;
   line-height: 1.2;
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--black-a12) 18%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

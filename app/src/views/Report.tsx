@@ -414,8 +414,18 @@ function AllCard({ state, today, first, onOpen }: { state: AppState; today: stri
 function RegionCard({ state, rows, hint }: { state: AppState; rows: RegionSpend[]; hint: string }) {
   const base = state.settings.baseCurrency;
   const { focus, list, row } = useGlobeFocus();
-  const max = Math.max(0, ...rows.map((r) => (r.total.known ? r.total.value : 0)));
-  const points = useMemo(() => rows.map((r) => ({ cc: r.cc, weight: max > 0 && r.total.known ? r.total.value / max : 0 })), [rows, max]);
+  const points = useMemo(() => {
+    const known = rows.every((r) => r.total.known && !r.total.incomplete);
+    const value = (r: RegionSpend) => (r.total.known ? r.total.value : 0);
+    const max = Math.max(0, ...rows.map(value));
+    const sum = rows.reduce((a, r) => a + value(r), 0);
+    // 地球上只给前几名标国旗与占比，缺汇率时不标占比
+    return rows.map((r, i) => ({
+      cc: r.cc,
+      weight: max > 0 ? value(r) / max : 0,
+      tag: known && sum > 0 && i < 5 ? `${Math.round((value(r) / sum) * 100)}%` : undefined,
+    }));
+  }, [rows]);
   if (rows.length < 2) return null;
   return (
     <div className="card copy-card region-card" data-copy-card>
@@ -431,23 +441,21 @@ function RegionCard({ state, rows, hint }: { state: AppState; rows: RegionSpend[
         <div className="region-globe">
           <Globe points={points} focus={focus} label={t('report.region.title')} />
         </div>
-        <div className="region-list" data-snapshot-list {...list}>
+        <div className="region-legend" data-snapshot-list {...list}>
           {rows.map((r) => (
-            <button type="button" className={`stop-row${focus === r.cc ? ' on' : ''}`} data-snapshot-keep key={r.cc} {...row(r.cc)}>
-              <span className="stop-name">
-                <span className="region-flag">
-                  <FlagImg cc={r.cc} />
-                </span>
-                <b>{regionLabel(r.cc)}</b>
-              </span>
-              <span className="stop-meta">
-                <span>{t('report.year.count', { count: r.subs.length })}</span>
-              </span>
-              <span className="stop-amount">
-                <b className="num">
-                  <FxAmount total={r.total} ccy={base} direction={-1} decimals={0} />
-                </b>
-              </span>
+            <button
+              type="button"
+              className={`region-key${focus === r.cc ? ' on' : ''}`}
+              data-snapshot-keep
+              key={r.cc}
+              title={t('report.year.count', { count: r.subs.length })}
+              {...row(r.cc)}
+            >
+              <FlagImg cc={r.cc} />
+              <span className="region-name">{regionLabel(r.cc)}</span>
+              <b className="num">
+                <FxAmount total={r.total} ccy={base} direction={-1} decimals={0} />
+              </b>
             </button>
           ))}
         </div>
