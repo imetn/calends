@@ -1,4 +1,4 @@
-import { isDataIcon } from '../shared/icon.ts';
+import { faviconOf, isDataIcon, methodIcon } from '../shared/icon.ts';
 import {
   addDays,
   addMonths,
@@ -74,11 +74,7 @@ function iconOf(s: Pick<Subscription, 'icon' | 'url'>): string | undefined {
   const icon = s.icon?.trim();
   // 内嵌图片不交给通知渠道（它们只认网址或 emoji），退回官网图标
   if (icon && !isDataIcon(icon)) return icon;
-  try {
-    return s.url ? `https://www.google.com/s2/favicons?domain=${new URL(s.url).hostname}&sz=128` : undefined;
-  } catch {
-    return undefined;
-  }
+  return faviconOf(s.url);
 }
 
 /** 写明校准值和之后扣掉的钱：用户刚填的余额和提醒里的数对得上 */
@@ -252,7 +248,7 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
         sub: t('notify.balance.expiring', { date: cnDate(r.expiring.date), amount: money(r.expiring.amount, m.currency) }),
         amount: relDays(left),
         tone: 'warn',
-        icon: m.logo && !m.logo.startsWith('data:') ? m.logo : undefined,
+        icon: methodIcon(m),
       });
       headline.push(t('notify.balance.expiringHeadline', { name: m.name }));
     }
@@ -264,7 +260,7 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
         sub: balanceNote(r, m, today),
         amount: relDays(d),
         tone: 'warn',
-        icon: m.logo && !m.logo.startsWith('data:') ? m.logo : undefined,
+        icon: methodIcon(m),
       });
       headline.push(t('notify.balance.headline', { name: m.name }));
     }

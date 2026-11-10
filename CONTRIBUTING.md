@@ -93,7 +93,7 @@ Record the commands and runtime checks used, what they establish and anything no
 
 The editor's name suggestions come from pack files in `app/src/catalog/`; each pack is optional and deleting one just removes its entries. Only add services the App Store search (shown below the catalogue) does not cover well, such as web-only subscriptions, AI products, domains and developer accounts, or that need preset renewal rules. Check `https://itunes.apple.com/search?term=<name>&entity=software&country=cn` (and `us`) first; if the app is in the top results, leave it out.
 
-Icons must be local files under `app/public/` (`public/brands/` for new ones, with the source and license in its `SOURCE.txt`); never hotlink a third-party favicon.
+Icons must be local files under `app/public/` (`public/brands/` for new ones, with the source and license in its `SOURCE.txt`); never hotlink a third-party favicon. Most email clients do not display SVG, so after adding or replacing an SVG under `ai/` or `brands/`, or a `-rect.svg` under `banks/`, run `node scripts/email-icons.mjs` to regenerate the PNG copies in `app/public/mail/` that reminder emails use; a test fails when one is missing. White logos need a background colour in that script.
 
 ## Translations
 

@@ -96,9 +96,13 @@ ${darkCss()}`;
 const tone = (r: Row) =>
   r.tone === 'warn' ? ['c-warn', L.warn] : r.tone === 'ok' ? ['c-ok', L.ok] : r.tone === 'muted' ? ['c-mute', L.mute] : ['c-ink', L.ink];
 
-/** 图标地址：http(s) 直接用，站内路径拼上站点地址；SVG、data: 在 Gmail 等客户端不显示，返回空 */
+/** 图标地址：http(s) 直接用，站内路径拼上站点地址；data: 与图标库以外的 SVG 在 Gmail 等客户端不显示，返回空 */
 function iconSrc(icon: string, site: string): string | undefined {
-  if (/^data:/i.test(icon) || /\.svg(\?|#|$)/i.test(icon)) return undefined;
+  if (/^data:/i.test(icon)) return undefined;
+  // 多数邮件客户端不显示 SVG：站内图标库改用 scripts/email-icons.mjs 生成的 PNG，其余 SVG 退回首字母
+  const mail = /^\/(ai|brands|banks)\/([a-z0-9-]+)\.svg$/.exec(icon);
+  if (mail && (mail[1] !== 'banks' || mail[2].endsWith('-rect'))) icon = `/mail/${mail[1]}/${mail[2]}.png`;
+  else if (/\.svg(\?|#|$)/i.test(icon)) return undefined;
   if (/^https?:\/\//i.test(icon)) return icon;
   if (icon.startsWith('/') && /^https?:\/\/|^file:/i.test(site)) return site + icon;
   return undefined;

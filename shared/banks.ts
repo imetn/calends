@@ -1,5 +1,5 @@
 // 由 scripts/sync-bank-logos.mjs 生成，勿手改。图标来自 https://github.com/icongo/bank-logos（MIT）
-// 银行中文名 → public/banks 下的文件名；按名称长度降序，先匹配更具体的名字
+// 银行中文名 → app/public/banks 下的文件名；按名称长度降序，先匹配更具体的名字
 export const BANKS: ReadonlyArray<readonly [string, string]> = [
   ['安徽舒城农村商业银行', 'scnhh'],
   ['浙江农村信用社联合社', 'xmbankonline'],

@@ -1,4 +1,4 @@
-// 同步银行图标集：icongo/bank-logos（MIT）→ app/public/banks/*.svg + app/src/banks.ts（中文名 → 文件名）
+// 同步银行图标集：icongo/bank-logos（MIT）→ app/public/banks/*.svg + shared/banks.ts（中文名 → 文件名）
 // 用法：node scripts/sync-bank-logos.mjs <bank-logos 仓库路径>
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,7 +18,7 @@ const body = Object.entries(map)
   .map(([name, slug]) => `  [${JSON.stringify(name)}, ${JSON.stringify(slug)}],`)
   .join('\n');
 writeFileSync(
-  'app/src/banks.ts',
+  'shared/banks.ts',
   `// 由 scripts/sync-bank-logos.mjs 生成，勿手改。图标来自 https://github.com/icongo/bank-logos（MIT）
 // 银行中文名 → app/public/banks 下的文件名；按名称长度降序，先匹配更具体的名字
 export const BANKS: ReadonlyArray<readonly [string, string]> = [

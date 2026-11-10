@@ -1,10 +1,9 @@
-import { isDataIcon } from '../../shared/icon.ts';
+import { bankOf, domainOf, faviconOf, isDataIcon, METHOD_BRAND_LOGO } from '../../shared/icon.ts';
 import { indigo, red, purple, green, orange, teal, pink, iris, gray, gold, slate, blue } from '@radix-ui/colors';
 import { base } from './base.ts';
 import { addDays, addMonths, chargesBetween, convert, effectiveStatus, parseDay, type Charge } from '../../shared/billing.ts';
 import { chargeBaseOrNaN, chargeValue } from '../../shared/fx.ts';
 import type { AppState, CardNetwork, MethodKind, PaymentMethod, Subscription } from '../../shared/types.ts';
-import { BANKS } from './banks.ts';
 import { locale, t } from '../../shared/i18n.ts';
 import { categoryColor, categoryList, findCategory, isDomainCategory, presetCategory, type Category } from '../../shared/categories.ts';
 
@@ -132,15 +131,15 @@ interface Brand {
   onColor?: boolean;
 }
 export const BRANDS: Brand[] = [
-  { key: 'appstore', name: 'App Store', logo: base('/brands/appstore.svg'), kinds: ['appstore'] },
-  { key: 'googleplay', name: 'Google Play', logo: base('/brands/googleplay.svg'), kinds: ['googleplay'] },
-  { key: 'paypal', name: 'PayPal', logo: base('/brands/paypal.svg'), kinds: ['paypal'], onColor: true },
+  { key: 'appstore', name: 'App Store', logo: base(METHOD_BRAND_LOGO.appstore!), kinds: ['appstore'] },
+  { key: 'googleplay', name: 'Google Play', logo: base(METHOD_BRAND_LOGO.googleplay!), kinds: ['googleplay'] },
+  { key: 'paypal', name: 'PayPal', logo: base(METHOD_BRAND_LOGO.paypal!), kinds: ['paypal'], onColor: true },
   {
     key: 'alipay',
     get name() {
       return t('list.kind.alipay');
     },
-    logo: base('/brands/alipay.svg'),
+    logo: base(METHOD_BRAND_LOGO.alipay!),
     kinds: ['alipay'],
     onColor: true,
   },
@@ -149,7 +148,7 @@ export const BRANDS: Brand[] = [
     get name() {
       return t('list.kind.wechat');
     },
-    logo: base('/brands/wechat.svg'),
+    logo: base(METHOD_BRAND_LOGO.wechat!),
     kinds: ['wechat'],
     onColor: true,
   },
@@ -224,12 +223,7 @@ export const NETWORKS: Record<CardNetwork, string> = {
   maestro: 'Maestro',
 };
 
-/** 银行卡对应的银行图标：手动指定优先，否则按名称里的银行名识别（招商银行 → cmbchina） */
-export function bankOf(m: Pick<PaymentMethod, 'name' | 'kind' | 'bank'>): string | undefined {
-  if (m.bank) return m.bank;
-  if (m.kind !== 'debit' && m.kind !== 'credit') return undefined;
-  return BANKS.find(([name]) => m.name.includes(name))?.[1];
-}
+export { bankOf, domainOf, faviconOf };
 
 /** 支付方式显示名（纯文字；国旗用 FlagImg 另画，不拼 emoji） */
 export function methodName(m: Pick<PaymentMethod, 'name' | 'region' | 'kind' | 'currency'>): string {
@@ -262,26 +256,11 @@ export function allCharges(state: AppState, from: string, to: string, today: str
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** 官网图标（Google favicon 服务） */
-export function faviconOf(url?: string): string | undefined {
-  const d = domainOf(url);
-  return d ? `https://www.google.com/s2/favicons?domain=${d}&sz=128` : undefined;
-}
-
 /** 订阅的图片图标，用作卡片和详情的背景光晕：图片链接 > 官网图标；域名类不用 */
 export function subImage(s: Pick<Subscription, 'category' | 'icon' | 'url'>): string | undefined {
   if (isDomainCat(s.category)) return undefined;
   if (s.icon?.startsWith('http') || isDataIcon(s.icon)) return s.icon;
   return faviconOf(s.url);
-}
-
-export function domainOf(url?: string): string | undefined {
-  if (!url) return undefined;
-  try {
-    return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\.|^ww\./, '');
-  } catch {
-    return undefined;
-  }
 }
 
 export type Period = 'day' | 'week' | 'month' | 'year';

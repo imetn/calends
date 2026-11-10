@@ -37,7 +37,7 @@ import { deleteMethod, getState, mergeEdits, reorderMethods, saveMethod, today }
 import { run } from '../toast.ts';
 import { methodReferences } from '../../../shared/ledger-edit.ts';
 import { go } from '../router.ts';
-import { BANKS } from '../banks.ts';
+import { BANKS } from '../../../shared/banks.ts';
 import { CurrencySelect, Picker, RegionSelect } from '../components/Picker.tsx';
 import { t } from '../../../shared/i18n.ts';
 import { tx } from '../i18n.ts';

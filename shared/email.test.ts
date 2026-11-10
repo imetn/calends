@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { FALLBACK_FX } from './billing.ts';
 import { fallbackChain, flatten, setLocale, type Locale, type Messages } from './i18n.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
@@ -69,18 +69,51 @@ test('订阅名称与图标里的 HTML 一律转义', () => {
   assert.ok(html.includes('&lt;script&gt;alert(1)&lt;/script&gt; Tom &amp; Jerry'));
 });
 
-test('图标：emoji 原样显示，SVG 与 data: 改用首字母', () => {
+test('图标：emoji 原样显示，图标库 SVG 换成 PNG，其余 SVG 与 data: 改用首字母', () => {
   loadLocale('en');
   const s = state([
     sub({ id: 'a', name: 'Alpha', icon: '☁️' }),
     sub({ id: 'b', name: 'beta', icon: '/ai/claude.svg' }),
     sub({ id: 'c', name: 'Gamma', icon: 'data:image/png;base64,AAAA' }),
+    sub({ id: 'd', name: 'delta', icon: 'https://cdn.example.com/d.svg' }),
   ]);
   const { html } = renderEmail(buildDaily(s, '2026-11-01')!, SITE);
   assert.ok(html.includes('☁️'));
-  assert.ok(!html.includes('claude.svg'));
+  assert.ok(html.includes(`src="${SITE}/mail/ai/claude.png"`));
+  assert.ok(!html.includes('.svg'));
   assert.ok(!html.includes('data:image'));
-  assert.match(html, />B<\/td>/);
+  assert.match(html, />D<\/td>/);
+});
+
+// 线上反馈：余额预警行没有图标（Plasma 的 logo 是 SVG；App Store 没设 logo，卡面按类型推出平台图标）
+test('余额预警：支付方式图标与卡面同一规则，SVG 换成 PNG', () => {
+  loadLocale('zh-CN');
+  const bal = { currency: 'USD', balance: 50, balanceAsOf: '2026-10-01', balanceExpires: '2026-12-01' } as const;
+  const s = state([]);
+  s.methods = [
+    { id: 'p', name: 'Plasma 卡', kind: 'crypto', logo: '/brands/plasma.svg', ...bal },
+    { id: 'a', name: '美国区', kind: 'appstore', ...bal },
+    // 认得出的银行即使设了自定义 logo，也和卡面一样用银行图标
+    { id: 'b', name: '招商银行储蓄卡', kind: 'debit', logo: 'https://cdn.example.com/custom.png', ...bal },
+    { id: 'd', name: '上传图片', kind: 'prepaid', logo: 'data:image/png;base64,AAAA', url: 'www.wallet.example.com/x', ...bal },
+  ];
+  const { html } = renderEmail(buildDaily(s, '2026-11-01')!, SITE);
+  for (const p of ['/mail/brands/plasma.png', '/mail/brands/appstore.png', '/mail/banks/cmbchina-rect.png']) assert.ok(html.includes(`src="${SITE}${p}"`), p);
+  assert.ok(html.includes('src="https://www.google.com/s2/favicons?domain=wallet.example.com&amp;sz=128"'));
+  assert.ok(!html.includes('data:image'));
+  assert.ok(!html.includes('custom.png'));
+});
+
+test('邮件图标：图标库里每个 SVG 都有对应的 PNG', () => {
+  const pub = new URL('../app/public/', import.meta.url);
+  const svgs = (dir: string, ok: (f: string) => boolean = () => true) =>
+    readdirSync(new URL(dir, pub))
+      .filter((f) => f.endsWith('.svg') && ok(f))
+      .map((f) => `${dir}${f.slice(0, -4)}`);
+  const missing = [...svgs('ai/'), ...svgs('brands/'), ...svgs('banks/', (f) => f.endsWith('-rect.svg'))].filter(
+    (id) => !existsSync(new URL(`mail/${id}.png`, pub)),
+  );
+  assert.deepEqual(missing, [], '运行 node scripts/email-icons.mjs');
 });
 
 test('月度账单：逐笔列出并给出合计', () => {
