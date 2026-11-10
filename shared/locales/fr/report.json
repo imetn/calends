@@ -39,7 +39,6 @@
   },
   "all": {
     "label": "Dépenses d’abonnement cumulées",
-    "basis": "Du premier prélèvement à aujourd’hui : trésorerie nette de ma part, remboursements et transferts inclus, achats pour autrui exclus.",
     "since": "Depuis {date}",
     "last12": "12 derniers mois",
     "avg": "Moyenne annuelle",
@@ -49,7 +48,6 @@
   },
   "tenure": {
     "title": "Durée des abonnements",
-    "basis": "Jours réellement abonnés, interruptions et paiements pour autrui exclus.\nArrêts rapides : arrêtés en 31 jours ou moins.\nAbonnements actifs : nombre au dernier jour de chaque mois.",
     "active": "Actifs, moyenne à ce jour",
     "stopped": "Arrêtés, durée moyenne",
     "quick": "Arrêts rapides",
@@ -116,9 +114,7 @@
     "groupTipAll": {
       "one": "{name}\n{count} élément\n{amount}",
       "other": "{name}\n{count} éléments\n{amount}"
-    },
-    "basisYear": "Du 1er janvier au 31 décembre de l'année choisie : ma part des dépenses nettes, remboursements et cessions inclus, paiements pour autrui exclus ; après aujourd'hui, prévision.\nMoyens de paiement et devises selon chaque prélèvement.",
-    "basisAll": "Du premier prélèvement à aujourd'hui : ma part des dépenses nettes, remboursements et cessions inclus, paiements pour autrui exclus.\nMoyens de paiement et devises selon chaque prélèvement."
+    }
   },
   "topup": {
     "title": "Plan de recharge",
@@ -161,13 +157,10 @@
   "stops": {
     "title": "Résiliations et suspensions",
     "loss": "Perte non remboursée",
-    "basis": "Arrêtés dans l’année choisie\nMa part ; perte non remboursée au taux du jour de l’arrêt.",
-    "basisAll": "Tous les abonnements arrêtés\nMa part ; perte non remboursée au taux du jour de l’arrêt.",
     "cancel": "Résiliation anticipée volontaire"
   },
   "year": {
     "title": "Détail de l’année",
-    "basis": "Dépenses nettes pour ma part, remboursements et transferts inclus ; après aujourd’hui, prévision d’après les abonnements actuels. Cette année compare le 1er janvier à aujourd’hui à la même période l’an dernier ; les autres années, l’année entière.",
     "vsLast": "vs même période l’an dernier",
     "vsPrev": "vs année précédente",
     "count": {
@@ -194,8 +187,7 @@
     "bars": "3D"
   },
   "region": {
-    "title": "Régions d'abonnement",
-    "basis": "Région de l'abonnement, sinon celle du moyen de paiement."
+    "title": "Régions d'abonnement"
   },
   "flow": {
     "title": "Flux d'argent"

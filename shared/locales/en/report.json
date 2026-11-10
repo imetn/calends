@@ -39,7 +39,6 @@
   },
   "all": {
     "label": "All-time subscription spend",
-    "basis": "From the first charge to today: net cash at my share, refunds and transfers included, proxy purchases excluded.",
     "since": "Since {date}",
     "last12": "Last 12 months",
     "avg": "Yearly avg",
@@ -49,7 +48,6 @@
   },
   "tenure": {
     "title": "How long subscriptions last",
-    "basis": "Days actually subscribed, gaps excluded, proxies excluded.\nQuick stops: stopped within 31 days.\nActive subscriptions: count on the last day of each month.",
     "active": "Active, avg so far",
     "stopped": "Stopped, avg kept",
     "quick": "Quick stops",
@@ -116,9 +114,7 @@
     "groupTipAll": {
       "one": "{name}\n{count} item\n{amount}",
       "other": "{name}\n{count} items\n{amount}"
-    },
-    "basisYear": "1 January to 31 December of the selected year: my share of net cash, refunds and transfers included, proxies excluded; dates after today are forecast.\nPayment methods and currencies follow each charge.",
-    "basisAll": "From the first charge to today: my share of net cash, refunds and transfers included, proxies excluded.\nPayment methods and currencies follow each charge."
+    }
   },
   "topup": {
     "title": "Top-up plan",
@@ -161,13 +157,10 @@
   "stops": {
     "title": "Cancellations & terminations",
     "loss": "Unrefunded loss",
-    "basis": "Stopped in the selected year\nMy share; unrefunded loss at stop-date FX.",
-    "basisAll": "All stopped subscriptions\nMy share; unrefunded loss at stop-date FX.",
     "cancel": "Voluntary early cancellation"
   },
   "year": {
     "title": "Year breakdown",
-    "basis": "Net cash at my share, including refunds and transfers; after today, forecast from current subscriptions. This year compares Jan 1 to today with the same period last year; other years compare full years.",
     "vsLast": "vs same period last year",
     "vsPrev": "vs. previous year",
     "count": {
@@ -194,8 +187,7 @@
     "bars": "3D"
   },
   "region": {
-    "title": "Subscription regions",
-    "basis": "Uses the subscription's region, or the payment method's when none is set."
+    "title": "Subscription regions"
   },
   "flow": {
     "title": "Money flow"

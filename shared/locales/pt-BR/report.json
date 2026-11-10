@@ -39,7 +39,6 @@
   },
   "all": {
     "label": "Gasto total com assinaturas",
-    "basis": "Do primeiro débito até hoje: caixa líquido da minha parte, com reembolsos e transferências, sem compras para terceiros.",
     "since": "Desde {date}",
     "last12": "Últimos 12 meses",
     "avg": "Média anual",
@@ -49,7 +48,6 @@
   },
   "tenure": {
     "title": "Quanto duram as assinaturas",
-    "basis": "Dias realmente assinados, sem pausas e sem pagamentos por terceiros.\nCanceladas logo: encerradas em até 31 dias.\nAssinaturas ativas: quantidade no último dia de cada mês.",
     "active": "Ativas, média até agora",
     "stopped": "Encerradas, média",
     "quick": "Canceladas logo",
@@ -116,9 +114,7 @@
     "groupTipAll": {
       "one": "{name}\n{count} item\n{amount}",
       "other": "{name}\n{count} itens\n{amount}"
-    },
-    "basisYear": "De 1º de janeiro a 31 de dezembro do ano escolhido: minha parte do gasto líquido, com reembolsos e transferências, sem pagamentos por terceiros; após hoje, previsto.\nMeios de pagamento e moedas conforme cada cobrança.",
-    "basisAll": "Da primeira cobrança até hoje: minha parte do gasto líquido, com reembolsos e transferências, sem pagamentos por terceiros.\nMeios de pagamento e moedas conforme cada cobrança."
+    }
   },
   "topup": {
     "title": "Plano de recarga",
@@ -161,13 +157,10 @@
   "stops": {
     "title": "Cancelamentos e desativações",
     "loss": "Perda não reembolsada",
-    "basis": "Encerradas no ano escolhido\nMinha parte; perda não reembolsada pelo câmbio do dia do encerramento.",
-    "basisAll": "Todas as assinaturas encerradas\nMinha parte; perda não reembolsada pelo câmbio do dia do encerramento.",
     "cancel": "Cancelamento antecipado voluntário"
   },
   "year": {
     "title": "Detalhes do ano",
-    "basis": "Gasto líquido da minha parte, com reembolsos e transferências; depois de hoje, previsão pelas assinaturas atuais. Este ano compara de 1º de janeiro até hoje com o mesmo período do ano passado; os demais anos, o ano inteiro.",
     "vsLast": "vs mesmo período do ano passado",
     "vsPrev": "vs. ano anterior",
     "count": {
@@ -194,8 +187,7 @@
     "bars": "3D"
   },
   "region": {
-    "title": "Regiões das assinaturas",
-    "basis": "Usa a região da assinatura ou, se vazia, a do meio de pagamento."
+    "title": "Regiões das assinaturas"
   },
   "flow": {
     "title": "Fluxo de dinheiro"

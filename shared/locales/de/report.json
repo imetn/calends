@@ -39,7 +39,6 @@
   },
   "all": {
     "label": "Abo-Ausgaben insgesamt",
-    "basis": "Von der ersten Abbuchung bis heute: Nettozahlungen mit meinem Anteil, inklusive Erstattungen und Übertragungen, ohne Stellvertreterkäufe.",
     "since": "Seit {date}",
     "last12": "Letzte 12 Monate",
     "avg": "Jahresschnitt",
@@ -49,7 +48,6 @@
   },
   "tenure": {
     "title": "Wie lange Abos laufen",
-    "basis": "Tatsächlich abonnierte Tage, ohne Pausen und Stellvertreterzahlungen.\nSchnell gekündigt: innerhalb von 31 Tagen beendet.\nAktive Abos: Anzahl am Monatsletzten.",
     "active": "Aktiv, Ø bisher",
     "stopped": "Beendet, Ø Laufzeit",
     "quick": "Schnell gekündigt",
@@ -116,9 +114,7 @@
     "groupTipAll": {
       "one": "{name}\n{count} Eintrag\n{amount}",
       "other": "{name}\n{count} Einträge\n{amount}"
-    },
-    "basisYear": "1. Januar bis 31. Dezember des gewählten Jahres: mein Anteil am Nettobetrag, inkl. Erstattungen und Übertragungen, ohne Stellvertreterzahlungen; nach heute geschätzt.\nZahlungsmittel und Währungen je Abbuchung.",
-    "basisAll": "Von der ersten Abbuchung bis heute: mein Anteil am Nettobetrag, inkl. Erstattungen und Übertragungen, ohne Stellvertreterzahlungen.\nZahlungsmittel und Währungen je Abbuchung."
+    }
   },
   "topup": {
     "title": "Aufladeplan",
@@ -161,13 +157,10 @@
   "stops": {
     "title": "Kündigungen & Abschaltungen",
     "loss": "Nicht erstatteter Verlust",
-    "basis": "Im gewählten Jahr beendet\nMein Anteil; nicht erstatteter Verlust zum Kurs am Beendigungstag.",
-    "basisAll": "Alle beendeten Abos\nMein Anteil; nicht erstatteter Verlust zum Kurs am Beendigungstag.",
     "cancel": "Freiwillig vorzeitig gekündigt"
   },
   "year": {
     "title": "Jahresübersicht",
-    "basis": "Nettoausgaben mit meinem Anteil, inklusive Erstattungen und Übertragungen; ab heute Prognose aus den aktuellen Abos. Dieses Jahr: 1. Januar bis heute gegenüber demselben Zeitraum im Vorjahr; andere Jahre: ganze Jahre.",
     "vsLast": "ggü. Vorjahreszeitraum",
     "vsPrev": "ggü. Vorjahr",
     "count": {
@@ -194,8 +187,7 @@
     "bars": "3D"
   },
   "region": {
-    "title": "Abo-Regionen",
-    "basis": "Region des Abos, sonst die der Zahlungsmethode."
+    "title": "Abo-Regionen"
   },
   "flow": {
     "title": "Geldfluss"

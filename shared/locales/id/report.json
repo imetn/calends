@@ -39,7 +39,6 @@
   },
   "all": {
     "label": "Total pengeluaran langganan",
-    "basis": "Dari tagihan pertama hingga hari ini: kas bersih bagian saya, termasuk refund dan transfer, tanpa pembelian titipan.",
     "since": "Sejak {date}",
     "last12": "12 bulan terakhir",
     "avg": "Rata-rata tahunan",
@@ -49,7 +48,6 @@
   },
   "tenure": {
     "title": "Berapa lama langganan bertahan",
-    "basis": "Hari berlangganan sebenarnya, tanpa jeda dan pembayaran untuk orang lain.\nBerhenti cepat: dihentikan dalam 31 hari.\nLangganan aktif: jumlah pada hari terakhir tiap bulan.",
     "active": "Aktif, rata-rata",
     "stopped": "Dihentikan, rata-rata",
     "quick": "Berhenti cepat",
@@ -113,9 +111,7 @@
     },
     "groupTipAll": {
       "other": "{name}\n{count} item\n{amount}"
-    },
-    "basisYear": "1 Januari sampai 31 Desember tahun terpilih: bagian saya dari pengeluaran bersih, termasuk refund dan pengalihan, tanpa pembayaran untuk orang lain; setelah hari ini berupa perkiraan.\nMetode pembayaran dan mata uang mengikuti tiap tagihan.",
-    "basisAll": "Dari tagihan pertama sampai hari ini: bagian saya dari pengeluaran bersih, termasuk refund dan pengalihan, tanpa pembayaran untuk orang lain.\nMetode pembayaran dan mata uang mengikuti tiap tagihan."
+    }
   },
   "topup": {
     "title": "Rencana top up",
@@ -157,13 +153,10 @@
   "stops": {
     "title": "Pembatalan & penghentian",
     "loss": "Kerugian tanpa pengembalian dana",
-    "basis": "Dihentikan pada tahun terpilih\nBagian saya; kerugian tanpa pengembalian dana memakai kurs tanggal penghentian.",
-    "basisAll": "Semua langganan yang dihentikan\nBagian saya; kerugian tanpa pengembalian dana memakai kurs tanggal penghentian.",
     "cancel": "Pembatalan dini sukarela"
   },
   "year": {
     "title": "Rincian tahun",
-    "basis": "Pengeluaran bersih bagian saya, termasuk pengembalian dana dan pengalihan; setelah hari ini, perkiraan dari langganan saat ini. Tahun ini membandingkan 1 Januari hingga hari ini dengan periode sama tahun lalu; tahun lain dibandingkan setahun penuh.",
     "vsLast": "vs periode sama tahun lalu",
     "vsPrev": "vs. tahun sebelumnya",
     "count": "{count} item",
@@ -187,8 +180,7 @@
     "bars": "3D"
   },
   "region": {
-    "title": "Wilayah langganan",
-    "basis": "Memakai wilayah langganan, atau wilayah metode pembayaran bila kosong."
+    "title": "Wilayah langganan"
   },
   "flow": {
     "title": "Aliran dana"

@@ -27,15 +27,12 @@ export function Composition({
   today,
   onOpen,
   pieces,
-  hint,
   snapshotSelection,
 }: {
   state: AppState;
   today: string;
   onOpen: (s: Subscription) => void;
   pieces?: SpendPiece[];
-  /** 口径说明；缺汇率时后面再接一行提示 */
-  hint?: string;
   snapshotSelection?: { dim: Dim; focus: string | null };
 }) {
   const base = state.settings.baseCurrency;
@@ -43,9 +40,7 @@ export function Composition({
   const [focus, setFocus] = useState<string | null>(snapshotSelection?.focus ?? null);
   const [box, W] = useWidth();
   const captureRef = useRef<HTMLDivElement>(null);
-  useSnapshotRender(captureRef, () => (
-    <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} hint={hint} snapshotSelection={{ dim, focus }} />
-  ));
+  useSnapshotRender(captureRef, () => <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} snapshotSelection={{ dim, focus }} />);
   const H = W < 560 ? 320 : 400;
   const fmt = pieces ? (amount: string) => amount : perMonth;
   const items: Item[] = pieces
@@ -137,7 +132,7 @@ export function Composition({
   return (
     <div className="card copy-card" data-copy-card ref={captureRef}>
       <div className="card-h">
-        <CardTitle hint={[hint, totalNote(partial)].filter(Boolean).join('\n') || undefined}>
+        <CardTitle hint={totalNote(partial) || undefined}>
           {copyParts(sel ? `${sel.name}\n${fmt(flow(-sel.v, base, { compact: true }))}` : t('report.comp.title'))}
         </CardTitle>
         <div className="copy-controls">

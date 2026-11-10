@@ -39,7 +39,6 @@
   },
   "all": {
     "label": "Gasto total en suscripciones",
-    "basis": "Desde el primer cargo hasta hoy: efectivo neto de mi parte, con reembolsos y transferencias, sin compras por encargo.",
     "since": "Desde {date}",
     "last12": "Últimos 12 meses",
     "avg": "Media anual",
@@ -49,7 +48,6 @@
   },
   "tenure": {
     "title": "Cuánto duran las suscripciones",
-    "basis": "Días realmente suscritos, sin pausas ni pagos por otros.\nBajas rápidas: canceladas en 31 días o menos.\nSuscripciones activas: número al último día de cada mes.",
     "active": "Activas, media hasta hoy",
     "stopped": "Canceladas, media",
     "quick": "Bajas rápidas",
@@ -116,9 +114,7 @@
     "groupTipAll": {
       "one": "{name}\n{count} elemento\n{amount}",
       "other": "{name}\n{count} elementos\n{amount}"
-    },
-    "basisYear": "Del 1 de enero al 31 de diciembre del año elegido: mi parte del gasto neto, con reembolsos y traspasos, sin pagos por otros; después de hoy, previsto.\nMétodos de pago y monedas según cada cargo.",
-    "basisAll": "Desde el primer cargo hasta hoy: mi parte del gasto neto, con reembolsos y traspasos, sin pagos por otros.\nMétodos de pago y monedas según cada cargo."
+    }
   },
   "topup": {
     "title": "Plan de recargas",
@@ -161,13 +157,10 @@
   "stops": {
     "title": "Cancelaciones y bajas",
     "loss": "Pérdida no reembolsada",
-    "basis": "Detenidas en el año elegido\nMi parte; pérdida no reembolsada al cambio del día del cese.",
-    "basisAll": "Todas las suscripciones detenidas\nMi parte; pérdida no reembolsada al cambio del día del cese.",
     "cancel": "Cancelación anticipada voluntaria"
   },
   "year": {
     "title": "Desglose del año",
-    "basis": "Gasto neto de mi parte, con reembolsos y transferencias; a partir de hoy, previsión según las suscripciones actuales. Este año compara del 1 de enero a hoy con el mismo periodo del año pasado; los demás años, el año completo.",
     "vsLast": "vs mismo periodo del año pasado",
     "vsPrev": "vs. año anterior",
     "count": {
@@ -194,8 +187,7 @@
     "bars": "3D"
   },
   "region": {
-    "title": "Regiones de suscripción",
-    "basis": "Se usa la región de la suscripción o, si falta, la del método de pago."
+    "title": "Regiones de suscripción"
   },
   "flow": {
     "title": "Flujo de dinero"

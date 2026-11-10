@@ -39,7 +39,6 @@
   },
   "all": {
     "label": "Tổng chi tiêu đăng ký",
-    "basis": "Từ khoản trừ đầu tiên đến hôm nay: tiền mặt ròng phần của tôi, gồm hoàn tiền và chuyển nhượng, không gồm mua hộ.",
     "since": "Từ {date}",
     "last12": "12 tháng qua",
     "avg": "Trung bình năm",
@@ -49,7 +48,6 @@
   },
   "tenure": {
     "title": "Gói đăng ký kéo dài bao lâu",
-    "basis": "Số ngày thực sự đăng ký, không tính thời gian gián đoạn và trả hộ.\nDừng ngay: dừng trong vòng 31 ngày.\nĐang dùng: số gói vào ngày cuối mỗi tháng.",
     "active": "Đang dùng, trung bình",
     "stopped": "Đã dừng, trung bình",
     "quick": "Dừng ngay",
@@ -113,9 +111,7 @@
     },
     "groupTipAll": {
       "other": "{name}\n{count} mục\n{amount}"
-    },
-    "basisYear": "Từ 1/1 đến 31/12 của năm đã chọn: phần chi tiêu ròng của tôi, gồm hoàn tiền và chuyển nhượng, không gồm trả hộ; sau hôm nay là dự kiến.\nPhương thức thanh toán và tiền tệ theo từng lần trừ tiền.",
-    "basisAll": "Từ lần trừ tiền đầu tiên đến hôm nay: phần chi tiêu ròng của tôi, gồm hoàn tiền và chuyển nhượng, không gồm trả hộ.\nPhương thức thanh toán và tiền tệ theo từng lần trừ tiền."
+    }
   },
   "topup": {
     "title": "Kế hoạch nạp tiền",
@@ -157,13 +153,10 @@
   "stops": {
     "title": "Hủy và ngừng dịch vụ",
     "loss": "Tổn thất chưa hoàn tiền",
-    "basis": "Đã dừng trong năm đã chọn\nPhần của tôi; tổn thất chưa hoàn tiền theo tỷ giá ngày dừng.",
-    "basisAll": "Tất cả đăng ký đã dừng\nPhần của tôi; tổn thất chưa hoàn tiền theo tỷ giá ngày dừng.",
     "cancel": "Chủ động hủy sớm"
   },
   "year": {
     "title": "Chi tiết năm",
-    "basis": "Chi tiêu ròng theo phần của tôi, gồm hoàn tiền và chuyển nhượng; sau hôm nay là dự kiến theo các gói hiện tại. Năm nay so từ 1/1 đến hôm nay với cùng kỳ năm ngoái; các năm khác so cả năm.",
     "vsLast": "so với cùng kỳ năm ngoái",
     "vsPrev": "so với năm trước",
     "count": "{count} mục",
@@ -187,8 +180,7 @@
     "bars": "3D"
   },
   "region": {
-    "title": "Khu vực đăng ký",
-    "basis": "Dùng khu vực của gói, nếu trống thì của phương thức thanh toán."
+    "title": "Khu vực đăng ký"
   },
   "flow": {
     "title": "Dòng tiền"

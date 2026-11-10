@@ -131,7 +131,7 @@ export function Report({
           prev={prevPieces}
           names={all ? [t('report.profile.recent'), t('report.profile.before')] : [String(year), String(year - 1)]}
         />
-        <RegionCard state={state} rows={regions} hint={t(all ? 'report.comp.basisAll' : 'report.comp.basisYear')} />
+        <RegionCard state={state} rows={regions} />
       </div>
     </>
   );
@@ -160,7 +160,7 @@ export function Report({
             <AllCard state={state} today={today} first={first} onOpen={onOpen} />
             <CashCard state={state} today={today} year={null} />
             {charts}
-            <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} hint={t('report.comp.basisAll')} />
+            <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} />
             <TenureCard state={state} today={today} onOpen={onOpen} />
             <StopsCard state={state} today={today} year={null} onOpen={onOpen} />
           </>
@@ -171,7 +171,7 @@ export function Report({
             <CashCard state={state} today={today} year={year} />
             <DailyCard state={state} today={today} year={year} />
             {charts}
-            <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} hint={t('report.comp.basisYear')} />
+            <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} />
             {now ? (
               <div className="grid g-2">
                 <Waterfall key={year} state={state} today={today} year={year} onOpen={onOpen} />
@@ -233,7 +233,7 @@ function Hero({ state, today, year }: { state: AppState; today: string; year: nu
         <CopyImageButton hover />
       </div>
       <div className="hero-l">
-        <CardTitle as="div" className="stat-label" hint={t('report.year.basis')}>
+        <CardTitle as="div" className="stat-label">
           {t('report.hero.label')}
         </CardTitle>
         <div className="hero-num">
@@ -308,7 +308,7 @@ function AllHero({ state, today }: { state: AppState; today: string }) {
         <CopyImageButton hover />
       </div>
       <div className="hero-l">
-        <CardTitle as="div" className="stat-label" hint={t('report.all.basis')}>
+        <CardTitle as="div" className="stat-label">
           {t('report.all.label')}
         </CardTitle>
         <div className="hero-num">
@@ -381,9 +381,7 @@ function AllCard({ state, today, first, onOpen }: { state: AppState; today: stri
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
-        <CardTitle as="h3" hint={t('report.all.basis')}>
-          {t('report.all.detail')}
-        </CardTitle>
+        <CardTitle as="h3">{t('report.all.detail')}</CardTitle>
         <div className="copy-tools">
           <CopyImageButton hover />
         </div>
@@ -411,7 +409,7 @@ function AllCard({ state, today, first, onOpen }: { state: AppState; today: stri
 }
 
 /** 订阅地区：左边点阵地球，右边地区列表；标记大小是所选期间的支出，悬停或点一行地球转到那个地区。不到两个地区时不出现 */
-function RegionCard({ state, rows, hint }: { state: AppState; rows: RegionSpend[]; hint: string }) {
+function RegionCard({ state, rows }: { state: AppState; rows: RegionSpend[] }) {
   const base = state.settings.baseCurrency;
   const { focus, list, row } = useGlobeFocus();
   const points = useMemo(() => {
@@ -430,7 +428,7 @@ function RegionCard({ state, rows, hint }: { state: AppState; rows: RegionSpend[
   return (
     <div className="card copy-card region-card" data-copy-card>
       <div className="card-h">
-        <CardTitle as="h3" hint={[hint, t('report.region.basis'), totalNote(sumTotals(rows.map((r) => r.total)))].filter(Boolean).join('\n')}>
+        <CardTitle as="h3" hint={totalNote(sumTotals(rows.map((r) => r.total))) || undefined}>
           {t('report.region.title')}
         </CardTitle>
         <div className="copy-tools">
@@ -473,9 +471,7 @@ function TenureCard({ state, today, onOpen }: { state: AppState; today: string; 
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
-        <CardTitle as="h3" hint={t('report.tenure.basis')}>
-          {t('report.tenure.title')}
-        </CardTitle>
+        <CardTitle as="h3">{t('report.tenure.title')}</CardTitle>
         <div className="copy-tools">
           <CopyImageButton hover />
         </div>
@@ -783,9 +779,7 @@ function YearCard({ state, today, year, onOpen }: { state: AppState; today: stri
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
-        <CardTitle as="h3" hint={t('report.year.basis')}>
-          {t('report.year.title')}
-        </CardTitle>
+        <CardTitle as="h3">{t('report.year.title')}</CardTitle>
         <div className="copy-tools">
           <CopyImageButton hover />
         </div>
@@ -839,9 +833,7 @@ function DailyCard({ state, today, year }: { state: AppState; today: string; yea
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
-        <CardTitle as="h3" hint={t('report.year.basis')}>
-          {t('report.daily.title')}
-        </CardTitle>
+        <CardTitle as="h3">{t('report.daily.title')}</CardTitle>
         <div className="copy-tools">
           <CopyImageButton hover />
           <Seg
@@ -893,9 +885,7 @@ function CashCard({ state, today, year }: { state: AppState; today: string; year
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">
-        <CardTitle as="h3" hint={t('scope.cashBasis')}>
-          {t('report.cash.title')}
-        </CardTitle>
+        <CardTitle as="h3">{t('report.cash.title')}</CardTitle>
         <div className="copy-tools">
           <CopyImageButton hover />
           <div className="legend-inline">
@@ -981,7 +971,7 @@ function StopsCard({ state, today, year, onOpen }: { state: AppState; today: str
       </div>
       <div className="card-h">
         {/* 口径说明收进 ⓘ，卡片里只留数字和明细 */}
-        <CardTitle hint={t(year === null ? 'report.stops.basisAll' : 'report.stops.basis')}>{t('report.stops.title')}</CardTitle>
+        <CardTitle>{t('report.stops.title')}</CardTitle>
       </div>
       <MetricCards inline>
         <Metric

@@ -39,7 +39,6 @@
   },
   "all": {
     "label": "Toplam abonelik harcaması",
-    "basis": "İlk ödemeden bugüne: payımın net nakdi; iadeler ve devirler dahil, vekâleten alımlar hariç.",
     "since": "{date} itibarıyla",
     "last12": "Son 12 ay",
     "avg": "Yıllık ortalama",
@@ -49,7 +48,6 @@
   },
   "tenure": {
     "title": "Abonelikler ne kadar sürüyor",
-    "basis": "Gerçekten abone olunan günler; aralar ve başkası adına ödemeler hariç.\nHemen bırakılan: 31 gün içinde durdurulan.\nAktif abonelik: her ayın son günündeki sayı.",
     "active": "Aktif, ortalama süre",
     "stopped": "Durdurulan, ortalama",
     "quick": "Hemen bırakılan",
@@ -116,9 +114,7 @@
     "groupTipAll": {
       "one": "{name}\n{count} öğe\n{amount}",
       "other": "{name}\n{count} öğe\n{amount}"
-    },
-    "basisYear": "Seçilen yılın 1 Ocak–31 Aralık dönemi: net harcamadaki payım; iadeler ve devirler dahil, başkası adına ödemeler hariç; bugünden sonrası tahmin.\nÖdeme yöntemleri ve para birimleri her tahsilata göre.",
-    "basisAll": "İlk tahsilattan bugüne: net harcamadaki payım; iadeler ve devirler dahil, başkası adına ödemeler hariç.\nÖdeme yöntemleri ve para birimleri her tahsilata göre."
+    }
   },
   "topup": {
     "title": "Yükleme planı",
@@ -161,13 +157,10 @@
   "stops": {
     "title": "İptaller ve sonlandırmalar",
     "loss": "İade edilmeyen kayıp",
-    "basis": "Seçilen yılda sonlandırılanlar\nBenim payım; iade edilmeyen kayıp sonlandırma tarihindeki kurla hesaplanır.",
-    "basisAll": "Durdurulan tüm abonelikler\nBenim payım; iade edilmeyen kayıp sonlandırma tarihindeki kurla hesaplanır.",
     "cancel": "İsteğe bağlı erken iptal"
   },
   "year": {
     "title": "Yıl dökümü",
-    "basis": "Payıma düşen net harcama, iadeler ve devirler dahil; bugünden sonrası mevcut aboneliklere göre tahmin. Bu yıl 1 Ocak’tan bugüne geçen yılın aynı dönemiyle, diğer yıllar tüm yılla karşılaştırılır.",
     "vsLast": "geçen yılın aynı dönemine göre",
     "vsPrev": "önceki yıla göre",
     "count": "{count} öğe",
@@ -191,8 +184,7 @@
     "bars": "3D"
   },
   "region": {
-    "title": "Abonelik bölgeleri",
-    "basis": "Aboneliğin bölgesi, yoksa ödeme yönteminin bölgesi."
+    "title": "Abonelik bölgeleri"
   },
   "flow": {
     "title": "Para akışı"
