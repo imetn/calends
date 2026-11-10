@@ -412,17 +412,20 @@ function AllCard({ state, today, first, onOpen }: { state: AppState; today: stri
 function RegionCard({ state, rows }: { state: AppState; rows: RegionSpend[] }) {
   const base = state.settings.baseCurrency;
   const { focus, list, row } = useGlobeFocus();
-  const points = useMemo(() => {
+  const { points, share } = useMemo(() => {
     const known = rows.every((r) => r.total.known && !r.total.incomplete);
     const value = (r: RegionSpend) => (r.total.known ? r.total.value : 0);
     const max = Math.max(0, ...rows.map(value));
     const sum = rows.reduce((a, r) => a + value(r), 0);
-    // 地球上只给前几名标国旗与占比，缺汇率时不标占比
-    return rows.map((r, i) => ({
-      cc: r.cc,
-      weight: max > 0 ? value(r) / max : 0,
-      tag: known && sum > 0 && i < 5 ? `${Math.round((value(r) / sum) * 100)}%` : undefined,
-    }));
+    return {
+      points: rows.map((r) => ({ cc: r.cc, weight: max > 0 ? value(r) / max : 0 })),
+      // 占比只标在图例里，每个地区都标；缺汇率时不标
+      share: (r: RegionSpend) => {
+        if (!known || sum <= 0) return '';
+        const pct = (value(r) / sum) * 100;
+        return pct < 1 ? '<1%' : `${Math.round(pct)}%`;
+      },
+    };
   }, [rows]);
   if (rows.length < 2) return null;
   return (
@@ -451,6 +454,7 @@ function RegionCard({ state, rows }: { state: AppState; rows: RegionSpend[] }) {
             >
               <FlagImg cc={r.cc} />
               <span className="region-name">{regionLabel(r.cc)}</span>
+              {share(r) && <span className="num">{share(r)}</span>}
               <b className="num">
                 <FxAmount total={r.total} ccy={base} direction={-1} decimals={0} />
               </b>

@@ -2195,33 +2195,7 @@ a {
 .globe-wrap {
   position: relative;
 }
-/* 地球标记上的国旗与占比：位置由 Globe 每帧写入 */
-.globe-tag {
-  position: absolute;
-  left: 0;
-  top: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px 2px 4px;
-  border-radius: var(--radius-sm);
-  background: var(--card);
-  box-shadow: var(--shadow);
-  font-size: var(--fs-1);
-  line-height: 1.2;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-}
-.globe-tag .flag-img {
-  width: 14px;
-  height: 10px;
-  border-radius: 1px;
-}
-.globe-tag b {
-  font-weight: 600;
-}
-/* 图例：国旗、地区、金额，自动换行 */
+/* 图例：国旗、地区、占比、金额，自动换行 */
 .region-legend {
   display: flex;
   flex-wrap: wrap;

@@ -132,19 +132,20 @@ test('分类色板：色值与 CSS 一致，旧自定义色与渐变换到最近
   assert.match(flow, /key === OTHER \|\| !key\s*\? 'var\(--gray-9\)'/);
 });
 
-test('订阅地区卡：图例紧凑一行一组，地球只给前五名标国旗与占比，缺汇率不标占比', () => {
+test('订阅地区卡：占比只标在图例里且每个地区都标，地球不再挂标签，缺汇率不标占比', () => {
   const src = readFileSync(new URL('../app/src/views/Report.tsx', import.meta.url), 'utf8');
   const card = src.slice(src.indexOf('function RegionCard('), src.indexOf('\n}\n', src.indexOf('function RegionCard(')));
   assert.match(card, /className="region-legend"/);
   assert.doesNotMatch(card, /stop-row/);
   assert.match(card, /rows\.every\(\(r\) => r\.total\.known && !r\.total\.incomplete\)/);
-  assert.match(card, /known && sum > 0 && i < 5 \?/);
+  assert.match(card, /if \(!known \|\| sum <= 0\) return '';/);
+  assert.match(card, /pct < 1 \? '<1%'/);
+  assert.doesNotMatch(card, /i < 5/);
+  assert.match(card, /\{share\(r\) && <span className="num">\{share\(r\)\}<\/span>\}/);
   const globe = readFileSync(new URL('../app/src/components/Globe.tsx', import.meta.url), 'utf8');
-  assert.match(globe, /className="globe-tag"/);
-  assert.match(globe, /tag\.style\.opacity/);
-  // 有无标签都包同一层，切换时画布不被替换
-  assert.doesNotMatch(globe, /if \(!tagged\.length\) return/);
+  assert.doesNotMatch(globe, /globe-tag|tag\?: string/);
   const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(css, /\.globe-tag/);
   assert.match(css, /\.tm-group > \.tm-cell:hover \{\n  background-color/);
 });
 
