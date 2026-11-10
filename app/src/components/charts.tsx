@@ -319,15 +319,15 @@ export function BarLine({
       </div>
       <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="none" style={{ height }} className="bl-line">
         {min < 0 && <line x1="0" x2={W} y1={y(0)} y2={y(0)} stroke="var(--sep)" vectorEffect="non-scaling-stroke" />}
-        <GlidePath d={path} fill="none" stroke="var(--card)" strokeWidth="5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+        {/* 摊到每月的成本：与「变动」瀑布图的上月末参考线同一种灰色虚线，不描白边，直接压在柱上 */}
         <GlidePath
           d={path}
           fill="none"
-          stroke="var(--chart-ink-2)"
-          strokeWidth="2.4"
+          stroke="var(--label-3)"
+          strokeWidth="1"
+          strokeDasharray="3 3"
           vectorEffect="non-scaling-stroke"
           strokeLinejoin="round"
-          strokeLinecap="round"
         />
       </svg>
       <XAxis labels={labels} months={months} w={w} pos={(i) => cx(i) / W} fallback={labels.flatMap((_, i) => (i % step === 0 ? [i] : []))} />

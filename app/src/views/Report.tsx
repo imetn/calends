@@ -901,7 +901,7 @@ function CashCard({ state, today, year }: { state: AppState; today: string; year
               {t('report.cash.legendCash')}
             </span>
             <span>
-              <i style={{ background: 'var(--chart-ink-2)', height: 3 }} />
+              <i className="legend-dash" />
               {t('report.cash.legendAccrual')}
             </span>
           </div>

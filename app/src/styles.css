@@ -2387,6 +2387,7 @@ a {
   display: flex;
   align-items: flex-end;
   position: absolute;
+  z-index: 1;
   left: 0;
   right: 0;
   top: 0;
@@ -2402,7 +2403,7 @@ a {
 .bl-col i {
   width: min(var(--bar-ratio), var(--bar-max));
   border-radius: var(--bar-radius) var(--bar-radius) 0 0;
-  /* 与概览月度柱同色；成本折线改用浅灰并描一圈卡片底色，压在柱子上也看得清 */
+  /* 与概览月度柱同色；成本虚线画在柱子后面 */
   background: var(--chart-ink);
   min-height: 1px;
   transition:
@@ -2451,6 +2452,7 @@ button.bl-col {
 }
 .bl-line {
   position: relative;
+  z-index: 0;
   pointer-events: none;
 }
 .legend-inline {
@@ -2468,6 +2470,13 @@ button.bl-col {
   width: 10px;
   height: 10px;
   border-radius: var(--radius-sm);
+}
+/* 折线图例：与图里的灰色虚线一致 */
+.legend-inline i.legend-dash {
+  width: 12px;
+  height: 1px;
+  border-radius: 0;
+  background: repeating-linear-gradient(90deg, var(--label-3) 0 3px, transparent 3px 6px);
 }
 .card-note {
   margin: 12px 0 0;

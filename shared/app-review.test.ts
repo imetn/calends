@@ -217,3 +217,16 @@ test('变动瀑布图：上月末虚线参考线横贯到期末；报告卡标�
     assert.doesNotMatch(src, /\bbasis(All|Year)?['"]/);
   }
 });
+
+test('柱线图：摊到每月的成本线与瀑布图参考线同为灰色虚线，不再描白边', () => {
+  const charts = readFileSync(new URL('../app/src/components/charts.tsx', import.meta.url), 'utf8');
+  const bl = charts.slice(charts.indexOf('export function BarLine('), charts.indexOf('export function niceTicks('));
+  assert.match(bl, /stroke="var\(--label-3\)"\s+strokeWidth="1"\s+strokeDasharray="3 3"/);
+  assert.doesNotMatch(bl, /stroke="var\(--card\)"/);
+  const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  // 虚线画在柱子后面，暗色下浅色柱也不吞掉虚线
+  assert.match(css, /\.bl-bars \{[^}]*z-index: 1;/);
+  assert.match(css, /\.bl-line \{[^}]*z-index: 0;/);
+  const report = readFileSync(new URL('../app/src/views/Report.tsx', import.meta.url), 'utf8');
+  assert.match(report, /<i className="legend-dash" \/>/);
+});
