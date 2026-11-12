@@ -4195,3 +4195,31 @@ test('报告年份选择记在服务端偏好，←/→ 与箭头同样按时间
   assert.match(src, /usePref<string>\('report-pick'/);
   assert.match(src, /canUseSingleKey\(e\)[\s\S]{0,120}ArrowLeft/);
 });
+
+test('region legend accessible names retain amounts even when globe tags are hidden', () => {
+  const r = harness(
+    '../app/src/views/Report.tsx',
+    'RegionCard',
+    {},
+    {
+      useGlobeFocus: () => ({ focus: undefined, list: {}, row: () => ({}) }),
+      regionLabel: (cc: string) => cc,
+      FlagImg: 'FlagImg',
+      Globe: 'Globe',
+    },
+  );
+  for (const total of [fxTotals.amountTotal(80, 'USD', 80), fxTotals.amountTotal(12, 'EUR', NaN)]) {
+    const rows = [
+      { cc: 'US', total, subs: [] },
+      { cc: 'DE', total, subs: [] },
+    ];
+    const buttons = r.render('RegionCard', { state: st, rows }).filter((n) => n.type === 'button' && String(n.props.className).includes('region-key'));
+    assert.equal(buttons.length, 2);
+    for (const [i, button] of buttons.entries()) {
+      assert.ok(button.props['aria-label']?.includes(rows[i].cc));
+      assert.ok(button.props['aria-label']?.includes(fxTotals.formatTotal(total, st.settings.baseCurrency, { direction: -1, decimals: 0 })));
+      if (!total.incomplete) assert.ok(button.props['aria-label'].includes('50%'));
+      else assert.ok(!button.props['aria-label'].includes('%'));
+    }
+  }
+});

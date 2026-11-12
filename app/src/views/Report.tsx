@@ -455,6 +455,7 @@ function RegionCard({ state, rows }: { state: AppState; rows: RegionSpend[] }) {
             <button
               type="button"
               className={`region-key${focus === r.cc ? ' on' : ''}`}
+              aria-label={[regionLabel(r.cc), share(r), formatTotal(r.total, base, { direction: -1, decimals: 0 })].filter(Boolean).join(', ')}
               data-snapshot-keep
               key={r.cc}
               title={t('report.year.count', { count: r.subs.length })}
