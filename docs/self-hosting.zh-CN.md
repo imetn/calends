@@ -31,7 +31,7 @@ docker logs calends
 
 打开 `http://localhost:8787/`，在登录页使用日志中的初始化令牌设置密码。命名卷 `calends-data` 持久化整个 `/data`，包括 SQLite 数据库状态与自动生成的初始化令牌，无需 Cloudflare 账号。
 
-生产环境建议固定完整版本标签，如 `xizozhe/calends:1.34.0`，升级时再主动修改。`latest` 跟随 main 分支，`1.34` 跟随该次版本系列的发布；这类浮动标签方便更新，但不锁定某次发布。以下命令中的 `xizozhe/calends` 也可替换为 `ghcr.io/imetn/calends`。
+生产环境建议固定完整版本标签，如 `xizozhe/calends:1.35.0`，升级时再主动修改。`latest` 跟随 main 分支，`1.35` 跟随该次版本系列的发布；这类浮动标签方便更新，但不锁定某次发布。以下命令中的 `xizozhe/calends` 也可替换为 `ghcr.io/imetn/calends`。
 
 如果用的是[快速开始里的 Compose 文件](../README.zh-CN.md#docker)，升级执行 `docker compose pull && docker compose up -d`。
 
@@ -54,7 +54,7 @@ docker logs calends
 - Docker Hub：`xizozhe/calends`（等同于 `docker.io/xizozhe/calends`）。
 - GitHub Container Registry（GHCR）：`ghcr.io/imetn/calends`。
 
-两处均提供 `linux/amd64` 和 `linux/arm64` 多架构镜像。[镜像工作流](../.github/workflows/docker.yml) 为 main 分支构建发布 `latest`，为版本发布生成版本标签，例如 `v1.34.0` 对应 `1.34.0` 和 `1.34`。
+两处均提供 `linux/amd64` 和 `linux/arm64` 多架构镜像。[镜像工作流](../.github/workflows/docker.yml) 为 main 分支构建发布 `latest`，为版本发布生成版本标签，例如 `v1.35.0` 对应 `1.35.0` 和 `1.35`。
 
 从源码构建不依赖已发布的 Calends 镜像，但仍需下载基础镜像与构建依赖。
 
@@ -72,7 +72,7 @@ Compose 会构建 `calends:local`，在 8787 端口启动服务，并用命名�
 
 仓库中的 `docker/docker-compose.yml` 从源码构建。要使用预构建镜像，改用 [`docker/compose.prebuilt.yml`](../docker/compose.prebuilt.yml)。
 
-也可改用 `ghcr.io/imetn/calends:latest`，或固定 `1.34.0` 等版本标签。在 `docker/` 下依次运行 `docker compose -f compose.prebuilt.yml pull` 和 `docker compose -f compose.prebuilt.yml up -d`，即可启动或升级此配置。镜像变化时，Compose 会重建容器并保留 `calends_calends-data` 数据卷。
+也可改用 `ghcr.io/imetn/calends:latest`，或固定 `1.35.0` 等版本标签。在 `docker/` 下依次运行 `docker compose -f compose.prebuilt.yml pull` 和 `docker compose -f compose.prebuilt.yml up -d`，即可启动或升级此配置。镜像变化时，Compose 会重建容器并保留 `calends_calends-data` 数据卷。
 
 不使用 Compose 时，也可以在仓库根目录直接构建和运行：
 
@@ -103,14 +103,14 @@ Debian 和 Ubuntu 一条命令安装，自带一份 Node，并在 `127.0.0.1:878
 curl -fsSL https://calends.date/install.sh | sudo bash
 ```
 
-升级也运行这条命令：先备份数据，配置不动，新版本起不来时自动恢复旧版本和数据。`--version 1.34.0` 安装指定版本，`--uninstall` 只删程序，保留数据和配置。想先看脚本内容，可以下载后用 `sudo bash install.sh` 运行。
+升级也运行这条命令：先备份数据，配置不动，新版本起不来时自动恢复旧版本和数据。`--version 1.35.0` 安装指定版本，`--uninstall` 只删程序，保留数据和配置。想先看脚本内容，可以下载后用 `sudo bash install.sh` 运行。
 
 本节后面是同样的手动安装步骤，适用于其他发行版。
 
 小内存 VPS 可以不装 Docker。从 1.26.0 起，每个版本的 [Release](https://github.com/imetn/calends/releases) 附带一个压缩包，运行代码和镜像相同，不需要安装 npm 依赖，x86 和 ARM 通用。需要 Linux、systemd 和系统级安装的 Node 24（`node -v` 确认）；装在用户目录的 Node（如 nvm）服务读不到。
 
 ```bash
-VERSION=1.34.0
+VERSION=1.35.0
 curl -fLO https://github.com/imetn/calends/releases/download/v$VERSION/calends-$VERSION.tar.gz
 curl -fLO https://github.com/imetn/calends/releases/download/v$VERSION/calends-$VERSION.tar.gz.sha256
 sha256sum -c calends-$VERSION.tar.gz.sha256
@@ -251,7 +251,7 @@ Telegram、飞书、钉钉、企业微信、Slack、Discord、Bark、ntfy、Serv
    用 node scripts/wrangler.mjs secret put SETUP_TOKEN 设置，再执行 npm run deploy。
    如果我需要自定义域名，部署前加到实际使用的 Wrangler 配置中。
 3. Docker：优先使用 xizozhe/calends（或 ghcr.io/imetn/calends）的预构建镜像。
-   生产环境固定 1.34.0 等版本标签，拉取后在 8787 端口运行，将 calends-data 挂载到 /data。
+   生产环境固定 1.35.0 等版本标签，拉取后在 8787 端口运行，将 calends-data 挂载到 /data。
    用 docker logs calends 读取初始化令牌。
    仅在需要时从源码构建，例如部署到子路径。
    需要公网访问时，用我选择的反向代理配置 HTTPS。
