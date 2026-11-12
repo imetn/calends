@@ -2167,19 +2167,21 @@ a {
 .stop-list {
   margin-top: 12px;
 }
-/* 订阅地区：半宽卡片，地球在上、图例在下；卡片够宽时左右排 */
+/* 订阅地区：地球在上、图例贴卡片底边，与并排的雷达图图例同一高度 */
 .region-card {
-  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
 }
 .region-body {
+  flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px 24px;
+  grid-template-rows: 1fr auto;
+  gap: 8px;
   align-items: center;
   margin-top: 12px;
 }
 .region-globe {
-  width: min(100%, 220px);
+  width: min(100%, 260px);
   justify-self: center;
 }
 .globe-canvas {
@@ -2195,18 +2197,43 @@ a {
 .globe-wrap {
   position: relative;
 }
-/* 图例：国旗、地区、占比、金额，自动换行 */
+/* 地球标记上的国旗与金额：位置由 Globe 每帧写入 */
+.globe-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  font-size: var(--fs-1);
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+}
+.globe-tag .flag-img {
+  width: 14px;
+  height: 10px;
+  border-radius: 1px;
+}
+.globe-tag b {
+  font-weight: 600;
+}
+/* 图例：国旗、地区、占比，自动换行；字号、颜色、间距与 .legend-inline（如雷达图图例）一致 */
 .region-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
+  gap: 4px 14px;
   justify-content: center;
 }
 .region-key {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 28px;
+  gap: 5px;
   padding: 0;
   border: 0;
   background: none;
@@ -2216,27 +2243,15 @@ a {
   cursor: default;
 }
 .region-key .flag-img {
-  width: 16px;
-  height: 11px;
-  border-radius: 2px;
+  width: 14px;
+  height: 10px;
+  border-radius: 1px;
   box-shadow: 0 0 0 var(--hairline) var(--line);
-}
-.region-key b {
-  color: var(--label);
-  font-weight: 600;
 }
 .region-key.on .region-name {
   color: var(--label);
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-@container (min-width: 460px) {
-  .region-body {
-    grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
-  }
-  .region-legend {
-    justify-content: flex-start;
-  }
 }
 
 /* 名称和金额一行，日期、方式、退款、天数排在下一行，原因再下一行 */

@@ -134,7 +134,7 @@ test('分类色板：色值与 CSS 一致，旧自定义色与渐变换到最近
   assert.match(flow, /fill: color\(r\.level === 0 \? r\.to : r\.from, 7\)/);
 });
 
-test('订阅地区卡：占比只标在图例里且每个地区都标，地球不再挂标签，缺汇率不标占比', () => {
+test('订阅地区卡：地球在上图例在下；金额只标在地球上（前五名与悬停地区），图例每个地区写占比，缺汇率不标占比', () => {
   const src = readFileSync(new URL('../app/src/views/Report.tsx', import.meta.url), 'utf8');
   const card = src.slice(src.indexOf('function RegionCard('), src.indexOf('\n}\n', src.indexOf('function RegionCard(')));
   assert.match(card, /className="region-legend"/);
@@ -142,12 +142,22 @@ test('订阅地区卡：占比只标在图例里且每个地区都标，地球�
   assert.match(card, /rows\.every\(\(r\) => r\.total\.known && !r\.total\.incomplete\)/);
   assert.match(card, /if \(!known \|\| sum <= 0\) return '';/);
   assert.match(card, /pct < 1 \? '<1%'/);
-  assert.doesNotMatch(card, /i < 5/);
-  assert.match(card, /\{share\(r\) && <span className="num">\{share\(r\)\}<\/span>\}/);
+  assert.match(card, /i < 5 \|\| p\.cc === focus \? <FxAmount/);
+  // 同一金额只出现一处：图例不再写金额
+  const legend = card.slice(card.indexOf('className="region-legend"'));
+  assert.doesNotMatch(legend, /FxAmount/);
   const globe = readFileSync(new URL('../app/src/components/Globe.tsx', import.meta.url), 'utf8');
-  assert.doesNotMatch(globe, /globe-tag|tag\?: string/);
+  assert.match(globe, /className="globe-tag"/);
+  assert.match(globe, /tag\?: ReactNode/);
   const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
-  assert.doesNotMatch(css, /\.globe-tag/);
+  assert.match(css, /\.globe-tag \{/);
+  // 图例与雷达图图例同一套：间距 14px、无最小行高、占比不加粗，贴卡片底边
+  assert.match(css, /\.region-legend \{[^}]*gap: 4px 14px;/);
+  assert.doesNotMatch(css.slice(css.indexOf('.region-key {'), css.indexOf('.region-key .flag-img')), /min-height/);
+  assert.match(css, /\.region-body \{[^}]*flex: 1;[^}]*grid-template-rows: 1fr auto;/);
+  assert.match(card, /\{share\(r\) && <span className="num">/);
+  // 不再左右排
+  assert.doesNotMatch(css, /\.region-body \{\n    grid-template-columns: minmax\(0, 200px\)/);
   assert.match(css, /\.tm-group > \.tm-cell:hover \{\n  background-color/);
 });
 

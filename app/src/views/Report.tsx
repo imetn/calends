@@ -408,7 +408,7 @@ function AllCard({ state, today, first, onOpen }: { state: AppState; today: stri
   );
 }
 
-/** 订阅地区：左边点阵地球，右边地区列表；标记大小是所选期间的支出，悬停或点一行地球转到那个地区。不到两个地区时不出现 */
+/** 订阅地区：上面点阵地球，下面图例；标记大小是所选期间的支出，地球上前几名和悬停的地区标国旗与金额，图例写每个地区的占比。悬停或点一行地球转到那个地区。不到两个地区时不出现 */
 function RegionCard({ state, rows }: { state: AppState; rows: RegionSpend[] }) {
   const base = state.settings.baseCurrency;
   const { focus, list, row } = useGlobeFocus();
@@ -419,7 +419,7 @@ function RegionCard({ state, rows }: { state: AppState; rows: RegionSpend[] }) {
     const sum = rows.reduce((a, r) => a + value(r), 0);
     return {
       points: rows.map((r) => ({ cc: r.cc, weight: max > 0 ? value(r) / max : 0 })),
-      // 占比只标在图例里，每个地区都标；缺汇率时不标
+      // 占比只在图例里，每个地区都标；缺汇率时不标
       share: (r: RegionSpend) => {
         if (!known || sum <= 0) return '';
         const pct = (value(r) / sum) * 100;
@@ -440,7 +440,15 @@ function RegionCard({ state, rows }: { state: AppState; rows: RegionSpend[] }) {
       </div>
       <div className="region-body">
         <div className="region-globe">
-          <Globe points={points} focus={focus} label={t('report.region.title')} />
+          <Globe
+            // 金额只标在地球上：前五名常驻，悬停的地区也标
+            points={points.map((p, i) => ({
+              ...p,
+              tag: i < 5 || p.cc === focus ? <FxAmount total={rows[i].total} ccy={base} direction={-1} decimals={0} /> : undefined,
+            }))}
+            focus={focus}
+            label={t('report.region.title')}
+          />
         </div>
         <div className="region-legend" data-snapshot-list {...list}>
           {rows.map((r) => (
@@ -455,9 +463,6 @@ function RegionCard({ state, rows }: { state: AppState; rows: RegionSpend[] }) {
               <FlagImg cc={r.cc} />
               <span className="region-name">{regionLabel(r.cc)}</span>
               {share(r) && <span className="num">{share(r)}</span>}
-              <b className="num">
-                <FxAmount total={r.total} ccy={base} direction={-1} decimals={0} />
-              </b>
             </button>
           ))}
         </div>

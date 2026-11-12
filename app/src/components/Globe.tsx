@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { COUNTRY_POINTS } from './country-points.ts';
 import { LAND_MASK } from './globe-land.ts';
+import { FlagImg } from './marks.tsx';
 
 export interface GlobePoint {
   cc: string;
   /** 0–1，决定标记大小 */
   weight: number;
+  /** 标在标记上方的短内容（如金额），旁边带国旗；背面时隐藏 */
+  tag?: ReactNode;
 }
 
 /** 球面上均匀分布的点数（斐波那契球）；陆地点深、海洋点浅 */
@@ -55,6 +58,7 @@ function loadDots() {
  */
 export function Globe({ points, focus, label, className = 'globe-canvas' }: { points: GlobePoint[]; focus?: string; label: string; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const tags = useRef(new Map<string, HTMLElement>());
   const live = useRef({ points, focus, kick: () => {} });
   live.current = { ...live.current, points, focus };
   // 静止时循环已停，focus 或数据变了要重新画
@@ -123,6 +127,12 @@ export function Globe({ points, focus, label, className = 'globe-canvas' }: { po
         if (!at) continue;
         const q = project(at[0] * RAD, at[1] * RAD);
         const m = r * (0.018 + 0.03 * Math.sqrt(p.weight));
+        const tag = tags.current.get(p.cc);
+        if (tag) {
+          // 转到边缘时淡出，背面隐藏
+          tag.style.opacity = String(Math.max(0, Math.min(1, (q.z - 0.2) / 0.25)));
+          tag.style.transform = `translate(${q.x}px, ${q.y - m - 3}px) translate(-50%, -100%)`;
+        }
         if (q.z <= 0.05) continue;
         ctx.beginPath();
         ctx.arc(q.x, q.y, m, 0, TAU);
@@ -236,9 +246,25 @@ export function Globe({ points, focus, label, className = 'globe-canvas' }: { po
     // 只在挂载时建一次；points、focus 走 live 引用
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // 外层始终保留：结构不变，画布才不会被换掉（绘制只绑在挂载时的那块画布上）
+  const tagged = points.filter((p) => p.tag && COUNTRY_POINTS[p.cc]);
   return (
     <div className="globe-wrap">
       <canvas ref={ref} className={className} role="img" aria-label={label} />
+      {tagged.map((p) => (
+        <span
+          key={p.cc}
+          className="globe-tag"
+          aria-hidden="true"
+          ref={(el) => {
+            if (el) tags.current.set(p.cc, el);
+            else tags.current.delete(p.cc);
+          }}
+        >
+          <FlagImg cc={p.cc} />
+          <b className="num">{p.tag}</b>
+        </span>
+      ))}
     </div>
   );
 }
