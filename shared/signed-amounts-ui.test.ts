@@ -195,6 +195,7 @@ test('Detail charge rows and annual totals show expenses/refunds consistently, i
   const file = '../app/src/views/Detail.tsx';
   const source = extractUiFunction(new URL(file, import.meta.url), 'Charges').split('function Charges(')[1];
   const Charges = load(file, 'Charges', `function Charges(${source}`, {
+    isSeparate: billing.isSeparate,
     React,
     Fragment: React.Fragment,
     // 两个状态：「显示全部」为真，展开的年份为全部年份，年度小计都能看到
@@ -287,6 +288,7 @@ test('Detail charge history groups every year when one year has multiple rows, a
     return [values[i], (v: unknown) => (values[i] = v)];
   };
   const Charges = load(file, 'Charges', `function Charges(${source}`, {
+    isSeparate: billing.isSeparate,
     React,
     Fragment: React.Fragment,
     useState: hook,
@@ -581,6 +583,7 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     collectNow: () => undefined,
   });
   const Charges = load(file, 'Charges', extractUiFunction(new URL(file, import.meta.url), 'Charges'), {
+    isSeparate: billing.isSeparate,
     ...deps,
     Seg: empty,
     copyParts: (v: unknown) => v,
@@ -859,7 +862,8 @@ test('扣款记录里结清哪几期：与缴费同年省略年份，跨年的�
   const settlesLabel = load(file, 'settlesLabel', extractUiFunction(new URL(file, import.meta.url), 'settlesLabel'), { cnDate, cnDateFull });
   assert.equal(settlesLabel(['2025-09-01', '2025-10-01', '2025-12-01'], '2025-12-10'), '9月1日 – 12月1日');
   assert.equal(settlesLabel(['2026-04-01'], '2026-06-05'), '4月1日');
-  assert.equal(settlesLabel(['2025-12-01', '2026-01-01'], '2026-01-20'), '2025年12月1日 – 1月1日');
+  assert.equal(settlesLabel(['2025-12-01', '2026-01-01'], '2026-01-20'), '2025年12月1日 – 2026年1月1日');
+  assert.equal(settlesLabel(['2025-10-01', '2026-03-01'], '2026-03-05'), '2025年10月1日 – 2026年3月1日');
 });
 
 test('同一条用量落在并行两段的服务期里只算一次，服务期没记完不写平均单价', () => {

@@ -1439,7 +1439,16 @@
   height: 22px !important;
 }
 /* 分开记的缴费结清哪几期：固定在金额下一行、右对齐，不和金额抢同一行 */
+/* 金额一列允许换行，结清的账单总在第二行，各行高度一致；过长时省略，逐期写在悬停提示里 */
+.dt-ledger .ld-row:not(.ld-year) > span:nth-child(3):has(> .dt-settles) {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
 .dt-ledger .dt-settles {
   flex-basis: 100%;
+  min-width: 0;
   text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

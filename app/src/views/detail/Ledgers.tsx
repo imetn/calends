@@ -2,7 +2,7 @@ import { amountTotal, chargesTotal, formatTotal, sumTotals } from '../../../../s
 import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { Plus } from 'lucide-react';
-import { chargeDay, chargeServicePeriod, isPostpaid, phaseSubs, type Charge } from '../../../../shared/billing.ts';
+import { chargeDay, chargeServicePeriod, isPostpaid, isSeparate, phaseSubs, type Charge } from '../../../../shared/billing.ts';
 import { meterDecimals, meterRows, meterView } from '../../../../shared/meters.ts';
 import { chargesUsage, chargeUsage, fixedQty, periodLabel, withUnit } from './ChargeTip.tsx';
 import { flow, cnDate, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
@@ -72,9 +72,10 @@ export function Transfers({ sub, state, onRow, onAdd }: { sub: Subscription; sta
   );
 }
 
-/** 一笔缴费结清的账单：首期 – 末期；与缴费同年的省略年份 */
+/** 一笔缴费结清的账单：首期 – 末期；都与缴费同年时省略年份，否则首末都写年份 */
 export function settlesLabel(settles: string[], paid: string) {
-  const day = (d: string) => (d.slice(0, 4) === paid.slice(0, 4) ? cnDate(d) : cnDateFull(d));
+  const same = settles.every((d) => d.slice(0, 4) === paid.slice(0, 4));
+  const day = (d: string) => (same ? cnDate(d) : cnDateFull(d));
   return settles.length > 1 ? `${day(settles[0])} – ${day(settles[settles.length - 1])}` : day(settles[0]);
 }
 
@@ -206,6 +207,8 @@ export function Charges({
                 : c.note
           }
           onRow={onRow && (({ c }) => onRow(c))}
+          // 分开记时推算期视为已缴的那几行不是真实缴费，没有可改的记录
+          canOpen={({ c }) => !isSeparate(c.sub) || !!c.kind || !!c.paidOn}
         />
       )}
     </Panel>

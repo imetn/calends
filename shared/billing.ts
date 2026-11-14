@@ -221,13 +221,23 @@ export function subError(s: Subscription): string | undefined {
   return undefined;
 }
 
-/** 分开记的缴费指定的账单日必须是这个阶段真实存在的账单（账单日或服务日），不静默改成按先后抵扣 */
+/**
+ * 分开记的缴费指定的账单日必须是这个阶段真实存在的账单（账单日或服务日），不静默改成按先后抵扣；
+ * 追踪起点之后的缴费不能指定推算期，早于追踪起点的缴费只能指定推算期（否则这部分会被丢掉）。
+ */
 function periodsError(v: Subscription): string | undefined {
   const asked = (v.payments ?? []).flatMap((p) => p.periods ?? []);
   if (!asked.length || !isSeparate(v)) return undefined;
   const last = [...asked].sort().at(-1)!;
-  const known = new Set(settleBills(v, last, last).bills.flatMap((b) => [b.date, b.serviceDate ?? b.date]));
-  return asked.every((d) => known.has(d)) ? undefined : t('mcp.error.invalidInput', { field: 'periods' });
+  const { bills, track } = settleBills(v, last, last);
+  const known = new Map(bills.flatMap((b) => [[b.date, b] as const, [b.serviceDate ?? b.date, b] as const]));
+  const ok = (v.payments ?? []).every((p) =>
+    (p.periods ?? []).every((d) => {
+      const b = known.get(d);
+      return !!b && (b.status === 'inferred') === p.date < track;
+    }),
+  );
+  return ok ? undefined : t('mcp.error.invalidInput', { field: 'periods' });
 }
 
 /**
@@ -823,39 +833,47 @@ const cents = (n: number) => Math.round(n * 100) / 100;
 /** 不看缴费的账单：分开记的账单只由周期、价格历史与停止、暂停、试用等规则决定 */
 const billsOnly = (s: Subscription): Subscription => ({ ...s, payments: undefined, nextDue: undefined, settlement: undefined, settledBefore: undefined });
 
-/** 离 at 最近的账单日（一样近取较早的）；没有账单时为开始日 */
-function nearestBill(v: Subscription, at: string): string {
+/** at 当天或之前最近的一期账单日（缴费日当天或之前的那期才是这笔缴的）；at 之前没有账单时取之后最早的一期，都没有时为开始日 */
+function billOnOrBefore(v: Subscription, at: string): string {
   const open = billsOnly(v);
-  const from = addDays(at, -400) > v.start ? addDays(at, -400) : v.start;
-  const near = chargesAsRecorded(open, from, addDays(at, 400), at)
-    .filter((c) => !c.kind)
-    .reduce<string | undefined>((m, c) => (!m || Math.abs(diffDays(at, c.date)) < Math.abs(diffDays(at, m)) ? c.date : m), undefined);
-  return near ?? v.start;
+  const first = v.billingStart && v.billingStart < v.start ? v.billingStart : v.start;
+  const bills = (from: string, to: string) => chargesAsRecorded(open, from, to, at).filter((c) => !c.kind);
+  return (at >= first ? bills(first, at).at(-1)?.date : undefined) ?? bills(at > first ? at : first, addDays(at > first ? at : first, 800))[0]?.date ?? v.start;
 }
 
 /**
- * 分开记的默认追踪起点（没写 settledBefore 时）：最早一笔普通缴费指定的最早账单，没指定时是离它最近的账单；
- * 还没有缴费时是离今天最近的账单。编辑器打开开关时按整条订阅算一次写进 settledBefore。
+ * 分开记的追踪起点（编辑器打开开关、整条写入时按整条订阅算一次写进 settledBefore）：最早一笔普通缴费指定的最早账单；
+ * 没指定时是那笔缴费日当天或之前的那期；还没有缴费时是今天当天或之前的那期。
  */
 export function trackingStart(s: Subscription, today: string): string {
   const first = phaseSubs(s)
     .flatMap((v) => (v.payments ?? []).filter((p) => !p.kind).map((p) => ({ v, p })))
     .sort((a, b) => a.p.date.localeCompare(b.p.date))[0];
   if (first?.p.periods?.length) return [...first.p.periods].sort()[0];
-  if (first) return nearestBill(first.v, first.p.date);
-  return nearestBill(currentPhase(s, today), today);
+  if (first) return billOnOrBefore(first.v, first.p.date);
+  return billOnOrBefore(currentPhase(s, today), today);
+}
+
+/**
+ * 读取时的追踪起点：settledBefore；旧数据没写时有缴费按缴费推（与日期无关），
+ * 没有缴费时按建档日推，没有建档日就从第一期起追踪，不随今天移动（否则逾期会随时间悄悄变成已缴）。
+ */
+function trackOf(s: Subscription): string {
+  if (s.settledBefore) return s.settledBefore;
+  if (phaseSubs(s).some((v) => (v.payments ?? []).some((p) => !p.kind))) return trackingStart(s, s.start);
+  return s.createdAt ? trackingStart(s, s.createdAt) : billOnOrBefore(s, s.start);
 }
 
 /**
  * 分开记的账单与分配：账单按开始锚点、价格历史、停止/暂停/试用/后付费等规则生成，与缴费日期无关；
  * 追踪起点（settledBefore，缺省见 trackingStart）之前的视为已缴（推算）。缴费先按 periods 指定的账单按未缴比例分，
  * 剩下的（及没写 periods 的）按缴费日先后从最早未缴的账单依次抵扣，可以抵到未来的账单（预缴）。
- * 早于追踪起点的缴费只抵推算期：从离它最近的那期往后，抵完的余额记作 credit。删掉一笔缴费，它的分配随之释放。
+ * 早于追踪起点的缴费只抵推算期：从缴费日当天或之前的那期往后，再往前补，推算期都抵满了才记作 credit。删掉一笔缴费，它的分配随之释放。
  * 分配结果与查询窗口无关：账单至少生成到最晚的缴费日与指定账单日，钱没分完再往后多生成。
  */
 export function settleBills(s: Subscription, today: string, until = today): Settlement {
   const pays = (s.payments ?? []).filter((p) => !p.kind).sort((a, b) => a.date.localeCompare(b.date));
-  const track = s.settledBefore ?? trackingStart(s, today);
+  const track = trackOf(s);
   const early = (p: Payment) => p.date < track;
   const total = pays.filter((p) => !early(p)).reduce((a, p) => a + Math.max(0, p.amount), 0);
   const last = [...pays.map((p) => p.date), ...pays.flatMap((p) => p.periods ?? [])].sort().at(-1) ?? s.start;
@@ -920,11 +938,17 @@ export function settleBills(s: Subscription, today: string, until = today): Sett
     }
     rest.set(p, amount);
   }
-  // 再按缴费日先后抵扣：追踪之后的从最早未缴的账单起；早于追踪起点的从离缴费日最近的推算期起，只抵推算期
+  // 再按缴费日先后抵扣：追踪之后的从最早未缴的账单起；早于追踪起点的从缴费日当天或之前的那期推算期起往后，
+  // 再往前补更早的推算期，补满了才记余额（推算期视为已缴，不能和同一笔钱的余额并存而重复计入）
   for (const p of pays) {
     let amount = rest.get(p) ?? 0;
-    const from = early(p) ? Math.max(0, keyOf.get(nearestBill(open, p.date)) ?? bills.findIndex((b) => b.date >= p.date)) : 0;
-    for (const b of bills.slice(from)) {
+    let order = bills;
+    if (early(p)) {
+      const on = bills.findLastIndex((b) => b.date <= p.date);
+      const at = on >= 0 ? on : bills.findIndex((b) => b.date >= p.date);
+      order = at < 0 ? [] : [...bills.slice(at), ...bills.slice(0, at).reverse()];
+    }
+    for (const b of order) {
       if (amount <= 0.004) break;
       if (inferred(b) !== early(p)) continue;
       const take = Math.min(amount, left(b));
@@ -1325,7 +1349,8 @@ export function nextCharge(s: Subscription, today: string): string | undefined {
 }
 
 export function lastCharge(s: Subscription, today: string): string | undefined {
-  const all = chargesBetween(s, s.start, today, today).filter((c) => !c.kind);
+  // 分开记时没缴的账单（待缴、逾期）不是扣款：最后一次扣款是最近一期缴过（含推算期视为已缴）的账单
+  const all = chargesBetween(s, s.start, today, today).filter((c) => !c.kind && !c.unpaid);
   return all[all.length - 1]?.date;
 }
 

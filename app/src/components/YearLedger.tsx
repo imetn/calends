@@ -22,6 +22,7 @@ export function YearLedger<T>({
   row,
   rowKey,
   onRow,
+  canOpen,
   rowClass,
   rowTitle,
   keepSecond = false,
@@ -37,6 +38,8 @@ export function YearLedger<T>({
   row: (x: T) => { date: ReactNode; second: ReactNode; extra?: ReactNode; orig: ReactNode; base: ReactNode; baseClass?: string };
   rowKey: (x: T, i: number) => string;
   onRow?: (x: T) => void;
+  /** 有 onRow 时哪些行能点开；缺省都能 */
+  canOpen?: (x: T) => boolean;
   rowClass?: (x: T) => string;
   rowTitle?: (x: T) => string | undefined;
   keepSecond?: boolean;
@@ -116,7 +119,7 @@ export function YearLedger<T>({
                 const key = rowKey(x, i);
                 const props = { className: `ld-row dt-row ${rowClass?.(x) ?? ''}`, title: rowTitle?.(x) };
                 // 不能点的行用普通元素：禁用按钮会被画成灰色，看起来像另一种字号和颜色
-                return onRow ? (
+                return onRow && (canOpen?.(x) ?? true) ? (
                   <button key={key} type="button" {...props} onClick={() => onRow(x)}>
                     {cells}
                   </button>
