@@ -321,8 +321,10 @@ export function cashVsAccrual(state: AppState, today: string, back: number, fwd:
   }
   // 往前多取一年，保证年付在窗口开头的摊销完整
   const subs = state.subscriptions.filter((s) => !s.proxy);
-  // 现金按实际付款日；账单与缴费分开记的订阅，一笔合并缴只在付款那月出现一次（见 cashChargesBetween）
-  for (const c of subs.flatMap((s) => cashChargesBetween(s, first, last, today))) {
+  // 现金按实际付款日；账单与缴费分开记的订阅按账单月（已缴、没缴的都留在其账单月），与年度报告的已扣款、待扣款同一口径
+  for (const c of subs.flatMap((s) =>
+    phaseSubs(s).some(isSeparate) ? chargesBetween(s, first, last, today).filter((c) => c.kind !== 'failed') : cashChargesBetween(s, first, last, today),
+  )) {
     const r = rows.get(c.date.slice(0, 7));
     if (!r) continue;
     r.cash += chargeValue(state, c) * myShareFactor(c.sub, c.date);

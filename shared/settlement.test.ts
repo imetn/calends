@@ -11,9 +11,11 @@ import {
   trackingStart,
   todayIn,
   addMonths,
+  lastCharge,
 } from './billing.ts';
+import { prepareSubWrite } from './sub-write.ts';
 import { cashVsAccrual, prepaidValue } from './metrics.ts';
-import { yearOutlook } from './scope-report.ts';
+import { spendPiecesBetween, yearDays, yearOutlook } from './scope-report.ts';
 import { netCost } from './transfers.ts';
 import { deletePayment, savePayment } from './phases.ts';
 import { DEFAULT_SETTINGS, type Payment, type Subscription } from './types.ts';
@@ -83,7 +85,7 @@ test('拆开缴与部分缴：一期收到多笔，未缴满的显示部分已�
   assert.equal(owed[0].projected, true);
 });
 
-test('逾期后缴：成本归账单所属年份，现金记在缴费日（跨年合并缴）', () => {
+test('逾期后缴：成本与报告月柱归账单所属年月（跨年合并缴）', () => {
   const s = fee([{ date: '2026-02-10', amount: 3700, periods: ['2025-10-01', '2025-11-01', '2025-12-01', '2026-01-01', '2026-02-01'] }], {
     settledBefore: '2025-10-01',
   });
@@ -95,8 +97,9 @@ test('逾期后缴：成本归账单所属年份，现金记在缴费日（跨�
   assert.equal(sum(prepaid), 1400);
   assert.equal(sum(y2026), 2200);
   const cash = cashVsAccrual({ subscriptions: [s], methods: [], settings: { ...DEFAULT_SETTINGS, baseCurrency: 'CNY' }, fx: FALLBACK_FX }, TODAY, 6, 0);
-  assert.equal(cash.find((r) => r.month === '2026-02')!.cash, 3700);
-  assert.equal(cash.find((r) => r.month === '2025-10')!.cash, 0);
+  // 报告的月柱按账单月，与年度已扣款同一口径；钱包与扣款记录仍按缴费日（见 cashChargesBetween）
+  assert.equal(cash.find((r) => r.month === '2026-02')!.cash, 400);
+  assert.equal(cash.find((r) => r.month === '2025-10')!.cash, 500);
   assert.equal(Math.round(cash.find((r) => r.month === '2025-10')!.accrual), 500);
 });
 
@@ -376,7 +379,7 @@ test('UI-1 实际每月按账单：截至今天的各期应缴 ÷ 到本期结�
   assert.ok(Math.abs(netCost(ledger(owe), owe, TODAY, 'CNY').perMonth - 400) < 6);
 });
 
-test('UI-4 年度报告按账单归属：跨年合并缴各算各的年份，没缴的（含逾期）是其账单月的待扣款；现金行按缴费日', () => {
+test('UI-4 年度报告按账单归属：跨年合并缴各算各的年份，没缴的（含逾期）是其账单月的待扣款；月柱也按账单月', () => {
   const s = fee([{ date: '2026-02-10', amount: 400, periods: ['2025-12-01'] }], { start: '2025-11-01', settledBefore: '2025-12-01', priceHistory: undefined });
   const y25 = yearOutlook(ledger(s), TODAY, 2025);
   assert.equal(y25.current.paid, 800);
@@ -400,8 +403,8 @@ test('UI-4 年度报告按账单归属：跨年合并缴各算各的年份，没
     cash.map((m) => [m.month, m.cash]),
     [
       ['2025-11', 400],
-      ['2025-12', 0],
-      ['2026-01', 0],
+      ['2025-12', 400],
+      ['2026-01', 400],
       ['2026-02', 400],
     ],
   );
@@ -464,4 +467,93 @@ test('部分已缴且账单日已过的期：状态是部分已缴，同时列�
   );
   const owed = chargesBetween(s, '2026-01-01', '2026-01-31', '2026-02-01').find((c) => c.unpaid);
   assert.equal(owed?.unpaid, 'overdue');
+});
+
+test('R2-A 早于追踪起点的缴费：分配起点与查询窗口无关，不会落到第一期', () => {
+  const s = fee([{ date: '2026-01-20', amount: 400 }], { start: '2025-06-01', settledBefore: '2026-02-01', priceHistory: undefined });
+  for (const to of ['2026-01-31', TODAY, '2026-12-31']) {
+    const r = settleBills(s, TODAY, to);
+    assert.deepEqual(
+      r.bills.filter((b) => b.pieces.length).map((b) => b.date),
+      ['2026-01-01'],
+    );
+    assert.equal(r.credit.length, 0);
+  }
+});
+
+test('R2-B 缴费日在账单后不到半个周期：追踪起点与分配取缴费日当天或之前的那期，不重复计入', () => {
+  // R1：没写 settledBefore，1-20 缴的是 1 月账单
+  const a = fee([{ date: '2026-01-20', amount: 400 }], { start: '2025-06-01', settledBefore: undefined, priceHistory: undefined });
+  assert.equal(trackingStart(a, TODAY), '2026-01-01');
+  const r = settleBills(a, TODAY);
+  assert.equal(r.credit.length, 0);
+  assert.equal(r.bills.find((b) => b.date === '2026-01-01')!.status, 'paid');
+  assert.equal(r.bills.find((b) => b.date === '2026-02-01')!.status, 'overdue');
+  assert.equal(sum(cashChargesBetween(a, '2026-01-01', '2026-01-31', TODAY)), 400);
+  assert.equal(netCost(ledger(a), a, TODAY, 'CNY').net, 8 * 400);
+  // R2：12-25 缴的是 12 月（推算期），不另记余额
+  const b = fee([{ date: '2025-12-25', amount: 400 }], { start: '2025-06-01', settledBefore: '2026-01-01', priceHistory: undefined });
+  assert.equal(settleBills(b, TODAY).credit.length, 0);
+  assert.equal(sum(cashChargesBetween(b, '2025-12-01', '2025-12-31', TODAY)), 400);
+  // 早缴的钱超过从它那期到追踪起点的推算期时，先补更早的推算期，再记余额
+  const c = fee([{ date: '2025-12-25', amount: 1200 }], { start: '2025-06-01', settledBefore: '2026-01-01', priceHistory: undefined });
+  const rc = settleBills(c, TODAY);
+  assert.equal(rc.credit.length, 0);
+  assert.deepEqual(
+    rc.bills.filter((x) => x.pieces.length).map((x) => x.date),
+    ['2025-10-01', '2025-11-01', '2025-12-01'],
+  );
+  assert.equal(netCost(ledger(c), c, TODAY, 'CNY').net, 7 * 400);
+});
+
+test('R2-C 追踪起点不随今天移动：没写 settledBefore 也没缴费时按建档日或第一期；整条写入时存下', () => {
+  const s = fee([], { start: '2025-06-01', settledBefore: undefined, priceHistory: undefined });
+  const overdue = (d: string) => overdueBills(s, d).map((c) => c.date);
+  assert.deepEqual(overdue('2026-02-15').slice(0, 1), ['2025-06-01']);
+  assert.deepEqual(overdue('2026-06-20').slice(0, 9), overdue('2026-02-15'));
+  const made = { ...s, createdAt: '2025-12-10' };
+  assert.equal(settleBills(made, '2026-06-20').track, '2025-12-01');
+  assert.equal(settleBills(made, '2026-09-20').track, '2025-12-01');
+  const w = prepareSubWrite(undefined, s, '2026-02-15', { subscriptions: [], methods: [], fx: FALLBACK_FX });
+  assert.ok(!w.error);
+  assert.equal(w.sub!.settledBefore, '2026-02-01');
+});
+
+test('R2-L1 指定账单与追踪起点不符时拒绝：追踪之后的缴费不能指定推算期，早缴的不能指定追踪之后的账单', () => {
+  assert.ok(subError(fee([{ date: '2026-01-05', amount: 500, periods: ['2025-03-01'] }])));
+  assert.ok(subError(fee([{ date: '2025-03-05', amount: 400, periods: ['2026-01-01'] }])));
+  assert.equal(subError(fee([{ date: '2025-03-05', amount: 500, periods: ['2025-03-01'] }])), undefined);
+});
+
+test('R2 最后一次扣款不算没缴的账单', () => {
+  const s = fee([{ date: '2026-01-05', amount: 400, periods: ['2026-01-01'] }], { settledBefore: '2026-01-01' });
+  assert.equal(lastCharge(s, TODAY), '2026-01-01');
+});
+
+test('R2 年度报告各数同一口径：全年合计＝已扣＋待扣＝月柱合计＝构成合计＝每日合计＝报告月柱（跨年合并缴、逾期、预缴）', () => {
+  const s = fee(
+    [
+      { date: '2026-01-10', amount: 800, periods: ['2025-12-01', '2026-01-01'] },
+      { date: '2026-02-10', amount: 800, periods: ['2026-03-01', '2026-04-01'] },
+    ],
+    { start: '2025-06-01', settledBefore: '2025-12-01', priceHistory: undefined },
+  );
+  const st = ledger(s);
+  const r = yearOutlook(st, TODAY);
+  const round = (n: number) => Math.round(n * 100) / 100;
+  // 2026：1 月已缴，2 月逾期待扣，3–4 月预缴（已扣），5–12 月待扣
+  assert.equal(r.current.paid, 400 + 800);
+  assert.equal(r.current.pending, 400 + 8 * 400);
+  assert.equal(r.current.total, 12 * 400);
+  assert.equal(round(r.months.reduce((a, m) => a + m.total, 0)), r.current.total);
+  assert.equal(round(spendPiecesBetween(st, '2026-01-01', '2026-12-31', TODAY).reduce((a, p) => a + p.amount, 0)), r.current.total);
+  assert.equal(round(yearDays(st, TODAY, 2026).reduce((a, d) => a + d.total, 0)), r.current.total);
+  const bars = cashVsAccrual(st, TODAY, 1, 10);
+  assert.equal(round(bars.reduce((a, m) => a + m.cash, 0)), r.current.total);
+  assert.deepEqual(
+    bars.map((m) => m.cash),
+    r.months.map((m) => m.total),
+  );
+  // 2025 年 12 月的账单 2026 年才缴，仍算 2025 年的已扣款
+  assert.equal(yearOutlook(st, TODAY, 2025).months[11].paid, 400);
 });

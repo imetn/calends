@@ -47,6 +47,8 @@ export interface ChargeRow {
   date: string;
   /** 分开记时账单日已到还没缴的部分：待扣款，不算已扣款（之后的账单与普通预测一样按日期算待扣款） */
   owed?: boolean;
+  /** 分开记时已预缴的未来账单：算已扣款 */
+  prepaid?: boolean;
   /** Base currency, my share; refunds are negative. */
   amount: number;
   original: Charge;
@@ -150,9 +152,11 @@ function rowTotal(rows: Array<{ amount: number; partial?: FxTotal }>): FxTotal {
 function cashMonth(rows: Array<{ date: string; amount: number; partial?: FxTotal }>, month: string, today: string): MonthCash {
   return { month, ...cashSpan(rows, today) };
 }
-function cashSpan(rows: Array<{ date: string; amount: number; partial?: FxTotal; owed?: boolean }>, today: string): CashSpan {
-  const paid = rows.filter((r) => !r.owed && r.date <= today);
-  const pending = rows.filter((r) => r.owed || r.date > today);
+function cashSpan(rows: Array<{ date: string; amount: number; partial?: FxTotal; owed?: boolean; prepaid?: boolean }>, today: string): CashSpan {
+  // 已扣款：今天及以前的，加上分开记时已预缴的未来账单；待扣款：没缴的（含逾期）与今天之后的预测
+  const done = (r: { date: string; owed?: boolean; prepaid?: boolean }) => !r.owed && (r.date <= today || !!r.prepaid);
+  const paid = rows.filter(done);
+  const pending = rows.filter((r) => !done(r));
   return {
     total: sum(rows),
     paid: sum(paid),
@@ -161,9 +165,9 @@ function cashSpan(rows: Array<{ date: string; amount: number; partial?: FxTotal;
   };
 }
 
-type CashRow = { sub: Subscription; date: string; amount: number; partial?: FxTotal; owed?: boolean };
+type CashRow = { sub: Subscription; date: string; amount: number; partial?: FxTotal; owed?: boolean; prepaid?: boolean };
 /** 净现金：扣款（我的份额、含退款）加转让收付；today 之后按当前计划预计。 */
-function cashRows(state: AppState, from: string, to: string, today: string, list = charges(state, from, to, today)): CashRow[] {
+function cashRows(state: AppState, from: string, to: string, today: string, list = charges(state, from, to, today, true)): CashRow[] {
   return [
     ...list,
     ...transferRows(state, from, to, today).map((r) => ({
@@ -184,6 +188,7 @@ function charges(state: AppState, from: string, to: string, today: string, withO
         .filter((c) => c.kind !== 'failed' && (withOwed || !c.unpaid || c.date > today))
         .map((c) => ({
           ...(c.unpaid && c.date <= today ? { owed: true } : {}),
+          ...(c.paidOn && c.date > today ? { prepaid: true } : {}),
           sub,
           date: c.date,
           amount: chargeValue(state, c) * myShareFactor(c.sub, c.date),
@@ -680,8 +685,8 @@ export function yearOutlook(state: AppState, today: string, year = Number(today.
   const monthAgo = `${Number(nextMonth.slice(0, 4)) - 1}${nextMonth.slice(4)}`;
   const versus = (rows: CashRow[], before: CashRow[]): Comparison | undefined =>
     !before.length ? undefined : rowTotal(rows).incomplete || rowTotal(before).incomplete ? { amount: NaN, percent: NaN } : compare(sum(rows), sum(before));
-  // 没缴的账单（含逾期）留在其账单月，算该年待扣款
-  const owedRows = (from: string, to: string) => cashRows(scoped, from, to, today, charges(scoped, from, to, today, true));
+  // 年度各数同一口径：没缴的账单（含逾期）留在其账单月，算该年待扣款（cashRows 默认带上）
+  const owedRows = (from: string, to: string) => cashRows(scoped, from, to, today);
   const yearRows = owedRows(`${y}-01-01`, `${y}-12-31`);
   const nextMonthRows = owedRows(`${nextMonth}-01`, monthEnd(nextMonth));
   const nextYearRows = owedRows(`${y + 1}-01-01`, `${y + 1}-12-31`);
@@ -771,7 +776,7 @@ export function yearDays(state: AppState, today: string, year: number): DayCash[
 export function allOutlook(state: AppState, today: string): AllOutlook {
   const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
   const first = scoped.subscriptions.reduce((m, s) => (s.start < m ? s.start : m), today);
-  const rows = cashRows(scoped, first, today, today);
+  const rows = cashRows(scoped, first, today, today, charges(scoped, first, today, today));
   const since = rows.reduce((m, r) => (r.date < m ? r.date : m), today);
   const months: MonthCash[] = [];
   for (let m = since.slice(0, 7); m <= today.slice(0, 7); m = addMonths(`${m}-01`, 1).slice(0, 7)) {
@@ -800,9 +805,10 @@ export function allOutlook(state: AppState, today: string): AllOutlook {
   };
 }
 
-/** Composition pieces for a date range on the yearOutlook basis (proxies excluded; dates after today are forecast). */
-export function spendPiecesBetween(state: AppState, from: string, to: string, today: string): SpendPiece[] {
-  return spendPieces(cashRows({ ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) }, from, to, today));
+/** Composition pieces for a date range on the yearOutlook basis (proxies excluded; dates after today are forecast; unpaid bills stay in their bill month unless owed is false). */
+export function spendPiecesBetween(state: AppState, from: string, to: string, today: string, owed = true): SpendPiece[] {
+  const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
+  return spendPieces(cashRows(scoped, from, to, today, charges(scoped, from, to, today, owed)));
 }
 
 function spendPieces(rows: CashRow[]): SpendPiece[] {

@@ -113,11 +113,14 @@ export function Report({
   const prevPieces = useMemo(
     () =>
       all
-        ? spendPiecesBetween(state, addDays(addMonths(today, -24), 1), addMonths(today, -12), today)
+        ? spendPiecesBetween(state, addDays(addMonths(today, -24), 1), addMonths(today, -12), today, false)
         : spendPiecesBetween(state, `${Number(pick) - 1}-01-01`, `${Number(pick) - 1}-12-31`, today),
     [all, pick, state, today],
   );
-  const recentPieces = useMemo(() => (all ? spendPiecesBetween(state, addDays(addMonths(today, -12), 1), today, today) : pieces), [all, pieces, state, today]);
+  const recentPieces = useMemo(
+    () => (all ? spendPiecesBetween(state, addDays(addMonths(today, -12), 1), today, today, false) : pieces),
+    [all, pieces, state, today],
+  );
   const year = all ? cur : Number(pick);
   const now = !all && year === cur;
   const future = !all && year > cur;
