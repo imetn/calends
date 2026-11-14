@@ -519,9 +519,10 @@ test('R2-C 追踪起点不随今天移动：没写 settledBefore 也没缴费时
   assert.equal(w.sub!.settledBefore, '2026-02-01');
 });
 
-test('R2-L1 指定账单与追踪起点不符时拒绝：追踪之后的缴费不能指定推算期，早缴的不能指定追踪之后的账单', () => {
+test('R2-L1 追踪之后的缴费指定推算期时拒绝，不静默丢弃', () => {
   assert.ok(subError(fee([{ date: '2026-01-05', amount: 500, periods: ['2025-03-01'] }])));
-  assert.ok(subError(fee([{ date: '2025-03-05', amount: 400, periods: ['2026-01-01'] }])));
+  // 早缴可以预缴追踪起点及之后的账单（见 R3-N1）
+  assert.equal(subError(fee([{ date: '2025-03-05', amount: 400, periods: ['2026-01-01'] }])), undefined);
   assert.equal(subError(fee([{ date: '2025-03-05', amount: 500, periods: ['2025-03-01'] }])), undefined);
 });
 
@@ -556,4 +557,47 @@ test('R2 年度报告各数同一口径：全年合计＝已扣＋待扣＝月�
   );
   // 2025 年 12 月的账单 2026 年才缴，仍算 2025 年的已扣款
   assert.equal(yearOutlook(st, TODAY, 2025).months[11].paid, 400);
+});
+
+test('R3-N1 早于追踪起点的缴费可以预缴追踪起点那期：不重复计入，与窗口无关', () => {
+  const s = fee([{ date: '2026-01-25', amount: 400, periods: ['2026-02-01'] }], { start: '2025-06-01', settledBefore: '2026-02-01', priceHistory: undefined });
+  assert.equal(subError(s), undefined);
+  for (const to of ['2026-01-31', TODAY, '2026-12-31']) {
+    const r = settleBills(s, TODAY, to);
+    assert.equal(r.credit.length, 0);
+    assert.deepEqual(
+      r.bills
+        .filter((b) => b.date >= '2026-01-01')
+        .slice(0, 2)
+        .map((b) => [b.date, b.status, b.paid]),
+      [
+        ['2026-01-01', 'inferred', 0],
+        ['2026-02-01', 'paid', 400],
+      ],
+    );
+  }
+  assert.deepEqual(overdueBills(s, TODAY), []);
+  assert.equal(sum(cashChargesBetween(s, '2026-01-01', '2026-02-28', TODAY)), 800);
+  assert.equal(netCost(ledger(s), s, TODAY, 'CNY').net, 9 * 400);
+});
+
+test('R3-N1 P1 新建时第一笔是预缴并指定下一期：能写入，追踪起点取缴费当期与指定期中较早的', () => {
+  const s = fee([{ date: '2026-01-25', amount: 400, periods: ['2026-02-01'] }], { start: '2025-06-01', settledBefore: undefined, priceHistory: undefined });
+  assert.equal(trackingStart(s, TODAY), '2026-01-01');
+  const w = prepareSubWrite(undefined, s, TODAY, { subscriptions: [], methods: [], fx: FALLBACK_FX });
+  assert.ok(!w.error);
+  assert.equal(w.sub!.settledBefore, '2026-01-01');
+  assert.equal(settleBills(w.sub!, TODAY).bills.find((b) => b.date === '2026-02-01')!.status, 'paid');
+});
+
+test('R3-N2 旧记录保存时存下读取时的追踪起点，改名不改变欠款', () => {
+  const old = fee([], { start: '2025-06-01', settledBefore: undefined, priceHistory: undefined, createdAt: '2025-10-05' });
+  const before = overdueBills(old, TODAY).map((c) => c.date);
+  const w = prepareSubWrite(old, { ...old, name: 'Renamed' }, TODAY, { subscriptions: [old], methods: [], fx: FALLBACK_FX });
+  assert.ok(!w.error);
+  assert.equal(w.sub!.settledBefore, '2025-10-01');
+  assert.deepEqual(
+    overdueBills(w.sub!, TODAY).map((c) => c.date),
+    before,
+  );
 });

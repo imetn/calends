@@ -223,7 +223,7 @@ export function subError(s: Subscription): string | undefined {
 
 /**
  * 分开记的缴费指定的账单日必须是这个阶段真实存在的账单（账单日或服务日），不静默改成按先后抵扣；
- * 追踪起点之后的缴费不能指定推算期，早于追踪起点的缴费只能指定推算期（否则这部分会被丢掉）。
+ * 追踪起点及之后的缴费不能指定推算期（否则这部分会被丢掉）；早于追踪起点的缴费可以指定推算期，也可以预缴追踪起点及之后的账单。
  */
 function periodsError(v: Subscription): string | undefined {
   const asked = (v.payments ?? []).flatMap((p) => p.periods ?? []);
@@ -234,7 +234,7 @@ function periodsError(v: Subscription): string | undefined {
   const ok = (v.payments ?? []).every((p) =>
     (p.periods ?? []).every((d) => {
       const b = known.get(d);
-      return !!b && (b.status === 'inferred') === p.date < track;
+      return !!b && (p.date < track || b.status !== 'inferred');
     }),
   );
   return ok ? undefined : t('mcp.error.invalidInput', { field: 'periods' });
@@ -843,22 +843,23 @@ function billOnOrBefore(v: Subscription, at: string): string {
 
 /**
  * 分开记的追踪起点（编辑器打开开关、整条写入时按整条订阅算一次写进 settledBefore）：最早一笔普通缴费指定的最早账单；
- * 没指定时是那笔缴费日当天或之前的那期；还没有缴费时是今天当天或之前的那期。
+ * 与那笔缴费日当天或之前的那期取较早的；没指定时就是那期；还没有缴费时是今天当天或之前的那期。
  */
 export function trackingStart(s: Subscription, today: string): string {
   const first = phaseSubs(s)
     .flatMap((v) => (v.payments ?? []).filter((p) => !p.kind).map((p) => ({ v, p })))
     .sort((a, b) => a.p.date.localeCompare(b.p.date))[0];
-  if (first?.p.periods?.length) return [...first.p.periods].sort()[0];
-  if (first) return billOnOrBefore(first.v, first.p.date);
-  return billOnOrBefore(currentPhase(s, today), today);
+  if (!first) return billOnOrBefore(currentPhase(s, today), today);
+  const on = billOnOrBefore(first.v, first.p.date);
+  // 指定了账单时取缴费当期与最早指定期中较早的：补缴旧账从那期起追踪，预缴下一期时缴费当期也在追踪内
+  return first.p.periods?.length ? [on, ...first.p.periods].sort()[0] : on;
 }
 
 /**
  * 读取时的追踪起点：settledBefore；旧数据没写时有缴费按缴费推（与日期无关），
  * 没有缴费时按建档日推，没有建档日就从第一期起追踪，不随今天移动（否则逾期会随时间悄悄变成已缴）。
  */
-function trackOf(s: Subscription): string {
+export function trackOf(s: Subscription): string {
   if (s.settledBefore) return s.settledBefore;
   if (phaseSubs(s).some((v) => (v.payments ?? []).some((p) => !p.kind))) return trackingStart(s, s.start);
   return s.createdAt ? trackingStart(s, s.createdAt) : billOnOrBefore(s, s.start);
@@ -917,13 +918,13 @@ export function settleBills(s: Subscription, today: string, until = today): Sett
   };
   const left = (b: Bill) => cents(b.due - b.paid);
   const inferred = (b: Bill) => b.status === 'inferred';
-  // 先分指定了账单的：按各期未缴金额的比例，最后一期拿零头；早于追踪起点的缴费只能指定推算期
+  // 先分指定了账单的：按各期未缴金额的比例，最后一期拿零头；写入时 periodsError 已拦住追踪之后指定推算期的，读取时照指定分配不丢钱
   for (const p of pays) {
     let amount = Math.max(0, p.amount);
     const targets = [...new Set((p.periods ?? []).map((k) => keyOf.get(k)).filter((i): i is number => i != null))]
       .sort((a, b) => a - b)
       .map((i) => bills[i])
-      .filter((b) => (!early(p) || inferred(b)) && left(b) > 0);
+      .filter((b) => left(b) > 0);
     const owed = targets.reduce((a, b) => a + left(b), 0);
     if (owed > 0) {
       const use = Math.min(amount, owed);

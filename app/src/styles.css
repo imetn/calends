@@ -5887,9 +5887,12 @@ a.car-toggle {
   color: var(--label);
   font-size: var(--fs-2);
   font-variant-numeric: tabular-nums;
+}
+/* 只有能点的行（按钮）才有手形与悬停底色；不能点的行（div）是普通行 */
+button.ld-row {
   cursor: pointer;
 }
-.ld-row:hover:not(:disabled):not(.ld-th) {
+button.ld-row:hover:not(:disabled):not(.ld-th) {
   background: var(--fill-2);
 }
 .ld-row:disabled {
