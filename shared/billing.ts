@@ -833,7 +833,14 @@ export interface Settlement {
 const cents = (n: number) => Math.round(n * 100) / 100;
 
 /** 不看缴费的账单：分开记的账单只由周期、价格历史与停止、暂停、试用等规则决定 */
-const billsOnly = (s: Subscription): Subscription => ({ ...s, payments: undefined, nextDue: undefined, settlement: undefined, settledBefore: undefined });
+const billsOnly = (s: Subscription): Subscription => ({
+  ...s,
+  payments: undefined,
+  nextDue: undefined,
+  estimateFrom: undefined,
+  settlement: undefined,
+  settledBefore: undefined,
+});
 
 /** at 当天或之前最近的一期账单日（缴费日当天或之前的那期才是这笔缴的）；at 之前没有账单时取之后最早的一期，都没有时为开始日 */
 function billOnOrBefore(v: Subscription, at: string): string {
