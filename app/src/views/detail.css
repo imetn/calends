@@ -1438,3 +1438,8 @@
   width: 22px !important;
   height: 22px !important;
 }
+/* 分开记的缴费结清哪几期：固定在金额下一行、右对齐，不和金额抢同一行 */
+.dt-ledger .dt-settles {
+  flex-basis: 100%;
+  text-align: right;
+}

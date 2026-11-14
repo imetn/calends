@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
 import { chargeDay, chargeServicePeriod, isPostpaid, phaseSubs, type Charge } from '../../../../shared/billing.ts';
 import { meterDecimals, meterRows, meterView } from '../../../../shared/meters.ts';
 import { chargesUsage, chargeUsage, fixedQty, periodLabel, withUnit } from './ChargeTip.tsx';
-import { flow, cnDateAuto, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
+import { flow, cnDate, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
 import { transfersOf, transferSign, transferValue } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
@@ -70,6 +70,12 @@ export function Transfers({ sub, state, onRow, onAdd }: { sub: Subscription; sta
       />
     </Panel>
   );
+}
+
+/** 一笔缴费结清的账单：首期 – 末期；与缴费同年的省略年份 */
+export function settlesLabel(settles: string[], paid: string) {
+  const day = (d: string) => (d.slice(0, 4) === paid.slice(0, 4) ? cnDate(d) : cnDateFull(d));
+  return settles.length > 1 ? `${day(settles[0])} – ${day(settles[settles.length - 1])}` : day(settles[0]);
 }
 
 /** 扣款记录：按年分组（组头带合计），日期 · 原币 · 折合本位币；点一行改这笔 */
@@ -183,14 +189,8 @@ export function Charges({
                 {orig(-c.amount, c.currency)}
                 {c.kind && <em className={`dt-kind ${c.kind}`}>{t(`detail.charges.kind.${c.kind}`)}</em>}
                 {multi && c.sub.region && !c.kind && <em className="dt-kind">{c.sub.region}</em>}
-                {/* 账单与缴费分开记：这笔缴的是哪几期账单（首期 – 末期），逐期写在悬停提示里 */}
-                {!!c.settles?.length && (
-                  <em className="dt-kind">
-                    {c.settles.length > 1
-                      ? `${cnDateAuto(c.settles[0], today)} – ${cnDateAuto(c.settles[c.settles.length - 1], today)}`
-                      : cnDateAuto(c.settles[0], today)}
-                  </em>
-                )}
+                {/* 账单与缴费分开记：这笔缴的是哪几期账单（首期 – 末期），固定在金额下一行；逐期写在悬停提示里 */}
+                {!!c.settles?.length && <small className="dt-settles">{settlesLabel(c.settles, c.date)}</small>}
               </>
             ),
             base: Number.isFinite(b) ? cost(-b) : '—',

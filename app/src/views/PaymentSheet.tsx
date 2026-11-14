@@ -329,8 +329,13 @@ export function PaymentSheet({
                   <input type="checkbox" checked={keys.includes(b.date)} onChange={() => togglePeriod(b.date)} />
                   <span className="rv-period-l">
                     <span>{cnDateAuto(b.date, today)}</span>
-                    <small className={!piece && b.status === 'overdue' ? 'due' : undefined}>
-                      {t(piece > 0.004 ? (full ? 'detail.settlement.this' : 'detail.settlement.partial') : `detail.settlement.${b.status}`)}
+                    {/* 本笔抵扣的逾期期仍写逾期：状态与分配同时可见 */}
+                    <small className={b.status === 'overdue' ? 'due' : undefined}>
+                      {piece > 0.004
+                        ? [b.status === 'overdue' && t('detail.settlement.overdue'), t(full ? 'detail.settlement.this' : 'detail.settlement.partial')]
+                            .filter(Boolean)
+                            .join(' ')
+                        : t(`detail.settlement.${b.status}`)}
                     </small>
                   </span>
                   <span className="num rv-period-r">{money(piece > 0.004 ? piece : owed, ccy)}</span>

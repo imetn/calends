@@ -20,6 +20,7 @@ import {
   relDays,
   money,
   cnDateAuto,
+  cnDate,
   cnDateFull,
   wholeCurrencies,
   wholeOpts,
@@ -726,13 +727,18 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
 test('detail timeline forecasts only the next charge, for monthly and yearly plans alike', () => {
   const file = '../app/src/views/detail/ChargeTimeline.tsx';
   const url = new URL(file, import.meta.url);
-  const timelineAxis = load(file, 'timelineAxis', `${extractUiFunction(url, 'barDay')}\n${extractUiFunction(url, 'timelineAxis')}`, {
-    ...billing,
-    detailForecast,
-    detailHistoryEnd,
-    regular: (h: billing.Charge[]) => h.filter((c) => !c.kind && c.amount > 0),
-    t: (k: string) => k,
-  });
+  const timelineAxis = load(
+    file,
+    'timelineAxis',
+    `${extractUiFunction(url, 'barDay')}\n${extractUiFunction(url, 'separateBars')}\n${extractUiFunction(url, 'timelineAxis')}`,
+    {
+      ...billing,
+      detailForecast,
+      detailHistoryEnd,
+      regular: (h: billing.Charge[]) => h.filter((c) => !c.kind && c.amount > 0),
+      t: (k: string) => k,
+    },
+  );
   const today = '2026-11-02';
   const base: Subscription = {
     id: 'f',
@@ -751,6 +757,109 @@ test('detail timeline forecasts only the next charge, for monthly and yearly pla
     assert.equal(ax.future.length, 1, sub.cycle.unit);
     assert.equal(ax.future[0].date, detailForecast(sub, today).charges[0].date);
   }
+});
+
+test('分开记的费用走势一期一根柱：预缴的未来账单画实柱，部分已缴的那期同柱带上未缴部分', () => {
+  const file = '../app/src/views/detail/ChargeTimeline.tsx';
+  const url = new URL(file, import.meta.url);
+  const timelineAxis = load(
+    file,
+    'timelineAxis',
+    `${extractUiFunction(url, 'barDay')}\n${extractUiFunction(url, 'separateBars')}\n${extractUiFunction(url, 'timelineAxis')}`,
+    {
+      ...billing,
+      detailForecast,
+      detailHistoryEnd,
+      regular: (h: billing.Charge[]) => h.filter((c) => !c.kind && c.amount > 0),
+      t: (k: string) => k,
+    },
+  );
+  const today = '2026-11-14';
+  const base: Subscription = {
+    id: 'sep',
+    name: 'Fictional fee',
+    category: 'tools',
+    tags: [],
+    price: 50,
+    currency: 'CNY',
+    start: '2026-06-01',
+    cycle: { unit: 'month', every: 1 },
+    status: 'active',
+    settlement: 'separate',
+    settledBefore: '2026-06-01',
+  };
+  // 预缴到 2027-02：12/1/2 月三期是实柱，下一期预测是 3 月
+  const ahead = {
+    ...base,
+    payments: [
+      { date: '2026-06-01', amount: 300 },
+      { date: '2026-11-10', amount: 150 },
+    ],
+  };
+  const ax = timelineAxis(ahead, today, billing.cashChargesBetween(ahead, ahead.start, today, today));
+  assert.deepEqual(
+    ax.past.filter((c: billing.Charge) => c.date > today).map((c: billing.Charge) => c.date),
+    ['2026-12-01', '2027-01-01', '2027-02-01'],
+  );
+  assert.equal(ax.past.length, 9);
+  assert.deepEqual(ax.owed, []);
+  assert.deepEqual(
+    ax.future.map((c: billing.Charge) => c.date),
+    ['2027-03-01'],
+  );
+  // 6 月账单 200 只缴了 100：同一根柱，已缴 100，余下 100 逾期；之后没缴的各期是虚线
+  const part = { ...base, price: 200, payments: [{ date: '2026-06-03', amount: 100 }] };
+  const bx = timelineAxis(part, today, billing.cashChargesBetween(part, part.start, today, today));
+  assert.deepEqual(
+    bx.past.map((c: billing.Charge) => [c.date, c.amount]),
+    [['2026-06-01', 100]],
+  );
+  const rest = bx.remainder.get(bx.past[0]);
+  assert.equal(rest.amount, 100);
+  assert.equal(rest.unpaid, 'overdue');
+  assert.deepEqual(
+    bx.owed.map((c: billing.Charge) => c.date),
+    ['2026-07-01', '2026-08-01', '2026-09-01', '2026-10-01', '2026-11-01'],
+  );
+});
+
+test('分开记的每月涨跌比账单单价：首期与当前一期，缴费多少不影响', () => {
+  const file = '../app/src/views/detail/Kpis.tsx';
+  const billPrices = load(file, 'billPrices', extractUiFunction(new URL(file, import.meta.url), 'billPrices'), { chargesBetween: billing.chargesBetween });
+  const sub: Subscription = {
+    id: 'a',
+    name: 'Fictional fee',
+    category: 'home',
+    tags: [],
+    price: 150,
+    currency: 'CNY',
+    start: '2026-01-01',
+    cycle: { unit: 'month', every: 1 },
+    status: 'active',
+    settlement: 'separate',
+    settledBefore: '2026-01-01',
+    priceHistory: [
+      { from: '2026-01-01', amount: 120 },
+      { from: '2026-06-01', amount: 150 },
+    ],
+    payments: [
+      { date: '2026-01-05', amount: 60 },
+      { date: '2026-09-18', amount: 750 },
+    ],
+  };
+  const bills = billPrices(sub, '2026-11-14');
+  assert.equal(bills.length, 11);
+  assert.equal(bills[0].amount, 120);
+  assert.equal(bills.at(-1).amount, 150);
+});
+
+test('扣款记录里结清哪几期：与缴费同年省略年份，跨年的写全', () => {
+  setLocale('zh-CN', []);
+  const file = '../app/src/views/detail/Ledgers.tsx';
+  const settlesLabel = load(file, 'settlesLabel', extractUiFunction(new URL(file, import.meta.url), 'settlesLabel'), { cnDate, cnDateFull });
+  assert.equal(settlesLabel(['2025-09-01', '2025-10-01', '2025-12-01'], '2025-12-10'), '9月1日 – 12月1日');
+  assert.equal(settlesLabel(['2026-04-01'], '2026-06-05'), '4月1日');
+  assert.equal(settlesLabel(['2025-12-01', '2026-01-01'], '2026-01-20'), '2025年12月1日 – 1月1日');
 });
 
 test('同一条用量落在并行两段的服务期里只算一次，服务期没记完不写平均单价', () => {

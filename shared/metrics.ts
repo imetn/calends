@@ -15,6 +15,8 @@ import {
   diffDays,
   effectiveStatus,
   isGap,
+  isSeparate,
+  overdueBills,
   myShareFactor,
   monthlyGross,
   nextCharge,
@@ -327,6 +329,13 @@ export function cashVsAccrual(state: AppState, today: string, back: number, fwd:
     r.cash += chargeValue(state, c) * myShareFactor(c.sub, c.date);
     r.partial.cash = sumTotals([r.partial.cash, scaleTotal(chargeTotal(state, c), myShareFactor(c.sub, c.date))]);
   }
+  // 分开记时还欠着的账单：钱还没付，和报告头部一样算进今天所在月的待扣
+  const now = rows.get(today.slice(0, 7));
+  if (now)
+    for (const c of subs.flatMap((s) => overdueBills(s, today))) {
+      now.cash += chargeValue(state, c) * myShareFactor(c.sub, c.date);
+      now.partial.cash = sumTotals([now.partial.cash, scaleTotal(chargeTotal(state, c), myShareFactor(c.sub, c.date))]);
+    }
   // 权责按账单所属期间摊开
   for (const c of subs.flatMap((s) => chargesBetween(s, addMonths(first, -24), last, today))) {
     const v = chargeValue(state, c) * myShareFactor(c.sub, c.date);
@@ -459,11 +468,24 @@ export function prepaidValue(
       if (!last) continue;
       const [a, b] = coverage(last);
       const end = p.end && addDays(p.end, 1) < b ? addDays(p.end, 1) : b;
-      if (end <= today) continue;
-      const factor = myShareFactor(p, today) * (diffDays(today, end) / Math.max(1, diffDays(a, b)));
-      value += chargeValue(state, last) * factor;
-      partial = sumTotals([partial, scaleTotal(chargeTotal(state, last), factor)]);
-      if (end > until) until = end;
+      // 分开记时预缴的未来账单整期都是余值；没缴的账单不算
+      const ahead = isSeparate(p)
+        ? chargesBetween(p, addDays(today, 1), addMonths(today, 120), today).filter((c) => !c.kind && !c.unpaid && c.paidOn && (!p.end || c.date <= p.end))
+        : [];
+      if (end <= today && !ahead.length) continue;
+      if (end > today) {
+        const factor = myShareFactor(p, today) * (diffDays(today, end) / Math.max(1, diffDays(a, b)));
+        value += chargeValue(state, last) * factor;
+        partial = sumTotals([partial, scaleTotal(chargeTotal(state, last), factor)]);
+        if (end > until) until = end;
+      }
+      for (const c of ahead) {
+        const share = myShareFactor(p, c.date);
+        value += chargeValue(state, c) * share;
+        partial = sumTotals([partial, scaleTotal(chargeTotal(state, c), share)]);
+        const e = coverage(c)[1];
+        if (e > until) until = e;
+      }
     }
     if (value > 0.01 || partial.incomplete) items.push({ sub: s, value, until, partial });
   }
