@@ -851,8 +851,8 @@ export function trackingStart(s: Subscription, today: string): string {
     .sort((a, b) => a.p.date.localeCompare(b.p.date))[0];
   if (!first) return billOnOrBefore(currentPhase(s, today), today);
   const on = billOnOrBefore(first.v, first.p.date);
-  // 指定了账单时取缴费当期与最早指定期中较早的：补缴旧账从那期起追踪，预缴下一期时缴费当期也在追踪内
-  return first.p.periods?.length ? [on, ...first.p.periods].sort()[0] : on;
+  // 指定了账单时从最早指定期起追踪：补缴旧账从那期起，预缴下一期时缴费当期仍按推算（已缴），不凭空变成逾期
+  return first.p.periods?.length ? [...first.p.periods].sort()[0] : on;
 }
 
 /**

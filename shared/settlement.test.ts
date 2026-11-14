@@ -581,13 +581,19 @@ test('R3-N1 早于追踪起点的缴费可以预缴追踪起点那期：不重�
   assert.equal(netCost(ledger(s), s, TODAY, 'CNY').net, 9 * 400);
 });
 
-test('R3-N1 P1 新建时第一笔是预缴并指定下一期：能写入，追踪起点取缴费当期与指定期中较早的', () => {
+test('R3-N1 P1 新建时第一笔是预缴并指定下一期：能写入，从指定期起追踪，缴费当期不变成逾期', () => {
   const s = fee([{ date: '2026-01-25', amount: 400, periods: ['2026-02-01'] }], { start: '2025-06-01', settledBefore: undefined, priceHistory: undefined });
-  assert.equal(trackingStart(s, TODAY), '2026-01-01');
+  assert.equal(trackingStart(s, TODAY), '2026-02-01');
   const w = prepareSubWrite(undefined, s, TODAY, { subscriptions: [], methods: [], fx: FALLBACK_FX });
   assert.ok(!w.error);
-  assert.equal(w.sub!.settledBefore, '2026-01-01');
-  assert.equal(settleBills(w.sub!, TODAY).bills.find((b) => b.date === '2026-02-01')!.status, 'paid');
+  assert.equal(w.sub!.settledBefore, '2026-02-01');
+  const bills = settleBills(w.sub!, TODAY).bills;
+  assert.equal(bills.find((b) => b.date === '2026-01-01')!.status, 'inferred');
+  assert.equal(bills.find((b) => b.date === '2026-02-01')!.status, 'paid');
+  // 补缴旧账：从指定的旧账单起追踪，之后没缴的逾期
+  const back = fee([{ date: '2026-01-25', amount: 400, periods: ['2025-12-01'] }], { start: '2025-06-01', settledBefore: undefined, priceHistory: undefined });
+  assert.equal(trackingStart(back, TODAY), '2025-12-01');
+  assert.equal(overdueBills(back, TODAY)[0]?.date, '2026-01-01');
 });
 
 test('R3-N2 旧记录保存时存下读取时的追踪起点，改名不改变欠款', () => {
