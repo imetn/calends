@@ -4,10 +4,10 @@ import { MemberSheet } from '../Members.tsx';
 import { isDataIcon } from '../../../../shared/icon.ts';
 
 import { StopFields } from '../../components/StopPanel.tsx';
-import { addDays, addMonths, billingPeriod, nextCharge, nthCharge, pauseDay } from '../../../../shared/billing.ts';
+import { addDays, addMonths, nextCharge, nthCharge, pauseDay, trackingStart } from '../../../../shared/billing.ts';
 import { cnDateFull, flow, money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
-import { REMIND_DAYS, type Cycle, type SubStatus, type Subscription } from '../../../../shared/types.ts';
+import { REMIND_DAYS, type Cycle, type SubStatus } from '../../../../shared/types.ts';
 import { DatePicker } from '../../components/DatePicker.tsx';
 import { CatIcon } from '../../components/marks.tsx';
 import { Cell, Group } from '../../components/ui.tsx';
@@ -112,11 +112,18 @@ export function BillingFields({ context }: { context: ReturnType<typeof useEdito
           <Toggle
             checked={f.settlement === 'separate'}
             onChange={(v) =>
-              up({
-                settlement: v ? 'separate' : undefined,
-                // 打开时从这里开始追踪：最早一笔实付所在的账期（没有实付时是本期），之前的账单视为已缴。有阶段时各段锚点不同，不动
-                ...(v && !f.billingStart && !f.phases?.length ? { billingStart: trackingStart(f, today) } : {}),
-              })
+              up(
+                v
+                  ? // 打开时记下追踪起点（最早一笔缴费对应的账单，没有缴费时是离今天最近的一期），之前的账单视为已缴；不动账单锚点
+                    { settlement: 'separate', settledBefore: f.settledBefore ?? trackingStart(f, today) }
+                  : // 关掉时不留痕：追踪起点与各笔缴费指定的账单一并清掉
+                    {
+                      settlement: undefined,
+                      settledBefore: undefined,
+                      payments: f.payments?.map(({ periods: _, ...p }) => p),
+                      ...(f.phases ? { phases: f.phases.map((ph) => ({ ...ph, payments: ph.payments?.map(({ periods: _, ...p }) => p) })) } : {}),
+                    },
+              )
             }
           />
         </Cell>
@@ -529,11 +536,4 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
       </>
     )
   );
-}
-
-/** 分开记的追踪起点：最早一笔实付所在的账期起始日；没有实付时为今天所在的账期 */
-function trackingStart(f: Subscription, today: string): string {
-  const first = (f.payments ?? []).filter((p) => !p.kind).reduce((m, p) => (!m || p.date < m ? p.date : m), '');
-  const at = first || today;
-  return billingPeriod({ ...f, settlement: undefined, payments: undefined, nextDue: undefined }, at < f.start ? f.start : at).from;
 }

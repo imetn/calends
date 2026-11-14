@@ -42,7 +42,8 @@ export function ganttOpenEnd(v: Subscription, today: string): string {
 export function ganttPaidUntil(v: Subscription, from: string, today: string): string {
   if (from > today) return from;
   const last = chargesBetween(v, from, today, today)
-    .filter((c) => !c.kind && c.amount > 0)
+    // 分开记时没缴的账单不算已付到
+    .filter((c) => !c.kind && !c.unpaid && c.amount > 0)
     .at(-1);
   if (!last) return isPostpaid(v) && v.price > 0 ? from : today;
   return chargeServicePeriod(v, last.date, last.serviceDate).until;

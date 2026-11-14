@@ -303,6 +303,8 @@ export interface Subscription extends RenewalRules {
   billing?: 'postpaid';
   /** 账单与缴费分开记：账单按周期生成，缴费单独记并分配到各期（合并、拆分、逾期、预缴）；缺省为出账即扣款 */
   settlement?: 'separate';
+  /** 分开记时开始追踪的账单日：此前的账单视为已缴；缺省按最早一笔缴费推算 */
+  settledBefore?: string;
   start: string;
   /** Import boundary: do not infer older charges without actual payment records. */
   estimateFrom?: string;

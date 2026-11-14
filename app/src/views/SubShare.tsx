@@ -36,7 +36,7 @@ const STYLES = (): Array<[Style, string]> => [
 /** 一个订阅的完整故事：花了多少、订了多久、换过几次、每年多少 */
 function story(state: AppState, sub: Subscription, today: string) {
   const base = state.settings.baseCurrency;
-  const charges = chargesBetween(sub, sub.start, today, today).filter((c) => c.kind !== 'failed');
+  const charges = chargesBetween(sub, sub.start, today, today).filter((c) => c.kind !== 'failed' && !c.unpaid);
   // 图形（柱高）用缺汇率按 0 的值；显示的合计与年度金额缺汇率时为 NaN，显示「—」
   const values = charges.map((c) => chargeValue(state, c));
   const total = charges.reduce((a, c) => a + chargeBaseOrNaN(state, c), 0);

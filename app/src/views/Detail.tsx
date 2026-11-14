@@ -106,7 +106,8 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   // 显示今天生效的那一段（换区前仍是旧区的价格与支付方式），未来的变更单独列出
   const cur = currentPhase(sub, today);
   // 账单（权责）：走势图、用量按账单日期；扣款记录与指标按实际付款。账单与缴费分开记时两者不同，其余订阅是同一份
-  const history = chargesBetween(sub, sub.start, today, today);
+  // 逾期未缴的部分由走势图另行画成虚线（overdueBills），这里不重复
+  const history = chargesBetween(sub, sub.start, today, today).filter((c) => c.unpaid !== 'overdue');
   const separate = phaseSubs(sub).some(isSeparate);
   const paid = separate ? cashChargesBetween(sub, sub.start, today, today) : history;
   const [pay, setPay] = useState<{ pay?: Payment; index?: number; phase?: string } | null>(null);

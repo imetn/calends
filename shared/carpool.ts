@@ -119,9 +119,11 @@ export function carLedger(state: AppState, s: Subscription, today: string) {
   // 发起日：没填就依次用第一笔收款、最早加入的成员、订阅开始日，「发起至今」总能算出来
   const firstJoin = members.map((m) => m.joined).reduce<string | undefined>((a, d) => (d && (!a || d < a) ? d : a), undefined);
   const since = s.share?.since ?? firstPay ?? firstJoin ?? s.start;
-  const paid = chargesBetween(s, since, today, today).reduce((a, c) => a + chargeBaseOrNaN(state, c), 0);
+  // 分开记时未缴（待缴、逾期）的账单不算已付
+  const outs = chargesBetween(s, since, today, today).filter((c) => !c.unpaid);
+  const paid = outs.reduce((a, c) => a + chargeBaseOrNaN(state, c), 0);
   const received = members.flatMap(memberCashFlows).reduce((a, p) => a + memberFlowValue(state, p), 0);
-  const paidTotal = chargesTotal(state, chargesBetween(s, since, today, today));
+  const paidTotal = chargesTotal(state, outs);
   const receivedTotal = sumTotals(members.flatMap(memberCashFlows).map((p) => convertedTotal(state, p.amount, p.currency, p.date)));
   const yearCostTotal = convertedTotal(state, monthlyGross(cur, today) * 12, cur.currency);
   const yearRefundTotal = sumTotals(

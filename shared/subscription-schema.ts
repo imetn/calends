@@ -143,7 +143,11 @@ const full = {
     type: 'string',
     enum: ['separate'],
     description:
-      'Bills and payments recorded separately (e.g. property fees paid late, merged or in advance): bills follow the cycle; each payment settles bills in its periods, the rest goes to the oldest unpaid. Omit for ordinary charges. billingStart marks the first bill tracked; earlier bills count as paid.',
+      'Bills and payments recorded separately (e.g. property fees paid late, merged or in advance): bills follow the cycle; each payment settles bills in its periods, the rest goes to the oldest unpaid. Omit for ordinary charges.',
+  },
+  settledBefore: {
+    ...day,
+    description: 'Only when settlement=separate: first bill tracked; earlier bills count as paid. Omit to start from the bill nearest the first payment.',
   },
   trialEnd: { ...day, description: 'First paid day after the free trial.' },
   pausedAt: day,

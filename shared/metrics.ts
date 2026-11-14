@@ -452,7 +452,9 @@ export function prepaidValue(
     for (const p of phaseSubs(s)) {
       if (p.stop && p.stop.date <= today) continue;
       if (p.cycle.unit === 'lifetime' || p.start > today) continue;
-      const past = chargesBetween(p, addMonths(today, -12 * Math.max(1, p.cycle.unit === 'year' ? p.cycle.every : 1) - 1), today, today).filter((c) => !c.kind);
+      const past = chargesBetween(p, addMonths(today, -12 * Math.max(1, p.cycle.unit === 'year' ? p.cycle.every : 1) - 1), today, today).filter(
+        (c) => !c.kind && !c.unpaid,
+      );
       const last = past[past.length - 1];
       if (!last) continue;
       const [a, b] = coverage(last);

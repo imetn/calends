@@ -162,23 +162,23 @@ export function Timeline({
   const ccy = unit === 'orig' && origCcy ? origCcy : base;
   // 平均线：与用量图一样按全部实际记录算，只画在已发生的柱上；缺汇率的不算进去，不能当 0
   const average = averageLine(reg.map((c) => (ccy === base ? chargeBaseOrNaN(state, c, base) : c.amount)));
-  const each = [...past.map((c) => ({ c, future: false })), ...owed.map((c) => ({ c, future: true })), ...future.map((c) => ({ c, future: true }))]
-    .sort((a, b) => a.c.date.localeCompare(b.c.date))
-    .map((r) => {
-      // 缺汇率的是 NaN：图表画占位短柱，也不算进汇总后的平均线
-      const v = ccy === base ? chargeBaseOrNaN(state, r.c, base) : r.c.amount;
-      // 首期优惠：这一笔按优惠价扣，原价减去的部分在柱顶画成斜纹（按这一笔同样的折算比例）
-      const regularPrice = r.c.sub.intro && r.c.date < r.c.sub.intro.until && !r.c.kind ? priceAt({ ...r.c.sub, intro: undefined }, r.c.date) : undefined;
-      const full = regularPrice && r.c.amount > 0 && regularPrice > r.c.amount ? (v * regularPrice) / r.c.amount : undefined;
-      return {
-        ...r,
-        date: barDay(r.c, today),
-        phase: r.c.sub.start,
-        v,
-        ref: r.future ? undefined : average,
-        full: full != null && Number.isFinite(full) ? full : undefined,
-      };
-    });
+  const ordered = [...past.map((c) => ({ c, future: false })), ...owed.map((c) => ({ c, future: true })), ...future.map((c) => ({ c, future: true }))];
+  // 只有插进了逾期账单时才需要重排；其余订阅保持原有顺序
+  const each = (owed.length ? ordered.sort((a, b) => a.c.date.localeCompare(b.c.date)) : ordered).map((r) => {
+    // 缺汇率的是 NaN：图表画占位短柱，也不算进汇总后的平均线
+    const v = ccy === base ? chargeBaseOrNaN(state, r.c, base) : r.c.amount;
+    // 首期优惠：这一笔按优惠价扣，原价减去的部分在柱顶画成斜纹（按这一笔同样的折算比例）
+    const regularPrice = r.c.sub.intro && r.c.date < r.c.sub.intro.until && !r.c.kind ? priceAt({ ...r.c.sub, intro: undefined }, r.c.date) : undefined;
+    const full = regularPrice && r.c.amount > 0 && regularPrice > r.c.amount ? (v * regularPrice) / r.c.amount : undefined;
+    return {
+      ...r,
+      date: barDay(r.c, today),
+      phase: r.c.sub.start,
+      v,
+      ref: r.future ? undefined : average,
+      full: full != null && Number.isFinite(full) ? full : undefined,
+    };
+  });
   // 柱子太密时由图表按宽度自动按月、季、年汇总，这里给出每一笔
   const rows = each;
   if (rows.length < 2) return null;

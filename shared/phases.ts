@@ -825,6 +825,15 @@ export function setPhaseMethod(s: Subscription, phaseStart: string, methodId: st
 }
 
 /** 删除一笔扣款记录 */
+/** 分开记的缴费可能记在指定的账单所在的阶段（不一定是缴费日所在的段）：在所有阶段里按日期找第 index 笔；给了 phase 先找那段 */
+function findSeparatePayment(phases: Phase[], date: string, index: number, phase?: string): [number, Payment] {
+  const found = (only?: string) =>
+    phases.flatMap((p, k) => (only && p.start !== only ? [] : (p.payments ?? []).filter((x) => x.date === date).map((x) => [k, x] as [number, Payment])));
+  const hit = (phase ? found(phase)[index] : undefined) ?? found()[index];
+  if (!hit) throw new Error(t('mcp.error.invalidTarget'));
+  return hit;
+}
+
 /**
  * 账单与缴费分开记：缴费原样记下，不固化推算、不推下次扣款日、不识别提前续费；分配由 settleBills 按 periods 与先后顺序算出。
  * 指定了结清哪几期时记在第一期所在的阶段，否则按缴费日归段
@@ -832,9 +841,7 @@ export function setPhaseMethod(s: Subscription, phaseStart: string, methodId: st
 function saveSeparatePayment(s: Subscription, pay: Payment, old?: { date: string; index: number }, phase?: string): Subscription {
   const phases = phasesOf(s);
   if (old) {
-    const oi = phaseIndexAt(phases, old.date, s, phase, true);
-    const target = (phases[oi].payments ?? []).filter((x) => x.date === old.date)[old.index];
-    if (!target) throw new Error(t('mcp.error.invalidTarget'));
+    const [oi, target] = findSeparatePayment(phases, old.date, old.index, phase);
     if (!('methodId' in pay) && !('funding' in pay) && target.funding?.length) pay = { ...pay, funding: target.funding };
     else if (!('methodId' in pay) && !pay.funding?.length && target.methodId) pay = { ...pay, methodId: target.methodId };
     if (!('periods' in pay) && target.periods && !pay.kind) pay = { ...pay, periods: target.periods };
@@ -853,9 +860,7 @@ function saveSeparatePayment(s: Subscription, pay: Payment, old?: { date: string
 export function deletePayment(s: Subscription, today: string, date: string, index: number, phase?: string): Subscription {
   if (isSeparate(s)) {
     const phases = phasesOf(s);
-    const i = phaseIndexAt(phases, date, s, phase, true);
-    const target = (phases[i].payments ?? []).filter((x) => x.date === date)[index];
-    if (!target) throw new Error(t('mcp.error.invalidTarget'));
+    const [i, target] = findSeparatePayment(phases, date, index, phase);
     phases[i] = { ...phases[i], payments: (phases[i].payments ?? []).filter((x) => x !== target) };
     return fromPhases(s, phases);
   }

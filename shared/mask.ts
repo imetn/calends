@@ -107,6 +107,7 @@ function publicSub(s: Subscription, cats: Category[]): Subscription {
     cycle: s.cycle,
     billing: s.billing,
     settlement: s.settlement,
+    settledBefore: s.settledBefore,
     start: s.start,
     billingStart: s.billingStart,
     estimateFrom: s.estimateFrom,
