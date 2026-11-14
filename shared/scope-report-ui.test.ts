@@ -157,8 +157,8 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
         },
       ];
     },
-    usePref: (key: string, fallback: string) => [
-      prefs[key] ?? fallback,
+    usePref: (key: string, fallback: string, valid?: (v: string) => boolean) => [
+      prefs[key] != null && (!valid || valid(prefs[key])) ? prefs[key] : fallback,
       (v: string) => {
         prefs[key] = v;
       },
@@ -731,11 +731,30 @@ test('same-currency cash pairs retain a distinct actual settlement and never hid
   }
 });
 
+// 订阅页筛选用例：一条 Other 分类订阅，绑定一张卡
+const listSt: AppState = {
+  ...st,
+  methods: [{ id: 'card', name: 'Card', kind: 'credit', currency: 'USD' }],
+  subscriptions: [
+    {
+      id: 'a',
+      name: 'Sample',
+      category: 'Other',
+      price: 10,
+      currency: 'USD',
+      cycle: { unit: 'month', every: 1 },
+      start: '2026-01-01',
+      status: 'active',
+      tags: [],
+      methodId: 'card',
+    } as Subscription,
+  ],
+};
 test('订阅筛选默认全部时无清空按钮，任一条件变化后清空恢复当前路由默认值', () => {
   for (const category of [undefined, 'Tools']) {
     for (const field of ['status', 'category', 'pay', 'search']) {
-      const r = harness('../app/src/views/List.tsx', 'List');
-      const render = () => r.render('List', { state: st, today, category, onOpen() {}, onAdd() {} });
+      const r = harness('../app/src/views/List.tsx', 'List', { 'list-view': 'gantt' });
+      const render = () => r.render('List', { state: listSt, today, category, onOpen() {}, onAdd() {} });
       const clear = (nodes: Node[]) => nodes.find((n) => n.props.className === 'facet-clear');
       let nodes = render();
       assert.equal(clear(nodes), undefined, '默认全部不显示清空');
@@ -752,6 +771,36 @@ test('订阅筛选默认全部时无清空按钮，任一条件变化后清空�
       assert.equal(nodes.find((n) => n.type === 'input')!.props.value, '');
     }
   }
+});
+
+test('全部订阅页的分类、支付方式筛选存进偏好，刷新后保留；已删掉的值退回全部，分类页只在本页有效', () => {
+  const facet = (nodes: Node[], f: string) => nodes.find((n) => n.props.label === `list.facet.${f}`)!;
+  const r = harness('../app/src/views/List.tsx', 'List', { 'list-view': 'gantt' });
+  const render = (state = listSt, category?: string) => r.render('List', { state, today, category, onOpen() {}, onAdd() {} });
+  const method = 'card';
+  facet(render(), 'category').props.onChange('Other');
+  facet(render(), 'pay').props.onChange(method);
+  assert.equal(r.prefs['list-cat'], 'Other');
+  assert.equal(r.prefs['list-pay'], method);
+  // 刷新：新的组件实例只靠偏好恢复
+  const again = harness('../app/src/views/List.tsx', 'List', { ...r.prefs });
+  let nodes = again.render('List', { state: listSt, today, onOpen() {}, onAdd() {} });
+  assert.equal(facet(nodes, 'category').props.value, 'Other');
+  assert.equal(facet(nodes, 'pay').props.value, method);
+  // 分类或支付方式已不存在：显示全部，不改写偏好
+  const gone = { ...listSt, methods: [], subscriptions: listSt.subscriptions.map((s) => ({ ...s, category: s.category === 'Other' ? 'Tools' : s.category })) };
+  nodes = again.render('List', { state: gone, today, onOpen() {}, onAdd() {} });
+  assert.equal(facet(nodes, 'category').props.value, 'all');
+  assert.equal(facet(nodes, 'pay').props.value, 'all');
+  assert.equal(again.prefs['list-cat'], 'Other');
+  // 分类页：分类筛选只在本页，不写偏好
+  const cat = harness('../app/src/views/List.tsx', 'List', { 'list-view': 'gantt' });
+  const catRender = () => cat.render('List', { state: listSt, today, category: 'Tools', onOpen() {}, onAdd() {} });
+  facet(catRender(), 'category').props.onChange('Other');
+  facet(catRender(), 'pay').props.onChange('card');
+  assert.equal(facet(catRender(), 'pay').props.value, 'card');
+  assert.equal(cat.prefs['list-cat'], undefined);
+  assert.equal(cat.prefs['list-pay'], undefined);
 });
 
 test('subscription list pinyin filtering keeps multi-word intersection and facet counts aligned', async () => {

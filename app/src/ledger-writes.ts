@@ -4,6 +4,7 @@ import { resyncShares } from '../../shared/carpool.ts';
 import { deleteMethodData, deleteSubscriptionSettings } from '../../shared/ledger-edit.ts';
 import { renameInSubs, type Category } from '../../shared/categories.ts';
 import { t } from '../../shared/i18n.ts';
+import { writePref } from './prefs.ts';
 
 export function createLedgerWrites(
   core: Pick<typeof import('./store.ts'), 'api' | 'getState' | 'syncFx' | 'write' | 'patchState' | 'replaceSyncedState' | 'isLedger' | 'upsertById'>,
@@ -129,6 +130,9 @@ export function createLedgerWrites(
       () => api<{ settings: Settings; subscriptions: Subscription[] }>('/api/categories', { method: 'PUT', body: JSON.stringify({ categories, renames }) }),
       (s, r) => withSubs({ ...s, settings: r.settings }, r.subscriptions),
     );
+    // 订阅页存的分类筛选跟着改名走，不因改名退回「全部」
+    const saved = getState().prefs?.['list-cat'];
+    if (saved && Object.hasOwn(renames, saved) && renames[saved] !== saved) writePref('list-cat', renames[saved]);
     return r.subscriptions.length;
   }
 

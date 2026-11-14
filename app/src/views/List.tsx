@@ -68,10 +68,21 @@ export function List({
   const [catFilter, setCatFilter] = useState<Filter>('all');
   const filter = category ? catFilter : savedFilter;
   const setFilter = (v: Filter) => (category ? setCatFilter(v) : setSavedFilter(v));
-  const [cat, setCat] = useState<string>(category ?? 'all');
-  const [pay, setPay] = useState<string>('all');
+  // 分类、支付方式筛选同样记在服务端；已删掉的分类或支付方式退回「全部」。分类页的筛选只在本页有效；搜索词不保留
+  const [savedCat, setSavedCat] = usePref<string>(
+    'list-cat',
+    'all',
+    (v): v is string => v === 'all' || state.subscriptions.some((s) => !s.proxy && s.category === v),
+  );
+  const [pageCat, setPageCat] = useState<string>(category ?? 'all');
+  useEffect(() => setPageCat(category ?? 'all'), [category]);
+  const cat = category ? pageCat : savedCat;
+  const setCat = (v: string) => (category ? setPageCat(v) : setSavedCat(v));
+  const [savedPay, setSavedPay] = usePref<string>('list-pay', 'all', (v): v is string => v === 'all' || v === 'none' || state.methods.some((m) => m.id === v));
+  const [pagePay, setPagePay] = useState<string>('all');
+  const pay = category ? pagePay : savedPay;
+  const setPay = (v: string) => (category ? setPagePay(v) : setSavedPay(v));
   const [q, setQ] = useState('');
-  useEffect(() => setCat(category ?? 'all'), [category]);
   // 排序、方向、视图存在服务端，多台设备一致；切换到另一种排序时用它的默认方向，再点同一种则反转
   const [sort, setSort] = usePref<Sort>('list-sort', 'next', isSort);
   const [dir, setDir] = usePref<Dir>('list-dir', DEFAULT_DIR[sort], isDir);
