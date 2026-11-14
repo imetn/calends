@@ -248,8 +248,8 @@ function Hero({ state, today, year }: { state: AppState; today: string; year: nu
           )}
         </div>
         <MetricCards plain>
-          {/* 往年全已付、明年全待扣，这两格会与大数字重复，只在今年出现 */}
-          {year === cur && (
+          {/* 往年全已付、明年全待扣，这两格会与大数字重复，只在今年出现；往年还有没缴的账单时也列出 */}
+          {(year === cur || (year < cur && Math.abs(r.current.pending) > 0.005)) && (
             <>
               <Metric label={t('scope.paid')} value={formatTotal(r.current.partial.paid, base, { direction: -1, compact: true, main: true })} />
               <Metric label={t('scope.pending')} value={formatTotal(r.current.partial.pending, base, { direction: -1, compact: true, main: true })} />

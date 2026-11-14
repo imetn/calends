@@ -16,7 +16,6 @@ import {
   effectiveStatus,
   isGap,
   isSeparate,
-  overdueBills,
   myShareFactor,
   monthlyGross,
   nextCharge,
@@ -329,13 +328,6 @@ export function cashVsAccrual(state: AppState, today: string, back: number, fwd:
     r.cash += chargeValue(state, c) * myShareFactor(c.sub, c.date);
     r.partial.cash = sumTotals([r.partial.cash, scaleTotal(chargeTotal(state, c), myShareFactor(c.sub, c.date))]);
   }
-  // 分开记时还欠着的账单：钱还没付，和报告头部一样算进今天所在月的待扣
-  const now = rows.get(today.slice(0, 7));
-  if (now)
-    for (const c of subs.flatMap((s) => overdueBills(s, today))) {
-      now.cash += chargeValue(state, c) * myShareFactor(c.sub, c.date);
-      now.partial.cash = sumTotals([now.partial.cash, scaleTotal(chargeTotal(state, c), myShareFactor(c.sub, c.date))]);
-    }
   // 权责按账单所属期间摊开
   for (const c of subs.flatMap((s) => chargesBetween(s, addMonths(first, -24), last, today))) {
     const v = chargeValue(state, c) * myShareFactor(c.sub, c.date);

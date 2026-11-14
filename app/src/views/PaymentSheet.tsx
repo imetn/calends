@@ -324,18 +324,20 @@ export function PaymentSheet({
               const piece = pieceOf(b.date);
               const owed = b.due - b.paid;
               const full = piece >= owed - 0.004;
+              const late = b.date < today && owed > 0.005;
               return (
                 <label key={b.date} className={`cell rv-period ${keys.includes(b.date) ? 'on' : ''}`}>
                   <input type="checkbox" checked={keys.includes(b.date)} onChange={() => togglePeriod(b.date)} />
                   <span className="rv-period-l">
                     <span>{cnDateAuto(b.date, today)}</span>
-                    {/* 本笔抵扣的逾期期仍写逾期：状态与分配同时可见 */}
-                    <small className={b.status === 'overdue' ? 'due' : undefined}>
-                      {piece > 0.004
-                        ? [b.status === 'overdue' && t('detail.settlement.overdue'), t(full ? 'detail.settlement.this' : 'detail.settlement.partial')]
-                            .filter(Boolean)
-                            .join(' ')
-                        : t(`detail.settlement.${b.status}`)}
+                    {/* 账单日已过仍有未缴（含部分已缴）即逾期：状态与本笔分配同时可见 */}
+                    <small className={late ? 'due' : undefined}>
+                      {(piece > 0.004
+                        ? [late && t('detail.settlement.overdue'), t(full ? 'detail.settlement.this' : 'detail.settlement.partial')]
+                        : [t(`detail.settlement.${b.status}`), late && b.status !== 'overdue' && t('detail.settlement.overdue')]
+                      )
+                        .filter(Boolean)
+                        .join(' ')}
                     </small>
                   </span>
                   <span className="num rv-period-r">{money(piece > 0.004 ? piece : owed, ccy)}</span>

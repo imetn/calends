@@ -1045,7 +1045,8 @@ function separateCharges(s: Subscription, from: string, to: string, today: strin
     out.push(paymentCharge(s, p, p.date, p.kind === 'failed' ? 0 : p.amount, today, { kind: p.kind }, p.kind === 'failed' ? {} : undefined));
   }
   if (basis === 'cash') {
-    // 现金口径只有真实缴费，加上今天之后还没缴的账单（预测，钱包余额要扣）；推算期与已过期的欠缴不是现金
+    // 现金口径是真实缴费，加上推算期视为已缴的部分（与普通订阅记账起点前推算的扣款一样，缴费日即账单日），
+    // 再加今天之后还没缴的账单（预测，钱包余额要扣）；已过期的欠缴不是现金
     for (const p of s.payments ?? [])
       if (!p.kind && inWindow(p.date))
         out.push(
@@ -1055,7 +1056,19 @@ function separateCharges(s: Subscription, from: string, to: string, today: strin
             settles: [...(allocated.get(p) ?? [])].sort(),
           }),
         );
-    for (const b of bills) if (b.status !== 'inferred' && b.date > today && b.due - b.paid > 0.005 && inWindow(b.date)) out.push(unpaidCharge(s, b, today));
+    for (const b of bills) {
+      if (!inWindow(b.date) || b.due - b.paid <= 0.005) continue;
+      if (b.status === 'inferred')
+        out.push({
+          sub: s,
+          date: b.date,
+          ...(b.serviceDate ? { serviceDate: b.serviceDate } : {}),
+          amount: cents(b.due - b.paid),
+          currency: s.currency,
+          projected: b.date > today,
+        });
+      else if (b.date > today) out.push(unpaidCharge(s, b, today));
+    }
     return out.sort((a, b) => a.date.localeCompare(b.date));
   }
   for (const b of bills) {

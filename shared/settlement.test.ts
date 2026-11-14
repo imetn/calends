@@ -231,7 +231,10 @@ test('H3 追踪起点之前的缴费只抵推算期，不重复计入，也不�
   const s = fee([{ date: '2025-09-01', amount: 500 }], { settledBefore: '2025-10-01' });
   assert.deepEqual(
     cashChargesBetween(s, '2025-08-01', '2025-10-31', TODAY).map((c) => [c.date, c.amount]),
-    [['2025-09-01', 500]],
+    [
+      ['2025-08-01', 500],
+      ['2025-09-01', 500],
+    ],
   );
   const sep = chargesBetween(s, '2025-09-01', '2025-09-30', TODAY);
   assert.deepEqual(
@@ -259,12 +262,12 @@ test('M1 多阶段：缴费记在指定账单所在的段，不带 phase 也能�
   assert.equal(c.phases!.flatMap((p) => p.payments ?? []).length, 0);
 });
 
-test('M2 现金口径只有真实缴费：没有推算期，也没有今天未缴的账单', () => {
+test('M2 现金口径：真实缴费按缴费日，推算期按账单日计入（与普通订阅记账起点前一样），今天没缴的账单不算', () => {
   const s = fee([{ date: '2026-01-03', amount: 400 }], { settledBefore: '2026-01-01' });
   const today = '2026-02-01';
   assert.deepEqual(
     cashChargesBetween(s, s.start, today, today).map((c) => [c.date, c.amount]),
-    [['2026-01-03', 400]],
+    [...Array.from({ length: 12 }, (_, k) => [`2025-${String(k + 1).padStart(2, '0')}-01`, 500]), ['2026-01-03', 400]],
   );
 });
 
@@ -373,27 +376,41 @@ test('UI-1 实际每月按账单：截至今天的各期应缴 ÷ 到本期结�
   assert.ok(Math.abs(netCost(ledger(owe), owe, TODAY, 'CNY').perMonth - 400) < 6);
 });
 
-test('UI-4 年度报告：逾期没缴的账单不算已扣款，算待扣款，并落在今天所在月；现金柱同一口径', () => {
-  const s = fee([{ date: '2026-01-03', amount: 400 }], { start: '2026-01-01', settledBefore: '2026-01-01', priceHistory: undefined });
-  const r = yearOutlook(ledger(s), TODAY);
-  assert.equal(r.current.paid, 400);
-  assert.equal(r.current.pending, 400 + 10 * 400);
-  assert.equal(r.months[0].total, 400);
-  assert.equal(r.months[1].total, 400);
-  assert.equal(r.months[1].pending, 400);
-  const cash = cashVsAccrual(ledger(s), TODAY, 1, 0);
+test('UI-4 年度报告按账单归属：跨年合并缴各算各的年份，没缴的（含逾期）是其账单月的待扣款；现金行按缴费日', () => {
+  const s = fee([{ date: '2026-02-10', amount: 400, periods: ['2025-12-01'] }], { start: '2025-11-01', settledBefore: '2025-12-01', priceHistory: undefined });
+  const y25 = yearOutlook(ledger(s), TODAY, 2025);
+  assert.equal(y25.current.paid, 800);
+  assert.equal(y25.current.pending, 0);
+  assert.deepEqual(
+    y25.months.slice(10).map((m) => m.total),
+    [400, 400],
+  );
+  const y26 = yearOutlook(ledger(s), TODAY);
+  assert.equal(y26.current.paid, 0);
+  assert.equal(y26.current.pending, 2 * 400 + 10 * 400);
+  assert.deepEqual(
+    y26.months.slice(0, 2).map((m) => [m.paid, m.pending]),
+    [
+      [0, 400],
+      [0, 400],
+    ],
+  );
+  const cash = cashVsAccrual(ledger(s), TODAY, 3, 0);
   assert.deepEqual(
     cash.map((m) => [m.month, m.cash]),
     [
-      ['2026-01', 400],
+      ['2025-11', 400],
+      ['2025-12', 0],
+      ['2026-01', 0],
       ['2026-02', 400],
     ],
   );
-  // 预缴的未来账单按缴费日记已扣款，不再出现在待扣款里
-  const ahead = fee([{ date: '2026-01-03', amount: 1200 }], { start: '2026-01-01', settledBefore: '2026-01-01', priceHistory: undefined });
-  const a = yearOutlook(ledger(ahead), TODAY);
-  assert.equal(a.current.paid, 1200);
-  assert.equal(a.current.pending, 9 * 400);
+  // 往年没缴的账单是那一年的待扣款
+  const owe = fee([], { start: '2025-11-01', settledBefore: '2025-12-01', priceHistory: undefined });
+  const past = yearOutlook(ledger(owe), TODAY, 2025);
+  assert.equal(past.current.paid, 400);
+  assert.equal(past.current.pending, 400);
+  assert.equal(past.months[11].pending, 400);
 });
 
 test('UI-5 预付余值：预缴的未来账单整期计入，没缴的账单不算', () => {
@@ -411,22 +428,40 @@ test('UI-5 预付余值：预缴的未来账单整期计入，没缴的账单不
   assert.deepEqual(prepaidValue(ledger(owe), TODAY).items, []);
 });
 
-test('UI-8 追踪起点之前的推算期不是真实缴费：扣款记录（现金）不列，报告现金头部与现金柱都不算', () => {
+test('UI-8 追踪起点之前的推算期与普通订阅推算扣款一样：计入累计、报告与现金，按账单日', () => {
   const s = fee([{ date: '2025-06-03', amount: 500 }]);
   assert.deepEqual(
-    cashChargesBetween(s, s.start, TODAY, TODAY)
-      .filter((c) => c.date <= TODAY)
-      .map((c) => [c.date, c.amount]),
-    [['2025-06-03', 500]],
+    cashChargesBetween(s, s.start, '2025-06-30', TODAY).map((c) => [c.date, c.amount]),
+    [
+      ['2025-01-01', 500],
+      ['2025-02-01', 500],
+      ['2025-03-01', 500],
+      ['2025-04-01', 500],
+      ['2025-05-01', 500],
+      ['2025-06-03', 500],
+    ],
   );
   const r = yearOutlook(ledger(s), TODAY, 2025);
   assert.deepEqual(
-    r.months.slice(0, 6).map((m) => m.total),
-    [0, 0, 0, 0, 0, 500],
+    r.months.slice(0, 6).map((m) => [m.paid, m.pending]),
+    Array.from({ length: 6 }, () => [500, 0]),
   );
   const cash = cashVsAccrual(ledger(s), TODAY, 13, 0).filter((m) => m.month < '2025-07');
   assert.deepEqual(
     cash.map((m) => m.cash),
-    [0, 0, 0, 0, 0, 500],
+    [500, 500, 500, 500, 500, 500],
   );
+  assert.equal(netCost(ledger(s), s, TODAY, 'CNY').net, 3000);
+});
+
+test('部分已缴且账单日已过的期：状态是部分已缴，同时列入逾期（剩余部分）', () => {
+  const s = fee([{ date: '2026-01-05', amount: 150, periods: ['2026-01-01'] }], { settledBefore: '2026-01-01', priceHistory: undefined });
+  const jan = settleBills(s, '2026-02-01').bills.find((b) => b.date === '2026-01-01')!;
+  assert.equal(jan.status, 'partial');
+  assert.deepEqual(
+    overdueBills(s, '2026-02-01').map((c) => [c.date, c.amount, c.unpaid]),
+    [['2026-01-01', 250, 'overdue']],
+  );
+  const owed = chargesBetween(s, '2026-01-01', '2026-01-31', '2026-02-01').find((c) => c.unpaid);
+  assert.equal(owed?.unpaid, 'overdue');
 });
