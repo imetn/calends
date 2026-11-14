@@ -34,9 +34,18 @@ export function scaleTotal(total: FxTotal, factor: number): FxTotal {
 export function convertedTotal(state: AppState, amount: number, currency: string, date?: string, to = state.settings.baseCurrency): FxTotal {
   return amountTotal(amount, currency, toBaseOrNaN(state, amount, currency, date, to));
 }
-type Cash = { amount: number; currency: string; date: string; projected: boolean; settled?: { amount: number; currency: string }; kind?: string };
+type Cash = {
+  valuationParts?: Cash[];
+  amount: number;
+  currency: string;
+  date: string;
+  projected: boolean;
+  settled?: { amount: number; currency: string };
+  kind?: string;
+};
 export function chargeTotal(state: AppState, c: Cash, to = state.settings.baseCurrency): FxTotal {
   if (c.kind === 'failed') return emptyTotal();
+  if (c.valuationParts?.length) return sumTotals(c.valuationParts.map((part) => chargeTotal(state, part, to)));
   const original = c.settled && !c.projected ? c.settled : c;
   return amountTotal(original.amount, original.currency, chargeBaseOrNaN(state, c, to));
 }

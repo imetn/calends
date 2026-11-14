@@ -459,15 +459,14 @@ export function prepaidValue(
         (c) => !c.kind && !c.unpaid,
       );
       const last = past[past.length - 1];
-      if (!last) continue;
-      const [a, b] = coverage(last);
+      const [a, b] = last ? coverage(last) : [today, today];
       const end = p.end && addDays(p.end, 1) < b ? addDays(p.end, 1) : b;
       // 分开记时预缴的未来账单整期都是余值；没缴的账单不算
       const ahead = isSeparate(p)
         ? chargesBetween(p, addDays(today, 1), addMonths(today, 120), today).filter((c) => !c.kind && !c.unpaid && c.paidOn && (!p.end || c.date <= p.end))
         : [];
       if (end <= today && !ahead.length) continue;
-      if (end > today) {
+      if (last && end > today) {
         const factor = myShareFactor(p, today) * (diffDays(today, end) / Math.max(1, diffDays(a, b)));
         value += chargeValue(state, last) * factor;
         partial = sumTotals([partial, scaleTotal(chargeTotal(state, last), factor)]);

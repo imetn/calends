@@ -88,10 +88,19 @@ export function toBaseOrNaN(state: AppState, amount: number, ccy: string, date?:
   return date ? convertOn(amount, ccy, to, date, state.fxHistory, state.fx) : convertOn(amount, ccy, to, '9999-12-31', undefined, state.fx);
 }
 
-type ChargeLike = { amount: number; currency: string; date: string; paidOn?: string; projected: boolean; settled?: { amount: number; currency: string } };
+type ChargeLike = {
+  amount: number;
+  currency: string;
+  date: string;
+  paidOn?: string;
+  projected: boolean;
+  settled?: { amount: number; currency: string };
+  valuationParts?: ChargeLike[];
+};
 
 /** 一笔扣款的本位币金额：已发生的按扣款当天汇率（记了卡上实扣时按实扣），预测的按当前汇率；缺汇率为 NaN */
 export function chargeBaseOrNaN(state: AppState, c: ChargeLike, to = state.settings.baseCurrency): number {
+  if (c.valuationParts?.length) return c.valuationParts.reduce((total, part) => total + chargeBaseOrNaN(state, part, to), 0);
   // 分开记的账单按实际缴费那天的汇率（paidOn），不按账单日
   const day = c.paidOn ?? c.date;
   // 记了卡上实际扣款时按它算：汇差、手续费都算进真实成本

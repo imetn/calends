@@ -607,3 +607,49 @@ test('R3-N2 旧记录保存时存下读取时的追踪起点，改名不改变�
     before,
   );
 });
+
+test('split bill payments retain each payment date and actual settlement currency in reports', async () => {
+  const { chargeBaseOrNaN } = await import('./fx.ts');
+  const { chargeTotal } = await import('./fx-total.ts');
+  const s = fee(
+    [
+      { date: '2026-01-03', amount: 50, periods: ['2026-01-01'] },
+      { date: '2026-01-20', amount: 50, periods: ['2026-01-01'] },
+    ],
+    { currency: 'EUR', price: 100, priceHistory: undefined, settledBefore: '2026-01-01' },
+  );
+  const state = {
+    subscriptions: [s],
+    methods: [],
+    settings: { ...DEFAULT_SETTINGS, baseCurrency: 'USD' },
+    fx: { base: 'USD' as const, fetchedAt: TODAY, rates: { USD: 1, EUR: 0.5 } },
+    fxHistory: { '2026-01-03': { USD: 1, EUR: 1 }, '2026-01-20': { USD: 1, EUR: 0.5, GBP: 0.8 } },
+  };
+  const bill = () => chargesBetween(s, '2026-01-01', '2026-01-31', TODAY);
+  assert.equal(bill().length, 1, 'one bill remains one chart bar');
+  assert.equal(chargeBaseOrNaN(state, bill()[0]), 150);
+  assert.equal(
+    cashChargesBetween(s, '2026-01-01', '2026-01-31', TODAY).reduce((n, c) => n + chargeBaseOrNaN(state, c), 0),
+    150,
+  );
+  s.payments![0].settled = { amount: 60, currency: 'USD' };
+  s.payments![1].settled = { amount: 80, currency: 'GBP' };
+  state.fxHistory['2026-01-20'] = { USD: 1, EUR: 0.5, GBP: 0.8 };
+  assert.equal(chargeBaseOrNaN(state, bill()[0]), 160, 'different card currencies retain their actual amounts');
+  s.payments![1].settled = { amount: 80, currency: 'XXX' };
+  assert.ok(Number.isNaN(chargeBaseOrNaN(state, bill()[0])), 'missing one payment rate remains incomplete');
+  assert.deepEqual(chargeTotal(state, bill()[0]), { value: 60, incomplete: true, known: true, unconverted: { XXX: 80 } });
+});
+
+test('prepaid future bill retains value even when the first tracked bill is unpaid', () => {
+  const s = fee([{ date: '2026-01-10', amount: 100, periods: ['2026-02-01'] }], {
+    start: '2026-01-01',
+    settledBefore: '2026-01-01',
+    currency: 'USD',
+    price: 100,
+    priceHistory: undefined,
+  });
+  const result = prepaidValue({ subscriptions: [s], methods: [], settings: { ...DEFAULT_SETTINGS, baseCurrency: 'USD' }, fx: FALLBACK_FX }, '2026-01-15');
+  assert.equal(result.total, 100);
+  assert.equal(result.items[0].until, '2026-03-01');
+});

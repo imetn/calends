@@ -535,6 +535,8 @@ export interface Charge {
   funding?: Payment['funding'];
   /** 账单与缴费分开记：结清这期账单（date 为账单日）的那笔缴费的实际日期 */
   paidOn?: string;
+  /** 合并账单保留各次缴费的折算依据，仅派生，不写入存储。 */
+  valuationParts?: Array<Pick<Charge, 'amount' | 'currency' | 'date' | 'projected' | 'paidOn' | 'settled'>>;
   /** 账单与缴费分开记：账单未缴的部分；overdue 为账单日已过 */
   unpaid?: 'due' | 'overdue';
   /** 账单与缴费分开记的实际缴费（cashChargesBetween）：记下的指定账单（Payment.periods），修改时原样带回 */
@@ -1044,6 +1046,14 @@ function mergePieces(cs: Charge[]): Charge {
   return {
     ...rest,
     amount,
+    valuationParts: cs.map(({ amount, currency, date, projected, paidOn, settled }) => ({
+      amount,
+      currency,
+      date,
+      projected,
+      paidOn,
+      ...(settled ? { settled } : {}),
+    })),
     paidOn: cs
       .map((c) => c.paidOn ?? c.date)
       .sort()
