@@ -8,7 +8,7 @@ import { toCsv } from '../../../shared/csv.ts';
 import type { ImportSource } from '../../../shared/import-ledger.ts';
 import { readImportFile } from '../import-file.ts';
 import { ImportSheet } from './ImportSheet.tsx';
-import { avatarOf, type AppState, type Subscription } from '../../../shared/types.ts';
+import { avatarOf, REMIND_DAYS, type AppState, type Subscription } from '../../../shared/types.ts';
 import { IconButton, Cell, Group, Toolbar } from '../components/ui.tsx';
 import { Icon } from '../components/icons.tsx';
 import { LoadFailed, Sheet } from '../components/overlays.tsx';
@@ -412,7 +412,10 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
             <Picker
               value={s.remindDays}
               onChange={(n) => run(() => saveSettings({ remindDays: n }))}
-              options={[0, 1, 2, 3, 5, 7, 14].map((n) => ({ value: n, label: n === 0 ? t('settings.remind.sameDay') : t('settings.days', { count: n }) }))}
+              options={[
+                ...REMIND_DAYS.map((n) => ({ value: n as number, label: n === 0 ? t('settings.remind.sameDay') : t('settings.days', { count: n }) })),
+                { value: -1, label: t('settings.remind.never') },
+              ]}
               ariaLabel={t('settings.remind.lead')}
             />
           </Cell>

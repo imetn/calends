@@ -153,6 +153,8 @@
     "default": {
       "other": "Default ({count} hari sebelumnya)"
     },
+    "defaultSameDay": "Default (pada hari jatuh tempo)",
+    "defaultNever": "Default (tidak pernah)",
     "sameDay": "Pada hari jatuh tempo",
     "before": {
       "other": "{count} hari sebelumnya"

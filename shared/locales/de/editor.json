@@ -159,6 +159,8 @@
       "one": "Standard ({count} Tag vorher)",
       "other": "Standard ({count} Tage vorher)"
     },
+    "defaultSameDay": "Standard (am Fälligkeitstag)",
+    "defaultNever": "Standard (nie)",
     "sameDay": "Am Fälligkeitstag",
     "before": {
       "one": "{count} Tag vorher",

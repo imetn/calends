@@ -41,7 +41,12 @@ export const SETTINGS_FIELDS = objectSchema({
   defaultMethodId: nullable(textSchema),
   signedAmounts: { type: 'boolean' },
   gainColor: { type: 'string', enum: ['green', 'red'] },
-  remindDays: { type: 'integer', minimum: -1, maximum: 365 },
+  remindDays: {
+    type: 'integer',
+    minimum: -1,
+    maximum: 365,
+    description: 'Default reminder lead days; -1 disables reminders for subscriptions without their own.',
+  },
   notifyHour: { type: 'integer', minimum: 0, maximum: 23 },
   timezone: textSchema,
   publicView: { type: 'boolean' },

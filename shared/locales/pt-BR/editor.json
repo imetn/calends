@@ -159,6 +159,8 @@
       "one": "Padrão ({count} dia antes)",
       "other": "Padrão ({count} dias antes)"
     },
+    "defaultSameDay": "Padrão (no dia da cobrança)",
+    "defaultNever": "Padrão (nunca)",
     "sameDay": "No dia da cobrança",
     "before": {
       "one": "{count} dia antes",

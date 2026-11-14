@@ -153,6 +153,8 @@
     "default": {
       "other": "デフォルト（{count}日前）"
     },
+    "defaultSameDay": "デフォルト（請求日当日）",
+    "defaultNever": "デフォルト（しない）",
     "sameDay": "請求日当日",
     "before": {
       "other": "{count}日前"

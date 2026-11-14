@@ -44,6 +44,7 @@
     "title": "Rappels",
     "lead": "Me rappeler",
     "sameDay": "Le jour même",
+    "never": "Jamais",
     "hour": "Heure d’envoi",
     "monthly": "Aperçu mensuel le 1er",
     "test": "Envoyer un rappel de test à tous les canaux",

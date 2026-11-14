@@ -352,3 +352,30 @@ test('余额到期作废：提前天数当天提醒，写明到期日与作废�
   assert.match(ahead, /left by Mar 5/, ahead);
   assert.doesNotMatch(ahead, /expired on|charged since/);
 });
+
+test('默认提醒设为关闭：跟随默认的订阅不提醒，单独设了天数的照常提醒；设置页与订阅提醒共用同一组天数并可关闭', () => {
+  const st = state();
+  st.settings = { ...st.settings, remindDays: -1 };
+  const trial = (id: string, name: string, remindDays?: number) => ({
+    id,
+    name,
+    category: 'Tools',
+    tags: [],
+    price: 10,
+    currency: 'USD',
+    cycle: { unit: 'month' as const, every: 1 },
+    start: '2025-12-01',
+    status: 'trial' as const,
+    trialEnd: '2026-01-02',
+    ...(remindDays == null ? {} : { remindDays }),
+  });
+  st.subscriptions = [trial('a', 'FollowsDefault'), trial('b', 'OwnReminder', 0)];
+  const text = JSON.stringify(buildDaily(st, '2026-01-02'));
+  assert.ok(text.includes('OwnReminder'), text);
+  assert.ok(!text.includes('FollowsDefault'), text);
+  const settings = readFileSync(new URL('../app/src/views/Settings.tsx', import.meta.url), 'utf8');
+  const editor = readFileSync(new URL('../app/src/views/editor/Sections.tsx', import.meta.url), 'utf8');
+  assert.match(settings, /REMIND_DAYS\.map[\s\S]{0,200}\{ value: -1, label: t\('settings\.remind\.never'\) \}/);
+  assert.match(editor, /REMIND_DAYS\.map[\s\S]{0,200}\{ value: '-1', label: t\('editor\.remind\.never'\) \}/);
+  assert.match(editor, /remindDays < 0[\s\S]{0,80}editor\.remind\.defaultNever/);
+});

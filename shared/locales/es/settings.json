@@ -44,6 +44,7 @@
     "title": "Recordatorios",
     "lead": "Recordarme",
     "sameDay": "El mismo día",
+    "never": "Nunca",
     "hour": "Enviar a las",
     "monthly": "Avance mensual el día 1",
     "test": "Enviar un recordatorio de prueba a todos los canales",

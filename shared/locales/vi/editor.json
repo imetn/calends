@@ -153,6 +153,8 @@
     "default": {
       "other": "Mặc định (trước {count} ngày)"
     },
+    "defaultSameDay": "Mặc định (vào ngày đến hạn)",
+    "defaultNever": "Mặc định (không bao giờ)",
     "sameDay": "Vào ngày đến hạn",
     "before": {
       "other": "Trước {count} ngày"

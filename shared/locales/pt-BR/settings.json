@@ -44,6 +44,7 @@
     "title": "Lembretes",
     "lead": "Lembrar",
     "sameDay": "No dia",
+    "never": "Nunca",
     "hour": "Enviar às",
     "monthly": "Prévia mensal no dia 1º",
     "test": "Enviar lembrete de teste para todos os canais",

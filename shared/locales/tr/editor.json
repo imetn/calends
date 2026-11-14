@@ -159,6 +159,8 @@
       "one": "Varsayılan ({count} gün önce)",
       "other": "Varsayılan ({count} gün önce)"
     },
+    "defaultSameDay": "Varsayılan (ödeme gününde)",
+    "defaultNever": "Varsayılan (hiçbir zaman)",
     "sameDay": "Ödeme gününde",
     "before": {
       "one": "{count} gün önce",

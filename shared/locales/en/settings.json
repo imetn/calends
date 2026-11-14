@@ -44,6 +44,7 @@
     "title": "Reminders",
     "lead": "Remind me",
     "sameDay": "On the day",
+    "never": "Never",
     "hour": "Send at",
     "monthly": "Monthly preview on the 1st",
     "test": "Send a test reminder to all channels",

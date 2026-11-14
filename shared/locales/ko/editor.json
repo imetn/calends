@@ -153,6 +153,8 @@
     "default": {
       "other": "기본값({count}일 전)"
     },
+    "defaultSameDay": "기본값(결제일 당일)",
+    "defaultNever": "기본값(안 함)",
     "sameDay": "결제일 당일",
     "before": {
       "other": "{count}일 전"

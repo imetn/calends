@@ -7,7 +7,7 @@ import { StopFields } from '../../components/StopPanel.tsx';
 import { addDays, addMonths, nextCharge, nthCharge, pauseDay } from '../../../../shared/billing.ts';
 import { cnDateFull, flow, money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
-import type { Cycle, SubStatus } from '../../../../shared/types.ts';
+import { REMIND_DAYS, type Cycle, type SubStatus } from '../../../../shared/types.ts';
 import { DatePicker } from '../../components/DatePicker.tsx';
 import { CatIcon } from '../../components/marks.tsx';
 import { Cell, Group } from '../../components/ui.tsx';
@@ -425,9 +425,16 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
                   value={f.remindDays == null ? '' : String(f.remindDays)}
                   onChange={(v) => up({ remindDays: v === '' ? undefined : Number(v) })}
                   options={[
-                    { value: '', label: t('editor.remind.default', { count: state.settings.remindDays }) },
-                    { value: '0', label: t('editor.remind.sameDay') },
-                    ...[1, 2, 3, 5, 7, 14, 30].map((n) => ({ value: String(n), label: t('editor.remind.before', { count: n }) })),
+                    {
+                      value: '',
+                      label:
+                        state.settings.remindDays < 0
+                          ? t('editor.remind.defaultNever')
+                          : state.settings.remindDays === 0
+                            ? t('editor.remind.defaultSameDay')
+                            : t('editor.remind.default', { count: state.settings.remindDays }),
+                    },
+                    ...REMIND_DAYS.map((n) => ({ value: String(n), label: n === 0 ? t('editor.remind.sameDay') : t('editor.remind.before', { count: n }) })),
                     { value: '-1', label: t('editor.remind.never') },
                   ]}
                   ariaLabel={t('editor.more.remind')}

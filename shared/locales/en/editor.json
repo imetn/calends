@@ -159,6 +159,8 @@
       "one": "Default ({count} day before)",
       "other": "Default ({count} days before)"
     },
+    "defaultSameDay": "Default (on the due date)",
+    "defaultNever": "Default (never)",
     "sameDay": "On the due date",
     "before": {
       "one": "{count} day before",

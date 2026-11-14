@@ -159,6 +159,8 @@
       "one": "Predeterminado ({count} día antes)",
       "other": "Predeterminado ({count} días antes)"
     },
+    "defaultSameDay": "Predeterminado (el día del cobro)",
+    "defaultNever": "Predeterminado (nunca)",
     "sameDay": "El día del cobro",
     "before": {
       "one": "{count} día antes",

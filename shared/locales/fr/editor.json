@@ -159,6 +159,8 @@
       "one": "Par défaut ({count} jour avant)",
       "other": "Par défaut ({count} jours avant)"
     },
+    "defaultSameDay": "Par défaut (le jour de l’échéance)",
+    "defaultNever": "Par défaut (jamais)",
     "sameDay": "Le jour de l’échéance",
     "before": {
       "one": "{count} jour avant",

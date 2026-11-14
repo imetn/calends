@@ -541,6 +541,9 @@ export const BALANCE_KINDS: MethodKind[] = ['appstore', 'googleplay', 'giftcard'
 /** 头像地址：没设置时用产品图标 */
 export const avatarOf = (s: Pick<Settings, 'avatar'>) => s.avatar || '/icons/logo.svg';
 
+/** 提前几天提醒的可选值：设置页的默认与订阅自己的提醒共用；-1 表示关闭 */
+export const REMIND_DAYS = [0, 1, 2, 3, 5, 7, 14, 30] as const;
+
 export const DEFAULT_SETTINGS: Settings = {
   baseCurrency: 'USD',
   notifyEmail: '',
