@@ -51,6 +51,10 @@ const payment = record(
     methodId: { ...text, description: 'Existing method id. Omit when funding splits the order.' },
     settled: record({ amount, currency: text }, ['amount', 'currency']),
     funding: list(record({ methodId: text, amount }, ['methodId', 'amount'])),
+    periods: {
+      ...list(day),
+      description: 'Only when settlement=separate: bill dates this payment settles. Omit to apply it to the oldest unpaid bills.',
+    },
   },
   ['date', 'amount'],
 );
@@ -135,6 +139,12 @@ const full = {
   start: day,
   status: { type: 'string', enum: ['active', 'trial', 'paused', 'cancelled', 'terminated'] },
   estimateFrom: day,
+  settlement: {
+    type: 'string',
+    enum: ['separate'],
+    description:
+      'Bills and payments recorded separately (e.g. property fees paid late, merged or in advance): bills follow the cycle; each payment settles bills in its periods, the rest goes to the oldest unpaid. Omit for ordinary charges. billingStart marks the first bill tracked; earlier bills count as paid.',
+  },
   trialEnd: { ...day, description: 'First paid day after the free trial.' },
   pausedAt: day,
   share: record(

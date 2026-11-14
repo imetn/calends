@@ -4,11 +4,12 @@ import {
   renewalDates,
   chargeMethodId,
   activePhases,
-  chargesBetween,
+  cashChargesBetween,
   currentPhase,
   cycleLabel,
   diffDays,
   effectiveStatus,
+  isSeparate,
   lastCharge,
   collectionAnchor,
   type MemberDue,
@@ -18,6 +19,8 @@ import {
   monthlyPriceTotal,
   myShareFactor,
   nextCharge,
+  overdueBills,
+  phaseSubs,
   priceAt,
   stopSummary,
   type Charge,
@@ -199,6 +202,9 @@ export function chargeRow(st: AppState, c: Charge, out?: string) {
     my_amount: fin(v * myShareFactor(c.sub, c.date)),
     ...(Number.isFinite(v) ? {} : { fx_missing: true }),
     projected: c.projected,
+    // 账单与缴费分开记：这期账单实际哪天缴的；没缴清的部分标 due / overdue
+    ...(c.paidOn ? { paid_on: c.paidOn } : {}),
+    ...(c.unpaid ? { unpaid: c.unpaid } : {}),
     kind: c.kind ?? 'charge',
     method: st.methods.find((m) => m.id === chargeMethodId(c))?.name ?? null,
     ...(c.funding?.length
@@ -233,7 +239,7 @@ export function fieldChanges(before: unknown, after: unknown, path = ''): Array<
 export const chargeCcy = (c: Charge) => (c.settled && !c.projected ? c.settled.currency : c.currency);
 
 export function computedOf(st: AppState, s: Subscription, today: string) {
-  const all = chargesBetween(s, '1970-01-01', today, today).filter((c) => !c.projected);
+  const all = cashChargesBetween(s, '1970-01-01', today, today).filter((c) => !c.projected);
   const gaps = fxGaps();
   const spent = all.reduce((sum, c) => sum + (gaps.note(chargeBaseOrNaN(st, c), chargeCcy(c)) as number), 0);
   return {
@@ -242,7 +248,15 @@ export function computedOf(st: AppState, s: Subscription, today: string) {
     last_charge: lastCharge(s, today) ?? null,
     spent_total: { amount: fin(spent), currency: st.settings.baseCurrency, charges: all.length, ...gaps.out(), ...partialOut(chargesTotal(st, all)) },
     stop: stopSummary(currentPhase(s, today), today) ?? null,
+    // 账单与缴费分开记：账单日已过还没缴清的各期
+    ...(phaseSubs(s).some(isSeparate) ? { unpaid_bills: unpaidOf(st, s, today) } : {}),
   };
+}
+
+function unpaidOf(st: AppState, s: Subscription, today: string) {
+  const owed = overdueBills(s, today);
+  const total = chargesTotal(st, owed);
+  return { count: owed.length, oldest: owed[0]?.date ?? null, amount: fin(total.value), currency: st.settings.baseCurrency, ...partialOut(total) };
 }
 
 export function roundAll<T extends object>(o: T): T {

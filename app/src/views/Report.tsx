@@ -898,7 +898,11 @@ function CashCard({ state, today, year }: { state: AppState; today: string; year
     });
   }, [state, today, back, fwd, year]);
   const pv = useMemo(() => prepaidValue(state, today), [state, today]);
-  const next90 = chargesTotal(state, allCharges(state, addDays(today, 1), addDays(today, 90), today));
+  // 分开记时已预缴的账单（带 paidOn）不再是未来要付的钱
+  const next90 = chargesTotal(
+    state,
+    allCharges(state, addDays(today, 1), addDays(today, 90), today).filter((c) => !c.paidOn),
+  );
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">

@@ -98,7 +98,8 @@
     "pausedAt": "일시 중지일",
     "plan": "요금제",
     "iconImported": "가져온 이미지 (URL 또는 이모지로 교체)",
-    "billing": "결제 방식"
+    "billing": "결제 방식",
+    "settlement": "청구와 납부를 따로 기록"
   },
   "share": {
     "none": "나만 사용",

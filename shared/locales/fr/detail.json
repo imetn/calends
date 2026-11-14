@@ -254,5 +254,17 @@
     "noTrend": "Pas assez de périodes pour afficher une tendance",
     "latestPrice": "Dernier {v}",
     "since": "Depuis le {date}"
+  },
+  "settlement": {
+    "due": "À payer",
+    "overdue": "En retard",
+    "partial": "Payée en partie",
+    "prepaid": "Prépayée",
+    "this": "Ce paiement",
+    "earliest": "Plus ancienne impayée",
+    "owed": {
+      "one": "{count} facture impayée",
+      "other": "{count} factures impayées"
+    }
   }
 }

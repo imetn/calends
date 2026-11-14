@@ -8,6 +8,7 @@ import {
   diffDays,
   effectiveStatus,
   isPostpaid,
+  isSeparate,
   nextCharge,
   renewalDates,
   memberAboard,
@@ -141,7 +142,11 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
         if (d === remind || (remind > 1 && d === 1)) {
           const method = state.methods.find((m) => m.id === s.methodId);
           // 后付费账单按所用那一期计价
-          const price = postpaid ? (chargesBetween(s, n, n, today).find((c) => !c.kind)?.amount ?? priceAt(s, n)) : priceAt(s, n);
+          // 分开记时按这期还没缴的部分
+          const price =
+            postpaid || isSeparate(currentPhase(s, today))
+              ? (chargesBetween(s, n, n, today).find((c) => !c.kind && !c.paidOn)?.amount ?? priceAt(s, n))
+              : priceAt(s, n);
           const conv = s.currency !== base ? `≈ ${money(convert(price, s.currency, base, fx), base)}` : undefined;
           const introEnds = !(s.intro && s.intro.until > n) && !!s.intro && diffDays(s.intro.until, n) < 40;
           renew.push({
@@ -301,7 +306,8 @@ export function buildMonthly(state: AppState, today: string): Digest | undefined
   // 月度账单只列我自己的订阅；代付在「代付待收」里单独提醒
   const charges = state.subscriptions
     .filter((s) => !s.proxy)
-    .flatMap((s) => chargesBetween(s, today, end, today).filter((c) => c.date < end))
+    // 分开记时已预缴的账单不再列入本月要付
+    .flatMap((s) => chargesBetween(s, today, end, today).filter((c) => c.date < end && !c.paidOn))
     .sort((a, b) => a.date.localeCompare(b.date));
   // 有一笔折算不了，本月合计就显示「—」，不把它当 0 少算
   const sum = charges.reduce((acc, c) => acc + convert(c.amount, c.currency, base, state.fx), 0);

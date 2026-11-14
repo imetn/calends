@@ -90,7 +90,8 @@
     "pausedAt": "暂停日",
     "plan": "套餐",
     "iconImported": "已导入图片，输入网址或 emoji 可替换",
-    "billing": "付费方式"
+    "billing": "付费方式",
+    "settlement": "账单与缴费分开记"
   },
   "share": {
     "none": "自用",

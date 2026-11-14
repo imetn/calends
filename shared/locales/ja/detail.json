@@ -240,5 +240,14 @@
     "noTrend": "この期間はデータが2期未満のため推移を表示できません",
     "latestPrice": "最新 {v}",
     "since": "{date} から"
+  },
+  "settlement": {
+    "due": "未払い",
+    "overdue": "延滞",
+    "partial": "一部支払済",
+    "prepaid": "前払い済",
+    "this": "この支払い",
+    "earliest": "最も古い未払い",
+    "owed": "未払い {count} 期"
   }
 }

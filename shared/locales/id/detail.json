@@ -240,5 +240,14 @@
     "noTrend": "Periode belum cukup untuk menampilkan tren",
     "latestPrice": "Terakhir {v}",
     "since": "Sejak {date}"
+  },
+  "settlement": {
+    "due": "Jatuh tempo",
+    "overdue": "Terlambat",
+    "partial": "Dibayar sebagian",
+    "prepaid": "Dibayar di muka",
+    "this": "Pembayaran ini",
+    "earliest": "Tunggakan terlama",
+    "owed": "{count} tagihan tertunggak"
   }
 }

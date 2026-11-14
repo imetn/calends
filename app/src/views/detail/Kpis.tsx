@@ -1,9 +1,19 @@
-import { amountTotal, formatTotal, scaleTotal, totalNote } from '../../../../shared/fx-total.ts';
+import { amountTotal, chargesTotal, formatTotal, scaleTotal, totalNote } from '../../../../shared/fx-total.ts';
 import { DAYS_PER_MONTH } from '../../../../shared/billing.ts';
 import { copyParts } from '../../components/copy.tsx';
 import { isStopped } from '../../../../shared/billing.ts';
 import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
-import { currentPhase, diffDays, effectiveStatus, isPostpaid, monthlyGross, phaseSubs, servedTime, type Charge } from '../../../../shared/billing.ts';
+import {
+  currentPhase,
+  diffDays,
+  effectiveStatus,
+  isPostpaid,
+  monthlyGross,
+  overdueBills,
+  phaseSubs,
+  servedTime,
+  type Charge,
+} from '../../../../shared/billing.ts';
 import { flow, cnDateAuto, cnDateFull, relDays } from '../../../../shared/format.ts';
 import { netCost, transfersOf } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
@@ -102,6 +112,8 @@ export function Kpis({
   // 后付费停止、暂停后仍有最后一张账单
   const next = st === 'lifetime' || (!postpaid && ['ended', 'terminated', 'paused'].includes(st)) ? undefined : detailForecast(sub, today).charges[0];
   const nextValue = next ? chargeBaseOrNaN(state, next, base) : NaN;
+  // 账单与缴费分开记且有欠缴时，第一格换成最早未缴的那期：欠几期、共欠多少
+  const owed = overdueBills(sub, today);
   // 停止的订阅由下方停止卡片写停止日，这里不再重复
   const ended = isStopped(st) && sub.end && !phaseSubs(sub).some((p) => p.stop);
   const durationCell = (
@@ -121,7 +133,16 @@ export function Kpis({
   return (
     <Panel className="dt-metrics metric-stack">
       <MetricCards inline>
-        {next ? (
+        {owed.length ? (
+          <Metric
+            label={t('detail.settlement.earliest')}
+            value={cnDateAuto(owed[0].date, today)}
+            valueClassName="warn"
+            note={copyParts(
+              [t('detail.settlement.owed', { count: owed.length }), formatTotal(chargesTotal(state, owed), base, { direction: -1, compact: true })].join('\n'),
+            )}
+          />
+        ) : next ? (
           <Metric
             label={st === 'trial' ? t('detail.renewal.afterTrial') : isPostpaid(next.sub) ? t('detail.billing.nextBill') : t('detail.ev.next')}
             value={cnDateAuto(next.date, today)}
@@ -134,7 +155,7 @@ export function Kpis({
         ) : (
           durationCell
         )}
-        {(next || ended) && durationCell}
+        {(owed.length || next || ended) && durationCell}
         {/* 只有一笔时累计就是那一笔，扣款记录里已有，不再占一格 */}
         {/* 导入边界之前的历史没有记录：没有一笔时写「—」，小字说明只算导入之后 */}
         {/* 有转让时是净花费：买入、卖出各自的金额在下方转让卡片，这里只写合计 */}

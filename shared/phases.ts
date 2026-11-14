@@ -12,6 +12,7 @@ import {
   diffDays,
   effectiveStatus,
   isPostpaid,
+  isSeparate,
   isStopped,
   nextCharge,
   nthCharge,
@@ -745,6 +746,7 @@ export function earlyRenewalEffect(
 
 /** 新增或修改一笔扣款记录；old 为原记录的日期与序号（修改时） */
 export function savePayment(s: Subscription, today: string, pay: Payment, old?: { date: string; index: number }, phase?: string): Subscription {
+  if (isSeparate(s)) return saveSeparatePayment(s, pay, old, phase);
   const phases = phasesOf(s);
   settleLegacyPhases(phases, s);
   // 改写一笔时没有带 methodId 这个键（如 MCP 只改金额），沿用原来那一笔单独记的支付方式；明确传 undefined 才清除
@@ -823,7 +825,40 @@ export function setPhaseMethod(s: Subscription, phaseStart: string, methodId: st
 }
 
 /** 删除一笔扣款记录 */
+/**
+ * 账单与缴费分开记：缴费原样记下，不固化推算、不推下次扣款日、不识别提前续费；分配由 settleBills 按 periods 与先后顺序算出。
+ * 指定了结清哪几期时记在第一期所在的阶段，否则按缴费日归段
+ */
+function saveSeparatePayment(s: Subscription, pay: Payment, old?: { date: string; index: number }, phase?: string): Subscription {
+  const phases = phasesOf(s);
+  if (old) {
+    const oi = phaseIndexAt(phases, old.date, s, phase, true);
+    const target = (phases[oi].payments ?? []).filter((x) => x.date === old.date)[old.index];
+    if (!target) throw new Error(t('mcp.error.invalidTarget'));
+    if (!('methodId' in pay) && !('funding' in pay) && target.funding?.length) pay = { ...pay, funding: target.funding };
+    else if (!('methodId' in pay) && !pay.funding?.length && target.methodId) pay = { ...pay, methodId: target.methodId };
+    if (!('periods' in pay) && target.periods && !pay.kind) pay = { ...pay, periods: target.periods };
+    phases[oi] = { ...phases[oi], payments: (phases[oi].payments ?? []).filter((x) => x !== target) };
+  }
+  const periods = pay.kind || !pay.periods?.length ? undefined : [...new Set(pay.periods)].sort();
+  pay = { ...pay, serviceDate: undefined, periods, ...(pay.funding && !pay.funding.length ? { funding: undefined } : {}) };
+  const i = phaseIndexAt(phases, periods?.[0] ?? pay.date, s, phase);
+  phases[i] = { ...phases[i], payments: [...(phases[i].payments ?? []), pay].sort((a, b) => a.date.localeCompare(b.date)) };
+  const next = fromPhases(s, phases);
+  const error = subError(next);
+  if (error) throw new Error(error);
+  return next;
+}
+
 export function deletePayment(s: Subscription, today: string, date: string, index: number, phase?: string): Subscription {
+  if (isSeparate(s)) {
+    const phases = phasesOf(s);
+    const i = phaseIndexAt(phases, date, s, phase, true);
+    const target = (phases[i].payments ?? []).filter((x) => x.date === date)[index];
+    if (!target) throw new Error(t('mcp.error.invalidTarget'));
+    phases[i] = { ...phases[i], payments: (phases[i].payments ?? []).filter((x) => x !== target) };
+    return fromPhases(s, phases);
+  }
   const phases = phasesOf(s);
   settleLegacyPhases(phases, s);
   const i = phaseIndexAt(phases, date, s, phase, true);

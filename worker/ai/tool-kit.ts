@@ -271,6 +271,7 @@ export async function persist(
         }
       : {}),
     next_charges: chargesBetween(after, today, addMonths(today, 13), today)
+      .filter((c) => !c.paidOn)
       .slice(0, 3)
       .map((c) => ({ date: c.date, amount: round(c.amount), currency: c.currency })),
     ...extra,

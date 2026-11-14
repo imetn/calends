@@ -254,5 +254,17 @@
     "noTrend": "Zu wenige Zeiträume für einen Verlauf",
     "latestPrice": "Zuletzt {v}",
     "since": "Seit {date}"
+  },
+  "settlement": {
+    "due": "Fällig",
+    "overdue": "Überfällig",
+    "partial": "Teilweise bezahlt",
+    "prepaid": "Vorausbezahlt",
+    "this": "Diese Zahlung",
+    "earliest": "Älteste offene",
+    "owed": {
+      "one": "{count} Rechnung offen",
+      "other": "{count} Rechnungen offen"
+    }
   }
 }

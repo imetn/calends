@@ -1,4 +1,4 @@
-import { preserveRenewalHistory, chargesBetween, currentPhase, effectiveStatus, pauseDay, phaseSubs, uid } from '../../shared/billing.ts';
+import { preserveRenewalHistory, cashChargesBetween, currentPhase, isSeparate, effectiveStatus, pauseDay, phaseSubs, uid } from '../../shared/billing.ts';
 import {
   editPhase,
   removePhase,
@@ -644,7 +644,7 @@ export const set_status: Tool = {
 export const record_payment: Tool = {
   name: 'record_payment',
   description:
-    'Record or replace an actual charge (replace={date,index}, same-day zero-based index; phase selects overlapping history), refund (positive amount — stored negative; total refunds cannot exceed the current period paid amount), adjustment or failed charge for a subscription, in the subscription’s currency. Optional currency must equal the selected phase currency for every kind (charge, refund, adjust, failed); a different card currency belongs in settled. settled = what the card was actually charged in another currency (e.g. TRY subscription billed in USD). method = payment method (id or name) used for this one charge when it differs from the phase’s method; null clears it; omitted keeps a replaced charge’s own method. funding = one order paid from several sources (amounts in the subscription currency summing to amount, e.g. 178.80 = PayPal 168.05 + Balance 10.75); wallet balances are reduced by each part. funding and method are exclusive; null clears a split; omitted keeps a replaced charge’s split. Rejects same-day same-amount duplicates unless allow_duplicate.',
+    "Record or replace an actual charge (replace={date,index}, same-day zero-based index; phase selects overlapping history), refund (positive amount — stored negative; total refunds cannot exceed the current period paid amount), adjustment or failed charge for a subscription, in the subscription’s currency. Optional currency must equal the selected phase currency for every kind (charge, refund, adjust, failed); a different card currency belongs in settled. settled = what the card was actually charged in another currency (e.g. TRY subscription billed in USD). method = payment method (id or name) used for this one charge when it differs from the phase’s method; null clears it; omitted keeps a replaced charge’s own method. funding = one order paid from several sources (amounts in the subscription currency summing to amount, e.g. 178.80 = PayPal 168.05 + Balance 10.75); wallet balances are reduced by each part. funding and method are exclusive; null clears a split; omitted keeps a replaced charge’s split. periods = bill dates this charge settles, only for subscriptions with settlement 'separate' (one payment may settle several bills, a bill may take several payments); omitted pays the oldest unpaid bills first; null clears; omitted keeps a replaced charge’s periods. Rejects same-day same-amount duplicates unless allow_duplicate.",
   write: true,
   inputSchema: obj(
     {
@@ -660,6 +660,11 @@ export const record_payment: Tool = {
       settled: obj({ amount: { type: 'number' }, currency: { type: 'string' } }, ['amount', 'currency']),
       method: { type: ['string', 'null'], description: 'Payment method id or name for this single charge; null clears it.' },
       funding: FUNDING,
+      periods: {
+        type: ['array', 'null'],
+        items: DATE,
+        description: 'Bill dates settled by this charge (settlement separate only).',
+      },
       note: { type: 'string' },
       allow_duplicate: { type: 'boolean', default: false },
       phase: {
@@ -677,7 +682,9 @@ export const record_payment: Tool = {
     const kind = str(a.kind) ?? 'charge';
     const sign = kind === 'refund' ? -1 : 1;
     const amount = sign * Math.abs(num(a.amount, 'amount'));
-    const existing = chargesBetween(s, d, d, today).filter((c) => !c.projected && Math.abs(c.amount - amount) < 0.005);
+    // 按实际付款日找：账单与缴费分开记时，权责口径的 charge 落在账单日
+    const existing = cashChargesBetween(s, d, d, today).filter((c) => !c.projected && Math.abs(c.amount - amount) < 0.005);
+    if (a.periods != null && (!Array.isArray(a.periods) || !isSeparate(currentPhase(s, d)))) throw new Error(t('mcp.error.invalidInput', { field: 'periods' }));
     const isRecorded = allPayments(s).some((p) => p.date === d && Math.abs(p.amount - amount) < 0.005);
     if (isRecorded && existing.length && !a.allow_duplicate && !a.replace) throw new Error(t('mcp.error.duplicatePayment', { date: d, amount }));
     const st2 = a.settled as { amount: unknown; currency: unknown } | undefined;
@@ -694,6 +701,7 @@ export const record_payment: Tool = {
       // 拆分同理：给了（含 null）才带键；给了拆分就清掉单独的支付方式
       ...(a.funding !== undefined ? { funding: fundingOf(st, a.funding, sign) } : {}),
       ...(a.funding != null ? { methodId: undefined } : {}),
+      ...(a.periods !== undefined ? { periods: a.periods === null ? undefined : (a.periods as unknown[]).map((x, i) => date(x, `periods[${i}]`)) } : {}),
     };
     return commit(
       ctx,

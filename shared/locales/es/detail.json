@@ -254,5 +254,17 @@
     "noTrend": "No hay periodos suficientes para mostrar la tendencia",
     "latestPrice": "Último {v}",
     "since": "Desde {date}"
+  },
+  "settlement": {
+    "due": "Pendiente",
+    "overdue": "Vencida",
+    "partial": "Pagada en parte",
+    "prepaid": "Prepagada",
+    "this": "Este pago",
+    "earliest": "Más antigua sin pagar",
+    "owed": {
+      "one": "{count} factura pendiente",
+      "other": "{count} facturas pendientes"
+    }
   }
 }

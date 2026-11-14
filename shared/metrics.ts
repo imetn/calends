@@ -7,6 +7,7 @@ import {
   stopSummary,
   addDays,
   addMonths,
+  cashChargesBetween,
   chargesBetween,
   coveredUntil,
   cycleDays,
@@ -318,15 +319,18 @@ export function cashVsAccrual(state: AppState, today: string, back: number, fwd:
     rows.set(m, { month: m, cash: 0, accrual: 0, partial: { cash: emptyTotal(), accrual: emptyTotal() }, projected: m > today.slice(0, 7) });
   }
   // 往前多取一年，保证年付在窗口开头的摊销完整
-  const charges = state.subscriptions.filter((s) => !s.proxy).flatMap((s) => chargesBetween(s, addMonths(first, -24), last, today));
-  for (const c of charges) {
-    const v = chargeValue(state, c) * myShareFactor(c.sub, c.date);
+  const subs = state.subscriptions.filter((s) => !s.proxy);
+  // 现金按实际付款日；账单与缴费分开记的订阅，一笔合并缴只在付款那月出现一次（见 cashChargesBetween）
+  for (const c of subs.flatMap((s) => cashChargesBetween(s, first, last, today))) {
     const r = rows.get(c.date.slice(0, 7));
+    if (!r) continue;
+    r.cash += chargeValue(state, c) * myShareFactor(c.sub, c.date);
+    r.partial.cash = sumTotals([r.partial.cash, scaleTotal(chargeTotal(state, c), myShareFactor(c.sub, c.date))]);
+  }
+  // 权责按账单所属期间摊开
+  for (const c of subs.flatMap((s) => chargesBetween(s, addMonths(first, -24), last, today))) {
+    const v = chargeValue(state, c) * myShareFactor(c.sub, c.date);
     const part = scaleTotal(chargeTotal(state, c), myShareFactor(c.sub, c.date));
-    if (r) {
-      r.cash += v;
-      r.partial.cash = sumTotals([r.partial.cash, part]);
-    }
     if (c.sub.cycle.unit === 'lifetime') continue;
     const [a, b] = coverage(c);
     const days = Math.max(1, diffDays(a, b));

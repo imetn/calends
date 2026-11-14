@@ -57,6 +57,7 @@ function publicPayment(pay: Payment): Payment {
     settled: pay.settled && { amount: pay.settled.amount, currency: pay.settled.currency },
     methodId: pay.methodId,
     ...(pay.funding?.length ? { funding: pay.funding.map(({ methodId, amount }) => ({ methodId, amount })) } : {}),
+    ...(pay.periods?.length ? { periods: pay.periods.filter((d) => typeof d === 'string') } : {}),
   };
 }
 
@@ -105,6 +106,7 @@ function publicSub(s: Subscription, cats: Category[]): Subscription {
     currency: s.currency,
     cycle: s.cycle,
     billing: s.billing,
+    settlement: s.settlement,
     start: s.start,
     billingStart: s.billingStart,
     estimateFrom: s.estimateFrom,

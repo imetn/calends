@@ -1600,7 +1600,7 @@ test('包在 label 里的日期选择器点空白处只开一次月历', () => {
 
 test('扣款图的整价判断看全部扣款，不随所选范围变化', () => {
   const src = readFileSync(new URL('views/detail/ChargeTimeline.tsx', root), 'utf8');
-  assert.match(src, /wholeCurrencies\(\s*\[\.\.\.reg, \.\.\.future\]/);
+  assert.match(src, /wholeCurrencies\(\s*\[\.\.\.reg, \.\.\.owed, \.\.\.future\]/);
 });
 
 test('同一天合成的用量柱点开最后一条读数', () => {

@@ -230,5 +230,14 @@
     "noTrend": "這段時間不足兩期，暫無走勢",
     "latestPrice": "最近 {v}",
     "since": "自 {date}"
+  },
+  "settlement": {
+    "due": "待繳",
+    "overdue": "逾期",
+    "partial": "部分已繳",
+    "prepaid": "已預繳",
+    "this": "本筆",
+    "earliest": "最早未繳",
+    "owed": "欠 {count} 期"
   }
 }

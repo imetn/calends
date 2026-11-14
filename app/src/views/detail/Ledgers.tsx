@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
 import { chargeDay, chargeServicePeriod, isPostpaid, phaseSubs, type Charge } from '../../../../shared/billing.ts';
 import { meterDecimals, meterRows, meterView } from '../../../../shared/meters.ts';
 import { chargesUsage, chargeUsage, fixedQty, periodLabel, withUnit } from './ChargeTip.tsx';
-import { flow, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
+import { flow, cnDateAuto, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
 import { transfersOf, transferSign, transferValue } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
@@ -103,7 +103,8 @@ export function Charges({
   const meter = usageSub.meters?.[0];
   const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(usageSub, meter, today) : undefined;
   const usageOf = (c: Charge) => chargeUsage(readings, c);
-  const post = (c: Charge) => !c.kind && isPostpaid(c.sub);
+  // 分开记的实际缴费（带 settles）按缴费日列，不按所属周期
+  const post = (c: Charge) => !c.kind && !c.settles && isPostpaid(c.sub);
   // 表头按行走：周期账单全是后付费时写「周期」，与预付费阶段混在一起时写「日期」
   const regular = rows.filter((r) => !r.c.kind);
   const usageFmt = meter && fixedQty(meterDecimals(usageSub, meter.id));
@@ -182,6 +183,14 @@ export function Charges({
                 {orig(-c.amount, c.currency)}
                 {c.kind && <em className={`dt-kind ${c.kind}`}>{t(`detail.charges.kind.${c.kind}`)}</em>}
                 {multi && c.sub.region && !c.kind && <em className="dt-kind">{c.sub.region}</em>}
+                {/* 账单与缴费分开记：这笔缴的是哪几期账单（首期 – 末期），逐期写在悬停提示里 */}
+                {!!c.settles?.length && (
+                  <em className="dt-kind">
+                    {c.settles.length > 1
+                      ? `${cnDateAuto(c.settles[0], today)} – ${cnDateAuto(c.settles[c.settles.length - 1], today)}`
+                      : cnDateAuto(c.settles[0], today)}
+                  </em>
+                )}
               </>
             ),
             base: Number.isFinite(b) ? cost(-b) : '—',
@@ -189,7 +198,13 @@ export function Charges({
           })}
           rowKey={({ c }, i) => `${c.date}-${c.sub.start}-${i}`}
           rowClass={({ c }) => c.kind ?? ''}
-          rowTitle={({ c }) => (post(c) ? [t('detail.charges.paidOn', { date: cnDateFull(c.date) }), c.note].filter(Boolean).join('\n') : c.note)}
+          rowTitle={({ c }) =>
+            post(c) && !c.settles
+              ? [t('detail.charges.paidOn', { date: cnDateFull(c.date) }), c.note].filter(Boolean).join('\n')
+              : c.settles?.length
+                ? [c.settles.map((d) => cnDateFull(d)).join('\n'), c.note].filter(Boolean).join('\n')
+                : c.note
+          }
           onRow={onRow && (({ c }) => onRow(c))}
         />
       )}

@@ -103,7 +103,8 @@
     "pausedAt": "Duraklatma tarihi",
     "plan": "Paket",
     "iconImported": "İçe aktarılan görsel; değiştirmek için URL veya emoji yazın",
-    "billing": "Ödeme"
+    "billing": "Ödeme",
+    "settlement": "Faturaları ve ödemeleri ayrı kaydet"
   },
   "share": {
     "none": "Yalnızca ben",

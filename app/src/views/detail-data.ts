@@ -63,7 +63,8 @@ function computeForecast(sub: Subscription, today: string) {
   const cur = currentPhase(sub, today);
   // 后付费停止后还有最后一张账单要出
   const ended = isStopped(effectiveStatus(sub, today)) && !isPostpaid(cur);
-  const charges = ended ? [] : chargesBetween(sub, from, addMonths(today, 12), today).filter((c) => !c.kind);
+  // 账单与缴费分开记时已预缴的账单（带 paidOn）不再是要付的下一笔
+  const charges = ended ? [] : chargesBetween(sub, from, addMonths(today, 12), today).filter((c) => !c.kind && !c.paidOn);
   const sparse = cycleDays(cur.cycle) >= 365 || charges.length <= 2;
   if (!sparse) return { sparse, charges };
   const span = Math.max(
@@ -72,6 +73,6 @@ function computeForecast(sub: Subscription, today: string) {
       .filter((p) => p.cycle.unit !== 'lifetime')
       .map((p) => Math.ceil(cycleDays(p.cycle)) + 31),
   );
-  const next = ended ? undefined : (charges[0] ?? chargesBetween(sub, from, addDays(today, span), today).find((c) => !c.kind));
+  const next = ended ? undefined : (charges[0] ?? chargesBetween(sub, from, addDays(today, span), today).find((c) => !c.kind && !c.paidOn));
   return { sparse, charges: next ? [next] : [] };
 }

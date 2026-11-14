@@ -124,8 +124,12 @@ export function ChargeTip({
         </div>
       )}
       {p && !post && row(t('detail.chart.period'), rangeLabel(p.from, addDays(p.until, -1), today))}
-      {post && row(t('detail.chart.paidOn'), cnDateFull(c.date))}
-      {row(future ? t('detail.timeline.planned') : t('detail.field.amount'), flow(-c.amount, c.currency, wholeOpts(c.amount, c.currency, whole)))}
+      {/* 账单与缴费分开记：账单日与实际缴费日不同时写缴费日 */}
+      {(post || (c.paidOn && c.paidOn !== c.date)) && !c.unpaid && row(t('detail.chart.paidOn'), cnDateFull(c.paidOn ?? c.date))}
+      {row(
+        c.unpaid ? t(`detail.settlement.${c.unpaid}`) : future ? t('detail.timeline.planned') : t('detail.field.amount'),
+        flow(-c.amount, c.currency, wholeOpts(c.amount, c.currency, whole)),
+      )}
       {converted != null && row(t('detail.chart.converted'), converted)}
       {full != null && row(t('detail.chart.regular'), full)}
       {usage != null && meter && row(t('detail.meters.head.usage'), withUnit(usage, meter.unit, decimals != null ? fixedQty(decimals) : qty))}

@@ -103,7 +103,8 @@
     "pausedAt": "Date de pause",
     "plan": "Formule",
     "iconImported": "Image importée ; saisissez une URL ou un emoji pour la remplacer",
-    "billing": "Paiement"
+    "billing": "Paiement",
+    "settlement": "Suivre factures et paiements séparément"
   },
   "share": {
     "none": "Moi seul",
