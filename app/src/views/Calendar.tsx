@@ -24,7 +24,7 @@ import { flow, cnDate, cnDateAuto, monthLabel, relDays, weekdayShort } from '../
 import { t } from '../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { IconButton, MetricCards, Metric, CardTitle, Toolbar } from '../components/ui.tsx';
-import { Seg, useWidth } from '../components/inputs.tsx';
+import { Seg, useMedia, useWidth } from '../components/inputs.tsx';
 import { Icon } from '../components/icons.tsx';
 import { PayBadge, RegionTag, SubIcon } from '../components/marks.tsx';
 import { subRegion } from '../region.ts';
@@ -35,7 +35,7 @@ import { useMoneyPair } from '../components/MoneyPair.tsx';
 import { usePref } from '../prefs.ts';
 import { calendarJump } from './calendar-jump.ts';
 import { monthReport } from '../../../shared/scope-report.ts';
-import { monthGrid } from '../../../shared/calendar.ts';
+import { calendarIcons, monthGrid } from '../../../shared/calendar.ts';
 import { ScopeReport, SpendingDelta } from '../components/ScopeReport.tsx';
 import { StopText, stopDescription, stopLabel } from '../components/StopPanel.tsx';
 
@@ -90,16 +90,9 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
   // 图标只排一行、叠放约四成：按格子实际宽度算能放几个，放不下的换成「+N」，格子高度始终不变。
   // 悬停格子时依次轻浮一下，悬停某个图标时它浮到最上层；是哪几项看右侧当天列表
   const [gridRef, gridW] = useWidth();
-  const narrow = gridW > 0 && gridW < 560;
-  const icon = narrow ? 17 : 24;
-  const step = Math.round(icon * 0.6);
-  const inner = gridW / 7 - (narrow ? 6 : 14);
-  const MORE_W = 20;
-  /** 全部叠放能放下几个（不需要「+N」时）；放不下时给「+N」留出位置，至少留一个图标 */
-  const allCap = gridW ? Math.max(1, Math.floor((inner - icon) / step) + 1) : 4;
-  const iconCap = gridW ? Math.max(1, Math.floor((inner - icon - MORE_W) / step) + 1) : 4;
-  /** 不叠也放得下（间隔 3px，含「+N」）就平铺，放不下才叠 */
-  const fits = (n: number, more: boolean) => icon * n + 3 * (n - 1) + (more ? MORE_W : 0) <= inner;
+  // 与 styles.css 的 @media (max-width: 680px) 同一判断：窄屏图标 17px、格间距 2px、内边距 2px
+  const narrow = useMedia('(max-width: 680px)');
+  const iconRow = (count: number) => calendarIcons(gridW, narrow, count);
   const byDay = new Map<string, Charge[]>();
   for (const c of charges) byDay.set(c.date, [...(byDay.get(c.date) ?? []), c]);
   // 显示用合计：有一笔缺汇率就显示「—」，不按 0 算
@@ -209,7 +202,8 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                   ))}
                   {grid.map((d) => {
                     const items = byDay.get(d) ?? [];
-                    const shown = items.length > allCap ? items.slice(0, iconCap) : items;
+                    const row = iconRow(items.length);
+                    const shown = items.slice(0, row.shown);
                     return (
                       <button
                         key={d}
@@ -229,7 +223,7 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                         </div>
                         <div
                           className="cal-icons"
-                          style={{ '--m0': `${fits(shown.length, items.length > shown.length) ? 3 : step - icon}px` } as Record<string, string>}
+                          style={{ '--m0': `${row.tiled ? 3 : row.step - row.icon}px` } as Record<string, string>}
                         >
                           {shown.map((c, i) => (
                             <span
