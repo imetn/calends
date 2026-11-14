@@ -28,7 +28,7 @@
 
 Track what you pay, when it renews, and who owes you. Calends brings subscriptions, shared plans and prepaid balances into one private, single-owner ledger, with an optional read-only public page and AI access through MCP.
 
-- **Flexible billing** — monthly, yearly, custom cycles and lifetime purchases, with trials, intro prices, bonus periods, pauses, postpaid billing, advance charging and cancellation deadlines.
+- **Flexible billing** — monthly, yearly, custom cycles and lifetime purchases, with trials, intro prices, bonus periods, pauses, postpaid billing, separate bill/payment tracking, advance charging and cancellation deadlines.
 - **Usage meters** — track per-period usage or cumulative readings in any unit, with shared meters across subscriptions, usage metrics, aligned charts and usage in charge records.
 - **Billing history** — keep price, plan and region changes, gaps and overlapping subscriptions; upgrades can credit the unused part of the old plan. See total spent, actual monthly cost and every charge.
 - **Transfers and split payments** — count second-hand takeovers and resales in net cost, and split a charge across multiple payment methods.
