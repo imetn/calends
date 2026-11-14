@@ -240,5 +240,14 @@
     "noTrend": "이 기간에는 추이를 표시할 기록이 부족합니다",
     "latestPrice": "최근 {v}",
     "since": "{date}부터"
+  },
+  "settlement": {
+    "due": "납부 예정",
+    "overdue": "연체",
+    "partial": "일부 납부",
+    "prepaid": "선납",
+    "this": "이번 납부",
+    "earliest": "가장 오래된 미납",
+    "owed": "{count}기 미납"
   }
 }

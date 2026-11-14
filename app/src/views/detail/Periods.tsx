@@ -1,4 +1,4 @@
-import { addDays, billingPeriod, diffDays, effectiveStatus, memberAboard, renewalDates } from '../../../../shared/billing.ts';
+import { addDays, billingPeriod, currentPhase, diffDays, effectiveStatus, isSeparate, memberAboard, renewalDates } from '../../../../shared/billing.ts';
 import { carRule, collectionPeriod, memberStatus } from '../../../../shared/carpool.ts';
 import { cnDateAuto } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
@@ -19,7 +19,14 @@ export function PeriodBar({ sub, today, split = false }: { sub: Subscription; to
   const bp = billingPeriod(sub, today);
   const kind: 'trial' | 'bonus' | 'paid' = st === 'trial' ? 'trial' : bonus ? 'bonus' : 'paid';
   const from = bonus ? bonus.from : bp.from > today ? today : bp.from;
-  const end = bonus ? addDays(bonus.until, 1) : renewal.serviceExpires && renewal.serviceExpires > next.date ? renewal.serviceExpires : next.date;
+  // 分开记：本期就是今天所在的账单期，预缴了后面几期也不拉长
+  const end = bonus
+    ? addDays(bonus.until, 1)
+    : isSeparate(currentPhase(sub, today))
+      ? addDays(bp.paidThrough, 1)
+      : renewal.serviceExpires && renewal.serviceExpires > next.date
+        ? renewal.serviceExpires
+        : next.date;
   const cancelBy = renewal.cancelBy && renewal.cancelBy >= today && renewal.cancelBy < end ? renewal.cancelBy : undefined;
   const charge = next.date > today && next.date < end ? next.date : undefined;
   const title = t(split && kind === 'paid' ? 'detail.period.sub' : `detail.period.${kind}`);

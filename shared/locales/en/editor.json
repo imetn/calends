@@ -103,7 +103,8 @@
     "pausedAt": "Paused on",
     "plan": "Plan",
     "iconImported": "Imported image; type a URL or emoji to replace",
-    "billing": "Payment"
+    "billing": "Payment",
+    "settlement": "Track bills and payments separately"
   },
   "share": {
     "none": "Just me",

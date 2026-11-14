@@ -90,7 +90,7 @@ export function CarSheet({
   // 收款、付款切换：两张表都按年分组，与订阅详情的扣款记录同一套
   const [tab, setTab] = useState<'in' | 'out'>('in');
   const outs = chargesBetween(s, book.since ?? s.start, today, today)
-    .filter((c) => c.kind !== 'failed')
+    .filter((c) => c.kind !== 'failed' && !c.unpaid)
     // 缺汇率的一笔为 NaN：行与年小计显示「—」
     .map((c) => ({ c, base: chargeBaseOrNaN(state, c) }))
     .reverse();

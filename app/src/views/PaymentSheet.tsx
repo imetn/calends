@@ -1,6 +1,18 @@
 import { ConfirmButton } from '../components/ConfirmButton.tsx';
 import { useState } from 'react';
-import { activePhases, addDays, chargeServicePeriod, chargesBetween, currentPhase, cycleLabel, phaseSubs, uid } from '../../../shared/billing.ts';
+import {
+  activePhases,
+  addDays,
+  addMonths,
+  chargeServicePeriod,
+  chargesBetween,
+  currentPhase,
+  cycleLabel,
+  isSeparate,
+  phaseSubs,
+  settleBills,
+  uid,
+} from '../../../shared/billing.ts';
 import { cnDateAuto, currencyDecimals, money } from '../../../shared/format.ts';
 import { settlementCurrencyOf } from '../../../shared/fx.ts';
 import { t } from '../../../shared/i18n.ts';
@@ -92,7 +104,31 @@ export function PaymentSheet({
 
   // 这笔会算提前续费时先说明结果；临时加购等额外费用可以一键改成调整，不影响到期日
   const target = originalDate && originalIndex != null ? { date: originalDate, index: originalIndex } : undefined;
-  const early = kind === 'charge' ? earlyRenewalEffect(sub, today, { date, amount: Number(amount) || 0 }, target, pick) : undefined;
+  // 分开记：勾选结清哪几期，没手动勾时按金额从最早未缴的往后覆盖；右侧是这笔分到的金额，没分到的写还欠多少
+  const separate = kind === 'charge' && isSeparate(phase);
+  const horizon = addMonths(date > today ? date : today, 36);
+  const before = separate ? settleBills(others, today, horizon).bills : [];
+  const open = before.filter((b) => b.status === 'due' || b.status === 'overdue' || b.status === 'partial');
+  const [picked, setPicked] = useState<string[] | null>(existingPay?.periods?.length ? existingPay.periods : null);
+  const auto = (() => {
+    let rest = Number(amount) || 0;
+    const keys: string[] = [];
+    for (const b of open) {
+      if (rest <= 0.004) break;
+      keys.push(b.date);
+      rest -= b.due - b.paid;
+    }
+    return keys;
+  })();
+  const keys = picked ?? auto;
+  const draft: Payment = { date, amount: Number(amount) || 0, currency: ccy, ...(picked?.length ? { periods: picked } : {}) };
+  const after = separate ? settleBills({ ...others, payments: [...(others.payments ?? []), draft] }, today, horizon).bills : [];
+  const pieceOf = (date: string) => after.find((b) => b.date === date)?.pieces.find((x) => x.payment === draft)?.amount ?? 0;
+  const [ahead, setAhead] = useState(1);
+  const future = open.filter((b) => b.date > today && !keys.includes(b.date) && pieceOf(b.date) <= 0.004);
+  const shown = open.filter((b) => !future.includes(b) || future.indexOf(b) < ahead);
+  const togglePeriod = (k: string) => setPicked(keys.includes(k) ? keys.filter((x) => x !== k) : [...keys, k].sort());
+  const early = kind === 'charge' && !separate ? earlyRenewalEffect(sub, today, { date, amount: Number(amount) || 0 }, target, pick) : undefined;
 
   const [busy, submit] = useSubmit();
   const save = () => {
@@ -108,6 +144,7 @@ export function PaymentSheet({
       methodId: split ? undefined : changed ? (scope === 'one' && method !== phase.methodId ? method : undefined) : existingPay?.methodId,
       // 只剩一个来源没填金额时，它补上差额；其余校验（来源不同、合计相等）由 savePayment 统一做
       // 没选来源也没填金额的空行直接忽略
+      ...(separate ? { periods: picked ?? undefined } : {}),
       funding: split
         ?.filter((x) => x.methodId || x.amount !== '')
         .map((x) => ({ methodId: x.methodId ?? '', amount: sign * (x.amount === '' && blanks === 1 ? left : Number(x.amount)) })),
@@ -281,6 +318,39 @@ export function PaymentSheet({
             <MoneyInput ccy={ccy} className="num" value={amount} onChange={(e) => setAmount((e.target as HTMLInputElement).value)} />
           </Cell>
         </Group>
+        {separate && open.length > 0 && (
+          <Group title={t('receivable.periods')}>
+            {shown.map((b) => {
+              const piece = pieceOf(b.date);
+              const owed = b.due - b.paid;
+              const full = piece >= owed - 0.004;
+              const late = b.date < today && owed > 0.005;
+              return (
+                <label key={b.date} className={`cell rv-period ${keys.includes(b.date) ? 'on' : ''}`}>
+                  <input type="checkbox" checked={keys.includes(b.date)} onChange={() => togglePeriod(b.date)} />
+                  <span className="rv-period-l">
+                    <span>{cnDateAuto(b.date, today)}</span>
+                    {/* 账单日已过仍有未缴（含部分已缴）即逾期：状态与本笔分配同时可见 */}
+                    <small className={late ? 'due' : undefined}>
+                      {(piece > 0.004
+                        ? [late && t('detail.settlement.overdue'), t(full ? 'detail.settlement.this' : 'detail.settlement.partial')]
+                        : [t(`detail.settlement.${b.status}`), late && b.status !== 'overdue' && t('detail.settlement.overdue')]
+                      )
+                        .filter(Boolean)
+                        .join(' ')}
+                    </small>
+                  </span>
+                  <span className="num rv-period-r">{money(piece > 0.004 ? piece : owed, ccy)}</span>
+                </label>
+              );
+            })}
+            {future.length > ahead && (
+              <button type="button" className="cell tap rv-more" onClick={() => setAhead(ahead + 6)}>
+                {t('receivable.more')}
+              </button>
+            )}
+          </Group>
+        )}
         {period && (
           <Group
             title={t('detail.meters.head.usage')}

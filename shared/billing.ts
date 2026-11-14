@@ -198,6 +198,8 @@ export function subError(s: Subscription): string | undefined {
   if (!s.cycle || !['day', 'week', 'month', 'year', 'lifetime'].includes(s.cycle.unit) || !Number.isInteger(s.cycle.every) || !(s.cycle.every >= 1))
     return t('core.subError.cycle');
   if (s.billing != null && s.billing !== 'postpaid') return t('mcp.error.invalidInput', { field: 'billing' });
+  if (s.settlement != null && s.settlement !== 'separate') return t('mcp.error.invalidInput', { field: 'settlement' });
+  if (s.settledBefore != null && !validDay(s.settledBefore)) return t('mcp.error.invalidInput', { field: 'settledBefore' });
   for (const v of phaseSubs(s)) {
     if (v.billing != null && v.billing !== 'postpaid') return t('mcp.error.invalidInput', { field: 'billing' });
     if (v.estimateFrom && !validDay(v.estimateFrom)) return t('core.subError.start');
@@ -213,10 +215,29 @@ export function subError(s: Subscription): string | undefined {
       )
     )
       return t('core.renewal.invalid');
-    const error = stopError(v) ?? paymentError(v);
+    const error = stopError(v) ?? paymentError(v) ?? periodsError(v);
     if (error) return error;
   }
   return undefined;
+}
+
+/**
+ * 分开记的缴费指定的账单日必须是这个阶段真实存在的账单（账单日或服务日），不静默改成按先后抵扣；
+ * 追踪起点及之后的缴费不能指定推算期（否则这部分会被丢掉）；早于追踪起点的缴费可以指定推算期，也可以预缴追踪起点及之后的账单。
+ */
+function periodsError(v: Subscription): string | undefined {
+  const asked = (v.payments ?? []).flatMap((p) => p.periods ?? []);
+  if (!asked.length || !isSeparate(v)) return undefined;
+  const last = [...asked].sort().at(-1)!;
+  const { bills, track } = settleBills(v, last, last);
+  const known = new Map(bills.flatMap((b) => [[b.date, b] as const, [b.serviceDate ?? b.date, b] as const]));
+  const ok = (v.payments ?? []).every((p) =>
+    (p.periods ?? []).every((d) => {
+      const b = known.get(d);
+      return !!b && (p.date < track || b.status !== 'inferred');
+    }),
+  );
+  return ok ? undefined : t('mcp.error.invalidInput', { field: 'periods' });
 }
 
 /**
@@ -235,6 +256,7 @@ function shapeIssues(s: Subscription): Array<[key: string, error: string]> {
   if (s.pauses != null && !(Array.isArray(s.pauses) && s.pauses.every((p) => p && isDay(p.from) && isDay(p.to) && p.from < p.to)))
     add('pauses', s.pauses, t('mcp.error.invalidInput', { field: 'pauses' }));
   if (!Array.isArray(s.tags) || s.tags.some((x) => typeof x !== 'string')) add('tags', s.tags, t('mcp.error.invalidInput', { field: 'tags' }));
+  if (s.settlement != null && s.settlement !== 'separate') add('settlement', s.settlement, t('mcp.error.invalidInput', { field: 'settlement' }));
   for (const p of [s, ...(Array.isArray(s.phases) ? s.phases : [])]) {
     if (!p || typeof p !== 'object') {
       add('phase', p, t('mcp.error.invalidInput', { field: 'phases' }));
@@ -511,6 +533,14 @@ export interface Charge {
   methodId?: string;
   /** 这一笔由几个来源合付；读取用 chargeSources() */
   funding?: Payment['funding'];
+  /** 账单与缴费分开记：结清这期账单（date 为账单日）的那笔缴费的实际日期 */
+  paidOn?: string;
+  /** 账单与缴费分开记：账单未缴的部分；overdue 为账单日已过 */
+  unpaid?: 'due' | 'overdue';
+  /** 账单与缴费分开记的实际缴费（cashChargesBetween）：记下的指定账单（Payment.periods），修改时原样带回 */
+  periods?: string[];
+  /** 同上：这笔缴费实际分到的账单日 */
+  settles?: string[];
 }
 
 /** 一笔扣款实际用的支付方式：拆分付款取金额最大的来源，否则这一笔单独记的优先，再否则是所属阶段的 */
@@ -739,7 +769,351 @@ export function chargesBetween(s: Subscription, from: string, to: string, today:
       .flatMap((v) => chargesBetween(v, from, to, today))
       .sort((a, b) => a.date.localeCompare(b.date));
   }
+  if (isSeparate(s)) return separateCharges(s, from, to, today, 'accrual');
   return chargesAsRecorded(settleLegacyEarly(s), from, to, today);
+}
+
+/** 账单与缴费分开记（买断不适用） */
+export const isSeparate = (s: Pick<Subscription, 'settlement' | 'cycle'>) => s.settlement === 'separate' && s.cycle.unit !== 'lifetime';
+
+/**
+ * 现金口径的扣款：分开记时每笔缴费按实际缴费日记一条（不拆到账单），之后未缴的账单仍按账单日预测；
+ * 其余订阅与 chargesBetween 相同。支付方式余额、现金流按它算。
+ */
+export function cashChargesBetween(s: Subscription, from: string, to: string, today: string): Charge[] {
+  if (s.expires && s.chargeLeadDays == null) s = migrateRenewalRules(s);
+  if (s.phases?.length) {
+    return phaseSubs(s)
+      .flatMap((v) => cashChargesBetween(v, from, to, today))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+  if (isSeparate(s)) return separateCharges(s, from, to, today, 'cash');
+  return chargesAsRecorded(settleLegacyEarly(s), from, to, today);
+}
+
+/** 分开记时账单日已过、还没缴清的各期（未缴部分），按账单日排序；与 chargesBetween 里 unpaid: 'overdue' 的那些相同 */
+export function overdueBills(s: Subscription, today: string): Charge[] {
+  if (s.expires && s.chargeLeadDays == null) s = migrateRenewalRules(s);
+  return phaseSubs(s)
+    .filter(isSeparate)
+    .flatMap((v) =>
+      settleBills(v, today)
+        .bills.filter((b) => b.status !== 'inferred' && b.date < today && b.due - b.paid > 0.005)
+        .map((b) => unpaidCharge(v, b, today)),
+    )
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export type BillStatus = 'paid' | 'partial' | 'due' | 'overdue' | 'prepaid' | 'inferred' | 'free';
+
+export interface Bill {
+  date: string;
+  serviceDate?: string;
+  /** 本期应缴 */
+  due: number;
+  /** 已分配到本期的真实缴费；推算期（开始追踪之前）没有缴费时为 0，未缴部分视为已缴 */
+  paid: number;
+  status: BillStatus;
+  /** 各笔缴费分到本期的金额 */
+  pieces: Array<{ payment: Payment; amount: number }>;
+}
+
+export interface Settlement {
+  bills: Bill[];
+  /** 每笔缴费结清的账单日（按分配结果，含自动抵扣） */
+  allocated: Map<Payment, string[]>;
+  /** 分配不出去的余额（所有账单都已缴清，或开始追踪之前的缴费抵完推算期后剩下的） */
+  credit: Array<{ payment: Payment; amount: number }>;
+  /** 开始追踪的账单日：此前的账单视为已缴 */
+  track: string;
+}
+
+const cents = (n: number) => Math.round(n * 100) / 100;
+
+/** 不看缴费的账单：分开记的账单只由周期、价格历史与停止、暂停、试用等规则决定 */
+const billsOnly = (s: Subscription): Subscription => ({ ...s, payments: undefined, nextDue: undefined, settlement: undefined, settledBefore: undefined });
+
+/** at 当天或之前最近的一期账单日（缴费日当天或之前的那期才是这笔缴的）；at 之前没有账单时取之后最早的一期，都没有时为开始日 */
+function billOnOrBefore(v: Subscription, at: string): string {
+  const open = billsOnly(v);
+  const first = v.billingStart && v.billingStart < v.start ? v.billingStart : v.start;
+  const bills = (from: string, to: string) => chargesAsRecorded(open, from, to, at).filter((c) => !c.kind);
+  return (at >= first ? bills(first, at).at(-1)?.date : undefined) ?? bills(at > first ? at : first, addDays(at > first ? at : first, 800))[0]?.date ?? v.start;
+}
+
+/**
+ * 分开记的追踪起点（编辑器打开开关、整条写入时按整条订阅算一次写进 settledBefore）：最早一笔普通缴费指定的最早账单；
+ * 与那笔缴费日当天或之前的那期取较早的；没指定时就是那期；还没有缴费时是今天当天或之前的那期。
+ */
+export function trackingStart(s: Subscription, today: string): string {
+  const first = phaseSubs(s)
+    .flatMap((v) => (v.payments ?? []).filter((p) => !p.kind).map((p) => ({ v, p })))
+    .sort((a, b) => a.p.date.localeCompare(b.p.date))[0];
+  if (!first) return billOnOrBefore(currentPhase(s, today), today);
+  const on = billOnOrBefore(first.v, first.p.date);
+  // 指定了账单时从最早指定期起追踪：补缴旧账从那期起，预缴下一期时缴费当期仍按推算（已缴），不凭空变成逾期
+  return first.p.periods?.length ? [...first.p.periods].sort()[0] : on;
+}
+
+/**
+ * 读取时的追踪起点：settledBefore；旧数据没写时有缴费按缴费推（与日期无关），
+ * 没有缴费时按建档日推，没有建档日就从第一期起追踪，不随今天移动（否则逾期会随时间悄悄变成已缴）。
+ */
+export function trackOf(s: Subscription): string {
+  if (s.settledBefore) return s.settledBefore;
+  if (phaseSubs(s).some((v) => (v.payments ?? []).some((p) => !p.kind))) return trackingStart(s, s.start);
+  return s.createdAt ? trackingStart(s, s.createdAt) : billOnOrBefore(s, s.start);
+}
+
+/**
+ * 分开记的账单与分配：账单按开始锚点、价格历史、停止/暂停/试用/后付费等规则生成，与缴费日期无关；
+ * 追踪起点（settledBefore，缺省见 trackingStart）之前的视为已缴（推算）。缴费先按 periods 指定的账单按未缴比例分，
+ * 剩下的（及没写 periods 的）按缴费日先后从最早未缴的账单依次抵扣，可以抵到未来的账单（预缴）。
+ * 早于追踪起点的缴费只抵推算期：从缴费日当天或之前的那期往后，再往前补，推算期都抵满了才记作 credit。删掉一笔缴费，它的分配随之释放。
+ * 分配结果与查询窗口无关：账单至少生成到最晚的缴费日与指定账单日，钱没分完再往后多生成。
+ */
+export function settleBills(s: Subscription, today: string, until = today): Settlement {
+  const pays = (s.payments ?? []).filter((p) => !p.kind).sort((a, b) => a.date.localeCompare(b.date));
+  const track = trackOf(s);
+  const early = (p: Payment) => p.date < track;
+  const total = pays.filter((p) => !early(p)).reduce((a, p) => a + Math.max(0, p.amount), 0);
+  const last = [...pays.map((p) => p.date), ...pays.flatMap((p) => p.periods ?? [])].sort().at(-1) ?? s.start;
+  const open = billsOnly(s);
+  const keyOf = new Map<string, number>();
+  const first = s.billingStart && s.billingStart < s.start ? s.billingStart : s.start;
+  let horizon = [until, last].sort().at(-1)!;
+  let raw: Charge[] = [];
+  // 预缴可能抵到很远的账单：账单总额不够分配时往后多生成，没有新账单（已结束）就停
+  for (let i = 0; i < 40; i++) {
+    raw = chargesAsRecorded(open, first, horizon, today).filter((c) => !c.kind);
+    const owed = raw.filter((c) => c.date >= track).reduce((a, c) => a + c.amount, 0);
+    if (owed >= total - 0.005) break;
+    const next = addMonths(horizon, 12);
+    const more = chargesAsRecorded(open, addDays(horizon, 1), next, today).filter((c) => !c.kind);
+    if (!more.length) break;
+    horizon = next;
+  }
+  const bills: Bill[] = raw.map((c) => ({
+    date: c.date,
+    serviceDate: c.serviceDate,
+    due: c.amount,
+    paid: 0,
+    status: c.date < track ? 'inferred' : 'due',
+    pieces: [],
+  }));
+  bills.forEach((b, i) => {
+    keyOf.set(b.date, i);
+    if (b.serviceDate && !keyOf.has(b.serviceDate)) keyOf.set(b.serviceDate, i);
+  });
+  const allocated = new Map<Payment, string[]>();
+  const rest = new Map<Payment, number>();
+  const give = (p: Payment, b: Bill, amount: number) => {
+    if (amount <= 0.004) return;
+    b.paid = cents(b.paid + amount);
+    const piece = b.pieces.find((x) => x.payment === p);
+    if (piece) piece.amount = cents(piece.amount + amount);
+    else b.pieces.push({ payment: p, amount: cents(amount) });
+    const keys = allocated.get(p) ?? [];
+    if (!keys.includes(b.date)) allocated.set(p, [...keys, b.date]);
+  };
+  const left = (b: Bill) => cents(b.due - b.paid);
+  const inferred = (b: Bill) => b.status === 'inferred';
+  // 先分指定了账单的：按各期未缴金额的比例，最后一期拿零头；写入时 periodsError 已拦住追踪之后指定推算期的，读取时照指定分配不丢钱
+  for (const p of pays) {
+    let amount = Math.max(0, p.amount);
+    const targets = [...new Set((p.periods ?? []).map((k) => keyOf.get(k)).filter((i): i is number => i != null))]
+      .sort((a, b) => a - b)
+      .map((i) => bills[i])
+      .filter((b) => left(b) > 0);
+    const owed = targets.reduce((a, b) => a + left(b), 0);
+    if (owed > 0) {
+      const use = Math.min(amount, owed);
+      let given = 0;
+      targets.forEach((b, i) => {
+        const part = i === targets.length - 1 ? cents(use - given) : cents((use * left(b)) / owed);
+        const take = Math.min(part, left(b));
+        give(p, b, take);
+        given = cents(given + take);
+      });
+      amount = cents(amount - given);
+    }
+    rest.set(p, amount);
+  }
+  // 再按缴费日先后抵扣：追踪之后的从最早未缴的账单起；早于追踪起点的从缴费日当天或之前的那期推算期起往后，
+  // 再往前补更早的推算期，补满了才记余额（推算期视为已缴，不能和同一笔钱的余额并存而重复计入）
+  for (const p of pays) {
+    let amount = rest.get(p) ?? 0;
+    let order = bills;
+    if (early(p)) {
+      const on = bills.findLastIndex((b) => b.date <= p.date);
+      const at = on >= 0 ? on : bills.findIndex((b) => b.date >= p.date);
+      order = at < 0 ? [] : [...bills.slice(at), ...bills.slice(0, at).reverse()];
+    }
+    for (const b of order) {
+      if (amount <= 0.004) break;
+      if (inferred(b) !== early(p)) continue;
+      const take = Math.min(amount, left(b));
+      if (take <= 0) continue;
+      give(p, b, take);
+      amount = cents(amount - take);
+    }
+    rest.set(p, amount);
+  }
+  for (const b of bills) {
+    if (inferred(b)) continue;
+    b.status =
+      b.due <= 0.004 ? 'free' : left(b) <= 0.004 ? (b.date > today ? 'prepaid' : 'paid') : b.paid > 0.004 ? 'partial' : b.date < today ? 'overdue' : 'due';
+  }
+  const credit = pays.filter((p) => (rest.get(p) ?? 0) > 0.004).map((p) => ({ payment: p, amount: rest.get(p)! }));
+  return { bills, allocated, credit, track };
+}
+
+function unpaidCharge(s: Subscription, b: Bill, today: string): Charge {
+  return {
+    sub: s,
+    date: b.date,
+    ...(b.serviceDate ? { serviceDate: b.serviceDate } : {}),
+    amount: cents(b.due - b.paid),
+    currency: s.currency,
+    projected: true,
+    unpaid: b.date < today ? 'overdue' : 'due',
+  };
+}
+
+/** 一笔缴费拆出的一份：share 给出卡上实扣与资金来源分到的部分（见 paymentShares），没有时整笔照抄 */
+function paymentCharge(s: Subscription, p: Payment, date: string, amount: number, today: string, extra: Partial<Charge>, share?: Partial<Charge>): Charge {
+  return {
+    sub: s,
+    date,
+    amount,
+    currency: s.currency,
+    projected: false,
+    ...(p.note ? { note: p.note } : {}),
+    ...(p.methodId ? { methodId: p.methodId } : {}),
+    ...(share ?? { ...(p.settled ? { settled: p.settled } : {}), ...(p.funding?.length ? { funding: p.funding } : {}) }),
+    ...extra,
+    ...(date > today && !extra.paidOn ? { projected: true } : {}),
+  };
+}
+
+/** 每笔缴费分到各期（及余额）的那几份，卡上实扣与各资金来源按金额比例分，最后一份拿零头，合计与原笔一致 */
+function paymentShares({ bills, credit }: Settlement): Map<object, Partial<Charge>> {
+  const parts = new Map<Payment, Array<{ key: object; amount: number }>>();
+  const add = (p: Payment, key: object, amount: number) => parts.set(p, [...(parts.get(p) ?? []), { key, amount }]);
+  for (const b of bills) for (const piece of b.pieces) add(piece.payment, piece, piece.amount);
+  for (const c of credit) add(c.payment, c, c.amount);
+  const out = new Map<object, Partial<Charge>>();
+  for (const [p, list] of parts) {
+    let settledDone = 0;
+    const fundingDone = (p.funding ?? []).map(() => 0);
+    list.forEach((x, i) => {
+      const last = i === list.length - 1;
+      const ratio = p.amount ? x.amount / p.amount : 1;
+      const share: Partial<Charge> = {};
+      if (p.settled) {
+        const amount = last ? cents(p.settled.amount - settledDone) : cents(p.settled.amount * ratio);
+        settledDone = cents(settledDone + amount);
+        share.settled = { amount, currency: p.settled.currency };
+      }
+      if (p.funding?.length)
+        share.funding = p.funding.map((f, k) => {
+          const amount = last ? cents(f.amount - fundingDone[k]) : cents(f.amount * ratio);
+          fundingDone[k] = cents(fundingDone[k] + amount);
+          return { ...f, amount };
+        });
+      out.set(x.key, share);
+    });
+  }
+  return out;
+}
+
+/** 同一期由几笔缴费结清时合成一条：金额相加，缴费日取最晚的；卡上实扣同币种才相加，支付方式不同时写成资金来源 */
+function mergePieces(cs: Charge[]): Charge {
+  if (cs.length < 2) return cs[0];
+  const [first] = cs;
+  const amount = cents(cs.reduce((a, c) => a + c.amount, 0));
+  const ccy = first.settled?.currency;
+  const settled =
+    ccy && cs.every((c) => c.settled?.currency === ccy) ? { amount: cents(cs.reduce((a, c) => a + c.settled!.amount, 0)), currency: ccy } : undefined;
+  const sources = new Map<string, number>();
+  for (const c of cs)
+    for (const f of c.funding?.length ? c.funding : [{ methodId: chargeMethodId(c) ?? '', amount: c.amount }])
+      sources.set(f.methodId, cents((sources.get(f.methodId) ?? 0) + f.amount));
+  const notes = [...new Set(cs.map((c) => c.note).filter(Boolean))];
+  const { settled: _s, funding: _f, methodId: _m, note: _n, ...rest } = first;
+  return {
+    ...rest,
+    amount,
+    paidOn: cs
+      .map((c) => c.paidOn ?? c.date)
+      .sort()
+      .at(-1),
+    ...(settled ? { settled } : {}),
+    ...(notes.length ? { note: notes.join('\n') } : {}),
+    ...(sources.size === 1
+      ? sources.has('')
+        ? {}
+        : { methodId: [...sources.keys()][0] }
+      : { funding: [...sources].map(([methodId, value]) => ({ methodId, amount: value })) }),
+  };
+}
+
+function separateCharges(s: Subscription, from: string, to: string, today: string, basis: 'accrual' | 'cash'): Charge[] {
+  const settlement = settleBills(s, today, to);
+  const { bills, credit, allocated } = settlement;
+  const shares = paymentShares(settlement);
+  const out: Charge[] = [];
+  const inWindow = (d: string) => d >= from && d <= to;
+  // 退款、补差、扣款失败仍是按日期的现金记录
+  for (const p of s.payments ?? []) {
+    if (!p.kind || !inWindow(p.date)) continue;
+    out.push(paymentCharge(s, p, p.date, p.kind === 'failed' ? 0 : p.amount, today, { kind: p.kind }, p.kind === 'failed' ? {} : undefined));
+  }
+  if (basis === 'cash') {
+    // 现金口径是真实缴费，加上推算期视为已缴的部分（与普通订阅记账起点前推算的扣款一样，缴费日即账单日），
+    // 再加今天之后还没缴的账单（预测，钱包余额要扣）；已过期的欠缴不是现金
+    for (const p of s.payments ?? [])
+      if (!p.kind && inWindow(p.date))
+        out.push(
+          paymentCharge(s, p, p.date, p.amount, today, {
+            paidOn: p.date,
+            ...(p.periods?.length ? { periods: p.periods } : {}),
+            settles: [...(allocated.get(p) ?? [])].sort(),
+          }),
+        );
+    for (const b of bills) {
+      if (!inWindow(b.date) || b.due - b.paid <= 0.005) continue;
+      if (b.status === 'inferred')
+        out.push({
+          sub: s,
+          date: b.date,
+          ...(b.serviceDate ? { serviceDate: b.serviceDate } : {}),
+          amount: cents(b.due - b.paid),
+          currency: s.currency,
+          projected: b.date > today,
+        });
+      else if (b.date > today) out.push(unpaidCharge(s, b, today));
+    }
+    return out.sort((a, b) => a.date.localeCompare(b.date));
+  }
+  for (const b of bills) {
+    if (!inWindow(b.date)) continue;
+    const base = b.serviceDate ? { serviceDate: b.serviceDate } : {};
+    if (b.pieces.length)
+      out.push(
+        mergePieces(
+          b.pieces.map((piece) => paymentCharge(s, piece.payment, b.date, piece.amount, today, { ...base, paidOn: piece.payment.date }, shares.get(piece))),
+        ),
+      );
+    if (b.due - b.paid <= 0.005) continue;
+    // 推算期没缴的部分视为已缴；追踪之后没缴的部分是待缴（今天及以后）或逾期（已过），都按预测记，不算已付
+    if (b.status === 'inferred') out.push({ sub: s, date: b.date, ...base, amount: cents(b.due - b.paid), currency: s.currency, projected: b.date > today });
+    else out.push(unpaidCharge(s, b, today));
+  }
+  // 账单都已缴清后多出的钱：按缴费日记，不丢
+  for (const c of credit)
+    if (inWindow(c.payment.date)) out.push(paymentCharge(s, c.payment, c.payment.date, c.amount, today, { paidOn: c.payment.date }, shares.get(c)));
+  return out.sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /** 按记录原样算，不再识别旧版提前续费；账期计算去掉停用状态后用它，否则会绕过 settleLegacyEarly 的停用判断 */
@@ -971,18 +1345,21 @@ export function nextCharge(s: Subscription, today: string): string | undefined {
   if (s.cycle.unit === 'lifetime') return s.start > today ? s.start : undefined;
   // 后付费停止后还有最后一张账单，交给 chargesBetween 判断
   if (s.stop && s.stop.date <= today && !isPostpaid(s)) return undefined;
-  // 提前续费后下一笔可能在将近两个周期之后
-  return chargesBetween(s, today, addDays(today, Math.max(396, Math.ceil(cycleDays(s.cycle) * 2) + 32)), today).find((c) => !c.kind)?.date;
+  // 提前续费后下一笔可能在将近两个周期之后；分开记时已预缴的账单（带 paidOn）不算下一笔
+  return chargesBetween(s, today, addDays(today, Math.max(396, Math.ceil(cycleDays(s.cycle) * 2) + 32)), today).find((c) => !c.kind && !c.paidOn)?.date;
 }
 
 export function lastCharge(s: Subscription, today: string): string | undefined {
-  const all = chargesBetween(s, s.start, today, today).filter((c) => !c.kind);
+  // 分开记时没缴的账单（待缴、逾期）不是扣款：最后一次扣款是最近一期缴过（含推算期视为已缴）的账单
+  const all = chargesBetween(s, s.start, today, today).filter((c) => !c.kind && !c.unpaid);
   return all[all.length - 1]?.date;
 }
 
 /** 停止前原账期。按原始锚点推算，保留月末夹紧、nextDue、实付与赠送期。 */
 export function billingPeriod(s: Subscription, at: string): { from: string; paidThrough: string; paid: number; days: number } {
   if (s.phases?.length) return billingPeriod(currentPhase(s, at), at);
+  // 分开记：账期只看账单周期，缴了没有、哪天缴的不影响「本期」
+  if (isSeparate(s)) return periodAsRecorded({ ...s, payments: undefined, nextDue: undefined, settlement: undefined }, at);
   return periodAsRecorded(settleLegacyEarly(s), at);
 }
 
@@ -1134,6 +1511,8 @@ export function paymentError(s: Subscription): string | undefined {
     if (!validDay(p.date)) return t('mcp.error.notDate', { what: 'payment.date' });
     if (p.serviceDate != null && !validDay(p.serviceDate)) return t('mcp.error.notDate', { what: 'payment.serviceDate' });
     if (!Number.isFinite(p.amount) || (p.settled && (!Number.isFinite(p.settled.amount) || !p.settled.currency))) return t('core.subError.price');
+    if (p.periods != null && (p.kind || !isSeparate(s) || !Array.isArray(p.periods) || !p.periods.every((d) => typeof d === 'string' && validDay(d))))
+      return t('mcp.error.invalidInput', { field: 'periods' });
     const funding = fundingError(p);
     if (funding) return funding;
     if (p.kind !== 'refund') continue;
@@ -1395,8 +1774,9 @@ export function runwayFor(method: PaymentMethod, state: AppState, today: string,
   const horizon = addMonths(today, Math.max(12, horizonMonths));
   // 余额按每笔实际的来源扣：单笔记的支付方式优先，拆分付款按份额；预测的扣款没有单笔记录，仍归阶段的支付方式
   const share = (c: Charge) => chargeSources(c).reduce((a, x) => a + (x.methodId === method.id ? x.share : 0), 0);
+  // 余额按实际扣款日走：分开记的合并缴只扣一次（见 cashChargesBetween）
   const charges = phases
-    .flatMap((s) => chargesBetween(s, addDays(asOf, 1), horizon, today))
+    .flatMap((s) => cashChargesBetween(s, addDays(asOf, 1), horizon, today))
     .map((c) => ({ c, share: share(c) }))
     .filter((x) => x.share > 0)
     .sort((a, b) => a.c.date.localeCompare(b.c.date));

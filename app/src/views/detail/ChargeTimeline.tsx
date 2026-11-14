@@ -15,7 +15,9 @@ import {
   diffDays,
   effectiveStatus,
   isPostpaid,
+  isSeparate,
   midDay,
+  overdueBills,
   phaseLanes,
   phaseSubs,
   priceAt,
@@ -51,13 +53,44 @@ export function barDay(c: Charge, today: string): string {
 }
 
 /**
+ * 分开记的每期账单柱：按阶段与账单日合成一期，有缴费（含预缴的未来账单）的画实柱，没缴的部分叠在同一根柱上画斜纹；
+ * 完全没缴的今天及以前的那期归 owed（虚线），今天之后的只取下一期。不是分开记时为 undefined
+ */
+function separateBars(sub: Subscription, today: string, until: string) {
+  if (!phaseSubs(sub).some(isSeparate)) return undefined;
+  const groups = new Map<string, Charge[]>();
+  for (const c of chargesBetween(sub, sub.start, until > today ? until : today, today))
+    if (!c.kind && c.amount > 0) groups.set(`${c.sub.start}|${c.date}`, [...(groups.get(`${c.sub.start}|${c.date}`) ?? []), c]);
+  const merge = (cs: Charge[]): Charge => {
+    const main = cs.find((c) => c.paidOn) ?? cs[0];
+    return cs.length < 2 ? main : { ...main, amount: Math.round(cs.reduce((a, c) => a + c.amount, 0) * 100) / 100 };
+  };
+  const paid: Charge[] = [];
+  const owed: Charge[] = [];
+  const next: Charge[] = [];
+  const remainder = new Map<Charge, Charge>();
+  for (const cs of groups.values()) {
+    const done = cs.filter((c) => !c.unpaid);
+    const left = cs.filter((c) => c.unpaid);
+    if (done.length) {
+      const bar = merge(done);
+      paid.push(bar);
+      if (left.length) remainder.set(bar, merge(left));
+    } else if (left[0].date <= today) owed.push(merge(left));
+    else if (!next.length) next.push(merge(left));
+  }
+  return { paid: paid.filter((c) => c.date <= today || c.paidOn), owed, next, remainder };
+}
+
+/**
  * 费用走势的时间范围与横轴：详情页据此同时驱动费用图和用量图，两张图日期对齐、范围同步。
  * 未来只画下一期。
  */
 export function timelineAxis(sub: Subscription, today: string, history: Charge[], picked?: Range) {
   const st = effectiveStatus(sub, today);
   const cur = currentPhase(sub, today);
-  const reg = regular(history);
+  // 分开记时一期一根柱：平均线、范围按已缴（含部分已缴）的各期算，见 separateBars
+  const reg = phaseSubs(sub).some(isSeparate) ? (separateBars(sub, today, today)?.paid ?? []) : regular(history);
   const live = !['ended', 'terminated', 'lifetime', 'paused'].includes(st);
   const end = detailHistoryEnd(sub, today);
   const anchor = end.date ?? today;
@@ -68,7 +101,7 @@ export function timelineAxis(sub: Subscription, today: string, history: Charge[]
   const future =
     live && next
       ? chargesBetween(sub, addDays(today, 1), until, today)
-          .filter((c) => !c.kind)
+          .filter((c) => !c.kind && !c.paidOn)
           .slice(0, 1)
       : [];
 
@@ -90,10 +123,14 @@ export function timelineAxis(sub: Subscription, today: string, history: Charge[]
   const fallback: Range = days <= 31 && ranges.some(([k]) => k === '1y') ? '1y' : 'all';
   const range = picked && ranges.some(([k]) => k === picked) ? picked : fallback;
   const since = range === 'all' ? '' : addMonths(anchor, range === '1y' ? -12 : -6);
-  const past = reg.filter((c) => chargeDay(c) >= since);
+  const bills = separateBars(sub, today, until);
+  const past = (bills?.paid ?? reg).filter((c) => chargeDay(c) >= since);
+  // 账单与缴费分开记：账单日已过（含今天）还没缴的那期，和预测一样画虚线
+  const owed = (bills?.owed ?? overdueBills(sub, today)).filter((c) => chargeDay(c) >= since);
+  if (bills) future.splice(0, future.length, ...bills.next);
   // Preserve late payments after a known service end without extending the service lane.
   // 按柱子位置取首末：补交的旧账单扣款日晚，柱子却画在更早的所属周期，不能按扣款顺序取
-  const barDays = [...past, ...future].map((c) => barDay(c, today)).sort();
+  const barDays = [...past, ...owed, ...future].map((c) => barDay(c, today)).sort();
   const firstDate = barDays[0] ?? anchor;
   const lastDate = barDays[barDays.length - 1] ?? anchor;
   const first = firstDate < anchor ? firstDate : anchor;
@@ -110,10 +147,13 @@ export function timelineAxis(sub: Subscription, today: string, history: Charge[]
     range,
     since,
     past,
+    owed,
+    /** 分开记时部分已缴的那期：已缴那根柱 → 同一期还没缴的部分 */
+    remainder: bills?.remainder,
     from: addDays(first, -pad),
     to: addDays(lastBar, pad),
     /** 画得出来：费用图至少两根柱 */
-    drawn: past.length + future.length >= 2,
+    drawn: past.length + owed.length + future.length >= 2,
   };
 }
 
@@ -142,10 +182,10 @@ export function Timeline({
   const base = state.settings.baseCurrency;
   const [ownRange, setOwnRange] = useState<Range | undefined>(() => snapshotSelection?.range);
   const ax = timelineAxis(sub, today, history, snapshotSelection?.range ?? rangeProp ?? ownRange);
-  const { reg, live, end, anchor, future, ranges, range, past, from, to } = ax;
+  const { reg, live, end, anchor, future, ranges, range, past, owed, remainder, from, to } = ax;
   const setRange = (r: Range) => (onRange ? onRange(r) : setOwnRange(r));
   // 单位：记账货币，或（所有扣款同一种外币时）原币；原币下卡上另币种结算的那笔没有原币实扣，按标价画
-  const ccys = [...new Set([...reg, ...future].map((c) => c.currency))];
+  const ccys = [...new Set([...reg, ...owed, ...future].map((c) => c.currency))];
   const origCcy = ccys.length === 1 && ccys[0] !== base ? ccys[0] : undefined;
   // 过去的扣款全都换算不了本位币时默认按原币画，否则本位币下全是 0 高的柱子，像没花钱
   const [unit, setUnit] = useState<'base' | 'orig'>(
@@ -158,12 +198,17 @@ export function Timeline({
   const ccy = unit === 'orig' && origCcy ? origCcy : base;
   // 平均线：与用量图一样按全部实际记录算，只画在已发生的柱上；缺汇率的不算进去，不能当 0
   const average = averageLine(reg.map((c) => (ccy === base ? chargeBaseOrNaN(state, c, base) : c.amount)));
-  const each = [...past.map((c) => ({ c, future: false })), ...future.map((c) => ({ c, future: true }))].map((r) => {
+  const ordered = [...past.map((c) => ({ c, future: false })), ...owed.map((c) => ({ c, future: true })), ...future.map((c) => ({ c, future: true }))];
+  // 分开记时逾期账单、预缴的未来账单插在中间，要按日期重排；其余订阅保持原有顺序
+  const each = (remainder ? ordered.sort((a, b) => a.c.date.localeCompare(b.c.date)) : ordered).map((r) => {
     // 缺汇率的是 NaN：图表画占位短柱，也不算进汇总后的平均线
     const v = ccy === base ? chargeBaseOrNaN(state, r.c, base) : r.c.amount;
     // 首期优惠：这一笔按优惠价扣，原价减去的部分在柱顶画成斜纹（按这一笔同样的折算比例）
     const regularPrice = r.c.sub.intro && r.c.date < r.c.sub.intro.until && !r.c.kind ? priceAt({ ...r.c.sub, intro: undefined }, r.c.date) : undefined;
-    const full = regularPrice && r.c.amount > 0 && regularPrice > r.c.amount ? (v * regularPrice) / r.c.amount : undefined;
+    const intro = regularPrice && r.c.amount > 0 && regularPrice > r.c.amount ? (v * regularPrice) / r.c.amount : undefined;
+    // 部分已缴：没缴的部分叠在柱顶画斜纹（与首期优惠同一种画法），整根柱高是本期应缴
+    const owedPart = remainder?.get(r.c);
+    const full = owedPart ? v + (ccy === base ? chargeBaseOrNaN(state, owedPart, base) : owedPart.amount) : intro;
     return {
       ...r,
       date: barDay(r.c, today),
@@ -171,6 +216,8 @@ export function Timeline({
       v,
       ref: r.future ? undefined : average,
       full: full != null && Number.isFinite(full) ? full : undefined,
+      intro: intro != null,
+      owedPart,
     };
   });
   // 柱子太密时由图表按宽度自动按月、季、年汇总，这里给出每一笔
@@ -180,7 +227,9 @@ export function Timeline({
   // 最高柱顶的金额：与提示框、扣款记录同一种写法（某币种全是整数时不写 .00）
   const whole = wholeCurrencies(history);
   // 整价判断看全部扣款与预测，不随所选范围变化，与扣款记录同一份数据
-  const wholeChart = wholeCurrencies([...reg, ...future].map((c) => ({ amount: ccy === base ? chargeValue(state, c, base) : c.amount, currency: ccy })));
+  const wholeChart = wholeCurrencies(
+    [...reg, ...owed, ...future].map((c) => ({ amount: ccy === base ? chargeValue(state, c, base) : c.amount, currency: ccy })),
+  );
   const fmt = (v: number) => money(v, ccy, wholeOpts(v, ccy, wholeChart));
   const spent = (total: FxTotal) => formatTotal(total, ccy, { direction: -1, ...(wholeChart.has(ccy) ? { decimals: 0 } : {}) });
   // 有用量指标时提示框带上这一笔结算期内的用量（第一个指标，与扣款记录的用量列一致）
@@ -307,7 +356,8 @@ export function Timeline({
               whole={whole}
               future={r.future}
               converted={r.c.currency !== ccy ? spent(chartTotal([r.c])) : undefined}
-              full={r.full != null ? money(r.full, ccy) : undefined}
+              full={r.intro && r.full != null ? money(r.full, ccy) : undefined}
+              owed={r.owedPart}
               usage={chargeUsage(readings, r.c)}
               open={chargeOpen(readings, r.c)}
               meter={meter}
@@ -317,11 +367,11 @@ export function Timeline({
         }}
       />
       {/* 实色是已扣、斜纹是预计，一看就知道，图例只写看不出来的事 */}
-      {(end.unknown || bucket > 0 || each.some((r) => r.full != null)) && (
+      {(end.unknown || bucket > 0 || each.some((r) => r.intro)) && (
         <div className="dt-legend">
           {end.unknown && <span>{t('detail.chart.unknownEnd')}</span>}
           {bucket > 0 && <span>{t(`detail.chart.bucket.m${bucket}`)}</span>}
-          {each.some((r) => r.full != null) && (
+          {each.some((r) => r.intro) && (
             <span>
               <i className="k-f" />
               {t('detail.chart.saved')}

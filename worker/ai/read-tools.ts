@@ -6,10 +6,13 @@ import {
   chargeSources,
   activePhases,
   addMonths,
+  cashChargesBetween,
   chargesBetween,
   currentPhase,
   cycleLabel,
   effectiveStatus,
+  isSeparate,
+  overdueBills,
   memberDues,
   collectionAnchor,
   memberLedger,
@@ -187,7 +190,8 @@ export const get_subscription: Tool = {
     const { st, today } = await state(ctx);
     const out = outCcy(st, a);
     const s = findSub(st, a.subscription);
-    const all = chargesBetween(s, s.start, today, today);
+    // 累计按实际付款，与详情页「累计」同一口径
+    const all = cashChargesBetween(s, s.start, today, today);
     const gaps = fxGaps();
     const spent = all.reduce((t, c) => t + (gaps.note(chargeBaseOrNaN(st, c, out ?? st.settings.baseCurrency), chargeCcy(c)) as number), 0);
     const from = addMonths(today, -Number(a.months_back ?? 12));
@@ -257,6 +261,7 @@ export const get_subscription: Tool = {
         planned: !!v.planned,
       })),
       charges: chargesBetween(s, from, to, today).map((c) => chargeRow(st, c, out)),
+      ...(phaseSubs(s).some(isSeparate) ? { unpaid_bills: overdueBills(s, today).map((c) => chargeRow(st, c, out)) } : {}),
       share: s.share
         ? {
             role: s.share.role,

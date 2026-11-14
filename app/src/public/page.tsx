@@ -565,7 +565,7 @@ function derive(state: AppState, today: string) {
 
 
   const upcoming = allCharges(state, addDays(today, 1), addDays(today, 30), today)
-    .filter((c) => c.amount > 0 && c.kind !== 'refund' && c.kind !== 'failed')
+    .filter((c) => c.amount > 0 && c.kind !== 'refund' && c.kind !== 'failed' && !c.paidOn)
     .map((c) => ({ ...c, value: chargeValue(state, c) }));
 
   const byCcy = new Map<string, { v: number }>();

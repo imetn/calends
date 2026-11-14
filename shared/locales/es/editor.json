@@ -103,7 +103,8 @@
     "pausedAt": "Fecha de pausa",
     "plan": "Plan",
     "iconImported": "Imagen importada; escribe una URL o emoji para reemplazarla",
-    "billing": "Pago"
+    "billing": "Pago",
+    "settlement": "Registrar facturas y pagos por separado"
   },
   "share": {
     "none": "Solo yo",

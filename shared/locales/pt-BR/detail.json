@@ -254,5 +254,17 @@
     "noTrend": "Períodos insuficientes para mostrar a tendência",
     "latestPrice": "Último {v}",
     "since": "Desde {date}"
+  },
+  "settlement": {
+    "due": "A pagar",
+    "overdue": "Vencida",
+    "partial": "Paga em parte",
+    "prepaid": "Pré-paga",
+    "this": "Este pagamento",
+    "earliest": "Mais antiga em aberto",
+    "owed": {
+      "one": "{count} conta em aberto",
+      "other": "{count} contas em aberto"
+    }
   }
 }

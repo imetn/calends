@@ -418,7 +418,9 @@ function DueSoon({ state, today, onOpen }: { state: AppState; today: string; onO
   // 大字 / 小字金额跟随显示货币设置
   const pair = useMoneyPair(state);
   const base = state.settings.baseCurrency;
-  const cs = allCharges(state, addDays(today, 1), addDays(today, 30), today).filter((c) => c.amount > 0 && c.kind !== 'refund' && c.kind !== 'failed');
+  const cs = allCharges(state, addDays(today, 1), addDays(today, 30), today).filter(
+    (c) => c.amount > 0 && c.kind !== 'refund' && c.kind !== 'failed' && !c.paidOn,
+  );
   const total = chargesTotal(state, cs);
   const groups: Array<['thisWeek' | 'later', Charge[]]> = [
     ['thisWeek', cs.filter((c) => diffDays(today, c.date) <= 6).slice(0, 10)],

@@ -113,11 +113,14 @@ export function Report({
   const prevPieces = useMemo(
     () =>
       all
-        ? spendPiecesBetween(state, addDays(addMonths(today, -24), 1), addMonths(today, -12), today)
+        ? spendPiecesBetween(state, addDays(addMonths(today, -24), 1), addMonths(today, -12), today, false)
         : spendPiecesBetween(state, `${Number(pick) - 1}-01-01`, `${Number(pick) - 1}-12-31`, today),
     [all, pick, state, today],
   );
-  const recentPieces = useMemo(() => (all ? spendPiecesBetween(state, addDays(addMonths(today, -12), 1), today, today) : pieces), [all, pieces, state, today]);
+  const recentPieces = useMemo(
+    () => (all ? spendPiecesBetween(state, addDays(addMonths(today, -12), 1), today, today, false) : pieces),
+    [all, pieces, state, today],
+  );
   const year = all ? cur : Number(pick);
   const now = !all && year === cur;
   const future = !all && year > cur;
@@ -248,8 +251,8 @@ function Hero({ state, today, year }: { state: AppState; today: string; year: nu
           )}
         </div>
         <MetricCards plain>
-          {/* 往年全已付、明年全待扣，这两格会与大数字重复，只在今年出现 */}
-          {year === cur && (
+          {/* 往年全已付、明年全待扣，这两格会与大数字重复，只在今年出现；往年还有没缴的账单时也列出 */}
+          {(year === cur || (year < cur && Math.abs(r.current.pending) > 0.005)) && (
             <>
               <Metric label={t('scope.paid')} value={formatTotal(r.current.partial.paid, base, { direction: -1, compact: true, main: true })} />
               <Metric label={t('scope.pending')} value={formatTotal(r.current.partial.pending, base, { direction: -1, compact: true, main: true })} />
@@ -898,7 +901,11 @@ function CashCard({ state, today, year }: { state: AppState; today: string; year
     });
   }, [state, today, back, fwd, year]);
   const pv = useMemo(() => prepaidValue(state, today), [state, today]);
-  const next90 = chargesTotal(state, allCharges(state, addDays(today, 1), addDays(today, 90), today));
+  // 分开记时已预缴的账单（带 paidOn）不再是未来要付的钱
+  const next90 = chargesTotal(
+    state,
+    allCharges(state, addDays(today, 1), addDays(today, 90), today).filter((c) => !c.paidOn),
+  );
   return (
     <div className="card copy-card" data-copy-card>
       <div className="card-h">

@@ -1,4 +1,4 @@
-import { addDays, addMonths, chargesBetween, todayIn } from '../shared/billing.ts';
+import { addDays, addMonths, cashChargesBetween, todayIn } from '../shared/billing.ts';
 import { CURRENCIES } from '../shared/format.ts';
 import { FX_SOURCES, parseCurrencyApi, parseFrankfurter } from '../shared/fx.ts';
 import type { AppState, FxHistory, FxTable } from '../shared/types.ts';
@@ -35,7 +35,7 @@ function neededDates(state: AppState): string[] {
   let first = today;
   for (const s of state.subscriptions) {
     if (s.start < first) first = s.start;
-    for (const c of chargesBetween(s, s.start, today, today)) set.add(c.date);
+    for (const c of cashChargesBetween(s, s.start, today, today)) set.add(c.date);
   }
   for (const m of state.methods) if (m.balanceAsOf && m.balanceAsOf <= today) set.add(m.balanceAsOf);
   for (let d = first.slice(0, 8) + '01'; d <= today; d = addMonths(d, 1)) {

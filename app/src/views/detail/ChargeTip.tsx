@@ -81,6 +81,7 @@ export function ChargeTip({
   decimals,
   extra,
   note,
+  owed,
 }: {
   c: Charge;
   state: AppState;
@@ -101,6 +102,8 @@ export function ChargeTip({
   /** 用量下面再加一行（同期的关联指标） */
   extra?: ReactNode;
   note?: string;
+  /** 分开记时这一期还没缴的部分：本笔写成已缴部分，下面再写待缴或逾期 */
+  owed?: Charge;
 }) {
   // 终身买断没有计费周期
   const p = c.kind || c.sub.cycle.unit === 'lifetime' ? undefined : chargeServicePeriod(c.sub, c.date, c.serviceDate);
@@ -124,8 +127,19 @@ export function ChargeTip({
         </div>
       )}
       {p && !post && row(t('detail.chart.period'), rangeLabel(p.from, addDays(p.until, -1), today))}
-      {post && row(t('detail.chart.paidOn'), cnDateFull(c.date))}
-      {row(future ? t('detail.timeline.planned') : t('detail.field.amount'), flow(-c.amount, c.currency, wholeOpts(c.amount, c.currency, whole)))}
+      {/* 账单与缴费分开记：账单日与实际缴费日不同时写缴费日 */}
+      {(post || (c.paidOn && c.paidOn !== c.date)) && !c.unpaid && row(t('detail.chart.paidOn'), cnDateFull(c.paidOn ?? c.date))}
+      {row(
+        c.unpaid
+          ? t(`detail.settlement.${c.unpaid}`)
+          : owed
+            ? t('detail.settlement.partial')
+            : future
+              ? t('detail.timeline.planned')
+              : t('detail.field.amount'),
+        flow(-c.amount, c.currency, wholeOpts(c.amount, c.currency, whole)),
+      )}
+      {owed?.unpaid && row(t(`detail.settlement.${owed.unpaid}`), flow(-owed.amount, owed.currency, wholeOpts(owed.amount, owed.currency, whole)))}
       {converted != null && row(t('detail.chart.converted'), converted)}
       {full != null && row(t('detail.chart.regular'), full)}
       {usage != null && meter && row(t('detail.meters.head.usage'), withUnit(usage, meter.unit, decimals != null ? fixedQty(decimals) : qty))}

@@ -98,7 +98,8 @@
     "pausedAt": "Ngày tạm dừng",
     "plan": "Gói",
     "iconImported": "Ảnh đã nhập; nhập URL hoặc emoji để thay",
-    "billing": "Thanh toán"
+    "billing": "Thanh toán",
+    "settlement": "Ghi hóa đơn và thanh toán riêng"
   },
   "share": {
     "none": "Chỉ mình tôi",

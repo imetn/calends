@@ -98,7 +98,8 @@
     "pausedAt": "一時停止日",
     "plan": "プラン",
     "iconImported": "インポートした画像（URL か絵文字で置き換え）",
-    "billing": "支払い方式"
+    "billing": "支払い方式",
+    "settlement": "請求と支払いを分けて記録"
   },
   "share": {
     "none": "自分だけ",

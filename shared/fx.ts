@@ -88,13 +88,15 @@ export function toBaseOrNaN(state: AppState, amount: number, ccy: string, date?:
   return date ? convertOn(amount, ccy, to, date, state.fxHistory, state.fx) : convertOn(amount, ccy, to, '9999-12-31', undefined, state.fx);
 }
 
-type ChargeLike = { amount: number; currency: string; date: string; projected: boolean; settled?: { amount: number; currency: string } };
+type ChargeLike = { amount: number; currency: string; date: string; paidOn?: string; projected: boolean; settled?: { amount: number; currency: string } };
 
 /** 一笔扣款的本位币金额：已发生的按扣款当天汇率（记了卡上实扣时按实扣），预测的按当前汇率；缺汇率为 NaN */
 export function chargeBaseOrNaN(state: AppState, c: ChargeLike, to = state.settings.baseCurrency): number {
+  // 分开记的账单按实际缴费那天的汇率（paidOn），不按账单日
+  const day = c.paidOn ?? c.date;
   // 记了卡上实际扣款时按它算：汇差、手续费都算进真实成本
-  if (c.settled && !c.projected) return toBaseOrNaN(state, c.settled.amount, c.settled.currency, c.date, to);
-  return toBaseOrNaN(state, c.amount, c.currency, c.projected ? undefined : c.date, to);
+  if (c.settled && !c.projected) return toBaseOrNaN(state, c.settled.amount, c.settled.currency, day, to);
+  return toBaseOrNaN(state, c.amount, c.currency, c.projected ? undefined : day, to);
 }
 
 /** 旧口径：同 toBaseOrNaN，但缺汇率时返回 0。新代码用 toBaseOrNaN 并标记不完整 */

@@ -254,5 +254,17 @@
     "noTrend": "Not enough periods in this range for a trend",
     "latestPrice": "Latest {v}",
     "since": "Since {date}"
+  },
+  "settlement": {
+    "due": "Due",
+    "overdue": "Overdue",
+    "partial": "Partly paid",
+    "prepaid": "Prepaid",
+    "this": "This payment",
+    "earliest": "Oldest unpaid",
+    "owed": {
+      "one": "{count} bill owed",
+      "other": "{count} bills owed"
+    }
   }
 }

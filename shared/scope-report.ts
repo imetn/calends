@@ -45,6 +45,10 @@ export interface Comparison {
 export interface ChargeRow {
   sub: Subscription;
   date: string;
+  /** 分开记时账单日已到还没缴的部分：待扣款，不算已扣款（之后的账单与普通预测一样按日期算待扣款） */
+  owed?: boolean;
+  /** 分开记时已预缴的未来账单：算已扣款 */
+  prepaid?: boolean;
   /** Base currency, my share; refunds are negative. */
   amount: number;
   original: Charge;
@@ -148,22 +152,22 @@ function rowTotal(rows: Array<{ amount: number; partial?: FxTotal }>): FxTotal {
 function cashMonth(rows: Array<{ date: string; amount: number; partial?: FxTotal }>, month: string, today: string): MonthCash {
   return { month, ...cashSpan(rows, today) };
 }
-function cashSpan(rows: Array<{ date: string; amount: number; partial?: FxTotal }>, today: string): CashSpan {
+function cashSpan(rows: Array<{ date: string; amount: number; partial?: FxTotal; owed?: boolean; prepaid?: boolean }>, today: string): CashSpan {
+  // 已扣款：今天及以前的，加上分开记时已预缴的未来账单；待扣款：没缴的（含逾期）与今天之后的预测
+  const done = (r: { date: string; owed?: boolean; prepaid?: boolean }) => !r.owed && (r.date <= today || !!r.prepaid);
+  const paid = rows.filter(done);
+  const pending = rows.filter((r) => !done(r));
   return {
     total: sum(rows),
-    paid: sum(rows.filter((r) => r.date <= today)),
-    pending: sum(rows.filter((r) => r.date > today)),
-    partial: {
-      total: rowTotal(rows),
-      paid: rowTotal(rows.filter((r) => r.date <= today)),
-      pending: rowTotal(rows.filter((r) => r.date > today)),
-    },
+    paid: sum(paid),
+    pending: sum(pending),
+    partial: { total: rowTotal(rows), paid: rowTotal(paid), pending: rowTotal(pending) },
   };
 }
 
-type CashRow = { sub: Subscription; date: string; amount: number; partial?: FxTotal };
+type CashRow = { sub: Subscription; date: string; amount: number; partial?: FxTotal; owed?: boolean; prepaid?: boolean };
 /** 净现金：扣款（我的份额、含退款）加转让收付；today 之后按当前计划预计。 */
-function cashRows(state: AppState, from: string, to: string, today: string, list = charges(state, from, to, today)): CashRow[] {
+function cashRows(state: AppState, from: string, to: string, today: string, list = charges(state, from, to, today, true)): CashRow[] {
   return [
     ...list,
     ...transferRows(state, from, to, today).map((r) => ({
@@ -173,12 +177,18 @@ function cashRows(state: AppState, from: string, to: string, today: string, list
   ];
 }
 
-function charges(state: AppState, from: string, to: string, today: string): ChargeRow[] {
+/**
+ * 扣款按账单归属：账单与缴费分开记时跨年合并缴的钱归各期账单所在年月，已缴的部分算已扣款；
+ * 没缴的部分（含逾期）默认不算（花出去的钱），withOwed 时作待扣款（owed）留在其账单月。普通订阅不受影响。
+ */
+function charges(state: AppState, from: string, to: string, today: string, withOwed = false): ChargeRow[] {
   return state.subscriptions
     .flatMap((sub) =>
       chargesBetween(sub, from, to, today)
-        .filter((c) => c.kind !== 'failed')
+        .filter((c) => c.kind !== 'failed' && (withOwed || !c.unpaid || c.date > today))
         .map((c) => ({
+          ...(c.unpaid && c.date <= today ? { owed: true } : {}),
+          ...(c.paidOn && c.date > today ? { prepaid: true } : {}),
           sub,
           date: c.date,
           amount: chargeValue(state, c) * myShareFactor(c.sub, c.date),
@@ -512,22 +522,23 @@ export function monthReport(state: AppState, month: string, today: string): Scop
   const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
   const from = `${month}-01`;
   const to = monthEnd(month);
-  const rows = charges(scoped, from, to, today);
+  const rows = charges(scoped, from, to, today, true);
   // 转让收付只进现金合计与月度走势，不进笔数、构成、排行和即将扣款
-  const cashOf = (m: string, list?: ChargeRow[]) => cashRows(scoped, `${m}-01`, monthEnd(m), today, list);
+  const cashOf = (m: string, list = charges(scoped, `${m}-01`, monthEnd(m), today, true)) => cashRows(scoped, `${m}-01`, monthEnd(m), today, list);
   const cash = cashOf(month, rows);
   const previousMonth = addMonths(from, -1).slice(0, 7);
   const previous = cashOf(previousMonth);
   const lastYear = addMonths(from, -12).slice(0, 7);
-  const yearlyCharges = charges(scoped, `${lastYear}-01`, monthEnd(lastYear), today);
+  const yearlyCharges = charges(scoped, `${lastYear}-01`, monthEnd(lastYear), today, true);
   const yearly = cashOf(lastYear, yearlyCharges);
-  const debits = rows.filter((r) => r.original.kind !== 'refund' && (r.amount > 0 || !!r.partial?.incomplete));
+  // 没缴的账单只进头部的待扣款，不算扣款笔数，也不进构成与排行
+  const debits = rows.filter((r) => !r.owed && r.original.kind !== 'refund' && (r.amount > 0 || !!r.partial?.incomplete));
   const blocks: Block[] = [
     {
       type: 'headline',
       mode: 'month',
       ...cashMonth(cash, month, today),
-      count: rows.filter((r) => r.original.kind !== 'refund').length,
+      count: rows.filter((r) => !r.owed && r.original.kind !== 'refund').length,
       previous: rowTotal(cash).incomplete || rowTotal(previous).incomplete ? { amount: NaN, percent: NaN } : compare(sum(cash), sum(previous)),
       yearly: yearlyCharges.some((r) => r.original.kind !== 'refund')
         ? rowTotal(cash).incomplete || rowTotal(yearly).incomplete
@@ -674,9 +685,11 @@ export function yearOutlook(state: AppState, today: string, year = Number(today.
   const monthAgo = `${Number(nextMonth.slice(0, 4)) - 1}${nextMonth.slice(4)}`;
   const versus = (rows: CashRow[], before: CashRow[]): Comparison | undefined =>
     !before.length ? undefined : rowTotal(rows).incomplete || rowTotal(before).incomplete ? { amount: NaN, percent: NaN } : compare(sum(rows), sum(before));
-  const yearRows = cashRows(scoped, `${y}-01-01`, `${y}-12-31`, today);
-  const nextMonthRows = cashRows(scoped, `${nextMonth}-01`, monthEnd(nextMonth), today);
-  const nextYearRows = cashRows(scoped, `${y + 1}-01-01`, `${y + 1}-12-31`, today);
+  // 年度各数同一口径：没缴的账单（含逾期）留在其账单月，算该年待扣款（cashRows 默认带上）
+  const owedRows = (from: string, to: string) => cashRows(scoped, from, to, today);
+  const yearRows = owedRows(`${y}-01-01`, `${y}-12-31`);
+  const nextMonthRows = owedRows(`${nextMonth}-01`, monthEnd(nextMonth));
+  const nextYearRows = owedRows(`${y + 1}-01-01`, `${y + 1}-12-31`);
   return {
     year: String(y),
     current: cashSpan(yearRows, today),
@@ -763,7 +776,7 @@ export function yearDays(state: AppState, today: string, year: number): DayCash[
 export function allOutlook(state: AppState, today: string): AllOutlook {
   const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
   const first = scoped.subscriptions.reduce((m, s) => (s.start < m ? s.start : m), today);
-  const rows = cashRows(scoped, first, today, today);
+  const rows = cashRows(scoped, first, today, today, charges(scoped, first, today, today));
   const since = rows.reduce((m, r) => (r.date < m ? r.date : m), today);
   const months: MonthCash[] = [];
   for (let m = since.slice(0, 7); m <= today.slice(0, 7); m = addMonths(`${m}-01`, 1).slice(0, 7)) {
@@ -792,9 +805,10 @@ export function allOutlook(state: AppState, today: string): AllOutlook {
   };
 }
 
-/** Composition pieces for a date range on the yearOutlook basis (proxies excluded; dates after today are forecast). */
-export function spendPiecesBetween(state: AppState, from: string, to: string, today: string): SpendPiece[] {
-  return spendPieces(cashRows({ ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) }, from, to, today));
+/** Composition pieces for a date range on the yearOutlook basis (proxies excluded; dates after today are forecast; unpaid bills stay in their bill month unless owed is false). */
+export function spendPiecesBetween(state: AppState, from: string, to: string, today: string, owed = true): SpendPiece[] {
+  const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
+  return spendPieces(cashRows(scoped, from, to, today, charges(scoped, from, to, today, owed)));
 }
 
 function spendPieces(rows: CashRow[]): SpendPiece[] {

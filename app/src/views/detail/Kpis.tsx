@@ -1,9 +1,21 @@
-import { amountTotal, formatTotal, scaleTotal, totalNote } from '../../../../shared/fx-total.ts';
+import { amountTotal, chargesTotal, formatTotal, scaleTotal, totalNote } from '../../../../shared/fx-total.ts';
 import { DAYS_PER_MONTH } from '../../../../shared/billing.ts';
 import { copyParts } from '../../components/copy.tsx';
 import { isStopped } from '../../../../shared/billing.ts';
 import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
-import { currentPhase, diffDays, effectiveStatus, isPostpaid, monthlyGross, phaseSubs, servedTime, type Charge } from '../../../../shared/billing.ts';
+import {
+  currentPhase,
+  diffDays,
+  effectiveStatus,
+  chargesBetween,
+  isPostpaid,
+  isSeparate,
+  monthlyGross,
+  overdueBills,
+  phaseSubs,
+  servedTime,
+  type Charge,
+} from '../../../../shared/billing.ts';
 import { flow, cnDateAuto, cnDateFull, relDays } from '../../../../shared/format.ts';
 import { netCost, transfersOf } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
@@ -15,6 +27,18 @@ import { toBase } from '../../derive.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { detailForecast, detailHistoryEnd } from '../detail-data.ts';
 import { regular } from './shared.tsx';
+
+/** 分开记的各期账单（截至今天、同一期的已缴与未缴合成一条），用于比较账单单价 */
+function billPrices(sub: Subscription, today: string): Charge[] {
+  const bills = new Map<string, Charge>();
+  for (const c of chargesBetween(sub, sub.start, today, today)) {
+    if (c.kind || c.amount <= 0) continue;
+    const key = `${c.sub.start}|${c.date}`;
+    const prev = bills.get(key);
+    bills.set(key, prev ? { ...prev, amount: Math.round((prev.amount + c.amount) * 100) / 100 } : c);
+  }
+  return [...bills.values()];
+}
 
 /** 涨跌角标：花费类数字，降了是好事（绿），涨了是坏事（红） */
 export function Trend({ pct }: { pct: number | undefined }) {
@@ -59,9 +83,8 @@ export function Kpis({
   const undated = end.unknown && !transfersOf(sub).some((tr) => tr.kind === 'sell' && tr.date <= today);
   const total = cost.net;
   // 缺汇率的那笔不参与均价与走势（不能当 0 拉低平均）
-  const per = regular(history)
-    .map((c) => chargeBaseOrNaN(state, c, base))
-    .filter(Number.isFinite);
+  // 分开记：走势比的是首期与当前这期的账单单价，不看哪笔缴了多少
+  const per = (phaseSubs(sub).some(isSeparate) ? billPrices(sub, today) : regular(history)).map((c) => chargeBaseOrNaN(state, c, base)).filter(Number.isFinite);
   // 实际在订的天数：各段到今天（或结束日）为止，不算断档，并行的不重复计
   const served = servedTime(sub, today);
   // 有转让时按持有期：最早买入起，卖出那天止
@@ -77,7 +100,7 @@ export function Kpis({
   const young = !!sub.estimateFrom || active < 30 || (regular(history).length < 2 && !transferred);
   // 均摊分母与 MCP 同一口径：预付费算到已付那期结束，有转让时按持有期（见 netCost）
   const spreadMonths = Math.max(1, cost.spreadDays / DAYS_PER_MONTH);
-  const perMonth = young ? toBase(state, monthlyGross(currentPhase(sub, today), today, state.fx), currentPhase(sub, today).currency) : total / spreadMonths;
+  const perMonth = young ? toBase(state, monthlyGross(currentPhase(sub, today), today, state.fx), currentPhase(sub, today).currency) : cost.perMonth;
   const perTrend = !cost.incomplete && !young && per.length > 1 && per[0] > 0 ? per[per.length - 1] / per[0] - 1 : undefined;
   const duration =
     active < 1
@@ -96,12 +119,14 @@ export function Kpis({
   const monthlyPartial =
     !lifetime && young
       ? amountTotal(monthlyGross(currentPhase(sub, today), today, state.fx), currentPhase(sub, today).currency, perMonth)
-      : scaleTotal(cost.partial, 1 / spreadMonths);
+      : scaleTotal(cost.spread, 1 / spreadMonths);
   const monthlyAmount = formatTotal(monthlyPartial, base, { direction: -1, compact: true, main: true, average: true });
   const postpaid = isPostpaid(currentPhase(sub, today));
   // 后付费停止、暂停后仍有最后一张账单
   const next = st === 'lifetime' || (!postpaid && ['ended', 'terminated', 'paused'].includes(st)) ? undefined : detailForecast(sub, today).charges[0];
   const nextValue = next ? chargeBaseOrNaN(state, next, base) : NaN;
+  // 账单与缴费分开记且有欠缴时，第一格换成最早未缴的那期：欠几期、共欠多少
+  const owed = overdueBills(sub, today);
   // 停止的订阅由下方停止卡片写停止日，这里不再重复
   const ended = isStopped(st) && sub.end && !phaseSubs(sub).some((p) => p.stop);
   const durationCell = (
@@ -121,7 +146,16 @@ export function Kpis({
   return (
     <Panel className="dt-metrics metric-stack">
       <MetricCards inline>
-        {next ? (
+        {owed.length ? (
+          <Metric
+            label={t('detail.settlement.earliest')}
+            value={cnDateAuto(owed[0].date, today)}
+            valueClassName="warn"
+            note={copyParts(
+              [t('detail.settlement.owed', { count: owed.length }), formatTotal(chargesTotal(state, owed), base, { direction: -1, compact: true })].join('\n'),
+            )}
+          />
+        ) : next ? (
           <Metric
             label={st === 'trial' ? t('detail.renewal.afterTrial') : isPostpaid(next.sub) ? t('detail.billing.nextBill') : t('detail.ev.next')}
             value={cnDateAuto(next.date, today)}
@@ -134,7 +168,7 @@ export function Kpis({
         ) : (
           durationCell
         )}
-        {(next || ended) && durationCell}
+        {(owed.length || next || ended) && durationCell}
         {/* 只有一笔时累计就是那一笔，扣款记录里已有，不再占一格 */}
         {/* 导入边界之前的历史没有记录：没有一笔时写「—」，小字说明只算导入之后 */}
         {/* 有转让时是净花费：买入、卖出各自的金额在下方转让卡片，这里只写合计 */}

@@ -5,7 +5,19 @@ import { createPortal } from 'react-dom';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Pause, Pencil, Play, Plus, Settings2, Share } from 'lucide-react';
-import { chargesBetween, currentPhase, cycleLabel, effectiveStatus, isPostpaid, nextCharge, phaseSubs, priceAt, type Charge } from '../../../shared/billing.ts';
+import {
+  cashChargesBetween,
+  chargesBetween,
+  currentPhase,
+  cycleLabel,
+  effectiveStatus,
+  isPostpaid,
+  isSeparate,
+  nextCharge,
+  phaseSubs,
+  priceAt,
+  type Charge,
+} from '../../../shared/billing.ts';
 import type { AppState, Payment, ShareMember, Subscription } from '../../../shared/types.ts';
 import { CarSheet } from './carpool/CarSheet.tsx';
 import { carLedger } from '../../../shared/carpool.ts';
@@ -93,7 +105,11 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   const next = nextCharge(sub, today);
   // 显示今天生效的那一段（换区前仍是旧区的价格与支付方式），未来的变更单独列出
   const cur = currentPhase(sub, today);
-  const history = chargesBetween(sub, sub.start, today, today);
+  // 账单（权责）：走势图、用量按账单日期；扣款记录与指标按实际付款。账单与缴费分开记时两者不同，其余订阅是同一份
+  // 逾期未缴的部分由走势图另行画成虚线（overdueBills），这里不重复
+  const history = chargesBetween(sub, sub.start, today, today).filter((c) => c.unpaid !== 'overdue');
+  const separate = phaseSubs(sub).some(isSeparate);
+  const paid = separate ? cashChargesBetween(sub, sub.start, today, today) : history;
   const [pay, setPay] = useState<{ pay?: Payment; index?: number; phase?: string } | null>(null);
   const [share, setShare] = useState(false);
   // 合租弹窗：从详情的合租区点进去，看收了多少、付了多少；成员资料再叠一层
@@ -111,7 +127,7 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
 
   const editPay = (c: Charge) => {
     // 同一天可能有多笔（如重复扣款），用当天在同一段里的序号定位；并行的两段各算各的
-    const index = history.filter((x) => x.date === c.date && x.sub.start === c.sub.start).indexOf(c);
+    const index = paid.filter((x) => x.date === c.date && x.sub.start === c.sub.start).indexOf(c);
     setPay({
       // 单笔支付方式与资金拆分一起带进编辑表单，改金额时不会丢
       pay: {
@@ -122,6 +138,7 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
         note: c.note,
         methodId: c.methodId,
         funding: c.funding,
+        periods: c.periods,
       },
       index,
       phase: sub.phases?.length ? c.sub.start : undefined,
@@ -144,10 +161,10 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
       sub={sub}
       state={state}
       today={today}
-      history={history}
+      history={paid}
       onRow={editPay}
       // 买断已有那一笔就不再提示记一笔，行仍可点开修改
-      onAdd={once && history.length ? undefined : () => setPay({})}
+      onAdd={once && paid.length ? undefined : () => setPay({})}
     />
   );
   const events = !compact ? <Events sub={sub} state={state} today={today} /> : null;
@@ -224,7 +241,7 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
           提醒仍是卡片，其余（走势、记录、合租、详情、历程）用分隔线隔开
         */}
       <div className="dt-body dt-flow">
-        <Kpis sub={sub} state={state} today={today} history={history} usage={meter && usageMetrics(usageSub, meter, today)} />
+        <Kpis sub={sub} state={state} today={today} history={paid} usage={meter && usageMetrics(usageSub, meter, today)} />
         {/* 指标下面：本期进度与属性（不加标题），然后是扣款走势、提醒和记录 */}
         <Summary key={sub.id} sub={sub} state={state} today={today} />
         {!compact && (

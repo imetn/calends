@@ -2,10 +2,10 @@ import { amountTotal, chargesTotal, formatTotal, sumTotals } from '../../../../s
 import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { Plus } from 'lucide-react';
-import { chargeDay, chargeServicePeriod, isPostpaid, phaseSubs, type Charge } from '../../../../shared/billing.ts';
+import { chargeDay, chargeServicePeriod, isPostpaid, isSeparate, phaseSubs, type Charge } from '../../../../shared/billing.ts';
 import { meterDecimals, meterRows, meterView } from '../../../../shared/meters.ts';
 import { chargesUsage, chargeUsage, fixedQty, periodLabel, withUnit } from './ChargeTip.tsx';
-import { flow, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
+import { flow, cnDate, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
 import { transfersOf, transferSign, transferValue } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
@@ -72,6 +72,13 @@ export function Transfers({ sub, state, onRow, onAdd }: { sub: Subscription; sta
   );
 }
 
+/** 一笔缴费结清的账单：首期 – 末期；都与缴费同年时省略年份，否则首末都写年份 */
+export function settlesLabel(settles: string[], paid: string) {
+  const same = settles.every((d) => d.slice(0, 4) === paid.slice(0, 4));
+  const day = (d: string) => (same ? cnDate(d) : cnDateFull(d));
+  return settles.length > 1 ? `${day(settles[0])} – ${day(settles[settles.length - 1])}` : day(settles[0]);
+}
+
 /** 扣款记录：按年分组（组头带合计），日期 · 原币 · 折合本位币；点一行改这笔 */
 export function Charges({
   sub,
@@ -103,7 +110,8 @@ export function Charges({
   const meter = usageSub.meters?.[0];
   const readings = meter && sub.cycle.unit !== 'lifetime' ? meterRows(usageSub, meter, today) : undefined;
   const usageOf = (c: Charge) => chargeUsage(readings, c);
-  const post = (c: Charge) => !c.kind && isPostpaid(c.sub);
+  // 分开记的实际缴费（带 settles）按缴费日列，不按所属周期
+  const post = (c: Charge) => !c.kind && !c.settles && isPostpaid(c.sub);
   // 表头按行走：周期账单全是后付费时写「周期」，与预付费阶段混在一起时写「日期」
   const regular = rows.filter((r) => !r.c.kind);
   const usageFmt = meter && fixedQty(meterDecimals(usageSub, meter.id));
@@ -182,6 +190,8 @@ export function Charges({
                 {orig(-c.amount, c.currency)}
                 {c.kind && <em className={`dt-kind ${c.kind}`}>{t(`detail.charges.kind.${c.kind}`)}</em>}
                 {multi && c.sub.region && !c.kind && <em className="dt-kind">{c.sub.region}</em>}
+                {/* 账单与缴费分开记：这笔缴的是哪几期账单（首期 – 末期），固定在金额下一行；逐期写在悬停提示里 */}
+                {!!c.settles?.length && <small className="dt-settles">{settlesLabel(c.settles, c.date)}</small>}
               </>
             ),
             base: Number.isFinite(b) ? cost(-b) : '—',
@@ -189,8 +199,16 @@ export function Charges({
           })}
           rowKey={({ c }, i) => `${c.date}-${c.sub.start}-${i}`}
           rowClass={({ c }) => c.kind ?? ''}
-          rowTitle={({ c }) => (post(c) ? [t('detail.charges.paidOn', { date: cnDateFull(c.date) }), c.note].filter(Boolean).join('\n') : c.note)}
+          rowTitle={({ c }) =>
+            post(c) && !c.settles
+              ? [t('detail.charges.paidOn', { date: cnDateFull(c.date) }), c.note].filter(Boolean).join('\n')
+              : c.settles?.length
+                ? [c.settles.map((d) => cnDateFull(d)).join('\n'), c.note].filter(Boolean).join('\n')
+                : c.note
+          }
           onRow={onRow && (({ c }) => onRow(c))}
+          // 分开记时推算期视为已缴的那几行不是真实缴费，没有可改的记录
+          canOpen={({ c }) => !isSeparate(c.sub) || !!c.kind || !!c.paidOn}
         />
       )}
     </Panel>

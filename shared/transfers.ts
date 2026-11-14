@@ -2,7 +2,7 @@ import { amountTotal, chargesTotal, scaleTotal, sumTotals, type FxTotal } from '
 import { DAYS_PER_MONTH } from './billing.ts';
 // 转让收付：二手买入时付给原主的钱、卖出时收到的钱。都是实际现金，不推算剩余服务价值。
 // 不是服务商扣款：不进 MRR、续费预测、余额消耗、退款与扣款笔数；只进生命周期净成本和年度、月度现金流。
-import { chargesBetween, CURRENCY_CODE, diffDays, paidServedDays, servedTime, validDay } from './billing.ts';
+import { cashChargesBetween, chargesBetween, CURRENCY_CODE, diffDays, isSeparate, paidServedDays, phaseSubs, servedTime, validDay } from './billing.ts';
 import { chargeBaseOrNaN, convertOn } from './fx.ts';
 import { t } from './i18n.ts';
 import type { AppState, Subscription, Transfer } from './types.ts';
@@ -56,8 +56,10 @@ export interface NetCost {
   from: string;
   until: string;
   days: number;
-  /** 月均、日均的分母：有转让时同持有期，否则算到预付已付那期结束（见 paidServedDays） */
+  /** 月均、日均的分母：有转让时同持有期，否则算到预付已付那期结束（见 paidServedDays）；分开记时算到今天所在账单期结束 */
   spreadDays: number;
+  /** 月均、日均的分子：一般同 partial；分开记时按账单，截至今天的各期应缴（含未缴，不含预缴的未来账单） */
+  spread: FxTotal;
   perMonth: number;
   perDay: number;
   /** 有服务扣款或转让缺少可用汇率：本位币合计不可用 */
@@ -66,7 +68,8 @@ export interface NetCost {
 
 /** 生命周期净成本 = 服务付款 + 买入 − 卖出；月均、日均按持有期摊（今天之后的转让不计） */
 export function netCost(state: AppState, s: Subscription, today: string, to = state.settings.baseCurrency): NetCost {
-  const history = chargesBetween(s, s.start, today, today).filter((c) => c.kind !== 'failed');
+  // 累计按实际付款：账单与缴费分开记时预缴的钱算进去，没缴的欠款不算
+  const history = cashChargesBetween(s, s.start, today, today).filter((c) => c.kind !== 'failed');
   const service = history.reduce((a, c) => a + chargeBaseOrNaN(state, c, to), 0);
   let bought = 0;
   let sold = 0;
@@ -78,15 +81,21 @@ export function netCost(state: AppState, s: Subscription, today: string, to = st
   }
   const net = service + bought - sold;
   const held = holdingPeriod(s, today);
-  const spreadDays = transfersOf(s).some((tr) => tr.date <= today) ? held.days : paidServedDays(s, history, today);
-  const perMonth = net / Math.max(1, spreadDays / DAYS_PER_MONTH);
+  // 分开记：均摊按账单算，缴早缴晚、欠没欠都不改变每月花多少（欠着的那期也算到它的账期结束）
+  const billed = phaseSubs(s).some(isSeparate) ? chargesBetween(s, s.start, today, today).filter((c) => !c.kind) : undefined;
+  const spreadDays = transfersOf(s).some((tr) => tr.date <= today)
+    ? held.days
+    : paidServedDays(s, billed?.map((c) => (c.unpaid ? { ...c, projected: false } : c)) ?? history, today);
+  const traded = transfersOf(s)
+    .filter((tr) => tr.date <= today)
+    .map((tr) => scaleTotal(amountTotal(tr.amount, tr.currency, transferValue(state, tr, to)), transferSign(tr)));
+  const partial = sumTotals([chargesTotal(state, history, to), ...traded]);
+  const spread = billed ? sumTotals([chargesTotal(state, billed, to), ...traded]) : partial;
+  const spreadNet = billed ? billed.reduce((a, c) => a + chargeBaseOrNaN(state, c, to), 0) + bought - sold : net;
+  const perMonth = spreadNet / Math.max(1, spreadDays / DAYS_PER_MONTH);
   return {
-    partial: sumTotals([
-      chargesTotal(state, history, to),
-      ...transfersOf(s)
-        .filter((tr) => tr.date <= today)
-        .map((tr) => scaleTotal(amountTotal(tr.amount, tr.currency, transferValue(state, tr, to)), transferSign(tr))),
-    ]),
+    partial,
+    spread,
     currency: to,
     service,
     charges: history.filter((c) => c.kind !== 'refund' && c.kind !== 'failed').length,

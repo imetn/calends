@@ -98,7 +98,8 @@
     "pausedAt": "Tanggal jeda",
     "plan": "Paket",
     "iconImported": "Gambar impor; ketik URL atau emoji untuk mengganti",
-    "billing": "Pembayaran"
+    "billing": "Pembayaran",
+    "settlement": "Catat tagihan dan pembayaran terpisah"
   },
   "share": {
     "none": "Hanya saya",

@@ -7,6 +7,7 @@ import {
   stopSummary,
   addDays,
   addMonths,
+  cashChargesBetween,
   chargesBetween,
   coveredUntil,
   cycleDays,
@@ -14,6 +15,7 @@ import {
   diffDays,
   effectiveStatus,
   isGap,
+  isSeparate,
   myShareFactor,
   monthlyGross,
   nextCharge,
@@ -318,15 +320,20 @@ export function cashVsAccrual(state: AppState, today: string, back: number, fwd:
     rows.set(m, { month: m, cash: 0, accrual: 0, partial: { cash: emptyTotal(), accrual: emptyTotal() }, projected: m > today.slice(0, 7) });
   }
   // 往前多取一年，保证年付在窗口开头的摊销完整
-  const charges = state.subscriptions.filter((s) => !s.proxy).flatMap((s) => chargesBetween(s, addMonths(first, -24), last, today));
-  for (const c of charges) {
-    const v = chargeValue(state, c) * myShareFactor(c.sub, c.date);
+  const subs = state.subscriptions.filter((s) => !s.proxy);
+  // 现金按实际付款日；账单与缴费分开记的订阅按账单月（已缴、没缴的都留在其账单月），与年度报告的已扣款、待扣款同一口径
+  for (const c of subs.flatMap((s) =>
+    phaseSubs(s).some(isSeparate) ? chargesBetween(s, first, last, today).filter((c) => c.kind !== 'failed') : cashChargesBetween(s, first, last, today),
+  )) {
     const r = rows.get(c.date.slice(0, 7));
+    if (!r) continue;
+    r.cash += chargeValue(state, c) * myShareFactor(c.sub, c.date);
+    r.partial.cash = sumTotals([r.partial.cash, scaleTotal(chargeTotal(state, c), myShareFactor(c.sub, c.date))]);
+  }
+  // 权责按账单所属期间摊开
+  for (const c of subs.flatMap((s) => chargesBetween(s, addMonths(first, -24), last, today))) {
+    const v = chargeValue(state, c) * myShareFactor(c.sub, c.date);
     const part = scaleTotal(chargeTotal(state, c), myShareFactor(c.sub, c.date));
-    if (r) {
-      r.cash += v;
-      r.partial.cash = sumTotals([r.partial.cash, part]);
-    }
     if (c.sub.cycle.unit === 'lifetime') continue;
     const [a, b] = coverage(c);
     const days = Math.max(1, diffDays(a, b));
@@ -448,16 +455,31 @@ export function prepaidValue(
     for (const p of phaseSubs(s)) {
       if (p.stop && p.stop.date <= today) continue;
       if (p.cycle.unit === 'lifetime' || p.start > today) continue;
-      const past = chargesBetween(p, addMonths(today, -12 * Math.max(1, p.cycle.unit === 'year' ? p.cycle.every : 1) - 1), today, today).filter((c) => !c.kind);
+      const past = chargesBetween(p, addMonths(today, -12 * Math.max(1, p.cycle.unit === 'year' ? p.cycle.every : 1) - 1), today, today).filter(
+        (c) => !c.kind && !c.unpaid,
+      );
       const last = past[past.length - 1];
       if (!last) continue;
       const [a, b] = coverage(last);
       const end = p.end && addDays(p.end, 1) < b ? addDays(p.end, 1) : b;
-      if (end <= today) continue;
-      const factor = myShareFactor(p, today) * (diffDays(today, end) / Math.max(1, diffDays(a, b)));
-      value += chargeValue(state, last) * factor;
-      partial = sumTotals([partial, scaleTotal(chargeTotal(state, last), factor)]);
-      if (end > until) until = end;
+      // 分开记时预缴的未来账单整期都是余值；没缴的账单不算
+      const ahead = isSeparate(p)
+        ? chargesBetween(p, addDays(today, 1), addMonths(today, 120), today).filter((c) => !c.kind && !c.unpaid && c.paidOn && (!p.end || c.date <= p.end))
+        : [];
+      if (end <= today && !ahead.length) continue;
+      if (end > today) {
+        const factor = myShareFactor(p, today) * (diffDays(today, end) / Math.max(1, diffDays(a, b)));
+        value += chargeValue(state, last) * factor;
+        partial = sumTotals([partial, scaleTotal(chargeTotal(state, last), factor)]);
+        if (end > until) until = end;
+      }
+      for (const c of ahead) {
+        const share = myShareFactor(p, c.date);
+        value += chargeValue(state, c) * share;
+        partial = sumTotals([partial, scaleTotal(chargeTotal(state, c), share)]);
+        const e = coverage(c)[1];
+        if (e > until) until = e;
+      }
     }
     if (value > 0.01 || partial.incomplete) items.push({ sub: s, value, until, partial });
   }

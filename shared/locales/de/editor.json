@@ -103,7 +103,8 @@
     "pausedAt": "Pausiert ab",
     "plan": "Tarif",
     "iconImported": "Importiertes Bild; URL oder Emoji ersetzt es",
-    "billing": "Zahlung"
+    "billing": "Zahlung",
+    "settlement": "Rechnungen und Zahlungen getrennt erfassen"
   },
   "share": {
     "none": "Nur ich",

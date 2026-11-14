@@ -240,5 +240,14 @@
     "noTrend": "Chưa đủ kỳ để hiển thị xu hướng",
     "latestPrice": "Gần nhất {v}",
     "since": "Từ {date}"
+  },
+  "settlement": {
+    "due": "Đến hạn",
+    "overdue": "Quá hạn",
+    "partial": "Đã trả một phần",
+    "prepaid": "Đã trả trước",
+    "this": "Khoản này",
+    "earliest": "Chưa trả lâu nhất",
+    "owed": "Nợ {count} kỳ"
   }
 }

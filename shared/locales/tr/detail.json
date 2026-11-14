@@ -245,5 +245,17 @@
     "noTrend": "Bu aralıkta eğilim için yeterli dönem yok",
     "latestPrice": "Son {v}",
     "since": "{date} itibarıyla"
+  },
+  "settlement": {
+    "due": "Ödenecek",
+    "overdue": "Gecikmiş",
+    "partial": "Kısmen ödendi",
+    "prepaid": "Peşin ödendi",
+    "this": "Bu ödeme",
+    "earliest": "En eski ödenmemiş",
+    "owed": {
+      "one": "{count} fatura ödenmedi",
+      "other": "{count} fatura ödenmedi"
+    }
   }
 }
