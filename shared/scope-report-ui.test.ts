@@ -26,7 +26,7 @@ import * as periodGrid from './period-grid.ts';
 import * as assistantFields from '../app/src/views/assistant-fields.ts';
 import { detailForecast, detailHistoryEnd } from '../app/src/views/detail-data.ts';
 import { calendarJump } from '../app/src/views/calendar-jump.ts';
-import { monthGrid } from './calendar.ts';
+import { calendarIcons, monthGrid } from './calendar.ts';
 import { PERSON_COLORS, DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 
 // Execute component event handlers in the existing JSX harness, retaining pure financial builders.
@@ -145,6 +145,7 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     useLayoutEffect: (fn: () => unknown) => fn(),
     calendarJump,
     monthGrid,
+    calendarIcons,
     location: { search: '', pathname: '/calendar' },
     history: { state: null, replaceState() {} },
     useState(initial: unknown) {
@@ -166,6 +167,7 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     useMoneyPair: () => () => ({ main: '' }),
     useSnapshotRender: () => {},
     useWidth: () => [null, 700],
+    useMedia: () => false,
     allCharges: () => [],
     sumBase: () => 0,
     // 显示用合计与排序（app/src/derive.ts）：缺汇率为 NaN
@@ -288,7 +290,14 @@ test('narrow calendar cells keep stacked icons plus "+N" inside the cell', () =>
       '../app/src/views/Calendar.tsx',
       'Calendar',
       {},
-      { useWidth: () => [null, width], allCharges: () => charges, stopLabel: () => '', stopDescription: () => '', StopText: 'StopText' },
+      {
+        useWidth: () => [null, width],
+        useMedia: () => width < 600,
+        allCharges: () => charges,
+        stopLabel: () => '',
+        stopDescription: () => '',
+        StopText: 'StopText',
+      },
     );
     const nodes = r.render('Calendar', { state: st, today, onOpen() {}, onIcs() {} });
     const box = nodes.find((n) => n.props.className === 'cal-icons' && all(n).some((c) => c.type === 'SubIcon'))!;

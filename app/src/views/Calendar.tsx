@@ -221,10 +221,7 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                             </span>
                           )}
                         </div>
-                        <div
-                          className="cal-icons"
-                          style={{ '--m0': `${row.tiled ? 3 : row.step - row.icon}px` } as Record<string, string>}
-                        >
+                        <div className="cal-icons" style={{ '--m0': `${row.tiled ? 3 : row.step - row.icon}px` } as Record<string, string>}>
                           {shown.map((c, i) => (
                             <span
                               // 同一订阅同一天可能既扣款又返佣，订阅 ID 会重复
