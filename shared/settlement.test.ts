@@ -607,3 +607,20 @@ test('R3-N2 旧记录保存时存下读取时的追踪起点，改名不改变�
     before,
   );
 });
+
+test('分开记忽略导入边界 estimateFrom：边界前的账单照常生成，缴费不被推成远期预缴', () => {
+  const s = fee(
+    [
+      { date: '2025-07-03', amount: 800, periods: ['2025-06-01', '2025-07-01'] },
+      { date: '2025-08-02', amount: 400 },
+    ],
+    { start: '2025-06-01', settledBefore: '2025-06-01', priceHistory: undefined, estimateFrom: '2026-12-01' },
+  );
+  const r = settleBills(s, TODAY);
+  assert.equal(r.bills[0].date, '2025-06-01');
+  assert.deepEqual(
+    r.bills.filter((b) => b.status === 'paid').map((b) => b.date),
+    ['2025-06-01', '2025-07-01', '2025-08-01'],
+  );
+  assert.equal(r.bills.find((b) => b.date === '2025-09-01')!.status, 'overdue');
+});
