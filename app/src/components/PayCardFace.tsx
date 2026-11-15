@@ -131,32 +131,70 @@ export function CardFace({ m, label, value, right, rightSub }: { m: PaymentMetho
 }
 
 /**
- * 银行卡芯片：金属金色底 + 触点分区（中间焊盘、左右各三格、上下引线）+ 一道斜向高光，
- * 线条用深金色细线，尺寸由 .pc-chip 决定、随卡片缩放
+ * 银行卡芯片：香槟金金属底 + 细拉丝纹理，触点每格一道亮边一道暗线做出压印感，外缘渐变斜边；
+ * 尺寸由 .pc-chip 决定、随卡片缩放
  */
 function CardChip() {
+  // 芯片触点分区（ISO 7816 式）：左右各三格，中间上方一格，下方一格带两个倒角；触点铺满芯片边缘
+  const CHIP_PADS = [
+    'M0 0H16.3V10.8H0Z',
+    'M0 10.8H16.3V24.5H0Z',
+    'M0 24.5H16.3V36H0Z',
+    'M31.7 0H48V10.8H31.7Z',
+    'M31.7 10.8H48V24.5H31.7Z',
+    'M31.7 24.5H48V36H31.7Z',
+    'M16.3 0H31.7V8.6H16.3Z',
+    'M20.6 8.6H27.4L31.7 13V36H16.3V13Z',
+  ];
   const id = useId().replace(/:/g, '');
   return (
-    <svg className="pc-chip" viewBox="0 0 36 27" aria-hidden="true">
+    <svg className="pc-chip" viewBox="0 0 48 36" aria-hidden="true">
       <defs>
-        <linearGradient id={`${id}g`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#f6e7b8" />
-          <stop offset="0.45" stopColor="#dcbf78" />
-          <stop offset="0.7" stopColor="#c9a65a" />
-          <stop offset="1" stopColor="#e9d39a" />
+        <linearGradient id={`${id}m`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#e3d2a6" />
+          <stop offset="0.24" stopColor="#f7eed6" />
+          <stop offset="0.56" stopColor="#b9a06a" />
+          <stop offset="0.78" stopColor="#e3d2a6" />
+          <stop offset="1" stopColor="#ad935d" />
         </linearGradient>
-        <linearGradient id={`${id}h`} x1="0" y1="0" x2="1" y2="0.6">
-          <stop offset="0.25" stopColor="#fff" stopOpacity="0" />
-          <stop offset="0.45" stopColor="#fff" stopOpacity="0.55" />
-          <stop offset="0.6" stopColor="#fff" stopOpacity="0" />
+        <linearGradient id={`${id}p`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fbf4e2" stopOpacity="0.5" />
+          <stop offset="1" stopColor="#8f7645" stopOpacity="0.25" />
         </linearGradient>
+        <linearGradient id={`${id}b`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fbf4e2" />
+          <stop offset="1" stopColor="#7a6337" />
+        </linearGradient>
+        {/* 拉丝：横向拉长的噪声分成亮纹与暗纹两层叠回去 */}
+        <filter id={`${id}r`} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.035 1.3" numOctaves="2" seed="7" stitchTiles="stitch" result="n" />
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.6 0 0 0 -0.62" result="hi" />
+          <feFlood floodColor="#fbf4e2" />
+          <feComposite in2="hi" operator="in" result="lit" />
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.6 0 0 0 0.98" result="lo" />
+          <feFlood floodColor="#9c8250" />
+          <feComposite in2="lo" operator="in" result="dim" />
+          <feMerge>
+            <feMergeNode in="dim" />
+            <feMergeNode in="lit" />
+          </feMerge>
+        </filter>
+        <clipPath id={`${id}c`}>
+          <rect width="48" height="36" rx="4" />
+        </clipPath>
       </defs>
-      <rect x="0.4" y="0.4" width="35.2" height="26.2" rx="5" fill={`url(#${id}g)`} stroke="rgba(120,90,20,0.5)" strokeWidth="0.6" />
-      <g fill="none" stroke="rgba(110,80,20,0.55)" strokeWidth="0.6" strokeLinecap="round">
-        <rect x="12" y="8" width="12" height="11" rx="2.2" />
-        <path d="M18 0.6V8M18 19v7.4M0.6 9.5H12M0.6 17.5H12M24 9.5h11.4M24 17.5h11.4M12 13.5H0.6M24 13.5h11.4" />
+      <g clipPath={`url(#${id}c)`}>
+        <rect width="48" height="36" fill={`url(#${id}m)`} />
+        <rect width="48" height="36" filter={`url(#${id}r)`} opacity="0.5" />
+        {CHIP_PADS.map((d) => (
+          <g key={d}>
+            <path d={d} fill={`url(#${id}p)`} />
+            <path d={d} transform="translate(0.5 0.5)" fill="none" stroke="#fbf4e2" strokeOpacity="0.8" strokeWidth="0.5" />
+            <path d={d} fill="none" stroke="#6f5a32" strokeWidth="0.75" />
+          </g>
+        ))}
       </g>
-      <rect x="0.4" y="0.4" width="35.2" height="26.2" rx="5" fill={`url(#${id}h)`} />
+      <rect x="0.5" y="0.5" width="47" height="35" rx="3.5" fill="none" stroke={`url(#${id}b)`} strokeWidth="1" />
     </svg>
   );
 }

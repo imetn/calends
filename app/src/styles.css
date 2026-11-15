@@ -1084,9 +1084,9 @@ a {
 }
 .pc-chip {
   display: block;
-  width: clamp(28px, 11cqw, 36px);
-  height: clamp(21px, 8.3cqw, 27px);
-  filter: drop-shadow(0 0.5px 0.5px rgba(0, 0, 0, 0.18));
+  width: clamp(32px, 13cqw, 44px);
+  aspect-ratio: 4 / 3;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.22));
 }
 .pc-bal {
   font-size: clamp(22px, 9.5cqw, 30px);

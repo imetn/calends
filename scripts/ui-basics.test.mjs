@@ -1114,7 +1114,7 @@ test('wallet cards keep the main-branch physical-card design with pointer tilt a
   // 银行卡芯片画出触点分区，而不是纯色块；卡面与芯片在钱包和订阅详情共用
   const face = sources.find(([file]) => file === 'components/PayCardFace.tsx')[2];
   assert.match(face, /function CardChip\(\)/);
-  assert.match(face, /<rect x="12" y="8" width="12" height="11"/);
+  assert.match(face, /'M20\.6 8\.6H27\.4L31\.7 13V36H16\.3V13Z'/);
   assert.match(wallet, /from '\.\.\/components\/PayCardFace\.tsx'/);
 });
 
