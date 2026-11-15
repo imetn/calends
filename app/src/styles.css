@@ -1236,7 +1236,7 @@ a {
   width: auto;
 }
 .sim-name {
-  /* 右侧是 SIM 压痕（约占 56%–92%），名称和号码各占一行，窄卡时缩小、仍放不下就省略 */
+  /* 右侧是 SIM 卡托（约占 58%–91%），名称和号码各占一行，窄卡时缩小、仍放不下就省略 */
   font-size: clamp(13px, 5.6cqw, 16px);
   font-weight: 700;
   line-height: 1.3;
@@ -1351,15 +1351,15 @@ a {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
-/* SIM 卡面：右侧两层可掰卡槽，芯片独立于轮廓缩放 */
+/* SIM 卡面：右侧三切卡托（Mini/Micro/Nano），按真实尺寸比例；Mini 宽 25mm ≈ 卡宽 29%，略放大到 33% */
 .sim-punch {
   position: absolute;
   z-index: -1;
-  right: 8%;
+  right: 9%;
   top: 50%;
-  width: 36%;
+  width: 33%;
   aspect-ratio: 25 / 15;
-  transform: translateY(-58%);
+  transform: translateY(-56%);
   overflow: visible;
 }
 .sim-cutouts {
@@ -1370,19 +1370,26 @@ a {
 }
 .sim-slot {
   fill: none;
-  stroke: rgba(65, 76, 88, 0.24);
+  stroke: rgba(65, 76, 88, 0.3);
   stroke-width: 1.2;
   vector-effect: non-scaling-stroke;
   stroke-linecap: butt;
   stroke-linejoin: round;
   filter: drop-shadow(0 0.8px 0 rgba(255, 255, 255, 0.95));
 }
+/* Micro/Nano 是压线不是冲透，更浅更细 */
+.sim-slot.score {
+  stroke: rgba(65, 76, 88, 0.2);
+  stroke-width: 0.9;
+}
+/* 芯片在 Nano 框（中心 9,7.5mm）里居中，宽约 10.3mm，随卡托缩放 */
 .sim-punch .pc-chip {
   position: absolute;
-  left: 22%;
+  left: 36%;
   top: 50%;
+  width: 41%;
   margin-top: 0;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
 }
 .sim-carrier {
   font-size: 18px;

@@ -26,13 +26,18 @@ export const faceClass = (m: PaymentMethod) => (isSim(m) ? 'sim' : brandOf(m) ==
 export function CardFace({ m, label, value, right, rightSub }: { m: PaymentMethod; label: string; value: ReactNode; right: string; rightSub: string }) {
   const brand = brandOf(m);
   if (isSim(m)) {
-    // 卡托细槽分段留出连接桥；芯片与银行卡共用组件和尺寸，不随槽线 SVG 缩放。
+    // 三切 SIM 卡托（单位 mm）：Mini 25×15 → Micro 15×12 → Nano 12.3×8.8，倒角都在右上；
+    // Mini 是冲透的卡槽，Micro/Nano 是压线，左右中间各留连接桥；芯片居中在 Nano 里。
     return (
       <>
         <div className="sim-punch" aria-hidden="true">
-          <svg className="sim-cutouts" viewBox="0 0 120 72">
-            <path className="sim-slot" d="M2 32V6Q2 2 6 2H48M53 2H100L118 20V45M118 50V66Q118 70 114 70H75M70 70H6Q2 70 2 66V37" />
-            <path className="sim-slot" d="M18 33V16Q18 12 22 12H49M54 12H84L102 30V44M102 49V56Q102 60 98 60H66M61 60H22Q18 60 18 56V38" />
+          <svg className="sim-cutouts" viewBox="0 0 25 15">
+            <path className="sim-slot" d="M12.4 0H22L25 3V7.1M25 7.9V14Q25 15 24 15H12.4M11.6 15H1Q0 15 0 14V7.9M0 7.1V1Q0 0 1 0H11.6" />
+            <path className="sim-slot score" d="M1.5 7.1V2.3Q1.5 1.5 2.3 1.5H14L16.5 4V7.1M16.5 7.9V12.7Q16.5 13.5 15.7 13.5H2.3Q1.5 13.5 1.5 12.7V7.9" />
+            <path
+              className="sim-slot score"
+              d="M2.85 7.1V3.6Q2.85 3.1 3.35 3.1H13.5L15.15 4.75V7.1M15.15 7.9V11.4Q15.15 11.9 14.65 11.9H3.35Q2.85 11.9 2.85 11.4V7.9"
+            />
           </svg>
           <CardChip />
         </div>
