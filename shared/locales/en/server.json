@@ -58,5 +58,15 @@
   "invalidAvatar": "Invalid image",
   "avatarInvalid": "Use a square PNG/WebP avatar up to 128×128 and 64 KB, without metadata. Uploads accept PNG/JPEG/WebP up to 8 MB and 40 megapixels.",
   "avatarRosterFull": "The people roster is full. Remove an avatar before adding another.",
-  "methodInUse": "This payment method is still in use. Move its references to another method or clear them first."
+  "methodInUse": "This payment method is still in use. Move its references to another method or clear them first.",
+  "autobackup": {
+    "badEndpoint": "Invalid endpoint; it must start with https:// or http://",
+    "badBucket": "Invalid bucket name",
+    "noCredentials": "Enter the Access Key ID and Secret Access Key",
+    "noPassphrase": "Set an encryption passphrase",
+    "badKeep": "Keep must be between 1 and 365",
+    "notConfigured": "Automatic backup is not set up",
+    "interrupted": "The last backup did not finish",
+    "beforeRestoreFailed": "The backup before restoring failed; the ledger is unchanged: {error}"
+  }
 }

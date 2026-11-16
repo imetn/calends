@@ -135,7 +135,9 @@
     },
     "time": "Gesichert am",
     "format": "Format",
-    "legacy": "Altes Backup: nur Abos und Zahlungsmethoden"
+    "legacy": "Altes Backup: nur Abos und Zahlungsmethoden",
+    "unlock": "Entsperren",
+    "wrongPassphrase": "Falsche Passphrase"
   },
   "import": {
     "title": {
@@ -482,5 +484,31 @@
     "copied": "Befehl kopiert",
     "guide": "Anleitung",
     "notes": "Versionshinweise"
+  },
+  "autobackup": {
+    "title": "Automatische Sicherung",
+    "off": "Aus",
+    "failed": "Sicherung fehlgeschlagen",
+    "last": "Letzte Sicherung",
+    "never": "Noch keine Sicherung",
+    "runNow": "Jetzt sichern",
+    "storage": "Speicher",
+    "endpoint": "Endpunkt",
+    "bucket": "Bucket",
+    "folder": "Ordner",
+    "kept": "Gespeichert",
+    "encryption": "Verschlüsselung",
+    "passphrase": "Passphrase",
+    "confirm": "Passphrase bestätigen",
+    "mismatch": "Passphrasen stimmen nicht überein",
+    "keep": "Aufbewahren",
+    "copies": {
+      "one": "Kopie",
+      "other": "Kopien"
+    },
+    "save": "Speichern",
+    "remove": "Entfernen",
+    "removed": "Automatische Sicherung entfernt",
+    "done": "Gesichert"
   }
 }

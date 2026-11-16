@@ -8,6 +8,8 @@ import { toCsv } from '../../../shared/csv.ts';
 import type { ImportSource } from '../../../shared/import-ledger.ts';
 import { readImportFile } from '../import-file.ts';
 import { ImportSheet } from './ImportSheet.tsx';
+import { AutoBackupCell, UnlockSheet } from './AutoBackup.tsx';
+import { isEncryptedBackup, type EncryptedBackup } from '../../../shared/backup-crypto.ts';
 import { avatarOf, REMIND_DAYS, type AppState, type Subscription } from '../../../shared/types.ts';
 import { IconButton, Cell, Group, Toolbar } from '../components/ui.tsx';
 import { Icon } from '../components/icons.tsx';
@@ -223,9 +225,13 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
   };
   // 备份恢复：整份交给服务端，订阅、支付方式、设置、汇率一起原样还原
   const [restoring, setRestoring] = useState<{ raw: unknown; subs: number; methods: number; exportedAt?: string; version: number } | null>(null);
+  // 自动备份上传的是加密文件：先要口令在浏览器里解开
+  const [locked, setLocked] = useState<EncryptedBackup | null>(null);
   const onJson = (text: string) => {
     try {
-      const j = JSON.parse(text) as { subscriptions?: unknown[]; methods?: unknown[]; exportedAt?: string; version?: number };
+      const raw = JSON.parse(text) as unknown;
+      if (isEncryptedBackup(raw)) return setLocked(raw);
+      const j = raw as { subscriptions?: unknown[]; methods?: unknown[]; exportedAt?: string; version?: number };
       if (!Array.isArray(j.subscriptions)) throw new Error();
       setRestoring({ raw: j, subs: j.subscriptions.length, methods: j.methods?.length ?? 0, exportedAt: j.exportedAt, version: j.version ?? 1 });
     } catch {
@@ -571,6 +577,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
           <Cell label={t('settings.data.restore')} onClick={() => pickFile('.json,application/json', onJson)} />
           <Cell label={t('settings.data.exportCsv')} onClick={exportCsv} />
           <Cell label={t('settings.data.backup')} onClick={() => (location.href = base('/api/backup'))} />
+          {!state.readonly && <AutoBackupCell timezone={s.timezone} />}
         </Group>
 
         <Group>
@@ -580,6 +587,16 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
         </Group>
       </div>
 
+      {locked && (
+        <UnlockSheet
+          file={locked}
+          onClose={() => setLocked(null)}
+          onOpen={(json) => {
+            setLocked(null);
+            onJson(json);
+          }}
+        />
+      )}
       {restoring && (
         <Sheet
           narrow

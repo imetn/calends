@@ -53,5 +53,15 @@
   "invalidAvatar": "잘못된 이미지",
   "avatarInvalid": "메타데이터 없는 정사각형 PNG/WebP(최대 128×128, 64 KB)를 사용하세요. 업로드: PNG/JPEG/WebP, 최대 8 MB 및 4천만 화소.",
   "avatarRosterFull": "인물 목록 용량이 가득 찼습니다. 먼저 아바타를 삭제하세요.",
-  "methodInUse": "이 결제 수단은 아직 사용 중입니다. 먼저 참조를 다른 결제 수단으로 옮기거나 비우세요."
+  "methodInUse": "이 결제 수단은 아직 사용 중입니다. 먼저 참조를 다른 결제 수단으로 옮기거나 비우세요.",
+  "autobackup": {
+    "badEndpoint": "엔드포인트가 올바르지 않습니다. https:// 또는 http://로 시작해야 합니다",
+    "badBucket": "버킷 이름이 올바르지 않습니다",
+    "noCredentials": "Access Key ID와 Secret Access Key를 입력하세요",
+    "noPassphrase": "암호화 암호 문구를 설정하세요",
+    "badKeep": "보관 개수는 1~365 사이여야 합니다",
+    "notConfigured": "자동 백업이 설정되지 않았습니다",
+    "interrupted": "마지막 백업이 완료되지 않았습니다",
+    "beforeRestoreFailed": "복원 전 자동 백업에 실패해 장부는 변경되지 않았습니다: {error}"
+  }
 }

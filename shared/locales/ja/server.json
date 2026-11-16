@@ -53,5 +53,15 @@
   "invalidAvatar": "画像が無効です",
   "avatarInvalid": "メタデータなしの正方形 PNG/WebP（最大 128×128、64 KB）を使用してください。アップロードは PNG/JPEG/WebP、最大 8 MB・4000 万画素です。",
   "avatarRosterFull": "人物リストの容量がいっぱいです。先にアバターを削除してください。",
-  "methodInUse": "この支払い方法はまだ使われています。先に参照を別の支払い方法へ移すか、クリアしてください。"
+  "methodInUse": "この支払い方法はまだ使われています。先に参照を別の支払い方法へ移すか、クリアしてください。",
+  "autobackup": {
+    "badEndpoint": "エンドポイントが無効です。https:// または http:// で始めてください",
+    "badBucket": "バケット名が無効です",
+    "noCredentials": "Access Key ID と Secret Access Key を入力してください",
+    "noPassphrase": "暗号化パスフレーズを設定してください",
+    "badKeep": "保持数は 1〜365 にしてください",
+    "notConfigured": "自動バックアップが設定されていません",
+    "interrupted": "前回のバックアップは完了しませんでした",
+    "beforeRestoreFailed": "復元前の自動バックアップに失敗しました。台帳は変更されていません：{error}"
+  }
 }

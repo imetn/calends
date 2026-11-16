@@ -129,7 +129,9 @@
     },
     "time": "Dicadangkan",
     "format": "Format",
-    "legacy": "Cadangan lama: hanya langganan dan metode pembayaran"
+    "legacy": "Cadangan lama: hanya langganan dan metode pembayaran",
+    "unlock": "Buka kunci",
+    "wrongPassphrase": "Frasa sandi salah"
   },
   "import": {
     "title": {
@@ -464,5 +466,30 @@
     "copied": "Perintah disalin",
     "guide": "Panduan pembaruan",
     "notes": "Catatan rilis"
+  },
+  "autobackup": {
+    "title": "Cadangan otomatis",
+    "off": "Mati",
+    "failed": "Pencadangan gagal",
+    "last": "Cadangan terakhir",
+    "never": "Belum ada cadangan",
+    "runNow": "Cadangkan sekarang",
+    "storage": "Penyimpanan",
+    "endpoint": "Endpoint",
+    "bucket": "Bucket",
+    "folder": "Folder",
+    "kept": "Tersimpan",
+    "encryption": "Enkripsi",
+    "passphrase": "Frasa sandi",
+    "confirm": "Konfirmasi frasa sandi",
+    "mismatch": "Frasa sandi tidak cocok",
+    "keep": "Jumlah disimpan",
+    "copies": {
+      "other": "salinan"
+    },
+    "save": "Simpan",
+    "remove": "Hapus",
+    "removed": "Cadangan otomatis dihapus",
+    "done": "Dicadangkan"
   }
 }

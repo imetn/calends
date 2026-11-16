@@ -53,5 +53,15 @@
   "invalidAvatar": "Gambar tidak valid",
   "avatarInvalid": "Gunakan PNG/WebP persegi tanpa metadata, maksimal 128×128 dan 64 KB. Unggahan: PNG/JPEG/WebP hingga 8 MB dan 40 megapiksel.",
   "avatarRosterFull": "Daftar orang penuh. Hapus avatar sebelum menambahkan yang baru.",
-  "methodInUse": "Metode pembayaran ini masih dipakai. Pindahkan referensinya ke metode lain atau kosongkan terlebih dahulu."
+  "methodInUse": "Metode pembayaran ini masih dipakai. Pindahkan referensinya ke metode lain atau kosongkan terlebih dahulu.",
+  "autobackup": {
+    "badEndpoint": "Endpoint tidak valid; harus diawali https:// atau http://",
+    "badBucket": "Nama bucket tidak valid",
+    "noCredentials": "Isi Access Key ID dan Secret Access Key",
+    "noPassphrase": "Tetapkan frasa sandi enkripsi",
+    "badKeep": "Jumlah simpanan harus 1 sampai 365",
+    "notConfigured": "Cadangan otomatis belum diatur",
+    "interrupted": "Pencadangan terakhir tidak selesai",
+    "beforeRestoreFailed": "Pencadangan sebelum pemulihan gagal; buku tidak berubah: {error}"
+  }
 }

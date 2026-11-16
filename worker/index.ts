@@ -69,6 +69,15 @@ import { fetchPublic } from './url-guard.ts';
 import { TOOLS, toolTitle } from './ai/mcp-tools.ts';
 import { appStorePlans, searchAppStore } from './appstore.ts';
 import { exportAll, parseBackup, restoreAll } from './backup.ts';
+import {
+  backupBeforeReplace,
+  removeAutoBackup,
+  runAutoBackup,
+  saveAutoBackup,
+  scheduledAutoBackup,
+  viewAutoBackup,
+  type AutoBackupConfig,
+} from './autobackup.ts';
 import { apply, chat, clearChats, listChats, saveChat, saveConfig, testConfig, viewConfig } from './ai/assistant.ts';
 import { requestLocale, settingsLocale, applyLocale, withLocaleScope } from './i18n.ts';
 import { t } from '../shared/i18n.ts';
@@ -363,9 +372,24 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     }
     const err = invalidIn(b.subscriptions);
     if (err) return bad(err);
+    const failed = await backupBeforeReplace(env);
+    if (failed) return bad(failed, 502);
     const restored = await restoreAll(env, b);
     const state = await loadState(env);
     return json({ restored, state }, 200, state.rev);
+  }
+  // 自动备份到 S3 兼容存储：配置里的密钥不回传；保存后开着就立即备份一次，结果在状态里
+  if (path === '/api/autobackup' && method === 'GET') return json(await viewAutoBackup(env));
+  if (path === '/api/autobackup' && method === 'PUT') {
+    const saved = await saveAutoBackup(env, (await readJson(req)) as Partial<AutoBackupConfig>);
+    if (typeof saved === 'string') return bad(saved);
+    if (saved.enabled) await runAutoBackup(env, { force: true }).catch(() => undefined);
+    return json(await viewAutoBackup(env));
+  }
+  if (path === '/api/autobackup' && method === 'DELETE') return (await removeAutoBackup(env), json(await viewAutoBackup(env)));
+  if (path === '/api/autobackup/run' && method === 'POST') {
+    await runAutoBackup(env, { force: true }).catch(() => undefined);
+    return json(await viewAutoBackup(env));
   }
   if (path === '/api/import' && method === 'POST') {
     // 只导入订阅与支付方式；设置走 PUT /api/settings 的校验，这里不再接受
@@ -391,6 +415,10 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     const imported = new Set(subs.map((s) => s.id));
     const linkError = meterLinkError(before, [...(mode === 'merge' ? before.filter((s) => !imported.has(s.id)) : []), ...subs]);
     if (linkError) return bad(linkError);
+    if (mode === 'replace') {
+      const failed = await backupBeforeReplace(env);
+      if (failed) return bad(failed, 502);
+    }
     await replaceAll(env, subs, methods, mode);
     const state = await loadState(env);
     return json(state, 200, state.rev);
@@ -564,6 +592,7 @@ async function handleScheduled(controller: ScheduledController, env: Env, ctx: E
   // 通知每刻钟检查；原有的每日维护仍只在 UTC 整点执行。
   if (new Date(controller.scheduledTime).getUTCMinutes() >= 15) {
     await scheduledNotifications(env, controller.scheduledTime);
+    await scheduledAutoBackup(env, controller.scheduledTime);
     return;
   }
   const fx = await getFx(env);
@@ -571,4 +600,5 @@ async function handleScheduled(controller: ScheduledController, env: Env, ctx: E
     ctx.waitUntil(refreshFx(env).catch((e) => console.error('[fx]', e)));
   }
   await scheduledNotifications(env, controller.scheduledTime);
+  await scheduledAutoBackup(env, controller.scheduledTime);
 }

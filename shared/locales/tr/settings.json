@@ -135,7 +135,9 @@
     },
     "time": "Yedekleme zamanı",
     "format": "Biçim",
-    "legacy": "Eski yedek: yalnızca abonelikler ve ödeme yöntemleri"
+    "legacy": "Eski yedek: yalnızca abonelikler ve ödeme yöntemleri",
+    "unlock": "Kilidi aç",
+    "wrongPassphrase": "Parola ifadesi yanlış"
   },
   "import": {
     "title": {
@@ -482,5 +484,31 @@
     "copied": "Komut kopyalandı",
     "guide": "Yükseltme rehberi",
     "notes": "Sürüm notları"
+  },
+  "autobackup": {
+    "title": "Otomatik yedekleme",
+    "off": "Kapalı",
+    "failed": "Yedekleme başarısız",
+    "last": "Son yedek",
+    "never": "Henüz yedek yok",
+    "runNow": "Şimdi yedekle",
+    "storage": "Depolama",
+    "endpoint": "Uç nokta",
+    "bucket": "Bucket",
+    "folder": "Klasör",
+    "kept": "Kaydedildi",
+    "encryption": "Şifreleme",
+    "passphrase": "Parola ifadesi",
+    "confirm": "Parola ifadesini onayla",
+    "mismatch": "Parola ifadeleri eşleşmiyor",
+    "keep": "Sakla",
+    "copies": {
+      "one": "kopya",
+      "other": "kopya"
+    },
+    "save": "Kaydet",
+    "remove": "Kaldır",
+    "removed": "Otomatik yedekleme kaldırıldı",
+    "done": "Yedeklendi"
   }
 }

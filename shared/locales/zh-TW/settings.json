@@ -129,7 +129,9 @@
     },
     "time": "備份時間",
     "format": "格式",
-    "legacy": "舊版備份：只含訂閱與付款方式"
+    "legacy": "舊版備份：只含訂閱與付款方式",
+    "unlock": "解鎖",
+    "wrongPassphrase": "密語不正確"
   },
   "import": {
     "title": {
@@ -464,5 +466,30 @@
     "copied": "已複製指令",
     "guide": "升級說明",
     "notes": "更新內容"
+  },
+  "autobackup": {
+    "title": "自動備份",
+    "off": "未開啟",
+    "failed": "備份失敗",
+    "last": "上次備份",
+    "never": "還沒有備份",
+    "runNow": "立即備份",
+    "storage": "儲存空間",
+    "endpoint": "服務位址",
+    "bucket": "儲存桶",
+    "folder": "資料夾",
+    "kept": "已儲存",
+    "encryption": "加密",
+    "passphrase": "加密密語",
+    "confirm": "確認密語",
+    "mismatch": "兩次密語不一致",
+    "keep": "保留份數",
+    "copies": {
+      "other": "份"
+    },
+    "save": "儲存",
+    "remove": "移除",
+    "removed": "已移除自動備份",
+    "done": "已備份"
   }
 }

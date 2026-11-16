@@ -135,7 +135,9 @@
     },
     "time": "Copia realizada",
     "format": "Formato",
-    "legacy": "Copia antigua: solo suscripciones y métodos de pago"
+    "legacy": "Copia antigua: solo suscripciones y métodos de pago",
+    "unlock": "Desbloquear",
+    "wrongPassphrase": "Frase incorrecta"
   },
   "import": {
     "title": {
@@ -482,5 +484,31 @@
     "copied": "Comando copiado",
     "guide": "Guía de actualización",
     "notes": "Notas de la versión"
+  },
+  "autobackup": {
+    "title": "Copia automática",
+    "off": "Desactivada",
+    "failed": "Copia fallida",
+    "last": "Última copia",
+    "never": "Aún no hay copias",
+    "runNow": "Copiar ahora",
+    "storage": "Almacenamiento",
+    "endpoint": "Endpoint",
+    "bucket": "Bucket",
+    "folder": "Carpeta",
+    "kept": "Guardado",
+    "encryption": "Cifrado",
+    "passphrase": "Frase de contraseña",
+    "confirm": "Confirmar frase",
+    "mismatch": "Las frases no coinciden",
+    "keep": "Conservar",
+    "copies": {
+      "one": "copia",
+      "other": "copias"
+    },
+    "save": "Guardar",
+    "remove": "Quitar",
+    "removed": "Copia automática quitada",
+    "done": "Copia hecha"
   }
 }

@@ -58,5 +58,15 @@
   "invalidAvatar": "Ungültiges Bild",
   "avatarInvalid": "Quadratisches PNG/WebP ohne Metadaten, bis 128×128 und 64 KB. Uploads: PNG/JPEG/WebP bis 8 MB und 40 Megapixel.",
   "avatarRosterFull": "Die Personenliste ist voll. Entferne zuerst ein Profilbild.",
-  "methodInUse": "Diese Zahlungsmethode wird noch verwendet. Verschiebe ihre Verweise zuerst auf eine andere Methode oder leere sie."
+  "methodInUse": "Diese Zahlungsmethode wird noch verwendet. Verschiebe ihre Verweise zuerst auf eine andere Methode oder leere sie.",
+  "autobackup": {
+    "badEndpoint": "Ungültiger Endpunkt; er muss mit https:// oder http:// beginnen",
+    "badBucket": "Ungültiger Bucket-Name",
+    "noCredentials": "Access Key ID und Secret Access Key eingeben",
+    "noPassphrase": "Eine Verschlüsselungs-Passphrase festlegen",
+    "badKeep": "Aufbewahren muss zwischen 1 und 365 liegen",
+    "notConfigured": "Automatische Sicherung ist nicht eingerichtet",
+    "interrupted": "Die letzte Sicherung wurde nicht abgeschlossen",
+    "beforeRestoreFailed": "Die Sicherung vor der Wiederherstellung ist fehlgeschlagen; das Konto ist unverändert: {error}"
+  }
 }

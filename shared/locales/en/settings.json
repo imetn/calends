@@ -135,7 +135,9 @@
     },
     "time": "Backed up",
     "format": "Format",
-    "legacy": "Legacy backup: subscriptions and payment methods only"
+    "legacy": "Legacy backup: subscriptions and payment methods only",
+    "unlock": "Unlock",
+    "wrongPassphrase": "Wrong passphrase"
   },
   "import": {
     "title": {
@@ -482,5 +484,31 @@
     "copied": "Command copied",
     "guide": "Upgrade guide",
     "notes": "Release notes"
+  },
+  "autobackup": {
+    "title": "Automatic backup",
+    "off": "Off",
+    "failed": "Backup failed",
+    "last": "Last backup",
+    "never": "No backup yet",
+    "runNow": "Back up now",
+    "storage": "Storage",
+    "endpoint": "Endpoint",
+    "bucket": "Bucket",
+    "folder": "Folder",
+    "kept": "Saved",
+    "encryption": "Encryption",
+    "passphrase": "Passphrase",
+    "confirm": "Confirm passphrase",
+    "mismatch": "Passphrases do not match",
+    "keep": "Keep",
+    "copies": {
+      "one": "copy",
+      "other": "copies"
+    },
+    "save": "Save",
+    "remove": "Remove",
+    "removed": "Automatic backup removed",
+    "done": "Backed up"
   }
 }

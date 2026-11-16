@@ -49,5 +49,15 @@
   "invalidAvatar": "圖片無效",
   "avatarInvalid": "頭像須為不含中繼資料的正方形 PNG/WebP，最大 128×128、64 KB。上傳支援 PNG/JPEG/WebP，最大 8 MB、4000 萬像素。",
   "avatarRosterFull": "人員名冊空間已滿，請先移除一個頭像。",
-  "methodInUse": "這個支付方式仍在使用。請先把引用遷到其他支付方式，或選擇清空。"
+  "methodInUse": "這個支付方式仍在使用。請先把引用遷到其他支付方式，或選擇清空。",
+  "autobackup": {
+    "badEndpoint": "服務位址無效，需以 https:// 或 http:// 開頭",
+    "badBucket": "儲存桶名稱無效",
+    "noCredentials": "請填寫 Access Key ID 和 Secret Access Key",
+    "noPassphrase": "請設定加密密語",
+    "badKeep": "保留份數需在 1 到 365 之間",
+    "notConfigured": "尚未設定自動備份",
+    "interrupted": "上次備份未完成",
+    "beforeRestoreFailed": "還原前的自動備份失敗，帳本未變動：{error}"
+  }
 }

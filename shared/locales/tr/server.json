@@ -58,5 +58,15 @@
   "invalidAvatar": "Geçersiz görsel",
   "avatarInvalid": "Meta veri içermeyen, kare PNG/WebP kullanın: en fazla 128×128 ve 64 KB. Yükleme: PNG/JPEG/WebP, en fazla 8 MB ve 40 megapiksel.",
   "avatarRosterFull": "Kişi listesi dolu. Önce bir avatarı kaldırın.",
-  "methodInUse": "Bu ödeme yöntemi hâlâ kullanılıyor. Önce referanslarını başka bir yönteme taşıyın veya temizleyin."
+  "methodInUse": "Bu ödeme yöntemi hâlâ kullanılıyor. Önce referanslarını başka bir yönteme taşıyın veya temizleyin.",
+  "autobackup": {
+    "badEndpoint": "Geçersiz uç nokta; https:// veya http:// ile başlamalı",
+    "badBucket": "Geçersiz bucket adı",
+    "noCredentials": "Access Key ID ve Secret Access Key girin",
+    "noPassphrase": "Bir şifreleme parola ifadesi belirleyin",
+    "badKeep": "Sakla 1 ile 365 arasında olmalı",
+    "notConfigured": "Otomatik yedekleme ayarlanmamış",
+    "interrupted": "Son yedekleme tamamlanmadı",
+    "beforeRestoreFailed": "Geri yükleme öncesi yedek başarısız oldu; defter değişmedi: {error}"
+  }
 }

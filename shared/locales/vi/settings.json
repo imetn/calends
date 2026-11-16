@@ -129,7 +129,9 @@
     },
     "time": "Thời điểm sao lưu",
     "format": "Định dạng",
-    "legacy": "Bản sao lưu cũ: chỉ có gói đăng ký và phương thức thanh toán"
+    "legacy": "Bản sao lưu cũ: chỉ có gói đăng ký và phương thức thanh toán",
+    "unlock": "Mở khóa",
+    "wrongPassphrase": "Sai cụm mật khẩu"
   },
   "import": {
     "title": {
@@ -464,5 +466,30 @@
     "copied": "Đã sao chép lệnh",
     "guide": "Hướng dẫn nâng cấp",
     "notes": "Ghi chú phát hành"
+  },
+  "autobackup": {
+    "title": "Sao lưu tự động",
+    "off": "Tắt",
+    "failed": "Sao lưu thất bại",
+    "last": "Lần sao lưu gần nhất",
+    "never": "Chưa có bản sao lưu",
+    "runNow": "Sao lưu ngay",
+    "storage": "Lưu trữ",
+    "endpoint": "Endpoint",
+    "bucket": "Bucket",
+    "folder": "Thư mục",
+    "kept": "Đã lưu",
+    "encryption": "Mã hóa",
+    "passphrase": "Cụm mật khẩu",
+    "confirm": "Xác nhận cụm mật khẩu",
+    "mismatch": "Cụm mật khẩu không khớp",
+    "keep": "Giữ lại",
+    "copies": {
+      "other": "bản"
+    },
+    "save": "Lưu",
+    "remove": "Gỡ bỏ",
+    "removed": "Đã gỡ sao lưu tự động",
+    "done": "Đã sao lưu"
   }
 }

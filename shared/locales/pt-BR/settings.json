@@ -135,7 +135,9 @@
     },
     "time": "Backup feito em",
     "format": "Formato",
-    "legacy": "Backup antigo: só assinaturas e formas de pagamento"
+    "legacy": "Backup antigo: só assinaturas e formas de pagamento",
+    "unlock": "Desbloquear",
+    "wrongPassphrase": "Frase secreta incorreta"
   },
   "import": {
     "title": {
@@ -482,5 +484,31 @@
     "copied": "Comando copiado",
     "guide": "Guia de atualização",
     "notes": "Notas da versão"
+  },
+  "autobackup": {
+    "title": "Backup automático",
+    "off": "Desativado",
+    "failed": "Falha no backup",
+    "last": "Último backup",
+    "never": "Nenhum backup ainda",
+    "runNow": "Fazer backup agora",
+    "storage": "Armazenamento",
+    "endpoint": "Endpoint",
+    "bucket": "Bucket",
+    "folder": "Pasta",
+    "kept": "Salvo",
+    "encryption": "Criptografia",
+    "passphrase": "Frase secreta",
+    "confirm": "Confirmar frase secreta",
+    "mismatch": "As frases não coincidem",
+    "keep": "Manter",
+    "copies": {
+      "one": "cópia",
+      "other": "cópias"
+    },
+    "save": "Salvar",
+    "remove": "Remover",
+    "removed": "Backup automático removido",
+    "done": "Backup feito"
   }
 }

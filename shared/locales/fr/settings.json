@@ -135,7 +135,9 @@
     },
     "time": "Sauvegardé le",
     "format": "Format",
-    "legacy": "Ancienne sauvegarde : abonnements et moyens de paiement uniquement"
+    "legacy": "Ancienne sauvegarde : abonnements et moyens de paiement uniquement",
+    "unlock": "Déverrouiller",
+    "wrongPassphrase": "Phrase secrète incorrecte"
   },
   "import": {
     "title": {
@@ -482,5 +484,31 @@
     "copied": "Commande copiée",
     "guide": "Guide de mise à jour",
     "notes": "Notes de version"
+  },
+  "autobackup": {
+    "title": "Sauvegarde automatique",
+    "off": "Désactivée",
+    "failed": "Échec de la sauvegarde",
+    "last": "Dernière sauvegarde",
+    "never": "Aucune sauvegarde",
+    "runNow": "Sauvegarder maintenant",
+    "storage": "Stockage",
+    "endpoint": "Point de terminaison",
+    "bucket": "Bucket",
+    "folder": "Dossier",
+    "kept": "Enregistré",
+    "encryption": "Chiffrement",
+    "passphrase": "Phrase secrète",
+    "confirm": "Confirmer la phrase secrète",
+    "mismatch": "Les phrases secrètes ne correspondent pas",
+    "keep": "Conserver",
+    "copies": {
+      "one": "copie",
+      "other": "copies"
+    },
+    "save": "Enregistrer",
+    "remove": "Supprimer",
+    "removed": "Sauvegarde automatique supprimée",
+    "done": "Sauvegardé"
   }
 }

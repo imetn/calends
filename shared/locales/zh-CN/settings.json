@@ -129,7 +129,9 @@
     },
     "time": "备份时间",
     "format": "格式",
-    "legacy": "旧版备份：只含订阅与支付方式"
+    "legacy": "旧版备份：只含订阅与支付方式",
+    "unlock": "解锁",
+    "wrongPassphrase": "口令不对"
   },
   "import": {
     "title": {
@@ -464,5 +466,30 @@
     "copied": "已复制命令",
     "guide": "升级说明",
     "notes": "更新内容"
+  },
+  "autobackup": {
+    "title": "自动备份",
+    "off": "未开启",
+    "failed": "备份失败",
+    "last": "上次备份",
+    "never": "还没有备份",
+    "runNow": "立即备份",
+    "storage": "存储",
+    "endpoint": "服务地址",
+    "bucket": "存储桶",
+    "folder": "文件夹",
+    "kept": "已保存",
+    "encryption": "加密",
+    "passphrase": "加密口令",
+    "confirm": "确认口令",
+    "mismatch": "两次口令不一致",
+    "keep": "保留份数",
+    "copies": {
+      "other": "份"
+    },
+    "save": "保存",
+    "remove": "移除",
+    "removed": "已移除自动备份",
+    "done": "已备份"
   }
 }

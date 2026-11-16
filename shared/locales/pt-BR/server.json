@@ -58,5 +58,15 @@
   "invalidAvatar": "Imagem inválida",
   "avatarInvalid": "Use PNG/WebP quadrado sem metadados, até 128×128 e 64 KB. Envios: PNG/JPEG/WebP até 8 MB e 40 megapixels.",
   "avatarRosterFull": "A lista de pessoas está cheia. Remova um avatar antes de adicionar outro.",
-  "methodInUse": "Esta forma de pagamento ainda está em uso. Mova as referências para outra forma ou limpe-as primeiro."
+  "methodInUse": "Esta forma de pagamento ainda está em uso. Mova as referências para outra forma ou limpe-as primeiro.",
+  "autobackup": {
+    "badEndpoint": "Endpoint inválido; deve começar com https:// ou http://",
+    "badBucket": "Nome de bucket inválido",
+    "noCredentials": "Informe o Access Key ID e o Secret Access Key",
+    "noPassphrase": "Defina uma frase secreta de criptografia",
+    "badKeep": "Manter deve ficar entre 1 e 365",
+    "notConfigured": "O backup automático não está configurado",
+    "interrupted": "O último backup não terminou",
+    "beforeRestoreFailed": "O backup antes da restauração falhou; o registro não foi alterado: {error}"
+  }
 }

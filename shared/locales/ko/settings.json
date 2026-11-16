@@ -129,7 +129,9 @@
     },
     "time": "백업 시각",
     "format": "형식",
-    "legacy": "이전 형식 백업: 구독과 결제 수단만 포함"
+    "legacy": "이전 형식 백업: 구독과 결제 수단만 포함",
+    "unlock": "잠금 해제",
+    "wrongPassphrase": "암호 문구가 틀렸습니다"
   },
   "import": {
     "title": {
@@ -464,5 +466,30 @@
     "copied": "명령어를 복사했습니다",
     "guide": "업그레이드 안내",
     "notes": "릴리스 노트"
+  },
+  "autobackup": {
+    "title": "자동 백업",
+    "off": "꺼짐",
+    "failed": "백업 실패",
+    "last": "마지막 백업",
+    "never": "아직 백업이 없습니다",
+    "runNow": "지금 백업",
+    "storage": "스토리지",
+    "endpoint": "엔드포인트",
+    "bucket": "버킷",
+    "folder": "폴더",
+    "kept": "저장됨",
+    "encryption": "암호화",
+    "passphrase": "암호 문구",
+    "confirm": "암호 문구 확인",
+    "mismatch": "암호 문구가 일치하지 않습니다",
+    "keep": "보관 개수",
+    "copies": {
+      "other": "개"
+    },
+    "save": "저장",
+    "remove": "제거",
+    "removed": "자동 백업을 제거했습니다",
+    "done": "백업했습니다"
   }
 }

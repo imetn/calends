@@ -53,5 +53,15 @@
   "invalidAvatar": "Ảnh không hợp lệ",
   "avatarInvalid": "Dùng PNG/WebP vuông không có siêu dữ liệu, tối đa 128×128 và 64 KB. Tải lên PNG/JPEG/WebP tối đa 8 MB và 40 megapixel.",
   "avatarRosterFull": "Danh sách người đã đầy. Hãy xóa một ảnh đại diện trước.",
-  "methodInUse": "Phương thức thanh toán này vẫn đang được dùng. Hãy chuyển tham chiếu sang phương thức khác hoặc xóa trống trước."
+  "methodInUse": "Phương thức thanh toán này vẫn đang được dùng. Hãy chuyển tham chiếu sang phương thức khác hoặc xóa trống trước.",
+  "autobackup": {
+    "badEndpoint": "Endpoint không hợp lệ; phải bắt đầu bằng https:// hoặc http://",
+    "badBucket": "Tên bucket không hợp lệ",
+    "noCredentials": "Nhập Access Key ID và Secret Access Key",
+    "noPassphrase": "Hãy đặt cụm mật khẩu mã hóa",
+    "badKeep": "Số bản giữ lại phải từ 1 đến 365",
+    "notConfigured": "Chưa thiết lập sao lưu tự động",
+    "interrupted": "Lần sao lưu trước chưa hoàn tất",
+    "beforeRestoreFailed": "Sao lưu trước khi khôi phục thất bại; sổ không thay đổi: {error}"
+  }
 }
