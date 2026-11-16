@@ -63,6 +63,7 @@
     "badEndpoint": "Endpoint no válido; debe empezar por https:// o http://",
     "badBucket": "Nombre de bucket no válido",
     "noCredentials": "Introduce el Access Key ID y el Secret Access Key",
+    "noLogin": "Introduce el usuario y la contraseña",
     "noPassphrase": "Define una frase de cifrado",
     "badKeep": "Conservar debe estar entre 1 y 365",
     "notConfigured": "La copia automática no está configurada",

@@ -54,6 +54,7 @@
     "badEndpoint": "服务地址无效，需以 https:// 或 http:// 开头",
     "badBucket": "存储桶名无效",
     "noCredentials": "请填写 Access Key ID 和 Secret Access Key",
+    "noLogin": "请填写用户名和密码",
     "noPassphrase": "请设置加密口令",
     "badKeep": "保留份数需在 1 到 365 之间",
     "notConfigured": "还没有设置自动备份",

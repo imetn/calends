@@ -63,6 +63,7 @@
     "badEndpoint": "Point de terminaison invalide ; il doit commencer par https:// ou http://",
     "badBucket": "Nom de bucket invalide",
     "noCredentials": "Saisissez l’Access Key ID et la Secret Access Key",
+    "noLogin": "Saisissez le nom d’utilisateur et le mot de passe",
     "noPassphrase": "Définissez une phrase secrète de chiffrement",
     "badKeep": "Conserver doit être compris entre 1 et 365",
     "notConfigured": "La sauvegarde automatique n’est pas configurée",

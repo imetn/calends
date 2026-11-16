@@ -1,7 +1,8 @@
-// 自动备份：把完整备份（与「导出完整备份」同一份内容）加密后上传到 S3 兼容存储，按份数滚动删除最旧的。
+// 自动备份：把完整备份（与「导出完整备份」同一份内容）加密后上传到 S3 兼容存储或 WebDAV，按份数滚动删除最旧的。
 // 触发：定时任务每刻钟检查一次——账本有改动（kv.rev 变了）且距上次备份满 1 小时，或距上次满 1 天；
 // 内容与上一份完全相同时不再上传，免得相同的副本把有差别的旧版本挤出保留份数。
 // 恢复备份、替换导入之前先备份一份当前账本，备份失败就不替换。
+// 两种存储的设置各存一份，kind 指明正在用哪个；切换后另一份留着，切回来不用重填。
 // 配置与状态存在 kv 的独立键里：不进完整备份、不推进 kv.rev，也不经 AI / MCP 工具。
 import type { BackupKey } from '../shared/backup-crypto.ts';
 import { sealBackup } from '../shared/backup-crypto.ts';
@@ -10,6 +11,7 @@ import { exportAll } from './backup.ts';
 import type { Env } from './env.ts';
 import { deleteObject, listObjects, normalizeEndpoint, putObject, type S3Config } from './s3.ts';
 import { getKv, getRev, putKv } from './store.ts';
+import { davDelete, davList, davPut, type DavConfig } from './webdav.ts';
 
 const CONFIG_KEY = 'autobackup';
 const STATUS_KEY = 'autobackupStatus';
@@ -18,10 +20,21 @@ const DAY = 24 * HOUR;
 export const KEEP_DEFAULT = 30;
 export const KEEP_MAX = 365;
 
-export interface AutoBackupConfig extends S3Config {
-  enabled: boolean;
+export type BackupKind = 's3' | 'webdav';
+export interface S3Target extends S3Config {
   /** 桶里的文件夹，可空 */
   prefix: string;
+}
+export interface DavTarget extends DavConfig {
+  /** 服务地址下的文件夹，可空 */
+  folder: string;
+}
+
+export interface AutoBackupConfig {
+  enabled: boolean;
+  kind: BackupKind;
+  s3?: S3Target;
+  webdav?: DavTarget;
   key: BackupKey;
   keep: number;
 }
@@ -37,16 +50,25 @@ export interface AutoBackupStatus {
   failures?: number;
 }
 
-/** 给浏览器看的配置：不回传密钥和派生后的加密密钥 */
+/** 给浏览器看的配置：不回传密钥、密码和派生后的加密密钥，只说有没有存 */
 export interface AutoBackupView {
   configured: boolean;
   enabled: boolean;
-  endpoint: string;
-  bucket: string;
-  prefix: string;
-  accessKeyId: string;
+  kind: BackupKind;
+  s3: { endpoint: string; bucket: string; prefix: string; accessKeyId: string; saved: boolean };
+  webdav: { url: string; folder: string; username: string; saved: boolean };
   keep: number;
   status: AutoBackupStatus;
+}
+
+/** 保存请求：不带 kind 表示只切换开关 */
+export interface AutoBackupInput {
+  enabled?: boolean;
+  kind?: BackupKind;
+  s3?: Partial<S3Target>;
+  webdav?: Partial<DavTarget>;
+  key?: BackupKey;
+  keep?: number;
 }
 
 const getConfig = (env: Env) => getKv<AutoBackupConfig>(env, CONFIG_KEY);
@@ -58,16 +80,21 @@ export async function viewAutoBackup(env: Env): Promise<AutoBackupView> {
   return {
     configured: !!c,
     enabled: !!c?.enabled,
-    endpoint: c?.endpoint ?? '',
-    bucket: c?.bucket ?? '',
-    prefix: c?.prefix ?? '',
-    accessKeyId: c?.accessKeyId ?? '',
+    kind: c?.kind ?? 's3',
+    s3: {
+      endpoint: c?.s3?.endpoint ?? '',
+      bucket: c?.s3?.bucket ?? '',
+      prefix: c?.s3?.prefix ?? '',
+      accessKeyId: c?.s3?.accessKeyId ?? '',
+      saved: !!c?.s3?.secretAccessKey,
+    },
+    webdav: { url: c?.webdav?.url ?? '', folder: c?.webdav?.folder ?? '', username: c?.webdav?.username ?? '', saved: !!c?.webdav?.password },
     keep: c?.keep ?? KEEP_DEFAULT,
     status: shown,
   };
 }
 
-const cleanPrefix = (p: unknown) =>
+const cleanFolder = (p: unknown) =>
   String(p ?? '')
     .trim()
     .replace(/^\/+|\/+$/g, '');
@@ -83,28 +110,60 @@ const validKey = (k: unknown): k is BackupKey => {
   );
 };
 
-/**
- * 保存配置。secretAccessKey 留空表示沿用已存的；key 由浏览器按口令派生，不传表示沿用。
- * 换了加密密钥或存储位置时，清掉上次内容的指纹，下一次一定会上传一份新的。
- */
-export async function saveAutoBackup(env: Env, b: Partial<AutoBackupConfig>): Promise<AutoBackupConfig | string> {
-  const cur = await getConfig(env);
-  const endpoint = normalizeEndpoint(String(b.endpoint ?? ''));
-  const bucket = String(b.bucket ?? '').trim();
-  const accessKeyId = String(b.accessKeyId ?? '').trim();
+/** 校验并整理 S3 设置；Secret 留空时沿用已存的，但只在服务地址和 Access Key ID 都没变时 */
+function s3Target(b: Partial<S3Target> | undefined, cur: S3Target | undefined): S3Target | string {
+  const endpoint = normalizeEndpoint(String(b?.endpoint ?? ''));
+  const bucket = String(b?.bucket ?? '').trim();
+  const accessKeyId = String(b?.accessKeyId ?? '').trim();
   // 换了服务地址或账号就不沿用旧密钥，免得拿旧凭据去签发给另一台主机的请求
-  const sameTarget = !!cur && cur.endpoint === endpoint && cur.accessKeyId === accessKeyId;
-  const secretAccessKey = String(b.secretAccessKey ?? '').trim() || (sameTarget ? cur.secretAccessKey : '');
-  const key = b.key === undefined ? cur?.key : b.key;
-  const keep = Number(b.keep ?? KEEP_DEFAULT);
+  const same = !!cur && cur.endpoint === endpoint && cur.accessKeyId === accessKeyId;
+  const secretAccessKey = String(b?.secretAccessKey ?? '').trim() || (same ? cur.secretAccessKey : '');
   if (!endpoint) return t('server.autobackup.badEndpoint');
   if (!bucket || /[/\s]/.test(bucket)) return t('server.autobackup.badBucket');
   if (!accessKeyId || !secretAccessKey) return t('server.autobackup.noCredentials');
+  return { endpoint, bucket, prefix: cleanFolder(b?.prefix), accessKeyId, secretAccessKey };
+}
+
+/** 校验并整理 WebDAV 设置；密码留空时沿用已存的，但只在服务地址和用户名都没变时 */
+function davTarget(b: Partial<DavTarget> | undefined, cur: DavTarget | undefined): DavTarget | string {
+  const url = normalizeEndpoint(String(b?.url ?? ''));
+  const username = String(b?.username ?? '').trim();
+  const same = !!cur && cur.url === url && cur.username === username;
+  const password = String(b?.password ?? '') || (same ? cur.password : '');
+  if (!url) return t('server.autobackup.badEndpoint');
+  if (!username || !password) return t('server.autobackup.noLogin');
+  return { url, username, password, folder: cleanFolder(b?.folder) };
+}
+
+/** 备份落在哪里：换了这个就清掉内容指纹，下一次一定上传 */
+const placeOf = (c: AutoBackupConfig) =>
+  c.kind === 's3' ? `s3 ${c.s3?.endpoint} ${c.s3?.bucket} ${c.s3?.prefix}` : `webdav ${c.webdav?.url} ${c.webdav?.folder}`;
+
+/**
+ * 保存配置。只校验、更新正在用的那种存储，另一种原样留着。key 由浏览器按口令派生，不传表示沿用。
+ * 不带 kind 时只切换开关。换了存储位置时清空状态；只换加密密钥时清掉上次内容的指纹。
+ */
+export async function saveAutoBackup(env: Env, b: AutoBackupInput): Promise<AutoBackupConfig | string> {
+  const cur = await getConfig(env);
+  if (b.kind === undefined) {
+    if (!cur) return t('server.autobackup.notConfigured');
+    const next = { ...cur, enabled: b.enabled !== false };
+    await putKv(env, CONFIG_KEY, next);
+    return next;
+  }
+  const kind: BackupKind = b.kind === 'webdav' ? 'webdav' : 's3';
+  const target = kind === 's3' ? s3Target(b.s3, cur?.s3) : davTarget(b.webdav, cur?.webdav);
+  if (typeof target === 'string') return target;
+  const key = b.key === undefined ? cur?.key : b.key;
+  const keep = Number(b.keep ?? KEEP_DEFAULT);
   if (!validKey(key)) return t('server.autobackup.noPassphrase');
   if (!Number.isInteger(keep) || keep < 1 || keep > KEEP_MAX) return t('server.autobackup.badKeep');
-  const next: AutoBackupConfig = { enabled: b.enabled !== false, endpoint, bucket, prefix: cleanPrefix(b.prefix), accessKeyId, secretAccessKey, key, keep };
+  const next: AutoBackupConfig = { enabled: b.enabled !== false, kind, s3: cur?.s3, webdav: cur?.webdav, [kind]: target, key, keep };
   await putKv(env, CONFIG_KEY, next);
-  if (!cur || cur.key.key !== next.key.key || cur.endpoint !== next.endpoint || cur.bucket !== next.bucket || cur.prefix !== next.prefix) {
+  if (!cur || placeOf(cur) !== placeOf(next)) {
+    // 换了存储位置：旧位置的记录不再适用
+    await putKv(env, STATUS_KEY, {});
+  } else if (cur.key.key !== next.key.key) {
     const { lastHash: _hash, ...status } = await getStatus(env);
     await putKv(env, STATUS_KEY, status);
   }
@@ -125,13 +184,40 @@ export function backupFileName(now: number, reason?: 'before-restore'): string {
 const FILE_RE = /^calends-backup-\d{8}-\d{6}(?:-[a-z-]+)?\.json$/;
 const folder = (prefix: string) => (prefix ? `${prefix}/` : '');
 
-/** 滚动保留：只看这个文件夹下由自动备份生成的文件，按时间从新到旧留 keep 份，返回要删的；别的文件一概不动 */
-export function filesToPrune(keys: string[], prefix: string, keep: number): string[] {
-  const dir = folder(prefix);
-  return keys
-    .filter((k) => k.startsWith(dir) && FILE_RE.test(k.slice(dir.length)))
+/** 滚动保留：只看文件夹里由自动备份生成的文件，按时间从新到旧留 keep 份，返回要删的；别的文件一概不动 */
+export function filesToPrune(names: string[], keep: number): string[] {
+  return names
+    .filter((n) => FILE_RE.test(n))
     .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
     .slice(Math.max(1, keep));
+}
+
+/** 两种存储的统一操作：文件名都是文件夹下的直接子项 */
+interface Store {
+  /** 返回状态里显示的路径 */
+  put(name: string, body: string): Promise<string>;
+  list(): Promise<string[]>;
+  remove(name: string): Promise<void>;
+}
+function storeOf(c: AutoBackupConfig): Store {
+  if (c.kind === 'webdav' && c.webdav) {
+    const d = c.webdav;
+    return {
+      put: async (name, body) => (await davPut(d, d.folder, name, body), folder(d.folder) + name),
+      list: () => davList(d, d.folder),
+      remove: (name) => davDelete(d, d.folder, name),
+    };
+  }
+  if (c.kind === 's3' && c.s3) {
+    const s = c.s3;
+    const dir = folder(s.prefix);
+    return {
+      put: async (name, body) => (await putObject(s, dir + name, body), dir + name),
+      list: async () => (await listObjects(s, dir)).map((x) => x.key.slice(dir.length)).filter((n) => n && !n.includes('/')),
+      remove: (name) => deleteObject(s, dir + name),
+    };
+  }
+  throw new Error(t('server.autobackup.notConfigured'));
 }
 
 /** 连续失败后的等待：15 分钟起翻倍，最长 6 小时 */
@@ -169,17 +255,12 @@ export async function runAutoBackup(env: Env, o: { force?: boolean; reason?: 'be
       await putKv(env, STATUS_KEY, next);
       return next;
     }
-    const file = folder(c.prefix) + backupFileName(now, o.reason);
-    await putObject(c, file, await sealBackup(JSON.stringify(backup), c.key));
+    const store = storeOf(c);
+    const file = await store.put(backupFileName(now, o.reason), await sealBackup(JSON.stringify(backup), c.key));
     const next: AutoBackupStatus = { lastAt: now, lastFile: file, lastHash: hash, lastRev: rev, lastTryAt: now, failures: 0 };
     await putKv(env, STATUS_KEY, next);
     try {
-      const old = filesToPrune(
-        (await listObjects(c, folder(c.prefix))).map((x) => x.key),
-        c.prefix,
-        c.keep,
-      );
-      for (const k of old) await deleteObject(c, k);
+      for (const name of filesToPrune(await store.list(), c.keep)) await store.remove(name);
     } catch (e) {
       console.error('[autobackup] prune', e);
     }

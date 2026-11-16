@@ -475,6 +475,7 @@
     "never": "還沒有備份",
     "runNow": "立即備份",
     "storage": "儲存空間",
+    "kind": "備份到",
     "endpoint": "服務位址",
     "bucket": "儲存桶",
     "folder": "資料夾",
@@ -488,6 +489,7 @@
       "other": "份"
     },
     "save": "儲存",
+    "switchTo": "改用 {kind}",
     "remove": "移除",
     "removed": "已移除自動備份",
     "done": "已備份"

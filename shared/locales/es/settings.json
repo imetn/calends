@@ -493,6 +493,7 @@
     "never": "Aún no hay copias",
     "runNow": "Copiar ahora",
     "storage": "Almacenamiento",
+    "kind": "Copiar en",
     "endpoint": "Endpoint",
     "bucket": "Bucket",
     "folder": "Carpeta",
@@ -507,6 +508,7 @@
       "other": "copias"
     },
     "save": "Guardar",
+    "switchTo": "Cambiar a {kind}",
     "remove": "Quitar",
     "removed": "Copia automática quitada",
     "done": "Copia hecha"

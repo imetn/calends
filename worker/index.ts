@@ -76,7 +76,7 @@ import {
   saveAutoBackup,
   scheduledAutoBackup,
   viewAutoBackup,
-  type AutoBackupConfig,
+  type AutoBackupInput,
 } from './autobackup.ts';
 import { apply, chat, clearChats, listChats, saveChat, saveConfig, testConfig, viewConfig } from './ai/assistant.ts';
 import { requestLocale, settingsLocale, applyLocale, withLocaleScope } from './i18n.ts';
@@ -378,10 +378,10 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     const state = await loadState(env);
     return json({ restored, state }, 200, state.rev);
   }
-  // 自动备份到 S3 兼容存储：配置里的密钥不回传；保存后开着就立即备份一次，结果在状态里
+  // 自动备份到 S3 兼容存储或 WebDAV：配置里的密钥不回传；保存后开着就立即备份一次，结果在状态里
   if (path === '/api/autobackup' && method === 'GET') return json(await viewAutoBackup(env));
   if (path === '/api/autobackup' && method === 'PUT') {
-    const saved = await saveAutoBackup(env, (await readJson(req)) as Partial<AutoBackupConfig>);
+    const saved = await saveAutoBackup(env, (await readJson(req)) as AutoBackupInput);
     if (typeof saved === 'string') return bad(saved);
     if (saved.enabled) await runAutoBackup(env, { force: true }).catch(() => undefined);
     return json(await viewAutoBackup(env));

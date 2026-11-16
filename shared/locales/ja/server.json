@@ -58,6 +58,7 @@
     "badEndpoint": "エンドポイントが無効です。https:// または http:// で始めてください",
     "badBucket": "バケット名が無効です",
     "noCredentials": "Access Key ID と Secret Access Key を入力してください",
+    "noLogin": "ユーザー名とパスワードを入力してください",
     "noPassphrase": "暗号化パスフレーズを設定してください",
     "badKeep": "保持数は 1〜365 にしてください",
     "notConfigured": "自動バックアップが設定されていません",

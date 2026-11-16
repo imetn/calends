@@ -63,6 +63,7 @@
     "badEndpoint": "Invalid endpoint; it must start with https:// or http://",
     "badBucket": "Invalid bucket name",
     "noCredentials": "Enter the Access Key ID and Secret Access Key",
+    "noLogin": "Enter the username and password",
     "noPassphrase": "Set an encryption passphrase",
     "badKeep": "Keep must be between 1 and 365",
     "notConfigured": "Automatic backup is not set up",

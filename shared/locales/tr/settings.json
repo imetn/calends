@@ -493,6 +493,7 @@
     "never": "Henüz yedek yok",
     "runNow": "Şimdi yedekle",
     "storage": "Depolama",
+    "kind": "Yedekleme yeri",
     "endpoint": "Uç nokta",
     "bucket": "Bucket",
     "folder": "Klasör",
@@ -507,6 +508,7 @@
       "other": "kopya"
     },
     "save": "Kaydet",
+    "switchTo": "{kind} hizmetine geç",
     "remove": "Kaldır",
     "removed": "Otomatik yedekleme kaldırıldı",
     "done": "Yedeklendi"

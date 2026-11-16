@@ -475,6 +475,7 @@
     "never": "아직 백업이 없습니다",
     "runNow": "지금 백업",
     "storage": "스토리지",
+    "kind": "백업 위치",
     "endpoint": "엔드포인트",
     "bucket": "버킷",
     "folder": "폴더",
@@ -488,6 +489,7 @@
       "other": "개"
     },
     "save": "저장",
+    "switchTo": "{kind}(으)로 전환",
     "remove": "제거",
     "removed": "자동 백업을 제거했습니다",
     "done": "백업했습니다"

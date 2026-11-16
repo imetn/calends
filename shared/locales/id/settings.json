@@ -475,6 +475,7 @@
     "never": "Belum ada cadangan",
     "runNow": "Cadangkan sekarang",
     "storage": "Penyimpanan",
+    "kind": "Cadangkan ke",
     "endpoint": "Endpoint",
     "bucket": "Bucket",
     "folder": "Folder",
@@ -488,6 +489,7 @@
       "other": "salinan"
     },
     "save": "Simpan",
+    "switchTo": "Beralih ke {kind}",
     "remove": "Hapus",
     "removed": "Cadangan otomatis dihapus",
     "done": "Dicadangkan"

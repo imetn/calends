@@ -1,4 +1,4 @@
-// 自动备份：加密格式、S3 签名、滚动保留、触发条件，以及对一个假 S3 服务的完整备份流程（含恢复前备份失败时不替换账本）。
+// 自动备份：加密格式、S3 签名、滚动保留、触发条件，以及对假 S3 / 假 WebDAV 服务的完整备份流程（含恢复前备份失败时不替换账本、切换存储后另一份设置保留）。
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -8,7 +8,16 @@ import { after, before, test } from 'node:test';
 import { openD1 } from '../docker/d1.mjs';
 import { deriveBackupKey, isEncryptedBackup, openBackup, sealBackup, WrongPassphrase } from '../shared/backup-crypto.ts';
 import { regionOf, signS3 } from '../worker/s3.ts';
-import { backupBeforeReplace, backupDue, backupFileName, filesToPrune, runAutoBackup, saveAutoBackup, viewAutoBackup } from '../worker/autobackup.ts';
+import {
+  backupBeforeReplace,
+  backupDue,
+  backupFileName,
+  filesToPrune,
+  removeAutoBackup,
+  runAutoBackup,
+  saveAutoBackup,
+  viewAutoBackup,
+} from '../worker/autobackup.ts';
 import { ensureMigrated } from '../worker/migrate.ts';
 
 test('加密备份：口令解开后与原文一致，口令错误报 WrongPassphrase', async () => {
@@ -44,11 +53,11 @@ test('S3 签名与 AWS 文档示例一致；地区按服务地址推断', async 
 });
 
 test('滚动保留只删自动备份生成的旧文件，至少留一份', () => {
-  const names = [1, 2, 3, 4].map((d) => `b/${backupFileName(Date.UTC(2026, 0, d))}`);
-  const keys = [...names, 'b/notes.txt', 'b/sub/' + backupFileName(0), backupFileName(0), `b/${backupFileName(Date.UTC(2026, 0, 5), 'before-restore')}`];
-  assert.deepEqual(filesToPrune(keys, 'b', 3), [names[1], names[0]]);
-  assert.deepEqual(filesToPrune(keys, 'b', 0).length, 4);
-  assert.deepEqual(filesToPrune([backupFileName(0)], '', 5), []);
+  const names = [1, 2, 3, 4].map((d) => backupFileName(Date.UTC(2026, 0, d)));
+  const all = [...names, 'notes.txt', `x-${backupFileName(0)}`, backupFileName(Date.UTC(2026, 0, 5), 'before-restore')];
+  assert.deepEqual(filesToPrune(all, 3), [names[1], names[0]]);
+  assert.deepEqual(filesToPrune(all, 0).length, 4);
+  assert.deepEqual(filesToPrune([backupFileName(0)], 5), []);
 });
 
 test('触发：有改动满 1 小时、无改动满 1 天；失败后退避', () => {
@@ -116,11 +125,22 @@ after(() => {
 test('完整流程：上传加密文件、内容未变不重复上传、按份数滚动、不回传密钥、恢复前备份失败返回错误', async () => {
   const key = await deriveBackupKey('pass phrase', undefined, 100_000);
   assert.equal(
-    typeof (await saveAutoBackup(env, { endpoint, bucket: 'bk', prefix: '/calends/', accessKeyId: 'AK', secretAccessKey: '', key, keep: 2 })),
+    typeof (await saveAutoBackup(env, {
+      kind: 's3',
+      s3: { endpoint, bucket: 'bk', prefix: '/calends/', accessKeyId: 'AK', secretAccessKey: '' },
+      key,
+      keep: 2,
+    })),
     'string',
   );
-  const saved = await saveAutoBackup(env, { endpoint, bucket: 'bk', prefix: '/calends/', accessKeyId: 'AK', secretAccessKey: 'SK', key, keep: 2 });
-  assert.equal(saved.prefix, 'calends');
+  const saved = await saveAutoBackup(env, {
+    kind: 's3',
+    s3: { endpoint, bucket: 'bk', prefix: '/calends/', accessKeyId: 'AK', secretAccessKey: 'SK' },
+    key,
+    keep: 2,
+  });
+  assert.equal(saved.s3.prefix, 'calends');
+  objects.set('calends/sub/' + backupFileName(0), 'nested');
   objects.set('calends/notes.txt', 'keep me');
 
   const first = await runAutoBackup(env, { now: Date.UTC(2026, 0, 1) });
@@ -130,7 +150,7 @@ test('完整流程：上传加密文件、内容未变不重复上传、按份�
 
   const same = await runAutoBackup(env, { now: Date.UTC(2026, 0, 2) });
   assert.equal(same.lastFile, first.lastFile, '内容未变不上传');
-  assert.equal(objects.size, 2);
+  assert.equal(objects.size, 3);
 
   await runAutoBackup(env, { force: true, now: Date.UTC(2026, 0, 3) });
   await runAutoBackup(env, { force: true, now: Date.UTC(2026, 0, 4) });
@@ -138,17 +158,26 @@ test('完整流程：上传加密文件、内容未变不重复上传、按份�
     'calends/calends-backup-20260103-000000.json',
     'calends/calends-backup-20260104-000000.json',
     'calends/notes.txt',
+    'calends/sub/calends-backup-19700101-000000.json',
   ]);
 
   // 留空密钥沿用已存的；浏览器拿到的视图里没有密钥
-  await saveAutoBackup(env, { endpoint, bucket: 'bk', prefix: 'calends', accessKeyId: 'AK', keep: 2 });
+  assert.equal(
+    (await saveAutoBackup(env, { kind: 's3', s3: { endpoint, bucket: 'bk', prefix: 'calends', accessKeyId: 'AK' }, keep: 2 })).s3.secretAccessKey,
+    'SK',
+  );
   // 换了服务地址就要重新填密钥，不把旧凭据发给新主机
   assert.equal(
-    typeof (await saveAutoBackup(env, { endpoint: 'https://other.example.com', bucket: 'bk', prefix: 'calends', accessKeyId: 'AK', keep: 2 })),
+    typeof (await saveAutoBackup(env, {
+      kind: 's3',
+      s3: { endpoint: 'https://other.example.com', bucket: 'bk', prefix: 'calends', accessKeyId: 'AK' },
+      keep: 2,
+    })),
     'string',
   );
   const view = await viewAutoBackup(env);
   assert.equal(view.configured, true);
+  assert.equal(view.s3.saved, true);
   assert.ok(!JSON.stringify(view).includes('SK') && !JSON.stringify(view).includes(key.key) && !('lastHash' in view.status));
 
   failPut = true;
@@ -165,4 +194,94 @@ test('完整流程：上传加密文件、内容未变不重复上传、按份�
   const n = puts;
   assert.equal(await backupBeforeReplace(env), undefined);
   assert.equal(puts, n + 1);
+});
+
+// 假 WebDAV：只认 Basic 认证；父文件夹不存在时 PUT 回 403；PROPFIND 返回直接子项（含子文件夹）
+const dav = new Map();
+const davDirs = new Set(['/dav']);
+let davServer;
+let davUrl;
+before(async () => {
+  davServer = createServer(async (req, res) => {
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    if (req.headers.authorization !== `Basic ${Buffer.from('me:pw').toString('base64')}`) return void res.writeHead(401).end();
+    const path = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '');
+    const parent = path.slice(0, path.lastIndexOf('/'));
+    if (req.method === 'MKCOL') {
+      if (davDirs.has(path)) return void res.writeHead(405).end();
+      if (!davDirs.has(parent)) return void res.writeHead(409).end();
+      davDirs.add(path);
+      return void res.writeHead(201).end();
+    }
+    if (req.method === 'PUT') {
+      // 父文件夹不存在：像 Apache mod_dav 那样回 403（规范是 409，两者走同一处理）
+      if (!davDirs.has(parent)) return void res.writeHead(403).end();
+      dav.set(path, Buffer.concat(chunks).toString());
+      return void res.writeHead(201).end();
+    }
+    if (req.method === 'DELETE') return void res.writeHead(dav.delete(path) ? 204 : 404).end();
+    if (req.method === 'PROPFIND') {
+      if (!davDirs.has(path)) return void res.writeHead(404).end();
+      const kids = [...dav.keys()].filter((k) => k.slice(0, k.lastIndexOf('/')) === path);
+      const dirs = [...davDirs].filter((d) => d.slice(0, d.lastIndexOf('/')) === path);
+      // 文件夹用带前缀的相对路径，文件用默认命名空间的绝对地址，且路径前面多一段代理前缀——都要认得
+      const r = (h, dir) =>
+        `<D:response><D:href>${encodeURI(h)}${dir ? '/' : ''}</D:href><D:propstat><D:prop><D:resourcetype>${dir ? '<D:collection/>' : ''}</D:resourcetype></D:prop></D:propstat></D:response>`;
+      const f = (h) =>
+        `<response xmlns="DAV:"><href>http://proxy.example${encodeURI(`/p${h}`)}</href><propstat><prop><resourcetype/></prop></propstat></response>`;
+      const xml = `<?xml version="1.0"?><D:multistatus xmlns:D="DAV:">${r(path, true)}${dirs.map((d) => r(d, true)).join('')}${kids.map(f).join('')}</D:multistatus>`;
+      return void res.writeHead(207).end(xml);
+    }
+    res.writeHead(405).end();
+  });
+  await new Promise((r) => davServer.listen(0, '127.0.0.1', r));
+  davUrl = `http://127.0.0.1:${davServer.address().port}/dav/`;
+});
+after(() => davServer.close());
+
+test('WebDAV：建文件夹后上传、按份数滚动、切换存储后 S3 设置保留', async () => {
+  await env.DB.prepare("INSERT INTO subscriptions (id, data) VALUES ('dav', '{}')").run();
+  assert.equal(
+    typeof (await saveAutoBackup(env, { kind: 'webdav', webdav: { url: davUrl, folder: 'calends', username: 'me' }, keep: 2 })),
+    'string',
+    '没存过密码要填',
+  );
+  const saved = await saveAutoBackup(env, { kind: 'webdav', webdav: { url: davUrl, folder: '/备份/calends/', username: 'me', password: 'pw' }, keep: 2 });
+  assert.equal(saved.webdav.url, davUrl.replace(/\/$/, ''));
+  assert.equal(saved.s3.secretAccessKey, 'SK', 'S3 设置留着');
+  dav.set('/dav/备份/calends/notes.txt', 'keep me');
+
+  assert.deepEqual((await viewAutoBackup(env)).status, {}, '换了存储位置，旧位置的记录清掉');
+  const first = await runAutoBackup(env, { now: Date.UTC(2026, 1, 1) });
+  assert.equal(first.lastFile, '备份/calends/calends-backup-20260201-000000.json');
+  const restored = JSON.parse(await openBackup(JSON.parse(dav.get('/dav/备份/calends/calends-backup-20260201-000000.json')), 'pass phrase'));
+  assert.equal(restored.format, 'calends-backup');
+  davDirs.add('/dav/备份/calends/old');
+  for (const d of [2, 3]) await runAutoBackup(env, { force: true, now: Date.UTC(2026, 1, d) });
+  assert.deepEqual([...dav.keys()].sort(), [
+    '/dav/备份/calends/calends-backup-20260202-000000.json',
+    '/dav/备份/calends/calends-backup-20260203-000000.json',
+    '/dav/备份/calends/notes.txt',
+  ]);
+
+  // 没设置过时只切开关报错；只切开关不改设置；换用户名不沿用旧密码
+  await removeAutoBackup(env);
+  assert.equal(typeof (await saveAutoBackup(env, { enabled: true })), 'string');
+  await saveAutoBackup(env, {
+    kind: 's3',
+    s3: { endpoint, bucket: 'bk', prefix: 'calends', accessKeyId: 'AK', secretAccessKey: 'SK' },
+    key: await deriveBackupKey('pass phrase', undefined, 100_000),
+    keep: 2,
+  });
+  await saveAutoBackup(env, { kind: 'webdav', webdav: { url: davUrl, folder: '备份/calends', username: 'me', password: 'pw' }, keep: 2 });
+  assert.equal((await saveAutoBackup(env, { enabled: false })).webdav.password, 'pw');
+  assert.equal((await viewAutoBackup(env)).enabled, false);
+  assert.equal(typeof (await saveAutoBackup(env, { kind: 'webdav', webdav: { url: davUrl, folder: 'calends', username: 'other' }, keep: 2 })), 'string');
+  const view = await viewAutoBackup(env);
+  assert.equal(view.kind, 'webdav');
+  assert.ok(view.webdav.saved && view.s3.saved && !JSON.stringify(view).includes('"pw"'));
+
+  // 切回 S3：留空密钥沿用之前存的
+  assert.equal((await saveAutoBackup(env, { kind: 's3', s3: { endpoint, bucket: 'bk', prefix: 'calends', accessKeyId: 'AK' }, keep: 2 })).kind, 's3');
 });

@@ -493,6 +493,7 @@
     "never": "No backup yet",
     "runNow": "Back up now",
     "storage": "Storage",
+    "kind": "Back up to",
     "endpoint": "Endpoint",
     "bucket": "Bucket",
     "folder": "Folder",
@@ -507,6 +508,7 @@
       "other": "copies"
     },
     "save": "Save",
+    "switchTo": "Switch to {kind}",
     "remove": "Remove",
     "removed": "Automatic backup removed",
     "done": "Backed up"

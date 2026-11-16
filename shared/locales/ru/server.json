@@ -69,6 +69,7 @@
     "badEndpoint": "Неверный адрес; он должен начинаться с https:// или http://",
     "badBucket": "Неверное имя бакета",
     "noCredentials": "Укажите Access Key ID и Secret Access Key",
+    "noLogin": "Введите имя пользователя и пароль",
     "noPassphrase": "Задайте парольную фразу для шифрования",
     "badKeep": "Хранить можно от 1 до 365 копий",
     "notConfigured": "Автокопирование не настроено",

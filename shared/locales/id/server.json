@@ -58,6 +58,7 @@
     "badEndpoint": "Endpoint tidak valid; harus diawali https:// atau http://",
     "badBucket": "Nama bucket tidak valid",
     "noCredentials": "Isi Access Key ID dan Secret Access Key",
+    "noLogin": "Masukkan nama pengguna dan kata sandi",
     "noPassphrase": "Tetapkan frasa sandi enkripsi",
     "badKeep": "Jumlah simpanan harus 1 sampai 365",
     "notConfigured": "Cadangan otomatis belum diatur",

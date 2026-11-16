@@ -475,6 +475,7 @@
     "never": "Chưa có bản sao lưu",
     "runNow": "Sao lưu ngay",
     "storage": "Lưu trữ",
+    "kind": "Sao lưu vào",
     "endpoint": "Endpoint",
     "bucket": "Bucket",
     "folder": "Thư mục",
@@ -488,6 +489,7 @@
       "other": "bản"
     },
     "save": "Lưu",
+    "switchTo": "Chuyển sang {kind}",
     "remove": "Gỡ bỏ",
     "removed": "Đã gỡ sao lưu tự động",
     "done": "Đã sao lưu"

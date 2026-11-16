@@ -493,6 +493,7 @@
     "never": "Noch keine Sicherung",
     "runNow": "Jetzt sichern",
     "storage": "Speicher",
+    "kind": "Sichern nach",
     "endpoint": "Endpunkt",
     "bucket": "Bucket",
     "folder": "Ordner",
@@ -507,6 +508,7 @@
       "other": "Kopien"
     },
     "save": "Speichern",
+    "switchTo": "Zu {kind} wechseln",
     "remove": "Entfernen",
     "removed": "Automatische Sicherung entfernt",
     "done": "Gesichert"

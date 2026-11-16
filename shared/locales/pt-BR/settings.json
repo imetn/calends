@@ -493,6 +493,7 @@
     "never": "Nenhum backup ainda",
     "runNow": "Fazer backup agora",
     "storage": "Armazenamento",
+    "kind": "Fazer backup em",
     "endpoint": "Endpoint",
     "bucket": "Bucket",
     "folder": "Pasta",
@@ -507,6 +508,7 @@
       "other": "cópias"
     },
     "save": "Salvar",
+    "switchTo": "Mudar para {kind}",
     "remove": "Remover",
     "removed": "Backup automático removido",
     "done": "Backup feito"

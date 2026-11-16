@@ -63,6 +63,7 @@
     "badEndpoint": "Geçersiz uç nokta; https:// veya http:// ile başlamalı",
     "badBucket": "Geçersiz bucket adı",
     "noCredentials": "Access Key ID ve Secret Access Key girin",
+    "noLogin": "Kullanıcı adını ve parolayı girin",
     "noPassphrase": "Bir şifreleme parola ifadesi belirleyin",
     "badKeep": "Sakla 1 ile 365 arasında olmalı",
     "notConfigured": "Otomatik yedekleme ayarlanmamış",

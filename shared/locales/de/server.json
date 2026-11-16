@@ -63,6 +63,7 @@
     "badEndpoint": "Ungültiger Endpunkt; er muss mit https:// oder http:// beginnen",
     "badBucket": "Ungültiger Bucket-Name",
     "noCredentials": "Access Key ID und Secret Access Key eingeben",
+    "noLogin": "Benutzername und Passwort eingeben",
     "noPassphrase": "Eine Verschlüsselungs-Passphrase festlegen",
     "badKeep": "Aufbewahren muss zwischen 1 und 365 liegen",
     "notConfigured": "Automatische Sicherung ist nicht eingerichtet",

@@ -58,6 +58,7 @@
     "badEndpoint": "Endpoint không hợp lệ; phải bắt đầu bằng https:// hoặc http://",
     "badBucket": "Tên bucket không hợp lệ",
     "noCredentials": "Nhập Access Key ID và Secret Access Key",
+    "noLogin": "Nhập tên người dùng và mật khẩu",
     "noPassphrase": "Hãy đặt cụm mật khẩu mã hóa",
     "badKeep": "Số bản giữ lại phải từ 1 đến 365",
     "notConfigured": "Chưa thiết lập sao lưu tự động",

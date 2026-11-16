@@ -493,6 +493,7 @@
     "never": "Aucune sauvegarde",
     "runNow": "Sauvegarder maintenant",
     "storage": "Stockage",
+    "kind": "Sauvegarder vers",
     "endpoint": "Point de terminaison",
     "bucket": "Bucket",
     "folder": "Dossier",
@@ -507,6 +508,7 @@
       "other": "copies"
     },
     "save": "Enregistrer",
+    "switchTo": "Passer à {kind}",
     "remove": "Supprimer",
     "removed": "Sauvegarde automatique supprimée",
     "done": "Sauvegardé"
