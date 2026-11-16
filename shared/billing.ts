@@ -1525,14 +1525,20 @@ function periodAsRecorded(s: Subscription, at: string): { from: string; paidThro
 export function periodBeforeRenewal(s: Subscription, today: string): { from: string; until: string } | undefined {
   const cur = currentPhase(s, today);
   if (cur.cycle.unit === 'lifetime' || isPostpaid(cur) || isSeparate(cur)) return undefined;
-  const early = settleLegacyEarly(cur)
-    .payments?.filter((p) => !p.kind && p.date <= today && !!p.serviceDate && today < p.serviceDate)
-    .sort((a, b) => a.serviceDate!.localeCompare(b.serviceDate!))[0];
+  const paid = settleLegacyEarly(cur).payments?.filter((p) => !p.kind && p.date <= today && !!p.serviceDate) ?? [];
+  const early = paid.filter((p) => today < p.serviceDate!).sort((a, b) => a.serviceDate!.localeCompare(b.serviceDate!))[0];
   if (!early?.serviceDate) return undefined;
-  // 付这笔之前的那天还在上一期里，起点与提前续费前显示的一致（月末日号、开始日偏移都不变）
+  // 付这笔之前的那天还在上一期里，起点与提前续费前显示的一致（月末日号、开始日偏移都不变）；
+  // 那天若在另一笔提前续费的空档里，起点是那笔已开始的服务日
   const before = addDays(early.date, -1);
-  const from = before < cur.start ? cur.start : billingPeriod(cur, before).from;
-  return { from: from < cur.start ? cur.start : from, until: early.serviceDate };
+  const prior = before < cur.start ? cur.start : billingPeriod(cur, before).from;
+  const started = paid
+    .map((p) => p.serviceDate!)
+    .filter((d) => d <= today)
+    .sort()
+    .at(-1);
+  const from = [cur.start, prior, started ?? ''].sort().at(-1)!;
+  return { from: from > today ? today : from, until: early.serviceDate };
 }
 
 /** 在 at 停止时校验用的账期：先付费按今天已付到哪天；后付费随时可停，账期截到 at */

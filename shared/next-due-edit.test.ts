@@ -154,4 +154,12 @@ test('提前续费后续上那期开始前，本期仍是上一期；停用账�
     { date: '2026-02-20', amount: 60 },
   );
   assert.deepEqual(periodBeforeRenewal(feb, '2026-02-22'), { from: '2026-01-31', until: '2026-02-28' });
+  // 连着提前付两期：第二段空档从第一笔续上的服务日起
+  const one = savePayment(base({ cycle: month, start: '2026-01-10', payments: [{ date: '2026-01-10', amount: 60 }] }), '2026-02-05', {
+    date: '2026-02-05',
+    amount: 60,
+  });
+  const two = savePayment(one, '2026-02-06', { date: '2026-02-06', amount: 60 });
+  assert.deepEqual(periodBeforeRenewal(two, '2026-02-07'), { from: '2026-01-10', until: '2026-02-10' });
+  assert.deepEqual(periodBeforeRenewal(two, '2026-02-12'), { from: '2026-02-10', until: '2026-03-10' });
 });
