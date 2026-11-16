@@ -4,6 +4,7 @@ import { copyParts } from '../../components/copy.tsx';
 import { isStopped } from '../../../../shared/billing.ts';
 import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
 import {
+  chargeDay,
   currentPhase,
   diffDays,
   effectiveStatus,
@@ -101,7 +102,9 @@ export function Kpis({
   // 均摊分母与 MCP 同一口径：预付费算到已付那期结束，有转让时按持有期（见 netCost）
   const spreadMonths = Math.max(1, cost.spreadDays / DAYS_PER_MONTH);
   const perMonth = young ? toBase(state, monthlyGross(currentPhase(sub, today), today, state.fx), currentPhase(sub, today).currency) : cost.perMonth;
-  const perTrend = !cost.incomplete && !young && per.length > 1 && per[0] > 0 ? per[per.length - 1] / per[0] - 1 : undefined;
+  // 后付费账单随用量起落（电费头几期可能只有几块），首末两期之比不是涨价，不画走势
+  const perTrend =
+    !cost.incomplete && !young && !phaseSubs(sub).some(isPostpaid) && per.length > 1 && per[0] > 0 ? per[per.length - 1] / per[0] - 1 : undefined;
   const duration =
     active < 1
       ? t('detail.kpi.startedToday')
@@ -121,6 +124,16 @@ export function Kpis({
       ? amountTotal(monthlyGross(currentPhase(sub, today), today, state.fx), currentPhase(sub, today).currency, perMonth)
       : scaleTotal(cost.spread, 1 / spreadMonths);
   const monthlyAmount = formatTotal(monthlyPartial, base, { direction: -1, compact: true, main: true, average: true });
+  // 今年付了多少：跟累计同一口径（实付、扣失败的不算），按扣款记录的归年（后付费账单归所属周期）。
+  // 今年与累计不同时第三格改写今年、累计降为小字；相同（今年才开始，或以前几年合计为 0）照旧只写累计，免得同一个数出现两次。
+  // 有转让时第三格是净花费或净赚，今年净额不为正（只剩退款）也不叫「花了」：这两种照旧写累计
+  const year = today.slice(0, 4);
+  const yearTotal = chargesTotal(
+    state,
+    history.filter((c) => c.kind !== 'failed' && chargeDay(c).slice(0, 4) === year),
+  );
+  const showYear =
+    !transferred && !cost.incomplete && !yearTotal.incomplete && yearTotal.value > 0.005 && Math.abs(yearTotal.value - cost.partial.value) > 0.005;
   const postpaid = isPostpaid(currentPhase(sub, today));
   // 后付费停止、暂停后仍有最后一张账单
   const next = st === 'lifetime' || (!postpaid && ['ended', 'terminated', 'paused'].includes(st)) ? undefined : detailForecast(sub, today).charges[0];
@@ -135,10 +148,13 @@ export function Kpis({
       value={undated ? '—' : duration}
       note={
         undated
-          ? t('detail.field.endedUnknown')
-          : gaps > 0
-            ? t('detail.stats.gaps', { count: gaps })
-            : t('detail.period.since', { date: cnDateFull(transferred ? cost.from : sub.start) })
+          ? copyParts([t('detail.field.endedUnknown'), t('detail.stats.count', { count: history.length })].join('\n'))
+          : copyParts(
+              [
+                gaps > 0 ? t('detail.stats.gaps', { count: gaps }) : t('detail.period.since', { date: cnDateFull(transferred ? cost.from : sub.start) }),
+                t('detail.stats.count', { count: history.length }),
+              ].join('\n'),
+            )
       }
     />
   );
@@ -174,16 +190,30 @@ export function Kpis({
         {/* 有转让时是净花费：买入、卖出各自的金额在下方转让卡片，这里只写合计 */}
         {(history.length !== 1 || transferred) && (
           <Metric
-            label={transferred ? t(total < 0 ? 'detail.transfer.netGain' : 'detail.transfer.net') : t('detail.stats.spent')}
-            value={sub.estimateFrom && !history.length && !transferred ? '—' : cumulative}
-            note={
-              cost.incomplete
-                ? cost.partial.known
-                  ? totalNote(cost.partial)
-                  : t('detail.stats.count', { count: history.length })
+            label={
+              showYear
+                ? t('detail.stats.spentThisYear')
                 : transferred
-                  ? copyParts([t('detail.stats.count', { count: history.length }), t('detail.transfer.included')].join('\n'))
-                  : t('detail.stats.count', { count: history.length })
+                  ? t(total < 0 ? 'detail.transfer.netGain' : 'detail.transfer.net')
+                  : t('detail.stats.spent')
+            }
+            value={
+              showYear
+                ? formatTotal(yearTotal, base, { direction: -1, compact: true, main: true })
+                : sub.estimateFrom && !history.length && !transferred
+                  ? '—'
+                  : cumulative
+            }
+            note={
+              showYear
+                ? t('detail.stats.allTime', { amount: formatTotal(cost.partial, base, { direction: -1, compact: true }) })
+                : cost.incomplete
+                  ? cost.partial.known
+                    ? totalNote(cost.partial)
+                    : undefined
+                  : transferred
+                    ? t('detail.transfer.included')
+                    : undefined
             }
           />
         )}

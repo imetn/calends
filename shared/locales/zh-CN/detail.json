@@ -89,7 +89,9 @@
     "months": "{count} 个月",
     "days": "{count} 天",
     "gaps": "中间断过 {count} 次",
-    "perMonth": "实际每月"
+    "perMonth": "实际每月",
+    "spentThisYear": "今年花了",
+    "allTime": "累计 {amount}"
   },
   "tab": {
     "charges": "扣款记录\n{count}",

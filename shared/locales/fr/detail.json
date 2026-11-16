@@ -107,7 +107,9 @@
       "one": "Interrompu une fois",
       "other": "Interrompu {count} fois"
     },
-    "perMonth": "Coût mensuel réel"
+    "perMonth": "Coût mensuel réel",
+    "spentThisYear": "Dépensé cette année",
+    "allTime": "Total {amount}"
   },
   "tab": {
     "charges": "Prélèvements\n{count}",

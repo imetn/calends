@@ -107,7 +107,9 @@
       "one": "Einmal unterbrochen",
       "other": "{count}-mal unterbrochen"
     },
-    "perMonth": "Tatsächlich pro Monat"
+    "perMonth": "Tatsächlich pro Monat",
+    "spentThisYear": "Dieses Jahr ausgegeben",
+    "allTime": "Gesamt {amount}"
   },
   "tab": {
     "charges": "Abbuchungen\n{count}",

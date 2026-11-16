@@ -99,7 +99,9 @@
     "gaps": {
       "other": "Gián đoạn {count} lần"
     },
-    "perMonth": "Thực chi mỗi tháng"
+    "perMonth": "Thực chi mỗi tháng",
+    "spentThisYear": "Chi năm nay",
+    "allTime": "Tổng {amount}"
   },
   "tab": {
     "charges": "Lần trừ tiền\n{count}",

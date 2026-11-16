@@ -726,6 +726,104 @@ test('a single charge owns its amount instead of repeating an identical cumulati
   assert.equal(nodes.filter((n) => n.children.includes('detail.ev.next')).length, 1);
 });
 
+test('detail third KPI leads with this year spending only when earlier years were paid', () => {
+  const r = harness(
+    '../app/src/views/Detail.tsx',
+    'Kpis',
+    {},
+    { toBase: (s: AppState, n: number, ccy: string) => fx.toBaseAt(s, n, ccy), detailForecast, detailHistoryEnd },
+  );
+  // 用户反馈：订阅详情没有当年的数据，小字里的「今年」又太小；第三格改写今年花了、累计降为小字，笔数挪到订了多久；
+  // 今年才开始的订阅今年就等于累计，照旧写累计
+  for (const [start, shown] of [
+    ['2025-01-01', true],
+    ['2026-01-01', false],
+  ] as const) {
+    const sub = {
+      id: 'service',
+      name: 'Service',
+      category: 'Tools',
+      tags: [],
+      price: 10,
+      currency: 'USD',
+      start,
+      cycle: { unit: 'month' as const, every: 1 },
+      status: 'active' as const,
+    };
+    const history = billing.chargesBetween(sub, sub.start, today, today);
+    const text = JSON.stringify(r.render('Kpis', { sub, state: { ...st, subscriptions: [sub] }, today, history }));
+    assert.equal(text.includes('detail.stats.spentThisYear'), shown, start);
+    assert.equal(text.includes('detail.stats.allTime'), shown, start);
+    assert.equal(text.includes('detail.stats.spent"'), !shown, start);
+    assert.ok(text.includes('detail.stats.count'));
+  }
+  // 去年已停、今年只有一笔退款：今年净额为负，不叫「今年花了」，照旧写累计
+  const stopped = {
+    id: 'stopped',
+    name: 'Stopped',
+    category: 'Tools',
+    tags: [],
+    price: 10,
+    currency: 'USD',
+    start: '2025-01-01',
+    end: '2025-06-30',
+    cycle: { unit: 'month' as const, every: 1 },
+    status: 'ended' as const,
+  };
+  const stoppedHistory = billing.chargesBetween(stopped, stopped.start, stopped.end, today);
+  stoppedHistory.push({ ...stoppedHistory[0], date: '2026-02-01', amount: -10, kind: 'refund' as const });
+  const refundText = JSON.stringify(r.render('Kpis', { sub: stopped, state: { ...st, subscriptions: [stopped] }, today, history: stoppedHistory }));
+  assert.ok(!refundText.includes('detail.stats.spentThisYear'));
+  assert.ok(refundText.includes('detail.stats.spent"'));
+  // 停用日不详：订了多久写不详，笔数照样留在这一格
+  const undated = { ...stopped, id: 'undated', end: undefined, status: 'terminated' as const };
+  const undatedHistory = billing.chargesBetween(undated, undated.start, '2025-06-30', today);
+  const undatedText = JSON.stringify(r.render('Kpis', { sub: undated, state: { ...st, subscriptions: [undated] }, today, history: undatedHistory }));
+  assert.ok(undatedText.includes('detail.field.endedUnknown'));
+  assert.ok(undatedText.includes('detail.stats.count'));
+  // 用户反馈：后付费电费头几期只有几块，「实际每月」走势拿末期比首期得出 3568%；按用量计费的账单不画走势
+  for (const billingMode of [undefined, 'postpaid'] as const) {
+    const sub = {
+      id: 'power',
+      name: 'Power',
+      category: 'Home',
+      tags: [],
+      price: 10,
+      currency: 'USD',
+      start: '2025-01-01',
+      cycle: { unit: 'month' as const, every: 1 },
+      status: 'active' as const,
+      ...(billingMode ? { billing: billingMode } : {}),
+    };
+    const history = billing.chargesBetween(sub, sub.start, today, today);
+    const text = JSON.stringify(r.render('Kpis', { sub, state: { ...st, subscriptions: [sub] }, today, history }));
+    assert.equal(text.includes('"pct":0'), !billingMode, String(billingMode));
+  }
+  // 以前几年合计为 0（免费方案）时今年就等于累计，也不写
+  const free = {
+    id: 'free',
+    name: 'Free',
+    category: 'Tools',
+    tags: [],
+    price: 10,
+    currency: 'USD',
+    start: '2025-01-01',
+    cycle: { unit: 'month' as const, every: 1 },
+    status: 'active' as const,
+    phases: [
+      { start: '2025-01-01', end: '2025-12-31', price: 0, currency: 'USD', cycle: { unit: 'month' as const, every: 1 } },
+      { start: '2026-01-01', price: 10, currency: 'USD', cycle: { unit: 'month' as const, every: 1 } },
+    ],
+  };
+  const freeHistory = billing.chargesBetween(free, free.start, today, today);
+  assert.ok(freeHistory.some((c) => c.date < '2026-01-01'));
+  assert.ok(
+    !JSON.stringify(r.render('Kpis', { sub: free, state: { ...st, subscriptions: [free] }, today, history: freeHistory })).includes(
+      'detail.stats.spentThisYear',
+    ),
+  );
+});
+
 test('same-currency cash pairs retain a distinct actual settlement and never hide fees behind the list price', () => {
   for (const orig of [false, true]) {
     const r = harness('../app/src/components/MoneyPair.tsx', 'useMoneyPair', {}, { useOrig: () => orig });

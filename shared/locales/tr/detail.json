@@ -104,7 +104,9 @@
       "one": "Bir kez ara verildi",
       "other": "{count} kez ara verildi"
     },
-    "perMonth": "Gerçek aylık"
+    "perMonth": "Gerçek aylık",
+    "spentThisYear": "Bu yıl harcanan",
+    "allTime": "Toplam {amount}"
   },
   "tab": {
     "charges": "Ödemeler\n{count}",

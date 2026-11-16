@@ -149,7 +149,32 @@
                         "props": {
                           "className": "metric-note"
                         },
-                        "children": ["detail.period.since"]
+                        "children": [
+                          {
+                            "type": "span",
+                            "props": {
+                              "className": "copy-parts"
+                            },
+                            "children": [
+                              [
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 0
+                                  },
+                                  "children": ["detail.period.since"]
+                                },
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 1
+                                  },
+                                  "children": ["detail.stats.count"]
+                                }
+                              ]
+                            ]
+                          }
+                        ]
                       }
                     ]
                   },
@@ -192,13 +217,7 @@
                           ]
                         ]
                       },
-                      {
-                        "type": "div",
-                        "props": {
-                          "className": "metric-note"
-                        },
-                        "children": ["detail.stats.count"]
-                      }
+                      false
                     ]
                   },
                   {
@@ -406,7 +425,32 @@
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.period.since"]
+                    "children": [
+                      {
+                        "type": "span",
+                        "props": {
+                          "className": "copy-parts"
+                        },
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0
+                              },
+                              "children": ["detail.period.since"]
+                            },
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 1
+                              },
+                              "children": ["detail.stats.count"]
+                            }
+                          ]
+                        ]
+                      }
+                    ]
                   }
                 ]
               },
@@ -449,13 +493,7 @@
                       ]
                     ]
                   },
-                  {
-                    "type": "div",
-                    "props": {
-                      "className": "metric-note"
-                    },
-                    "children": ["detail.stats.count"]
-                  }
+                  false
                 ]
               },
               {
@@ -650,7 +688,32 @@
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.period.since"]
+                "children": [
+                  {
+                    "type": "span",
+                    "props": {
+                      "className": "copy-parts"
+                    },
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0
+                          },
+                          "children": ["detail.period.since"]
+                        },
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 1
+                          },
+                          "children": ["detail.stats.count"]
+                        }
+                      ]
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -693,13 +756,7 @@
                   ]
                 ]
               },
-              {
-                "type": "div",
-                "props": {
-                  "className": "metric-note"
-                },
-                "children": ["detail.stats.count"]
-              }
+              false
             ]
           },
           {
@@ -1017,7 +1074,32 @@
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.period.since"]
+          "children": [
+            {
+              "type": "span",
+              "props": {
+                "className": "copy-parts"
+              },
+              "children": [
+                [
+                  {
+                    "type": "span",
+                    "props": {
+                      "key": 0
+                    },
+                    "children": ["detail.period.since"]
+                  },
+                  {
+                    "type": "span",
+                    "props": {
+                      "key": 1
+                    },
+                    "children": ["detail.stats.count"]
+                  }
+                ]
+              ]
+            }
+          ]
         }
       ]
     },
@@ -1071,7 +1153,70 @@
       "props": {
         "className": "metric-note"
       },
+      "children": [
+        {
+          "type": "span",
+          "props": {
+            "className": "copy-parts"
+          },
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0
+                },
+                "children": ["detail.period.since"]
+              },
+              {
+                "type": "span",
+                "props": {
+                  "key": 1
+                },
+                "children": ["detail.stats.count"]
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "className": "copy-parts"
+      },
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0
+            },
+            "children": ["detail.period.since"]
+          },
+          {
+            "type": "span",
+            "props": {
+              "key": 1
+            },
+            "children": ["detail.stats.count"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0
+      },
       "children": ["detail.period.since"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 1
+      },
+      "children": ["detail.stats.count"]
     },
     {
       "type": "div",
@@ -1112,13 +1257,7 @@
             ]
           ]
         },
-        {
-          "type": "div",
-          "props": {
-            "className": "metric-note"
-          },
-          "children": ["detail.stats.count"]
-        }
+        false
       ]
     },
     {
@@ -1165,13 +1304,6 @@
         "className": "nowrap"
       },
       "children": ["−$200"]
-    },
-    {
-      "type": "div",
-      "props": {
-        "className": "metric-note"
-      },
-      "children": ["detail.stats.count"]
     },
     {
       "type": "div",
@@ -4414,7 +4546,32 @@
                         "props": {
                           "className": "metric-note"
                         },
-                        "children": ["detail.period.since"]
+                        "children": [
+                          {
+                            "type": "span",
+                            "props": {
+                              "className": "copy-parts"
+                            },
+                            "children": [
+                              [
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 0
+                                  },
+                                  "children": ["detail.period.since"]
+                                },
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 1
+                                  },
+                                  "children": ["detail.stats.count"]
+                                }
+                              ]
+                            ]
+                          }
+                        ]
                       }
                     ]
                   },
@@ -4457,13 +4614,7 @@
                           ]
                         ]
                       },
-                      {
-                        "type": "div",
-                        "props": {
-                          "className": "metric-note"
-                        },
-                        "children": ["detail.stats.count"]
-                      }
+                      false
                     ]
                   },
                   {
@@ -4669,7 +4820,32 @@
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.period.since"]
+                    "children": [
+                      {
+                        "type": "span",
+                        "props": {
+                          "className": "copy-parts"
+                        },
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0
+                              },
+                              "children": ["detail.period.since"]
+                            },
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 1
+                              },
+                              "children": ["detail.stats.count"]
+                            }
+                          ]
+                        ]
+                      }
+                    ]
                   }
                 ]
               },
@@ -4712,13 +4888,7 @@
                       ]
                     ]
                   },
-                  {
-                    "type": "div",
-                    "props": {
-                      "className": "metric-note"
-                    },
-                    "children": ["detail.stats.count"]
-                  }
+                  false
                 ]
               },
               {
@@ -4911,7 +5081,32 @@
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.period.since"]
+                "children": [
+                  {
+                    "type": "span",
+                    "props": {
+                      "className": "copy-parts"
+                    },
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0
+                          },
+                          "children": ["detail.period.since"]
+                        },
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 1
+                          },
+                          "children": ["detail.stats.count"]
+                        }
+                      ]
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -4954,13 +5149,7 @@
                   ]
                 ]
               },
-              {
-                "type": "div",
-                "props": {
-                  "className": "metric-note"
-                },
-                "children": ["detail.stats.count"]
-              }
+              false
             ]
           },
           {
@@ -5276,7 +5465,32 @@
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.period.since"]
+          "children": [
+            {
+              "type": "span",
+              "props": {
+                "className": "copy-parts"
+              },
+              "children": [
+                [
+                  {
+                    "type": "span",
+                    "props": {
+                      "key": 0
+                    },
+                    "children": ["detail.period.since"]
+                  },
+                  {
+                    "type": "span",
+                    "props": {
+                      "key": 1
+                    },
+                    "children": ["detail.stats.count"]
+                  }
+                ]
+              ]
+            }
+          ]
         }
       ]
     },
@@ -5330,7 +5544,70 @@
       "props": {
         "className": "metric-note"
       },
+      "children": [
+        {
+          "type": "span",
+          "props": {
+            "className": "copy-parts"
+          },
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0
+                },
+                "children": ["detail.period.since"]
+              },
+              {
+                "type": "span",
+                "props": {
+                  "key": 1
+                },
+                "children": ["detail.stats.count"]
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "className": "copy-parts"
+      },
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0
+            },
+            "children": ["detail.period.since"]
+          },
+          {
+            "type": "span",
+            "props": {
+              "key": 1
+            },
+            "children": ["detail.stats.count"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0
+      },
       "children": ["detail.period.since"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 1
+      },
+      "children": ["detail.stats.count"]
     },
     {
       "type": "div",
@@ -5371,13 +5648,7 @@
             ]
           ]
         },
-        {
-          "type": "div",
-          "props": {
-            "className": "metric-note"
-          },
-          "children": ["detail.stats.count"]
-        }
+        false
       ]
     },
     {
@@ -5424,13 +5695,6 @@
         "className": "nowrap"
       },
       "children": ["$0"]
-    },
-    {
-      "type": "div",
-      "props": {
-        "className": "metric-note"
-      },
-      "children": ["detail.stats.count"]
     },
     {
       "type": "div",
@@ -8667,7 +8931,32 @@
                         "props": {
                           "className": "metric-note"
                         },
-                        "children": ["detail.period.since"]
+                        "children": [
+                          {
+                            "type": "span",
+                            "props": {
+                              "className": "copy-parts"
+                            },
+                            "children": [
+                              [
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 0
+                                  },
+                                  "children": ["detail.period.since"]
+                                },
+                                {
+                                  "type": "span",
+                                  "props": {
+                                    "key": 1
+                                  },
+                                  "children": ["detail.stats.count"]
+                                }
+                              ]
+                            ]
+                          }
+                        ]
                       }
                     ]
                   },
@@ -8719,13 +9008,7 @@
                           ]
                         ]
                       },
-                      {
-                        "type": "div",
-                        "props": {
-                          "className": "metric-note"
-                        },
-                        "children": ["detail.stats.count"]
-                      }
+                      false
                     ]
                   },
                   {
@@ -8940,7 +9223,32 @@
                     "props": {
                       "className": "metric-note"
                     },
-                    "children": ["detail.period.since"]
+                    "children": [
+                      {
+                        "type": "span",
+                        "props": {
+                          "className": "copy-parts"
+                        },
+                        "children": [
+                          [
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 0
+                              },
+                              "children": ["detail.period.since"]
+                            },
+                            {
+                              "type": "span",
+                              "props": {
+                                "key": 1
+                              },
+                              "children": ["detail.stats.count"]
+                            }
+                          ]
+                        ]
+                      }
+                    ]
                   }
                 ]
               },
@@ -8992,13 +9300,7 @@
                       ]
                     ]
                   },
-                  {
-                    "type": "div",
-                    "props": {
-                      "className": "metric-note"
-                    },
-                    "children": ["detail.stats.count"]
-                  }
+                  false
                 ]
               },
               {
@@ -9200,7 +9502,32 @@
                 "props": {
                   "className": "metric-note"
                 },
-                "children": ["detail.period.since"]
+                "children": [
+                  {
+                    "type": "span",
+                    "props": {
+                      "className": "copy-parts"
+                    },
+                    "children": [
+                      [
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 0
+                          },
+                          "children": ["detail.period.since"]
+                        },
+                        {
+                          "type": "span",
+                          "props": {
+                            "key": 1
+                          },
+                          "children": ["detail.stats.count"]
+                        }
+                      ]
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -9252,13 +9579,7 @@
                   ]
                 ]
               },
-              {
-                "type": "div",
-                "props": {
-                  "className": "metric-note"
-                },
-                "children": ["detail.stats.count"]
-              }
+              false
             ]
           },
           {
@@ -9583,7 +9904,32 @@
           "props": {
             "className": "metric-note"
           },
-          "children": ["detail.period.since"]
+          "children": [
+            {
+              "type": "span",
+              "props": {
+                "className": "copy-parts"
+              },
+              "children": [
+                [
+                  {
+                    "type": "span",
+                    "props": {
+                      "key": 0
+                    },
+                    "children": ["detail.period.since"]
+                  },
+                  {
+                    "type": "span",
+                    "props": {
+                      "key": 1
+                    },
+                    "children": ["detail.stats.count"]
+                  }
+                ]
+              ]
+            }
+          ]
         }
       ]
     },
@@ -9637,7 +9983,70 @@
       "props": {
         "className": "metric-note"
       },
+      "children": [
+        {
+          "type": "span",
+          "props": {
+            "className": "copy-parts"
+          },
+          "children": [
+            [
+              {
+                "type": "span",
+                "props": {
+                  "key": 0
+                },
+                "children": ["detail.period.since"]
+              },
+              {
+                "type": "span",
+                "props": {
+                  "key": 1
+                },
+                "children": ["detail.stats.count"]
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "className": "copy-parts"
+      },
+      "children": [
+        [
+          {
+            "type": "span",
+            "props": {
+              "key": 0
+            },
+            "children": ["detail.period.since"]
+          },
+          {
+            "type": "span",
+            "props": {
+              "key": 1
+            },
+            "children": ["detail.stats.count"]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 0
+      },
       "children": ["detail.period.since"]
+    },
+    {
+      "type": "span",
+      "props": {
+        "key": 1
+      },
+      "children": ["detail.stats.count"]
     },
     {
       "type": "div",
@@ -9687,13 +10096,7 @@
             ]
           ]
         },
-        {
-          "type": "div",
-          "props": {
-            "className": "metric-note"
-          },
-          "children": ["detail.stats.count"]
-        }
+        false
       ]
     },
     {
@@ -9757,13 +10160,6 @@
         "className": "nowrap"
       },
       "children": ["200"]
-    },
-    {
-      "type": "div",
-      "props": {
-        "className": "metric-note"
-      },
-      "children": ["detail.stats.count"]
     },
     {
       "type": "div",

@@ -107,7 +107,9 @@
       "one": "Lapsed once",
       "other": "Lapsed {count} times"
     },
-    "perMonth": "Actual monthly"
+    "perMonth": "Actual monthly",
+    "spentThisYear": "Spent this year",
+    "allTime": "Total {amount}"
   },
   "tab": {
     "charges": "Charges\n{count}",

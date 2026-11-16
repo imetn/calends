@@ -99,7 +99,9 @@
     "gaps": {
       "other": "Terputus {count} kali"
     },
-    "perMonth": "Biaya bulanan riil"
+    "perMonth": "Biaya bulanan riil",
+    "spentThisYear": "Pengeluaran tahun ini",
+    "allTime": "Total {amount}"
   },
   "tab": {
     "charges": "Tagihan\n{count}",

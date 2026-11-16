@@ -99,7 +99,9 @@
     "gaps": {
       "other": "{count}회 중단"
     },
-    "perMonth": "실제 월평균"
+    "perMonth": "실제 월평균",
+    "spentThisYear": "올해 지출",
+    "allTime": "누적 {amount}"
   },
   "tab": {
     "charges": "결제 내역\n{count}",

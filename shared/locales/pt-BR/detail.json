@@ -107,7 +107,9 @@
       "one": "Interrompida uma vez",
       "other": "Interrompida {count} vezes"
     },
-    "perMonth": "Custo mensal real"
+    "perMonth": "Custo mensal real",
+    "spentThisYear": "Gasto este ano",
+    "allTime": "Total {amount}"
   },
   "tab": {
     "charges": "Cobranças\n{count}",

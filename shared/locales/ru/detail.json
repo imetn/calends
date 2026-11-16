@@ -114,7 +114,9 @@
       "many": "Перерывов: {count}",
       "other": "Перерывов: {count}"
     },
-    "perMonth": "Фактически в месяц"
+    "perMonth": "Фактически в месяц",
+    "spentThisYear": "Потрачено в этом году",
+    "allTime": "Всего {amount}"
   },
   "tab": {
     "charges": "Списания\n{count}",

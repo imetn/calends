@@ -99,7 +99,9 @@
     "gaps": {
       "other": "{count}回中断"
     },
-    "perMonth": "実質月額"
+    "perMonth": "実質月額",
+    "spentThisYear": "今年の支出",
+    "allTime": "累計 {amount}"
   },
   "tab": {
     "charges": "請求履歴\n{count}",
