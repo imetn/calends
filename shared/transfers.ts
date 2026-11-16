@@ -2,7 +2,18 @@ import { amountTotal, chargesTotal, scaleTotal, sumTotals, type FxTotal } from '
 import { DAYS_PER_MONTH } from './billing.ts';
 // 转让收付：二手买入时付给原主的钱、卖出时收到的钱。都是实际现金，不推算剩余服务价值。
 // 不是服务商扣款：不进 MRR、续费预测、余额消耗、退款与扣款笔数；只进生命周期净成本和年度、月度现金流。
-import { cashChargesBetween, chargesBetween, CURRENCY_CODE, diffDays, isSeparate, paidServedDays, phaseSubs, servedTime, validDay } from './billing.ts';
+import {
+  cashChargesBetween,
+  chargesBetween,
+  CURRENCY_CODE,
+  historyStart,
+  diffDays,
+  isSeparate,
+  paidServedDays,
+  phaseSubs,
+  servedTime,
+  validDay,
+} from './billing.ts';
 import { chargeBaseOrNaN, convertOn } from './fx.ts';
 import { t } from './i18n.ts';
 import type { AppState, Subscription, Transfer } from './types.ts';
@@ -69,7 +80,7 @@ export interface NetCost {
 /** 生命周期净成本 = 服务付款 + 买入 − 卖出；月均、日均按持有期摊（今天之后的转让不计） */
 export function netCost(state: AppState, s: Subscription, today: string, to = state.settings.baseCurrency): NetCost {
   // 累计按实际付款：账单与缴费分开记时预缴的钱算进去，没缴的欠款不算
-  const history = cashChargesBetween(s, s.start, today, today).filter((c) => c.kind !== 'failed');
+  const history = cashChargesBetween(s, historyStart(s), today, today).filter((c) => c.kind !== 'failed');
   const service = history.reduce((a, c) => a + chargeBaseOrNaN(state, c, to), 0);
   let bought = 0;
   let sold = 0;
@@ -82,7 +93,7 @@ export function netCost(state: AppState, s: Subscription, today: string, to = st
   const net = service + bought - sold;
   const held = holdingPeriod(s, today);
   // 分开记：均摊按账单算，缴早缴晚、欠没欠都不改变每月花多少（欠着的那期也算到它的账期结束）
-  const billed = phaseSubs(s).some(isSeparate) ? chargesBetween(s, s.start, today, today).filter((c) => !c.kind) : undefined;
+  const billed = phaseSubs(s).some(isSeparate) ? chargesBetween(s, historyStart(s), today, today).filter((c) => !c.kind) : undefined;
   const spreadDays = transfersOf(s).some((tr) => tr.date <= today)
     ? held.days
     : paidServedDays(s, billed?.map((c) => (c.unpaid ? { ...c, projected: false } : c)) ?? history, today);

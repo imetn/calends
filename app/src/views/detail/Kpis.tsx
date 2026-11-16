@@ -10,6 +10,7 @@ import {
   diffDays,
   effectiveStatus,
   chargesBetween,
+  historyStart,
   chargeServicePeriod,
   isPostpaid,
   isSeparate,
@@ -34,7 +35,7 @@ import { regular } from './shared.tsx';
 /** 分开记的各期账单（截至今天、同一期的已缴与未缴合成一条），用于比较账单单价 */
 function billPrices(sub: Subscription, today: string): Charge[] {
   const bills = new Map<string, Charge>();
-  for (const c of chargesBetween(sub, sub.start, today, today)) {
+  for (const c of chargesBetween(sub, historyStart(sub), today, today)) {
     if (c.kind || c.amount <= 0) continue;
     const key = `${c.sub.start}|${c.date}`;
     const prev = bills.get(key);

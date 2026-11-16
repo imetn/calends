@@ -1236,7 +1236,9 @@ export function preserveRenewalHistory(previous: Subscription, next: Subscriptio
     ? { ...out, phases: undefined, start: old.start, billingStart: old.billingStart, payments: old.payments }
     : out;
   const moved =
-    old.cycle.unit !== next.cycle.unit || old.cycle.every !== next.cycle.every || (!next.phases?.length && (old.billingStart ?? old.start) !== (next.billingStart ?? next.start));
+    old.cycle.unit !== next.cycle.unit ||
+    old.cycle.every !== next.cycle.every ||
+    (!next.phases?.length && (old.billingStart ?? old.start) !== (next.billingStart ?? next.start));
   if (moved) return { ...out, nextDue: rebaseNextDue(basis, old.nextDue) };
   if (sameRules || old.nextDue <= today || old.nextDue === billingAnchor(old)) return out;
   // 只改了提前扣款天数：同一期服务，按新天数换算扣款日（不早于今天）
@@ -1406,9 +1408,16 @@ export function nextCharge(s: Subscription, today: string): string | undefined {
   return chargesBetween(s, today, addDays(today, Math.max(396, Math.ceil(cycleDays(s.cycle) * 2) + 32)), today).find((c) => !c.kind && !c.paidOn)?.date;
 }
 
+/** 整段账的起点：开始日前记下的实付（如提前几天付的首期）也属于这条订阅的扣款记录 */
+export function historyStart(s: Subscription): string {
+  return phaseSubs(s)
+    .flatMap((p) => p.payments ?? [])
+    .reduce((a, p) => (p.date < a ? p.date : a), s.start);
+}
+
 export function lastCharge(s: Subscription, today: string): string | undefined {
   // 分开记时没缴的账单（待缴、逾期）不是扣款：最后一次扣款是最近一期缴过（含推算期视为已缴）的账单
-  const all = chargesBetween(s, s.start, today, today).filter((c) => !c.kind && !c.unpaid);
+  const all = chargesBetween(s, historyStart(s), today, today).filter((c) => !c.kind && !c.unpaid);
   return all[all.length - 1]?.date;
 }
 
@@ -1504,6 +1513,22 @@ function periodAsRecorded(s: Subscription, at: string): { from: string; paidThro
           .reduce((a, c) => a + c.amount, 0)
       : 0;
   return { from, paidThrough, paid, days: Math.max(1, diffDays(from, next)) };
+}
+
+/**
+ * 提前续费已付、续上的那期还没开始时，today 所在的服务期（上一期，until 为续上那期的第一天）。
+ * billingPeriod() 在这段时间已经指向续上的那期（停用、退款按它算已付到哪天），「本期」显示用这里。
+ */
+export function periodBeforeRenewal(s: Subscription, today: string): { from: string; until: string } | undefined {
+  const cur = currentPhase(s, today);
+  if (cur.cycle.unit === 'lifetime' || isPostpaid(cur) || isSeparate(cur)) return undefined;
+  const until = settleLegacyEarly(cur)
+    .payments?.filter((p) => !p.kind && p.date <= today && !!p.serviceDate && today < p.serviceDate)
+    .map((p) => p.serviceDate!)
+    .sort()[0];
+  if (!until) return undefined;
+  const prior = nthCharge(until, cur.cycle, -1);
+  return { from: prior < cur.start ? cur.start : prior, until };
 }
 
 /** 在 at 停止时校验用的账期：先付费按今天已付到哪天；后付费随时可停，账期截到 at */

@@ -8,6 +8,7 @@ import { Pause, Pencil, Play, Plus, Settings2, Share } from 'lucide-react';
 import {
   cashChargesBetween,
   chargesBetween,
+  historyStart,
   currentPhase,
   cycleLabel,
   effectiveStatus,
@@ -107,9 +108,9 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   const cur = currentPhase(sub, today);
   // 账单（权责）：走势图、用量按账单日期；扣款记录与指标按实际付款。账单与缴费分开记时两者不同，其余订阅是同一份
   // 逾期未缴的部分由走势图另行画成虚线（overdueBills），这里不重复
-  const history = chargesBetween(sub, sub.start, today, today).filter((c) => c.unpaid !== 'overdue');
+  const history = chargesBetween(sub, historyStart(sub), today, today).filter((c) => c.unpaid !== 'overdue');
   const separate = phaseSubs(sub).some(isSeparate);
-  const paid = separate ? cashChargesBetween(sub, sub.start, today, today) : history;
+  const paid = separate ? cashChargesBetween(sub, historyStart(sub), today, today) : history;
   const [pay, setPay] = useState<{ pay?: Payment; index?: number; phase?: string } | null>(null);
   const [share, setShare] = useState(false);
   // 合租弹窗：从详情的合租区点进去，看收了多少、付了多少；成员资料再叠一层

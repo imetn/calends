@@ -9,6 +9,7 @@ import {
   chargeDay,
   chargeServicePeriod,
   chargesBetween,
+  historyStart,
   currentPhase,
   cycleDays,
   cycleLabel,
@@ -57,7 +58,7 @@ export function barDay(c: Charge): string {
 function separateBars(sub: Subscription, today: string, until: string) {
   if (!phaseSubs(sub).some(isSeparate)) return undefined;
   const groups = new Map<string, Charge[]>();
-  for (const c of chargesBetween(sub, sub.start, until > today ? until : today, today))
+  for (const c of chargesBetween(sub, historyStart(sub), until > today ? until : today, today))
     if (!c.kind && c.amount > 0) groups.set(`${c.sub.start}|${c.date}`, [...(groups.get(`${c.sub.start}|${c.date}`) ?? []), c]);
   const merge = (cs: Charge[]): Charge => {
     const main = cs.find((c) => c.paidOn) ?? cs[0];

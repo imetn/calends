@@ -108,3 +108,41 @@ test('开始日往后挪很远时，原来的旧扣款不算首购，开始日�
     ['2026-06-01', '2026-07-01', '2026-08-01', '2026-09-01'],
   );
 });
+
+// 用户反馈：开始日前付的首期不在扣款记录里；提前续费后、续上那期开始前，「本期」显示成了续上的那期
+test('开始日前付的首期计入整段扣款记录', async () => {
+  const { historyStart, lastCharge } = await import('./billing.ts');
+  const s = savePayment(base({ chargeLeadDays: 7, payments: [{ date: '2025-11-20', amount: 60 }] }), '2026-09-28', { date: '2026-09-28', amount: 60 });
+  assert.equal(historyStart(s), '2025-11-20');
+  assert.deepEqual(
+    chargesBetween(s, historyStart(s), '2026-11-16', '2026-11-16').map((c) => c.date),
+    ['2025-11-20', '2026-09-28'],
+  );
+  assert.equal(lastCharge(base({ payments: [{ date: '2025-11-20', amount: 60 }] }), '2025-11-25'), '2025-11-20');
+  // 多阶段：较早阶段的付款也算
+  const phased = switchPlan(s, '2026-12-01', { price: 80 });
+  assert.equal(historyStart(phased), '2025-11-20');
+});
+
+test('提前续费后续上那期开始前，本期仍是上一期；停用账期不变', async () => {
+  const { billingPeriod, periodBeforeRenewal } = await import('./billing.ts');
+  for (const lead of [7, 0]) {
+    const s = savePayment(base({ chargeLeadDays: lead, payments: [{ date: lead ? '2025-11-20' : '2025-11-27', amount: 60 }] }), '2026-09-28', {
+      date: '2026-09-28',
+      amount: 60,
+    });
+    assert.deepEqual(periodBeforeRenewal(s, '2026-11-16'), { from: '2025-11-27', until: '2026-11-27' });
+    assert.equal(periodBeforeRenewal(s, '2026-11-27'), undefined);
+    assert.equal(periodBeforeRenewal(s, '2026-09-27'), undefined);
+    // 停用与退款仍按已付到续上那期末
+    assert.equal(billingPeriod(s, '2026-11-16').paidThrough, '2027-11-26');
+  }
+  // 月末日号：上一期从 9-30 起
+  const month = { unit: 'month' as const, every: 1 };
+  const m = savePayment(
+    base({ cycle: month, start: '2026-08-31', payments: ['2026-08-31', '2026-09-30'].map((date) => ({ date, amount: 60 })) }),
+    '2026-10-25',
+    { date: '2026-10-25', amount: 60 },
+  );
+  assert.deepEqual(periodBeforeRenewal(m, '2026-10-27'), { from: '2026-09-30', until: '2026-10-31' });
+});

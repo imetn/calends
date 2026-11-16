@@ -7,6 +7,7 @@ import {
   activePhases,
   addMonths,
   cashChargesBetween,
+  historyStart,
   chargesBetween,
   currentPhase,
   cycleLabel,
@@ -191,7 +192,7 @@ export const get_subscription: Tool = {
     const out = outCcy(st, a);
     const s = findSub(st, a.subscription);
     // 累计按实际付款，与详情页「累计」同一口径
-    const all = cashChargesBetween(s, s.start, today, today);
+    const all = cashChargesBetween(s, historyStart(s), today, today);
     const gaps = fxGaps();
     const spent = all.reduce((t, c) => t + (gaps.note(chargeBaseOrNaN(st, c, out ?? st.settings.baseCurrency), chargeCcy(c)) as number), 0);
     const from = addMonths(today, -Number(a.months_back ?? 12));

@@ -852,7 +852,10 @@ test('分开记的费用走势一期一根柱：预缴的未来账单画实柱�
 
 test('分开记的每月涨跌比账单单价：首期与当前一期，缴费多少不影响', () => {
   const file = '../app/src/views/detail/Kpis.tsx';
-  const billPrices = load(file, 'billPrices', extractUiFunction(new URL(file, import.meta.url), 'billPrices'), { chargesBetween: billing.chargesBetween });
+  const billPrices = load(file, 'billPrices', extractUiFunction(new URL(file, import.meta.url), 'billPrices'), {
+    chargesBetween: billing.chargesBetween,
+    historyStart: billing.historyStart,
+  });
   const sub: Subscription = {
     id: 'a',
     name: 'Fictional fee',
