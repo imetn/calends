@@ -211,7 +211,7 @@ export function Dock({
         <button
           ref={btn}
           type="button"
-          className={`dock-more ${!inBar ? 'on' : ''}`}
+          className={`dock-more ${!inBar ? 'on' : ''} ${update && settings ? 'has-dot' : ''}`}
           onClick={() => onOpen(!open)}
           aria-haspopup="dialog"
           aria-expanded={open}

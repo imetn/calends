@@ -28,7 +28,11 @@ test('en-AU reuses English messages through the fallback chain instead of its ow
     .map((d) => d.name)
     .sort();
   assert.deepEqual(TRANSLATED_LOCALES.map((l) => l.code).sort(), dirs);
-  for (const { code } of LOCALES) assert.ok(fallbackChain(code).some((l) => dirs.includes(l)), code);
+  for (const { code } of LOCALES)
+    assert.ok(
+      fallbackChain(code).some((l) => dirs.includes(l)),
+      code,
+    );
 });
 
 test('browser and Accept-Language preferences pick en-AU only for Australian English', () => {

@@ -137,7 +137,9 @@ function DeviceCell({ d, tz, onRevoke, onRename }: { d: Device; tz: string; onRe
         d.name ? ua : '',
         where,
         [
-          t(d.method === 'passkey' ? 'settings.security.signedInPasskey' : 'settings.security.signedInPassword', { time: localTime(d.createdAt, tz, { part: 'date' }) }),
+          t(d.method === 'passkey' ? 'settings.security.signedInPasskey' : 'settings.security.signedInPassword', {
+            time: localTime(d.createdAt, tz, { part: 'date' }),
+          }),
           d.current ? '' : ago(d.lastSeenAt),
         ]
           .filter(Boolean)

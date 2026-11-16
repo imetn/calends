@@ -165,9 +165,36 @@ test('upcoming dates share one near-day threshold, then fall back to a dated lab
 // 用户反馈（#16）：英文下时间线写 11/10、报告图提示写 2026-10，格式不统一；en-AU 要日在前
 test('displayed dates follow the interface locale: en keeps US order, en-AU puts the day first, zh-CN stays unchanged', () => {
   const cases = {
-    en: { short: '11/15', numeric: '11/15/2026', day: 'Nov 15', full: 'Nov 15, 2026', month: 'Nov 2026', axis: '11/26', stamp: 'Nov 15, 2026, 7:03 PM', time: '7:03 PM' },
-    'en-AU': { short: '15/11', numeric: '15/11/2026', day: '15 Nov', full: '15 Nov 2026', month: 'Nov 2026', axis: '11/26', stamp: '15 Nov 2026, 7:03 pm', time: '7:03 pm' },
-    'zh-CN': { short: '11/15', numeric: '2026/11/15', day: '11月15日', full: '2026年11月15日', month: '2026年11月', axis: '26/11', stamp: '2026年11月15日 19:03', time: '19:03' },
+    en: {
+      short: '11/15',
+      numeric: '11/15/2026',
+      day: 'Nov 15',
+      full: 'Nov 15, 2026',
+      month: 'Nov 2026',
+      axis: '11/26',
+      stamp: 'Nov 15, 2026, 7:03 PM',
+      time: '7:03 PM',
+    },
+    'en-AU': {
+      short: '15/11',
+      numeric: '15/11/2026',
+      day: '15 Nov',
+      full: '15 Nov 2026',
+      month: 'Nov 2026',
+      axis: '11/26',
+      stamp: '15 Nov 2026, 7:03 pm',
+      time: '7:03 pm',
+    },
+    'zh-CN': {
+      short: '11/15',
+      numeric: '2026/11/15',
+      day: '11月15日',
+      full: '2026年11月15日',
+      month: '2026年11月',
+      axis: '26/11',
+      stamp: '2026年11月15日 19:03',
+      time: '19:03',
+    },
   } as const;
   for (const [loc, want] of Object.entries(cases)) {
     setLocale(loc as keyof typeof cases, []);

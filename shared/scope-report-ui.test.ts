@@ -1145,7 +1145,8 @@ test('提醒预览按所有者时区分出今天与最近发送，空预览不�
     [['Sent today']],
   );
   // 时间按当前语言显示（这里是 en），今年的省略年份
-  const shown = (g: Element) => all(g).flatMap((n) => n.children.filter((c): c is string => typeof c === 'string').map((c) => c.replace(/[\u202f\u00a0]/g, ' ')));
+  const shown = (g: Element) =>
+    all(g).flatMap((n) => n.children.filter((c): c is string => typeof c === 'string').map((c) => c.replace(/[\u202f\u00a0]/g, ' ')));
   assert.ok(shown(groups[0]).includes('2:00 AM'));
   assert.ok(shown(groups[1]).includes('Oct 21, 12:01 PM'));
   assert.equal(r.render('ReminderPreview', { preview: { ...preview, log: [] }, timezone: 'UTC' }).filter((n) => n.type === 'Group').length, 0);

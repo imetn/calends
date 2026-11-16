@@ -228,7 +228,9 @@ export function DatePicker({
           <button type="button" className="dp-open" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
             <Icon name="cal" />
             {/* 显示按当前语言写日期（中文「2026年10月25日」）；手动输入时仍可填 2026-10-25 等格式 */}
-            <span className="dp-val">{draft ? (ISO.test(draft) ? (compact ? numericDate(draft, { year: true }) : cnDateFull(draft)) : draft) : placeholder}</span>
+            <span className="dp-val">
+              {draft ? (ISO.test(draft) ? (compact ? numericDate(draft, { year: true }) : cnDateFull(draft)) : draft) : placeholder}
+            </span>
           </button>
           <IconButton className="dp-edit" aria-label={t('picker.date.type')} tabIndex={-1} onClick={startEditing}>
             <Icon name="edit" />

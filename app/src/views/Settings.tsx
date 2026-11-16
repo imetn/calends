@@ -132,7 +132,9 @@ function ReminderPreview({ preview, timezone }: { preview: Preview | null; timez
           ))}
           {todayLog.map((l) => (
             <Cell key={l.dedupe_key} label={<span style={{ fontSize: 'var(--fs-2)' }}>{l.subject}</span>}>
-              <span style={{ color: l.status === 'sent' ? undefined : 'var(--red)', fontSize: 'var(--fs-1)' }}>{localTime(l.sent_at, timezone, { part: 'time' })}</span>
+              <span style={{ color: l.status === 'sent' ? undefined : 'var(--red)', fontSize: 'var(--fs-1)' }}>
+                {localTime(l.sent_at, timezone, { part: 'time' })}
+              </span>
             </Cell>
           ))}
         </Group>
@@ -651,9 +653,7 @@ function VersionCells() {
   const update = availableUpdate(u);
   return (
     <>
-      <Cell label={t('settings.update.current')}>
-        {`v${APP_VERSION}`}
-      </Cell>
+      <Cell label={t('settings.update.current')}>{`v${APP_VERSION}`}</Cell>
       {latest && (
         <Cell label={t('settings.update.latest')} onClick={() => window.open(latest.url, '_blank', 'noopener')}>
           {update && <span className="badge green">{t('settings.update.available')}</span>}

@@ -10969,6 +10969,21 @@ button.name-edit:focus-visible {
   .dock.open .dock-more {
     color: var(--label);
   }
+  /* 有新版本时「更多」右上角同设置入口一样的小圆点；展开后由设置图标上的圆点接替 */
+  .dock-more.has-dot::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    transition: opacity 0.2s var(--ease);
+  }
+  .dock.open .dock-more.has-dot::after {
+    opacity: 0;
+  }
   .dock.open .dock-more .i:first-child {
     opacity: 0;
     transform: rotate(90deg) scale(0.6);

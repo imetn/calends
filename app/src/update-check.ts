@@ -1,5 +1,14 @@
 import { useSyncExternalStore } from 'react';
-import { autoCheckDue, isNewer, LATEST_RELEASE_API, nextUpdateCache, parseRelease, parseUpdateCache, parseVersion, type UpdateCache } from '../../shared/version.ts';
+import {
+  autoCheckDue,
+  isNewer,
+  LATEST_RELEASE_API,
+  nextUpdateCache,
+  parseRelease,
+  parseUpdateCache,
+  parseVersion,
+  type UpdateCache,
+} from '../../shared/version.ts';
 import { readStored, storageKey } from './base.ts';
 
 /**

@@ -144,7 +144,11 @@ function Receipt({ r, year, all, whose, ongoing, m, hide, pct, byMethod, today }
       <div className="rp-c rp-shop">{copyParts(t('review.receipt.shop', { whose }).trim())}</div>
       <div className="rp-c rp-small">
         {copyParts(
-          all ? t('review.receipt.all', { date: numericDate(today, { year: true }) }) : ongoing ? t('review.receipt.asOf', { date: numericDate(today, { year: true }) }) : t('review.receipt.fullYear', { year }),
+          all
+            ? t('review.receipt.all', { date: numericDate(today, { year: true }) })
+            : ongoing
+              ? t('review.receipt.asOf', { date: numericDate(today, { year: true }) })
+              : t('review.receipt.fullYear', { year }),
         )}
       </div>
       <div className="rp-rule">{'='.repeat(60)}</div>
