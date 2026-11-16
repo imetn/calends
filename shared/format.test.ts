@@ -386,3 +386,11 @@ test('历史汇率入库汇率接口支持的全部币种；下发覆盖账本�
   assert.equal(staleRow({ source: 'currency-api', rates: JSON.stringify(rates) }, keep), false);
   assert.equal(staleRow({ source: 'currency-api', rates: JSON.stringify(Object.fromEntries([...keep].map((c) => [c, 1]))) }, keep), false);
 });
+
+test('纯日期不当 UTC 零点换时区：西半球不早一天、不编造时刻', () => {
+  setLocale('en', []);
+  assert.equal(localDay('2026-10-19', 'America/Los_Angeles'), '2026-10-19');
+  assert.equal(localTime('2026-10-19', 'America/Los_Angeles'), cnDateFull('2026-10-19'));
+  assert.equal(localTime('2026-10-19', 'America/Los_Angeles', { part: 'time' }), '');
+  assert.doesNotMatch(localTime('2026-10-19', 'America/Los_Angeles'), /18|PM|AM/);
+});

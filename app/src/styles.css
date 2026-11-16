@@ -2662,7 +2662,8 @@ button.bl-col {
   position: relative;
 }
 .log-date {
-  width: 42px;
+  min-width: 42px;
+  white-space: nowrap;
   font-size: var(--fs-1);
   color: var(--label-2);
   flex-shrink: 0;
@@ -7597,7 +7598,8 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 
 /* ---------------- 单个订阅的分享图 ---------------- */
 .rc-row .rc-d {
-  width: 78px;
+  min-width: 78px;
+  white-space: nowrap;
   flex-shrink: 0;
   opacity: 0.6;
   font-size: var(--fs-1);

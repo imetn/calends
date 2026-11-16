@@ -256,10 +256,13 @@ export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
+// 纯日期（YYYY-MM-DD）没有时刻，不能当 UTC 零点换时区，否则西半球会早一天
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const utcInstant = (raw: string): Date => new Date(/[TZ]/.test(raw) ? raw : raw.replace(' ', 'T') + 'Z');
 
 /** 服务端的 UTC 时间（ISO 或 SQLite 的「YYYY-MM-DD HH:MM:SS」）在设置时区里是哪一天，YYYY-MM-DD，供比较用，不用于显示 */
 export function localDay(raw: string, timeZone: string): string {
+  if (DATE_ONLY.test(raw)) return raw;
   const d = utcInstant(raw);
   return Number.isNaN(d.getTime()) ? raw.slice(0, 10) : dateFormat('sv-SE', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
@@ -269,6 +272,7 @@ export function localDay(raw: string, timeZone: string): string {
  * part 只要日期或时间；today（YYYY-MM-DD）与之同年时省略年份。
  */
 export function localTime(raw: string, timeZone: string, opts: { part?: 'date' | 'time'; today?: string } = {}): string {
+  if (DATE_ONLY.test(raw)) return opts.part === 'time' ? '' : opts.today ? cnDateAuto(raw, opts.today) : cnDateFull(raw);
   const d = utcInstant(raw);
   if (Number.isNaN(d.getTime())) return raw;
   const time: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };

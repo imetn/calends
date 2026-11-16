@@ -1743,3 +1743,15 @@ test('概览月度支出图的时间范围存进同步偏好，刷新和换设�
   assert.doesNotMatch(overview, /useState<SpendingPeriod>/);
   assert.match(prefs, /'overview-period',/);
 });
+
+test('检查更新：请求有超时，自动检查途中点手动检查也会显示失败', () => {
+  const src = readFileSync(new URL('../app/src/update-check.ts', import.meta.url), 'utf8');
+  assert.match(src, /signal: AbortSignal\.timeout\(/);
+  assert.match(src, /if \(manual\) manualWaiting = true;\n\s*if \(state\.checking\) return;/);
+});
+
+test('助手对话分隔线时间走 localTime，按设置时区且今年省略年份', () => {
+  const src = readFileSync(new URL('../app/src/views/Assistant.tsx', import.meta.url), 'utf8');
+  assert.match(src, /fmtWhen = \(iso: string, timeZone: string, today: string\): string => localTime\(iso, timeZone, \{ today \}\)/);
+  assert.doesNotMatch(src, /toLocaleString\(/);
+});

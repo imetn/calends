@@ -41,14 +41,23 @@ function save(cache: UpdateCache) {
 }
 
 async function fetchLatest() {
-  const res = await fetch(LATEST_RELEASE_API, { headers: { accept: 'application/vnd.github+json' }, credentials: 'omit', cache: 'no-store' });
+  const res = await fetch(LATEST_RELEASE_API, {
+    headers: { accept: 'application/vnd.github+json' },
+    credentials: 'omit',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(10_000),
+  });
   if (!res.ok) throw new Error(String(res.status));
   const latest = parseRelease(await res.json());
   if (!latest) throw new Error('bad release');
   return latest;
 }
 
+// 自动检查还在途中时用户点了「检查更新」：复用这次请求，结束时按手动检查显示失败
+let manualWaiting = false;
+
 async function check(manual: boolean) {
+  if (manual) manualWaiting = true;
   if (state.checking) return;
   set({ checking: true, failed: manual ? false : state.failed });
   let latest = null;
@@ -59,7 +68,9 @@ async function check(manual: boolean) {
   }
   const cache = nextUpdateCache(state.cache, Date.now(), latest);
   save(cache);
-  set({ cache, checking: false, failed: manual ? !latest : state.failed });
+  const shown = manualWaiting;
+  manualWaiting = false;
+  set({ cache, checking: false, failed: shown ? !latest : state.failed });
 }
 
 /** 手动「检查更新」：总是请求，失败时显示失败状态 */

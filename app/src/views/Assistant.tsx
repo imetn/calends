@@ -23,7 +23,8 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
-import { locale, t } from '../../../shared/i18n.ts';
+import { t } from '../../../shared/i18n.ts';
+import { localTime } from '../../../shared/format.ts';
 import { confirmInOrder, type WriteVerification } from '../../../shared/assistant-result.ts';
 import type { ApiMessage, AssistantConfigView, ErrorKind } from '../../../shared/deepseek.ts';
 import { dropOldImages } from '../../../shared/deepseek.ts';
@@ -50,12 +51,8 @@ import { reduce } from './assistant-chat.ts';
 import { Proposal } from './AssistantProposal.tsx';
 import { SetupSheet } from './AssistantSetup.tsx';
 
-/** 对话分隔线上的时间：今年的不写年份 */
-export function fmtWhen(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString(locale(), { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
+/** 对话分隔线上的时间：按设置时区，今年的不写年份 */
+export const fmtWhen = (iso: string, timeZone: string, today: string): string => localTime(iso, timeZone, { today });
 
 // ---------- 页面 ----------
 export function Assistant({ state, today, onOpen, switcher }: { state: AppState; today: string; onOpen: (s: Subscription) => void; switcher?: ReactNode }) {
@@ -326,7 +323,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
           <div className="as-col">
             {shownPast.map((c) => (
               <div key={c.id} className="as-past">
-                <div className="as-past-head">{fmtWhen(c.createdAt)}</div>
+                <div className="as-past-head">{fmtWhen(c.createdAt, state.settings.timezone, today)}</div>
                 {c.turns.map((turn) =>
                   turn.role === 'user' ? (
                     <UserBubble key={turn.id} turn={turn} />
@@ -352,7 +349,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
               </div>
             ))}
             <section ref={session} className={`as-session ${shownPast.length ? 'fresh' : ''}`} style={shownPast.length ? { minHeight: fill } : undefined}>
-              {shownPast.length > 0 && <div className="as-past-head">{fmtWhen(chat.createdAt)}</div>}
+              {shownPast.length > 0 && <div className="as-past-head">{fmtWhen(chat.createdAt, state.settings.timezone, today)}</div>}
               {empty
                 ? pastLoaded && <Welcome ready={ready} cfg={cfg} onSetup={() => setSetup(true)} />
                 : chat.turns.map((turn, i) =>
