@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { transformSync } from 'oxc-transform-react';
 import { DEFAULT_SETTINGS } from './types.ts';
 import { FALLBACK_FX, todayIn, addDays } from './billing.ts';
-import { LOCALES } from './i18n.ts';
+import { TRANSLATED_LOCALES } from './i18n.ts';
 import { buildIcs } from '../worker/ics.ts';
 
 const read = (file: string) => readFileSync(new URL(file, import.meta.url), 'utf8');
@@ -195,7 +195,7 @@ test('14. 真实生成流程将令牌带入弹层提示词，关闭和已保存�
 });
 
 test('15. 14 种语言的合租空状态指向编辑器真实分组及发起选项', () => {
-  for (const { code } of LOCALES) {
+  for (const { code } of TRANSLATED_LOCALES) {
     const editor = locale(code, 'editor');
     const copy = locale(code, 'family').pool.emptyBody;
     assert.ok(copy.includes(editor.group.who), code);
@@ -205,7 +205,7 @@ test('15. 14 种语言的合租空状态指向编辑器真实分组及发起选�
 });
 
 test('16. 14 种语言的代付空状态指向编辑器真实分组及代付选项', () => {
-  for (const { code } of LOCALES) {
+  for (const { code } of TRANSLATED_LOCALES) {
     const editor = locale(code, 'editor');
     const copy = locale(code, 'proxy').page.emptyBody;
     assert.ok(copy.includes(editor.group.who), code);
@@ -231,7 +231,7 @@ test('9/17. 所有语言区分报告全额实付与年度我的份额，并说�
     id: 'aplikasi',
     vi: 'ứng dụng',
   };
-  for (const { code } of LOCALES) {
+  for (const { code } of TRANSLATED_LOCALES) {
     const report = locale(code, 'report').cash.fullPaidHint;
     const review = locale(code, 'review').spendBasis;
     assert.ok(report && review && report !== review, code);
@@ -325,6 +325,7 @@ test('报告损失明细可打开原订阅；四种年度分享在非零且未�
     TailName: 'TailName',
     catColor: () => '#777',
     monthLabel: () => 'October',
+    numericDate: (d: string) => d,
     packCircles: () => [],
     location: { host: 'example.test' },
   });
@@ -406,7 +407,7 @@ test('报告损失明细可打开原订阅；四种年度分享在非零且未�
 });
 
 test('14 种语言统一未退款损失语义，金额标签取代未用天数，预付余值保持独立', () => {
-  for (const { code } of LOCALES) {
+  for (const { code } of TRANSLATED_LOCALES) {
     const core = locale(code, 'core').stop;
     const report = locale(code, 'report');
     const review = locale(code, 'review');
@@ -466,7 +467,7 @@ test('登录与首次设置表单为密码管理器提供同一账号和正确�
     assert.equal(password.props.type, 'password');
     assert.equal(password.props.autoComplete, needsSetup ? 'new-password' : 'current-password webauthn');
     assert.equal(password.props['aria-label'], needsSetup ? 'app.login.newPassword' : 'app.login.password');
-    for (const { code } of LOCALES) assert.ok(locale(code, 'app').login.username, code);
+    for (const { code } of TRANSLATED_LOCALES) assert.ok(locale(code, 'app').login.username, code);
   }
   assert.ok(login.includes('autofill.current?.();')); // 密码提交和 Passkey 按钮共用 go() 的同步取消
   assert.ok(login.includes('return stop;')); // 卸载时清理条件式请求

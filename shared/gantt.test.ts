@@ -6,7 +6,7 @@ import { transformSync } from 'oxc-transform-react';
 import * as billing from './billing.ts';
 import * as format from './format.ts';
 import * as gantt from './gantt.ts';
-import { LOCALES, flatten, intlLocale, setLocale, t } from './i18n.ts';
+import { TRANSLATED_LOCALES, flatten, intlLocale, setLocale, t } from './i18n.ts';
 import { DEFAULT_SETTINGS, type Subscription } from './types.ts';
 
 const read = (file: string) => readFileSync(new URL(file, import.meta.url), 'utf8');
@@ -69,7 +69,7 @@ test('拖动吸附和翻页保留月份锚点，月末往返无漂移', () => {
 });
 
 test('14 种语言的短窗口有周/半月网格及日期标签，窄轨道标签不重叠、不越界', () => {
-  for (const { code } of LOCALES) {
+  for (const { code } of TRANSLATED_LOCALES) {
     const list = JSON.parse(read(`./locales/${code}/list.json`));
     assert.equal(list.gantt.zoomYear, undefined, code);
     for (const key of ['zoom3m', 'zoom6m', 'zoom1y', 'zoom3y']) assert.ok(list.gantt[key], `${code} ${key}`);

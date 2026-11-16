@@ -1,10 +1,12 @@
 // 多语言：前端、Worker、邮件、MCP 共用一套。
 // - 文案放在 shared/locales/<语言>/<命名空间>.json，键名形如 editor.save；zh-CN 与 en 是源语言，其余由它们翻译而来。
+// - en-AU 这类地区变体没有自己的文案目录，文案沿回退链取 en，只有日期、数字按自己的地区习惯格式化。
 // - t('ns.key', { name }) 取文案，{name} 为占位符；值写成 { "one": …, "other": … } 时按 count 选复数形式。
 // - 当前语言：浏览器里全局只有一种；Worker 每个请求、定时任务各有一份（setLocaleScope），按请求头或设置切换，并发请求互不串用。
 
 export const LOCALES = [
   { code: 'en', name: 'English', flag: 'us' },
+  { code: 'en-AU', name: 'English (Australia)', flag: 'au' },
   { code: 'zh-CN', name: '简体中文', flag: 'cn' },
   { code: 'zh-TW', name: '繁體中文（台灣）', flag: 'tw' },
   { code: 'zh-HK', name: '繁體中文（香港）', flag: 'hk' },
@@ -31,7 +33,12 @@ export type Messages = Record<string, string | Record<string, string>>;
 const CODES = new Set<string>(LOCALES.map((l) => l.code));
 export const isLocale = (s: unknown): s is Locale => typeof s === 'string' && CODES.has(s);
 
-/** 缺失的键依次回退：港繁 → 台繁 → 简体 → 英文 */
+/** 只换日期、数字格式的地区变体：不建文案目录，文案全部来自回退链上的下一种语言 */
+const FORMAT_ONLY = new Set<string>(['en-AU']);
+/** 有自己文案目录的语言；翻译齐全性检查逐一核对这些 */
+export const TRANSLATED_LOCALES = LOCALES.filter((l) => !FORMAT_ONLY.has(l.code));
+
+/** 缺失的键依次回退：港繁 → 台繁 → 简体 → 英文；澳洲英文 → 英文 */
 export function fallbackChain(locale: Locale): Locale[] {
   const chain: Locale[] = [locale];
   if (locale === 'zh-HK') chain.push('zh-TW');

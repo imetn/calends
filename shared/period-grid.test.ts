@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
-import { LOCALES, flatten, setLocale, t } from './i18n.ts';
+import { TRANSLATED_LOCALES, flatten, setLocale, t } from './i18n.ts';
 import assert from 'node:assert/strict';
 import { addDays, addMonths } from './billing.ts';
 import { periodGrid, periodGridMode, periodTipData, visibleStripPeriods } from './period-grid.ts';
@@ -170,7 +170,7 @@ test('提示保留原币应收、这一期分到的实收、整笔金额、日�
 });
 
 test('14种语言的年、季度与应收提示文案齐全，汉字年份仅限中日文', () => {
-  for (const { code } of LOCALES) {
+  for (const { code } of TRANSLATED_LOCALES) {
     const messages = JSON.parse(readFileSync(new URL(`./locales/${code}/receivable.json`, import.meta.url), 'utf8'));
     setLocale(code, [flatten('receivable', messages)]);
     const cjk = code.startsWith('zh') || code === 'ja';

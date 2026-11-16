@@ -22,7 +22,7 @@ import {
   type Runway,
   isStopped,
 } from '../../../shared/billing.ts';
-import { flow, cnDate, cnDateAuto, money, relDays } from '../../../shared/format.ts';
+import { flow, cnDate, cnDateAuto, cnDateFull, money, relDays } from '../../../shared/format.ts';
 import { toBaseAt } from '../../../shared/fx.ts';
 import { intlLocale } from '../../../shared/i18n.ts';
 import { BALANCE_KINDS, type AppState, type CardNetwork, type MethodKind, type PaymentMethod, type Subscription, type TopUp } from '../../../shared/types.ts';
@@ -632,7 +632,7 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
                   <span className="cell-l">
                     <span className="green">{flow(tp.amount, m.currency)}</span>
                     <small>
-                      {tp.date}
+                      {cnDateFull(tp.date)}
                       {copyParts(
                         tp.cost != null ? `\n${t('wallet.topup.spent', { amount: flow(-tp.cost, tp.costCurrency ?? state.settings.baseCurrency) })}` : '',
                       )}

@@ -121,7 +121,7 @@ export function History({
                       <button
                         className="h-price-row"
                         onClick={() => onPrice(v.start, p.from)}
-                        aria-label={t('editor.history.editPrice', { date: p.from })}
+                        aria-label={t('editor.history.editPrice', { date: cnDateFull(p.from) })}
                         aria-expanded={priceEditor?.start === v.start && priceEditor.from === p.from}
                       >
                         {content}

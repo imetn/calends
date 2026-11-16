@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Fragment } from 'react';
 import { CircleX, Check, CircleAlert, Loader2, Pencil, ReceiptText } from 'lucide-react';
 import { cycleLabel, collectCurrencyOf } from '../../../shared/billing.ts';
-import { flow, billLabel, cnDate, money } from '../../../shared/format.ts';
+import { flow, billLabel, cnDate, money, numericDate } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { PayBadge, SubIcon } from '../components/marks.tsx';
@@ -319,7 +319,7 @@ export function Proposal(props: {
           <div>
             {part.preview.next_charges.map((c) => (
               <span key={c.date}>
-                {c.date.slice(5).replace('-', '/')} <span className="copy-gap" aria-hidden="true" /> {flow(-c.amount, c.currency)}
+                {numericDate(c.date)} <span className="copy-gap" aria-hidden="true" /> {flow(-c.amount, c.currency)}
               </span>
             ))}
           </div>

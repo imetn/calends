@@ -3,6 +3,7 @@ import { prepareImport, type ImportFixes, type ImportSource } from '../../../sha
 import type { AppState, Cycle } from '../../../shared/types.ts';
 import { t } from '../../../shared/i18n.ts';
 import { cycleLabel, validDay } from '../../../shared/billing.ts';
+import { cnDateFull } from '../../../shared/format.ts';
 import { ask, Sheet } from '../components/overlays.tsx';
 import { Cell, Group } from '../components/ui.tsx';
 import { DatePicker } from '../components/DatePicker.tsx';
@@ -139,7 +140,7 @@ export function ImportSheet({ source, state, today, onClose }: { source: ImportS
                       onChange={(v) => edit(row.key, { start: v ?? today })}
                     />
                   </Cell>
-                  {row.nextDue && <Cell label={t('settings.import.next')}>{row.nextDue}</Cell>}
+                  {row.nextDue && <Cell label={t('settings.import.next')}>{validDay(row.nextDue) ? cnDateFull(row.nextDue) : row.nextDue}</Cell>}
                   {(row.inactive || row.manual) && <Cell label={t('settings.import.paused')} />}
                 </>
               )}

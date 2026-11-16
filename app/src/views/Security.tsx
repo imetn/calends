@@ -137,7 +137,7 @@ function DeviceCell({ d, tz, onRevoke, onRename }: { d: Device; tz: string; onRe
         d.name ? ua : '',
         where,
         [
-          t(d.method === 'passkey' ? 'settings.security.signedInPasskey' : 'settings.security.signedInPassword', { time: localTime(d.createdAt, tz, true) }),
+          t(d.method === 'passkey' ? 'settings.security.signedInPasskey' : 'settings.security.signedInPassword', { time: localTime(d.createdAt, tz, { part: 'date' }) }),
           d.current ? '' : ago(d.lastSeenAt),
         ]
           .filter(Boolean)
@@ -199,8 +199,8 @@ export function SecurityGroup({ state }: { state: AppState }) {
             }
             sub={
               p.lastUsedAt
-                ? t('settings.security.lastUsed', { time: localTime(p.lastUsedAt, tz, true) })
-                : t('settings.security.addedAt', { time: localTime(p.createdAt, tz, true) })
+                ? t('settings.security.lastUsed', { time: localTime(p.lastUsedAt, tz, { part: 'date' }) })
+                : t('settings.security.addedAt', { time: localTime(p.createdAt, tz, { part: 'date' }) })
             }
           >
             <ConfirmButton

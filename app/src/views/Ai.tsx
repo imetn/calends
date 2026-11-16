@@ -382,7 +382,7 @@ export function Ai({ state, switcher }: { state: AppState; switcher?: ReactNode 
                   </code>
                   <span className="ai-token-when created" role="cell">
                     <small>{t('ai.col.created')}</small>
-                    {localTime(tk.createdAt, state.settings.timezone, true)}
+                    {localTime(tk.createdAt, state.settings.timezone, { part: 'date' })}
                   </span>
                   <span className={`ai-token-when used ${tk.lastUsedAt ? '' : 'never'}`} role="cell">
                     <small>{t('ai.col.lastUsed')}</small>

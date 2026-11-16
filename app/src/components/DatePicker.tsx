@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { dateFormat } from '../../../shared/intl.ts';
 import { addDays, addMonths, parseDay } from '../../../shared/billing.ts';
-import { cnDateFull, monthLabel, weekdayShort } from '../../../shared/format.ts';
+import { cnDateFull, monthLabel, numericDate, weekdayShort } from '../../../shared/format.ts';
 import { intlLocale, t } from '../../../shared/i18n.ts';
 import { parseDateInput } from '../../../shared/date-input.ts';
 import { getState, today as todayOf } from '../store.ts';
@@ -21,10 +21,6 @@ function grid(month: string): string[] {
   const start = addDays(first, -dow);
   return Array.from({ length: 42 }, (_, i) => addDays(start, i));
 }
-
-/** 数字短日期，顺序与分隔符跟随语言：2026/10/25、10/25/2026、25.10.2026 */
-const numericDate = (d: string) =>
-  dateFormat(intlLocale(), { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' }).format(new Date(parseDay(d)));
 
 /** 「2026年」「2026」：年份按当前语言写 */
 const yearLabel = (year: number) => dateFormat(intlLocale(), { year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(year, 0, 1)));
@@ -232,7 +228,7 @@ export function DatePicker({
           <button type="button" className="dp-open" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
             <Icon name="cal" />
             {/* 显示按当前语言写日期（中文「2026年10月25日」）；手动输入时仍可填 2026-10-25 等格式 */}
-            <span className="dp-val">{draft ? (ISO.test(draft) ? (compact ? numericDate(draft) : cnDateFull(draft)) : draft) : placeholder}</span>
+            <span className="dp-val">{draft ? (ISO.test(draft) ? (compact ? numericDate(draft, { year: true }) : cnDateFull(draft)) : draft) : placeholder}</span>
           </button>
           <IconButton className="dp-edit" aria-label={t('picker.date.type')} tabIndex={-1} onClick={startEditing}>
             <Icon name="edit" />
