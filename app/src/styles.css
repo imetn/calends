@@ -7274,8 +7274,11 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   height: 16px;
   color: var(--label-2);
 }
-.pk-pop {
-  width: 260px;
+/* 宽屏至少 260px；长名称（如本地化时区「乌兹别克斯坦标准时间 · Samarkand」）按内容加宽到 360px，再长才省略。窄屏是铺满的底部面板 */
+.pk-pop:not(.mobile) {
+  width: max-content;
+  min-width: 260px;
+  max-width: min(360px, calc(100vw - 32px));
 }
 .dp-pop.pk-pop.mobile {
   height: auto;

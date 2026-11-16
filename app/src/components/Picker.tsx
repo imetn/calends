@@ -50,6 +50,8 @@ export function Picker<T extends string | number>({
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [hi, setHi] = useState(0);
+  /** 打开时按全部选项定下的宽度：搜索过滤期间不随最长一项伸缩 */
+  const [W, setW] = useState<number>();
   const btn = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -73,7 +75,11 @@ export function Picker<T extends string | number>({
       ),
     );
     // 弹层打开后把焦点给搜索框（没有搜索框或触屏时给列表，方便上下键）
-    requestAnimationFrame(() => ((touchFirst() ? null : input.current) ?? list.current)?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => {
+      ((touchFirst() ? null : input.current) ?? list.current)?.focus({ preventScroll: true });
+      const box = list.current?.closest<HTMLElement>('.pk-pop:not(.mobile)');
+      if (box) setW(box.getBoundingClientRect().width);
+    });
   }, [open]);
   useEffect(() => {
     if (q) setHi(0);
@@ -85,6 +91,7 @@ export function Picker<T extends string | number>({
   const close = () => {
     setOpen(false);
     setQ('');
+    setW(undefined);
   };
   const pick = (v: T) => {
     onChange(v);
@@ -120,7 +127,7 @@ export function Picker<T extends string | number>({
         <Icon name="updown" />
       </button>
       {open && (
-        <Pop triggerRef={btn} onClose={close} label={ariaLabel ?? t('picker.choose')} className="cp-pop pk-pop" style={{ height: H }}>
+        <Pop triggerRef={btn} onClose={close} label={ariaLabel ?? t('picker.choose')} className="cp-pop pk-pop" style={{ height: H, width: W }}>
           <div className="pk-in" onKeyDown={onKey}>
             {searchable && (
               <label className="cp-search">

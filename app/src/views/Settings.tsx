@@ -3,7 +3,7 @@ import { copyParts } from '../components/copy.tsx';
 import { base } from '../base.ts';
 import { closestCenter, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toCsv } from '../../../shared/csv.ts';
 import type { ImportSource } from '../../../shared/import-ledger.ts';
 import { readImportFile } from '../import-file.ts';
@@ -21,7 +21,8 @@ import { SecurityGroup } from './Security.tsx';
 import { CategoriesGroup } from './Categories.tsx';
 import { PublicSubsSheet, publicCandidates } from './PublicSubs.tsx';
 import { go, sortNav } from '../router.ts';
-import { LOCALES, isLocale, locale, t } from '../../../shared/i18n.ts';
+import { LOCALES, intlLocale, isLocale, locale, t } from '../../../shared/i18n.ts';
+import { timeZones } from '../timezones.ts';
 import { preferredLocale } from '../i18n.ts';
 import { APP_VERSION, availableUpdate, checkUpdateNow, useUpdateState } from '../update-check.ts';
 import type { ReleaseInfo } from '../../../shared/version.ts';
@@ -105,19 +106,6 @@ export function IcsSheet({ state, onClose }: { state: AppState; onClose: () => v
   );
 }
 
-/** 全部 IANA 时区，右侧标出当前偏移（GMT+8）；当前值不在列表里时也保留 */
-function timeZones(current: string) {
-  const all = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
-  const offset = (z: string) => {
-    try {
-      return new Intl.DateTimeFormat('en-US', { timeZone: z, timeZoneName: 'shortOffset' }).formatToParts().find((p) => p.type === 'timeZoneName')?.value ?? '';
-    } catch {
-      return '';
-    }
-  };
-  return [...new Set(['UTC', ...all, current])].map((z) => ({ value: z, label: z.replace(/_/g, ' '), hint: offset(z) }));
-}
-
 function ReminderPreview({ preview, timezone }: { preview: Preview | null; timezone: string }) {
   if (!preview) return null;
   const todayLog = preview?.log.filter((l) => localDay(l.sent_at, timezone) === preview.day) ?? [];
@@ -159,6 +147,9 @@ function ReminderPreview({ preview, timezone }: { preview: Preview | null; timez
 
 export function Settings({ state, today }: { state: AppState; today: string }) {
   const s = state.settings;
+  const lang = intlLocale();
+  // 约 400 个时区各建两次 Intl 格式器，按时区、语言和日期（夏令时偏移）缓存
+  const zones = useMemo(() => timeZones(s.timezone, lang), [s.timezone, lang, today]);
   // 侧边栏模块按设置里的顺序列出，拖动后存回 navOrder（服务端，多台设备一致）
   const navRows = sortNav(NAV_ROWS, ([k]) => k, s.navOrder);
   const sensors = useSensors(
@@ -342,7 +333,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
             <Picker
               value={s.timezone}
               onChange={(z) => run(() => saveSettings({ timezone: z }))}
-              options={timeZones(s.timezone)}
+              options={zones}
               search
               ariaLabel={t('settings.general.timezone')}
             />
