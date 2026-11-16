@@ -211,6 +211,7 @@
     "title": "Aturan perpanjangan",
     "chargeLeadDays": "Tagih lebih awal",
     "cancelLeadDays": "Batalkan lebih awal",
+    "nextDue": "Tagihan berikutnya",
     "hint": "Tagihan sebelum perpanjangan, pembatalan sebelum tagihan itu. Masukkan hari; 0 berarti tidak ada. Periode layanan tetap.",
     "cancelBy": "Batas pembatalan",
     "invalid": "Masukkan bilangan bulat dari 0 hingga 3660 hari.",

@@ -222,6 +222,7 @@
     "title": "Renewal rules",
     "chargeLeadDays": "Charge in advance",
     "cancelLeadDays": "Cancel in advance",
+    "nextDue": "Next charge date",
     "hint": "Domains often renew days before they expire; Apple subscriptions must be cancelled before the charge. Only the charge date and cancel deadline change; the service period stays the same.",
     "cancelBy": "Cancel by",
     "invalid": "Enter whole numbers from 0 to 3660 days.",

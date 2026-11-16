@@ -16,6 +16,7 @@ import {
   isStopped,
   nextCharge,
   nthCharge,
+  paidService,
   pausedFromOf,
   phaseSubs,
   settleLegacyEarly,
@@ -457,6 +458,7 @@ export function toEditForm(s: Subscription, today: string): Subscription {
     renewalOffsetDays: p.renewalOffsetDays,
     intro: p.intro,
     bonus: p.bonus,
+    nextDue: p.nextDue,
   };
 }
 
@@ -480,6 +482,8 @@ export function syncPhase(s: Subscription, today: string): Subscription {
     renewalOffsetDays: s.renewalOffsetDays,
     intro: s.intro,
     bonus: s.bonus,
+    // 旧草稿没有这个键时不清掉这一段的下次扣款日
+    ...('nextDue' in s ? { nextDue: s.nextDue } : {}),
   });
   if (s.end !== endOf(phases)) phases[phases.length - 1].end = s.end;
   phases[phases.length - 1].stop = s.stop;
@@ -658,7 +662,7 @@ function settleRenewal(phases: Phase[], k: number, sub: Subscription, pay: Payme
   if (pay.date >= due) return p.nextDue ? same : { phase: { ...p, nextDue: due }, pay };
   const prior = chargeBefore(v, due);
   const billed = prior >= p.start && prior >= (v.estimateFrom ?? '') && !(v.bonus && prior >= v.bonus.from && prior < v.bonus.until);
-  if (billed && latest(renewalsOf(p).map((x) => x.serviceDate ?? x.date)) < prior) return same;
+  if (billed && latest(renewalsOf(p).map((x) => paidService(v, x))) < prior) return same;
   const span = Math.ceil(cycleDays(p.cycle) * 2) + 32 + (p.chargeLeadDays ?? 0);
   const next = chargesBetween(v, addDays(due, 1), addDays(due, span), today).find((c) => !c.kind)?.date ?? (v.end && addDays(v.end, 1));
   return next ? { phase: { ...p, nextDue: next }, pay: { ...pay, serviceDate: charge.serviceDate ?? due } } : same;

@@ -222,6 +222,7 @@
     "title": "Regras de renovação",
     "chargeLeadDays": "Cobrança antecipada",
     "cancelLeadDays": "Cancelamento antecipado",
+    "nextDue": "Próxima cobrança",
     "hint": "Cobrança antes da renovação e cancelamento antes dessa cobrança. Informe os dias; 0 significa nenhum. Os períodos não mudam.",
     "cancelBy": "Prazo de cancelamento",
     "invalid": "Insira um número inteiro de 0 a 3660 dias.",

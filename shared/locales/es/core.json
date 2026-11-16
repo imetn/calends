@@ -222,6 +222,7 @@
     "title": "Reglas de renovación",
     "chargeLeadDays": "Cobro anticipado",
     "cancelLeadDays": "Cancelación anticipada",
+    "nextDue": "Próximo cobro",
     "hint": "Cobro antes de renovar y cancelación antes de ese cobro. Indica los días; 0 significa ninguno. Los períodos no cambian.",
     "cancelBy": "Fecha límite de cancelación",
     "invalid": "Introduce un número entero de 0 a 3660 días.",

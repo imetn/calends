@@ -211,6 +211,7 @@
     "title": "Quy tắc gia hạn",
     "chargeLeadDays": "Thu tiền trước",
     "cancelLeadDays": "Hủy trước",
+    "nextDue": "Ngày trừ tiền tiếp theo",
     "hint": "Thu tiền trước khi gia hạn, hủy trước khoản thu đó. Nhập số ngày; 0 là không áp dụng. Kỳ dịch vụ không đổi.",
     "cancelBy": "Hạn chót hủy",
     "invalid": "Nhập số ngày nguyên từ 0 đến 3660.",

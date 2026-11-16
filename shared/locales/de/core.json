@@ -222,6 +222,7 @@
     "title": "Verlängerungsregeln",
     "chargeLeadDays": "Tage vorab abbuchen",
     "cancelLeadDays": "Tage vorher kündigen",
+    "nextDue": "Nächste Abbuchung",
     "hint": "Abbuchung vor der Verlängerung, Kündigung vor der Abbuchung. Tage eingeben; 0 bedeutet keine. Leistungszeiträume bleiben gleich.",
     "cancelBy": "Kündigungsfrist",
     "invalid": "Ganze Zahlen von 0 bis 3660 Tagen eingeben.",

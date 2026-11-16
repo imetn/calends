@@ -222,6 +222,7 @@
     "title": "Règles de renouvellement",
     "chargeLeadDays": "Prélèvement anticipé",
     "cancelLeadDays": "Annulation anticipée",
+    "nextDue": "Prochain prélèvement",
     "hint": "Prélèvement avant le renouvellement, annulation avant ce prélèvement. Indiquez les jours ; 0 signifie aucun. Les périodes restent fixes.",
     "cancelBy": "Date limite d’annulation",
     "invalid": "Saisissez un nombre entier de 0 à 3660 jours.",

@@ -191,6 +191,7 @@
     "title": "續費規則",
     "chargeLeadDays": "提前扣款",
     "cancelLeadDays": "需提前取消",
+    "nextDue": "下次扣款日",
     "hint": "域名等服務常在到期前自動扣款；Apple 等訂閱需在扣款前取消。只影響扣款日與取消截止日，服務賬期不變。",
     "cancelBy": "最遲取消日期",
     "invalid": "請輸入 0 至 3660 的整數日數。",

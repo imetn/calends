@@ -222,6 +222,7 @@
     "title": "Yenileme kuralları",
     "chargeLeadDays": "Erken tahsilat",
     "cancelLeadDays": "Önceden iptal",
+    "nextDue": "Sonraki ödeme",
     "hint": "Yenilemeden önce tahsilat, tahsilattan önce iptal. Gün sayısını girin; 0, yok demektir. Hizmet dönemleri değişmez.",
     "cancelBy": "Son iptal tarihi",
     "invalid": "0 ile 3660 arasında tam gün sayısı girin.",

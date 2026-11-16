@@ -696,7 +696,7 @@ export function settleLegacyEarly(s: Subscription): Subscription {
   }
   if (!chain.length) return s;
   const prior = chargeBefore(open, chain[0].due.date);
-  if (!renewals.slice(0, first).some((p) => (p.serviceDate ?? p.date) >= prior)) return s;
+  if (!renewals.slice(0, first).some((p) => paidService(s, p) >= prior)) return s;
   const next = after(chain.at(-1)!.due.date);
   if (!next) return s;
   const settled = new Map(chain.map((x) => [x.pay, x.due.serviceDate ?? x.due.date]));
@@ -1177,7 +1177,9 @@ function rawCharges(s: Subscription, from: string, to: string, today: string): C
         ...(p.funding?.length ? { funding: p.funding } : {}),
       }));
     if (s.cycle.unit === 'lifetime') return out;
-    const last = renewals.at(-1)?.date ?? s.billingStart ?? s.start;
+    // 开始日之前付的首购结清的是开始那一期，不再推算出开始日这一笔
+    const latest = renewals.at(-1)?.date;
+    const last = !latest ? (s.billingStart ?? s.start) : !s.billingStart && latest < s.start ? s.start : latest;
     const future = schedule(s, s.nextDue ?? last, from, to, today, last, true);
     const covered = new Set([...pays, ...future].map((p) => p.date));
     const earlier =
@@ -1212,25 +1214,58 @@ export function migrateRenewalRules(s: Subscription): Subscription {
   return { ...s, ...patch, ...(s.phases ? { phases: s.phases.map((p) => (p.start === charge!.sub.start ? { ...p, ...patch } : p)) } : {}) };
 }
 
-/** 更新当前阶段规则，旧规则留在历史中；调用方在 syncPhase 前使用。 */
+/** 更新当前阶段规则，旧规则留在历史中；存储的下次扣款日随规则、周期、计费锚点一起重算（手动改了的除外）。调用方在 syncPhase 前使用。 */
 export function preserveRenewalHistory(previous: Subscription, next: Subscription, today: string): Subscription {
   const old = currentPhase(migrateRenewalRules(previous), today);
-  if ((old.chargeLeadDays ?? 0) === (next.chargeLeadDays ?? 0) && (old.cancelLeadDays ?? 0) === (next.cancelLeadDays ?? 0))
-    return { ...next, renewalHistory: old.renewalHistory, renewalOffsetDays: old.renewalOffsetDays };
+  const sameRules = (old.chargeLeadDays ?? 0) === (next.chargeLeadDays ?? 0) && (old.cancelLeadDays ?? 0) === (next.cancelLeadDays ?? 0);
   const initial = { from: old.start, chargeLeadDays: old.chargeLeadDays ?? 0, cancelLeadDays: old.cancelLeadDays ?? 0 };
-  const history = (old.renewalHistory ?? [initial]).filter((r) => r.from < today);
-  return {
-    ...next,
-    renewalOffsetDays: old.renewalOffsetDays,
-    renewalHistory: [
-      ...history,
-      {
-        from: today,
-        chargeLeadDays: next.chargeLeadDays ?? 0,
-        cancelLeadDays: next.cancelLeadDays ?? 0,
-      },
-    ],
-  };
+  const out: Subscription = sameRules
+    ? { ...next, renewalHistory: old.renewalHistory, renewalOffsetDays: old.renewalOffsetDays }
+    : {
+        ...next,
+        renewalOffsetDays: old.renewalOffsetDays,
+        renewalHistory: [
+          ...(old.renewalHistory ?? [initial]).filter((r) => r.from < today),
+          { from: today, chargeLeadDays: next.chargeLeadDays ?? 0, cancelLeadDays: next.cancelLeadDays ?? 0 },
+        ],
+      };
+  // 表单没碰下次扣款日时才重算；手动填的、或这次保存前已重算过的（与库里不同）保持原样
+  if (!old.nextDue || next.nextDue !== old.nextDue) return out;
+  // 多段订阅的表单顶层没有这一段的记录和锚点，从这一段取
+  const basis: Subscription = next.phases?.length
+    ? { ...out, phases: undefined, start: old.start, billingStart: old.billingStart, payments: old.payments }
+    : out;
+  const moved =
+    old.cycle.unit !== next.cycle.unit || old.cycle.every !== next.cycle.every || (!next.phases?.length && (old.billingStart ?? old.start) !== (next.billingStart ?? next.start));
+  if (moved) return { ...out, nextDue: rebaseNextDue(basis, old.nextDue) };
+  if (sameRules || old.nextDue <= today || old.nextDue === billingAnchor(old)) return out;
+  // 只改了提前扣款天数：同一期服务，按新天数换算扣款日（不早于今天）
+  const service = addDays(old.nextDue, renewalRuleAt(old, old.nextDue).chargeLeadDays ?? 0);
+  const due = addDays(service, -(next.chargeLeadDays ?? 0));
+  return { ...out, nextDue: due < today ? today : due };
+}
+
+/** 续费记录结清的那一期从哪天开始：提前续费看 serviceDate；开始日之前付的首购结清的是开始那一期。 */
+export function paidService(s: Subscription, p: Payment): string {
+  return p.serviceDate ?? (!s.billingStart && p.date < s.start ? s.start : p.date);
+}
+
+/**
+ * 周期或计费锚点改了以后，按新规则重算存储的下次扣款日：最后一笔续费结清离它服务起点最近的一期，下一期就是下次扣款；
+ * 没有续费记录时取离原下次扣款日最近的一期。算不出（买断、后付费、分开记、早于锚点）时清掉，回到按记录推算。
+ */
+function rebaseNextDue(s: Subscription, old: string): string | undefined {
+  if (s.cycle.unit === 'lifetime' || isPostpaid(s) || isSeparate(s)) return undefined;
+  const anchor = billingAnchor(s);
+  const last = (s.payments ?? []).filter((p) => !p.kind).reduce<Payment | undefined>((m, p) => (!m || p.date > m.date ? p : m), undefined);
+  const service = (k: number) => (k === 0 ? anchor : addDays(nthCharge(anchor, s.cycle, k), s.renewalOffsetDays ?? 0));
+  const cash = (k: number) => renewalDate(s, nthCharge(anchor, s.cycle, k), k === 0);
+  const ref = last ? paidService(s, last) : old;
+  const at = last ? service : cash;
+  const guess = Math.round(diffDays(anchor, ref) / cycleDays(s.cycle));
+  const k = [guess - 1, guess + 1].reduce((b, j) => (Math.abs(diffDays(at(j), ref)) < Math.abs(diffDays(at(b), ref)) ? j : b), guess);
+  const n = last ? k + 1 : k;
+  return n < 0 ? undefined : cash(n);
 }
 
 export function renewalDates(s: Subscription, from: string): { nextCharge?: string; serviceExpires?: string; cancelBy?: string } {
@@ -1352,7 +1387,7 @@ export function reconcileRenewalRules(previous: Subscription | undefined, next: 
       const before = old.find((v) => v.start === p.start);
       if (!before) return p;
       const revised = preserveRenewalHistory(before, { ...next, ...p, phases: undefined }, today);
-      return { ...p, renewalHistory: revised.renewalHistory, renewalOffsetDays: revised.renewalOffsetDays };
+      return { ...p, renewalHistory: revised.renewalHistory, renewalOffsetDays: revised.renewalOffsetDays, nextDue: revised.nextDue };
     }),
   };
 }

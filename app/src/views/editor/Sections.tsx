@@ -4,7 +4,7 @@ import { MemberSheet } from '../Members.tsx';
 import { isDataIcon } from '../../../../shared/icon.ts';
 
 import { StopFields } from '../../components/StopPanel.tsx';
-import { addDays, addMonths, nextCharge, nthCharge, pauseDay, trackingStart } from '../../../../shared/billing.ts';
+import { addDays, addMonths, isPostpaid, isSeparate, nextCharge, nthCharge, pauseDay, preserveRenewalHistory, trackingStart } from '../../../../shared/billing.ts';
 import { cnDateFull, flow, money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { REMIND_DAYS, type Cycle, type SubStatus } from '../../../../shared/types.ts';
@@ -337,7 +337,13 @@ export function SharingFields({ context }: { context: ReturnType<typeof useEdito
 }
 
 export function MoreFields({ context }: { context: ReturnType<typeof useEditorFields> }) {
-  const { f, up, state, today, val, lt, setTransfer, more } = context;
+  const { isNew, f, up, state, today, val, lt, setTransfer, more } = context;
+  // 下次扣款日按保存后的样子显示：改了周期或提前天数，这里跟着重算；手动改的直接存成下次扣款日
+  const saved = state.subscriptions.find((s) => s.id === f.id);
+  const manualDue =
+    !isNew && saved && !lt && !isSeparate(f) && !isPostpaid(f) && f.status === 'active' && !f.stop && !f.end
+      ? nextCharge(syncPhase(preserveRenewalHistory(saved, f, today), today), today)
+      : undefined;
   return (
     more && (
       <>
@@ -423,6 +429,11 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
             </Group>
             {/* 天数是手填的：减号、可直接输入的数字、加号收在一个胶囊里；说明放在组下方 */}
             <Group title={t('core.renewal.title')} foot={t('core.renewal.hint')}>
+              {manualDue && (
+                <Cell label={t('core.renewal.nextDue')}>
+                  <DatePicker value={manualDue} onChange={(v) => v && up({ nextDue: v })} />
+                </Cell>
+              )}
               {(['chargeLeadDays', 'cancelLeadDays'] as const).map((field) => (
                 <Cell key={field} label={t(`core.renewal.${field}`)}>
                   <Stepper
