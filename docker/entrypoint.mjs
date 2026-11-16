@@ -52,6 +52,8 @@ if (!setupToken) {
 const assetsDir = process.env.ASSETS_DIR || fileURLToPath(new URL('../dist', import.meta.url));
 const env = { DB: db, ASSETS: createAssets(assetsDir), SETUP_TOKEN: setupToken };
 for (const k of ['SITE_URL', 'OWNER_PASSCODE', 'BASE_PATH']) if (process.env[k]) env[k] = process.env[k];
+// 运行方式只用来在设置页给出升级命令；没有标记的 Node 安装（Docker、自己解压的压缩包）只给文档
+env.RUNTIME = process.env.CALENDS_RUNTIME || 'node';
 
 const pending = new Set();
 const ctx = {

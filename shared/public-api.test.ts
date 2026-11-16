@@ -70,6 +70,10 @@ test('实际匿名公开 API 在隔离数据库中仅公开收支符号设置，
     assert.equal(state.rev, undefined);
     assert.equal((await get('/api/state')).status, 401);
   }
+  // Worker 没有 RUNTIME 标记即 Cloudflare：设置页只给文档；未登录读不到
+  assert.equal((await get('/api/runtime')).status, 401);
+  const dev = await worker.fetch(new Request('http://local.test/api/runtime'), { ...env, DEV_BYPASS_AUTH: '1' } as Env);
+  assert.deepEqual(await dev.json(), { runtime: 'cloudflare' });
   put('settings', { ...DEFAULT_SETTINGS, publicView: false, signedAmounts: false });
   assert.equal((await get('/api/public')).status, 404);
 });

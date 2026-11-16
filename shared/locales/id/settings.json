@@ -458,6 +458,11 @@
     "available": "Pembaruan tersedia",
     "check": "Periksa pembaruan",
     "failed": "Gagal memeriksa",
-    "upToDate": "Terbaru"
+    "upToDate": "Terbaru",
+    "title": "Perbarui ke v{version}",
+    "copy": "Salin perintah",
+    "copied": "Perintah disalin",
+    "guide": "Panduan pembaruan",
+    "notes": "Catatan rilis"
   }
 }

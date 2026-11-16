@@ -10,6 +10,8 @@ export interface Env {
   /** 站点地址（提醒里的链接）；不配置时用访问后台时记下的地址 */
   SITE_URL?: string;
   BASE_PATH?: string;
+  /** 运行方式：install.sh 安装为 installer，其他 Node 安装（含 Docker）为 node；不设即 Cloudflare。只用来给出升级方法 */
+  RUNTIME?: string;
   MAIL_FROM?: string;
   MAIL_FROM_NAME?: string;
   /** 旧版：口令直接放在密钥里；第一次登录成功后会转存为哈希，之后可以删除 */

@@ -476,6 +476,11 @@
     "available": "Güncelleme var",
     "check": "Güncellemeleri denetle",
     "failed": "Denetlenemedi",
-    "upToDate": "Güncel"
+    "upToDate": "Güncel",
+    "title": "v{version} sürümüne yükselt",
+    "copy": "Komutu kopyala",
+    "copied": "Komut kopyalandı",
+    "guide": "Yükseltme rehberi",
+    "notes": "Sürüm notları"
   }
 }

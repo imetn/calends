@@ -458,6 +458,11 @@
     "available": "업데이트 가능",
     "check": "업데이트 확인",
     "failed": "확인 실패",
-    "upToDate": "최신"
+    "upToDate": "최신",
+    "title": "v{version}(으)로 업그레이드",
+    "copy": "명령어 복사",
+    "copied": "명령어를 복사했습니다",
+    "guide": "업그레이드 안내",
+    "notes": "릴리스 노트"
   }
 }

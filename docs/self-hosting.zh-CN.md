@@ -151,6 +151,16 @@ sudo systemctl daemon-reload
 sudo systemctl start calends
 ```
 
+## 升级
+
+有新版本时，设置里的版本行会标出来；点开可以看到更新内容和本节说明，一行安装还会给出升级命令。升级前先在设置里导出备份。
+
+- **Cloudflare 部署按钮**：按钮把仓库复制到了你的 Git 账号，并接上了 Workers Builds，每次推送都会部署。把新版本合进你的仓库即可，例如在本地克隆里执行 `git pull https://github.com/imetn/calends main`，再 `git push`。如果 Git 提示历史不相关、拒绝合并，改为克隆 `imetn/calends` 按源码方式部署。
+- **从源码部署 Cloudflare**：`git pull && npm ci && npm run deploy`，部署时会执行新的迁移。
+- **Docker Compose**：`docker compose pull && docker compose up -d`。用 `docker run` 的，按[使用预构建镜像](#使用预构建镜像)拉取镜像并重建容器；从源码构建的，先 `git pull`，再 `docker compose up -d --build`。
+- **一行安装**：再执行一次 `curl -fsSL https://calends.date/install.sh | sudo bash`。
+- **不用安装脚本的压缩包**：按[不用 Docker（systemd）](#不用-dockersystemd)最后的步骤操作。
+
 ## 配置项
 
 Cloudflare 的变量和绑定写在 Wrangler 配置中，凭据使用 secret。Docker 支持的环境变量通过 `-e` 或 Compose 传入。

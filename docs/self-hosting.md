@@ -151,6 +151,16 @@ sudo systemctl daemon-reload
 sudo systemctl start calends
 ```
 
+## Upgrading
+
+When a newer release is out, Settings marks the version row; open it for the release notes and this guide, plus the upgrade command for one-line installs. Export a backup in Settings before upgrading.
+
+- **Deploy to Cloudflare button**: the button copied this repository into your Git account and connected Workers Builds, which deploys every push. Bring the new release into your copy, for example from a local clone with `git pull https://github.com/imetn/calends main`, then `git push`. If Git refuses to merge unrelated histories, clone `imetn/calends` and deploy from source instead.
+- **Cloudflare from source**: `git pull && npm ci && npm run deploy`. The deploy applies new migrations.
+- **Docker Compose**: `docker compose pull && docker compose up -d`. With `docker run`, pull the image and recreate the container as described in [Using prebuilt images](#using-prebuilt-images); when building from source, `git pull` and then `docker compose up -d --build`.
+- **One-line install**: run `curl -fsSL https://calends.date/install.sh | sudo bash` again.
+- **Tarball without the installer**: follow the steps at the end of [Without Docker (systemd)](#without-docker-systemd).
+
 ## Configuration
 
 For Cloudflare, set variables and bindings in your Wrangler configuration and use secrets for credentials. For Docker, pass supported environment variables with `-e` or through Compose.

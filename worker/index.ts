@@ -163,6 +163,8 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     if (body.byteLength > 1_000_000) return bad('too large', 413);
     return new Response(body, { headers: { 'content-type': type, 'cache-control': 'private, max-age=86400' } });
   }
+  // 已登录：运行方式，设置页据此给出升级方法
+  if (path === '/api/runtime' && method === 'GET') return json({ runtime: env.RUNTIME ?? 'cloudflare' });
   // 已登录：账号安全
   if (path === '/api/auth/security' && method === 'GET') return json({ passkeys: await listPasskeys(env), sessions: await listSessions(req, env) });
   const sess = path.match(/^\/api\/auth\/sessions\/(\w+)$/);

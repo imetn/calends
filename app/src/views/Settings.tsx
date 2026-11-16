@@ -21,9 +21,10 @@ import { SecurityGroup } from './Security.tsx';
 import { CategoriesGroup } from './Categories.tsx';
 import { PublicSubsSheet, publicCandidates } from './PublicSubs.tsx';
 import { go, sortNav } from '../router.ts';
-import { LOCALES, isLocale, t } from '../../../shared/i18n.ts';
+import { LOCALES, isLocale, locale, t } from '../../../shared/i18n.ts';
 import { preferredLocale } from '../i18n.ts';
 import { APP_VERSION, availableUpdate, checkUpdateNow, useUpdateState } from '../update-check.ts';
+import type { ReleaseInfo } from '../../../shared/version.ts';
 
 /** 可设为启动页的页面（标签取 app.nav.*） */
 const START_PAGES: Array<[string, string]> = [
@@ -660,12 +661,65 @@ function VersionCells() {
   ) : (
     <span style={{ color: 'var(--accent)' }}>{t('settings.update.check')}</span>
   );
-  // 有新版时整行点开发布页；否则整行就是「检查更新」
+  const [sheet, setSheet] = useState(false);
+  // 面板开着时新版状态没了（别处重新检查），面板跟着关，下次发现新版不会自己弹出
+  useEffect(() => {
+    if (!update) setSheet(false);
+  }, [update]);
+  // 有新版时整行打开升级面板；否则整行就是「检查更新」
   return (
-    <Cell label={t('settings.update.current')} onClick={update ? () => window.open(update.url, '_blank', 'noopener') : () => void checkUpdateNow()}>
-      {`v${APP_VERSION}`}
-      {update ? <span className="badge green">{`${t('settings.update.available')} v${update.version}`}</span> : status}
-    </Cell>
+    <>
+      <Cell label={t('settings.update.current')} onClick={update ? () => setSheet(true) : () => void checkUpdateNow()}>
+        {`v${APP_VERSION}`}
+        {update ? <span className="badge green">{`${t('settings.update.available')} v${update.version}`}</span> : status}
+      </Cell>
+      {sheet && update && <UpgradeSheet release={update} onClose={() => setSheet(false)} />}
+    </>
+  );
+}
+
+/** 只有一行安装的升级命令是确定的；Docker（compose、docker run、固定标签、源码构建）和 Cloudflare 做法不一，只给文档 */
+const UPGRADE_COMMANDS: Record<string, string> = {
+  installer: 'curl -fsSL https://calends.date/install.sh | sudo bash',
+};
+
+const upgradeDocs = () =>
+  locale().startsWith('zh')
+    ? 'https://github.com/imetn/calends/blob/main/docs/self-hosting.zh-CN.md#%E5%8D%87%E7%BA%A7'
+    : 'https://github.com/imetn/calends/blob/main/docs/self-hosting.md#upgrading';
+
+function UpgradeSheet({ release, onClose }: { release: ReleaseInfo; onClose: () => void }) {
+  // 读不到运行方式时当作没有命令，只给文档
+  const [runtime, setRuntime] = useState<string | null>(null);
+  useEffect(() => {
+    api<{ runtime: string }>('/api/runtime').then(
+      (r) => setRuntime(r.runtime),
+      () => setRuntime(''),
+    );
+  }, []);
+  const command = runtime ? UPGRADE_COMMANDS[runtime] : undefined;
+  return (
+    <Sheet narrow title={t('settings.update.title', { version: release.version })} onClose={onClose}>
+      {/* 运行方式读回来之前不排内容，免得命令框插进来时按钮跳动 */}
+      {runtime !== null && (
+        <div className="stack">
+          {command && <div className="codebox">{command}</div>}
+          <div className="sheet-actions">
+            {command && (
+              <button className="btn" onClick={() => void copyText(command, t('settings.update.copied'))}>
+                {t('settings.update.copy')}
+              </button>
+            )}
+            <a className="btn" href={upgradeDocs()} target="_blank" rel="noopener noreferrer">
+              {t('settings.update.guide')}
+            </a>
+            <a className="btn primary" href={release.url} target="_blank" rel="noopener noreferrer">
+              {t('settings.update.notes')}
+            </a>
+          </div>
+        </div>
+      )}
+    </Sheet>
   );
 }
 

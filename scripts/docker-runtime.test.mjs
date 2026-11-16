@@ -229,6 +229,10 @@ test('运行时：设置密码、登录、读写账本，重启后数据还在�
   assert.match(cookie, /^sid=/);
   assert.equal((await send(run.port, { path: '/api/state' })).status, 401, '没有登录不能读账本');
 
+  // 运行方式只给登录后看；没有标记的 Node 安装报 node，设置页只给文档不给命令
+  assert.equal((await send(run.port, { path: '/api/runtime' })).status, 401);
+  assert.deepEqual(JSON.parse((await send(run.port, { path: '/api/runtime', headers: { cookie } })).text()), { runtime: 'node' });
+
   const state = await send(run.port, { path: '/api/state', headers: { cookie } });
   assert.equal(state.status, 200, state.text());
   const { rev } = JSON.parse(state.text());
@@ -335,6 +339,7 @@ test('镜像：不再依赖 wrangler，探活不新起 Node，堆有上限', () 
   const file = readFileSync(new URL('../docker/Dockerfile', import.meta.url), 'utf8');
   assert.doesNotMatch(file, /wrangler|npm install/);
   assert.match(file, /--max-old-space-size=/);
+  assert.doesNotMatch(file, /CALENDS_RUNTIME/, 'Docker 的升级方式不止一种，只给文档不给命令');
   assert.match(file, /HEALTHCHECK .*CMD bash -c .*\/healthz/);
   assert.match(readFileSync(new URL('../docker/docker-compose.yml', import.meta.url), 'utf8'), /mem_limit:/);
 });
@@ -490,5 +495,7 @@ test('安装脚本：下载中断不会执行半截，随版本发布，只信�
   const top = script.replace(/^[a-z_]+\(\) \{ .* \}$/gm, '').replace(/^[a-z_]+\(\) \{\n[\s\S]*?^\}$/gm, '');
   for (const line of top.split('\n').filter((x) => x && !x.startsWith('#'))) assert.match(line, /^(set -euo pipefail|[A-Z_]+=.*|main "\$@")$/);
   assert.match(script, /sha256sum -c --quiet "\$file\.sha256"/);
+  assert.match(script, /Environment=CALENDS_RUNTIME=installer/, '设置页据此给出重跑安装脚本的升级命令');
+  assert.doesNotMatch(readFileSync(new URL('../docker/calends.service', import.meta.url), 'utf8'), /CALENDS_RUNTIME/, '自己解压的压缩包不标记，不推安装脚本');
   assert.match(readFileSync(new URL('../.github/workflows/release-tarball.yml', import.meta.url), 'utf8'), /gh release upload .* install\.sh/);
 });

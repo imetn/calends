@@ -476,6 +476,11 @@
     "available": "Mise à jour disponible",
     "check": "Rechercher des mises à jour",
     "failed": "Échec de la vérification",
-    "upToDate": "À jour"
+    "upToDate": "À jour",
+    "title": "Mettre à jour vers v{version}",
+    "copy": "Copier la commande",
+    "copied": "Commande copiée",
+    "guide": "Guide de mise à jour",
+    "notes": "Notes de version"
   }
 }

@@ -458,6 +458,11 @@
     "available": "可更新",
     "check": "检查更新",
     "failed": "检查失败",
-    "upToDate": "最新"
+    "upToDate": "最新",
+    "title": "升级到 v{version}",
+    "copy": "复制命令",
+    "copied": "已复制命令",
+    "guide": "升级说明",
+    "notes": "更新内容"
   }
 }

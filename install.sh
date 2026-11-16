@@ -117,7 +117,7 @@ install_unit() {
   cp "$APP/calends.service" "$UNIT"
   chmod 644 "$UNIT"
   mkdir -p "$(dirname "$DROPIN")"
-  printf '# Written by install.sh: use the Node in %s\n[Service]\nEnvironment=PATH=%s/bin:/usr/bin:/bin\n' "$NODE_DIR" "$NODE_DIR" >"$DROPIN"
+  printf '# Written by install.sh: use the Node in %s\n[Service]\nEnvironment=PATH=%s/bin:/usr/bin:/bin\nEnvironment=CALENDS_RUNTIME=installer\n' "$NODE_DIR" "$NODE_DIR" >"$DROPIN"
   systemctl daemon-reload
 }
 

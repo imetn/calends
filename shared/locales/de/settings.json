@@ -476,6 +476,11 @@
     "available": "Update verfügbar",
     "check": "Nach Updates suchen",
     "failed": "Prüfung fehlgeschlagen",
-    "upToDate": "Aktuell"
+    "upToDate": "Aktuell",
+    "title": "Auf v{version} aktualisieren",
+    "copy": "Befehl kopieren",
+    "copied": "Befehl kopiert",
+    "guide": "Anleitung",
+    "notes": "Versionshinweise"
   }
 }

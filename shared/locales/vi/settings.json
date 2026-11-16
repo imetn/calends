@@ -458,6 +458,11 @@
     "available": "Có bản cập nhật",
     "check": "Kiểm tra cập nhật",
     "failed": "Kiểm tra thất bại",
-    "upToDate": "Mới nhất"
+    "upToDate": "Mới nhất",
+    "title": "Nâng cấp lên v{version}",
+    "copy": "Sao chép lệnh",
+    "copied": "Đã sao chép lệnh",
+    "guide": "Hướng dẫn nâng cấp",
+    "notes": "Ghi chú phát hành"
   }
 }
