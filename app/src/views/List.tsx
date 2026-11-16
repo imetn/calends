@@ -1,4 +1,5 @@
 import { formatTotal, scaleTotal, sumTotals } from '../../../shared/fx-total.ts';
+import { dragScroll } from '../drag-scroll.ts';
 import { monthlyTotal } from '../../../shared/billing.ts';
 import { isMarked, nextSort } from '../components/LtHead.tsx';
 import { copyParts } from '../components/copy.tsx';
@@ -666,7 +667,7 @@ function FacetRow({
   return (
     <div className="facet-row">
       <span className="facet-label">{label}</span>
-      <div className="facet-opts">
+      <div className="facet-opts" ref={dragScroll}>
         {options
           .filter((o) => o.key === 'all' || o.n > 0 || o.key === value)
           .map((o) => (

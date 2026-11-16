@@ -367,3 +367,9 @@
 :root[data-preview]::-webkit-scrollbar {
   display: none;
 }
+/* 鼠标拖动横向芯片行（drag-scroll.ts）：拖动中显示抓取光标、不选中文字 */
+[data-drag-scroll='dragging'],
+[data-drag-scroll='dragging'] * {
+  cursor: grabbing !important;
+  user-select: none;
+}

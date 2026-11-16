@@ -1,4 +1,5 @@
 import { numberFormat } from '../../../shared/intl.ts';
+import { dragScroll } from '../drag-scroll.ts';
 import './ui.css';
 import type { JSX, ReactNode } from 'react';
 import { SelectionIndicator, Switch as AriaSwitch, ToggleButton, ToggleButtonGroup } from 'react-aria-components';
@@ -55,6 +56,7 @@ export function Seg<T extends string>({
 }) {
   return (
     <ToggleButtonGroup
+      ref={dragScroll}
       className={`seg ${small ? 'sm' : ''}`}
       selectionMode="single"
       disallowEmptySelection

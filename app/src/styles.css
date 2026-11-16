@@ -4930,6 +4930,13 @@ button.h-price-row:focus-visible {
   height: 0;
 }
 
+/* 鼠标拖动横向芯片行（drag-scroll.ts）：拖动中显示抓取光标、不选中文字 */
+[data-drag-scroll='dragging'],
+[data-drag-scroll='dragging'] * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
 /* 支付方式选择器 */
 .mp-btn {
   display: inline-flex;

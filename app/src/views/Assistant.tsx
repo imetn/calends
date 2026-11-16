@@ -1,4 +1,5 @@
 import { base } from '../base.ts';
+import { dragScroll } from '../drag-scroll.ts';
 import type { ReactNode } from 'react';
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import {
@@ -446,7 +447,7 @@ export function Welcome({ ready, cfg, onSetup }: { ready: boolean; cfg: Assistan
 /** 输入框上方一排可横向滑动的建议（窄屏换行） */
 export function Suggestions({ onPick }: { onPick: (s: { text: string; send: boolean }) => void }) {
   return (
-    <div className="as-suggest">
+    <div className="as-suggest" ref={dragScroll}>
       {SUGGESTIONS.map((s) => (
         <button key={s.key} title={t(`assistant.suggest.${s.key}.hint`)} onClick={() => onPick({ text: t(`assistant.suggest.${s.key}.text`), send: s.send })}>
           {t(`assistant.suggest.${s.key}.title`)}

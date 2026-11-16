@@ -1,4 +1,5 @@
 import { copyParts } from '../components/copy.tsx';
+import { dragScroll } from '../drag-scroll.ts';
 import { base as appPath, readStored, storageKey } from '../base.ts';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, MotionConfig } from 'motion/react';
@@ -795,7 +796,7 @@ function SubList({ d, today, ccy, k, fmt }: { d: Derived; today: string; ccy: Cc
         <CardTitle>{t('public.list.title')}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="-mx-1 mb-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none]">
+        <div ref={dragScroll} className="-mx-1 mb-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none]">
           <div className="flex w-max gap-1.5">
             {tabs.map(([c, n]) => (
               <button
