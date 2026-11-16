@@ -1,7 +1,7 @@
 // 用户反馈：下次扣款日在改提前扣款天数、周期、日期后不跟着变；开始日前付的首购让提前续费失效；编辑器可手动改下次扣款日
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { nextCharge, preserveRenewalHistory, reconcileRenewalRules } from './billing.ts';
+import { chargesBetween, nextCharge, preserveRenewalHistory, reconcileRenewalRules } from './billing.ts';
 import { savePayment, switchPlan, syncPhase, toEditForm } from './phases.ts';
 import type { Subscription } from './types.ts';
 
@@ -97,4 +97,14 @@ test('多段订阅：编辑表单带上当前段的下次扣款日，手动改�
   assert.equal(nextCharge(manual, '2026-10-01'), '2026-11-20');
   // 没碰下次扣款日的编辑不会清掉它
   assert.equal(due(edit(manual, { name: 'Renamed' }, '2026-10-02')), due(manual));
+});
+
+test('开始日往后挪很远时，原来的旧扣款不算首购，开始日这一期照常扣', () => {
+  const s = base({ start: '2026-06-01', cycle: { unit: 'month', every: 1 }, payments: [{ date: '2025-03-01', amount: 10 }] });
+  assert.deepEqual(
+    chargesBetween(s, '2026-05-01', '2026-09-01', '2026-07-15')
+      .filter((c) => !c.kind && c.date >= '2026-06-01')
+      .map((c) => c.date),
+    ['2026-06-01', '2026-07-01', '2026-08-01', '2026-09-01'],
+  );
 });

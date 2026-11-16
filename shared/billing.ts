@@ -1179,7 +1179,7 @@ function rawCharges(s: Subscription, from: string, to: string, today: string): C
     if (s.cycle.unit === 'lifetime') return out;
     // 开始日之前付的首购结清的是开始那一期，不再推算出开始日这一笔
     const latest = renewals.at(-1)?.date;
-    const last = !latest ? (s.billingStart ?? s.start) : !s.billingStart && latest < s.start ? s.start : latest;
+    const last = !latest ? (s.billingStart ?? s.start) : paysFirstPeriod(s, latest) ? s.start : latest;
     const future = schedule(s, s.nextDue ?? last, from, to, today, last, true);
     const covered = new Set([...pays, ...future].map((p) => p.date));
     const earlier =
@@ -1247,7 +1247,12 @@ export function preserveRenewalHistory(previous: Subscription, next: Subscriptio
 
 /** 续费记录结清的那一期从哪天开始：提前续费看 serviceDate；开始日之前付的首购结清的是开始那一期。 */
 export function paidService(s: Subscription, p: Payment): string {
-  return p.serviceDate ?? (!s.billingStart && p.date < s.start ? s.start : p.date);
+  return p.serviceDate ?? (paysFirstPeriod(s, p.date) ? s.start : p.date);
+}
+
+/** 开始日前一个周期内（含提前扣款天数）付的续费是首购：没有 billingStart 时它结清开始那一期；更早的是挪开始日留下的旧记录，不算。 */
+function paysFirstPeriod(s: Subscription, date: string): boolean {
+  return !s.billingStart && s.cycle.unit !== 'lifetime' && date < s.start && date > addDays(nthCharge(s.start, s.cycle, -1), -maxChargeLead(s));
 }
 
 /**
