@@ -1258,6 +1258,11 @@ test('metric slots retain negative, zero and unavailable amounts, notes and sema
   assert.match(accessory, /metric-top[\s\S]*?Monthly[\s\S]*?−5%[\s\S]*?metric-value[\s\S]*?−10/);
 
   assert.match(css, /@container \(max-width: 520px\)[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)/);
+  // 用户反馈：手机两列时涨跌角标仍在标题右上角，不掉到金额下面；放不下才换到标题下一行
+  const narrow = css.slice(css.indexOf('@container (max-width: 520px)'), css.indexOf('@container (max-width: 300px)'));
+  assert.doesNotMatch(narrow, /\.metric-top\s*\{[^}]*display:\s*contents/);
+  assert.doesNotMatch(narrow, /'accessory'/);
+  assert.match(narrow, /\.metric-top\s*\{[^}]*grid-area:\s*label;[^}]*flex-wrap:\s*wrap/);
   assert.match(css, /@container \(max-width: 300px\)[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
 
   // 回归：数值只在空格处折行，「− / ¥4,843.18」「2027年4月10 / 日」这类从符号、末字中间断开的写法不再出现

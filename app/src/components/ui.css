@@ -395,19 +395,14 @@
   }
   .metric-grid > div {
     display: grid;
-    grid-template-areas: 'label' 'value' 'accessory' 'note';
+    grid-template-areas: 'label' 'value' 'note';
     align-content: start;
     padding: 10px 12px 12px;
   }
+  /* 角标与桌面一样在标题右侧；标题加角标一行放不下时，角标换到标题下一行 */
   .metric-top {
-    display: contents;
-  }
-  .metric-top > small {
     grid-area: label;
-  }
-  .metric-top > :not(small) {
-    grid-area: accessory;
-    justify-self: start;
+    flex-wrap: wrap;
   }
   .metric-value,
   .metric-grid > div > b {
