@@ -457,6 +457,7 @@
     "current": "Versi",
     "available": "Pembaruan tersedia",
     "check": "Periksa pembaruan",
-    "failed": "Gagal memeriksa"
+    "failed": "Gagal memeriksa",
+    "upToDate": "Terbaru"
   }
 }

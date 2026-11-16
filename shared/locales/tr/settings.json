@@ -475,6 +475,7 @@
     "current": "Sürüm",
     "available": "Güncelleme var",
     "check": "Güncellemeleri denetle",
-    "failed": "Denetlenemedi"
+    "failed": "Denetlenemedi",
+    "upToDate": "Güncel"
   }
 }

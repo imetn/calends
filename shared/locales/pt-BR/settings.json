@@ -475,6 +475,7 @@
     "current": "Versão",
     "available": "Atualização disponível",
     "check": "Verificar atualizações",
-    "failed": "Falha na verificação"
+    "failed": "Falha na verificação",
+    "upToDate": "Atualizado"
   }
 }

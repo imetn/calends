@@ -457,6 +457,7 @@
     "current": "目前版本",
     "available": "可更新",
     "check": "檢查更新",
-    "failed": "檢查失敗"
+    "failed": "檢查失敗",
+    "upToDate": "已是最新"
   }
 }
