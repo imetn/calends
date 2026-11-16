@@ -140,11 +140,12 @@ test('完整流程：上传加密文件、内容未变不重复上传、按份�
     keep: 2,
   });
   assert.equal(saved.s3.prefix, 'calends');
-  objects.set('calends/sub/' + backupFileName(0), 'nested');
+  const nested = 'calends/sub/' + backupFileName(0);
+  objects.set(nested, 'nested');
   objects.set('calends/notes.txt', 'keep me');
 
   const first = await runAutoBackup(env, { now: Date.UTC(2026, 0, 1) });
-  assert.equal(first.lastFile, 'calends/calends-backup-20260101-000000.json');
+  assert.match(first.lastFile, /^calends\/calends-backup-20260101-000000-000-[a-f0-9]{32}\.json$/);
   const restored = JSON.parse(await openBackup(JSON.parse(objects.get(first.lastFile)), 'pass phrase'));
   assert.equal(restored.format, 'calends-backup');
 
@@ -152,14 +153,9 @@ test('完整流程：上传加密文件、内容未变不重复上传、按份�
   assert.equal(same.lastFile, first.lastFile, '内容未变不上传');
   assert.equal(objects.size, 3);
 
-  await runAutoBackup(env, { force: true, now: Date.UTC(2026, 0, 3) });
-  await runAutoBackup(env, { force: true, now: Date.UTC(2026, 0, 4) });
-  assert.deepEqual([...objects.keys()].sort(), [
-    'calends/calends-backup-20260103-000000.json',
-    'calends/calends-backup-20260104-000000.json',
-    'calends/notes.txt',
-    'calends/sub/calends-backup-19700101-000000.json',
-  ]);
+  const third = await runAutoBackup(env, { force: true, now: Date.UTC(2026, 0, 3) });
+  const fourth = await runAutoBackup(env, { force: true, now: Date.UTC(2026, 0, 4) });
+  assert.deepEqual([...objects.keys()].sort(), [third.lastFile, fourth.lastFile, 'calends/notes.txt', nested].sort());
 
   // 留空密钥沿用已存的；浏览器拿到的视图里没有密钥
   assert.equal(
@@ -254,16 +250,13 @@ test('WebDAV：建文件夹后上传、按份数滚动、切换存储后 S3 设�
 
   assert.deepEqual((await viewAutoBackup(env)).status, {}, '换了存储位置，旧位置的记录清掉');
   const first = await runAutoBackup(env, { now: Date.UTC(2026, 1, 1) });
-  assert.equal(first.lastFile, '备份/calends/calends-backup-20260201-000000.json');
-  const restored = JSON.parse(await openBackup(JSON.parse(dav.get('/dav/备份/calends/calends-backup-20260201-000000.json')), 'pass phrase'));
+  assert.match(first.lastFile, /^备份\/calends\/calends-backup-20260201-000000-000-[a-f0-9]{32}\.json$/);
+  const restored = JSON.parse(await openBackup(JSON.parse(dav.get('/dav/' + first.lastFile)), 'pass phrase'));
   assert.equal(restored.format, 'calends-backup');
   davDirs.add('/dav/备份/calends/old');
-  for (const d of [2, 3]) await runAutoBackup(env, { force: true, now: Date.UTC(2026, 1, d) });
-  assert.deepEqual([...dav.keys()].sort(), [
-    '/dav/备份/calends/calends-backup-20260202-000000.json',
-    '/dav/备份/calends/calends-backup-20260203-000000.json',
-    '/dav/备份/calends/notes.txt',
-  ]);
+  const second = await runAutoBackup(env, { force: true, now: Date.UTC(2026, 1, 2) });
+  const third = await runAutoBackup(env, { force: true, now: Date.UTC(2026, 1, 3) });
+  assert.deepEqual([...dav.keys()].sort(), ['/dav/' + second.lastFile, '/dav/' + third.lastFile, '/dav/备份/calends/notes.txt'].sort());
 
   // 没设置过时只切开关报错；只切开关不改设置；换用户名不沿用旧密码
   await removeAutoBackup(env);
@@ -284,4 +277,56 @@ test('WebDAV：建文件夹后上传、按份数滚动、切换存储后 S3 设�
 
   // 切回 S3：留空密钥沿用之前存的
   assert.equal((await saveAutoBackup(env, { kind: 's3', s3: { endpoint, bucket: 'bk', prefix: 'calends', accessKeyId: 'AK' }, keep: 2 })).kind, 's3');
+});
+
+test('同一毫秒的恢复前备份保留独立快照，旧文件按时间参与滚动', async () => {
+  objects.clear();
+  const key = await deriveBackupKey('snapshot pass', undefined, 100_000);
+  await saveAutoBackup(env, {
+    kind: 's3',
+    s3: { endpoint, bucket: 'bk', prefix: 'unique', accessKeyId: 'AK', secretAccessKey: 'SK' },
+    key,
+    keep: 30,
+  });
+  const now = Date.UTC(2026, 0, 6, 0, 0, 0, 123);
+  await env.DB.prepare("INSERT OR REPLACE INTO subscriptions (id, data) VALUES ('snapshot', ?)")
+    .bind(JSON.stringify({ id: 'snapshot', name: 'Before first restore' }))
+    .run();
+  const first = await runAutoBackup(env, { force: true, reason: 'before-restore', now });
+  await env.DB.prepare("UPDATE subscriptions SET data = ? WHERE id = 'snapshot'")
+    .bind(JSON.stringify({ id: 'snapshot', name: 'Before second restore' }))
+    .run();
+  const second = await runAutoBackup(env, { force: true, reason: 'before-restore', now });
+  assert.notEqual(first.lastFile, second.lastFile);
+  assert.equal(objects.size, 2);
+  for (const [file, name] of [
+    [first.lastFile, 'Before first restore'],
+    [second.lastFile, 'Before second restore'],
+  ]) {
+    const backup = JSON.parse(await openBackup(JSON.parse(objects.get(file)), 'snapshot pass'));
+    assert.equal(backup.subscriptions.find((s) => s.id === 'snapshot').name, name);
+  }
+  const legacy = 'calends-backup-20260106-000000-before-restore.json';
+  const newer = backupFileName(now + 1);
+  assert.deepEqual(filesToPrune([legacy, first.lastFile.split('/').pop(), newer, 'notes.json'], 2), [legacy]);
+});
+
+test('只保留一份时优先保留本次快照，同毫秒随机 ID 较小也不删除当前文件', async () => {
+  const previous = 'calends-backup-20260106-000000-123-ffffffffffffffffffffffffffffffff-before-restore.json';
+  const current = 'calends-backup-20260106-000000-123-00000000000000000000000000000000-before-restore.json';
+  assert.deepEqual(filesToPrune([previous, current], 1, current), []);
+  const later = 'calends-backup-20260106-000000-124-00000000000000000000000000000000-before-restore.json';
+  const names = [previous, current, later];
+  const concurrentDeletes = new Set([...filesToPrune(names, 1, previous), ...filesToPrune(names, 1, later)]);
+  assert.ok(!concurrentDeletes.has(later), '并发请求不能互相删除所有快照');
+  const saved = await saveAutoBackup(env, {
+    kind: 's3',
+    s3: { endpoint, bucket: 'bk', prefix: 'unique', accessKeyId: 'AK', secretAccessKey: 'SK' },
+    keep: 1,
+  });
+  assert.equal(saved.keep, 1);
+  const latest = await runAutoBackup(env, { force: true, reason: 'before-restore', now: Date.UTC(2026, 0, 6, 0, 0, 0, 123) });
+  assert.ok(objects.has(latest.lastFile));
+  const laterBackup = await runAutoBackup(env, { force: true, reason: 'before-restore', now: Date.UTC(2026, 0, 6, 0, 0, 0, 124) });
+  assert.deepEqual([...objects.keys()], [laterBackup.lastFile]);
 });

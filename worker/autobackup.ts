@@ -179,17 +179,26 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export function backupFileName(now: number, reason?: 'before-restore'): string {
   const d = new Date(now);
   const stamp = `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}-${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}`;
-  return `calends-backup-${stamp}${reason ? `-${reason}` : ''}.json`;
+  return `calends-backup-${stamp}-${String(d.getUTCMilliseconds()).padStart(3, '0')}-${crypto.randomUUID().replaceAll('-', '')}${reason ? `-${reason}` : ''}.json`;
 }
-const FILE_RE = /^calends-backup-\d{8}-\d{6}(?:-[a-z-]+)?\.json$/;
+const FILE_RE = /^calends-backup-(\d{8}-\d{6})(?:-(\d{3})-[a-f0-9]{32})?(?:-[a-z-]+)?\.json$/;
 const folder = (prefix: string) => (prefix ? `${prefix}/` : '');
 
 /** 滚动保留：只看文件夹里由自动备份生成的文件，按时间从新到旧留 keep 份，返回要删的；别的文件一概不动 */
-export function filesToPrune(names: string[], keep: number): string[] {
-  return names
-    .filter((n) => FILE_RE.test(n))
-    .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
-    .slice(Math.max(1, keep));
+export function filesToPrune(names: string[], keep: number, current?: string): string[] {
+  const time = (name: string) => {
+    const match = FILE_RE.exec(name)!;
+    return match[1] + (match[2] ?? '000');
+  };
+  return (
+    names
+      .filter((n) => FILE_RE.test(n))
+      .sort((a, b) => time(b).localeCompare(time(a)) || b.localeCompare(a))
+      .slice(Math.max(1, keep))
+      // 并发上传可读到相同列表：只删严格早于本次的文件，避免两个请求互删。
+      // 同毫秒的多份快照留到下一次较晚的备份再滚动。
+      .filter((name) => !current || time(name) < time(current))
+  );
 }
 
 /** 两种存储的统一操作：文件名都是文件夹下的直接子项 */
@@ -260,7 +269,7 @@ export async function runAutoBackup(env: Env, o: { force?: boolean; reason?: 'be
     const next: AutoBackupStatus = { lastAt: now, lastFile: file, lastHash: hash, lastRev: rev, lastTryAt: now, failures: 0 };
     await putKv(env, STATUS_KEY, next);
     try {
-      for (const name of filesToPrune(await store.list(), c.keep)) await store.remove(name);
+      for (const name of filesToPrune(await store.list(), c.keep, file.split('/').pop())) await store.remove(name);
     } catch (e) {
       console.error('[autobackup] prune', e);
     }
