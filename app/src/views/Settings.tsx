@@ -646,20 +646,17 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
   );
 }
 
-/** 版本与更新：当前版本、最近读到的最新正式版（点开是它的发布页）、手动检查。自托管只提示，不在这里升级 */
+/** 版本与更新：当前版本（有新版时同行标出并可点开发布页）、手动检查。自托管只提示，不在这里升级 */
 function VersionCells() {
   const u = useUpdateState();
-  const latest = u.cache?.latest;
   const update = availableUpdate(u);
   return (
     <>
-      <Cell label={t('settings.update.current')}>{`v${APP_VERSION}`}</Cell>
-      {latest && (
-        <Cell label={t('settings.update.latest')} onClick={() => window.open(latest.url, '_blank', 'noopener')}>
-          {update && <span className="badge green">{t('settings.update.available')}</span>}
-          {`v${latest.version}`}
-        </Cell>
-      )}
+      {/* 有新版时同一行带上新版本，点开是它的发布页；已是最新就只显示当前版本 */}
+      <Cell label={t('settings.update.current')} onClick={update ? () => window.open(update.url, '_blank', 'noopener') : undefined}>
+        {`v${APP_VERSION}`}
+        {update && <span className="badge green">{`${t('settings.update.available')} v${update.version}`}</span>}
+      </Cell>
       <Cell label={<span style={{ color: 'var(--accent)' }}>{t('settings.update.check')}</span>} onClick={() => void checkUpdateNow()}>
         {u.checking ? '…' : u.failed && <span style={{ color: 'var(--red)' }}>{t('settings.update.failed')}</span>}
       </Cell>

@@ -455,7 +455,6 @@
   },
   "update": {
     "current": "目前版本",
-    "latest": "最新版本",
     "available": "可更新",
     "check": "檢查更新",
     "failed": "檢查失敗"

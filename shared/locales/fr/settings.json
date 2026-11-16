@@ -473,7 +473,6 @@
   },
   "update": {
     "current": "Version",
-    "latest": "Dernière version",
     "available": "Mise à jour disponible",
     "check": "Rechercher des mises à jour",
     "failed": "Échec de la vérification"

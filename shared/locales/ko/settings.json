@@ -455,7 +455,6 @@
   },
   "update": {
     "current": "현재 버전",
-    "latest": "최신 버전",
     "available": "업데이트 가능",
     "check": "업데이트 확인",
     "failed": "확인 실패"
