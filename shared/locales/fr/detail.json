@@ -121,7 +121,9 @@
     "expectedMonthly": "Prévu par mois",
     "amortizedCost": "Coût lissé",
     "perMonthValue": "{amount}/mois",
-    "perDay": "{amount} par jour"
+    "perDay": "{amount} par jour",
+    "thisYearMonthly": "Cette année par mois",
+    "averageMonthly": "Moyenne {amount}/mois"
   },
   "chart": {
     "title": "Par prélèvement\n{ccy}",

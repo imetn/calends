@@ -113,7 +113,9 @@
     "expectedMonthly": "Perkiraan per bulan",
     "amortizedCost": "Biaya rata-rata",
     "perMonthValue": "{amount}/bln",
-    "perDay": "{amount} per hari"
+    "perDay": "{amount} per hari",
+    "thisYearMonthly": "Per bulan tahun ini",
+    "averageMonthly": "Rata-rata {amount}/bln"
   },
   "chart": {
     "title": "Per tagihan\n{ccy}",

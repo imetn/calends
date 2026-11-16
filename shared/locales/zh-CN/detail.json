@@ -103,7 +103,9 @@
     "expectedMonthly": "预计每月",
     "amortizedCost": "平摊成本",
     "perMonthValue": "{amount}/月",
-    "perDay": "每天 {amount}"
+    "perDay": "每天 {amount}",
+    "thisYearMonthly": "今年每月",
+    "averageMonthly": "平均 {amount}/月"
   },
   "chart": {
     "title": "每笔扣款\n{ccy}",

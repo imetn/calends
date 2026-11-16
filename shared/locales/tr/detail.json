@@ -118,7 +118,9 @@
     "expectedMonthly": "Tahmini aylık",
     "amortizedCost": "Dağıtılmış maliyet",
     "perMonthValue": "{amount}/ay",
-    "perDay": "Günde {amount}"
+    "perDay": "Günde {amount}",
+    "thisYearMonthly": "Bu yıl aylık",
+    "averageMonthly": "Ortalama {amount}/ay"
   },
   "chart": {
     "title": "Ödeme başına\n{ccy}",

@@ -113,7 +113,9 @@
     "expectedMonthly": "Dự kiến mỗi tháng",
     "amortizedCost": "Chi phí phân bổ",
     "perMonthValue": "{amount}/tháng",
-    "perDay": "{amount} mỗi ngày"
+    "perDay": "{amount} mỗi ngày",
+    "thisYearMonthly": "Năm nay mỗi tháng",
+    "averageMonthly": "Trung bình {amount}/tháng"
   },
   "chart": {
     "title": "Mỗi lần trừ\n{ccy}",

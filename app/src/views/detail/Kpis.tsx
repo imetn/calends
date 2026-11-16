@@ -6,9 +6,11 @@ import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
 import {
   chargeDay,
   currentPhase,
+  cycleDays,
   diffDays,
   effectiveStatus,
   chargesBetween,
+  chargeServicePeriod,
   isPostpaid,
   isSeparate,
   monthlyGross,
@@ -85,7 +87,13 @@ export function Kpis({
   const total = cost.net;
   // 缺汇率的那笔不参与均价与走势（不能当 0 拉低平均）
   // 分开记：走势比的是首期与当前这期的账单单价，不看哪笔缴了多少
-  const per = (phaseSubs(sub).some(isSeparate) ? billPrices(sub, today) : regular(history)).map((c) => chargeBaseOrNaN(state, c, base)).filter(Number.isFinite);
+  // 折成每月再比：月付首期 $15 换年付 $300，比的是 $15/月 对 $25/月，不是 15 对 300
+  // 按名义周期折算（不按实际天数），同价的 1 月与 11 月账单不会因 31/30 天出现走势
+  const perMonthOf = (c: Charge) => {
+    const days = cycleDays(c.sub.cycle);
+    return Number.isFinite(days) && days > 0 ? (chargeBaseOrNaN(state, c, base) * DAYS_PER_MONTH) / days : NaN;
+  };
+  const per = (phaseSubs(sub).some(isSeparate) ? billPrices(sub, today) : regular(history)).map(perMonthOf).filter(Number.isFinite);
   // 实际在订的天数：各段到今天（或结束日）为止，不算断档，并行的不重复计
   const served = servedTime(sub, today);
   // 有转让时按持有期：最早买入起，卖出那天止
@@ -143,6 +151,35 @@ export function Kpis({
   const showYear =
     !transferred && !cost.incomplete && !yearTotal.incomplete && yearTotal.value > 0.005 && Math.abs(yearTotal.value - cost.partial.value) > 0.005;
   const postpaid = isPostpaid(currentPhase(sub, today));
+  // 今年每月只给后付费（按用量出账、每期金额不同）：今年出账的实付 ÷ 这些账单覆盖的服务期，还没出的账单不进分母。
+  // 预付费定价订阅照旧写实际每月，调价由单价走势表达；与全程平均差不到 5% 时也不换格
+  // 分母取账单服务期的并集：分次缴的同一期、并行阶段的重叠期只算一次；0 元账单的天数照算，没出的本期不算。
+  // 换格判断拿同口径的全程月均比（全程实付 ÷ 全部账单服务期），免得全程月均被本期未出账的天数摊低而误换
+  const billedDays = (inYear: boolean) => {
+    const periods = history
+      .filter((c) => !c.kind && c.date <= today && (!inYear || chargeDay(c).slice(0, 4) === year))
+      .map((c) => chargeServicePeriod(c.sub, c.date, c.serviceDate))
+      .sort((x, y) => x.from.localeCompare(y.from));
+    let days = 0;
+    let reach = '';
+    for (const p of periods) {
+      const from = p.from > reach ? p.from : reach;
+      if (p.until > from) days += diffDays(from, p.until);
+      if (p.until > reach) reach = p.until;
+    }
+    return days;
+  };
+  const yearDays = billedDays(true);
+  const yearMonthly = postpaid && showYear && !lifetime && !young && !undated && yearDays >= 28 ? (yearTotal.value * DAYS_PER_MONTH) / yearDays : NaN;
+  const billedAll = Number.isFinite(yearMonthly)
+    ? chargesTotal(
+        state,
+        history.filter((c) => c.kind !== 'failed' && c.date <= today),
+      )
+    : undefined;
+  const allDays = billedAll ? billedDays(false) : 0;
+  const billedMonthly = billedAll && !billedAll.incomplete && allDays > 0 ? (billedAll.value * DAYS_PER_MONTH) / allDays : NaN;
+  const showYearMonthly = Number.isFinite(billedMonthly) && billedMonthly > 0 && Math.abs(yearMonthly / billedMonthly - 1) >= 0.05;
   // 后付费停止、暂停后仍有最后一张账单
   const next = st === 'lifetime' || (!postpaid && ['ended', 'terminated', 'paused'].includes(st)) ? undefined : detailForecast(sub, today).charges[0];
   const nextValue = next ? chargeBaseOrNaN(state, next, base) : NaN;
@@ -227,30 +264,51 @@ export function Kpis({
           />
         )}
         <Metric
-          label={lifetime ? t('detail.kpi.amortizedCost') : young ? t('detail.kpi.expectedMonthly') : t('detail.stats.perMonth')}
-          value={
-            undated || (sub.estimateFrom && lifetime && !history.length)
-              ? '—'
+          label={
+            showYearMonthly
+              ? t('detail.kpi.thisYearMonthly')
               : lifetime
-                ? t('detail.kpi.perMonthValue', { amount: monthlyAmount })
-                : monthlyAmount
+                ? t('detail.kpi.amortizedCost')
+                : young
+                  ? t('detail.kpi.expectedMonthly')
+                  : t('detail.stats.perMonth')
+          }
+          value={
+            showYearMonthly
+              ? formatTotal(scaleTotal(yearTotal, DAYS_PER_MONTH / yearDays), base, { direction: -1, compact: true, main: true, average: true })
+              : undated || (sub.estimateFrom && lifetime && !history.length)
+                ? '—'
+                : lifetime
+                  ? t('detail.kpi.perMonthValue', { amount: monthlyAmount })
+                  : monthlyAmount
           }
           // 与其他格一样三行：折到每天多少；算不出来就不写这一行
           note={
-            !undated
-              ? monthlyPartial.incomplete
-                ? [
-                    monthlyPartial.known || Object.keys(monthlyPartial.unconverted).length > 1 ? totalNote(monthlyPartial) : '',
-                    t('detail.kpi.perDay', { amount: formatTotal(scaleTotal(monthlyPartial, 1 / DAYS_PER_MONTH), base, { direction: -1, average: true }) }),
-                  ]
-                    .filter(Boolean)
-                    .join('\n')
-                : Number.isFinite(monthly)
-                  ? t('detail.kpi.perDay', { amount: flow(-monthly / DAYS_PER_MONTH, base) })
-                  : undefined
-              : undefined
+            showYearMonthly
+              ? copyParts(
+                  [
+                    // 小字的全程平均与换格判断同口径（全部已出账服务期），方向不会与主数相反
+                    t('detail.kpi.averageMonthly', {
+                      amount: formatTotal(scaleTotal(billedAll!, DAYS_PER_MONTH / allDays), base, { direction: -1, compact: true, average: true }),
+                    }),
+                    t('detail.kpi.perDay', { amount: flow(-billedMonthly / DAYS_PER_MONTH, base) }),
+                  ].join('\n'),
+                )
+              : !undated
+                ? monthlyPartial.incomplete
+                  ? [
+                      monthlyPartial.known || Object.keys(monthlyPartial.unconverted).length > 1 ? totalNote(monthlyPartial) : '',
+                      t('detail.kpi.perDay', { amount: formatTotal(scaleTotal(monthlyPartial, 1 / DAYS_PER_MONTH), base, { direction: -1, average: true }) }),
+                    ]
+                      .filter(Boolean)
+                      .join('\n')
+                  : Number.isFinite(monthly)
+                    ? t('detail.kpi.perDay', { amount: flow(-monthly / DAYS_PER_MONTH, base) })
+                    : undefined
+                : undefined
           }
-          accessory={!lifetime && !undated && !transferred ? <Trend pct={perTrend} /> : undefined}
+          // 写今年每月时不挂单价走势：角标会被读成「今年每月涨了多少」，今年比去年已在第三格
+          accessory={!lifetime && !undated && !transferred && !showYearMonthly ? <Trend pct={perTrend} /> : undefined}
         />
       </MetricCards>
       {usage && <MetricCards inline>{usage}</MetricCards>}

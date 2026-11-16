@@ -121,7 +121,9 @@
     "expectedMonthly": "Previsto por mês",
     "amortizedCost": "Custo diluído",
     "perMonthValue": "{amount}/mês",
-    "perDay": "{amount} por dia"
+    "perDay": "{amount} por dia",
+    "thisYearMonthly": "Este ano por mês",
+    "averageMonthly": "Média {amount}/mês"
   },
   "chart": {
     "title": "Por cobrança\n{ccy}",

@@ -113,7 +113,9 @@
     "expectedMonthly": "예상 월 비용",
     "amortizedCost": "분할 비용",
     "perMonthValue": "{amount}/월",
-    "perDay": "하루 {amount}"
+    "perDay": "하루 {amount}",
+    "thisYearMonthly": "올해 월평균",
+    "averageMonthly": "평균 {amount}/월"
   },
   "chart": {
     "title": "회당 결제\n{ccy}",

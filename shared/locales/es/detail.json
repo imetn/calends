@@ -121,7 +121,9 @@
     "expectedMonthly": "Previsto al mes",
     "amortizedCost": "Coste prorrateado",
     "perMonthValue": "{amount}/mes",
-    "perDay": "{amount} al día"
+    "perDay": "{amount} al día",
+    "thisYearMonthly": "Este año al mes",
+    "averageMonthly": "Media {amount}/mes"
   },
   "chart": {
     "title": "Por cargo\n{ccy}",

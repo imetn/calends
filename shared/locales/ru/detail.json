@@ -128,7 +128,9 @@
     "expectedMonthly": "Ожидается в месяц",
     "amortizedCost": "Распределённая стоимость",
     "perMonthValue": "{amount}/мес.",
-    "perDay": "{amount} в день"
+    "perDay": "{amount} в день",
+    "thisYearMonthly": "В этом году в месяц",
+    "averageMonthly": "В среднем {amount}/мес"
   },
   "chart": {
     "title": "За списание\n{ccy}",

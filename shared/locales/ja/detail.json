@@ -113,7 +113,9 @@
     "expectedMonthly": "月あたりの見込み",
     "amortizedCost": "按分コスト",
     "perMonthValue": "{amount}/月",
-    "perDay": "1日 {amount}"
+    "perDay": "1日 {amount}",
+    "thisYearMonthly": "今年の月平均",
+    "averageMonthly": "平均 {amount}/月"
   },
   "chart": {
     "title": "1 回の請求\n{ccy}",

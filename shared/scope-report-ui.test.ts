@@ -840,6 +840,92 @@ test('detail third KPI leads with this year spending only when earlier years wer
   );
   const flatPct = [...flatText.matchAll(/"pct":([^,}]+)/g)].map((m) => Number(m[1]));
   assert.ok(flatPct.length > 0 && flatPct.every((p) => p === 0), JSON.stringify(flatPct));
+  // 用户反馈：第三格说今年总共花了多少，第四格也要说今年每月多少；全程平均降为小字
+  const monthlyText = (phases: { start: string; end?: string; price: number }[], extra = {}, day = today) => {
+    const sub = {
+      id: 'm',
+      name: 'M',
+      category: 'Tools',
+      tags: [],
+      price: 10,
+      currency: 'USD',
+      start: phases[0].start,
+      cycle: { unit: 'month' as const, every: 1 },
+      status: 'active' as const,
+      ...extra,
+      phases: phases.map((p) => ({ ...p, currency: 'USD', cycle: { unit: 'month' as const, every: 1 }, ...extra })),
+    };
+    return JSON.stringify(
+      r.render('Kpis', { sub, state: { ...st, subscriptions: [sub] }, today: day, history: billing.chargesBetween(sub, sub.start, day, day) }),
+    );
+  };
+  // 预付费今年涨到 15 元：第四格照旧是实际每月，调价只由单价走势 +50% 表达，不为一个后付费订阅改别的订阅
+  const risen = monthlyText([
+    { start: '2025-01-01', end: '2025-12-31', price: 10 },
+    { start: '2026-01-01', price: 15 },
+  ]);
+  assert.ok(risen.includes('"detail.stats.perMonth"') && !risen.includes('detail.kpi.thisYearMonthly'));
+  assert.ok(risen.includes('"detail.stats.perMonth"]},{"props":{"pct":0.5'));
+  // 后付费：今年每月按已出账的账单覆盖的月份算，没出的 10 月账单不进分母
+  const risenPostpaid = monthlyText(
+    [
+      { start: '2025-01-01', end: '2025-12-31', price: 10 },
+      { start: '2026-01-01', price: 15 },
+    ],
+    { billing: 'postpaid' },
+  );
+  assert.ok(risenPostpaid.includes('detail.kpi.thisYearMonthly') && risenPostpaid.includes('detail.kpi.averageMonthly'));
+  assert.ok(!risenPostpaid.includes('"detail.stats.perMonth"'));
+  // 数值约 $15/月（按服务期天数折算，日历月与平均月长差不到 1%）
+  const ytm = Number(
+    /thisYearMonthly"\]\},null\]\},\{"type":"div","props":\{"className":"metric-value "\},"children":\[\[\{"type":"span","props":\{"key":0,"className":"nowrap"\},"children":\["−\$([\d.]+)"/.exec(
+      risenPostpaid,
+    )?.[1],
+  );
+  assert.ok(Math.abs(ytm / 15 - 1) < 0.01, String(ytm));
+  // 价格没变：今年每月与全程平均一样，照旧写实际每月
+  const steady = monthlyText([
+    { start: '2025-01-01', end: '2025-12-31', price: 10 },
+    { start: '2026-01-01', price: 10 },
+  ]);
+  assert.ok(steady.includes('"detail.stats.perMonth"') && !steady.includes('detail.kpi.thisYearMonthly'));
+  // 同价月付，末笔在 30 天的 11 月：走势按名义周期折月，仍是 0，不因 31/30 天出现 +3%
+  const steadyNov = monthlyText([{ start: '2026-01-01', price: 10 }], {}, '2026-11-16');
+  const novPct = [...steadyNov.matchAll(/"pct":([^,}]+)/g)].map((m) => Number(m[1]));
+  assert.ok(novPct.length > 0 && novPct.every((p) => p === 0), JSON.stringify(novPct));
+  // 后付费价格没变：今年每月与全程平均一样，照旧写实际每月
+  const steadyPostpaid = monthlyText(
+    [
+      { start: '2025-01-01', end: '2025-12-31', price: 10 },
+      { start: '2026-01-01', price: 10 },
+    ],
+    { billing: 'postpaid' },
+  );
+  assert.ok(steadyPostpaid.includes('"detail.stats.perMonth"') && !steadyPostpaid.includes('detail.kpi.thisYearMonthly'));
+  // 审查发现：后付费同价、历史短且本期快结束时，全程月均被未出账天数摊低，不能因此换成今年每月
+  const shortPostpaid = monthlyText([{ start: '2025-10-01', price: 10 }], { billing: 'postpaid' }, '2026-10-30');
+  assert.ok(shortPostpaid.includes('"detail.stats.perMonth"') && !shortPostpaid.includes('detail.kpi.thisYearMonthly'));
+  // X：月付 $15 首期换年付 $300，单价走势按每月比（$15 对约 $25），不是 15 对 300 的 1900%
+  const xSub = {
+    id: 'x',
+    name: 'X',
+    category: 'Tools',
+    tags: [],
+    price: 300,
+    currency: 'USD',
+    start: '2026-04-13',
+    cycle: { unit: 'year' as const, every: 1 },
+    status: 'active' as const,
+    phases: [
+      { start: '2026-04-13', end: '2026-10-12', price: 15, currency: 'USD', cycle: { unit: 'month' as const, every: 1 } },
+      { start: '2026-10-13', price: 300, currency: 'USD', cycle: { unit: 'year' as const, every: 1 } },
+    ],
+  };
+  const xText = JSON.stringify(
+    r.render('Kpis', { sub: xSub, state: { ...st, subscriptions: [xSub] }, today, history: billing.chargesBetween(xSub, xSub.start, today, today) }),
+  );
+  const xPct = [...xText.matchAll(/"pct":([^,}]+)/g)].map((m) => Number(m[1]));
+  assert.ok(xPct.length > 0 && xPct.every((p) => p > 0.6 && p < 0.7), JSON.stringify(xPct));
   // 用户反馈：后付费电费头几期只有几块，「实际每月」走势拿末期比首期得出 3568%；按用量计费的账单不画走势
   for (const billingMode of [undefined, 'postpaid'] as const) {
     const sub = {

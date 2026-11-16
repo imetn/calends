@@ -121,7 +121,9 @@
     "expectedMonthly": "Expected monthly",
     "amortizedCost": "Amortized cost",
     "perMonthValue": "{amount}/mo",
-    "perDay": "{amount} a day"
+    "perDay": "{amount} a day",
+    "thisYearMonthly": "This year monthly",
+    "averageMonthly": "Average {amount}/mo"
   },
   "chart": {
     "title": "Per charge\n{ccy}",

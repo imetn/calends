@@ -121,7 +121,9 @@
     "expectedMonthly": "Voraussichtlich pro Monat",
     "amortizedCost": "Umgelegte Kosten",
     "perMonthValue": "{amount}/Monat",
-    "perDay": "{amount} pro Tag"
+    "perDay": "{amount} pro Tag",
+    "thisYearMonthly": "Dieses Jahr pro Monat",
+    "averageMonthly": "Schnitt {amount}/Monat"
   },
   "chart": {
     "title": "Pro Abbuchung\n{ccy}",
