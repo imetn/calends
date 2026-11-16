@@ -15,7 +15,7 @@ export interface ChartBar {
   future?: boolean;
   /** 参照值（如用量图的平均每期），画成虚线；柱子汇总后取各柱合计的均值 */
   ref?: number;
-  /** 属于哪一段方案：只有不同方案的扣款挨在一起时才并排，同一方案的相邻扣款各自一根 */
+  /** 属于哪一段方案：只有不同方案的扣款挨在一起时才叠成一根，同一方案的相邻扣款各自一根 */
   phase?: string;
   /** 首期优惠期间这一笔的原价（同单位）：实际扣的是实色，原价比实际多出的部分画成柱顶的斜纹 */
   full?: number;
@@ -102,7 +102,7 @@ export function ChargeBars({
   const iw = Math.max(1, w - padL - PAD_R);
   const x = (d: string) => padL + (Math.min(span, Math.max(0, diffDays(from, d))) / span) * iw;
   type Group = { x: number; idx: number[]; future: boolean; stack: boolean };
-  // 1) 换方案、换卡、并行方案时，不同方案的两笔相隔 10 天以内：并排放在同一位置，悬停时逐笔列出；
+  // 1) 换方案、换卡、并行方案时，不同方案的两笔相隔 10 天以内：叠成同一位置的一根柱，悬停时逐笔列出；
   //    同一方案同一天的几笔（同一天记的几条用量）合成一根实心柱，与提示框、扣款记录按期合计一致，不叠画在一起
   const near: Group[] = [];
   bars.forEach((b, i) => {
@@ -156,8 +156,8 @@ export function ChargeBars({
     : [];
   const bucketRef = totals.length ? totals.reduce((a, b) => a + b, 0) / totals.length : undefined;
   const refOf = (g: Group) => (hasRef(g) ? (bucket ? bucketRef : Math.max(...g.idx.map((i) => bars[i].ref!))) : undefined);
-  // 柱高：汇总柱是合计，并排的几笔各自一根，取其中最高的
-  const peakOf = (g: Group) => (g.stack ? Math.max(...g.idx.map(val)) : g.idx.reduce((a, i) => a + val(i), 0));
+  // 柱高：汇总柱、叠在一起的几笔都是合计
+  const peakOf = (g: Group) => g.idx.reduce((a, i) => a + val(i), 0);
   // 首期优惠的原价柱也要放得下
   const fullOf = (g: Group) => (g.idx.length === 1 ? (bars[g.idx[0]].full ?? 0) : 0);
   const maxV = Math.max(0, ...groups.map((g) => Math.max(peakOf(g), fullOf(g), refOf(g) ?? 0))) || 1;
@@ -316,18 +316,26 @@ export function ChargeBars({
                   </g>
                 );
               }
-              // 挨在一起的几笔（不同方案）：同一位置左右并排，每笔一根窄柱，中间留 1px 缝
+              // 挨在一起的几笔（不同方案）：同一位置上下叠成一根柱，柱高是合计，每笔一段，段间留 1px 缝；只有最上面一段是圆头
+              // 整根柱顶在合计的位置，段间的缝从柱内扣；缺汇率的段画成 4px 浅色块
               const n = g.idx.length;
-              const w1 = Math.max(2, (bw - (n - 1)) / n);
+              const known = g.idx.filter((i) => Number.isFinite(bars[i].v));
+              const sum = known.reduce((a, i) => a + val(i), 0);
+              const total = Math.max(y(0) - y(sum), n * 3 - 1);
+              const room = total - (n - 1) - (n - known.length) * 4;
+              let base = y(0);
               return g.idx.map((i, k) => {
                 const ok = Number.isFinite(bars[i].v);
-                const by = ok ? Math.min(y(val(i)), y(0) - 2) : y(0) - 4;
+                const h = ok ? Math.max(2, sum > 0 ? (val(i) / sum) * room : room / known.length) : 4;
+                const top = base - h;
+                const d = k === n - 1 ? barPath(g.x - bw / 2, top, bw, h) : `M${g.x - bw / 2},${base}V${top}H${g.x + bw / 2}V${base}Z`;
+                base = top - 1;
                 return (
                   <GlidePath
                     key={i}
                     className={`cc-bar ${g.future ? 'future' : ''} ${ok ? '' : 'unknown'} ${on}`}
                     style={g.future && ok ? { fill: `url(#${hatch})` } : undefined}
-                    d={barPath(g.x - bw / 2 + k * (w1 + 1), by, w1, y(0) - by)}
+                    d={d}
                   />
                 );
               });

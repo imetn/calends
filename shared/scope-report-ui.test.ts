@@ -1197,6 +1197,62 @@ test('扣款太密汇总成一根时，平均线是一条平线，不把每笔�
   assert.equal(yOf(whole.map((b, i) => (i < 60 ? { ...b, v: Number.NaN } : b))), yOf(whole));
 });
 
+test('换方案同一天的两笔叠成一根柱，不再左右并排成两根窄柱', () => {
+  const r = harness(
+    '../app/src/views/DetailChart.tsx',
+    'ChargeBars',
+    {},
+    {
+      useWidth: () => [null, 700],
+      BAR: { ratio: 0.5, max: 24, radius: 6 },
+      niceTicks: (m: number) => [0, m / 2, m],
+      HatchPattern: () => null,
+      diffDays: billing.diffDays,
+    },
+  );
+  const bars = [
+    { date: '2026-08-16', v: 4, phase: 'a' },
+    { date: '2026-09-16', v: 19, phase: 'a' },
+    { date: '2026-10-16', v: 4, phase: 'a' },
+    { date: '2026-11-16', v: 4, phase: 'a' },
+    { date: '2026-11-16', v: 15, phase: 'b' },
+  ];
+  const nodes = r.render('ChargeBars', {
+    bars,
+    from: '2026-08-01',
+    to: '2026-12-01',
+    today: '2026-11-16',
+    todayLabel: '',
+    fmt: String,
+    tick: String,
+    lanes: [],
+    tip: () => null,
+  });
+  const paths = nodes.filter((n) => n.props.d && /^cc-bar(\s|$)/.test(String(n.props.className ?? ''))).map((n) => n.props.d as string);
+  assert.equal(paths.length, 5);
+  // 圆头柱：顶取圆弧终点的纵坐标，右边取最后一个竖线的横坐标；方角柱：M 起点、H 终点、V 顶
+  const box = (d: string) => {
+    const num = (re: RegExp) => [...d.matchAll(re)].map((m) => Number(m[1]));
+    const arc = num(/A[\d.]+,[\d.]+ 0 0 1 [\d.]+,([\d.]+)/g);
+    const xs = [...num(/M([\d.]+)/g), ...num(/A[\d.]+,[\d.]+ 0 0 1 ([\d.]+),/g), ...num(/H([\d.]+)/g)];
+    return {
+      left: Math.min(...xs),
+      right: Math.max(...xs),
+      top: arc.length ? Math.min(...arc) : Math.min(...num(/V([\d.]+)/g)),
+      bottom: num(/M[\d.]+,([\d.]+)/g)[0],
+    };
+  };
+  const [lower, upper] = paths.slice(3).map(box);
+  const single = box(paths[1]);
+  // 同一位置、与单笔一样宽；下面一段的顶在上面一段的底之下 1px；合计 19 的叠柱与单笔 19 的柱一样高
+  assert.equal(lower.left, upper.left);
+  assert.equal(lower.right - lower.left, single.right - single.left);
+  assert.equal(upper.right - upper.left, single.right - single.left);
+  assert.ok(Math.abs(lower.top - 1 - upper.bottom) < 0.01);
+  assert.ok(Math.abs(upper.top - single.top) < 0.01);
+  assert.equal(lower.bottom, single.bottom);
+});
+
 test('发送记录只在二级面板出现，不占设置页', () => {
   const source = readFileSync(new URL('../app/src/views/Settings.tsx', import.meta.url), 'utf8');
   const page = source.slice(source.indexOf('export function Settings('));
