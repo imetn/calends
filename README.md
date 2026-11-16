@@ -40,7 +40,7 @@ Track what you pay, when it renews, and who owes you. Calends brings subscriptio
 - **AI access** — query and update your ledger from an MCP-compatible assistant, with scoped tokens and previews for write operations.
 - **Import external ledgers** — preview and import CSV files, ZIP backups and databases from Wallos and other services in your browser.
 - **Public page editor** — arrange widgets on a grid canvas and customize the header of your read-only public page.
-- **Storage and access** — password and passkey sign-in, remote device sign-out, optional public sharing with server-side masking, JSON backup/restore and CSV import/export. Available in 14 languages.
+- **Storage and access** — password and passkey sign-in, remote device sign-out, optional public sharing with server-side masking, JSON backup/restore and CSV import/export. Available in 14 languages, with Australian English regional formatting.
 
 ## Quick start
 
