@@ -1,6 +1,6 @@
 import { amountTotal, convertedTotal, emptyTotal, scaleTotal, sumTotals, type FxTotal } from './fx-total.ts';
 // 代付：每一期扣款是一笔应收，和合租共用一套按期记账的规则（receivables.ts）。页面和提醒邮件共用，保证两边说法一致
-import { addDays, addMonths, chargesBetween, historyStart } from './billing.ts';
+import { addDays, addMonths, chargesBetween } from './billing.ts';
 import { toBaseOrNaN as toBaseAt } from './fx.ts';
 import { settle, type LedgerPeriod, type Period } from './receivables.ts';
 import type { AppState, ProxyCharge, Subscription } from './types.ts';
@@ -12,7 +12,7 @@ import type { AppState, ProxyCharge, Subscription } from './types.ts';
 export function proxyPeriods(s: Subscription, last: string, today: string): (Period & { list: number; listCurrency: string; charge?: ProxyCharge })[] {
   const charged = new Map((s.proxy?.charged ?? []).map((c) => [c.charge, c]));
   // 多取一年，最后一期也知道到哪天为止
-  const all = chargesBetween(s, historyStart(s), addMonths(last, 13), today);
+  const all = chargesBetween(s, s.start, addMonths(last, 13), today);
   return all.flatMap((c, i) => {
     if (c.date > last) return [];
     const charge = charged.get(c.date);

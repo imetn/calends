@@ -1408,12 +1408,15 @@ export function nextCharge(s: Subscription, today: string): string | undefined {
   return chargesBetween(s, today, addDays(today, Math.max(396, Math.ceil(cycleDays(s.cycle) * 2) + 32)), today).find((c) => !c.kind && !c.paidOn)?.date;
 }
 
-/** 整段账的起点：开始日前记下的实付（如提前几天付的首期）也属于这条订阅的扣款记录 */
+/** 整段账的起点：开始日前提前付的首期（paysFirstPeriod）也属于扣款记录；挪开始日留下的更早记录不算 */
 export function historyStart(s: Subscription): string {
   return phaseSubs(s)
-    .flatMap((p) => p.payments ?? [])
+    .flatMap((p) => (p.payments ?? []).filter((x) => !x.kind && paysFirstPeriod(p, x.date)))
     .reduce((a, p) => (p.date < a ? p.date : a), s.start);
 }
+
+/** 两个日期中较晚的一天；开始日前提前付的首期不能让退订日早于开始日 */
+export const latestDay = (a: string | undefined, b: string): string => (a && a > b ? a : b);
 
 export function lastCharge(s: Subscription, today: string): string | undefined {
   // 分开记时没缴的账单（待缴、逾期）不是扣款：最后一次扣款是最近一期缴过（含推算期视为已缴）的账单
@@ -1522,13 +1525,14 @@ function periodAsRecorded(s: Subscription, at: string): { from: string; paidThro
 export function periodBeforeRenewal(s: Subscription, today: string): { from: string; until: string } | undefined {
   const cur = currentPhase(s, today);
   if (cur.cycle.unit === 'lifetime' || isPostpaid(cur) || isSeparate(cur)) return undefined;
-  const until = settleLegacyEarly(cur)
+  const early = settleLegacyEarly(cur)
     .payments?.filter((p) => !p.kind && p.date <= today && !!p.serviceDate && today < p.serviceDate)
-    .map((p) => p.serviceDate!)
-    .sort()[0];
-  if (!until) return undefined;
-  const prior = nthCharge(until, cur.cycle, -1);
-  return { from: prior < cur.start ? cur.start : prior, until };
+    .sort((a, b) => a.serviceDate!.localeCompare(b.serviceDate!))[0];
+  if (!early?.serviceDate) return undefined;
+  // 付这笔之前的那天还在上一期里，起点与提前续费前显示的一致（月末日号、开始日偏移都不变）
+  const before = addDays(early.date, -1);
+  const from = before < cur.start ? cur.start : billingPeriod(cur, before).from;
+  return { from: from < cur.start ? cur.start : from, until: early.serviceDate };
 }
 
 /** 在 at 停止时校验用的账期：先付费按今天已付到哪天；后付费随时可停，账期截到 at */
@@ -2149,7 +2153,7 @@ export function memberDues(s: Subscription, today: string, collectCurrency: stri
   const stop = [
     shareLastDay(s),
     s.status === 'paused' && !s.pausedAt ? addDays(today, -1) : undefined,
-    undatedStop(s) ? (lastCharge(s, today) ?? s.start) : undefined,
+    undatedStop(s) ? latestDay(lastCharge(s, today), s.start) : undefined,
     today,
   ]
     .filter((d): d is string => !!d)

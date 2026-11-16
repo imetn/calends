@@ -122,6 +122,8 @@ test('开始日前付的首期计入整段扣款记录', async () => {
   // 多阶段：较早阶段的付款也算
   const phased = switchPlan(s, '2026-12-01', { price: 80 });
   assert.equal(historyStart(phased), '2025-11-20');
+  // 挪开始日留下的更早记录（早于一个周期）不算首期，起点仍是开始日
+  assert.equal(historyStart(base({ start: '2026-06-01', payments: [{ date: '2025-01-01', amount: 60 }] })), '2026-06-01');
 });
 
 test('提前续费后续上那期开始前，本期仍是上一期；停用账期不变', async () => {
@@ -145,4 +147,11 @@ test('提前续费后续上那期开始前，本期仍是上一期；停用账�
     { date: '2026-10-25', amount: 60 },
   );
   assert.deepEqual(periodBeforeRenewal(m, '2026-10-27'), { from: '2026-09-30', until: '2026-10-31' });
+  // 2 月夹短的月末：上一期仍从 1-31 起，不按 2-28 往回推成 1-28
+  const feb = savePayment(
+    base({ cycle: month, start: '2025-12-31', payments: ['2025-12-31', '2026-01-31'].map((date) => ({ date, amount: 60 })) }),
+    '2026-02-20',
+    { date: '2026-02-20', amount: 60 },
+  );
+  assert.deepEqual(periodBeforeRenewal(feb, '2026-02-22'), { from: '2026-01-31', until: '2026-02-28' });
 });
