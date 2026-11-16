@@ -781,6 +781,65 @@ test('detail third KPI leads with this year spending only when earlier years wer
   const undatedText = JSON.stringify(r.render('Kpis', { sub: undated, state: { ...st, subscriptions: [undated] }, today, history: undatedHistory }));
   assert.ok(undatedText.includes('detail.field.endedUnknown'));
   assert.ok(undatedText.includes('detail.stats.count'));
+  // 用户反馈：今年花了要看出比去年涨了多少；比去年同期（1 月 1 日到去年的今天），今年还没过完不拿去年全年比
+  const yoy = (phases: { start: string; end?: string; price: number }[]) => {
+    const sub = {
+      id: 'yoy',
+      name: 'Yoy',
+      category: 'Tools',
+      tags: [],
+      price: 10,
+      currency: 'USD',
+      start: phases[0].start,
+      cycle: { unit: 'month' as const, every: 1 },
+      status: 'active' as const,
+      phases: phases.map((p) => ({ ...p, currency: 'USD', cycle: { unit: 'month' as const, every: 1 } })),
+    };
+    const history = billing.chargesBetween(sub, sub.start, today, today);
+    const text = JSON.stringify(r.render('Kpis', { sub, state: { ...st, subscriptions: [sub] }, today, history }));
+    assert.ok(text.includes('detail.stats.spentThisYear'));
+    return [...text.matchAll(/"pct":([^,}]+)/g)].map((m) => Number(m[1]));
+  };
+  // 去年 10 元、今年 15 元：今年 1–10 月 150 比去年同期 100，涨 50%；第四格的单价走势另算
+  const up = yoy([
+    { start: '2025-01-01', end: '2025-12-31', price: 10 },
+    { start: '2026-01-01', price: 15 },
+  ]);
+  assert.ok(
+    up.some((p) => Math.abs(p - 0.5) < 1e-9),
+    JSON.stringify(up),
+  );
+  // 前年付过、去年整年免费：今年花了照常显示，但去年同期没有可比的基数，不画同比（不出 Infinity）
+  const fromFree = yoy([
+    { start: '2024-01-01', end: '2024-12-31', price: 10 },
+    { start: '2025-01-01', end: '2025-12-31', price: 0 },
+    { start: '2026-01-01', price: 10 },
+  ]);
+  // 剩下的只有第四格的单价走势（前后都是 10 元，0%）
+  assert.ok(fromFree.length > 0 && fromFree.every((p) => p === 0), JSON.stringify(fromFree));
+  // 后付费：10 月账单 11 月才出，今年还没出；去年同期也只算截至去年今天已出的账单，单价不变就是 0%，不偏跌
+  const flatPostpaid = {
+    id: 'flat',
+    name: 'Flat',
+    category: 'Home',
+    tags: [],
+    price: 10,
+    currency: 'USD',
+    start: '2024-01-01',
+    billing: 'postpaid' as const,
+    cycle: { unit: 'month' as const, every: 1 },
+    status: 'active' as const,
+  };
+  const flatText = JSON.stringify(
+    r.render('Kpis', {
+      sub: flatPostpaid,
+      state: { ...st, subscriptions: [flatPostpaid] },
+      today,
+      history: billing.chargesBetween(flatPostpaid, flatPostpaid.start, today, today),
+    }),
+  );
+  const flatPct = [...flatText.matchAll(/"pct":([^,}]+)/g)].map((m) => Number(m[1]));
+  assert.ok(flatPct.length > 0 && flatPct.every((p) => p === 0), JSON.stringify(flatPct));
   // 用户反馈：后付费电费头几期只有几块，「实际每月」走势拿末期比首期得出 3568%；按用量计费的账单不画走势
   for (const billingMode of [undefined, 'postpaid'] as const) {
     const sub = {
@@ -797,7 +856,8 @@ test('detail third KPI leads with this year spending only when earlier years wer
     };
     const history = billing.chargesBetween(sub, sub.start, today, today);
     const text = JSON.stringify(r.render('Kpis', { sub, state: { ...st, subscriptions: [sub] }, today, history }));
-    assert.equal(text.includes('"pct":0'), !billingMode, String(billingMode));
+    // 只看第四格「实际每月」的角标；第三格的同比是另一回事
+    assert.equal(text.includes('"detail.stats.perMonth"]},{"props":{"pct"'), !billingMode, String(billingMode));
   }
   // 以前几年合计为 0（免费方案）时今年就等于累计，也不写
   const free = {

@@ -128,10 +128,18 @@ export function Kpis({
   // 今年与累计不同时第三格改写今年、累计降为小字；相同（今年才开始，或以前几年合计为 0）照旧只写累计，免得同一个数出现两次。
   // 有转让时第三格是净花费或净赚，今年净额不为正（只剩退款）也不叫「花了」：这两种照旧写累计
   const year = today.slice(0, 4);
-  const yearTotal = chargesTotal(
-    state,
-    history.filter((c) => c.kind !== 'failed' && chargeDay(c).slice(0, 4) === year),
-  );
+  // 某年里、截至某天已经出账的实付：按归年（后付费账单归所属周期），出账日不晚于截止日
+  const paidIn = (y: string, until: string) =>
+    chargesTotal(
+      state,
+      history.filter((c) => c.kind !== 'failed' && chargeDay(c).slice(0, 4) === y && c.date <= until),
+    );
+  const yearTotal = paidIn(year, today);
+  // 同比：去年截至去年的今天已出账的那些，同一口径；今年没过完，不拿去年全年比。
+  // 出账日也截在去年的今天：后付费 10 月账单 11 月才出，今年还没出的那张去年同期也不算。去年同期没花钱或缺汇率就不画角标
+  const lastYear = String(Number(year) - 1);
+  const lastSame = paidIn(lastYear, `${lastYear}${today.slice(4)}`);
+  const yearTrend = !lastSame.incomplete && lastSame.value > 0.005 ? yearTotal.value / lastSame.value - 1 : undefined;
   const showYear =
     !transferred && !cost.incomplete && !yearTotal.incomplete && yearTotal.value > 0.005 && Math.abs(yearTotal.value - cost.partial.value) > 0.005;
   const postpaid = isPostpaid(currentPhase(sub, today));
@@ -190,6 +198,7 @@ export function Kpis({
         {/* 有转让时是净花费：买入、卖出各自的金额在下方转让卡片，这里只写合计 */}
         {(history.length !== 1 || transferred) && (
           <Metric
+            accessory={showYear ? <Trend pct={yearTrend} /> : undefined}
             label={
               showYear
                 ? t('detail.stats.spentThisYear')
