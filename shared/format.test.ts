@@ -69,8 +69,8 @@ test('prices and comparison signs keep money semantics regardless of cash flow s
 
 test('unrefunded loss translations leave cash-flow signs to flow in every locale', async () => {
   const { readFileSync } = await import('node:fs');
-  const { LOCALES, flatten, t } = await import('./i18n.ts');
-  for (const { code: loc } of LOCALES) {
+  const { TRANSLATED_LOCALES, flatten, t } = await import('./i18n.ts');
+  for (const { code: loc } of TRANSLATED_LOCALES) {
     const messages = {};
     flatten('core', JSON.parse(readFileSync(new URL(`./locales/${loc}/core.json`, import.meta.url), 'utf8')), messages);
     setLocale(loc, [messages]);

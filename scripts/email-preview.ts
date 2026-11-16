@@ -2,7 +2,7 @@
 // 用法：npm run email:preview                         中文与英文
 //       npm run email:preview -- ja ko                指定语言
 //       SITE_URL=https://example.com npm run email:preview   图片、链接用线上地址（默认指向本地 app/public/）
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { addMonths, FALLBACK_FX } from '../shared/billing.ts';
@@ -22,6 +22,8 @@ function loadLocale(loc: Locale) {
   const pack = (l: Locale): Messages => {
     const m: Messages = {};
     const dir = join(ROOT, 'shared/locales', l);
+    // en-AU 等地区变体没有自己的目录，文案全部来自回退语言
+    if (!existsSync(dir)) return m;
     for (const ns of ['common', 'core', 'server', 'notify']) {
       if (readdirSync(dir).includes(`${ns}.json`)) flatten(ns, JSON.parse(readFileSync(join(dir, `${ns}.json`), 'utf8')), m);
     }

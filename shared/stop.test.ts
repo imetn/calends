@@ -21,7 +21,7 @@ import { cancelAtEnd, reactivate, resume, savePayment, statusChangeError, stopSu
 import { cancelSavings, events, insights, prepaidValue, stopLosses, yearReview } from './metrics.ts';
 import { maskForPublic } from './mask.ts';
 import { chargeValue } from './fx.ts';
-import { flatten, LOCALES, setLocale, t } from './i18n.ts';
+import { flatten, TRANSLATED_LOCALES, setLocale, t } from './i18n.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 import { TOOLS } from '../worker/ai/mcp-tools.ts';
 import type { ToolCtx } from '../worker/ai/tool-kit.ts';
@@ -636,7 +636,7 @@ test('14 种语言都有停止状态、表单文案及全部新增错误，且�
   const load = (loc: string, ns: string) => JSON.parse(readFileSync(new URL(`./locales/${loc}/${ns}.json`, import.meta.url), 'utf8'));
   const enStop = load('en', 'core').stop;
   const enError = load('en', 'mcp').error;
-  for (const { code } of LOCALES) {
+  for (const { code } of TRANSLATED_LOCALES) {
     assert.ok(load(code, 'list').status.terminated);
     for (const [key, text] of Object.entries(enStop)) {
       const translated = load(code, 'core').stop[key];
