@@ -123,7 +123,8 @@
     "perMonthValue": "{amount}/mês",
     "perDay": "{amount} por dia",
     "thisYearMonthly": "Este ano por mês",
-    "averageMonthly": "Média {amount}/mês"
+    "averageMonthly": "Média {amount}/mês",
+    "dailyAmount": "{amount}/dia"
   },
   "chart": {
     "title": "Por cobrança\n{ccy}",

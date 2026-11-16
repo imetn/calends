@@ -7,6 +7,16 @@
   min-width: 0;
 }
 
+/* 只占一行：后面的部分换到第二行时被裁掉，不显示 */
+.copy-fit {
+  display: block;
+}
+.copy-fit .copy-parts {
+  display: flex;
+  max-height: 1lh;
+  overflow: hidden;
+}
+
 .copy-gap {
   display: inline-block;
   width: 0.65em;

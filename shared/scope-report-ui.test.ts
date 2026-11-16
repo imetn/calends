@@ -876,6 +876,8 @@ test('detail third KPI leads with this year spending only when earlier years wer
   );
   assert.ok(risenPostpaid.includes('detail.kpi.thisYearMonthly') && risenPostpaid.includes('detail.kpi.averageMonthly'));
   assert.ok(!risenPostpaid.includes('"detail.stats.perMonth"'));
+  // 用户反馈：小字只写「平均」一次，每月与每天排一行（copy-fit 放不下时裁掉每天），不再写「每天」
+  assert.ok(risenPostpaid.includes('copy-fit') && risenPostpaid.includes('detail.kpi.dailyAmount') && !risenPostpaid.includes('detail.kpi.perDay'));
   // 数值约 $15/月（按服务期天数折算，日历月与平均月长差不到 1%）
   const ytm = Number(
     /thisYearMonthly"\]\},null\]\},\{"type":"div","props":\{"className":"metric-value "\},"children":\[\[\{"type":"span","props":\{"key":0,"className":"nowrap"\},"children":\["−\$([\d.]+)"/.exec(

@@ -123,7 +123,8 @@
     "perMonthValue": "{amount}/mois",
     "perDay": "{amount} par jour",
     "thisYearMonthly": "Cette année par mois",
-    "averageMonthly": "Moyenne {amount}/mois"
+    "averageMonthly": "Moyenne {amount}/mois",
+    "dailyAmount": "{amount}/jour"
   },
   "chart": {
     "title": "Par prélèvement\n{ccy}",

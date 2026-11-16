@@ -115,7 +115,8 @@
     "perMonthValue": "{amount}/月",
     "perDay": "1日 {amount}",
     "thisYearMonthly": "今年の月平均",
-    "averageMonthly": "平均 {amount}/月"
+    "averageMonthly": "平均 {amount}/月",
+    "dailyAmount": "{amount}/日"
   },
   "chart": {
     "title": "1 回の請求\n{ccy}",

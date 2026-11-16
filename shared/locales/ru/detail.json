@@ -130,7 +130,8 @@
     "perMonthValue": "{amount}/мес.",
     "perDay": "{amount} в день",
     "thisYearMonthly": "В этом году в месяц",
-    "averageMonthly": "В среднем {amount}/мес"
+    "averageMonthly": "В среднем {amount}/мес",
+    "dailyAmount": "{amount}/день"
   },
   "chart": {
     "title": "За списание\n{ccy}",

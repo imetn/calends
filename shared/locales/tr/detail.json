@@ -120,7 +120,8 @@
     "perMonthValue": "{amount}/ay",
     "perDay": "Günde {amount}",
     "thisYearMonthly": "Bu yıl aylık",
-    "averageMonthly": "Ortalama {amount}/ay"
+    "averageMonthly": "Ortalama {amount}/ay",
+    "dailyAmount": "{amount}/gün"
   },
   "chart": {
     "title": "Ödeme başına\n{ccy}",

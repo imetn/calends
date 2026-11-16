@@ -123,7 +123,8 @@
     "perMonthValue": "{amount}/mes",
     "perDay": "{amount} al día",
     "thisYearMonthly": "Este año al mes",
-    "averageMonthly": "Media {amount}/mes"
+    "averageMonthly": "Media {amount}/mes",
+    "dailyAmount": "{amount}/día"
   },
   "chart": {
     "title": "Por cargo\n{ccy}",

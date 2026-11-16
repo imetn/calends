@@ -115,7 +115,8 @@
     "perMonthValue": "{amount}/bln",
     "perDay": "{amount} per hari",
     "thisYearMonthly": "Per bulan tahun ini",
-    "averageMonthly": "Rata-rata {amount}/bln"
+    "averageMonthly": "Rata-rata {amount}/bln",
+    "dailyAmount": "{amount}/hari"
   },
   "chart": {
     "title": "Per tagihan\n{ccy}",

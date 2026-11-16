@@ -123,7 +123,8 @@
     "perMonthValue": "{amount}/mo",
     "perDay": "{amount} a day",
     "thisYearMonthly": "This year monthly",
-    "averageMonthly": "Average {amount}/mo"
+    "averageMonthly": "Average {amount}/mo",
+    "dailyAmount": "{amount}/day"
   },
   "chart": {
     "title": "Per charge\n{ccy}",

@@ -284,28 +284,30 @@ export function Kpis({
           }
           // 与其他格一样三行：折到每天多少；算不出来就不写这一行
           note={
-            showYearMonthly
-              ? copyParts(
+            showYearMonthly ? (
+              // 小字的全程平均与换格判断同口径（全部已出账服务期），方向不会与主数相反；每天排在同一行，放不下就不显示
+              <span className="copy-fit">
+                {copyParts(
                   [
-                    // 小字的全程平均与换格判断同口径（全部已出账服务期），方向不会与主数相反
                     t('detail.kpi.averageMonthly', {
                       amount: formatTotal(scaleTotal(billedAll!, DAYS_PER_MONTH / allDays), base, { direction: -1, compact: true, average: true }),
                     }),
-                    t('detail.kpi.perDay', { amount: flow(-billedMonthly / DAYS_PER_MONTH, base) }),
+                    t('detail.kpi.dailyAmount', { amount: flow(-billedMonthly / DAYS_PER_MONTH, base) }),
                   ].join('\n'),
-                )
-              : !undated
-                ? monthlyPartial.incomplete
-                  ? [
-                      monthlyPartial.known || Object.keys(monthlyPartial.unconverted).length > 1 ? totalNote(monthlyPartial) : '',
-                      t('detail.kpi.perDay', { amount: formatTotal(scaleTotal(monthlyPartial, 1 / DAYS_PER_MONTH), base, { direction: -1, average: true }) }),
-                    ]
-                      .filter(Boolean)
-                      .join('\n')
-                  : Number.isFinite(monthly)
-                    ? t('detail.kpi.perDay', { amount: flow(-monthly / DAYS_PER_MONTH, base) })
-                    : undefined
-                : undefined
+                )}
+              </span>
+            ) : !undated ? (
+              monthlyPartial.incomplete ? (
+                [
+                  monthlyPartial.known || Object.keys(monthlyPartial.unconverted).length > 1 ? totalNote(monthlyPartial) : '',
+                  t('detail.kpi.perDay', { amount: formatTotal(scaleTotal(monthlyPartial, 1 / DAYS_PER_MONTH), base, { direction: -1, average: true }) }),
+                ]
+                  .filter(Boolean)
+                  .join('\n')
+              ) : Number.isFinite(monthly) ? (
+                t('detail.kpi.perDay', { amount: flow(-monthly / DAYS_PER_MONTH, base) })
+              ) : undefined
+            ) : undefined
           }
           // 写今年每月时不挂单价走势：角标会被读成「今年每月涨了多少」，今年比去年已在第三格
           accessory={!lifetime && !undated && !transferred && !showYearMonthly ? <Trend pct={perTrend} /> : undefined}

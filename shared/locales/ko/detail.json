@@ -115,7 +115,8 @@
     "perMonthValue": "{amount}/월",
     "perDay": "하루 {amount}",
     "thisYearMonthly": "올해 월평균",
-    "averageMonthly": "평균 {amount}/월"
+    "averageMonthly": "평균 {amount}/월",
+    "dailyAmount": "{amount}/일"
   },
   "chart": {
     "title": "회당 결제\n{ccy}",

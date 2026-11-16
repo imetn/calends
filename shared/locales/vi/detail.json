@@ -115,7 +115,8 @@
     "perMonthValue": "{amount}/tháng",
     "perDay": "{amount} mỗi ngày",
     "thisYearMonthly": "Năm nay mỗi tháng",
-    "averageMonthly": "Trung bình {amount}/tháng"
+    "averageMonthly": "Trung bình {amount}/tháng",
+    "dailyAmount": "{amount}/ngày"
   },
   "chart": {
     "title": "Mỗi lần trừ\n{ccy}",
