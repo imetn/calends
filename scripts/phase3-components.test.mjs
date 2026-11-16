@@ -147,6 +147,7 @@ test('incomplete annual totals keep finite receipt decoration and unavailable pe
   const Receipt = component('Review.tsx', 'Receipt', {
     copyParts: (v) => v,
     t: String,
+    numericDate: formatMod.numericDate,
     Line: 'line',
     ReviewLoss: 'loss',
     location: { host: 'fictional.invalid' },

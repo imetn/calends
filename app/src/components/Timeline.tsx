@@ -3,7 +3,7 @@ import { dateFormat } from '../../../shared/intl.ts';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { addDays, addMonths, diffDays } from '../../../shared/billing.ts';
-import { monthLabel } from '../../../shared/format.ts';
+import { monthLabel, numericDate } from '../../../shared/format.ts';
 import { intlLocale, t } from '../../../shared/i18n.ts';
 import './timeline.css';
 import './copy.css';
@@ -40,7 +40,6 @@ const AHEAD_MONTHS = 12;
 const CHUNK = 1200;
 
 const yearLabel = (d: string) => dateFormat(intlLocale(), { year: 'numeric', timeZone: 'UTC' }).format(new Date(`${d}T00:00:00Z`));
-const md = (d: string) => `${Number(d.slice(5, 7))}/${Number(d.slice(8))}`;
 
 /**
  * 扣款时间线：最左是账本里最早的订阅开始那天，最右是今天往后一年；打开时今天在正中。
@@ -296,7 +295,7 @@ export function Timeline({
                     data-snapshot-keep
                     className={`tl-icon tl-day ${date < today ? 'past' : ''} ${tip?.g === g ? 'on' : ''}`}
                     style={style}
-                    aria-label={[md(date), g.total, ...g.items.map((i) => `${i.name} ${i.amount}`)].filter(Boolean).join('\n')}
+                    aria-label={[numericDate(date), g.total, ...g.items.map((i) => `${i.name} ${i.amount}`)].filter(Boolean).join('\n')}
                     aria-describedby={tip?.g === g ? tipId : undefined}
                     aria-expanded={tip?.g === g && tip.pinned}
                     onMouseEnter={(e) => tip?.pinned || showTip(g, e.currentTarget, false)}
@@ -318,7 +317,7 @@ export function Timeline({
                   data-snapshot-keep
                   className={`tl-icon ${date < today ? 'past' : ''}`}
                   style={style}
-                  aria-label={`${md(date)}\n${it.name}\n${it.amount}`}
+                  aria-label={`${numericDate(date)}\n${it.name}\n${it.amount}`}
                   onMouseEnter={(e) => tip?.pinned || showTip(one, e.currentTarget, false)}
                   onMouseLeave={() => tip?.pinned || setTip(null)}
                   onFocus={(e) => tip?.pinned || showTip(one, e.currentTarget, false)}
@@ -358,11 +357,11 @@ export function Timeline({
               const n = e.relatedTarget as Node | null;
               if (n && !e.currentTarget.contains(n) && !tip.from.contains(n)) setTip(null);
             }}
-            aria-label={tip.pinned ? md(tip.g.date) : undefined}
+            aria-label={tip.pinned ? numericDate(tip.g.date) : undefined}
             style={tipAt}
           >
             <div className="tl-tip-head">
-              <b>{md(tip.g.date)}</b>
+              <b>{numericDate(tip.g.date)}</b>
               {tip.g.total && <b className="num">{tip.g.total}</b>}
             </div>
             {tip.g.items.map((it) =>

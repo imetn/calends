@@ -12,7 +12,7 @@ import {
   servedTime,
   isStopped,
 } from '../../../shared/billing.ts';
-import { cnDate, cnDateFull, money } from '../../../shared/format.ts';
+import { cnDate, cnDateFull, money, numericDate } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 
 /** 不是今年的日期带上年份 */
@@ -205,7 +205,7 @@ function SReceipt({ sub, st, hide, m, today }: Ctx) {
       <div className="rc-cut" />
       {shown.map(({ c, v }, i) => (
         <div key={i} className="rc-row">
-          <span className="rc-d">{c.date}</span>
+          <span className="rc-d">{numericDate(c.date, { year: true })}</span>
           <span className="rc-n">
             {c.kind === 'refund' ? (
               t('share.refund')

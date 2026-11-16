@@ -44,7 +44,7 @@ const NAV_ROWS: Array<[string, string, boolean]> = [
   ['connect', 'ai', true],
 ];
 import { CurrencySelect, Picker } from '../components/Picker.tsx';
-import { localTime } from '../../../shared/format.ts';
+import { cnDateFull, localDay, localTime } from '../../../shared/format.ts';
 
 interface Preview {
   day: string;
@@ -118,12 +118,12 @@ function timeZones(current: string) {
 
 function ReminderPreview({ preview, timezone }: { preview: Preview | null; timezone: string }) {
   if (!preview) return null;
-  const todayLog = preview?.log.filter((l) => localTime(l.sent_at, timezone, true) === preview.day) ?? [];
-  const recentLog = preview?.log.filter((l) => localTime(l.sent_at, timezone, true) !== preview.day) ?? [];
+  const todayLog = preview?.log.filter((l) => localDay(l.sent_at, timezone) === preview.day) ?? [];
+  const recentLog = preview?.log.filter((l) => localDay(l.sent_at, timezone) !== preview.day) ?? [];
   return (
     <>
       {preview && (preview.digests.length > 0 || todayLog.length > 0) && (
-        <Group title={t('settings.today.title', { day: preview.day })}>
+        <Group title={t('settings.today.title', { day: cnDateFull(preview.day) })}>
           {preview.digests.map((d) => (
             <Cell key={d.key} label={d.subject}>
               {t('settings.today.items', { count: d.sections.reduce((a, x) => a + x.rows.length, 0) })}
@@ -131,7 +131,7 @@ function ReminderPreview({ preview, timezone }: { preview: Preview | null; timez
           ))}
           {todayLog.map((l) => (
             <Cell key={l.dedupe_key} label={<span style={{ fontSize: 'var(--fs-2)' }}>{l.subject}</span>}>
-              <span style={{ color: l.status === 'sent' ? undefined : 'var(--red)', fontSize: 'var(--fs-1)' }}>{localTime(l.sent_at, timezone).slice(11)}</span>
+              <span style={{ color: l.status === 'sent' ? undefined : 'var(--red)', fontSize: 'var(--fs-1)' }}>{localTime(l.sent_at, timezone, { part: 'time' })}</span>
             </Cell>
           ))}
         </Group>
@@ -143,7 +143,7 @@ function ReminderPreview({ preview, timezone }: { preview: Preview | null; timez
           {recentLog.slice(0, 6).map((l) => (
             <Cell key={l.dedupe_key} label={<span style={{ fontSize: 'var(--fs-2)' }}>{l.subject}</span>}>
               <span style={{ color: l.status === 'sent' ? undefined : 'var(--red)', fontSize: 'var(--fs-1)', whiteSpace: 'nowrap' }}>
-                {((at) => (at.startsWith(preview.day.slice(0, 4)) ? at.slice(5) : at))(localTime(l.sent_at, timezone))}
+                {localTime(l.sent_at, timezone, { today: preview.day })}
               </span>
             </Cell>
           ))}
@@ -505,7 +505,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
           {failed.fx && !fxs ? (
             <LoadFailed onRetry={() => void loadFx()} />
           ) : (
-            <Cell label={t('settings.fx.history')} sub={fxs?.first ? t('settings.fx.earliest', { date: fxs.first }) : undefined}>
+            <Cell label={t('settings.fx.history')} sub={fxs?.first ? t('settings.fx.earliest', { date: cnDateFull(fxs.first) }) : undefined}>
               {fxs ? t('settings.fx.coverage', { covered: fxs.covered, count: fxs.needed }) : '…'}
             </Cell>
           )}

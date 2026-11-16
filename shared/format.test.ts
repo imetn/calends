@@ -1,6 +1,23 @@
 import { afterEach, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { currencyDecimals, monthTicks, moneyTick, symbol, flow, flowSign, money, nearDate, relDays, setSignedAmounts } from './format.ts';
+import {
+  cnDate,
+  cnDateFull,
+  currencyDecimals,
+  localDay,
+  localTime,
+  monthLabel,
+  monthTicks,
+  moneyTick,
+  numericDate,
+  symbol,
+  flow,
+  flowSign,
+  money,
+  nearDate,
+  relDays,
+  setSignedAmounts,
+} from './format.ts';
 import { setLocale } from './i18n.ts';
 import { DEFAULT_SETTINGS } from './types.ts';
 
@@ -143,6 +160,70 @@ test('upcoming dates share one near-day threshold, then fall back to a dated lab
   // 跨年但在两周内仍说相对天数
   assert.equal(nearDate('2027-01-03', '2026-12-28'), relDays(6));
   setLocale('en', []);
+});
+
+// 用户反馈（#16）：英文下时间线写 11/10、报告图提示写 2026-10，格式不统一；en-AU 要日在前
+test('displayed dates follow the interface locale: en keeps US order, en-AU puts the day first, zh-CN stays unchanged', () => {
+  const cases = {
+    en: { short: '11/15', numeric: '11/15/2026', day: 'Nov 15', full: 'Nov 15, 2026', month: 'Nov 2026', axis: '11/26', stamp: 'Nov 15, 2026, 7:03 PM', time: '7:03 PM' },
+    'en-AU': { short: '15/11', numeric: '15/11/2026', day: '15 Nov', full: '15 Nov 2026', month: 'Nov 2026', axis: '11/26', stamp: '15 Nov 2026, 7:03 pm', time: '7:03 pm' },
+    'zh-CN': { short: '11/15', numeric: '2026/11/15', day: '11月15日', full: '2026年11月15日', month: '2026年11月', axis: '26/11', stamp: '2026年11月15日 19:03', time: '19:03' },
+  } as const;
+  for (const [loc, want] of Object.entries(cases)) {
+    setLocale(loc as keyof typeof cases, []);
+    const got = {
+      short: numericDate('2026-11-15'),
+      numeric: numericDate('2026-11-15', { year: true }),
+      day: cnDate('2026-11-15'),
+      full: cnDateFull('2026-11-15'),
+      month: monthLabel('2026-11'),
+      axis: monthLabel('2026-11', { numeric: true }),
+      // 服务端 UTC 时间按设置时区显示：UTC 11:03 是悉尼夏令时 22:03、上海 19:03
+      stamp: localTime('2026-11-15 11:03:00', 'Asia/Shanghai'),
+      time: localTime('2026-11-15T11:03:00Z', 'Asia/Shanghai', { part: 'time' }),
+    };
+    // Intl 在部分版本里用窄不换行空格分隔时间和 AM/PM
+    for (const k of Object.keys(got) as Array<keyof typeof got>) got[k] = got[k].replace(/[\u202f\u00a0]/g, ' ');
+    assert.deepEqual(got, want, loc);
+  }
+  setLocale('en-AU', []);
+  assert.equal(localTime('2026-11-15 11:03:00', 'Australia/Sydney', { part: 'date' }), '15 Nov 2026');
+  assert.equal(localTime('2026-11-15 11:03:00', 'Australia/Sydney', { today: '2026-11-16' }).replace(/[\u202f\u00a0]/g, ' '), '15 Nov, 10:03 pm');
+  assert.equal(localTime('not a time', 'UTC'), 'not a time');
+  // 比较用的日期仍是 ISO，跨日按设置时区算
+  assert.equal(localDay('2026-11-15 14:30:00', 'Australia/Sydney'), '2026-11-16');
+  assert.equal(localDay('2026-11-15T14:30:00Z', 'UTC'), '2026-11-15');
+  setLocale('en', []);
+});
+
+test('display points no longer hand-build MM/DD, YY/M or YYYY-MM date strings', async () => {
+  const { readFileSync, readdirSync } = await import('node:fs');
+  const root = new URL('../app/src/', import.meta.url);
+  const files = (readdirSync(root, { recursive: true }) as string[]).filter((f) => /\.tsx?$/.test(f));
+  const handBuilt = [
+    // 「11/10」：月份与日子用斜杠拼接
+    /slice\(5\)\.replace\(\s*'-'\s*,\s*'\/'\s*\)/,
+    /Number\([\w.]+\.slice\(5, 7\)\)\}\/\$\{Number\(/,
+    // 「26/10」：两位年份拼月份
+    /slice\(2, 4\)\}\/\$\{/,
+    // 「2026-10-20 19:03」：sv-SE 写法只留给比较用的 localDay
+    /toLocaleString\('sv-SE'/,
+  ];
+  for (const f of files) {
+    const src = readFileSync(new URL(f, root), 'utf8');
+    for (const re of handBuilt) assert.doesNotMatch(src, re, `${f} ${re}`);
+  }
+  const read = (f: string) => readFileSync(new URL(f, root), 'utf8');
+  // 原样输出 ISO 字符串的几处显示点
+  assert.doesNotMatch(read('views/Report.tsx'), /: rows\[i\]\.month\}/);
+  assert.doesNotMatch(read('views/SubShare.tsx'), /\{c\.date\}/);
+  assert.doesNotMatch(read('views/Wallet.tsx'), /\{tp\.date\}/);
+  assert.doesNotMatch(read('views/ImportSheet.tsx'), />\{row\.nextDue\}</);
+  assert.doesNotMatch(read('views/Review.tsx'), /\{ date: today \}/);
+  assert.doesNotMatch(read('views/Settings.tsx'), /\{ day: preview\.day \}|\{ date: fxs\.first \}|localTime\([^)]*\)\.slice\(/);
+  assert.doesNotMatch(read('components/History.tsx'), /\{ date: p\.from \}/);
+  for (const f of ['views/Settings.tsx', 'views/Security.tsx', 'views/Ai.tsx']) assert.doesNotMatch(read(f), /localTime\([^)]*, true\)/, f);
+  assert.doesNotMatch(readFileSync(new URL('../worker/ics.ts', import.meta.url), 'utf8'), /\{ date: deadline \}/);
 });
 
 const monthsFrom = (start: string, n: number) =>

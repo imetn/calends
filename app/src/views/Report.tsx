@@ -8,7 +8,7 @@ import { base as appPath } from '../base.ts';
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { canUseSingleKey } from '../keyboard.ts';
 import { addDays, addMonths, diffDays, effectiveStatus, isStopped } from '../../../shared/billing.ts';
-import { flow, cnDate, money, moneyTick, monthLabel, servedSpan } from '../../../shared/format.ts';
+import { flow, cnDate, money, moneyTick, monthLabel, numericDate, servedSpan } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { tx } from '../i18n.ts';
 import {
@@ -937,7 +937,7 @@ function CashCard({ state, today, year }: { state: AppState; today: string; year
           months={year === null ? undefined : rows.map((r) => r.month)}
           tip={(i) => (
             <>
-              <b>{year === null ? t('report.pick.year', { year: rows[i].month }) : rows[i].month}</b>
+              <b>{year === null ? t('report.pick.year', { year: rows[i].month }) : monthLabel(rows[i].month)}</b>
               {copyParts(rows[i].projected ? t('report.cash.forecast') : '')}
               <br />
               {copyParts(
@@ -1246,7 +1246,7 @@ function Changelog({ state, today, year, onOpen, base }: { state: AppState; toda
             <Fragment key={e.sub.id + e.kind + e.date + i}>
               {showYear && <div className="log-year">{yr}</div>}
               <button className="log-item" data-snapshot-keep onClick={() => onOpen(e.sub)}>
-                <span className="log-date num">{e.date.slice(5).replace('-', '/')}</span>
+                <span className="log-date num">{numericDate(e.date)}</span>
                 <i className={`log-dot ${neutral ? '' : up ? 'up' : 'down'}`} />
                 <SubIcon sub={e.sub} size={24} />
                 <span className="log-name">

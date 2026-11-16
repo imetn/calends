@@ -325,6 +325,7 @@ test('报告损失明细可打开原订阅；四种年度分享在非零且未�
     TailName: 'TailName',
     catColor: () => '#777',
     monthLabel: () => 'October',
+    numericDate: (d: string) => d,
     packCircles: () => [],
     location: { host: 'example.test' },
   });

@@ -198,8 +198,14 @@ export function cnDateFull(d: string): string {
   return fmtDate(d, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-/** 「2026年10月」「Oct 2026」；month 为 YYYY-MM */
-export function monthLabel(month: string, opts: { year?: boolean; long?: boolean } = {}): string {
+/** 数字日期，顺序与分隔符跟随语言：短的「11/15」「15/11」「15.11.」，带年份的「11/15/2026」「15/11/2026」「2026/11/15」 */
+export function numericDate(d: string, opts: { year?: boolean } = {}): string {
+  return fmtDate(d, opts.year ? { year: 'numeric', month: '2-digit', day: '2-digit' } : { month: 'numeric', day: 'numeric' });
+}
+
+/** 「2026年10月」「Oct 2026」；month 为 YYYY-MM。numeric 写成两位年份的数字月份：「10/26」「26/10」 */
+export function monthLabel(month: string, opts: { year?: boolean; long?: boolean; numeric?: boolean } = {}): string {
+  if (opts.numeric) return fmtDate(`${month}-01`, { year: '2-digit', month: 'numeric' });
   return fmtDate(`${month}-01`, { month: opts.long ? 'long' : 'short', ...(opts.year === false ? {} : { year: 'numeric' }) });
 }
 
@@ -250,13 +256,25 @@ export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
-/** 把服务端的 UTC 时间（ISO 或 SQLite 的「YYYY-MM-DD HH:MM:SS」）按设置的时区显示成「2026-10-20 19:03」；dateOnly 只要日期 */
-export function localTime(raw: string, timeZone: string, dateOnly = false): string {
-  const iso = /[TZ]/.test(raw) ? raw : raw.replace(' ', 'T') + 'Z';
-  const d = new Date(iso);
+const utcInstant = (raw: string): Date => new Date(/[TZ]/.test(raw) ? raw : raw.replace(' ', 'T') + 'Z');
+
+/** 服务端的 UTC 时间（ISO 或 SQLite 的「YYYY-MM-DD HH:MM:SS」）在设置时区里是哪一天，YYYY-MM-DD，供比较用，不用于显示 */
+export function localDay(raw: string, timeZone: string): string {
+  const d = utcInstant(raw);
+  return Number.isNaN(d.getTime()) ? raw.slice(0, 10) : dateFormat('sv-SE', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+
+/**
+ * 服务端的 UTC 时间按设置的时区、当前语言显示：「2026年10月20日 19:03」「Oct 20, 2026, 7:03 PM」「20 Oct 2026, 7:03 pm」。
+ * part 只要日期或时间；today（YYYY-MM-DD）与之同年时省略年份。
+ */
+export function localTime(raw: string, timeZone: string, opts: { part?: 'date' | 'time'; today?: string } = {}): string {
+  const d = utcInstant(raw);
   if (Number.isNaN(d.getTime())) return raw;
-  const s = d.toLocaleString('sv-SE', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
-  return dateOnly ? s.slice(0, 10) : s.slice(0, 16);
+  const time: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+  if (opts.part === 'time') return dateFormat(intlLocale(), { timeZone, ...time }).format(d);
+  const year = opts.today && localDay(raw, timeZone).slice(0, 4) === opts.today.slice(0, 4) ? {} : { year: 'numeric' as const };
+  return dateFormat(intlLocale(), { timeZone, ...year, month: 'short', day: 'numeric', ...(opts.part === 'date' ? {} : time) }).format(d);
 }
 
 /**

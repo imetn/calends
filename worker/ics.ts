@@ -1,6 +1,6 @@
 import { isImageIcon } from '../shared/icon.ts';
 import { addDays, addMonths, chargesBetween, renewalRuleAt, todayIn, chargeMethodId, isSeparate, type Charge } from '../shared/billing.ts';
-import { money } from '../shared/format.ts';
+import { cnDateFull, money } from '../shared/format.ts';
 import { t } from '../shared/i18n.ts';
 import type { AppState, Subscription } from '../shared/types.ts';
 
@@ -100,7 +100,7 @@ export function buildIcs(state: AppState, siteUrl: string): string {
           lines.push(
             'BEGIN:VALARM',
             'ACTION:DISPLAY',
-            fold(`DESCRIPTION:${icsText(t('core.renewal.cancelReminder', { date: deadline }))}`),
+            fold(`DESCRIPTION:${icsText(t('core.renewal.cancelReminder', { date: cnDateFull(deadline) }))}`),
             `TRIGGER:-P${cancelLead + remind - 1}DT15H`,
             'END:VALARM',
           );
