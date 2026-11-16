@@ -762,6 +762,30 @@ test('detail timeline forecasts only the next charge, for monthly and yearly pla
   }
 });
 
+test('后付费本期还没出的账单也画在周期中间，与前几根柱等距', () => {
+  // 用户反馈：最后一根斜纹柱被挪到周期末日，比前一根多空出半个月
+  const file = '../app/src/views/detail/ChargeTimeline.tsx';
+  const barDay = load(file, 'barDay', extractUiFunction(new URL(file, import.meta.url), 'barDay'), billing);
+  const sub: Subscription = {
+    id: 'p',
+    name: 'Power',
+    category: 'home',
+    tags: [],
+    price: 10,
+    currency: 'CNY',
+    start: '2024-01-01',
+    billing: 'postpaid',
+    cycle: { unit: 'month', every: 1 },
+    status: 'active',
+  };
+  const today = '2026-11-16';
+  const [past, next] = [billing.chargesBetween(sub, '2026-11-01', today, today).at(-1)!, detailForecast(sub, today).charges[0]];
+  assert.equal(past.date, '2026-11-01');
+  assert.equal(next.date, '2026-12-01');
+  assert.equal(barDay(past), '2026-10-16');
+  assert.equal(barDay(next), '2026-11-15');
+});
+
 test('分开记的费用走势一期一根柱：预缴的未来账单画实柱，部分已缴的那期同柱带上未缴部分', () => {
   const file = '../app/src/views/detail/ChargeTimeline.tsx';
   const url = new URL(file, import.meta.url);

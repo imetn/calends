@@ -42,14 +42,12 @@ export type Range = 'all' | '1y' | '6m';
 
 /**
  * 柱子位置：后付费的周期账单画在所属周期中间（8 月电费在 8 月中），与用量柱对齐；其余在扣款日。
- * 还没出的账单若中间日已过（周期还没走完），挪到周期末日，不画在「今天」左边
+ * 还没出的本期账单也画在中间日，与前几根柱等距；挪到周期末日会比其他柱多空出半个月
  */
-export function barDay(c: Charge, today: string): string {
+export function barDay(c: Charge): string {
   if (c.kind || !isPostpaid(c.sub)) return c.date;
   const p = chargeServicePeriod(c.sub, c.date, c.serviceDate);
-  const last = addDays(p.until, -1);
-  const mid = midDay(p.from, last);
-  return c.date > today && mid <= today ? last : mid;
+  return midDay(p.from, addDays(p.until, -1));
 }
 
 /**
@@ -130,7 +128,7 @@ export function timelineAxis(sub: Subscription, today: string, history: Charge[]
   if (bills) future.splice(0, future.length, ...bills.next);
   // Preserve late payments after a known service end without extending the service lane.
   // 按柱子位置取首末：补交的旧账单扣款日晚，柱子却画在更早的所属周期，不能按扣款顺序取
-  const barDays = [...past, ...owed, ...future].map((c) => barDay(c, today)).sort();
+  const barDays = [...past, ...owed, ...future].map((c) => barDay(c)).sort();
   const firstDate = barDays[0] ?? anchor;
   const lastDate = barDays[barDays.length - 1] ?? anchor;
   const first = firstDate < anchor ? firstDate : anchor;
@@ -211,7 +209,7 @@ export function Timeline({
     const full = owedPart ? v + (ccy === base ? chargeBaseOrNaN(state, owedPart, base) : owedPart.amount) : intro;
     return {
       ...r,
-      date: barDay(r.c, today),
+      date: barDay(r.c),
       phase: r.c.sub.start,
       v,
       ref: r.future ? undefined : average,
