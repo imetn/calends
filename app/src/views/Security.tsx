@@ -11,6 +11,7 @@ import { api, registerPasskey, saveSettings } from '../store.ts';
 import { run } from '../toast.ts';
 import { composing } from '../keyboard.ts';
 import { t } from '../../../shared/i18n.ts';
+import { renameStart } from '../name-edit.ts';
 
 interface Device {
   id: string;
@@ -69,9 +70,11 @@ function NameEdit({ name, fallback, required, onSave }: { name: string; fallback
   const [saving, setSaving] = useState<string>();
   // Esc 卸载输入框时 Chromium 仍会派发 blur，用它挡掉这次保存
   const cancelled = useRef(false);
+  // 没起过名时按钮显示默认名（浏览器 · 系统），点开改名也从它开始，和 Passkey 一样带着原名
+  const shown = renameStart(name, fallback);
   if (draft === undefined)
     return (
-      <button type="button" className="name-edit" title={t('settings.security.rename')} disabled={saving !== undefined} onClick={() => setDraft(name)}>
+      <button type="button" className="name-edit" title={t('settings.security.rename')} disabled={saving !== undefined} onClick={() => setDraft(shown)}>
         {(saving ?? name) || copyParts(fallback)}
       </button>
     );
@@ -79,7 +82,8 @@ function NameEdit({ name, fallback, required, onSave }: { name: string; fallback
     if (cancelled.current) return void (cancelled.current = false);
     const v = draft.trim();
     setDraft(undefined);
-    if (v === name || (required && !v)) return;
+    // 原样确认默认名不算改名，不把浏览器名写成自定义名
+    if (v === name || v === shown || (required && !v)) return;
     setSaving(v);
     let ok = false;
     void run(() => onSave(v).then(() => (ok = true)), t('settings.toast.saved')).then(() => {
