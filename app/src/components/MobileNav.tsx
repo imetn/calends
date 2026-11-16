@@ -4,6 +4,7 @@ import { arcAngle } from '../mobile-nav.ts';
 import { usePageAdd } from '../page-add.ts';
 import { href } from '../router.ts';
 import { THEME_LABEL, ThemeIcon, type ThemeMode } from '../theme.tsx';
+import { availableUpdate, useUpdateState } from '../update-check.ts';
 import { Icon } from './icons.tsx';
 
 /** 手机导航的一项：key 是底栏设置里的键，path 是点下去的路由 */
@@ -96,6 +97,7 @@ export function Dock({
   onAdd?: () => void;
 }) {
   const typing = useTyping();
+  const update = availableUpdate(useUpdateState());
   const key = routeKey(route);
   const inBar = bar.some((n) => n.key === key);
   const btn = useRef<HTMLButtonElement>(null);
@@ -174,6 +176,7 @@ export function Dock({
       <a key="settings" className={`arc-item ${route === 'settings' || route === 'settings/public' ? 'on' : ''}`} href={href('settings')} onClick={close}>
         <Icon name="gear" />
         <span className="arc-label">{t('app.navShort.settings')}</span>
+        {update && <span className="side-dot" role="img" aria-label={t('settings.update.available')} />}
       </a>,
     );
 

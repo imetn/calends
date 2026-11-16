@@ -452,5 +452,12 @@
         "desc": "Khu vực của các gói đang dùng"
       }
     }
+  },
+  "update": {
+    "current": "Phiên bản",
+    "latest": "Phiên bản mới nhất",
+    "available": "Có bản cập nhật",
+    "check": "Kiểm tra cập nhật",
+    "failed": "Kiểm tra thất bại"
   }
 }

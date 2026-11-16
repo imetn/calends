@@ -452,5 +452,12 @@
         "desc": "Wilayah langganan aktif"
       }
     }
+  },
+  "update": {
+    "current": "Versi",
+    "latest": "Versi terbaru",
+    "available": "Pembaruan tersedia",
+    "check": "Periksa pembaruan",
+    "failed": "Gagal memeriksa"
   }
 }

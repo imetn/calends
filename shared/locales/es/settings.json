@@ -470,5 +470,12 @@
         "desc": "Regiones de las suscripciones activas"
       }
     }
+  },
+  "update": {
+    "current": "Versión",
+    "latest": "Última versión",
+    "available": "Actualización disponible",
+    "check": "Buscar actualizaciones",
+    "failed": "No se pudo comprobar"
   }
 }

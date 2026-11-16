@@ -2896,6 +2896,24 @@ button.bl-col {
 .side-gap {
   height: 8px;
 }
+/* 有新版本：设置入口上的小圆点（侧栏行尾、手机圆弧图标右上） */
+.side-dot {
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  background: var(--accent);
+}
+.arc-item:has(.side-dot) {
+  position: relative;
+}
+.arc-item .side-dot {
+  position: absolute;
+  top: 13px;
+  right: 15px;
+  margin: 0;
+}
 .side-foot {
   border-top: 0;
   padding-top: 6px;
