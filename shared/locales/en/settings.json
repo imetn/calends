@@ -470,5 +470,12 @@
         "desc": "Regions of active subscriptions"
       }
     }
+  },
+  "update": {
+    "current": "Version",
+    "latest": "Latest version",
+    "available": "Update available",
+    "check": "Check for updates",
+    "failed": "Check failed"
   }
 }

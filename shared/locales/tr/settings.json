@@ -470,5 +470,12 @@
         "desc": "Etkin aboneliklerin bölgeleri"
       }
     }
+  },
+  "update": {
+    "current": "Sürüm",
+    "latest": "En son sürüm",
+    "available": "Güncelleme var",
+    "check": "Güncellemeleri denetle",
+    "failed": "Denetlenemedi"
   }
 }

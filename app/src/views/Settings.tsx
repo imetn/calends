@@ -23,6 +23,7 @@ import { PublicSubsSheet, publicCandidates } from './PublicSubs.tsx';
 import { go, sortNav } from '../router.ts';
 import { LOCALES, isLocale, t } from '../../../shared/i18n.ts';
 import { preferredLocale } from '../i18n.ts';
+import { APP_VERSION, availableUpdate, checkUpdateNow, useUpdateState } from '../update-check.ts';
 
 /** 可设为启动页的页面（标签取 app.nav.*） */
 const START_PAGES: Array<[string, string]> = [
@@ -354,6 +355,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
               ariaLabel={t('settings.general.weekStartAria')}
             />
           </Cell>
+          <VersionCells />
         </Group>
 
         <Group title={t('settings.sidebar.title')}>
@@ -638,6 +640,29 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
       {ics && <IcsSheet state={state} onClose={() => setIcs(false)} />}
       {pubSubs && <PublicSubsSheet state={state} today={today} onClose={() => setPubSubs(false)} />}
       {importing && <ImportSheet source={importing} state={state} today={today} onClose={() => setImporting(null)} />}
+    </>
+  );
+}
+
+/** 版本与更新：当前版本、最近读到的最新正式版（点开是它的发布页）、手动检查。自托管只提示，不在这里升级 */
+function VersionCells() {
+  const u = useUpdateState();
+  const latest = u.cache?.latest;
+  const update = availableUpdate(u);
+  return (
+    <>
+      <Cell label={t('settings.update.current')}>
+        {`v${APP_VERSION}`}
+      </Cell>
+      {latest && (
+        <Cell label={t('settings.update.latest')} onClick={() => window.open(latest.url, '_blank', 'noopener')}>
+          {update && <span className="badge green">{t('settings.update.available')}</span>}
+          {`v${latest.version}`}
+        </Cell>
+      )}
+      <Cell label={<span style={{ color: 'var(--accent)' }}>{t('settings.update.check')}</span>} onClick={() => void checkUpdateNow()}>
+        {u.checking ? '…' : u.failed && <span style={{ color: 'var(--red)' }}>{t('settings.update.failed')}</span>}
+      </Cell>
     </>
   );
 }

@@ -16,6 +16,7 @@ import { SubIcon } from './components/marks.tsx';
 import { useMedia } from './components/inputs.tsx';
 import { authStatus, boot, login, loginPasskey, saveSettings, setupPassword, startPasskeyAutofill, today, useStore } from './store.ts';
 import { run } from './toast.ts';
+import { autoCheckUpdate, availableUpdate, useUpdateState } from './update-check.ts';
 import { usePref } from './prefs.ts';
 import { allCurrencies, setOrig, usedCurrencies, useOrig } from './display.ts';
 import { syncCategories } from './derive.ts';
@@ -272,6 +273,7 @@ function Sidebar({
   inert?: boolean;
 }) {
   const [gear, setGear] = useState(0);
+  const update = availableUpdate(useUpdateState());
   // 即将扣款：像聊天记录一样列在导航下方；往后看 0 天表示看到本月月底
   const days = state.settings.upcomingDays ?? 45;
   const horizon = days === 0 ? monthEnd(d.slice(0, 7)) : addDays(d, days);
@@ -348,6 +350,7 @@ function Sidebar({
               <Icon name="gear" />
             </span>
             <span>{t('app.nav.settings')}</span>
+            {update && <span className="side-dot" role="img" aria-label={t('settings.update.available')} />}
           </a>
         )}
       </div>
@@ -517,6 +520,11 @@ function App() {
   useEffect(() => {
     if (loaded) prefetchViews();
   }, [loaded]);
+  // 检查更新只在登录后的应用里做（公开页是另一个入口，不引入）；只读演示没有设置页，不查
+  const checkUpdates = loaded && !state.readonly;
+  useEffect(() => {
+    if (checkUpdates) autoCheckUpdate();
+  }, [checkUpdates]);
   // 窄屏：侧边栏换成底栏 +「更多」
   const narrow = useMedia('(max-width: 860px)');
   const wideDock = useMedia(WIDE_DOCK);

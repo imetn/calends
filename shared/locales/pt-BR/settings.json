@@ -470,5 +470,12 @@
         "desc": "Regiões das assinaturas ativas"
       }
     }
+  },
+  "update": {
+    "current": "Versão",
+    "latest": "Versão mais recente",
+    "available": "Atualização disponível",
+    "check": "Verificar atualizações",
+    "failed": "Falha na verificação"
   }
 }

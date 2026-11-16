@@ -470,5 +470,12 @@
         "desc": "Regionen aktiver Abos"
       }
     }
+  },
+  "update": {
+    "current": "Version",
+    "latest": "Neueste Version",
+    "available": "Update verfügbar",
+    "check": "Nach Updates suchen",
+    "failed": "Prüfung fehlgeschlagen"
   }
 }
