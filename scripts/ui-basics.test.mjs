@@ -1755,3 +1755,14 @@ test('助手对话分隔线时间走 localTime，按设置时区且今年省略�
   assert.match(src, /fmtWhen = \(iso: string, timeZone: string, today: string\): string => localTime\(iso, timeZone, \{ today \}\)/);
   assert.doesNotMatch(src, /toLocaleString\(/);
 });
+
+test('金额小数不被容器的 small { display: block } 挤到下一行；报告即将扣款独占一行时分两列', () => {
+  const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\.amt \.amt-fraction \{\n\s*display: inline;/);
+  const report = readFileSync(new URL('../app/src/components/ScopeReport.tsx', import.meta.url), 'utf8');
+  assert.match(report, /case 'upcoming':[\s\S]*?wide && !monthly && list\.length > 1 \?[\s\S]*?scope-ranks/);
+  const lifecycle = readFileSync(new URL('../app/src/components/ScopeLifecycleReport.tsx', import.meta.url), 'utf8');
+  assert.match(lifecycle, /renderBlock\(upcoming, true\)/);
+  const ui = readFileSync(new URL('../app/src/components/ui.css', import.meta.url), 'utf8');
+  assert.match(ui, /\.metric-note \.hero-delta \{\n\s*font-size: var\(--fs-1\);/);
+});

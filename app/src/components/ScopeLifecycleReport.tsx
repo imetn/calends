@@ -7,6 +7,7 @@ import type { Block, ScopeReport } from '../../../shared/scope-report.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { Gantt } from '../views/Gantt.tsx';
 import { MetricCards, Metric, CardTitle } from './ui.tsx';
+import { SpendingDelta } from './ScopeReport.tsx';
 
 /** Lifecycle presentation is exclusive to list selections; calendar blocks retain their renderer. */
 export function ScopeLifecycleReport({
@@ -26,7 +27,7 @@ export function ScopeLifecycleReport({
   id: string;
   copying: boolean;
   actions: ReactNode;
-  renderBlock: (block: Block) => ReactNode;
+  renderBlock: (block: Block, wide?: boolean) => ReactNode;
 }) {
   const [allEvents, setAllEvents] = useState(false);
   const data = report.lifecycle!;
@@ -38,6 +39,20 @@ export function ScopeLifecycleReport({
   const mrr = head?.mode === 'scope' ? head.partial?.mrr : undefined;
   const count = (n: number) => t('scope.lifecycle.times', { count: n });
   const amount = (total: Parameters<typeof formatTotal>[0]) => formatTotal(total, base, { direction: -1, main: true });
+  const candidates =
+    head?.mode === 'scope'
+      ? [
+          { label: 'scope.yearTotal', value: head.year, total: head.partial?.year },
+          { label: 'scope.yearPaid', value: head.paid, total: head.partial?.paid },
+          { label: 'scope.annual', value: head.annual, total: head.partial?.annual },
+        ]
+      : head?.mode === 'total'
+        ? [{ label: 'scope.yearPaid', value: head.yearPaid, total: head.partial?.yearPaid }]
+        : [];
+  const spare =
+    data.stoppedCount || data.terminatedCount
+      ? undefined
+      : candidates.map((c) => ({ ...c, value: c.total?.value ?? c.value })).find((c) => c.value !== 0 && Math.abs(c.value - data.spent.value) > 0.005);
   return (
     <div id={id} className="scope-grid scope-lifecycle">
       <div className="scope-headline scope-block">
@@ -56,22 +71,32 @@ export function ScopeLifecycleReport({
             label={t(data.activeCount || !data.stoppedCount ? 'scope.monthly' : 'scope.lifecycle.stoppedMonthly')}
             value={data.activeCount ? (mrr ? amount(mrr) : flow(0, base)) : data.stoppedCount ? amount(data.stoppedMonthly) : '—'}
             note={
-              data.activeCount && head?.mode === 'scope'
-                ? `${t('scope.previousEnd')} / ${flow(-head.change.amount, base)}`
-                : t(data.stoppedCount === data.timeline.length + data.omitted ? 'scope.lifecycle.allStopped' : 'scope.lifecycle.noActive')
-            }
-          />
-          <Metric
-            label={t(data.terminatedCount ? 'core.stop.terminate' : 'scope.lifecycle.stopped')}
-            value={data.terminatedCount || data.stoppedCount ? count(data.terminatedCount || data.stoppedCount) : '—'}
-            note={
-              data.terminatedCount ? (
-                <span className={data.terminationLoss.value > 0 || data.terminationLoss.incomplete ? 'loss' : ''}>
-                  {t('report.stops.loss')} / {amount(data.terminationLoss)}
+              data.activeCount && head?.mode === 'scope' ? (
+                <span className="hero-delta">
+                  <SpendingDelta value={head.change} base={base} />
+                  <span>{t('scope.previousEnd')}</span>
                 </span>
-              ) : undefined
+              ) : (
+                t(data.stoppedCount === data.timeline.length + data.omitted ? 'scope.lifecycle.allStopped' : 'scope.lifecycle.noActive')
+              )
             }
           />
+          {/* 没有停止过的订阅时「已停止」只剩横线：换成第一个不为零、且不与累计花费同数的金额指标 */}
+          {spare ? (
+            <Metric label={t(spare.label)} value={spare.total ? amount(spare.total) : flow(-spare.value, base)} />
+          ) : (
+            <Metric
+              label={t(data.terminatedCount ? 'core.stop.terminate' : 'scope.lifecycle.stopped')}
+              value={data.terminatedCount || data.stoppedCount ? count(data.terminatedCount || data.stoppedCount) : '—'}
+              note={
+                data.terminatedCount ? (
+                  <span className={data.terminationLoss.value > 0 || data.terminationLoss.incomplete ? 'loss' : ''}>
+                    {t('report.stops.loss')} / {amount(data.terminationLoss)}
+                  </span>
+                ) : undefined
+              }
+            />
+          )}
           <Metric label={t('scope.lifecycle.averageDuration')} value={durationLabel(data.averageDays)} />
         </MetricCards>
       </div>
@@ -95,7 +120,7 @@ export function ScopeLifecycleReport({
           )}
         </div>
       )}
-      {upcoming && <div className="card scope-block scope-alone">{renderBlock(upcoming)}</div>}
+      {upcoming && <div className="card scope-block scope-alone">{renderBlock(upcoming, true)}</div>}
     </div>
   );
 }

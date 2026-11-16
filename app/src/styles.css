@@ -96,6 +96,11 @@ a {
   font-weight: 600;
   letter-spacing: 0;
 }
+/* 小数部分始终跟在整数后面：容器里给说明文字用的 small { display: block } 不能把它挤到下一行 */
+.amt .amt-fraction {
+  display: inline;
+  margin: 0;
+}
 
 /* ================================================================
    外壳

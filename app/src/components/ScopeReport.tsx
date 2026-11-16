@@ -466,7 +466,17 @@ export function ScopeReport({ report, state, today, onOpen, title, animate, open
           <>
             {heading('upcoming')}
             {!monthly && block.rows.length > 1 && <p className="scope-note num">{expense(block.total, block.partial?.total)}</p>}
-            {chargeRows(upcomingRows(block.rows))}
+            {(() => {
+              const list = chargeRows(upcomingRows(block.rows));
+              // 独占整行时与排行一样分两列竖排，手机上回到单列
+              return wide && !monthly && list.length > 1 ? (
+                <div className="scope-movements scope-ranks" style={{ '--rank-rows': Math.ceil(list.length / 2) } as CSSProperties}>
+                  {list}
+                </div>
+              ) : (
+                list
+              );
+            })()}
           </>
         );
       case 'events':

@@ -368,6 +368,10 @@
   color: var(--label-3);
   font-size: var(--fs-1);
 }
+/* 卡片说明里的涨跌标签跟说明同字号，不沿用大数字下方的 fs-2 */
+.metric-note .hero-delta {
+  font-size: var(--fs-1);
+}
 .metric-note small {
   display: block;
   font-size: var(--fs-1);

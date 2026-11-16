@@ -3628,7 +3628,7 @@ test('selection cash keeps its chart without data disclosure; legacy cash retain
   assert.ok(nodes.some((n) => n.props.className === 'scope-chart-data'));
 });
 
-test('selection stop metric has no savings and uses a dash when nothing stopped', () => {
+test('selection stop metric has no savings and shows a non-duplicate amount when nothing stopped', () => {
   const r = harness('../app/src/components/ScopeLifecycleReport.tsx', 'ScopeLifecycleReport');
   const sub: Subscription = {
     id: 'stop',
@@ -3660,7 +3660,20 @@ test('selection stop metric has no savings and uses a dash when nothing stopped'
     const text = JSON.stringify(metric);
     assert.ok(!text.includes('report.stops.saved'));
     assert.ok(!all(metric).some((n) => n.props.className === 'metric-note'));
-    assert.ok(text.includes(stopped ? 'scope.lifecycle.times' : '—'));
+    // 用户反馈：没有停止的订阅时「已停止 —」没有意义；今年开始的订阅今年已付等于累计花费，同页不重复，取「今年」
+    assert.ok(text.includes(stopped ? 'scope.lifecycle.times' : 'scope.yearTotal'));
+    assert.ok(!text.includes('scope.yearPaid'));
+    assert.ok(!text.includes('—'));
+    if (!stopped)
+      assert.notEqual(
+        text.match(/\d[\d,.]*/g)?.join(),
+        JSON.stringify(nodes.filter((n) => n.props.className === 'metric')[0])
+          .match(/\d[\d,.]*/g)
+          ?.join(),
+      );
+    // 用户反馈：较上月末用涨跌标签，不再写成「较上月末 / +¥…」
+    const monthly = JSON.stringify(nodes.filter((n) => n.props.className === 'metric')[1]);
+    if (!stopped) assert.ok(monthly.includes('SpendingDelta') && !monthly.includes(' / '));
   }
 });
 
