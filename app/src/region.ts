@@ -26,3 +26,17 @@ export function regionLabel(cc: string): string {
 export function subRegion(sub: { region?: string }, m?: PaymentMethod): string | undefined {
   return sub.region || (m ? methodRegion(m) : undefined) || undefined;
 }
+
+/** 登录设备的位置（Worker 存「城市, 国家代码」）：有国旗的国家换成本地化国名，其余原样显示 */
+export function deviceLocation(location: string, hasFlag: (cc: string) => boolean): { cc?: string; text: string } {
+  const parts = location
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const last = parts.at(-1) ?? '';
+  if (/^[A-Za-z]{2}$/.test(last) && hasFlag(last.toLowerCase())) {
+    const cc = last.toLowerCase();
+    return { cc, text: [regionLabel(cc), ...parts.slice(0, -1)].join(' · ') };
+  }
+  return { text: parts.join(', ') };
+}

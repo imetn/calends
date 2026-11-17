@@ -24,7 +24,9 @@ import { CategoriesGroup } from './Categories.tsx';
 import { PublicSubsSheet, publicCandidates } from './PublicSubs.tsx';
 import { go, sortNav } from '../router.ts';
 import { LOCALES, intlLocale, isLocale, locale, t } from '../../../shared/i18n.ts';
+import { FlagBox } from '../components/marks.tsx';
 import { timeZones } from '../timezones.ts';
+import { zoneCountry } from '../zone-countries.ts';
 import { preferredLocale } from '../i18n.ts';
 import { APP_VERSION, availableUpdate, checkUpdateNow, useUpdateState } from '../update-check.ts';
 import type { ReleaseInfo } from '../../../shared/version.ts';
@@ -151,7 +153,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
   const s = state.settings;
   const lang = intlLocale();
   // 约 400 个时区各建两次 Intl 格式器，按时区、语言和日期（夏令时偏移）缓存
-  const zones = useMemo(() => timeZones(s.timezone, lang), [s.timezone, lang, today]);
+  const zones = useMemo(() => timeZones(s.timezone, lang).map((z) => ({ ...z, icon: <FlagBox cc={zoneCountry(z.value)} /> })), [s.timezone, lang, today]);
   // 侧边栏模块按设置里的顺序列出，拖动后存回 navOrder（服务端，多台设备一致）
   const navRows = sortNav(NAV_ROWS, ([k]) => k, s.navOrder);
   const sensors = useSensors(

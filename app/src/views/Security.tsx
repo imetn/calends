@@ -1,5 +1,8 @@
 import { ConfirmButton } from '../components/ConfirmButton.tsx';
 import { copyParts } from '../components/copy.tsx';
+import { FlagBox } from '../components/marks.tsx';
+import { FLAGS } from '../display.ts';
+import { deviceLocation } from '../region.ts';
 import { useEffect, useRef, useState } from 'react';
 import type { AppState } from '../../../shared/types.ts';
 import { localTime } from '../../../shared/format.ts';
@@ -124,7 +127,7 @@ function NameEdit({ name, fallback, required, onSave }: { name: string; fallback
 function DeviceCell({ d, tz, onRevoke, onRename }: { d: Device; tz: string; onRevoke: () => void; onRename: (name: string) => Promise<unknown> }) {
   const { browser, os } = describeUA(d.userAgent);
   const ua = [browser, os].filter(Boolean).join('\n');
-  const where = [d.location, d.ip].filter(Boolean).join('\n');
+  const loc = deviceLocation(d.location, (cc) => FLAGS.has(cc));
   return (
     <Cell
       label={
@@ -137,20 +140,22 @@ function DeviceCell({ d, tz, onRevoke, onRename }: { d: Device; tz: string; onRe
           )}
         </span>
       }
-      sub={[
-        d.name ? ua : '',
-        where,
-        [
-          t(d.method === 'passkey' ? 'settings.security.signedInPasskey' : 'settings.security.signedInPassword', {
-            time: localTime(d.createdAt, tz, { part: 'date' }),
-          }),
-          d.current ? '' : ago(d.lastSeenAt),
-        ]
-          .filter(Boolean)
-          .join('\n'),
-      ]
-        .filter(Boolean)
-        .join('\n')}
+      sub={
+        <span className="copy-parts">
+          {d.name && ua.split('\n').map((part) => <span key={part}>{part}</span>)}
+          <span className="dev-loc">
+            <FlagBox cc={loc.cc} />
+            {loc.text}
+          </span>
+          {d.ip && <span>{d.ip}</span>}
+          <span>
+            {t(d.method === 'passkey' ? 'settings.security.signedInPasskey' : 'settings.security.signedInPassword', {
+              time: localTime(d.createdAt, tz, { part: 'date' }),
+            })}
+          </span>
+          {!d.current && <span>{ago(d.lastSeenAt)}</span>}
+        </span>
+      }
     >
       {!d.current && (
         <button type="button" className="chip-btn" onClick={onRevoke}>

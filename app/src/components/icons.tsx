@@ -92,6 +92,13 @@ export const P: Record<string, JSX.Element> = {
       <path d="M4 21a8 8 0 0 1 16 0" />
     </>
   ),
+  // 不属于任何国家的时区、没有位置的登录设备：代替国旗
+  globe: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+    </>
+  ),
   // 代付：一来一回
   swap: <path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />,
   left: <path d="m15 18-6-6 6-6" />,

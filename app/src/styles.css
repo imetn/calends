@@ -6435,6 +6435,21 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   box-shadow: none;
   background: var(--fill-2);
 }
+/* 登录设备位置：小号国旗跟在文字前 */
+.dev-loc {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 5px;
+}
+.dev-loc .cp-flag {
+  width: 16px;
+  height: 12px;
+}
+.dev-loc .cp-flag .i {
+  width: 11px;
+  height: 11px;
+}
 .cp-name {
   flex: 1;
   min-width: 0;

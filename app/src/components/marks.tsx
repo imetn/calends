@@ -189,6 +189,12 @@ export function FlagImg({ cc, className = '' }: { cc?: string; className?: strin
   return <img className={`flag-img ${className}`} src={base(`/flags/${k}.png`)} alt="" loading="lazy" />;
 }
 
+/** 选项与列表里 4:3 的国旗框；没有国家（UTC、未知位置）时放地球 */
+export function FlagBox({ cc }: { cc?: string }) {
+  const k = cc?.trim().toLowerCase();
+  return <span className="cp-flag">{k && FLAGS.has(k) ? <img src={base(`/flags/${k}.png`)} alt="" loading="lazy" /> : <Icon name="globe" />}</span>;
+}
+
 /** 只提示需注意的状态；正常计费与已结清不显示胶囊。 */
 export function StatusPill({ tone, children }: { tone: 'ok' | 'owe' | 'stop' | 'notice' | 'done'; children: ComponentChildren }) {
   if (tone === 'ok') return null;
