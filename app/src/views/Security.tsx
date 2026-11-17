@@ -127,6 +127,7 @@ function NameEdit({ name, fallback, required, onSave }: { name: string; fallback
 function DeviceCell({ d, tz, onRevoke, onRename }: { d: Device; tz: string; onRevoke: () => void; onRename: (name: string) => Promise<unknown> }) {
   const { browser, os } = describeUA(d.userAgent);
   const ua = [browser, os].filter(Boolean).join('\n');
+  const seen = d.current ? '' : ago(d.lastSeenAt);
   const loc = deviceLocation(d.location, (cc) => FLAGS.has(cc));
   return (
     <Cell
@@ -153,7 +154,7 @@ function DeviceCell({ d, tz, onRevoke, onRename }: { d: Device; tz: string; onRe
               time: localTime(d.createdAt, tz, { part: 'date' }),
             })}
           </span>
-          {!d.current && <span>{ago(d.lastSeenAt)}</span>}
+          {seen && <span>{seen}</span>}
         </span>
       }
     >

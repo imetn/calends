@@ -22,6 +22,9 @@ test('时区对应国家：IANA 新旧名都有国旗，UTC 没有国家', () =>
   assert.equal(zoneCountry('Asia/Kolkata'), 'in');
   assert.equal(zoneCountry('Europe/Kiev'), 'ua');
   assert.equal(zoneCountry('America/Indianapolis'), 'us');
+  assert.equal(zoneCountry('Asia/Chongqing'), 'cn');
+  assert.equal(zoneCountry('US/Eastern'), 'us');
+  assert.equal(zoneCountry('Europe/Uzhgorod'), 'ua');
   assert.equal(zoneCountry('UTC'), undefined);
   assert.equal(zoneCountry('Etc/GMT+3'), undefined);
   for (const zone of Intl.supportedValuesOf('timeZone')) {

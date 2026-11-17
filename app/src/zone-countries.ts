@@ -252,5 +252,13 @@ const ZONES: Record<string, string> = {
 
 const COUNTRY = new Map(Object.entries(ZONES).flatMap(([cc, zones]) => zones.split(' ').map((z) => [z, cc] as const)));
 
-/** 时区所属国家（小写 ISO 代码），没有时为 undefined */
-export const zoneCountry = (zone: string): string | undefined => COUNTRY.get(zone);
+/** 时区所属国家（小写 ISO 代码），没有时为 undefined；旧名（Asia/Chongqing、US/Eastern）先换成标准名再查 */
+export function zoneCountry(zone: string): string | undefined {
+  const hit = COUNTRY.get(zone);
+  if (hit) return hit;
+  try {
+    return COUNTRY.get(new Intl.DateTimeFormat('en', { timeZone: zone }).resolvedOptions().timeZone);
+  } catch {
+    return undefined;
+  }
+}
