@@ -191,6 +191,17 @@ export function CurrencySelect({ value, onChange, ariaLabel = t('picker.currency
   );
 }
 
+/** 不可选的币种标签：外观同 CurrencySelect；箭头隐藏但占位，与同列下拉等宽、数字对齐 */
+export function CurrencyTag({ code }: { code: string }) {
+  return (
+    <span className="pk-btn inline pk-static">
+      <CcyFlag code={code} />
+      <span>{code}</span>
+      <Icon name="updown" />
+    </span>
+  );
+}
+
 /** 地区名跟随当前语言，按语言缓存 */
 const regionCache = new Map<string, Intl.DisplayNames | undefined>();
 function regionNames(): Intl.DisplayNames | undefined {

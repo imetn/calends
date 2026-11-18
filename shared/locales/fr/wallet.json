@@ -70,7 +70,7 @@
     "save": "Enregistrer",
     "modeAdd": "Recharger",
     "modeSet": "Définir le solde réel",
-    "amount": "Montant ({ccy})",
+    "amount": "Montant",
     "actual": "Solde réel",
     "estimate": "Estimation actuelle",
     "after": "Après enregistrement",

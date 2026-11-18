@@ -187,7 +187,6 @@
     "refundAmount": "返金額",
     "refundDate": "返金日",
     "reason": "理由（任意）",
-    "currencyHint": "返金通貨は契約通貨の {currency} です。カードへの返金は別の通貨・金額を入力できます。",
     "refunded": "返金済み {money}",
     "partial": "一部返金 {money}",
     "unrefunded": "未返金\n損失 {money}",

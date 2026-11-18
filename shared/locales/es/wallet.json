@@ -52,7 +52,7 @@
     "save": "Guardar",
     "modeAdd": "Recargar",
     "modeSet": "Definir saldo real",
-    "amount": "Importe ({ccy})",
+    "amount": "Importe",
     "actual": "Saldo real",
     "estimate": "Estimación actual",
     "after": "Después de guardar",

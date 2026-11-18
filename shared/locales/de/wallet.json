@@ -70,7 +70,7 @@
     "save": "Sichern",
     "modeAdd": "Aufladen",
     "modeSet": "Tatsächliches Guthaben festlegen",
-    "amount": "Betrag ({ccy})",
+    "amount": "Betrag",
     "actual": "Tatsächliches Guthaben",
     "estimate": "Aktuelle Schätzung",
     "after": "Nach dem Sichern",

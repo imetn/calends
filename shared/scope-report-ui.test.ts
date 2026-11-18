@@ -604,6 +604,7 @@ test('member with a receipt and no paid-through date never claims no receipts an
       DatePicker: 'DatePicker',
       Toggle: 'Toggle',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       Picker: 'Picker',
       todayIn: () => today,
@@ -1325,6 +1326,7 @@ test('收款表单按应收预填：上面只读的收费，默认勾最早没�
         DatePicker: 'DatePicker',
         Toggle: 'Toggle',
         CurrencySelect: 'CurrencySelect',
+        CurrencyTag: 'CurrencyTag',
         NumInput: 'NumInput',
         Picker: 'Picker',
         todayIn: () => today,
@@ -2260,6 +2262,7 @@ test('收款保存失败保留草稿且不关闭；重试成功只增加一条�
       Sheet: 'Sheet',
       DatePicker: 'DatePicker',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       getState: () => ({ ...st, subscriptions: [sub] }),
       run: async (fn: () => Promise<unknown>) => {
@@ -2328,6 +2331,7 @@ test('新成员从加入日起收：中途加入可选并存下基准日，加�
       DatePicker: 'DatePicker',
       Toggle: 'Toggle',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       Picker: 'Picker',
       todayIn: () => today,
@@ -2421,6 +2425,7 @@ test('成员先改收费再改生效日只留下一个调整，今天标准与�
       DatePicker: 'DatePicker',
       Toggle: 'Toggle',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       Picker: 'Picker',
       todayIn: () => today,
@@ -2502,6 +2507,7 @@ test('删除一笔收款：它抵扣的期恢复为没收，期初结清不受�
         DatePicker: 'DatePicker',
         Toggle: 'Toggle',
         CurrencySelect: 'CurrencySelect',
+        CurrencyTag: 'CurrencyTag',
         NumInput: 'NumInput',
         Picker: 'Picker',
         ConfirmButton: 'ConfirmButton',
@@ -2647,6 +2653,7 @@ test('成员表单：改自定义收费从生效日起记调价', async () => {
       DatePicker: 'DatePicker',
       Toggle: 'Toggle',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       Picker: 'Picker',
       todayIn: () => today,
@@ -2677,6 +2684,62 @@ test('成员表单：改自定义收费从生效日起记调价', async () => {
   assert.deepEqual(m.feeHistory!.at(-1)!.from, today);
 });
 
+test('卡与套餐币种不同时，扣款表单以卡上实扣为主输入，订单金额只展示并按卡上实扣保存', async () => {
+  const phases = await import('./phases.ts');
+  const sub: Subscription = {
+    id: 'fictional-yen',
+    name: 'Orbit',
+    category: 'Tools',
+    tags: [],
+    price: 27273,
+    currency: 'JPY',
+    start: '2026-01-05',
+    cycle: { unit: 'month', every: 1 },
+    status: 'active',
+    methodId: 'usd-card',
+  };
+  let saved: Subscription | undefined;
+  const state = { ...st, methods: [{ id: 'usd-card', name: 'Card', kind: 'credit' as const, currency: 'USD' }], subscriptions: [sub] };
+  const deps = {
+    ...phases,
+    Sheet: 'Sheet',
+    DatePicker: 'DatePicker',
+    CurrencySelect: 'CurrencySelect',
+    CurrencyTag: 'CurrencyTag',
+    MethodPicker: 'MethodPicker',
+    MoneyInput: 'MoneyInput',
+    ConfirmButton: 'ConfirmButton',
+    getState: () => state,
+    run: (fn: () => Promise<unknown>) => fn(),
+    saveSub: async (s: Subscription) => {
+      saved = s;
+    },
+  };
+  const r = harness('../app/src/views/PaymentSheet.tsx', 'PaymentSheet', {}, deps);
+  const render = () => r.render('PaymentSheet', { sub, today, onClose() {} });
+  const inputs = () => render().filter((n) => n.type === 'MoneyInput');
+  // 卡上实扣在前且是 USD；订单金额 JPY 不是输入框
+  assert.equal(inputs()[0].props.ccy, 'USD');
+  assert.equal(
+    inputs().some((n) => n.props.ccy === 'JPY'),
+    false,
+  );
+  // 卡上实扣只有一个输入框，同一个数不出现两次；订单币种是标签、不可选
+  assert.equal(inputs().filter((n) => n.props.ccy === 'USD').length, 1);
+  assert.equal(
+    render().some((n) => n.type === 'CurrencyTag' && n.props.code === 'JPY'),
+    true,
+  );
+  inputs()[0].props.onChange({ target: { value: '176.44' } });
+  await all(render().find((n) => n.type === 'Sheet')!.props.foot)
+    .find((n) => n.type === 'button' && String(n.props.className).includes('primary'))!
+    .props.onClick();
+  const pay = saved!.payments!.at(-1)!;
+  assert.equal(pay.amount, 27273);
+  assert.equal(pay.currency, 'JPY');
+  assert.deepEqual(pay.settled, { amount: 176.44, currency: 'USD' });
+});
+
 test('转让和扣款删除通过胶囊执行，保留同日其他记录且不再打开 ask', async () => {
   const phases = await import('./phases.ts');
   const sub: Subscription = {
@@ -2701,6 +2764,7 @@ test('转让和扣款删除通过胶囊执行，保留同日其他记录且不�
     Sheet: 'Sheet',
     DatePicker: 'DatePicker',
     CurrencySelect: 'CurrencySelect',
+    CurrencyTag: 'CurrencyTag',
     MethodPicker: 'MethodPicker',
     MoneyInput: 'MoneyInput',
     ConfirmButton: 'ConfirmButton',
@@ -2780,6 +2844,7 @@ test('成员、人员和渠道胶囊确认后删除，成员删除保留其他�
     Sheet: 'Sheet',
     DatePicker: 'DatePicker',
     CurrencySelect: 'CurrencySelect',
+    CurrencyTag: 'CurrencyTag',
     NumInput: 'NumInput',
     ConfirmButton: 'ConfirmButton',
     todayIn: () => today,
@@ -3026,6 +3091,7 @@ test('成员表单设置下车退款保留原始已付至，金额无效不能�
       DatePicker: 'DatePicker',
       Toggle: 'Toggle',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       Picker: 'Picker',
       todayIn: () => today,
@@ -3299,6 +3365,7 @@ test('所有入口打开同一个成员弹窗：欠款也不自动叠收款表�
       DatePicker: 'DatePicker',
       Toggle: 'Toggle',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       Picker: 'Picker',
       todayIn: () => today,
@@ -3346,6 +3413,7 @@ test('所有入口打开同一个成员弹窗：欠款也不自动叠收款表�
       Sheet: 'Sheet',
       DatePicker: 'DatePicker',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       todayIn: () => today,
       getState: () => ({ ...st, subscriptions: [sub] }),
@@ -3392,6 +3460,7 @@ test('欠了好几期：默认勾最早一期，再勾两期就补前三期，�
       Sheet: 'Sheet',
       DatePicker: 'DatePicker',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       todayIn: () => today,
       getState: () => ({ ...st, subscriptions: [sub] }),
@@ -3456,6 +3525,7 @@ test('记收款时点某期右边的应收单独改：勾选不变，金额跟�
         Sheet: 'Sheet',
         DatePicker: 'DatePicker',
         CurrencySelect: 'CurrencySelect',
+        CurrencyTag: 'CurrencyTag',
         NumInput: 'NumInput',
         todayIn: () => today,
         getState: () => ({ ...st, subscriptions: [s] }),
@@ -3537,6 +3607,7 @@ test('phase2 rendered ledger sections and assistant summaries retain their froze
     DatePicker: 'DatePicker',
     Toggle: 'Toggle',
     CurrencySelect: 'CurrencySelect',
+    CurrencyTag: 'CurrencyTag',
     NumInput: 'NumInput',
     MoneyInput: 'MoneyInput',
     NameLink: 'NameLink',
@@ -4163,6 +4234,7 @@ test('点开已收的格子弹出这一笔的明细，可改可删；没收的�
       DatePicker: 'DatePicker',
       Toggle: 'Toggle',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       Picker: 'Picker',
       todayIn: () => today,
@@ -4215,6 +4287,7 @@ test('点开已收的格子弹出这一笔的明细，可改可删；没收的�
       DatePicker: 'DatePicker',
       Toggle: 'Toggle',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       Picker: 'Picker',
       todayIn: () => today,
@@ -4255,6 +4328,7 @@ test('点开已收的格子弹出这一笔的明细，可改可删；没收的�
       DatePicker: 'DatePicker',
       Toggle: 'Toggle',
       CurrencySelect: 'CurrencySelect',
+      CurrencyTag: 'CurrencyTag',
       NumInput: 'NumInput',
       Picker: 'Picker',
       todayIn: () => today,
@@ -4305,6 +4379,7 @@ test('成员弹窗分三段：人员账号在上、收款格子居中、收费�
         DatePicker: 'DatePicker',
         Toggle: 'Toggle',
         CurrencySelect: 'CurrencySelect',
+        CurrencyTag: 'CurrencyTag',
         NumInput: 'NumInput',
         Picker: 'Picker',
         todayIn: () => today,

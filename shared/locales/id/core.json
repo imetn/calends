@@ -187,7 +187,6 @@
     "refundAmount": "Jumlah pengembalian",
     "refundDate": "Tanggal pengembalian",
     "reason": "Alasan (opsional)",
-    "currencyHint": "Pengembalian memakai {currency}, mata uang langganan. Mata uang dan jumlah aktual di kartu dapat diisi di bawah.",
     "refunded": "Dikembalikan {money}",
     "partial": "Pengembalian sebagian {money}",
     "unrefunded": "Tanpa pengembalian dana\nKerugian {money}",

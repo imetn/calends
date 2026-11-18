@@ -197,7 +197,6 @@
     "refundAmount": "Importe reembolsado",
     "refundDate": "Fecha de reembolso",
     "reason": "Motivo (opcional)",
-    "currencyHint": "Los reembolsos usan {currency}, la moneda de la suscripción. Puedes indicar otra moneda de tarjeta abajo.",
     "refunded": "Reembolsado {money}",
     "partial": "Reembolso parcial {money}",
     "unrefunded": "Sin reembolso\nPérdida {money}",

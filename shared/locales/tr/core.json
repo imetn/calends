@@ -197,7 +197,6 @@
     "refundAmount": "İade tutarı",
     "refundDate": "İade tarihi",
     "reason": "Neden (isteğe bağlı)",
-    "currencyHint": "İadeler abonelik para birimi {currency} ile kaydedilir. Kart iadesi için aşağıya farklı para birimi girilebilir.",
     "refunded": "İade edildi {money}",
     "partial": "Kısmi iade {money}",
     "unrefunded": "İade yok\nKayıp {money}",

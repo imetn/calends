@@ -197,7 +197,6 @@
     "refundAmount": "Erstattungsbetrag",
     "refundDate": "Erstattungsdatum",
     "reason": "Grund (optional)",
-    "currencyHint": "Erstattungen erfolgen in der Abowährung {currency}. Eine andere Kartenwährung kann unten erfasst werden.",
     "refunded": "Erstattet {money}",
     "partial": "Teilerstattung {money}",
     "unrefunded": "Keine Erstattung\nVerlust {money}",

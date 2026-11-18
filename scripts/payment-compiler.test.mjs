@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { transformSync } from 'oxc-transform-react';
 import * as billing from '../shared/billing.ts';
 import * as phases from '../shared/phases.ts';
-import { settlementCurrencyOf } from '../shared/fx.ts';
+import { settlementCurrencyOf, toBaseOrNaN } from '../shared/fx.ts';
 import { DEFAULT_SETTINGS } from '../shared/types.ts';
 
 test('compiled new payment initializes settlement without an edit record', () => {
@@ -50,6 +50,7 @@ test('compiled payment renders the whole new form including its unused delete ca
     useSubmit: () => [false, () => {}],
     getState: () => ({ methods: [], settings: { baseCurrency: 'CNY' } }),
     settlementCurrencyOf: () => 'CNY',
+    toBaseOrNaN: () => Number.NaN,
     t: String,
     money: String,
   };
@@ -64,6 +65,7 @@ test('compiled payment renders the whole new form including its unused delete ca
     'Icon',
     'DatePicker',
     'CurrencySelect',
+    'CurrencyTag',
     'Picker',
     'MethodPicker',
   ])
@@ -95,6 +97,7 @@ test('editing an early payment keeps its owning phase unassigned and saves witho
     ...billing,
     ...phases,
     settlementCurrencyOf,
+    toBaseOrNaN,
     React: { createElement: (type, props, ...children) => ({ type, props: props ?? {}, children }) },
     _c: (n) => Array(n).fill(Symbol.for('react.memo_cache_sentinel')),
     useState: (v) => [v, () => {}],
@@ -119,6 +122,7 @@ test('editing an early payment keeps its owning phase unassigned and saves witho
     'Icon',
     'DatePicker',
     'CurrencySelect',
+    'CurrencyTag',
     'Picker',
     'MethodPicker',
   ])
@@ -169,6 +173,7 @@ test('separate settlement payment preselects the oldest unpaid bills the amount 
     ...billing,
     ...phases,
     settlementCurrencyOf,
+    toBaseOrNaN,
     React: { createElement: (type, props, ...children) => ({ type, props: props ?? {}, children }) },
     _c: (n) => Array(n).fill(Symbol.for('react.memo_cache_sentinel')),
     useState: (v) => [v, () => {}],
@@ -195,6 +200,7 @@ test('separate settlement payment preselects the oldest unpaid bills the amount 
     'Icon',
     'DatePicker',
     'CurrencySelect',
+    'CurrencyTag',
     'Picker',
     'MethodPicker',
   ])

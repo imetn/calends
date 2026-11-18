@@ -197,7 +197,6 @@
     "refundAmount": "Refund amount",
     "refundDate": "Refund date",
     "reason": "Reason (optional)",
-    "currencyHint": "Refunds use {currency}, the subscription currency. Record a different card currency below.",
     "refunded": "Refunded {money}",
     "partial": "Partial refund {money}",
     "unrefunded": "No refund\nLoss {money}",

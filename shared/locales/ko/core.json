@@ -187,7 +187,6 @@
     "refundAmount": "환불 금액",
     "refundDate": "환불일",
     "reason": "사유 (선택)",
-    "currencyHint": "환불 통화는 구독 통화인 {currency}로 고정됩니다. 카드 환불은 다른 통화와 금액을 입력할 수 있습니다.",
     "refunded": "환불됨 {money}",
     "partial": "부분 환불 {money}",
     "unrefunded": "미환불\n손실 {money}",

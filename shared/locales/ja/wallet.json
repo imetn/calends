@@ -65,7 +65,7 @@
     "save": "保存",
     "modeAdd": "チャージ",
     "modeSet": "実際の残高を設定",
-    "amount": "金額（{ccy}）",
+    "amount": "金額",
     "actual": "実際の残高",
     "estimate": "現在の推定",
     "after": "保存後",

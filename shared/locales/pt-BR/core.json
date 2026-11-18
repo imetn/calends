@@ -197,7 +197,6 @@
     "refundAmount": "Valor do reembolso",
     "refundDate": "Data do reembolso",
     "reason": "Motivo (opcional)",
-    "currencyHint": "O reembolso usa {currency}, a moeda da assinatura. Outra moeda do cartão pode ser informada abaixo.",
     "refunded": "Reembolsado {money}",
     "partial": "Reembolso parcial {money}",
     "unrefunded": "Sem reembolso\nPerda {money}",

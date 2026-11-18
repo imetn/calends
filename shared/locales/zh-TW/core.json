@@ -167,7 +167,6 @@
     "refundAmount": "退款金額",
     "refundDate": "退款日期",
     "reason": "原因（選填）",
-    "currencyHint": "退款幣別固定為訂閱幣別 {currency}，卡片實退可另填幣別和金額。",
     "refunded": "已退款 {money}",
     "partial": "部分退款 {money}",
     "unrefunded": "未退款\n損失 {money}",

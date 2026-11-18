@@ -52,7 +52,7 @@
     "save": "Salvar",
     "modeAdd": "Recarregar",
     "modeSet": "Definir saldo real",
-    "amount": "Valor ({ccy})",
+    "amount": "Valor",
     "actual": "Saldo real",
     "estimate": "Estimativa atual",
     "after": "Depois de salvar",

@@ -197,7 +197,6 @@
     "refundAmount": "Montant remboursé",
     "refundDate": "Date de remboursement",
     "reason": "Motif (facultatif)",
-    "currencyHint": "Le remboursement utilise {currency}, la devise de l’abonnement. Une autre devise de carte peut être saisie ci-dessous.",
     "refunded": "Remboursé {money}",
     "partial": "Remboursement partiel {money}",
     "unrefunded": "Non remboursé\nPerte {money}",

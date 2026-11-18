@@ -65,7 +65,7 @@
     "save": "저장",
     "modeAdd": "충전",
     "modeSet": "실제 잔액 설정",
-    "amount": "금액({ccy})",
+    "amount": "금액",
     "actual": "실제 잔액",
     "estimate": "현재 추정치",
     "after": "저장 후",

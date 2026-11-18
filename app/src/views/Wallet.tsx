@@ -38,7 +38,7 @@ import { run } from '../toast.ts';
 import { methodReferences } from '../../../shared/ledger-edit.ts';
 import { go } from '../router.ts';
 import { BANKS } from '../../../shared/banks.ts';
-import { CurrencySelect, Picker, RegionSelect } from '../components/Picker.tsx';
+import { CurrencySelect, CurrencyTag, Picker, RegionSelect } from '../components/Picker.tsx';
 import { t } from '../../../shared/i18n.ts';
 import { tx } from '../i18n.ts';
 import { useMoneyPair } from '../components/MoneyPair.tsx';
@@ -581,15 +581,18 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
           ]}
         />
         <Group foot={balanceNote}>
-          <Cell label={mode === 'add' ? t('wallet.topup.amount', { ccy: m.currency }) : t('wallet.topup.actual')}>
-            <MoneyInput
-              ccy={m.currency}
-              className="num"
-              autoFocus
-              value={val}
-              onChange={(e) => setVal((e.target as HTMLInputElement).value)}
-              placeholder={`${m.currency} 0.00`}
-            />
+          <Cell label={mode === 'add' ? t('wallet.topup.amount') : t('wallet.topup.actual')}>
+            <span className="contact-field">
+              <MoneyInput
+                ccy={m.currency}
+                className="num"
+                autoFocus
+                value={val}
+                onChange={(e) => setVal((e.target as HTMLInputElement).value)}
+                placeholder="0.00"
+              />
+              <CurrencyTag code={m.currency} />
+            </span>
           </Cell>
           <Cell label={t('wallet.topup.estimate')}>{money(current, m.currency)}</Cell>
           <Cell label={t('wallet.topup.after')}>
@@ -604,17 +607,17 @@ function TopupSheet({ m, current, today, onClose }: { m: PaymentMethod; current:
             <Cell label={t('wallet.topup.date')}>
               <DatePicker value={date} onChange={(v) => setDate(v ?? today)} />
             </Cell>
-            <Cell label={t('wallet.topup.costCcy')}>
-              <CurrencySelect value={costCcy} onChange={setCostCcy} />
-            </Cell>
             <Cell label={t('wallet.topup.cost')}>
-              <MoneyInput
-                ccy={costCcy}
-                className="num"
-                value={cost}
-                placeholder={t('wallet.topup.costPh')}
-                onChange={(e) => setCost((e.target as HTMLInputElement).value)}
-              />
+              <span className="contact-field">
+                <MoneyInput
+                  ccy={costCcy}
+                  className="num"
+                  value={cost}
+                  placeholder={t('wallet.topup.costPh')}
+                  onChange={(e) => setCost((e.target as HTMLInputElement).value)}
+                />
+                <CurrencySelect value={costCcy} onChange={setCostCcy} ariaLabel={t('wallet.topup.costCcy')} />
+              </span>
             </Cell>
             <Cell label={t('wallet.topup.note')}>
               <input value={note} placeholder={t('wallet.topup.notePh')} onChange={(e) => setNote((e.target as HTMLInputElement).value)} />

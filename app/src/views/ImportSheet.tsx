@@ -95,20 +95,20 @@ export function ImportSheet({ source, state, today, onClose }: { source: ImportS
                 <>
                   <Cell label={t('editor.field.amount')}>
                     {/* 按币种限制小数位（日元等不收小数） */}
-                    <NumInput
-                      className="num"
-                      ccy={fix.currency ?? row.currency}
-                      aria-label={`${t('editor.field.amount')} ${row.name}`}
-                      value={Number.isFinite(fix.price ?? row.price) ? (fix.price ?? row.price) : undefined}
-                      onValue={(n) => edit(row.key, { price: n ?? NaN })}
-                    />
-                  </Cell>
-                  <Cell label={t('editor.field.currency')}>
-                    <CurrencySelect
-                      value={fix.currency ?? row.currency ?? ''}
-                      ariaLabel={`${t('editor.field.currency')} ${row.name}`}
-                      onChange={(currency) => edit(row.key, { currency })}
-                    />
+                    <span className="contact-field">
+                      <NumInput
+                        className="num"
+                        ccy={fix.currency ?? row.currency}
+                        aria-label={`${t('editor.field.amount')} ${row.name}`}
+                        value={Number.isFinite(fix.price ?? row.price) ? (fix.price ?? row.price) : undefined}
+                        onValue={(n) => edit(row.key, { price: n ?? NaN })}
+                      />
+                      <CurrencySelect
+                        value={fix.currency ?? row.currency ?? ''}
+                        ariaLabel={`${t('editor.field.currency')} ${row.name}`}
+                        onChange={(currency) => edit(row.key, { currency })}
+                      />
+                    </span>
                   </Cell>
                   <Cell label={t('editor.field.cycle')}>
                     <Picker

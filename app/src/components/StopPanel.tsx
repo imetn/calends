@@ -18,9 +18,9 @@ import type { Subscription } from '../../../shared/types.ts';
 import { getState } from '../store.ts';
 import { toast } from '../toast.ts';
 import { DatePicker } from './DatePicker.tsx';
-import { CurrencySelect, Picker } from './Picker.tsx';
+import { CurrencySelect, CurrencyTag, Picker } from './Picker.tsx';
 import { Cell } from './ui.tsx';
-import { useSubmit } from './inputs.tsx';
+import { MoneyInput, useSubmit } from './inputs.tsx';
 
 export function stopLabel(sub: Subscription, today: string): string | undefined {
   const summary = stopSummary(sub, today);
@@ -212,28 +212,33 @@ export function StopFields({ sub, today, value, onChange }: { sub: Subscription;
           )}
           {refund && !postpaid && (
             <>
-              <Cell label={`${t('core.stop.refundAmount')}\n${cur.currency}`} sub={t('core.stop.currencyHint', { currency: cur.currency })}>
-                <input
-                  className="num"
-                  inputMode="decimal"
-                  value={amount ?? String(preview!.suggestedRefund)}
-                  onChange={(e) => up({ amount: e.target.value })}
-                />
+              <Cell label={t('core.stop.refundAmount')}>
+                <span className="contact-field">
+                  <MoneyInput
+                    ccy={cur.currency}
+                    className="num"
+                    aria-label={t('core.stop.refundAmount')}
+                    value={amount ?? String(preview!.suggestedRefund)}
+                    onChange={(e) => up({ amount: (e.target as HTMLInputElement).value })}
+                  />
+                  <CurrencyTag code={cur.currency} />
+                </span>
               </Cell>
               <Cell label={t('core.stop.refundDate')}>
                 <DatePicker value={refundDate ?? date} min={date} onChange={(v) => up({ refundDate: v })} />
               </Cell>
-              <Cell label={t('editor.payment.settledCcy')}>
-                <CurrencySelect value={settledCurrency} onChange={(v) => up({ settledCurrency: v })} />
-              </Cell>
-              <Cell label={t('editor.payment.settledAmount')}>
-                <input
-                  className="num"
-                  inputMode="decimal"
-                  value={settled}
-                  placeholder={t('editor.field.optional')}
-                  onChange={(e) => up({ settled: e.target.value })}
-                />
+              <Cell label={t('proxy.table.charged')}>
+                <span className="contact-field">
+                  <MoneyInput
+                    ccy={settledCurrency}
+                    className="num"
+                    aria-label={t('editor.payment.settledAmount')}
+                    value={settled}
+                    placeholder={t('editor.field.optional')}
+                    onChange={(e) => up({ settled: (e.target as HTMLInputElement).value })}
+                  />
+                  <CurrencySelect value={settledCurrency} onChange={(v) => up({ settledCurrency: v })} ariaLabel={t('editor.payment.settledCcy')} />
+                </span>
               </Cell>
             </>
           )}

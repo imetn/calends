@@ -14,13 +14,13 @@ import {
   uid,
 } from '../../../shared/billing.ts';
 import { cnDateAuto, currencyDecimals, money } from '../../../shared/format.ts';
-import { settlementCurrencyOf } from '../../../shared/fx.ts';
+import { settlementCurrencyOf, toBaseOrNaN } from '../../../shared/fx.ts';
 import { t } from '../../../shared/i18n.ts';
 import { meterRows, periodReading, periodReadingCount, setPeriodValues, usageWithin } from '../../../shared/meters.ts';
 import { deletePayment, earlyRenewalEffect, savePayment, setPhaseMethod } from '../../../shared/phases.ts';
 import type { Meter, Payment, Subscription } from '../../../shared/types.ts';
 import { DatePicker } from '../components/DatePicker.tsx';
-import { CurrencySelect, Picker } from '../components/Picker.tsx';
+import { CurrencySelect, CurrencyTag, Picker } from '../components/Picker.tsx';
 import { MethodPicker } from '../components/MethodPicker.tsx';
 import { Sheet } from '../components/overlays.tsx';
 import { MoneyInput, NumInput, Seg, useSubmit } from '../components/inputs.tsx';
@@ -81,6 +81,16 @@ export function PaymentSheet({
   const unit = 10 ** currencyDecimals(ccy);
   const left = Math.round((Number(amount) - splitSum) * unit) / unit;
   const amountValid = amount.trim() !== '' && Number(amount) >= 0;
+  // 卡上换币种结算（USD 卡订日元套餐）：要填的是卡上扣了多少，订单金额是套餐价，只展示、点了才改（优惠、补差另说）
+  const cardCcy = getState().methods.find((m) => m.id === method)?.currency;
+  const cross = kind === 'charge' && !split && ((!!cardCcy && cardCcy !== ccy) || (!!existingPay?.settled && existingPay.settled.currency !== ccy));
+  const [amountOpen, setAmountOpen] = useState(false);
+  // 没填时用订单金额按当日汇率折出的卡币种金额做占位
+  const cardGuess = (() => {
+    const n = toBaseOrNaN(getState(), Number(amount), ccy, date, settledCcy);
+    const unit = 10 ** currencyDecimals(settledCcy);
+    return amountValid && Number.isFinite(n) ? String(Math.round(n * unit) / unit) : undefined;
+  })();
   const blanks = (split ?? []).filter((x) => x.amount === '').length;
   // 用量跟计费周期走：填的数记在这笔扣款覆盖的那段时间里，周期内已有记录就改它；只写改过的指标
   // 关联指标的数值存在来源订阅上，这里只填自己的
@@ -313,11 +323,64 @@ export function PaymentSheet({
           )}
         </Group>
         {/* 金额按这一段的币种（写在标签里，跟方案走）；卡上用别的币种扣时先选实扣币种再填金额 */}
-        <Group>
-          <Cell label={t('editor.payment.amount', { currency: ccy })} sub={kind === 'refund' ? t('core.stop.currencyHint', { currency: ccy }) : undefined}>
-            <MoneyInput ccy={ccy} className="num" value={amount} onChange={(e) => setAmount((e.target as HTMLInputElement).value)} />
-          </Cell>
-        </Group>
+        {(() => {
+          const card = (
+            <Cell label={t('proxy.table.charged')}>
+              <span className="contact-field">
+                <MoneyInput
+                  ccy={settledCcy}
+                  className="num"
+                  autoFocus={cross}
+                  aria-label={t('editor.payment.settledAmount')}
+                  placeholder={cardGuess ?? t('editor.field.optional')}
+                  value={settled}
+                  onChange={(e) => setSettled((e.target as HTMLInputElement).value)}
+                />
+                <CurrencySelect value={settledCcy} onChange={setSettledCcy} ariaLabel={t('editor.payment.settledCcy')} />
+              </span>
+            </Cell>
+          );
+          // 订单币种跟着套餐期走，这里只标出来、不可选；改币种走改价
+          const order = (
+            <Cell label={t('editor.payment.orderAmount')}>
+              <span className="contact-field">
+                {cross && !amountOpen && amountValid ? (
+                  <button
+                    type="button"
+                    className="pay-order-view num"
+                    onClick={() => setAmountOpen(true)}
+                    aria-label={t('editor.payment.amount', { currency: ccy })}
+                  >
+                    {amount}
+                  </button>
+                ) : (
+                  <MoneyInput
+                    ccy={ccy}
+                    className="num"
+                    autoFocus={amountOpen}
+                    aria-label={t('editor.payment.amount', { currency: ccy })}
+                    value={amount}
+                    onChange={(e) => setAmount((e.target as HTMLInputElement).value)}
+                  />
+                )}
+                <CurrencyTag code={ccy} />
+              </span>
+            </Cell>
+          );
+          return split ? (
+            <Group>{order}</Group>
+          ) : cross ? (
+            <Group>
+              {card}
+              {order}
+            </Group>
+          ) : (
+            <Group>
+              {order}
+              {kind === 'charge' || kind === 'refund' ? card : null}
+            </Group>
+          );
+        })()}
         {separate && open.length > 0 && (
           <Group title={t('receivable.periods')}>
             {shown.map((b) => {
@@ -371,20 +434,6 @@ export function PaymentSheet({
             ))}
           </Group>
         )}
-        <Group title={t('editor.payment.settled')}>
-          <Cell label={t('editor.payment.settledCcy')}>
-            <CurrencySelect value={settledCcy} onChange={setSettledCcy} />
-          </Cell>
-          <Cell label={t('editor.payment.settledAmount')}>
-            <MoneyInput
-              ccy={settledCcy}
-              className="num"
-              placeholder={t('editor.field.optional')}
-              value={settled}
-              onChange={(e) => setSettled((e.target as HTMLInputElement).value)}
-            />
-          </Cell>
-        </Group>
         <Group>
           <Cell label={t('editor.field.notes')}>
             <input value={note} placeholder={t('editor.field.optional')} onChange={(e) => setNote((e.target as HTMLInputElement).value)} />

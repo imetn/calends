@@ -5604,6 +5604,18 @@ button.h-price-row:focus-visible {
   flex: 1;
   min-width: 0;
 }
+/* 跨币种扣款里只展示的订单金额：点一下变输入框 */
+.pay-order-view {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  text-align: right;
+  color: var(--label-2);
+  cursor: text;
+}
 .contact-at {
   flex-shrink: 0;
   margin-right: -8px;
@@ -7251,6 +7263,15 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 }
 .pk-btn.inline:hover {
   background: var(--fill);
+}
+/* 不可选的币种标签：同款胶囊，不响应悬停 */
+.pk-btn.inline.pk-static,
+.pk-btn.inline.pk-static:hover {
+  cursor: default;
+  background: var(--fill-2);
+}
+.pk-btn.pk-static > .i {
+  visibility: hidden;
 }
 .pk-btn.inline.open {
   background: var(--card);

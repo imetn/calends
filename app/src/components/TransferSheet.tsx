@@ -84,11 +84,11 @@ export function TransferSheet({
           </Cell>
         </Group>
         <Group>
-          <Cell label={t('picker.currency')}>
-            <CurrencySelect value={ccy} onChange={setCcy} />
-          </Cell>
           <Cell label={t(kind === 'buy' ? 'detail.transfer.paid' : 'detail.transfer.received')}>
-            <MoneyInput ccy={ccy} className="num" value={amount} placeholder="0" onChange={(e) => setAmount((e.target as HTMLInputElement).value)} />
+            <span className="contact-field">
+              <MoneyInput ccy={ccy} className="num" value={amount} placeholder="0" onChange={(e) => setAmount((e.target as HTMLInputElement).value)} />
+              <CurrencySelect value={ccy} onChange={setCcy} />
+            </span>
           </Cell>
         </Group>
         <Group>
