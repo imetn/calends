@@ -182,6 +182,12 @@ test('批量执行与逐个调用 MCP 写工具结果一致（同一 JSON 文本
     ['save_person', { action: 'create', id: 'p1', set: { name: 'Fictional Person' } }],
     ['update_settings', { set: { weekStart: 1, remindDays: 5 } }],
   ];
+  // 同步路径上修改类意图要带 target 与冻结的期望（docs/sync-api.md「意图保护」）
+  const guards: Record<number, Record<string, unknown>> = {
+    4: { target: 'sub/s1', expect: { notes: null, tags: [] } },
+    5: { target: 'sub/s1', expect: { price: 12, priceHistory: null, phases: null } },
+    7: { target: 'kv/settings', expect: { weekStart: null, remindDays: null } },
+  };
   const dump = async (env: Env) => ({
     subs: (await env.DB.prepare('SELECT id, data FROM subscriptions ORDER BY id').all()).results,
     methods: (await env.DB.prepare('SELECT id, data FROM methods ORDER BY id').all()).results,
@@ -195,7 +201,7 @@ test('批量执行与逐个调用 MCP 写工具结果一致（同一 JSON 文本
 
   const batch = await fixture();
   const a = await device(batch.env);
-  const r = await a.push(steps.map(([name, args]) => ({ name: `${name}@1`, args })));
+  const r = await a.push(steps.map(([name, args], i) => ({ name: `${name}@1`, args, ...guards[i] })));
   assert.deepEqual(r.body.rejections, []);
   assert.deepEqual(strip(await dump(batch.env)), strip(await dump(one.env)));
 });
@@ -360,8 +366,9 @@ test('审查 P1-1：同步令牌由网页签发、列出、吊销；吊销后立
   assert.equal(created.item.hash, undefined);
   const list = (await (await web('/api/sync/tokens')).json()) as Array<{ id: string; name: string; hash?: string }>;
   assert.ok(list.some((x) => x.id === created.item.id && x.name === 'Fictional iPhone' && x.hash === undefined));
-  const stored = JSON.stringify(await f.env.DB.prepare("SELECT value FROM kv WHERE key = 'syncTokens'").first());
-  assert.ok(!stored.includes(created.token));
+  const stored = JSON.stringify((await f.env.DB.prepare('SELECT * FROM sync_tokens').all()).results);
+  assert.ok(stored.includes(created.item.id) && !stored.includes(created.token));
+  assert.equal(await f.env.DB.prepare("SELECT value FROM kv WHERE key = 'syncTokens'").first(), null);
   const body = JSON.stringify({ protocol: 1, installId: 'x', register: true });
   assert.equal((await f.call('sync', { method: 'POST', body, token: created.token })).status, 200);
   await web(`/api/sync/tokens/${created.item.id}`, { method: 'DELETE' });
@@ -595,4 +602,247 @@ test('审查 P2：分页按 UTF-8 字节 —— 三条各 30 万汉字的记录�
   assert.ok(new TextEncoder().encode(JSON.stringify(first.objects)).length <= 2 * 1024 * 1024);
   const rest = await changesSince(f.env, first.cookie);
   assert.equal(rest.objects.filter(([k]) => k.startsWith('sub/')).length, 1);
+});
+
+// —— 第 3 轮审查 ——
+
+test('审查 R3 P1-4：白名单逐个归类；修改、删除已有内容的意图缺期望或定位一律 invalid（先于目标查找）', async () => {
+  const { requiredExpect } = await import('../worker/sync-ops.ts');
+  const f = await fixture();
+  const a = await device(f.env);
+  const S = { subscription: 's1' };
+  // [名称, 参数, target, 缺的保护]
+  const guarded: Array<[string, Record<string, unknown>, string, string]> = [
+    ['update_subscription', { ...S, set: { notes: 'x' } }, 'sub/s1', 'expect.notes'],
+    ['update_subscription', { ...S, set: { end: '2026-09-01' } }, 'sub/s1', 'expect.end'],
+    ['change_price', { ...S, amount: 3, from: '2026-03-05' }, 'sub/s1', 'expect.price'],
+    ['change_price', { ...S, action: 'edit', phase: '2026-01-05', original_from: '2026-01-05', amount: 3 }, 'sub/s1', 'expect.price'],
+    ['change_price', { ...S, action: 'remove', phase: '2026-01-05', original_from: '2026-03-05' }, 'sub/s1', 'expect.price'],
+    ['change_plan', { ...S, action: 'edit', at: '2026-01-05', set: { price: 3 } }, 'sub/s1', 'expect.price'],
+    ['change_plan', { ...S, action: 'switch', at: '2026-04-05', set: { price: 3 } }, 'sub/s1', 'expect.price'],
+    ['set_status', { ...S, status: 'paused' }, 'sub/s1', 'expect.status'],
+    ['set_meters', { ...S, meters: [] }, 'sub/s1', 'expect.meters'],
+    ['add_readings', { ...S, readings: [] }, 'sub/s1', 'expect.readings'],
+    ['set_share', { ...S, role: 'owner', seats: 3 }, 'sub/s1', 'expect.share'],
+    ['set_share', { ...S, role: 'none' }, 'sub/s1', 'expect.share'],
+    ['set_proxy', { ...S, for_name: 'Fictional' }, 'sub/s1', 'expect.proxy'],
+    ['set_proxy', { ...S, action: 'remove' }, 'sub/s1', 'expect.proxy'],
+    ['save_share_member', { ...S, member: 'mb1', fee: 5 }, 'sub/s1', 'expect.member'],
+    ['remove_share_member', { ...S, member: 'mb1' }, 'sub/s1', 'expect.member'],
+    ['record_receivable', { ...S, member: 'mb1', action: 'update', id: 'r1', amount: 1 }, 'sub/s1', 'expect.record'],
+    ['record_receivable', { ...S, member: 'mb1', action: 'delete', id: 'r1' }, 'sub/s1', 'expect.record'],
+    ['record_receivable', { ...S, kind: 'proxy', action: 'update', id: 'r1', amount: 1 }, 'sub/s1', 'expect.record'],
+    ['record_receivable', { ...S, action: 'charged', charge: '2026-02-05', charged_amount: 3 }, 'sub/s1', 'expect.charged'],
+    ['record_payment', { ...S, date: '2026-02-05', amount: 1, replace: { date: '2026-02-05', index: 0 } }, 'sub/s1', 'locate'],
+    ['delete_payment', { ...S, date: '2026-02-05', index: 0 }, 'sub/s1', 'locate'],
+    ['record_transfer', { ...S, date: '2026-02-05', amount: 1, replace: { date: '2026-02-05', index: 0 } }, 'sub/s1', 'locate'],
+    ['record_transfer', { ...S, delete: { date: '2026-02-05', index: 0 } }, 'sub/s1', 'locate'],
+    ['update_payment_method', { method: 'm1', set: { name: 'X' } }, 'method/m1', 'expect.name'],
+    ['update_payment_method', { method: 'm1', name: 'X' }, 'method/m1', 'expect.name'],
+    ['update_payment_method', { method: 'm1', balance: 5 }, 'method/m1', 'expect.balance'],
+    ['update_payment_method', { method: 'm1', set: { balanceAsOf: '2026-02-01' } }, 'method/m1', 'expect.balance'],
+    ['update_payment_method', { method: 'm1', top_up_action: 'update', top_up_index: 0, top_up: { amount: 1 } }, 'method/m1', 'locate'],
+    ['update_payment_method', { method: 'm1', top_up_action: 'delete', top_up_index: 0 }, 'method/m1', 'locate'],
+    ['save_category', { action: 'update', category: 'Video', set: { name: 'Films' } }, 'kv/settings', 'expect.categories'],
+    ['save_category', { action: 'delete', category: 'Video' }, 'kv/settings', 'expect.categories'],
+    ['save_category', { action: 'reorder', order: ['Video'] }, 'kv/settings', 'expect.categories'],
+    ['save_person', { action: 'update', person: 'p1', set: { note: 'x' } }, 'kv/people', 'expect.note'],
+    ['update_settings', { set: { weekStart: 1 } }, 'kv/settings', 'expect.weekStart'],
+  ];
+  // 新建、追加、整条删除：不要求期望（追加的恰好一次由 mid 保证；整条删除对已删目标视为达成）
+  const free: Array<[string, Record<string, unknown>]> = [
+    ['create_subscription', { id: 'x' }],
+    ['record_payment', { ...S, date: '2026-02-05', amount: 1 }],
+    ['record_transfer', { ...S, date: '2026-02-05', amount: 1 }],
+    ['delete_subscription', S],
+    ['record_receivable', { ...S, member: 'mb1', periods: ['2026-02-05'] }],
+    ['record_receivable', { ...S, member: 'mb1', action: 'waive', periods: ['2026-02-05'] }],
+    ['save_share_member', { ...S, name: 'New member' }],
+    ['update_payment_method', { action: 'create', id: 'x', set: {} }],
+    ['update_payment_method', { action: 'delete', method: 'm1' }],
+    ['update_payment_method', { method: 'm1', top_up: { amount: 1 } }],
+    ['save_category', { action: 'create', set: { name: 'New' } }],
+    ['save_person', { action: 'create', set: { name: 'New' } }],
+    ['save_person', { action: 'delete', person: 'p1' }],
+  ];
+  // 白名单里每个工具都已归类：新增同步意图必须先在 requiredExpect 与这张表里声明
+  const covered = new Set([...guarded.map((g) => g[0]), ...free.map((g) => g[0])]);
+  assert.deepEqual(
+    SYNC_INTENTS.filter((n) => !covered.has(n)),
+    [],
+  );
+  for (const [name, args] of free) assert.equal(requiredExpect(name, args), undefined, `${name} ${JSON.stringify(args)}`);
+  for (const [name, args, target, missing] of guarded) {
+    const r = await a.push([{ name: `${name}@1`, target, args }]);
+    assert.deepEqual(codes(r), ['invalid'], `${name} ${JSON.stringify(args)}`);
+    const detail = (r.body.rejections as Array<{ detail: string }>)[0].detail;
+    assert.ok(detail.includes(missing), `${name}: ${detail}`);
+  }
+});
+
+test('审查 R3 P1-4 反例：代付收款 rc1=30，旧设备不带期望改成 10 → invalid；期望不符 expect_failed；相符才改，删除同理', async () => {
+  const f = await fixture();
+  const a = await device(f.env);
+  await a.push([SUB()]);
+  const proxy = await a.push([{ name: 'set_proxy@1', target: 'sub/s1', args: { subscription: 's1', for_name: 'Fictional Friend' }, expect: { proxy: null } }]);
+  assert.deepEqual(proxy.body.rejections, []);
+  const rec = await a.push([
+    { name: 'record_receivable@1', target: 'sub/s1', args: { subscription: 's1', kind: 'proxy', id: 'rc1', amount: 30, date: '2026-02-06', count: 1 } },
+  ]);
+  assert.deepEqual(rec.body.rejections, []);
+  type Receipt = { id: string; amount: number };
+  const receipt = async () => ((await rawSub(f.env)).proxy as { receipts?: Receipt[] } | undefined)?.receipts?.find((x) => x.id === 'rc1');
+  const seen = await receipt();
+  assert.equal(seen?.amount, 30);
+  const upd = (expect?: unknown) => ({
+    name: 'record_receivable@1',
+    target: 'sub/s1',
+    args: { subscription: 's1', kind: 'proxy', action: 'update', id: 'rc1', amount: 10 },
+    ...(expect !== undefined ? { expect: { record: expect } } : {}),
+  });
+  assert.deepEqual(codes(await a.push([upd()])), ['invalid']);
+  assert.deepEqual(codes(await a.push([upd({ ...seen, amount: 25 })])), ['expect_failed']);
+  assert.equal((await receipt())?.amount, 30);
+  assert.deepEqual((await a.push([upd(seen)])).body.rejections, []);
+  const now = await receipt();
+  assert.equal(now?.amount, 10);
+  // 删除：期望仍是旧内容（30）→ expect_failed；按新内容删除成功；再删一次已达成
+  const del = (expect: unknown) => ({
+    name: 'record_receivable@1',
+    target: 'sub/s1',
+    args: { subscription: 's1', kind: 'proxy', action: 'delete', id: 'rc1' },
+    expect: { record: expect },
+  });
+  assert.deepEqual(codes(await a.push([del(seen)])), ['expect_failed']);
+  assert.deepEqual((await a.push([del(now)])).body.rejections, []);
+  assert.equal(await receipt(), undefined);
+  assert.deepEqual((await a.push([del(now)])).body.rejections, []);
+});
+
+test('审查 R3 P2-5：只改余额日期也要冻结 balance + balanceAsOf；不符 expect_failed', async () => {
+  const f = await fixture();
+  const a = await device(f.env);
+  const mk = await a.push([
+    {
+      name: 'update_payment_method@1',
+      target: 'method/m1',
+      args: { action: 'create', id: 'm1', set: { name: 'Fictional Wallet', kind: 'prepaid', currency: 'USD', balance: 40, balanceAsOf: '2026-01-01' } },
+    },
+  ]);
+  assert.deepEqual(mk.body.rejections, []);
+  const asOf = (expect?: Record<string, unknown>) => ({
+    name: 'update_payment_method@1',
+    target: 'method/m1',
+    args: { method: 'm1', set: { balanceAsOf: '2026-02-01' } },
+    ...(expect ? { expect } : {}),
+  });
+  assert.deepEqual(codes(await a.push([asOf()])), ['invalid']);
+  assert.deepEqual(codes(await a.push([asOf({ balance: 40 })])), ['invalid']);
+  assert.deepEqual(codes(await a.push([asOf({ balance: 40, balanceAsOf: '2025-12-01' })])), ['expect_failed']);
+  const raw = async () => JSON.parse(((await f.env.DB.prepare("SELECT data FROM methods WHERE id = 'm1'").first()) as { data: string }).data);
+  assert.equal((await raw()).balanceAsOf, '2026-01-01');
+  assert.deepEqual((await a.push([asOf({ balance: 40, balanceAsOf: '2026-01-01' })])).body.rejections, []);
+  assert.equal((await raw()).balanceAsOf, '2026-02-01');
+});
+
+test('审查 R3 P2-7：logoWide、order 与工具 schema 一致不可清空：to:null 先判 invalid 不动数据，给具体值可改', async () => {
+  const { METHOD_FIELDS } = await import('./ledger-edit.ts');
+  const f = await fixture();
+  const a = await device(f.env);
+  await a.push([
+    {
+      name: 'update_payment_method@1',
+      target: 'method/m1',
+      args: { action: 'create', id: 'm1', set: { name: 'Fictional Card', kind: 'credit', currency: 'USD', logoWide: true, order: 3 } },
+    },
+  ]);
+  const raw = async () => JSON.parse(((await f.env.DB.prepare("SELECT data FROM methods WHERE id = 'm1'").first()) as { data: string }).data);
+  const props = (METHOD_FIELDS as { properties: Record<string, { type: unknown }> }).properties;
+  for (const [field, from, to] of [
+    ['logoWide', true, false],
+    ['order', 3, 0],
+  ] as const) {
+    assert.ok(!JSON.stringify(props[field].type).includes('null'), `${field} 在工具 schema 里不可空`);
+    const cleared = await a.push([{ name: 'patch@1', target: 'method/m1', fields: { [field]: { from, to: null } } }]);
+    assert.deepEqual(codes(cleared), ['invalid'], field);
+    assert.equal((await raw())[field], from, field);
+    const set = await a.push([{ name: 'patch@1', target: 'method/m1', fields: { [field]: { from, to } } }]);
+    assert.deepEqual(set.body.rejections, [], field);
+    assert.equal((await raw())[field], to, field);
+  }
+});
+
+test('审查 R3 P1-1：签发 B 读到旧状态后暂停、期间吊销 A，再放行 B → A 仍 401、B 可用；两个并发吊销互不恢复', async () => {
+  const { revokeSyncToken, listSyncTokens, authenticateSync } = await import('../worker/sync-auth.ts');
+  const f = await fixture();
+  const auth = (token: string) => authenticateSync(new Request('https://example.test/', { headers: { authorization: `Bearer ${token}` } }), f.env);
+  const A = await createSyncToken(f.env, 'Fictional A');
+  const C = await createSyncToken(f.env, 'Fictional C');
+  // 确定交错：拦下签发 B 的写入语句，等吊销 A 完成后再执行
+  const db = f.env.DB;
+  let release!: () => void;
+  const gate = new Promise<void>((r) => (release = r));
+  let held = false;
+  const prepare = db.prepare.bind(db);
+  (db as { prepare: unknown }).prepare = (sql: string) => {
+    const stmt = prepare(sql);
+    if (!/INSERT INTO sync_tokens/.test(sql)) return stmt;
+    const bind = stmt.bind.bind(stmt);
+    return Object.assign(stmt, {
+      bind: (...v: unknown[]) => {
+        const b = bind(...v);
+        const run = b.run.bind(b);
+        return Object.assign(b, {
+          run: async () => {
+            held = true;
+            await gate;
+            return run();
+          },
+        });
+      },
+    });
+  };
+  const creating = createSyncToken(f.env, 'Fictional B');
+  const isHeld = () => held;
+  for (let i = 0; i < 200 && !isHeld(); i++) await new Promise((r) => setTimeout(r, 1));
+  assert.ok(held, 'B 的写入已被拦下');
+  await revokeSyncToken(f.env, A.item.id);
+  release();
+  const B = await creating;
+  (db as { prepare: unknown }).prepare = prepare;
+  assert.equal(await auth(A.token), undefined, '吊销的 A 不被签发 B 恢复');
+  assert.ok(await auth(B.token));
+  // 两个并发吊销：各删各的行
+  await Promise.all([revokeSyncToken(f.env, B.item.id), revokeSyncToken(f.env, C.item.id)]);
+  assert.equal(await auth(B.token), undefined);
+  assert.equal(await auth(C.token), undefined);
+  const left = (await listSyncTokens(f.env)).map((x) => x.name);
+  assert.ok(!left.includes('Fictional A') && !left.includes('Fictional B') && !left.includes('Fictional C'), left.join());
+});
+
+test('审查 R3 P1-1：0010 迁移把旧 kv 里的同步令牌搬进新表并删除旧键', async () => {
+  const env = { DB: openD1(':memory:') } as unknown as Env;
+  // 先只迁到 0009，模拟升级前已经签发过（kv 形态的）令牌
+  const { MIGRATIONS } = await import('../worker/migrations.gen.ts');
+  const before = MIGRATIONS.filter((m: { name: string }) => m.name < '0010');
+  for (const m of before) for (const sql of m.statements) await env.DB.prepare(sql).run();
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TEXT)').run();
+  for (const m of before) await env.DB.prepare('INSERT INTO d1_migrations (name, applied_at) VALUES (?1, ?2)').bind(m.name, 'T').run();
+  const legacy = [{ id: 'old1', name: 'Fictional Old', hash: 'h-old1', prefix: 'cal_sync_abcd', createdAt: '2026-01-01T00:00:00.000Z' }];
+  await env.DB.prepare("INSERT INTO kv (key, value) VALUES ('syncTokens', ?1), ('syncTokenUse', ?2)")
+    .bind(JSON.stringify(legacy), JSON.stringify({ old1: '2026-02-01T00:00:00.000Z' }))
+    .run();
+  await ensureMigrated(env);
+  const rows = (await env.DB.prepare('SELECT * FROM sync_tokens').all()).results;
+  assert.deepEqual(rows, [
+    {
+      id: 'old1',
+      name: 'Fictional Old',
+      hash: 'h-old1',
+      prefix: 'cal_sync_abcd',
+      created_at: '2026-01-01T00:00:00.000Z',
+      last_used_at: '2026-02-01T00:00:00.000Z',
+    },
+  ]);
+  assert.equal(await env.DB.prepare("SELECT value FROM kv WHERE key IN ('syncTokens', 'syncTokenUse')").first(), null);
 });

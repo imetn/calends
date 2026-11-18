@@ -65,6 +65,72 @@ export const SYNC_INTENTS = [
   'set_proxy',
 ] as const;
 
+/** update_subscription 的 set 键 → 订阅文档字段 */
+const SUB_SET_KEYS: Record<string, string> = {
+  show_on_public: 'showOnPublic',
+  manage_url: 'manageUrl',
+  method: 'methodId',
+  remind_days: 'remindDays',
+  next_due: 'nextDue',
+  trial_end: 'trialEnd',
+};
+/** 阶段类意图（change_plan）可能改动的顶层字段 */
+const PLAN_KEYS = ['price', 'currency', 'cycle', 'billing', 'start', 'end', 'stop', 'status', 'priceHistory', 'phases', 'methodId', 'region', 'planned'];
+/** 不按顶层字段比较、由专门规则核对的期望键 */
+const SPECIAL_EXPECT = new Set(['readings', 'member', 'record', 'charged']);
+
+/**
+ * 修改、删除已有内容的意图在同步路径上必须冻结的期望键（docs/sync-api.md「意图保护」表）。
+ * 返回 undefined = 新建、追加或整条删除，不要求期望；按内容定位的内层改删（付款、转让、充值）另由 locate 保护。
+ * 新增 SYNC_INTENTS 必须在这里归类（sync.test 遍历白名单核对）。
+ */
+export function requiredExpect(name: string, a: Record<string, unknown>): string[] | undefined {
+  const set = a.set && typeof a.set === 'object' ? Object.keys(a.set as object) : [];
+  const action = typeof a.action === 'string' ? a.action : undefined;
+  switch (name) {
+    case 'update_subscription':
+      return set.map((k) => SUB_SET_KEYS[k] ?? k);
+    case 'change_price':
+      return ['price', 'priceHistory', 'phases'];
+    case 'change_plan':
+      return PLAN_KEYS;
+    case 'set_status':
+      return ['status'];
+    case 'set_meters':
+      return ['meters'];
+    case 'add_readings':
+      return ['readings'];
+    case 'set_share':
+      return ['share'];
+    case 'set_proxy':
+      return ['proxy'];
+    case 'save_share_member':
+      return a.member != null ? ['member'] : undefined;
+    case 'remove_share_member':
+      return ['member'];
+    case 'record_receivable':
+      return action === 'update' || action === 'delete' ? ['record'] : action === 'charged' ? ['charged'] : undefined;
+    case 'update_payment_method': {
+      if (action === 'create' || action === 'delete') return undefined;
+      const keys = set.filter((k) => k !== 'balance' && k !== 'balanceAsOf');
+      if (typeof a.name === 'string') keys.push('name');
+      if (typeof a.region === 'string') keys.push('region');
+      if (a.balance !== undefined || set.includes('balance') || set.includes('balanceAsOf')) keys.push('balance', 'balanceAsOf');
+      return keys.length ? [...new Set(keys)] : undefined;
+    }
+    case 'save_category':
+      return action === 'create' ? undefined : ['categories'];
+    case 'save_person':
+      if (action !== 'update' && action !== undefined) return undefined;
+      return [...set, ...('avatar' in a || 'avatar_base64' in a ? ['avatar'] : [])];
+    case 'update_settings':
+      return set;
+    default:
+      // create_subscription、record_payment、delete_payment、record_transfer、delete_subscription
+      return undefined;
+  }
+}
+
 const INTENT_TOOLS = new Map<string, Tool>(
   SYNC_INTENTS.map((n) => {
     const tool = TOOLS.find((x) => x.name === n && x.write);
@@ -76,10 +142,13 @@ const INTENT_TOOLS = new Map<string, Tool>(
 /** 服务器认识的操作与版本区间（hello.ops）：现在全部只有 @1 */
 export const OP_VERSIONS: Record<string, [number, number]> = Object.fromEntries([...GENERIC, ...SYNC_INTENTS].map((n) => [n, [1, 1]]));
 
-/** patch@1 允许 to:null 清空的字段；其余（名称、分类、标签、公开页开关）必须给具体值 */
+/**
+ * patch@1 允许 to:null 清空的字段，须与工具 schema（METHOD_FIELDS 等）可空的字段一致；
+ * 其余（名称、分类、标签、公开页开关，以及支付方式的 logoWide、order）必须给具体值，null 先判 invalid
+ */
 const NULLABLE = {
   sub: ['icon', 'url', 'manageUrl', 'methodId', 'region', 'remindDays', 'account', 'notes', 'expires', 'trialEnd', 'chargeLeadDays', 'cancelLeadDays'],
-  method: ['color', 'region', 'notes', 'lowRunwayDays', 'brand', 'logo', 'logoWide', 'order', 'bank', 'network', 'phone', 'url', 'balanceExpires'],
+  method: ['color', 'region', 'notes', 'lowRunwayDays', 'brand', 'logo', 'bank', 'network', 'phone', 'url', 'balanceExpires'],
 } as const;
 
 /** 没有存值时的等效值：续费提前天数缺省即 0（billing.ts 的 ?? 0），补丁比较与清空都按它 */
@@ -256,6 +325,9 @@ export class SyncExec {
       name === 'delete_subscription' || (name === 'update_payment_method' && a.action === 'delete') || (name === 'save_person' && a.action === 'delete');
     const creating = name === 'create_subscription' || a.action === 'create';
     const target = op.target ? splitKey(op.target) : undefined;
+    // 修改类意图缺定位或期望 → invalid，不按无保护写入执行（先于目标查找：缺保护本身就是错误请求）
+    const guard = this.requiredGuard(name, a, op, target?.kind);
+    if (guard) return guard;
     let doc: Record<string, unknown> | undefined;
     if (!creating && target && (target.kind === 'sub' || target.kind === 'method')) {
       doc = this.current(op.target!) as Record<string, unknown> | undefined;
@@ -268,17 +340,14 @@ export class SyncExec {
       doc = p as unknown as Record<string, unknown>;
     }
 
-    // 必须带期望的绝对值意图（sync-design 4.4）：缺了就拒绝，不按无保护写入执行
-    const guard = this.requiredGuard(name, a, op, target?.kind);
-    if (guard) return guard;
-
-    // 绝对值意图的期望（sync-design 4.4）：字段逐个比较目标当前值
+    // 期望字段逐个比较目标当前值（sync-design 4.4）；成员、收款记录、代付实扣、读数另有专门规则
     if (op.expect && typeof op.expect === 'object' && !('hash' in op.expect)) {
-      const { readings: _r, ...fields } = op.expect as Record<string, unknown>;
-      const cur = doc ?? (target?.kind === 'kv' ? (this.current(op.target!) as Record<string, unknown> | undefined) : undefined);
-      if (!cur) return reject('target_deleted', op.target ?? '');
-      for (const [k, v] of Object.entries(fields))
-        if (norm(cur[k]) !== norm(v)) return reject('expect_failed', `${k}: server=${norm(cur[k])} expect=${norm(v)}`);
+      const fields = Object.entries(op.expect as Record<string, unknown>).filter(([k]) => !SPECIAL_EXPECT.has(k));
+      const cur = doc ?? (target?.kind === 'kv' ? ((this.current(op.target!) as Record<string, unknown> | undefined) ?? {}) : undefined);
+      if (fields.length && !cur) return reject('target_deleted', op.target ?? '');
+      for (const [k, v] of fields) if (norm(cur![k]) !== norm(v)) return reject('expect_failed', `${k}: server=${norm(cur![k])} expect=${norm(v)}`);
+      const inner = this.checkInner(name, a, op.expect as Record<string, unknown>, doc);
+      if (inner) return inner;
     }
 
     // 读数：逐条比较本次要改、要删的那几条（sync-design 4.4）
@@ -306,18 +375,62 @@ export class SyncExec {
       if (!l || !isDate(l.date) || !l.match || typeof l.match !== 'object' || !Number.isInteger(l.count) || l.count < 1)
         return reject('invalid', `${name}: locate`);
     }
-    const set = (a.set ?? {}) as Record<string, unknown>;
-    const balance = name === 'update_payment_method' && a.action !== 'create' && (a.balance !== undefined || 'balance' in set);
-    // 期望与定位都针对 target 那一条：必须有 target，且与参数指向同一条
-    if (needLocate || balance || ['set_status', 'set_meters', 'add_readings'].includes(name)) {
-      const want = name === 'update_payment_method' ? 'method' : 'sub';
-      const ref = want === 'method' ? a.method : a.subscription;
+    const need = requiredExpect(name, a);
+    // 期望与定位都针对 target 那一条：必须有 target，且与参数按 id 指向同一条（不接受名称、人员推断）
+    if (needLocate || need?.length) {
+      const want =
+        name === 'update_payment_method' ? 'method' : name === 'save_category' || name === 'update_settings' ? 'kv' : name === 'save_person' ? 'kv' : 'sub';
+      const ref = want === 'method' ? a.method : want === 'kv' ? (name === 'save_person' ? 'people' : 'settings') : a.subscription;
       if (kind !== want || !op.target || ref !== splitKey(op.target)?.id) return reject('invalid', `${name}: target`);
+      if (name === 'record_receivable' && a.person != null) return reject('invalid', `${name}: person`);
     }
-    if (name === 'set_status' && !(expect && 'status' in expect)) return reject('invalid', 'set_status: expect.status');
-    if (name === 'set_meters' && !(expect && 'meters' in expect)) return reject('invalid', 'set_meters: expect.meters');
-    if (name === 'add_readings' && !(expect && Array.isArray(expect.readings))) return reject('invalid', 'add_readings: expect.readings');
-    if (balance && !(expect && 'balance' in expect && 'balanceAsOf' in expect)) return reject('invalid', 'update_payment_method: expect.balance');
+    if (need?.length) {
+      const missing = need.find((k) => !expect || !(k in expect));
+      if (missing) return reject('invalid', `${name}: expect.${missing}`);
+      if (name === 'add_readings' && !Array.isArray(expect!.readings)) return reject('invalid', 'add_readings: expect.readings');
+      if ((need.includes('member') || need.includes('record')) && typeof a.member !== 'string' && name !== 'record_receivable')
+        return reject('invalid', `${name}: member id`);
+      if (need.includes('record') && typeof a.id !== 'string') return reject('invalid', `${name}: id`);
+      if (need.includes('charged') && !isDate(a.charge)) return reject('invalid', `${name}: charge`);
+    }
+    return undefined;
+  }
+
+  /**
+   * 成员、收款记录、代付实扣的期望（docs/sync-api.md「意图保护」）：按 id / 日期找到服务器上的那一项，与冻结内容逐字段相同。
+   * 删除类目标已不在 = 已达成；修改类 target_deleted。
+   */
+  private checkInner(
+    name: string,
+    a: Record<string, unknown>,
+    expect: Record<string, unknown>,
+    doc: Record<string, unknown> | undefined,
+  ): OpResult | undefined {
+    const s = doc as unknown as Subscription | undefined;
+    const removing = name === 'remove_share_member' || (name === 'record_receivable' && a.action === 'delete');
+    const same = (what: string, cur: unknown, want: unknown) =>
+      norm(cur) === norm(want) ? undefined : reject('expect_failed', `${what}: server=${norm(cur)} expect=${norm(want)}`);
+    if ('member' in expect && (name === 'save_share_member' || name === 'remove_share_member')) {
+      const m = s?.share?.members.find((x) => x.id === a.member);
+      if (!m) return removing ? OK : reject('target_deleted', `member/${String(a.member)}`);
+      return same('member', m, expect.member);
+    }
+    if ('record' in expect && name === 'record_receivable') {
+      const kind = a.member != null ? 'share' : 'proxy';
+      if (a.kind != null && a.kind !== kind) return reject('invalid', 'record_receivable: kind');
+      const owner = kind === 'share' ? s?.share?.members.find((x) => x.id === a.member) : s?.proxy;
+      const rec = owner ? [...(owner.receipts ?? []), ...(owner.waivers ?? [])].find((x) => x.id === a.id) : undefined;
+      if (!rec) return removing ? OK : reject('target_deleted', `receivable/${String(a.id)}`);
+      return same('record', rec, expect.record);
+    }
+    if ('charged' in expect && name === 'record_receivable') {
+      if (!s?.proxy) return reject('target_deleted', 'proxy');
+      return same(
+        'charged',
+        s.proxy.charged?.find((x) => x.charge === a.charge),
+        expect.charged,
+      );
+    }
     return undefined;
   }
 

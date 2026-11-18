@@ -25,9 +25,75 @@ writeFileSync(
 import { ensureMigrated } from ${JSON.stringify(join(root, 'worker/migrate.ts'))};
 import { isConflictError } from ${JSON.stringify(join(root, 'worker/write-guard.ts'))};
 const out = (v) => Response.json(v);
+// 守卫探针：给 D1 套一层，只在测试里存在。认出守卫批（首条写 sync_cas）后可以
+// - 屏障：凑齐 n 个守卫批再一起放行（它们都读到了同一个旧序号）
+// - 抢写：本请求的前 k 个守卫批提交前，先由「别处」写一笔（让这次 CAS 必然失败）
+// 并统计守卫批次数与 CAS 失败次数。
+const INTERFERE = {
+  tz: "UPDATE kv SET value = json_set(value, '$.timezone', 'Asia/Tokyo') WHERE key = 'settings'",
+  note: "UPDATE subscriptions SET data = json_set(data, '$.notes', 'from sync', '$.updatedAt', 'sync-' || hex(randomblob(4))) WHERE id = 'wb1'",
+};
+const sqlOf = new WeakMap();
+let barrier = null;
+let stats = { guarded: 0, conflicts: 0 };
+const tag = (stmt, sql) => {
+  sqlOf.set(stmt, sql);
+  const bind = stmt.bind.bind(stmt);
+  stmt.bind = (...a) => tag(bind(...a), sql);
+  return stmt;
+};
+const probeDb = (db, interfere, times) => {
+  let left = times;
+  return new Proxy(db, {
+    get(t, k) {
+      if (k === 'prepare') return (sql) => tag(t.prepare(sql), sql);
+      if (k === 'batch')
+        return async (stmts) => {
+          const guarded = (sqlOf.get(stmts[0]) ?? '').includes('sync_cas');
+          if (guarded) {
+            stats.guarded++;
+            if (barrier && barrier.left > 0) {
+              const b = barrier;
+              await new Promise((r) => {
+                b.waiting.push(r);
+                if (--b.left === 0) b.waiting.splice(0).forEach((f) => f());
+              });
+            }
+            if (left > 0 && interfere) {
+              left--;
+              await t.prepare(INTERFERE[interfere]).run();
+            }
+          }
+          try {
+            return await t.batch(stmts);
+          } catch (e) {
+            if (guarded && isConflictError(e)) stats.conflicts++;
+            throw e;
+          }
+        };
+      const v = t[k];
+      return typeof v === 'function' ? v.bind(t) : v;
+    },
+  });
+};
 export default {
   async fetch(req, env, ctx) {
     const u = new URL(req.url);
+    if (u.pathname === '/__probe/barrier') {
+      barrier = { left: Number(u.searchParams.get('n')), waiting: [] };
+      stats = { guarded: 0, conflicts: 0 };
+      return out({ ok: true });
+    }
+    if (u.pathname === '/__probe/stats') {
+      const s = stats;
+      stats = { guarded: 0, conflicts: 0 };
+      return out(s);
+    }
+    const interfere = req.headers.get('x-probe-interfere');
+    if (interfere || barrier?.left) {
+      const times = Number(req.headers.get('x-probe-times') ?? 1);
+      return worker.fetch(req, { ...env, DB: probeDb(env.DB, interfere, times) }, ctx);
+    }
     if (u.pathname === '/__probe/migrate') {
       const db = u.searchParams.get('db') === '2' ? env.DB2 : env.DB;
       await ensureMigrated({ ...env, DB: db });
@@ -154,7 +220,11 @@ const dump = async (mf) => {
 
 const resetLedger = async (mf) => {
   const db = await mf.getD1Database('DB');
-  await db.batch([db.prepare('DELETE FROM subscriptions'), db.prepare('DELETE FROM methods')]);
+  await db.batch([
+    db.prepare('DELETE FROM subscriptions'),
+    db.prepare('DELETE FROM methods'),
+    db.prepare("DELETE FROM kv WHERE key IN ('settings', 'people')"),
+  ]);
 };
 
 test('D1：守卫识别 CHECK 失败；条件更新命中 0 行、后续语句失败都整批回滚', async () => {
@@ -263,35 +333,104 @@ test('并发：多台设备同时改同一字段（同一旧值）→ 只有一�
   assert.equal(sub.notes, `w${won[0]}`);
 });
 
-test('并发：网页设置的读改写同时到达 → 成功的改动都留下，冲突的返回 409 write_conflict', async () => {
-  const fields = [
-    ['weekStart', 1],
-    ['remindDays', 4],
-    ['notifyHour', 6],
-    ['timezone', 'Asia/Tokyo'],
-    ['currency', 'EUR'],
-    ['theme', 'dark'],
-  ];
-  const rs = await Promise.all(fields.map(([k, v]) => call(mfA, '/api/settings', { method: 'PUT', body: { [k]: v } })));
+const stats = async () => (await call(mfA, '/__probe/stats')).body;
+
+test('并发（确定屏障）：两个网页设置请求读到同一旧序号 → 一个 CAS 失败后重算成功，两处改动都留下', async () => {
+  await resetLedger(mfA);
+  await stats();
+  // 网页现在的请求形状：只发改动字段（ledger-writes.ts saveSettings）
+  await call(mfA, '/__probe/barrier?n=2');
+  const rs = await Promise.all([
+    call(mfA, '/api/settings', { method: 'PUT', body: { notifyHour: 7 } }),
+    call(mfA, '/api/settings', { method: 'PUT', body: { weekStart: 1 } }),
+  ]);
+  assert.deepEqual(
+    rs.map((r) => r.status),
+    [200, 200],
+    JSON.stringify(rs.map((r) => r.body)),
+  );
+  const st = await stats();
+  assert.equal(st.conflicts, 1, `恰好一次 CAS 失败：${JSON.stringify(st)}`);
+  assert.equal(st.guarded, 3, '两次首提交 + 一次重算');
   const settings = (await call(mfA, '/api/state')).body.settings;
-  let ok = 0;
-  rs.forEach((r, i) => {
-    const [k, v] = fields[i];
-    if (r.status === 200) {
-      ok++;
-      assert.deepEqual(settings[k], v, `成功返回的 ${k} 不能被并发写入盖掉`);
-    } else {
-      assert.equal(r.status, 409, JSON.stringify(r.body));
-      assert.equal(r.body.code, 'write_conflict');
-    }
+  assert.equal(settings.notifyHour, 7);
+  assert.equal(settings.weekStart, 1);
+});
+
+test('并发（确定抢写）：网页设置提交前别处改了时区 → 首次 CAS 失败、重算成功且不盖掉时区；连续两次被抢 → 409', async () => {
+  await resetLedger(mfA);
+  await call(mfA, '/api/settings', { method: 'PUT', body: { timezone: 'UTC', notifyHour: 9 } });
+  await stats();
+  const once = await call(mfA, '/api/settings', { method: 'PUT', body: { notifyHour: 7 }, headers: { 'x-probe-interfere': 'tz' } });
+  assert.equal(once.status, 200, JSON.stringify(once.body));
+  assert.deepEqual(await stats(), { guarded: 2, conflicts: 1 });
+  let settings = (await call(mfA, '/api/state')).body.settings;
+  assert.equal(settings.timezone, 'Asia/Tokyo', '别处的改动留下');
+  assert.equal(settings.notifyHour, 7);
+  await call(mfA, '/api/settings', { method: 'PUT', body: { timezone: 'UTC' } });
+  await stats();
+  const twice = await call(mfA, '/api/settings', {
+    method: 'PUT',
+    body: { notifyHour: 5 },
+    headers: { 'x-probe-interfere': 'tz', 'x-probe-times': '2' },
   });
-  assert.ok(ok >= 1);
-  console.log(`# 网页并发设置：${ok} 成功 / ${rs.length - ok} 冲突`);
+  assert.equal(twice.status, 409, JSON.stringify(twice.body));
+  assert.equal(twice.body.code, 'write_conflict');
+  assert.deepEqual(await stats(), { guarded: 2, conflicts: 2 });
+  settings = (await call(mfA, '/api/state')).body.settings;
+  assert.equal(settings.timezone, 'Asia/Tokyo');
+  assert.equal(settings.notifyHour, 7, '409 时这次改动不落库');
+});
+
+test('并发（确定抢写）：订阅整条替换带冻结版本 If-Match，提交前同步改了备注 → 重算发现版本变了 409，同步备注保留；不带 If-Match 的旧请求仍是旧覆盖语义', async () => {
+  await resetLedger(mfA);
+  const base = {
+    id: 'wb1',
+    name: 'Fictional Web',
+    price: 6,
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-01-05',
+    status: 'active',
+    notes: 'base',
+  };
+  const created = await call(mfA, '/api/subscriptions/wb1', { method: 'PUT', body: base });
+  assert.equal(created.status, 200, JSON.stringify(created.body));
+  const frozen = created.body.updatedAt;
+  assert.ok(frozen);
+  await stats();
+  // 网页请求形状：草稿正文（不带 updatedAt）+ If-Match 草稿打开时的版本
+  const draft = { ...created.body, updatedAt: undefined, price: 7 };
+  const r = await call(mfA, '/api/subscriptions/wb1', {
+    method: 'PUT',
+    body: draft,
+    headers: { 'if-match': JSON.stringify(frozen), 'x-probe-interfere': 'note' },
+  });
+  assert.equal(r.status, 409, JSON.stringify(r.body));
+  assert.deepEqual(await stats(), { guarded: 1, conflicts: 1 }, '首次 CAS 失败；重算时 If-Match 已不符，不再提交');
+  const db = await mfA.getD1Database('DB');
+  const row = async () => JSON.parse((await db.prepare("SELECT data FROM subscriptions WHERE id = 'wb1'").first()).data);
+  assert.equal((await row()).notes, 'from sync');
+  assert.equal((await row()).price, 6);
+  // 按新版本重开草稿：成功
+  const now = await row();
+  const ok = await call(mfA, '/api/subscriptions/wb1', {
+    method: 'PUT',
+    body: { ...now, updatedAt: undefined, price: 7 },
+    headers: { 'if-match': JSON.stringify(now.updatedAt) },
+  });
+  assert.equal(ok.status, 200);
+  assert.equal((await row()).notes, 'from sync');
+  // 保证边界（docs/sync-api.md）：不带 If-Match 的旧客户端整条覆盖，守卫重算也只会重放旧正文
+  const legacy = await call(mfA, '/api/subscriptions/wb1', { method: 'PUT', body: { ...draft, notes: 'legacy' }, headers: { 'x-probe-interfere': 'note' } });
+  assert.equal(legacy.status, 200);
+  assert.equal((await row()).notes, 'legacy');
 });
 
 test('对拍：同步批量（含失败操作）== 经 /mcp 逐个调用成功的那些工具', async () => {
   await Promise.all([resetLedger(mfA), resetLedger(mfB)]);
   const day = today();
+  const PRICE0 = { price: 12, priceHistory: null, phases: null };
   const steps = [
     [
       'update_payment_method',
@@ -308,16 +447,16 @@ test('对拍：同步批量（含失败操作）== 经 /mcp 逐个调用成功�
     ['record_payment', { subscription: 'xs1', date: '2026-02-05', amount: 12, allow_duplicate: true }, 'sub/xs1', true],
     // 失败：订阅不存在（保存点回滚，不影响后面）
     ['record_payment', { subscription: 'ghost', date: '2026-02-05', amount: 1 }, 'sub/ghost', false],
-    ['update_subscription', { subscription: 'xs1', set: { notes: 'fictional note', tags: ['x'] } }, 'sub/xs1', true],
+    ['update_subscription', { subscription: 'xs1', set: { notes: 'fictional note', tags: ['x'] } }, 'sub/xs1', true, { notes: null, tags: [] }],
     // 失败：价格非法
-    ['change_price', { subscription: 'xs1', amount: -5, from: '2026-03-05' }, 'sub/xs1', false],
-    ['change_price', { subscription: 'xs1', amount: 15, from: '2026-03-05' }, 'sub/xs1', true],
+    ['change_price', { subscription: 'xs1', amount: -5, from: '2026-03-05' }, 'sub/xs1', false, PRICE0],
+    ['change_price', { subscription: 'xs1', amount: 15, from: '2026-03-05' }, 'sub/xs1', true, PRICE0],
     ['save_person', { action: 'create', id: 'xp1', set: { name: 'Fictional Person' } }, null, true],
-    ['update_settings', { set: { weekStart: 1, remindDays: 5 } }, null, true],
+    ['update_settings', { set: { weekStart: 1, remindDays: 5 } }, 'kv/settings', true, { weekStart: null, remindDays: null }],
   ];
   const a = await device(mfA, await syncToken(mfA), 'oracle');
   const r = await a.push(
-    steps.map(([name, args, target]) => ({ name: `${name}@1`, args, ...(target ? { target } : {}) })),
+    steps.map(([name, args, target, , expect]) => ({ name: `${name}@1`, args, ...(target ? { target } : {}), ...(expect ? { expect } : {}) })),
     day,
   );
   assert.equal(r.status, 200, JSON.stringify(r.body));

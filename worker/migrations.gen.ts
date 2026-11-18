@@ -100,5 +100,13 @@ export const MIGRATIONS: Array<{ name: string; statements: string[] }> = [
       "CREATE TRIGGER sync_kv_update AFTER UPDATE ON kv\nWHEN (NEW.key IN ('settings', 'people') OR OLD.key IN ('settings', 'people')) AND (OLD.value IS NOT NEW.value OR OLD.key IS NOT NEW.key)\nBEGIN\n  UPDATE sync_head SET seq = seq + 1;\n  INSERT INTO sync_objects (kind, id, seq, deleted) SELECT 'kv', OLD.key, (SELECT seq FROM sync_head), 1 WHERE OLD.key IS NOT NEW.key AND OLD.key IN ('settings', 'people')\n    ON CONFLICT(kind, id) DO UPDATE SET seq = excluded.seq, deleted = 1;\n  INSERT INTO sync_objects (kind, id, seq, deleted) SELECT 'kv', NEW.key, (SELECT seq FROM sync_head), 0 WHERE NEW.key IN ('settings', 'people')\n    ON CONFLICT(kind, id) DO UPDATE SET seq = excluded.seq, deleted = 0;\nEND",
       "CREATE TRIGGER sync_kv_delete AFTER DELETE ON kv\nWHEN OLD.key IN ('settings', 'people')\nBEGIN\n  UPDATE sync_head SET seq = seq + 1;\n  INSERT INTO sync_objects (kind, id, seq, deleted) VALUES ('kv', OLD.key, (SELECT seq FROM sync_head), 1)\n    ON CONFLICT(kind, id) DO UPDATE SET seq = excluded.seq, deleted = 1;\nEND"
     ]
+  },
+  {
+    "name": "0010_sync_tokens.sql",
+    "statements": [
+      "-- App 同步令牌：每个令牌一行，签发与吊销是单行 INSERT / DELETE，不再读改写整张列表（并发签发不会恢复刚吊销的令牌）。\n-- 只存 SHA-256；明文只在签发时返回一次。\nCREATE TABLE sync_tokens (\n  id TEXT PRIMARY KEY,\n  name TEXT NOT NULL,\n  hash TEXT NOT NULL UNIQUE,\n  prefix TEXT NOT NULL,\n  created_at TEXT NOT NULL,\n  last_used_at TEXT\n)",
+      "-- 迁入此前存放在 kv 的令牌（若有），随后删除旧键\nINSERT OR IGNORE INTO sync_tokens (id, name, hash, prefix, created_at, last_used_at)\nSELECT json_extract(t.value, '$.id'), json_extract(t.value, '$.name'), json_extract(t.value, '$.hash'), json_extract(t.value, '$.prefix'),\n  json_extract(t.value, '$.createdAt'),\n  (SELECT json_extract(u.value, '$.' || json_quote(json_extract(t.value, '$.id'))) FROM kv u WHERE u.key = 'syncTokenUse')\nFROM kv k, json_each(k.value) t\nWHERE k.key = 'syncTokens' AND json_valid(k.value)",
+      "DELETE FROM kv WHERE key IN ('syncTokens', 'syncTokenUse')"
+    ]
   }
 ];

@@ -4,7 +4,6 @@
 // 官方托管不用这里：外层验过 aud=sync 的令牌后直接把 SyncIdentity 传给 syncHandler。
 import { randomToken, sha256 } from './auth.ts';
 import type { Env } from './env.ts';
-import { getKv, putKv } from './store.ts';
 
 /** 已验证的同步主体：自部署来自同步令牌，官方托管由外层注入 */
 export interface SyncIdentity {
@@ -22,16 +21,22 @@ export interface SyncToken {
   lastUsedAt?: string;
 }
 
-const KEY = 'syncTokens';
-/** 最后使用时间单独一个键，鉴权时不读改写整张列表（同 MCP 令牌） */
-const USE_KEY = 'syncTokenUse';
 export const SYNC_TOKEN_PREFIX = 'cal_sync_';
 
-const stored = async (env: Env) => (await getKv<SyncToken[]>(env, KEY)) ?? [];
+type Row = { id: string; name: string; hash: string; prefix: string; created_at: string; last_used_at: string | null };
+const fromRow = (r: Row): SyncToken => ({
+  id: r.id,
+  name: r.name,
+  hash: r.hash,
+  prefix: r.prefix,
+  createdAt: r.created_at,
+  ...(r.last_used_at ? { lastUsedAt: r.last_used_at } : {}),
+});
 
+/** 每个令牌一行（0010_sync_tokens.sql）：签发、吊销都是单行原子写，不读改写整张列表 */
 export async function listSyncTokens(env: Env): Promise<SyncToken[]> {
-  const used = (await getKv<Record<string, string>>(env, USE_KEY)) ?? {};
-  return (await stored(env)).map((x) => (used[x.id] ? { ...x, lastUsedAt: used[x.id] } : x));
+  const { results } = await env.DB.prepare('SELECT * FROM sync_tokens ORDER BY created_at, id').all<Row>();
+  return results.map(fromRow);
 }
 
 export async function createSyncToken(env: Env, name: string): Promise<{ token: string; item: SyncToken }> {
@@ -43,16 +48,14 @@ export async function createSyncToken(env: Env, name: string): Promise<{ token: 
     prefix: token.slice(0, SYNC_TOKEN_PREFIX.length + 4),
     createdAt: new Date().toISOString(),
   };
-  await putKv(env, KEY, [...(await stored(env)), item]);
+  await env.DB.prepare('INSERT INTO sync_tokens (id, name, hash, prefix, created_at) VALUES (?1, ?2, ?3, ?4, ?5)')
+    .bind(item.id, item.name, item.hash, item.prefix, item.createdAt)
+    .run();
   return { token, item };
 }
 
 export async function revokeSyncToken(env: Env, id: string): Promise<void> {
-  await putKv(
-    env,
-    KEY,
-    (await stored(env)).filter((x) => x.id !== id),
-  );
+  await env.DB.prepare('DELETE FROM sync_tokens WHERE id = ?1').bind(id).run();
 }
 
 /** 校验 Bearer 同步令牌；只认同步令牌，MCP 令牌与网页 Cookie 一律不认 */
@@ -63,14 +66,11 @@ export async function authenticateSync(req: Request, env: Env): Promise<SyncIden
     ?.trim();
   if (!raw?.startsWith(SYNC_TOKEN_PREFIX)) return undefined;
   const hash = await sha256(raw);
-  const tk = (await listSyncTokens(env)).find((x) => x.hash === hash);
+  const tk = await env.DB.prepare('SELECT id, last_used_at FROM sync_tokens WHERE hash = ?1').bind(hash).first<Pick<Row, 'id' | 'last_used_at'>>();
   if (!tk) return undefined;
   const now = new Date().toISOString();
-  if (!tk.lastUsedAt || now.slice(0, 13) !== tk.lastUsedAt.slice(0, 13))
-    await env.DB.prepare(
-      "INSERT INTO kv (key, value, updated_at) VALUES (?1, json_object(?2, ?3), datetime('now')) ON CONFLICT(key) DO UPDATE SET value = json_set(kv.value, '$.' || json_quote(?2), ?3), updated_at = excluded.updated_at",
-    )
-      .bind(USE_KEY, tk.id, now)
-      .run();
+  // 最后使用时间按小时更新；只改本行，已吊销（行已删除）时命中 0 行
+  if (!tk.last_used_at || now.slice(0, 13) !== tk.last_used_at.slice(0, 13))
+    await env.DB.prepare('UPDATE sync_tokens SET last_used_at = ?2 WHERE id = ?1').bind(tk.id, now).run();
   return { aud: 'sync', sub: tk.id };
 }
