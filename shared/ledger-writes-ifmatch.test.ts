@@ -1,5 +1,6 @@
 // 网页写入的版本绑定（审查 R3 P1-2 / P1-3）：If-Match 用草稿打开时冻结的版本，设置只发改动字段。只用虚构数据。
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
@@ -109,4 +110,90 @@ test('R3 P1-3：网页设置只发送改动字段（清空为 null），不带�
   h.state = { ...h.state, settings: { ...h.state.settings, timezone: 'UTC', notifyHour: 9 } };
   await h.w.saveSettings({ notifyHour: 7, defaultMethodId: undefined });
   assert.deepEqual(h.sent[0].body, { notifyHour: 7, defaultMethodId: null });
+});
+
+const { mergeEditorSave } = await import('../app/src/views/editor/save.ts');
+
+test('R3 收口 P1：编辑器三方同字段冲突（本地与别处都改了备注且不同）→ 保持草稿冻结版本 V1，服务器据此 409', async () => {
+  const opened = SUB({ updatedAt: 'V1', notes: 'base' });
+  const h = harness([opened]);
+  // 编辑期间同步：备注改为 from sync，版本 V2
+  const latest = SUB({ updatedAt: 'V2', notes: 'from sync' });
+  h.state = { ...h.state, subscriptions: [latest] };
+  const out = { ...opened, notes: 'old draft' };
+  await h.w.saveSub(
+    mergeEditorSave(
+      opened,
+      out,
+      h.state.subscriptions.find((x) => x.id === 's1'),
+      false,
+    ),
+  );
+  assert.equal(h.sent[0].ifMatch, 'V1');
+  assert.equal(h.sent[0].body.notes, 'old draft');
+});
+
+test('R3 收口 P1：编辑器无冲突（别处改备注、本地改价格）→ 合并两边，采用 latest 版本 V2；两边改成同值也不算冲突', async () => {
+  const opened = SUB({ updatedAt: 'V1', notes: 'base' });
+  const h = harness([SUB({ updatedAt: 'V2', notes: 'from sync' })]);
+  await h.w.saveSub(mergeEditorSave(opened, { ...opened, price: 12 }, h.state.subscriptions[0], false));
+  assert.equal(h.sent[0].ifMatch, 'V2');
+  assert.equal(h.sent[0].body.notes, 'from sync');
+  assert.equal(h.sent[0].body.price, 12);
+  const h2 = harness([SUB({ updatedAt: 'V2', notes: 'same' })]);
+  await h2.w.saveSub(mergeEditorSave(opened, { ...opened, notes: 'same' }, h2.state.subscriptions[0], false));
+  assert.equal(h2.sent[0].ifMatch, 'V2');
+});
+
+test('R3 收口 P1 端到端：编辑器调用链 mergeEditorSave → saveSub → 真实 Worker；同字段冲突 409 且同步备注保留，无冲突 200', async () => {
+  const hook = registerHooks({
+    load(url, ctx, next) {
+      if (url.endsWith('.json')) return { format: 'module', source: `export default ${readFileSync(new URL(url), 'utf8')}`, shortCircuit: true };
+      return next(url, ctx);
+    },
+  });
+  const { default: worker } = await import('../worker/index.ts');
+  const { openD1 } = await import('../docker/d1.mjs');
+  const { ensureMigrated } = await import('../worker/migrate.ts');
+  hook.deregister();
+  const env = { DB: openD1(':memory:'), DEV_BYPASS_AUTH: '1' } as never as Parameters<typeof worker.fetch>[1];
+  await ensureMigrated(env);
+  const fetchJson = async (path: string, init: RequestInit = {}) => {
+    const r = await worker.fetch(
+      new Request(`https://example.test${path}`, { ...init, headers: { 'content-type': 'application/json', ...(init.headers as object) } }),
+      env,
+    );
+    const body = await r.json();
+    if (!r.ok) throw Object.assign(new Error(body.error), { status: r.status });
+    return body;
+  };
+  const base = SUB({ cycle: { unit: 'month', every: 1 }, notes: 'base' });
+  const opened = (await fetchJson('/api/subscriptions/s1', { method: 'PUT', body: JSON.stringify(base) })) as Subscription;
+  // 别处（同步）改了备注，版本前进（隔开几毫秒，保证时间戳不同）
+  await new Promise((r) => setTimeout(r, 5));
+  const latest = (await fetchJson('/api/subscriptions/s1', { method: 'PUT', body: JSON.stringify({ ...opened, notes: 'from sync' }) })) as Subscription;
+  let state: AppState = { subscriptions: [latest], methods: [], settings: { ...DEFAULT_SETTINGS }, fx: FALLBACK_FX };
+  const w = createLedgerWrites({
+    api: fetchJson as never,
+    getState: () => state,
+    syncFx: async () => {},
+    write: (async (local: (s: AppState) => AppState, req: () => Promise<unknown>) => {
+      const prev = state;
+      state = local(state);
+      try {
+        return await req();
+      } catch (e) {
+        state = prev;
+        throw e;
+      }
+    }) as never,
+    upsertById: <T extends { id: string }>(list: T[], x: T) => list.map((y) => (y.id === x.id ? x : y)),
+  } as never);
+  const stored = async () => ((await fetchJson('/api/state')) as AppState).subscriptions.find((x) => x.id === 's1')!;
+  await assert.rejects(w.saveSub(mergeEditorSave(opened, { ...opened, notes: 'old draft' }, latest, false)), (e: { status?: number }) => e.status === 409);
+  assert.equal((await stored()).notes, 'from sync');
+  await w.saveSub(mergeEditorSave(opened, { ...opened, price: 12 }, latest, false));
+  const now = await stored();
+  assert.equal(now.notes, 'from sync');
+  assert.equal(now.price, 12);
 });
