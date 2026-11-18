@@ -5,8 +5,12 @@
 //   POST /sync/v1/sync  请求头 x-calends-test-page-bytes 指定分页上限、x-calends-test-dump 列出要回传的表；
 //                       响应体 _test = { executed, dump }（提交后执行过的操作 = 进程内的 onCommitted；各表全部行）
 //   POST /__test/ledger { action: exec | restoreLedger | disasterRecovery | prepare | commit, dump? }（白盒操作，见 calends-cloud src/ledger-test.ts）
+//   两者都认请求头 x-calends-test-idem：同一键只执行一次，重发拿到第一次的完整结果（含 _test.executed 与 dump）。
+//   本驱动每个逻辑调用一个新键，网络失败、429/502/504 时带同一键重发，所以非幂等的控制操作（commit、exec 插入、灾备）
+//   与同步请求的执行观测都不会因重发而改变；服务器在执行中收到重发会等第一次的结果。
 // 用例里同步读取的 db / meta / client / ledgerText / physicalSnapshot 走本地镜像：每次会改库的调用之后按回传的整表刷新。
 // 只用虚构数据。令牌与口令只放进请求头，不打印。
+import { randomUUID } from 'node:crypto';
 import { newDb, readLedger } from './engine.mjs';
 
 const hooks = await import(process.env.SYNC_CONTRACT_HOOKS ?? '');
@@ -42,17 +46,18 @@ export function remoteServer(LocalServer, { SERVER_PRIVATE, TABLES }) {
     }
 
     async post(path, body, extra = {}) {
+      const idem = randomUUID();
       for (let attempt = 0; ; attempt++) {
         let res;
         try {
           remote.requests++;
           res = await fetch(BASE + path, {
             method: 'POST',
-            headers: { ...this.headers, 'content-type': 'application/json', 'x-calends-test-dump': TABLES.join(','), ...extra },
+            headers: { ...this.headers, 'content-type': 'application/json', 'x-calends-test-dump': TABLES.join(','), 'x-calends-test-idem': idem, ...extra },
             body: JSON.stringify(body),
           });
         } catch (e) {
-          // 网络层失败：请求可能未到达，也可能已执行；只有幂等的白盒操作与同步请求会走到这里，重发即协议本身要处理的重复
+          // 网络层失败：请求可能未到达，也可能已执行；带同一幂等键重发，服务器只执行一次并回第一次的结果
           if (attempt >= 4) throw e;
           remote.retries++;
           await sleep(500 * 2 ** attempt);
@@ -70,6 +75,11 @@ export function remoteServer(LocalServer, { SERVER_PRIVATE, TABLES }) {
         } catch {
           throw new Error(`${path} HTTP ${res.status}：非 JSON 响应 ${text.slice(0, 200)}`);
         }
+        // 服务器须回显幂等键：不认这个键的旧版控制面上，重发非幂等操作会改变结果
+        const echoed = path === '/__test/ledger' ? json.idem : json[TEST_FIELD]?.idem;
+        if (res.status === 200 && echoed !== idem) throw new Error(`${path} 没有回显幂等键（测试控制面版本过旧？）`);
+        if (path === '/__test/ledger') delete json.idem;
+        else if (json[TEST_FIELD]) delete json[TEST_FIELD].idem;
         return { status: res.status, body: json };
       }
     }
