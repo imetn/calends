@@ -861,6 +861,22 @@ function saveSeparatePayment(s: Subscription, pay: Payment, old?: { date: string
   return next;
 }
 
+/**
+ * savePayment 的 old.index 与 deletePayment 的 index 所指的那一天的付款列表（同一取法，只读）。
+ * App 同步按内容定位一笔付款后，用它换算成工具认的序号，不按设备上的序号写入。
+ */
+export function paymentsOn(s: Subscription, today: string, date: string, phase?: string): Payment[] {
+  const phases = phasesOf(s);
+  if (isSeparate(s)) {
+    const on = (only?: string) => phases.flatMap((p) => (only && p.start !== only ? [] : (p.payments ?? []).filter((x) => x.date === date)));
+    const picked = phase ? on(phase) : [];
+    return picked.length ? picked : on();
+  }
+  settleLegacyPhases(phases, s);
+  const i = phaseIndexAt(phases, date, s, phase, true);
+  return (materialize(phases, i, s, today, date).payments ?? []).filter((x) => x.date === date);
+}
+
 export function deletePayment(s: Subscription, today: string, date: string, index: number, phase?: string): Subscription {
   if (isSeparate(s)) {
     const phases = phasesOf(s);

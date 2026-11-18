@@ -69,6 +69,11 @@ export class BatchStore implements LedgerStore {
     if (!this.rows.fx.has(date)) this.rows.fx.set(date, { rates: JSON.stringify(rates), source });
   }
 
+  /** 历史汇率：同日期以给定值为准（恢复导入，与 restoreAll 的 putFxDayStmt 同一语义） */
+  putFx(date: string, rates: Record<string, number>, source: string): void {
+    this.rows.fx.set(date, { rates: JSON.stringify(rates), source });
+  }
+
   /** 原始文档（未推导）：sub/<id>、method/<id> 的 data，kv 的值 */
   raw(table: 'subscriptions' | 'methods', id: string): unknown {
     const d = this.rows[table].get(id);
@@ -101,10 +106,16 @@ export class BatchStore implements LedgerStore {
       const v = this.rows.kv.get(key);
       if (v !== undefined && v !== this.initial.kv.get(key)) w.kv.push({ key, value: v });
     }
+    // 新增日期与恢复导入覆盖的日期；整批受快照守卫保护，冲突时整批拒绝，不会盖掉快照之后别处写入的汇率
     const fx = [...this.rows.fx]
-      .filter(([date]) => !this.initial.fx.has(date))
+      .filter(([date, r]) => {
+        const old = this.initial.fx.get(date);
+        return !old || old.rates !== r.rates || old.source !== r.source;
+      })
       .map(([date, r]) =>
-        env.DB.prepare('INSERT INTO fx_daily (date, rates, source) VALUES (?1, ?2, ?3) ON CONFLICT(date) DO NOTHING').bind(date, r.rates, r.source),
+        env.DB.prepare(
+          'INSERT INTO fx_daily (date, rates, source) VALUES (?1, ?2, ?3) ON CONFLICT(date) DO UPDATE SET rates = excluded.rates, source = excluded.source',
+        ).bind(date, r.rates, r.source),
       );
     return [...ledgerWriteStmts(env, w), ...fx];
   }

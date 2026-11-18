@@ -5,6 +5,7 @@
 import pkg from '../package.json' with { type: 'json' };
 import { MAX_MUTATIONS, MIN_CLIENT_PROTOCOL, PAGE_BYTES, SYNC_PROTOCOL, projectSettings, type RejectCode } from '../shared/sync-check.ts';
 import type { Env } from './env.ts';
+import type { SyncIdentity } from './sync-auth.ts';
 import { ensureMigrated } from './migrate.ts';
 import { loadState, rotateGenerationStmt } from './store.ts';
 import { OP_VERSIONS, parseOpName, SyncExec, type SyncOp } from './sync-ops.ts';
@@ -114,7 +115,10 @@ export function parseSyncRequest(body: unknown): SyncRequest {
 }
 
 const rejectionsStmt = (env: Env, installId: string, after: number) =>
-  env.DB.prepare('SELECT mutation_id AS mid, code, detail FROM sync_rejections WHERE install_id = ?1 AND mutation_id > ?2 ORDER BY mutation_id').bind(installId, after);
+  env.DB.prepare('SELECT mutation_id AS mid, code, detail FROM sync_rejections WHERE install_id = ?1 AND mutation_id > ?2 ORDER BY mutation_id').bind(
+    installId,
+    after,
+  );
 
 /** 第 2、3 步：读一致快照、判定资格、在内存行上执行。不写库 */
 export async function prepareSync(env: Env, req: SyncRequest): Promise<Prepared> {
@@ -171,6 +175,8 @@ export async function prepareSync(env: Env, req: SyncRequest): Promise<Prepared>
   return { kind: 'run', ledgerId, drEpoch, gen, head, row, last, expected, rejections, fresh, executed, rotate, store };
 }
 
+const utf8 = new TextEncoder();
+
 const casFail = (e: unknown) => e instanceof Error && /CHECK constraint failed/i.test(e.message);
 const casStmt = (env: Env) => env.DB.prepare('INSERT INTO sync_cas (ok) SELECT changes() = 1');
 
@@ -181,7 +187,9 @@ export async function commitSync(env: Env, req: SyncRequest, p: Prepared, opts: 
   if (p.kind === 'gone') {
     if (p.insert)
       stmts.push(
-        env.DB.prepare('INSERT INTO sync_clients (install_id, last_mutation_id, last_seen, gone) VALUES (?1, 0, ?2, 1) ON CONFLICT(install_id) DO NOTHING').bind(req.installId, now),
+        env.DB.prepare(
+          'INSERT INTO sync_clients (install_id, last_mutation_id, last_seen, gone) VALUES (?1, 0, ?2, 1) ON CONFLICT(install_id) DO NOTHING',
+        ).bind(req.installId, now),
         casStmt(env),
       );
     if (p.mark)
@@ -200,11 +208,9 @@ export async function commitSync(env: Env, req: SyncRequest, p: Prepared, opts: 
     );
     if (!p.row)
       stmts.push(
-        env.DB.prepare('INSERT INTO sync_clients (install_id, last_mutation_id, last_seen, gone) VALUES (?1, ?2, ?3, 0) ON CONFLICT(install_id) DO NOTHING').bind(
-          req.installId,
-          p.last,
-          now,
-        ),
+        env.DB.prepare(
+          'INSERT INTO sync_clients (install_id, last_mutation_id, last_seen, gone) VALUES (?1, ?2, ?3, 0) ON CONFLICT(install_id) DO NOTHING',
+        ).bind(req.installId, p.last, now),
       );
     else
       stmts.push(
@@ -218,7 +224,12 @@ export async function commitSync(env: Env, req: SyncRequest, p: Prepared, opts: 
     stmts.push(casStmt(env), ...(p.store?.commitStmts(env) ?? []));
     for (const r of p.fresh)
       stmts.push(
-        env.DB.prepare('INSERT OR REPLACE INTO sync_rejections (install_id, mutation_id, code, detail) VALUES (?1, ?2, ?3, ?4)').bind(req.installId, r.mid, r.code, r.detail),
+        env.DB.prepare('INSERT OR REPLACE INTO sync_rejections (install_id, mutation_id, code, detail) VALUES (?1, ?2, ?3, ?4)').bind(
+          req.installId,
+          r.mid,
+          r.code,
+          r.detail,
+        ),
       );
     if (p.rotate) stmts.push(rotateGenerationStmt(env));
   } else return true;
@@ -263,7 +274,7 @@ export async function changesSince(env: Env, cookie: SyncRequest['cookie'], page
     let d: unknown = r.deleted || r.doc == null ? null : JSON.parse(r.doc);
     if (key === 'kv/settings' && d) d = projectSettings(d as Record<string, unknown>) ?? null;
     const text = d === null ? '' : JSON.stringify(d);
-    const size = key.length + text.length;
+    const size = utf8.encode(key).length + utf8.encode(text).length;
     if (objects.length && bytes + size > pageBytes) {
       more = true;
       break;
@@ -320,19 +331,25 @@ export async function hello(env: Env, authed: boolean) {
     env.DB.prepare("SELECT value FROM sync_meta WHERE key = 'ledgerId'"),
   ]);
   const n = (r: D1Result) => Number((r.results[0] as { n: number } | undefined)?.n ?? 0);
-  return { ...base, counts: { sub: n(subs), method: n(methods), people: n(people) }, ledgerId: (meta.results[0] as { value: string } | undefined)?.value ?? null };
+  return {
+    ...base,
+    counts: { sub: n(subs), method: n(methods), people: n(people) },
+    ledgerId: (meta.results[0] as { value: string } | undefined)?.value ?? null,
+  };
 }
 
 /**
- * 同步接口的处理器，可单独挂载（官方托管注入已验证的身份）。path 为挂载点之后的部分：'hello' 或 'sync'。
- * authed：调用方已完成鉴权（自部署用写权限的 MCP 令牌，官方托管用 aud=sync 的 OAuth 令牌）。
+ * 同步接口的处理器，可单独挂载。path 为挂载点之后的部分：'hello' 或 'sync'。
+ * identity：调用方已验证的同步主体（aud=sync）；未验证传 null。自部署由 index.ts 用同步令牌验出，
+ * 官方托管由外层验过自己的 aud=sync 令牌后注入，本函数不验令牌。
  */
-export async function syncHandler(req: Request, env: Env, path: string, identity: { authed: boolean }, opts: SyncOptions = {}): Promise<Response> {
+export async function syncHandler(req: Request, env: Env, path: string, identity: SyncIdentity | null, opts: SyncOptions = {}): Promise<Response> {
   const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { 'cache-control': 'no-store' } });
-  if (path === 'hello' && req.method === 'GET') return (await ensureMigrated(env), json(await hello(env, identity.authed)));
+  const authed = identity?.aud === 'sync';
+  if (path === 'hello' && req.method === 'GET') return (await ensureMigrated(env), json(await hello(env, authed)));
   if (path !== 'sync') return json({ error: 'not_found' }, 404);
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: { allow: 'POST' } });
-  if (!identity.authed) return Response.json({ error: 'invalid_token', code: 'invalid_token' }, { status: 401, headers: { 'www-authenticate': 'Bearer' } });
+  if (!authed) return Response.json({ error: 'invalid_token', code: 'invalid_token' }, { status: 401, headers: { 'www-authenticate': 'Bearer' } });
   let body: unknown;
   try {
     body = await req.json();

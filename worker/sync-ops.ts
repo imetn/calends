@@ -2,7 +2,8 @@
 // 意图操作直接调现有 MCP 写工具（同一校验与账务口径）；同 id 新建、期望值、补丁原值、按内容定位这些同步专有的前置检查在本层做，
 // 不改工具行为，MCP 与网页不受影响。返回 ok 或拒绝码；非业务异常（引擎缺陷）按 invalid / engine_error 拒绝并告警。
 import { t } from '../shared/i18n.ts';
-import { type Payment, type PaymentMethod, type Person, type Subscription } from '../shared/types.ts';
+import { type PaymentMethod, type Person, type Subscription } from '../shared/types.ts';
+import { paymentsOn } from '../shared/phases.ts';
 import { prepareSubWrite } from '../shared/sub-write.ts';
 import { deleteMethodData, validateMethod } from '../shared/ledger-edit.ts';
 import { canonicalJson, contentHash, isSyncedSetting, PATCH_FIELDS, projectSettings, splitKey, type RejectCode } from '../shared/sync-check.ts';
@@ -35,11 +36,57 @@ export interface SyncOp {
 
 export type OpResult = { ok: true; rotate?: boolean } | { ok: false; code: RejectCode; detail: string };
 
-const WRITE_TOOLS = new Map<string, Tool>(TOOLS.filter((x) => x.write).map((x) => [x.name, x]));
 const GENERIC = ['noop', 'patch', 'create', 'delete', 'replace', 'set_member', 'fx_fill', 'import_ledger'];
 
+/**
+ * 可作为同步意图的写工具：sync-design 4.2 的显式清单。新增 MCP 写工具不会自动进入同步；
+ * save_subscription（无期望保护的整条保存）不在内，整条恢复只走带期望哈希的 replace@1。
+ */
+export const SYNC_INTENTS = [
+  'create_subscription',
+  'update_subscription',
+  'change_price',
+  'change_plan',
+  'set_status',
+  'record_payment',
+  'delete_payment',
+  'record_transfer',
+  'set_meters',
+  'add_readings',
+  'delete_subscription',
+  'set_share',
+  'save_share_member',
+  'remove_share_member',
+  'record_receivable',
+  'update_payment_method',
+  'save_category',
+  'save_person',
+  'update_settings',
+  'set_proxy',
+] as const;
+
+const INTENT_TOOLS = new Map<string, Tool>(
+  SYNC_INTENTS.map((n) => {
+    const tool = TOOLS.find((x) => x.name === n && x.write);
+    if (!tool) throw new Error(`sync intent ${n} is not an MCP write tool`);
+    return [n, tool];
+  }),
+);
+
 /** 服务器认识的操作与版本区间（hello.ops）：现在全部只有 @1 */
-export const OP_VERSIONS: Record<string, [number, number]> = Object.fromEntries([...GENERIC, ...WRITE_TOOLS.keys()].map((n) => [n, [1, 1]]));
+export const OP_VERSIONS: Record<string, [number, number]> = Object.fromEntries([...GENERIC, ...SYNC_INTENTS].map((n) => [n, [1, 1]]));
+
+/** patch@1 允许 to:null 清空的字段；其余（名称、分类、标签、公开页开关）必须给具体值 */
+const NULLABLE = {
+  sub: ['icon', 'url', 'manageUrl', 'methodId', 'region', 'remindDays', 'account', 'notes', 'expires', 'trialEnd', 'chargeLeadDays', 'cancelLeadDays'],
+  method: ['color', 'region', 'notes', 'lowRunwayDays', 'brand', 'logo', 'logoWide', 'order', 'bank', 'network', 'phone', 'url', 'balanceExpires'],
+} as const;
+
+/** 没有存值时的等效值：续费提前天数缺省即 0（billing.ts 的 ?? 0），补丁比较与清空都按它 */
+const SUB_DEFAULTS: Record<string, unknown> = { chargeLeadDays: 0, cancelLeadDays: 0 };
+
+/** 订阅补丁清空时传给 update_subscription 的值：文本字段的 schema 只收字符串（空串 = 清除） */
+const SUB_CLEAR: Record<string, unknown> = { ...SUB_DEFAULTS, url: '', manageUrl: '', notes: '', account: '', region: '' };
 
 export function parseOpName(name: unknown): { base: string; version: number } | undefined {
   const m = typeof name === 'string' ? name.match(/^([a-z_]+)@(\d+)$/) : null;
@@ -62,13 +109,18 @@ function sameOrConflict(cur: Record<string, unknown>, frozen: Record<string, unk
 }
 
 /** 补丁：当前 = from 应用；当前 = to 已达成跳过；都不等 field_changed */
-function patchCheck(cur: Record<string, unknown>, fields: Record<string, { from: unknown; to: unknown }>): { set: Record<string, unknown> } | { err: OpResult } {
+function patchCheck(
+  cur: Record<string, unknown>,
+  fields: Record<string, { from: unknown; to: unknown }>,
+  defaults: Record<string, unknown> = {},
+): { set: Record<string, unknown> } | { err: OpResult } {
   const set: Record<string, unknown> = {};
   for (const [f, change] of Object.entries(fields)) {
     if (!change || typeof change !== 'object' || !('from' in change) || !('to' in change)) return { err: reject('invalid', `fields.${f}`) };
-    if (norm(cur[f]) === norm(change.from)) {
-      if (norm(change.from) !== norm(change.to)) set[f] = change.to;
-    } else if (norm(cur[f]) !== norm(change.to)) return { err: reject('field_changed', `${f}: server=${norm(cur[f])} from=${norm(change.from)}`) };
+    const n = (v: unknown) => norm(v ?? defaults[f]);
+    if (n(cur[f]) === n(change.from)) {
+      if (n(change.from) !== n(change.to)) set[f] = change.to;
+    } else if (n(cur[f]) !== n(change.to)) return { err: reject('field_changed', `${f}: server=${norm(cur[f])} from=${norm(change.from)}`) };
   }
   return { set };
 }
@@ -90,7 +142,7 @@ export class SyncExec {
 
   private async tool(name: string, args: Record<string, unknown>, today: string): Promise<OpResult> {
     const { dry_run: _dry, ...rest } = args;
-    await WRITE_TOOLS.get(name)!.run(rest, this.ctx(today));
+    await INTENT_TOOLS.get(name)!.run(rest, this.ctx(today));
     return OK;
   }
 
@@ -153,7 +205,7 @@ export class SyncExec {
     }
   }
 
-  // —— 意图：现有 MCP 写工具 ——
+  // —— 意图：现有 MCP 写工具（只限 SYNC_INTENTS） ——
 
   private async intent(name: string, op: SyncOp, today: string): Promise<OpResult> {
     const a = { ...op.args };
@@ -164,7 +216,8 @@ export class SyncExec {
     }
     if (name === 'record_payment') a.allow_duplicate = true;
 
-    // 同 id 新建（sync-design 1.3）
+    // 同 id 新建（sync-design 1.3）：未提供的键不比较；明确给 null 的按「没有」比较
+    const given = (o: Record<string, unknown>, k: string) => (k in o ? (o[k] ?? null) : undefined);
     if (name === 'create_subscription' && typeof a.id === 'string') {
       const cur = this.store.raw('subscriptions', a.id) as Subscription | undefined;
       if (cur) {
@@ -175,7 +228,7 @@ export class SyncExec {
           currency: a.currency,
           cycle: cyc ? { unit: cyc.unit, every: Math.max(1, Number(cyc.every ?? 1)) } : undefined,
           start: a.start ?? today,
-          methodId: a.method === null ? undefined : a.method,
+          methodId: given(a, 'method'),
         });
       }
     }
@@ -183,12 +236,13 @@ export class SyncExec {
       const cur = this.store.raw('methods', a.id) as Record<string, unknown> | undefined;
       if (cur) {
         const set = (a.set ?? {}) as Record<string, unknown>;
+        const balance = given(set, 'balance');
         return sameOrConflict(cur, {
           name: set.name,
           kind: set.kind,
           currency: set.currency,
-          balance: set.balance,
-          balanceAsOf: set.balance == null ? undefined : (set.balanceAsOf ?? today),
+          balance,
+          balanceAsOf: balance === undefined ? undefined : balance === null ? null : (set.balanceAsOf ?? today),
         });
       }
     }
@@ -198,7 +252,8 @@ export class SyncExec {
     }
 
     // 目标已删：删除类视为达成，其余 target_deleted
-    const deleting = name === 'delete_subscription' || (name === 'update_payment_method' && a.action === 'delete') || (name === 'save_person' && a.action === 'delete');
+    const deleting =
+      name === 'delete_subscription' || (name === 'update_payment_method' && a.action === 'delete') || (name === 'save_person' && a.action === 'delete');
     const creating = name === 'create_subscription' || a.action === 'create';
     const target = op.target ? splitKey(op.target) : undefined;
     let doc: Record<string, unknown> | undefined;
@@ -213,26 +268,138 @@ export class SyncExec {
       doc = p as unknown as Record<string, unknown>;
     }
 
+    // 必须带期望的绝对值意图（sync-design 4.4）：缺了就拒绝，不按无保护写入执行
+    const guard = this.requiredGuard(name, a, op, target?.kind);
+    if (guard) return guard;
+
     // 绝对值意图的期望（sync-design 4.4）：字段逐个比较目标当前值
     if (op.expect && typeof op.expect === 'object' && !('hash' in op.expect)) {
+      const { readings: _r, ...fields } = op.expect as Record<string, unknown>;
       const cur = doc ?? (target?.kind === 'kv' ? (this.current(op.target!) as Record<string, unknown> | undefined) : undefined);
       if (!cur) return reject('target_deleted', op.target ?? '');
-      for (const [k, v] of Object.entries(op.expect)) if (norm(cur[k]) !== norm(v)) return reject('expect_failed', `${k}: server=${norm(cur[k])} expect=${norm(v)}`);
+      for (const [k, v] of Object.entries(fields))
+        if (norm(cur[k]) !== norm(v)) return reject('expect_failed', `${k}: server=${norm(cur[k])} expect=${norm(v)}`);
     }
 
-    // 内层记录按内容定位（sync-design 4.3）：目前用于 delete_payment
-    if (name === 'delete_payment' && op.locate) {
-      const s = doc as unknown as Subscription;
-      const date = op.locate.date;
-      const sameDay = [...(s.payments ?? []), ...(s.phases ?? []).flatMap((p) => p.payments ?? [])].filter((p) => p.date === date);
-      const hit = (p: Payment) => Object.entries(op.locate!.match ?? {}).every(([k, v]) => norm((p as unknown as Record<string, unknown>)[k]) === norm(v));
-      const n = sameDay.filter(hit).length;
-      if (!n) return reject('target_deleted', `payment ${date}`);
-      if (n !== op.locate.count) return reject('expect_failed', `payments(${date}) server=${n} expect=${op.locate.count}`);
-      a.date = date;
-      a.index = sameDay.findIndex(hit);
+    // 读数：逐条比较本次要改、要删的那几条（sync-design 4.4）
+    if (name === 'add_readings') {
+      const r = this.checkReadings(a, op, doc as unknown as Subscription);
+      if (r) return r;
     }
+
+    // 内层记录按内容定位（sync-design 4.3）：换算成工具认的序号；设备上的序号一律不用
+    const located = await this.locateRecord(name, a, op, target?.id, today);
+    if (located) return located;
     return this.tool(name, a, today);
+  }
+
+  /** 同步路径上必须有保护条件的意图：缺定位或期望 → invalid */
+  private requiredGuard(name: string, a: Record<string, unknown>, op: SyncOp, kind: string | undefined): OpResult | undefined {
+    const expect = op.expect && typeof op.expect === 'object' && !('hash' in op.expect) ? (op.expect as Record<string, unknown>) : undefined;
+    const needLocate =
+      (name === 'record_payment' && a.replace != null) ||
+      name === 'delete_payment' ||
+      (name === 'record_transfer' && (a.replace != null || a.delete != null)) ||
+      (name === 'update_payment_method' && (a.top_up_action === 'update' || a.top_up_action === 'delete'));
+    if (needLocate) {
+      const l = op.locate;
+      if (!l || !isDate(l.date) || !l.match || typeof l.match !== 'object' || !Number.isInteger(l.count) || l.count < 1)
+        return reject('invalid', `${name}: locate`);
+    }
+    const set = (a.set ?? {}) as Record<string, unknown>;
+    const balance = name === 'update_payment_method' && a.action !== 'create' && (a.balance !== undefined || 'balance' in set);
+    // 期望与定位都针对 target 那一条：必须有 target，且与参数指向同一条
+    if (needLocate || balance || ['set_status', 'set_meters', 'add_readings'].includes(name)) {
+      const want = name === 'update_payment_method' ? 'method' : 'sub';
+      const ref = want === 'method' ? a.method : a.subscription;
+      if (kind !== want || !op.target || ref !== splitKey(op.target)?.id) return reject('invalid', `${name}: target`);
+    }
+    if (name === 'set_status' && !(expect && 'status' in expect)) return reject('invalid', 'set_status: expect.status');
+    if (name === 'set_meters' && !(expect && 'meters' in expect)) return reject('invalid', 'set_meters: expect.meters');
+    if (name === 'add_readings' && !(expect && Array.isArray(expect.readings))) return reject('invalid', 'add_readings: expect.readings');
+    if (balance && !(expect && 'balance' in expect && 'balanceAsOf' in expect)) return reject('invalid', 'update_payment_method: expect.balance');
+    return undefined;
+  }
+
+  /**
+   * add_readings 的期望：expect.readings 列出本次每条输入（按 id，或无 id 时按日期）与每个要删的 id 在设备上看到的原样，
+   * 设备上没有的写 { id 或 date, absent: true }。服务器上同一条（工具同一匹配规则）必须逐字段相同。
+   */
+  private checkReadings(a: Record<string, unknown>, op: SyncOp, s: Subscription): OpResult | undefined {
+    const frozen = (op.expect as { readings: Array<Record<string, unknown>> }).readings;
+    const list = s.readings ?? [];
+    const keyOf = (x: Record<string, unknown>) => (typeof x.id === 'string' && x.id ? `id:${x.id}` : `date:${String(x.date)}`);
+    // 冻结的一条可按 id 或日期认领（输入不带 id 时工具按日期合并）
+    const want = new Map<string, Record<string, unknown>>();
+    for (const f of frozen) {
+      if (!f || typeof f !== 'object') return reject('invalid', 'expect.readings');
+      if (typeof f.id === 'string' && f.id) want.set(`id:${f.id}`, f);
+      if (typeof f.date === 'string') want.set(`date:${f.date}`, f);
+    }
+    const inputs = ((a.readings as Array<Record<string, unknown>> | undefined) ?? []).map((x) => ({
+      key: keyOf(x),
+      find: () => list.find((r) => (typeof x.id === 'string' && x.id ? r.id === x.id : r.date === x.date)),
+    }));
+    const deletes = ((a.delete as unknown[] | undefined) ?? []).map((id) => ({ key: `id:${String(id)}`, find: () => list.find((r) => r.id === id) }));
+    for (const { key, find } of [...inputs, ...deletes]) {
+      const f = want.get(key);
+      if (!f) return reject('invalid', `expect.readings: ${key}`);
+      const cur = find();
+      if (f.absent === true ? cur !== undefined : norm(cur) !== norm({ ...f, absent: undefined }))
+        return reject('expect_failed', `reading ${key}: server=${norm(cur)} expect=${norm(f)}`);
+    }
+    return undefined;
+  }
+
+  /** 按内容与冻结笔数定位内层记录（sync-design 4.3）。0 命中 target_deleted；命中数与冻结笔数不同 expect_failed；否则取第一条 */
+  private async locateRecord(name: string, a: Record<string, unknown>, op: SyncOp, id: string | undefined, today: string): Promise<OpResult | undefined> {
+    const l = op.locate;
+    if (!l || !id) return undefined;
+    const st = await this.store.loadState();
+    const pick = <T>(list: T[], what: string): number | OpResult => {
+      const hit = (x: T) => Object.entries(l.match).every(([k, v]) => norm((x as Record<string, unknown>)[k]) === norm(v));
+      const n = list.filter(hit).length;
+      if (!n) return reject('target_deleted', `${what} ${l.date}`);
+      if (n !== l.count) return reject('expect_failed', `${what}(${l.date}) server=${n} expect=${l.count}`);
+      return list.findIndex(hit);
+    };
+    if (name === 'record_payment' || name === 'delete_payment') {
+      if (name === 'record_payment' && a.replace == null) return undefined;
+      const s = st.subscriptions.find((x) => x.id === id);
+      if (!s) return reject('target_deleted', `sub/${id}`);
+      const phase = isDate(a.phase) ? a.phase : undefined;
+      const i = pick(paymentsOn(s, today, l.date, phase), 'payment');
+      if (typeof i !== 'number') return i;
+      if (name === 'record_payment') a.replace = { date: l.date, index: i };
+      else Object.assign(a, { date: l.date, index: i });
+      return undefined;
+    }
+    if (name === 'record_transfer') {
+      if (a.replace == null && a.delete == null) return undefined;
+      const s = st.subscriptions.find((x) => x.id === id);
+      if (!s) return reject('target_deleted', `sub/${id}`);
+      const i = pick(
+        (s.transfers ?? []).filter((x) => x.date === l.date),
+        'transfer',
+      );
+      if (typeof i !== 'number') return i;
+      a[a.delete != null ? 'delete' : 'replace'] = { date: l.date, index: i };
+      return undefined;
+    }
+    if (name === 'update_payment_method' && (a.top_up_action === 'update' || a.top_up_action === 'delete')) {
+      const m = st.methods.find((x) => x.id === id);
+      if (!m) return reject('target_deleted', `method/${id}`);
+      const tops = m.topUps ?? [];
+      const sameDay = tops.map((x, k) => [x, k] as const).filter(([x]) => x.date === l.date);
+      const i = pick(
+        sameDay.map(([x]) => x),
+        'top_up',
+      );
+      if (typeof i !== 'number') return i;
+      a.top_up_index = sameDay[i][1];
+      a.expected_top_up = sameDay[i][0];
+    }
+    return undefined;
   }
 
   // —— patch@1 ——
@@ -244,15 +411,23 @@ export class SyncExec {
     if (table === undefined) return reject('invalid', `patch ${op.target}`);
     const bad = Object.keys(op.fields).find((f) => (table ? !(f in table) : !isSyncedSetting(f)));
     if (bad) return reject('invalid', `patch field ${bad}`);
+    if (table) {
+      const noClear = Object.entries(op.fields).find(
+        ([f, c]) => c && typeof c === 'object' && (c as { to?: unknown }).to === null && !(NULLABLE as Record<string, readonly string[]>)[k.kind].includes(f),
+      );
+      if (noClear) return reject('invalid', `patch ${noClear[0]}: not clearable`);
+    }
     const cur = k.kind === 'kv' ? this.settings() : (this.current(op.target!) as Record<string, unknown> | undefined);
     if (!cur) return reject('target_deleted', op.target!);
-    const checked = patchCheck(cur, op.fields);
+    const checked = patchCheck(cur, op.fields, k.kind === 'sub' ? SUB_DEFAULTS : {});
     if ('err' in checked) return checked.err;
     const set = checked.set;
     if (!Object.keys(set).length) return OK;
     if (k.kind === 'sub') {
-      // 引擎用空串表示清除
-      const args = Object.fromEntries(Object.entries(set).map(([f, v]) => [(PATCH_FIELDS.sub as Record<string, string>)[f], v === null ? '' : v]));
+      // 清空值按 update_subscription 的字段约定：文本字段传空串，续费提前天数传 0，其余可空字段传 null
+      const args = Object.fromEntries(
+        Object.entries(set).map(([f, v]) => [(PATCH_FIELDS.sub as Record<string, string>)[f], v === null ? (f in SUB_CLEAR ? SUB_CLEAR[f] : null) : v]),
+      );
       return this.tool('update_subscription', { subscription: k.id, set: args }, today);
     }
     if (k.kind === 'method') return this.tool('update_payment_method', { method: k.id, set }, today);
@@ -336,14 +511,16 @@ export class SyncExec {
       // 期望相符的删除：等同 delete@1
       return cur === undefined ? OK : this.remove({ ...op, name: 'delete@1' }, op.at!.date!);
     }
-    if (cur !== undefined && norm(cur) === norm(k.kind === 'kv' && k.id === 'settings' ? projectSettings(op.doc as Record<string, unknown>) : op.doc)) return OK;
+    if (cur !== undefined && norm(cur) === norm(k.kind === 'kv' && k.id === 'settings' ? projectSettings(op.doc as Record<string, unknown>) : op.doc))
+      return OK;
     return this.writeDoc(k.kind, k.id, op.doc, op.at!.date!);
   }
 
   // —— set_member@1：集合字段加减成员（publicHidden） ——
 
   private async setMember(op: SyncOp): Promise<OpResult> {
-    if (op.target !== 'kv/settings' || op.field !== 'publicHidden' || (typeof op.add !== 'string') === (typeof op.remove !== 'string')) return reject('invalid', 'set_member');
+    if (op.target !== 'kv/settings' || op.field !== 'publicHidden' || (typeof op.add !== 'string') === (typeof op.remove !== 'string'))
+      return reject('invalid', 'set_member');
     const s = this.settings();
     const list = Array.isArray(s.publicHidden) ? (s.publicHidden as string[]) : [];
     const next = op.add ? (list.includes(op.add) ? list : [...list, op.add]) : list.filter((x) => x !== op.remove);
@@ -369,7 +546,7 @@ export class SyncExec {
     const methods: PaymentMethod[] = [];
     let settings: Record<string, unknown> = {};
     let people: Person[] | undefined;
-    const fx: Array<[string, Record<string, number>]> = [];
+    const fx: Array<[string, Record<string, number>, string]> = [];
     for (const pair of op.objects) {
       const k = Array.isArray(pair) ? splitKey(String(pair[0])) : undefined;
       const doc = Array.isArray(pair) ? pair[1] : undefined;
@@ -378,7 +555,10 @@ export class SyncExec {
       else if (k.kind === 'method') methods.push({ ...(doc as PaymentMethod), id: k.id });
       else if (k.kind === 'kv' && k.id === 'settings') settings = projectSettings(doc as Record<string, unknown>) ?? {};
       else if (k.kind === 'kv') people = doc as Person[];
-      else fx.push([k.id, ((doc as { rates?: Record<string, number> }).rates ?? doc) as Record<string, number>]);
+      else {
+        const d = doc as { rates?: Record<string, number>; source?: unknown };
+        fx.push([k.id, (d.rates ?? doc) as Record<string, number>, typeof d.source === 'string' ? d.source : 'import']);
+      }
     }
     const priv = Object.fromEntries(Object.entries(this.settings()).filter(([f]) => !isSyncedSetting(f)));
     // 原样写入设备账本的文档（不重盖 updatedAt）：导入后服务器同步视图应逐字节等于副本
@@ -388,16 +568,22 @@ export class SyncExec {
         ...methods.map((m) => ({ table: 'methods' as const, id: m.id, data: JSON.stringify(m) })),
       ],
       deletes: [
-        ...this.store.ids('subscriptions').filter((id) => !subs.some((s) => s.id === id)).map((id) => ({ table: 'subscriptions' as const, id })),
-        ...this.store.ids('methods').filter((id) => !methods.some((m) => m.id === id)).map((id) => ({ table: 'methods' as const, id })),
+        ...this.store
+          .ids('subscriptions')
+          .filter((id) => !subs.some((s) => s.id === id))
+          .map((id) => ({ table: 'subscriptions' as const, id })),
+        ...this.store
+          .ids('methods')
+          .filter((id) => !methods.some((m) => m.id === id))
+          .map((id) => ({ table: 'methods' as const, id })),
       ],
       kv: [{ key: 'settings', value: JSON.stringify({ ...priv, ...settings }) }],
     };
     // 设备账本没有名册：服务器原本也没有就保持没有（不凭空写出空名册），有则清空
     if (people || this.store.rawKv('people') !== undefined) w.kv.push({ key: 'people', value: ledgerEditWrites({ people: people ?? [] }).kv[0].value });
     this.store.apply(w);
-    for (const [date, rates] of fx) this.store.fillFx(date, rates, 'import');
+    // 历史汇率按恢复备份同一语义：副本里有的日期以副本为准（含来源），副本没有的日期保留
+    for (const [date, rates, source] of fx) this.store.putFx(date, rates, source);
     return { ok: true, rotate: true };
   }
 }
-

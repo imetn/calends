@@ -64,8 +64,9 @@ import {
 import type { Revision } from './store.ts';
 import { mergePrefs, type Prefs } from '../shared/prefs.ts';
 import { cleanCategories, renameInSubs } from '../shared/categories.ts';
-import { authenticate, createToken, listTokens, mcp, revokeToken } from './ai/mcp.ts';
+import { createToken, listTokens, mcp, revokeToken } from './ai/mcp.ts';
 import { syncHandler } from './sync.ts';
+import { authenticateSync, createSyncToken, listSyncTokens, revokeSyncToken } from './sync-auth.ts';
 import { fetchPublic } from './url-guard.ts';
 import { TOOLS, toolTitle } from './ai/mcp-tools.ts';
 import { appStorePlans, searchAppStore } from './appstore.ts';
@@ -141,9 +142,9 @@ function methodError(fx: FxTable, previous: PaymentMethod | undefined, pm: Payme
 
 async function api(req: Request, env: Env, path: string): Promise<Response> {
   const method = req.method;
-  // App 同步（docs/sync-api.md）：只认 Bearer 令牌（写权限的 MCP 令牌），不认网页 Cookie，所以不经过同源检查
+  // App 同步（docs/sync-api.md）：只认同步令牌（Bearer），不认 MCP 令牌与网页 Cookie，所以不经过同源检查
   const sync = path.match(/^\/api\/sync\/v1\/([a-z]+)$/);
-  if (sync) return syncHandler(req, env, sync[1], { authed: (await authenticate(req, env))?.scope === 'write' });
+  if (sync) return syncHandler(req, env, sync[1], (await authenticateSync(req, env)) ?? null);
   if (path === '/api/login' && method === 'POST') return login(req, env);
   if (path === '/api/logout' && method === 'POST') return logout(req, env);
   // 登录前可用：状态、首次设置、Passkey 登录
@@ -208,6 +209,19 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   const tm = path.match(/^\/api\/mcp\/tokens\/([\w-]+)$/);
   if (tm && method === 'DELETE') {
     await revokeToken(env, tm[1]);
+    return json({ ok: true });
+  }
+  // 同步令牌管理（设置「安全 › 已连接的设备与应用」）：明文只在新建时返回一次
+  if (path === '/api/sync/tokens' && method === 'GET') return json((await listSyncTokens(env)).map(({ hash: _h, ...rest }) => rest));
+  if (path === '/api/sync/tokens' && method === 'POST') {
+    const b = (await readJson(req)) as { name?: string };
+    const { token, item } = await createSyncToken(env, String(b.name ?? ''));
+    const { hash: _h, ...rest } = item;
+    return json({ token, item: rest });
+  }
+  const st = path.match(/^\/api\/sync\/tokens\/([\w-]+)$/);
+  if (st && method === 'DELETE') {
+    await revokeSyncToken(env, st[1]);
     return json({ ok: true });
   }
   let m = path.match(/^\/api\/subscriptions\/([\w-]+)$/);
