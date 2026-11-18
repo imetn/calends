@@ -2,7 +2,7 @@ import { amountTotal, chargesTotal, formatTotal, sumTotals } from '../../../../s
 import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { Plus } from 'lucide-react';
-import { chargeDay, chargeServicePeriod, isPostpaid, isSeparate, phaseSubs, type Charge } from '../../../../shared/billing.ts';
+import { chargeDay, chargeServicePeriod, isPostpaid, isSeparate, type Charge } from '../../../../shared/billing.ts';
 import { meterDecimals, meterRows, meterView } from '../../../../shared/meters.ts';
 import { chargesUsage, chargeUsage, fixedQty, periodLabel, withUnit } from './ChargeTip.tsx';
 import { flow, cnDate, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
@@ -96,7 +96,6 @@ export function Charges({
   onAdd?: () => void;
 }) {
   const base = state.settings.baseCurrency;
-  const multi = phaseSubs(sub).length > 1;
   // 缺汇率的一笔本位币金额为 NaN：行内与年小计显示「—」，不按 0 合计
   const rows = history.map((c) => ({ c, b: chargeBaseOrNaN(state, c, base) })).reverse();
   // 卡上实扣的原币：这张表里某个币种的金额都是整数（如奈拉、日元整价扣款）就不写 .00，省出宽度；
@@ -191,7 +190,6 @@ export function Charges({
               <>
                 {orig(-card(c).amount, card(c).currency)}
                 {c.kind && <em className={`dt-kind ${c.kind}`}>{t(`detail.charges.kind.${c.kind}`)}</em>}
-                {multi && c.sub.region && !c.kind && <em className="dt-kind">{c.sub.region}</em>}
                 {/* 账单与缴费分开记：这笔缴的是哪几期账单（首期 – 末期），固定在金额下一行；逐期写在悬停提示里 */}
                 {!!c.settles?.length && <small className="dt-settles">{settlesLabel(c.settles, c.date)}</small>}
               </>
