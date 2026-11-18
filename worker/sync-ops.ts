@@ -368,7 +368,7 @@ export class SyncExec {
     const subs: Subscription[] = [];
     const methods: PaymentMethod[] = [];
     let settings: Record<string, unknown> = {};
-    let people: Person[] = [];
+    let people: Person[] | undefined;
     const fx: Array<[string, Record<string, number>]> = [];
     for (const pair of op.objects) {
       const k = Array.isArray(pair) ? splitKey(String(pair[0])) : undefined;
@@ -391,11 +391,10 @@ export class SyncExec {
         ...this.store.ids('subscriptions').filter((id) => !subs.some((s) => s.id === id)).map((id) => ({ table: 'subscriptions' as const, id })),
         ...this.store.ids('methods').filter((id) => !methods.some((m) => m.id === id)).map((id) => ({ table: 'methods' as const, id })),
       ],
-      kv: [
-        { key: 'settings', value: JSON.stringify({ ...priv, ...settings }) },
-        { key: 'people', value: ledgerEditWrites({ people }).kv[0].value },
-      ],
+      kv: [{ key: 'settings', value: JSON.stringify({ ...priv, ...settings }) }],
     };
+    // 设备账本没有名册：服务器原本也没有就保持没有（不凭空写出空名册），有则清空
+    if (people || this.store.rawKv('people') !== undefined) w.kv.push({ key: 'people', value: ledgerEditWrites({ people: people ?? [] }).kv[0].value });
     this.store.apply(w);
     for (const [date, rates] of fx) this.store.fillFx(date, rates, 'import');
     return { ok: true, rotate: true };
