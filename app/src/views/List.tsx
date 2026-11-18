@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { activePhases, currentPhase, diffDays, effectiveStatus, monthlyMine, nextCharge, priceAt, upcomingPhase, isStopped } from '../../../shared/billing.ts';
 import { cnDate, cnDateAuto, money, nearDate, relDays } from '../../../shared/format.ts';
 import { toBaseOrNaN } from '../../../shared/fx.ts';
+import { registrarIcon } from '../../../shared/icon.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { IconButton, Toolbar } from '../components/ui.tsx';
 import { Amount, Seg } from '../components/inputs.tsx';
@@ -705,13 +706,7 @@ function FacetRow({
  * 域名类用注册商图标（默认 Cloudflare）；取不到颜色时退回分类色的单色光晕
  */
 function CardGlow({ sub }: { sub: Subscription }) {
-  const src = isDomainCat(sub.category)
-    ? sub.icon?.startsWith('http')
-      ? sub.icon
-      : base('/brands/cloudflare.svg')
-    : sub.icon?.startsWith('/')
-      ? sub.icon
-      : subImage(sub);
+  const src = isDomainCat(sub.category) ? base(registrarIcon(sub.icon)) : sub.icon?.startsWith('/') ? sub.icon : subImage(sub);
   const palette = useIconPalette(src);
   if (!palette) return <div className="sc-glow" style={{ '--glow': catColor(sub.category) } as Record<string, string>} />;
   let h = 0;

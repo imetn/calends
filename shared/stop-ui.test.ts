@@ -560,6 +560,7 @@ function editorRuntime(original: Subscription) {
       PersonPicker: 'PersonPicker',
       ChangePanel: 'ChangePanel',
       CatIcon: 'CatIcon',
+      Pencil: 'Pencil',
       ReceiptText: 'ReceiptText',
       searchCatalog: () => [],
       base: (path: string) => path,

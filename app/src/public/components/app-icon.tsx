@@ -1,4 +1,4 @@
-import { isImageIcon } from '../../../../shared/icon.ts';
+import { isImageIcon, registrarIcon } from '../../../../shared/icon.ts';
 import { base } from '../../base.ts';
 import { useState } from 'react';
 import type { Subscription } from '../../../../shared/types.ts';
@@ -15,7 +15,7 @@ export function AppIcon({ sub, className, size, eager }: { sub: Pick<Subscriptio
   if (isDomainCat(sub.category)) {
     return (
       <span style={style} className={cn(box, 'bg-white')}>
-        <img src={sub.icon?.startsWith('http') ? sub.icon : base('/brands/cloudflare.svg')} alt="" className="size-[70%] object-contain" />
+        <img src={base(registrarIcon(sub.icon))} alt="" className="size-[70%] object-contain" />
       </span>
     );
   }

@@ -1,5 +1,6 @@
 import { AVATAR_INPUT_MAX_BYTES, avatarCrop, prepareAvatarThumbnail } from '../../shared/avatar.ts';
 import { t } from '../../shared/i18n.ts';
+import { ICON_UPLOAD_SIZE, iconFit, iconInput, isDataIcon } from '../../shared/icon.ts';
 // 从别的页面（新建订阅表单）把文字、图片交给 AI 助手：先存进 sessionStorage，助手页打开时取走
 import { go } from './router.ts';
 import { HANDOFF_KEY } from './store.ts';
@@ -42,6 +43,46 @@ export function takeHandoff(): { text: string; images: string[] } | null {
     return JSON.parse(raw) as { text: string; images: string[] };
   } catch {
     return null;
+  }
+}
+
+/**
+ * 本地图片 → 订阅图标：等比缩进 128 见方、保留透明，重新编码（丢掉原图元数据），
+ * 优先 WebP，浏览器不支持时回落 PNG；结果再过一遍 iconInput，保证与导入、MCP 写入的约束一致。
+ */
+export async function compressIcon(file: Blob): Promise<string> {
+  const invalid = () => new Error(t('editor.field.iconUploadInvalid'));
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || !file.size || file.size > AVATAR_INPUT_MAX_BYTES) throw invalid();
+  let bmp: ImageBitmap;
+  try {
+    bmp = await createImageBitmap(file);
+  } catch {
+    throw invalid();
+  }
+  try {
+    const fit = iconFit(bmp.width, bmp.height);
+    if (!fit) throw invalid();
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = ICON_UPLOAD_SIZE;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw invalid();
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bmp, fit.x, fit.y, fit.w, fit.h);
+    for (const q of [0.9, 0.8, 0.65, 0.5]) {
+      const url = canvas.toDataURL('image/webp', q);
+      const data = isDataIcon(url) ? url : canvas.toDataURL('image/png');
+      try {
+        const icon = iconInput(data);
+        if (icon) return icon;
+      } catch {
+        /* 超出大小上限：降低质量再试；PNG 没有质量可调，直接失败 */
+      }
+      if (!url.startsWith('data:image/webp')) break;
+    }
+    // 图能解码、只是压不进 64 KB（多见于不支持 WebP 编码、回落 PNG 的浏览器）：别让人以为是格式或 8 MB 的问题
+    throw new Error(t('editor.field.iconUploadTooLarge'));
+  } finally {
+    bmp.close();
   }
 }
 

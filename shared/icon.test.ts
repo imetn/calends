@@ -1,6 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { iconInput, isDataIcon, isImageIcon } from './icon.ts';
+import { iconFit, iconInput, isDataIcon, isImageIcon, registrarIcon } from './icon.ts';
+
+test('域名订阅的注册商图标：上传的内嵌图片、网址、站内路径都生效，emoji 和空值回落 Cloudflare', () => {
+  const png = 'data:image/png;base64,iVBORw0KGgo=';
+  assert.equal(registrarIcon(png), png);
+  assert.equal(registrarIcon('https://example.com/r.png'), 'https://example.com/r.png');
+  assert.equal(registrarIcon('/brands/namecheap.svg'), '/brands/namecheap.svg');
+  assert.equal(registrarIcon('🌐'), '/brands/cloudflare.svg');
+  assert.equal(registrarIcon(undefined), '/brands/cloudflare.svg');
+});
 
 test('订阅图标：网址、站内路径和 png/jpeg/webp 内嵌图片是图片，其余当 emoji', () => {
   assert.ok(isImageIcon('https://example.test/a.png'));
@@ -32,4 +41,19 @@ test('iconInput：接受网址、站内路径、内嵌图片和 emoji，空值�
     `data:image/png;base64,${'A'.repeat(90000)}`,
   ])
     assert.throws(() => iconInput(bad), undefined, bad);
+});
+
+test('iconFit：等比缩进 128 见方并居中，小图不放大，非法尺寸返回 undefined', () => {
+  assert.deepEqual(iconFit(1024, 1024), { x: 0, y: 0, w: 128, h: 128 });
+  assert.deepEqual(iconFit(1000, 250), { x: 0, y: 48, w: 128, h: 32 });
+  assert.deepEqual(iconFit(300, 1200), { x: 48, y: 0, w: 32, h: 128 });
+  assert.deepEqual(iconFit(64, 32), { x: 32, y: 48, w: 64, h: 32 });
+  assert.deepEqual(iconFit(4000, 1), { x: 0, y: 63, w: 128, h: 1 });
+  for (const [w, h] of [
+    [0, 10],
+    [10, Number.NaN],
+    [-1, 5],
+    [10000, 10000],
+  ])
+    assert.equal(iconFit(w, h), undefined);
 });

@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react';
 import type { EditorStatus } from './useEditorFields.ts';
 import { MemberSheet } from '../Members.tsx';
 import { isDataIcon } from '../../../../shared/icon.ts';
+import { useIconUpload } from './icon-upload.tsx';
 
 import { StopFields } from '../../components/StopPanel.tsx';
 import {
@@ -17,9 +18,9 @@ import {
 } from '../../../../shared/billing.ts';
 import { cnDateFull, flow, money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
-import { REMIND_DAYS, type Cycle, type SubStatus } from '../../../../shared/types.ts';
+import { REMIND_DAYS, type Cycle, type SubStatus, type Subscription } from '../../../../shared/types.ts';
 import { DatePicker } from '../../components/DatePicker.tsx';
-import { CatIcon } from '../../components/marks.tsx';
+import { CatIcon, SubIcon } from '../../components/marks.tsx';
 import { Cell, Group } from '../../components/ui.tsx';
 import { Icon } from '../../components/icons.tsx';
 import { NumInput, Seg, Stepper, Toggle } from '../../components/inputs.tsx';
@@ -346,6 +347,42 @@ export function SharingFields({ context }: { context: ReturnType<typeof useEdito
   );
 }
 
+/** 订阅图标：输入网址 / emoji，或上传本地图片（缩成 128px 内嵌进数据里），也可拖入、粘贴图片 */
+function IconField({ f, up }: { f: Subscription; up: (p: Partial<Subscription>) => void }) {
+  const pick = useIconUpload(up);
+  const embedded = isDataIcon(f.icon);
+  return (
+    <div className="cell icon-field" onDragOver={pick.onDragOver} onDrop={pick.onDrop}>
+      {/* 与钱包 Logo 栏一样：「是图片图标」写在标签下（可换行），输入框只留短提示，长文案语言在窄屏也放得下 */}
+      <span className="cell-l">
+        {t('editor.field.icon')}
+        {embedded && <small>{t('editor.field.iconImage')}</small>}
+      </span>
+      <span className="cell-r icon-actions">
+        <SubIcon sub={f} size={28} />
+        <button type="button" className="chip-btn" disabled={pick.busy} title={t('editor.field.iconUploadHelp')} onClick={pick.open}>
+          {t('editor.field.iconUpload')}
+        </button>
+        {embedded && (
+          <button type="button" className="chip-btn" disabled={pick.busy} onClick={() => up({ icon: undefined })}>
+            {t('editor.field.iconClear')}
+          </button>
+        )}
+        {pick.input}
+      </span>
+      {/* 输入框单独占满整格宽度的第二行；内嵌图片不把整串 base64 塞进来：留空并提示，输入网址或 emoji 即替换 */}
+      <span className="cell-r icon-input">
+        <input
+          value={embedded ? '' : (f.icon ?? '')}
+          placeholder={embedded ? t('editor.field.iconImported') : t('editor.field.auto')}
+          onChange={(e) => up({ icon: (e.target as HTMLInputElement).value || undefined })}
+          onPaste={pick.onPaste}
+        />
+      </span>
+    </div>
+  );
+}
+
 export function MoreFields({ context }: { context: ReturnType<typeof useEditorFields> }) {
   const { isNew, f, up, state, today, val, lt, setTransfer, more } = context;
   // 下次扣款日按保存后的样子显示：改了周期或提前天数，这里跟着重算；手动改的直接存成下次扣款日
@@ -522,14 +559,7 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
           <Cell label={t('editor.field.manageUrl')}>
             <input value={f.manageUrl ?? ''} placeholder={t('editor.field.optional')} onChange={(e) => up({ manageUrl: val(e) || undefined })} />
           </Cell>
-          <Cell label={t('editor.field.icon')}>
-            {/* 导入的内嵌图片不把整串 base64 塞进输入框：留空并提示，输入网址或 emoji 即替换 */}
-            <input
-              value={isDataIcon(f.icon) ? '' : (f.icon ?? '')}
-              placeholder={isDataIcon(f.icon) ? t('editor.field.iconImported') : t('editor.field.auto')}
-              onChange={(e) => up({ icon: val(e) || undefined })}
-            />
-          </Cell>
+          <IconField f={f} up={up} />
           {isDomainCat(f.category) && (
             <Cell label={t('editor.field.showDomain')} sub={t(f.showOnPublic ? 'editor.field.showDomainOn' : 'editor.field.showDomainOff')}>
               <Toggle label={t('editor.field.showDomain')} checked={!!f.showOnPublic} onChange={(v) => up({ showOnPublic: v || undefined })} />

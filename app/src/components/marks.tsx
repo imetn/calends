@@ -1,4 +1,4 @@
-import { isDataIcon, isImageIcon } from '../../../shared/icon.ts';
+import { isDataIcon, isImageIcon, registrarIcon } from '../../../shared/icon.ts';
 import './ui.css';
 import { base } from '../base.ts';
 import type { ReactNode as ComponentChildren } from 'react';
@@ -22,13 +22,10 @@ export function SubIcon({ sub, size = 40, proxied }: { sub: Pick<Subscription, '
   const style = { '--s': `${size}px`, '--tint': tint } as Record<string, string>;
   // 域名用注册商的图标，不用各自的站点图标：默认 Cloudflare，其他注册商在 icon 里填它的图标
   if (isDomainCat(sub.category)) {
+    const reg = registrarIcon(sub.icon);
     return (
       <span className="ico domain" style={style}>
-        <img
-          decoding="async"
-          src={sub.icon?.startsWith('http') ? (proxied ? base(`/api/img?u=${encodeURIComponent(sub.icon)}`) : sub.icon) : base('/brands/cloudflare.svg')}
-          alt=""
-        />
+        <img decoding="async" src={proxied && /^https?:/.test(reg) ? base(`/api/img?u=${encodeURIComponent(reg)}`) : base(reg)} alt="" />
       </span>
     );
   }
