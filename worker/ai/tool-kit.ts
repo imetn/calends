@@ -22,6 +22,15 @@ export interface ToolCtx {
    */
   overlay?: Map<string, Subscription | null>;
   draftState?: Partial<AppState>;
+  /** 业务日期（YYYY-MM-DD）：同步重放离线操作时传操作当时的日期；不传按账本时区取今天 */
+  today?: string;
+  /** 批量执行（同步）：读写走同一份内存快照，整批最后一次提交；不传直接读写库 */
+  store?: LedgerStore;
+}
+
+export interface LedgerStore {
+  loadState(): Promise<AppState>;
+  saveLedgerEdit(patch: Partial<AppState>, deletedMethods: string[], deletedSubscriptions: string[]): Promise<void>;
 }
 
 export interface Tool {
@@ -35,12 +44,12 @@ export interface Tool {
 }
 
 export async function state(ctx: ToolCtx): Promise<{ st: AppState; today: string }> {
-  const st = { ...(await loadState(ctx.env, false)), ...ctx.draftState };
+  const st = { ...(await (ctx.store ? ctx.store.loadState() : loadState(ctx.env, false))), ...ctx.draftState };
   if (ctx.overlay?.size) {
     const subs = st.subscriptions.filter((s) => !ctx.overlay!.has(s.id)).concat([...ctx.overlay.values()].filter((s): s is Subscription => !!s));
     st.subscriptions = subs;
   }
-  return { st, today: todayIn(st.settings.timezone) };
+  return { st, today: ctx.today ?? todayIn(st.settings.timezone) };
 }
 
 export const candidates = (xs: Array<{ name: string; id: string }>) => xs.map((x) => t('mcp.item', { name: x.name, id: x.id })).join(t('mcp.sep'));
@@ -310,7 +319,9 @@ export async function writeLedger(ctx: ToolCtx, st: AppState, w: LedgerWrite, pr
     return { dry_run: true, ...preview };
   }
   // 存储层会给订阅记 updatedAt：写副本，预览里的对象保持原样
-  await saveLedgerEdit(ctx.env, { ...rest, subscriptions: subscriptions?.map((s) => ({ ...s })), methods }, deletedMethods, deletedSubscriptions);
+  const patch = { ...rest, subscriptions: subscriptions?.map((s) => ({ ...s })), methods };
+  if (ctx.store) await ctx.store.saveLedgerEdit(patch, deletedMethods, deletedSubscriptions);
+  else await saveLedgerEdit(ctx.env, patch, deletedMethods, deletedSubscriptions);
   return { ok: true, ...preview };
 }
 

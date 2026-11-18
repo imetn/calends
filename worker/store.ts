@@ -85,40 +85,41 @@ async function ensurePeople(env: Env, state: AppState): Promise<boolean> {
   return true;
 }
 
-/**
- * 旧版应收（已付至、按覆盖期记的收款、代付逐期记录）一次性转成按期记账（可重复执行，转过的原样返回）。
- * 内存里总是转好再用；write 时写回库里，导入、恢复了旧备份后也会再转一次
- */
-async function ensureReceivables(env: Env, state: AppState, write: boolean): Promise<boolean> {
-  const changed: Subscription[] = [];
-  state.subscriptions = state.subscriptions.map((s) => {
-    const next = migrateReceivables(s, state.settings.baseCurrency);
-    if (next !== s) changed.push(next);
-    return next;
-  });
-  if (!changed.length || !write) return false;
-  await writePeople(env, undefined, changed);
-  return true;
+/** 账本原始行：同一个 D1 batch 读出的一份快照（同步批量执行在内存里改它，见 worker/sync-store.ts） */
+export interface LedgerRows {
+  subscriptions: string[];
+  methods: string[];
+  /** kv 原文（JSON 文本）：settings、fx、people、prefs、rev */
+  kv: Record<string, string>;
+  fxDaily: Array<{ date: string; rates: string }>;
 }
 
-export async function loadState(env: Env, migratePeople = true): Promise<AppState> {
-  // D1 batch reads one transactional snapshot: never pair stale data with a newer rev.
-  const rows = await env.DB.batch([
-    env.DB.prepare('SELECT data FROM subscriptions'),
-    env.DB.prepare('SELECT data FROM methods'),
-    env.DB.prepare("SELECT key, value FROM kv WHERE key IN ('settings', 'fx', 'people', 'prefs', 'rev')"),
-    env.DB.prepare('SELECT date, rates FROM fx_daily'),
-  ]);
-  const subs = rows[0] as D1Result<{ data: string }>;
-  const methods = rows[1] as D1Result<{ data: string }>;
-  const kv = Object.fromEntries((rows[2] as D1Result<{ key: string; value: string }>).results.map((r) => [r.key, JSON.parse(r.value)]));
+export const ledgerReadStmts = (env: Env): D1PreparedStatement[] => [
+  env.DB.prepare('SELECT data FROM subscriptions'),
+  env.DB.prepare('SELECT data FROM methods'),
+  env.DB.prepare("SELECT key, value FROM kv WHERE key IN ('settings', 'fx', 'people', 'prefs', 'rev')"),
+  env.DB.prepare('SELECT date, rates FROM fx_daily'),
+];
+
+export function ledgerRows(results: D1Result[]): LedgerRows {
+  return {
+    subscriptions: (results[0] as D1Result<{ data: string }>).results.map((r) => r.data),
+    methods: (results[1] as D1Result<{ data: string }>).results.map((r) => r.data),
+    kv: Object.fromEntries((results[2] as D1Result<{ key: string; value: string }>).results.map((r) => [r.key, r.value])),
+    fxDaily: (results[3] as D1Result<{ date: string; rates: string }>).results,
+  };
+}
+
+/** 由原始行推导账本，不写库；旧版应收在内存里转好，转过的记录一并返回（由 loadState 决定是否写回） */
+function derive(rows: LedgerRows): { state: AppState; migrated: Subscription[] } {
+  const kv = Object.fromEntries(Object.entries(rows.kv).map(([k, v]) => [k, JSON.parse(v)]));
   if (typeof kv.rev !== 'number') throw new Error('Missing ledger revision');
   const state: AppState = {
     rev: kv.rev,
-    subscriptions: subs.results.map((r) => migrateRenewalRules(JSON.parse(r.data) as Subscription)),
+    subscriptions: rows.subscriptions.map((d) => migrateRenewalRules(JSON.parse(d) as Subscription)),
     // 按用户在钱包里拖出来的顺序；没排过的保持原有先后
-    methods: methods.results
-      .map((r) => JSON.parse(r.data) as PaymentMethod)
+    methods: rows.methods
+      .map((d) => JSON.parse(d) as PaymentMethod)
       .map((m, i) => ({ m, i }))
       .sort((a, b) => (a.m.order ?? 1e9) - (b.m.order ?? 1e9) || a.i - b.i)
       .map((x) => x.m),
@@ -129,8 +130,31 @@ export async function loadState(env: Env, migratePeople = true): Promise<AppStat
   };
   // 旧版删除留下的悬空引用（公开页隐藏、默认支付方式）只在内存里剔除，不改库
   state.settings = pruneSettingsRefs(state.settings, state.subscriptions, state.methods);
-  if ((await ensureReceivables(env, state, migratePeople)) || (migratePeople && (await ensurePeople(env, state)))) return loadState(env);
-  state.fxHistory = slimFxHistory((rows[3] as D1Result<{ date: string; rates: string }>).results, keepSet(state));
+  const migrated: Subscription[] = [];
+  state.subscriptions = state.subscriptions.map((s) => {
+    const next = migrateReceivables(s, state.settings.baseCurrency);
+    if (next !== s) migrated.push(next);
+    return next;
+  });
+  state.fxHistory = slimFxHistory(rows.fxDaily, keepSet(state));
+  return { state, migrated };
+}
+
+/** 与 loadState(env, false) 结果相同的纯函数：批量执行在同一份行快照上反复推导，不再读库 */
+export function deriveState(rows: LedgerRows): AppState {
+  return derive(rows).state;
+}
+
+export async function loadState(env: Env, migratePeople = true): Promise<AppState> {
+  // D1 batch reads one transactional snapshot: never pair stale data with a newer rev.
+  const { state, migrated } = derive(ledgerRows(await env.DB.batch(ledgerReadStmts(env))));
+  if (!migratePeople) return state;
+  // 旧版应收转换、自动建档写回后重读（一次性迁移，可重复执行）
+  if (migrated.length) {
+    await writePeople(env, undefined, migrated);
+    return loadState(env);
+  }
+  if (await ensurePeople(env, state)) return loadState(env);
   return state;
 }
 
@@ -160,10 +184,17 @@ export async function remove(env: Env, table: Table, id: string): Promise<Revisi
   return mutate(env, [env.DB.prepare(`DELETE FROM ${table} WHERE id = ?1`).bind(id)]);
 }
 
+/**
+ * 整本替换（恢复备份、替换导入、App 用设备账本恢复服务器）在同一事务里换随机代际：已连接的 App 下次整份重拉。
+ * 只换代际，不动 ledgerId、drEpoch、sync_clients、sync_rejections：设备的执行编号不丢，旧请求不会重复执行。
+ */
+export const rotateGenerationStmt = (env: Env): D1PreparedStatement =>
+  env.DB.prepare("UPDATE sync_meta SET value = lower(hex(randomblob(8))) WHERE key = 'generation'");
+
 export async function replaceAll(env: Env, subs: Subscription[], methods: PaymentMethod[], mode: 'merge' | 'replace'): Promise<Revision> {
   const stmts: D1PreparedStatement[] = [];
   if (mode === 'replace') {
-    stmts.push(env.DB.prepare('DELETE FROM subscriptions'), env.DB.prepare('DELETE FROM methods'));
+    stmts.push(env.DB.prepare('DELETE FROM subscriptions'), env.DB.prepare('DELETE FROM methods'), rotateGenerationStmt(env));
   }
   for (const m of methods) stmts.push(upsertStmt(env, 'methods', m.id, m));
   for (const s of subs) stmts.push(upsertStmt(env, 'subscriptions', s.id, s));
@@ -207,6 +238,7 @@ export async function restoreLedger(
     ...(b.settings ? [putKvStmt(env, 'settings', b.settings)] : []),
     ...(b.fx ? [putKvStmt(env, 'fx', b.fx)] : []),
     ...b.fxDaily.map((d) => putFxDayStmt(env, d.date, d.rates, d.source)),
+    rotateGenerationStmt(env),
   ]);
 }
 
@@ -216,6 +248,42 @@ export async function saveSettingsWithSubs(env: Env, settings: Settings, subs: S
   return mutate(env, [putKvStmt(env, 'settings', settings), ...subs.map((s) => upsertStmt(env, 'subscriptions', s.id, stamp(s, now)))]);
 }
 
+/** 一次工具写入落到库里的样子：每条记录写成的 JSON 文本与删除的 id（同步批量执行在内存里应用同一份结果） */
+export interface LedgerWrites {
+  upserts: Array<{ table: Table; id: string; data: string }>;
+  deletes: Array<{ table: Table; id: string }>;
+  kv: Array<{ key: 'settings' | 'people' | 'prefs'; value: string }>;
+}
+
+export function ledgerEditWrites(patch: Partial<AppState>, deletedMethods: string[] = [], deletedSubscriptions: string[] = [], now = new Date().toISOString()): LedgerWrites {
+  const kv = (['settings', 'people', 'prefs'] as const).filter((k) => patch[k] !== undefined);
+  if (kv.includes('people')) validatePeopleAvatars(patch.people as Person[]);
+  return {
+    upserts: [
+      ...(patch.subscriptions ?? []).map((s) => ({ table: 'subscriptions' as const, id: s.id, data: JSON.stringify(stamp(s, now)) })),
+      ...(patch.methods ?? []).map((m) => ({ table: 'methods' as const, id: m.id, data: JSON.stringify(m) })),
+    ],
+    deletes: [...deletedMethods.map((id) => ({ table: 'methods' as const, id })), ...deletedSubscriptions.map((id) => ({ table: 'subscriptions' as const, id }))],
+    kv: kv.map((key) => ({ key, value: JSON.stringify(patch[key]) })),
+  };
+}
+
+export function ledgerWriteStmts(env: Env, w: LedgerWrites): D1PreparedStatement[] {
+  return [
+    ...w.upserts.map((u) =>
+      env.DB.prepare(
+        `INSERT INTO ${u.table} (id, data, updated_at) VALUES (?1, ?2, datetime('now')) ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`,
+      ).bind(u.id, u.data),
+    ),
+    ...w.deletes.map((d) => env.DB.prepare(`DELETE FROM ${d.table} WHERE id = ?1`).bind(d.id)),
+    ...w.kv.map((k) =>
+      env.DB.prepare(
+        "INSERT INTO kv (key, value, updated_at) VALUES (?1, ?2, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+      ).bind(k.key, k.value),
+    ),
+  ];
+}
+
 /** Atomic multi-entity tool write: never leave a migration or settings/prefs edit half-applied. */
 export async function saveLedgerEdit(
   env: Env,
@@ -223,13 +291,5 @@ export async function saveLedgerEdit(
   deletedMethods: string[] = [],
   deletedSubscriptions: string[] = [],
 ): Promise<Revision> {
-  const now = new Date().toISOString();
-  const stmts = [
-    ...(patch.subscriptions ?? []).map((s) => upsertStmt(env, 'subscriptions', s.id, stamp(s, now))),
-    ...(patch.methods ?? []).map((m) => upsertStmt(env, 'methods', m.id, m)),
-    ...deletedMethods.map((id) => env.DB.prepare('DELETE FROM methods WHERE id = ?1').bind(id)),
-    ...deletedSubscriptions.map((id) => env.DB.prepare('DELETE FROM subscriptions WHERE id = ?1').bind(id)),
-    ...(['settings', 'people', 'prefs'] as const).filter((k) => patch[k] !== undefined).map((k) => putKvStmt(env, k, patch[k])),
-  ];
-  return mutate(env, stmts);
+  return mutate(env, ledgerWriteStmts(env, ledgerEditWrites(patch, deletedMethods, deletedSubscriptions)));
 }
