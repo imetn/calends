@@ -101,7 +101,9 @@ export function Charges({
   const rows = history.map((c) => ({ c, b: chargeBaseOrNaN(state, c, base) })).reverse();
   // 卡上实扣的原币：这张表里某个币种的金额都是整数（如奈拉、日元整价扣款）就不写 .00，省出宽度；
   // 当时成本按同一规则看本位币金额，同一行两列写法一致
-  const whole = wholeCurrencies(history);
+  // 卡上实扣：记了卡上实际扣的币种与金额（Payment.settled、代付的实扣）就写它，否则是订阅原价
+  const card = (c: Charge) => (c.settled && !c.projected ? c.settled : c);
+  const whole = wholeCurrencies(history.map(card));
   const orig = (v: number, ccy: string) => flow(v, ccy, wholeOpts(v, ccy, whole));
   const wholeBase = wholeCurrencies(rows.map((r) => ({ amount: r.b, currency: base })));
   const cost = (v: number) => flow(v, base, wholeOpts(v, base, wholeBase));
@@ -161,7 +163,7 @@ export function Charges({
               orig: copyParts(
                 currencyTotals(
                   ys,
-                  (r) => r.c,
+                  (r) => card(r.c),
                   (sum, ccy) => orig(-sum, ccy),
                 ),
               ),
@@ -187,7 +189,7 @@ export function Charges({
             extra: readings && usageCell(usageOf(c)),
             orig: (
               <>
-                {orig(-c.amount, c.currency)}
+                {orig(-card(c).amount, card(c).currency)}
                 {c.kind && <em className={`dt-kind ${c.kind}`}>{t(`detail.charges.kind.${c.kind}`)}</em>}
                 {multi && c.sub.region && !c.kind && <em className="dt-kind">{c.sub.region}</em>}
                 {/* 账单与缴费分开记：这笔缴的是哪几期账单（首期 – 末期），固定在金额下一行；逐期写在悬停提示里 */}

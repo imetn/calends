@@ -1102,10 +1102,11 @@
 
 /*
  * 扣款记录与代付、合租的收付款表同一套（.ld-table / .ld-receipts）：
- * 扣款日 · 支付方式 · 卡上实扣 · 当时成本，四列均分；窄时去掉支付方式一列
+ * 扣款日 · 支付方式 · 卡上实扣 · 当时成本；支付方式多是图标，让出宽度给卡上实扣，
+ * 年份行多币种合计（如 −₱44,598.20 −$200.34）一行放得下；窄时去掉支付方式一列
  */
 .dt-ledger .ld-row:not(.car-more) {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1fr);
 }
 .dt-ledger .ld-year > span:nth-child(3) {
   text-align: right;
