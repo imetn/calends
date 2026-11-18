@@ -31,6 +31,8 @@ import { toBase } from '../../derive.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { detailForecast, detailHistoryEnd } from '../detail-data.ts';
 import { regular } from './shared.tsx';
+import { proxyRows, proxyTotals } from '../../../../shared/proxy.ts';
+import { OwedOrNet } from '../proxy/common.tsx';
 
 /** 分开记的各期账单（截至今天、同一期的已缴与未缴合成一条），用于比较账单单价 */
 function billPrices(sub: Subscription, today: string): Charge[] {
@@ -205,31 +207,59 @@ export function Kpis({
     />
   );
 
+  const firstCell = owed.length ? (
+    <Metric
+      label={t('detail.settlement.earliest')}
+      value={cnDateAuto(owed[0].date, today)}
+      valueClassName="warn"
+      note={copyParts(
+        [t('detail.settlement.owed', { count: owed.length }), formatTotal(chargesTotal(state, owed), base, { direction: -1, compact: true })].join('\n'),
+      )}
+    />
+  ) : next ? (
+    <Metric
+      label={st === 'trial' ? t('detail.renewal.afterTrial') : isPostpaid(next.sub) ? t('detail.billing.nextBill') : t('detail.ev.next')}
+      value={cnDateAuto(next.date, today)}
+      note={copyParts(
+        [Number.isFinite(nextValue) ? flow(-nextValue, base) : flow(-next.amount, next.currency), relDays(diffDays(today, next.date))].join('\n'),
+      )}
+    />
+  ) : ended ? (
+    <Metric label={t('detail.field.endedOn')} value={cnDateAuto(sub.end!, today)} note={relDays(diffDays(today, sub.end!))} />
+  ) : (
+    durationCell
+  );
+
+  // 代付不是我的支出：下次扣款之后与代付页卡片同一套（已代付 · 已收 · 待收或盈亏）
+  if (sub.proxy) {
+    const list = proxyRows(state, sub, today);
+    const { partial } = proxyTotals(list);
+    return (
+      <Panel className="dt-metrics metric-stack">
+        <MetricCards inline>
+          {firstCell}
+          <Metric
+            label={t('proxy.paidPeriods', { count: list.length })}
+            value={formatTotal(partial.charged, base, { direction: -1, compact: true, main: true })}
+            note={totalNote(partial.charged) || undefined}
+          />
+          <Metric
+            label={t('proxy.received')}
+            value={formatTotal(partial.received, base, { direction: 1, compact: true, main: true })}
+            note={totalNote(partial.received) || undefined}
+            valueClassName="green"
+          />
+          <OwedOrNet list={list} base={base} />
+        </MetricCards>
+        {usage && <MetricCards inline>{usage}</MetricCards>}
+      </Panel>
+    );
+  }
+
   return (
     <Panel className="dt-metrics metric-stack">
       <MetricCards inline>
-        {owed.length ? (
-          <Metric
-            label={t('detail.settlement.earliest')}
-            value={cnDateAuto(owed[0].date, today)}
-            valueClassName="warn"
-            note={copyParts(
-              [t('detail.settlement.owed', { count: owed.length }), formatTotal(chargesTotal(state, owed), base, { direction: -1, compact: true })].join('\n'),
-            )}
-          />
-        ) : next ? (
-          <Metric
-            label={st === 'trial' ? t('detail.renewal.afterTrial') : isPostpaid(next.sub) ? t('detail.billing.nextBill') : t('detail.ev.next')}
-            value={cnDateAuto(next.date, today)}
-            note={copyParts(
-              [Number.isFinite(nextValue) ? flow(-nextValue, base) : flow(-next.amount, next.currency), relDays(diffDays(today, next.date))].join('\n'),
-            )}
-          />
-        ) : ended ? (
-          <Metric label={t('detail.field.endedOn')} value={cnDateAuto(sub.end!, today)} note={relDays(diffDays(today, sub.end!))} />
-        ) : (
-          durationCell
-        )}
+        {firstCell}
         {(owed.length || next || ended) && durationCell}
         {/* 只有一笔时累计就是那一笔，扣款记录里已有，不再占一格 */}
         {/* 导入边界之前的历史没有记录：没有一笔时写「—」，小字说明只算导入之后 */}

@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FALLBACK_FX } from './billing.ts';
-import { proxyAhead, proxyLedger, proxyRows, proxyTotals, proxyYear } from './proxy.ts';
+import { proxyAhead, proxyLedger, proxyRows, proxyTotals, proxyYear, withProxyCharged } from './proxy.ts';
+import { chargesBetween } from './billing.ts';
 import { deleteRecord, openPeriods, receivableOf, recordProxyCharge, recordReceipt, recordWaiver } from './receivable-edit.ts';
 import { migrateReceivables } from './receivables-legacy.ts';
 import { DEFAULT_SETTINGS, type AppState, type Proxy, type Subscription } from './types.ts';
@@ -140,4 +141,22 @@ test('今年代付合计：只算今年扣款的期，盈亏只看已收回的�
   // 选去年：只剩 12 月那一期
   const last = proxyYear(state(s), today, '2025');
   assert.equal(last.done.length + last.open.length, 1);
+});
+
+test('详情页的扣款按代付记的卡上实扣：标价 JPY、卡上 USD 时挂成 settled，没记实扣与预测的不动', () => {
+  const s = sub(
+    {
+      charged: [
+        { charge: '2026-02-05', amount: 176.44, currency: 'USD' },
+        { charge: '2026-03-05', amount: 27273, currency: 'JPY' },
+      ],
+    },
+    { price: 27273, currency: 'JPY' },
+  );
+  const list = withProxyCharged(s, chargesBetween(s, s.start, '2026-05-31', '2026-04-10'));
+  const at = (d: string) => list.find((c) => c.date === d)!;
+  assert.deepEqual(at('2026-02-05').settled, { amount: 176.44, currency: 'USD' });
+  assert.equal(at('2026-03-05').settled, undefined, '同币同额不重复挂');
+  assert.equal(at('2026-01-05').settled, undefined, '没记实扣的期按标价');
+  assert.ok(at('2026-05-05').projected && !at('2026-05-05').settled, '预测不动');
 });

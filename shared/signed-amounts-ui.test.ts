@@ -1,4 +1,5 @@
 import * as fxTotals from './fx-total.ts';
+import { withProxyCharged } from './proxy.ts';
 import { shouldGroupYears } from '../app/src/components/year-ledger.ts';
 import { readUiSource, extractUiFunction } from '../scripts/ui-test-source.ts';
 import { usageWithin } from './meters.ts';
@@ -522,6 +523,9 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     detailForecast,
     meterView: (sub: unknown) => sub,
     detailHistoryEnd,
+    withProxyCharged,
+    PersonAvatar: () => null,
+    personFor: () => null,
     money,
     cnDateFull,
     relDays,

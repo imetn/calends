@@ -1,6 +1,6 @@
 import { amountTotal, convertedTotal, emptyTotal, scaleTotal, sumTotals, type FxTotal } from './fx-total.ts';
 // 代付：每一期扣款是一笔应收，和合租共用一套按期记账的规则（receivables.ts）。页面和提醒邮件共用，保证两边说法一致
-import { addDays, addMonths, chargesBetween } from './billing.ts';
+import { addDays, addMonths, chargesBetween, type Charge } from './billing.ts';
 import { toBaseOrNaN as toBaseAt } from './fx.ts';
 import { settle, type LedgerPeriod, type Period } from './receivables.ts';
 import type { AppState, ProxyCharge, Subscription } from './types.ts';
@@ -27,6 +27,21 @@ export function proxyPeriods(s: Subscription, last: string, today: string): (Per
       listCurrency: c.currency,
       charge,
     };
+  });
+}
+
+/**
+ * 代付的实扣记在 proxy.charged（每期卡上实际扣的币种与金额），不在 payments 里；
+ * 详情页的扣款记录、走势与折算按这份实扣，和代付页说法一致。已有实扣、预测的不动
+ */
+export function withProxyCharged(s: Subscription, charges: Charge[]): Charge[] {
+  const charged = new Map((s.proxy?.charged ?? []).map((c) => [c.charge, c]));
+  if (!charged.size) return charges;
+  return charges.map((c) => {
+    const x = charged.get(c.date);
+    if (!x || c.projected || c.kind || c.settled || x.amount == null) return c;
+    const currency = x.currency ?? c.currency;
+    return currency === c.currency && x.amount === c.amount ? c : { ...c, settled: { amount: x.amount, currency } };
   });
 }
 

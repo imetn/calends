@@ -26,6 +26,8 @@ import { MemberSheet } from './Members.tsx';
 import { PaymentSheet } from './PaymentSheet.tsx';
 import { IconButton } from '../components/ui.tsx';
 import { CatChip, RegionTag, SubIcon } from '../components/marks.tsx';
+import { PersonAvatar, personFor } from '../components/PersonAvatar.tsx';
+import { withProxyCharged } from '../../../shared/proxy.ts';
 import { subRegion } from '../region.ts';
 import { run } from '../toast.ts';
 import { saveSub } from '../store.ts';
@@ -108,7 +110,10 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   const cur = currentPhase(sub, today);
   // 账单（权责）：走势图、用量按账单日期；扣款记录与指标按实际付款。账单与缴费分开记时两者不同，其余订阅是同一份
   // 逾期未缴的部分由走势图另行画成虚线（overdueBills），这里不重复
-  const history = chargesBetween(sub, historyStart(sub), today, today).filter((c) => c.unpaid !== 'overdue');
+  const history = withProxyCharged(
+    sub,
+    chargesBetween(sub, historyStart(sub), today, today).filter((c) => c.unpaid !== 'overdue'),
+  );
   const separate = phaseSubs(sub).some(isSeparate);
   const paid = separate ? cashChargesBetween(sub, historyStart(sub), today, today) : history;
   const [pay, setPay] = useState<{ pay?: Payment; index?: number; phase?: string } | null>(null);
@@ -224,6 +229,12 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
                 state.methods.find((x) => x.id === cur.methodId),
               )}
             />
+            {sub.proxy && (
+              <span className="who-chip" title={sub.proxy.note}>
+                <PersonAvatar p={personFor(state, sub.proxy.personId, sub.proxy.forName)} size={16} />
+                {t('proxy.payFor', { name: sub.proxy.forName || t('proxy.unset') })}
+              </span>
+            )}
             {isPostpaid(cur) && <span className="badge">{t('detail.billing.postpaid')}</span>}
             {sub.category && <CatChip cat={sub.category} />}
           </>
