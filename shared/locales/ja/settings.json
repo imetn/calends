@@ -31,7 +31,8 @@
     "monday": "月曜日",
     "sunday": "日曜日",
     "telemetry": "匿名の利用統計",
-    "telemetryForcedOff": "このデプロイでは無効"
+    "telemetryForcedOff": "このデプロイでは無効",
+    "telemetryNote": "利用状況とバージョン情報のみを集計します。サブスクリプション、金額、台帳のデータは一切収集しません。"
   },
   "sidebar": {
     "thisMonth": "今月",

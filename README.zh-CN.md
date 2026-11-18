@@ -98,7 +98,7 @@ codex mcp add calends --url https://你的域名/mcp --bearer-token-env-var CALE
 
 Calends 每天向 [telemetry.calends.date](https://telemetry.calends.date) 发送一次匿名使用统计：随机生成的安装 ID、版本号、运行方式（Cloudflare、Docker/Node 或一键安装）、界面语言，以及每天打开应用、打开各页面、助手消息和 MCP 工具调用的次数。不发送订阅名称、价格、付款、备注、账号信息或任何输入内容。统计由你自己的服务器发送，浏览器只把页面打开次数交给它。
 
-可在「设置 → 通用」关闭；部署时设置 `CALENDS_TELEMETRY=0`（或 `DO_NOT_TRACK=1`）会强制关闭，设置里也无法再打开。开发环境从不发送。
+可在「设置 → 匿名使用统计」关闭；部署时设置 `CALENDS_TELEMETRY=0`（或 `DO_NOT_TRACK=1`）会强制关闭，设置里也无法再打开。开发环境从不发送。
 
 ## 参与贡献
 

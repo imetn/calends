@@ -31,7 +31,8 @@
     "monday": "Thứ Hai",
     "sunday": "Chủ Nhật",
     "telemetry": "Thống kê sử dụng ẩn danh",
-    "telemetryForcedOff": "Đã tắt cho bản cài đặt này"
+    "telemetryForcedOff": "Đã tắt cho bản cài đặt này",
+    "telemetryNote": "Chỉ thống kê mức sử dụng và thông tin phiên bản. Không bao giờ thu thập gói đăng ký, số tiền hay dữ liệu sổ của bạn."
   },
   "sidebar": {
     "thisMonth": "Tháng này",

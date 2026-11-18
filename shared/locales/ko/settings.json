@@ -31,7 +31,8 @@
     "monday": "월요일",
     "sunday": "일요일",
     "telemetry": "익명 사용 통계",
-    "telemetryForcedOff": "이 배포에서 꺼짐"
+    "telemetryForcedOff": "이 배포에서 꺼짐",
+    "telemetryNote": "사용 현황과 버전 정보만 집계합니다. 구독, 금액, 장부 데이터는 절대 수집하지 않습니다."
   },
   "sidebar": {
     "thisMonth": "이번 달",

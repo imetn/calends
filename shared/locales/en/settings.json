@@ -32,7 +32,8 @@
     "monday": "Monday",
     "sunday": "Sunday",
     "telemetry": "Anonymous usage stats",
-    "telemetryForcedOff": "Off for this deployment"
+    "telemetryForcedOff": "Off for this deployment",
+    "telemetryNote": "Only usage and version info is counted. Your subscriptions, amounts and ledger data are never collected."
   },
   "sidebar": {
     "thisMonth": "This month",

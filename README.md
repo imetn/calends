@@ -98,7 +98,7 @@ Keep `CALENDS_TOKEN` available in the environment that launches Codex. Tools cov
 
 Calends sends anonymous usage statistics once a day to [telemetry.calends.date](https://telemetry.calends.date): a random install ID, the app version, how it runs (Cloudflare, Docker/Node or the installer), the interface language and daily counts of app opens, page views, assistant messages and MCP tool calls. It never sends subscription names, prices, payments, notes, account details or anything you type. The counts are sent by your own server; the browser only reports page views to it.
 
-Turn it off under Settings → General, or set `CALENDS_TELEMETRY=0` (or `DO_NOT_TRACK=1`) when deploying, which also locks the setting off. Development builds never send.
+Turn it off under Settings → Anonymous usage stats, or set `CALENDS_TELEMETRY=0` (or `DO_NOT_TRACK=1`) when deploying, which also locks the setting off. Development builds never send.
 
 ## Contributing
 

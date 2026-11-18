@@ -357,7 +357,6 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
               ariaLabel={t('settings.general.weekStartAria')}
             />
           </Cell>
-          <TelemetryCell />
           <VersionCells />
         </Group>
 
@@ -583,6 +582,8 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
           {!state.readonly && <AutoBackupCell timezone={s.timezone} />}
         </Group>
 
+        <TelemetryGroup />
+
         <Group>
           <button className="cell tap logout-cell" onClick={() => logout()}>
             {t('settings.logout')}
@@ -658,9 +659,8 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
   );
 }
 
-/** 版本与更新：一行显示当前版本；有新版时标出并可点开发布页，否则点这一行手动检查。自托管只提示，不在这里升级 */
-/** 匿名使用统计：开关存在服务端；部署时用环境变量关掉的，只显示已关闭 */
-function TelemetryCell() {
+/** 匿名使用统计：放在数据组之后、退出登录之前，组脚注明不收集账本内容。开关存在服务端；部署时用环境变量关掉的，只显示已关闭 */
+function TelemetryGroup() {
   const [view, setView] = useState<{ enabled: boolean; forcedOff: boolean } | null>(null);
   useEffect(() => {
     api<{ enabled: boolean; forcedOff: boolean }>('/api/telemetry').then(setView, () => undefined);
@@ -671,17 +671,20 @@ function TelemetryCell() {
       setView(await api<{ enabled: boolean; forcedOff: boolean }>('/api/telemetry', { method: 'PUT', body: JSON.stringify({ enabled }) }));
     });
   return (
-    <Cell label={t('settings.general.telemetry')}>
-      {view &&
-        (view.forcedOff ? (
-          <span className="muted">{t('settings.general.telemetryForcedOff')}</span>
-        ) : (
-          <Toggle checked={view.enabled} onChange={(v) => void toggle(v)} label={t('settings.general.telemetry')} />
-        ))}
-    </Cell>
+    <Group foot={t('settings.general.telemetryNote')}>
+      <Cell label={t('settings.general.telemetry')}>
+        {view &&
+          (view.forcedOff ? (
+            <span className="muted">{t('settings.general.telemetryForcedOff')}</span>
+          ) : (
+            <Toggle checked={view.enabled} onChange={(v) => void toggle(v)} label={t('settings.general.telemetry')} />
+          ))}
+      </Cell>
+    </Group>
   );
 }
 
+/** 版本与更新：一行显示当前版本；有新版时标出并可点开发布页，否则点这一行手动检查。自托管只提示，不在这里升级 */
 function VersionCells() {
   const u = useUpdateState();
   const update = availableUpdate(u);

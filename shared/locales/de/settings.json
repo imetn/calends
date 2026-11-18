@@ -32,7 +32,8 @@
     "monday": "Montag",
     "sunday": "Sonntag",
     "telemetry": "Anonyme Nutzungsstatistik",
-    "telemetryForcedOff": "Für diese Installation aus"
+    "telemetryForcedOff": "Für diese Installation aus",
+    "telemetryNote": "Erfasst nur Nutzung und Versionsinfo. Deine Abos, Beträge und Kontodaten werden nie erfasst."
   },
   "sidebar": {
     "thisMonth": "Dieser Monat",

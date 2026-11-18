@@ -32,7 +32,8 @@
     "monday": "Lundi",
     "sunday": "Dimanche",
     "telemetry": "Statistiques d’utilisation anonymes",
-    "telemetryForcedOff": "Désactivées pour cette installation"
+    "telemetryForcedOff": "Désactivées pour cette installation",
+    "telemetryNote": "Seuls l’usage et la version sont comptés. Vos abonnements, montants et données du registre ne sont jamais collectés."
   },
   "sidebar": {
     "thisMonth": "Ce mois-ci",

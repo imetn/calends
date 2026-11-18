@@ -31,7 +31,8 @@
     "monday": "週一開始",
     "sunday": "週日開始",
     "telemetry": "匿名使用統計",
-    "telemetryForcedOff": "已在部署中關閉"
+    "telemetryForcedOff": "已在部署中關閉",
+    "telemetryNote": "僅統計使用情況與版本資料，不收集任何訂閱、金額或帳本資料。"
   },
   "sidebar": {
     "thisMonth": "本月",

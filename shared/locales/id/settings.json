@@ -31,7 +31,8 @@
     "monday": "Senin",
     "sunday": "Minggu",
     "telemetry": "Statistik penggunaan anonim",
-    "telemetryForcedOff": "Dinonaktifkan untuk instalasi ini"
+    "telemetryForcedOff": "Dinonaktifkan untuk instalasi ini",
+    "telemetryNote": "Hanya menghitung penggunaan dan info versi. Langganan, nominal, dan data buku catatan Anda tidak pernah dikumpulkan."
   },
   "sidebar": {
     "thisMonth": "Bulan ini",

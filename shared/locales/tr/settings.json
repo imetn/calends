@@ -32,7 +32,8 @@
     "monday": "Pazartesi",
     "sunday": "Pazar",
     "telemetry": "Anonim kullanım istatistikleri",
-    "telemetryForcedOff": "Bu kurulumda kapalı"
+    "telemetryForcedOff": "Bu kurulumda kapalı",
+    "telemetryNote": "Yalnızca kullanım ve sürüm bilgisi sayılır. Abonelikleriniz, tutarlar ve defter verileriniz asla toplanmaz."
   },
   "sidebar": {
     "thisMonth": "Bu ay",
