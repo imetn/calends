@@ -29,7 +29,9 @@
     "weekStart": "Minggu dimulai pada",
     "weekStartAria": "Hari pertama dalam minggu",
     "monday": "Senin",
-    "sunday": "Minggu"
+    "sunday": "Minggu",
+    "telemetry": "Statistik penggunaan anonim",
+    "telemetryForcedOff": "Dinonaktifkan untuk instalasi ini"
   },
   "sidebar": {
     "thisMonth": "Bulan ini",

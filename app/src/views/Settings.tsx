@@ -357,6 +357,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
               ariaLabel={t('settings.general.weekStartAria')}
             />
           </Cell>
+          <TelemetryCell />
           <VersionCells />
         </Group>
 
@@ -658,6 +659,29 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
 }
 
 /** 版本与更新：一行显示当前版本；有新版时标出并可点开发布页，否则点这一行手动检查。自托管只提示，不在这里升级 */
+/** 匿名使用统计：开关存在服务端；部署时用环境变量关掉的，只显示已关闭 */
+function TelemetryCell() {
+  const [view, setView] = useState<{ enabled: boolean; forcedOff: boolean } | null>(null);
+  useEffect(() => {
+    api<{ enabled: boolean; forcedOff: boolean }>('/api/telemetry').then(setView, () => undefined);
+  }, []);
+  const toggle = (enabled: boolean) =>
+    run(async () => {
+      setView((v) => v && { ...v, enabled });
+      setView(await api<{ enabled: boolean; forcedOff: boolean }>('/api/telemetry', { method: 'PUT', body: JSON.stringify({ enabled }) }));
+    });
+  return (
+    <Cell label={t('settings.general.telemetry')}>
+      {view &&
+        (view.forcedOff ? (
+          <span className="muted">{t('settings.general.telemetryForcedOff')}</span>
+        ) : (
+          <Toggle checked={view.enabled} onChange={(v) => void toggle(v)} label={t('settings.general.telemetry')} />
+        ))}
+    </Cell>
+  );
+}
+
 function VersionCells() {
   const u = useUpdateState();
   const update = availableUpdate(u);

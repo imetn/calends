@@ -29,7 +29,9 @@
     "weekStart": "Tuần bắt đầu vào",
     "weekStartAria": "Ngày đầu tuần",
     "monday": "Thứ Hai",
-    "sunday": "Chủ Nhật"
+    "sunday": "Chủ Nhật",
+    "telemetry": "Thống kê sử dụng ẩn danh",
+    "telemetryForcedOff": "Đã tắt cho bản cài đặt này"
   },
   "sidebar": {
     "thisMonth": "Tháng này",

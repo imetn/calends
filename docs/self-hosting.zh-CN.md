@@ -173,6 +173,7 @@ Cloudflare 的变量和绑定写在 Wrangler 配置中，凭据使用 secret。D
 | `EMAIL`、`MAIL_FROM`、`MAIL_FROM_NAME` | 邮件绑定与变量 | 镜像入口未配置           | 可选的邮件发送配置，见下文。其他通知渠道在应用内设置。                                                                                      |
 | `OLD_HOSTS`                            | 变量           | 镜像入口未透传           | 逗号分隔的旧域名。设置 `SITE_URL` 后，旧域名的页面以 HTTP 301 跳转到新站；API、MCP 和日历订阅保持可用。                                     |
 | `BASE_PATH`                            | 变量           | 构建参数和环境变量       | 可选子路径（如 `/calends`，不带结尾斜杠），构建与运行时须一致，见[子路径部署](#子路径部署)。                                                |
+| `CALENDS_TELEMETRY`、`DO_NOT_TRACK`    | 变量           | 环境变量                 | `CALENDS_TELEMETRY=0` 或 `DO_NOT_TRACK=1` 关闭匿名使用统计，设置里也无法打开，见[隐私](../README.zh-CN.md#隐私)。                           |
 | `DATA_DIR`                             | —              | 环境变量                 | SQLite 数据目录，默认 `/data`，需挂载持久化卷。                                                                                             |
 | `PORT`                                 | —              | 环境变量                 | 监听端口，默认 `8787`。                                                                                                                     |
 | `HOST`                                 | —              | 环境变量                 | 监听地址，默认 `0.0.0.0`。不用 Docker 时可在反向代理后设为 `127.0.0.1`；Docker 用 `-p 127.0.0.1:8787:8787`，不要改它。                      |

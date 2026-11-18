@@ -30,7 +30,9 @@
     "weekStart": "Début de semaine",
     "weekStartAria": "Premier jour de la semaine",
     "monday": "Lundi",
-    "sunday": "Dimanche"
+    "sunday": "Dimanche",
+    "telemetry": "Statistiques d’utilisation anonymes",
+    "telemetryForcedOff": "Désactivées pour cette installation"
   },
   "sidebar": {
     "thisMonth": "Ce mois-ci",

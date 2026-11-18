@@ -35,6 +35,7 @@ import { Overview } from './views/Overview.tsx';
 import { Report } from './views/Report.tsx';
 import { IcsSheet, Settings } from './views/Settings.tsx';
 import { PublicPageEditor } from './views/PublicPageEditor.tsx';
+import { countPage, startTelemetry } from './telemetry.ts';
 import { currentRoute, go as navigate, href, initRouter, loginNext, onRoute, replaceRoute, sortNav } from './router.ts';
 import { locale, t } from '../../shared/i18n.ts';
 import { initialLocale, loadLocale, preferredLocale } from './i18n.ts';
@@ -525,6 +526,13 @@ function App() {
   useEffect(() => {
     if (checkUpdates) autoCheckUpdate();
   }, [checkUpdates]);
+  // 匿名使用统计：同样只在登录后的应用里记；开关和发送在服务端
+  useEffect(() => {
+    if (checkUpdates) startTelemetry();
+  }, [checkUpdates]);
+  useEffect(() => {
+    if (checkUpdates) countPage(route);
+  }, [checkUpdates, route]);
   // 窄屏：侧边栏换成底栏 +「更多」
   const narrow = useMedia('(max-width: 860px)');
   const wideDock = useMedia(WIDE_DOCK);

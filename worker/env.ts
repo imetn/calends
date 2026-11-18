@@ -20,6 +20,9 @@ export interface Env {
   SETUP_TOKEN?: string;
   /** 换过域名时填旧域名（逗号分隔）：在这些域名上打开页面会 301 到 SITE_URL；接口、MCP、日历订阅照常可用，已有的订阅和客户端不受影响 */
   OLD_HOSTS?: string;
+  /** 设为 0 关闭匿名使用统计（设置页的开关随之不可打开）；DO_NOT_TRACK=1 效果相同 */
+  CALENDS_TELEMETRY?: string;
+  DO_NOT_TRACK?: string;
   /** 仅本地：.dev.vars 设为 1 时跳过登录（不要在线上配置） */
   DEV_BYPASS_AUTH?: string;
 }

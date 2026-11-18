@@ -29,7 +29,9 @@
     "weekStart": "한 주의 시작",
     "weekStartAria": "한 주의 첫 요일",
     "monday": "월요일",
-    "sunday": "일요일"
+    "sunday": "일요일",
+    "telemetry": "익명 사용 통계",
+    "telemetryForcedOff": "이 배포에서 꺼짐"
   },
   "sidebar": {
     "thisMonth": "이번 달",

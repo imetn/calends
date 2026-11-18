@@ -29,7 +29,9 @@
     "weekStart": "週の始まり",
     "weekStartAria": "週の最初の曜日",
     "monday": "月曜日",
-    "sunday": "日曜日"
+    "sunday": "日曜日",
+    "telemetry": "匿名の利用統計",
+    "telemetryForcedOff": "このデプロイでは無効"
   },
   "sidebar": {
     "thisMonth": "今月",

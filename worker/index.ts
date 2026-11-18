@@ -78,6 +78,8 @@ import {
   viewAutoBackup,
   type AutoBackupInput,
 } from './autobackup.ts';
+import { countServer, countUsage, reportTelemetry, saveTelemetry, viewTelemetry } from './telemetry.ts';
+import { cleanCounts } from '../shared/telemetry.ts';
 import { apply, chat, clearChats, listChats, saveChat, saveConfig, testConfig, viewConfig } from './ai/assistant.ts';
 import { requestLocale, settingsLocale, applyLocale, withLocaleScope } from './i18n.ts';
 import { t } from '../shared/i18n.ts';
@@ -391,6 +393,13 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     await runAutoBackup(env, { force: true }).catch(() => undefined);
     return json(await viewAutoBackup(env));
   }
+  // 匿名使用统计：开关不进设置（不进备份、AI 工具改不了）；浏览器只把页面打开次数交给自己的服务端
+  if (path === '/api/telemetry' && method === 'GET') return json(await viewTelemetry(env));
+  if (path === '/api/telemetry' && method === 'PUT') return json(await saveTelemetry(env, ((await readJson(req)) as { enabled?: unknown }).enabled === true));
+  if (path === '/api/telemetry/counts' && method === 'POST') {
+    await countUsage(env, cleanCounts(((await readJson(req)) as { counts?: unknown }).counts));
+    return json({ ok: true });
+  }
   if (path === '/api/import' && method === 'POST') {
     // 只导入订阅与支付方式；设置走 PUT /api/settings 的校验，这里不再接受
     const body = (await readJson(req)) as { subscriptions?: Subscription[]; methods?: PaymentMethod[]; mode?: 'merge' | 'replace' };
@@ -458,7 +467,11 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
       }
     }
   }
-  if (path === '/api/assistant/chat' && method === 'POST') return chat(env, (await readJson(req)) as Parameters<typeof chat>[1], req.signal);
+  if (path === '/api/assistant/chat' && method === 'POST') {
+    const body = (await readJson(req)) as Parameters<typeof chat>[1];
+    await countServer(env, 'assistant.messages');
+    return chat(env, body, req.signal);
+  }
   if (path === '/api/assistant/apply' && method === 'POST') {
     try {
       const result = await apply(env, (await readJson(req)) as Parameters<typeof apply>[1]);
@@ -601,4 +614,5 @@ async function handleScheduled(controller: ScheduledController, env: Env, ctx: E
   }
   await scheduledNotifications(env, controller.scheduledTime);
   await scheduledAutoBackup(env, controller.scheduledTime);
+  await reportTelemetry(env).catch((e) => console.error('[telemetry]', e));
 }

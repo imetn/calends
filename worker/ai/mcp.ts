@@ -1,6 +1,7 @@
 // MCP 服务器：让 Codex、Claude、Cursor 等 AI 助手通过 /mcp 读写账本。
 // 传输：Streamable HTTP 的无状态模式——每个 POST 是一条 JSON-RPC 请求，直接返回 JSON，不开 SSE、不保留会话。
 // 鉴权：Authorization: Bearer <令牌>；令牌在后台「AI」页生成，库里只存 SHA-256，分只读 / 读写两种权限。
+import { countServer } from '../telemetry.ts';
 import { randomToken, sha256 } from '../auth.ts';
 import type { Env } from '../env.ts';
 import { getKv, getSettings, putKv } from '../store.ts';
@@ -117,6 +118,7 @@ async function handle(msg: Rpc, env: Env, token: McpToken): Promise<unknown | un
       const tool = TOOLS.find((x) => x.name === name);
       if (!tool) return fail(msg.id, -32602, t('mcp.error.noTool', { name }));
       if (tool.write && token.scope !== 'write') return ok(msg.id, { isError: true, content: [{ type: 'text', text: t('mcp.error.readOnly') }] });
+      await countServer(env, 'mcp.calls');
       const ctx: ToolCtx = { env, access: { client: 'mcp', scope: token.scope } };
       try {
         const out = await tool.run((msg.params?.arguments ?? {}) as Record<string, unknown>, ctx);

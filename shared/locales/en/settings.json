@@ -30,7 +30,9 @@
     "weekStart": "Week starts on",
     "weekStartAria": "First day of week",
     "monday": "Monday",
-    "sunday": "Sunday"
+    "sunday": "Sunday",
+    "telemetry": "Anonymous usage stats",
+    "telemetryForcedOff": "Off for this deployment"
   },
   "sidebar": {
     "thisMonth": "This month",

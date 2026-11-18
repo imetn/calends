@@ -29,7 +29,9 @@
     "weekStart": "每周从",
     "weekStartAria": "每周起始日",
     "monday": "周一开始",
-    "sunday": "周日开始"
+    "sunday": "周日开始",
+    "telemetry": "匿名使用统计",
+    "telemetryForcedOff": "已在部署中关闭"
   },
   "sidebar": {
     "thisMonth": "本月",

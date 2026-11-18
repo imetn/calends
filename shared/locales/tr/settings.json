@@ -30,7 +30,9 @@
     "weekStart": "Hafta başlangıcı",
     "weekStartAria": "Haftanın ilk günü",
     "monday": "Pazartesi",
-    "sunday": "Pazar"
+    "sunday": "Pazar",
+    "telemetry": "Anonim kullanım istatistikleri",
+    "telemetryForcedOff": "Bu kurulumda kapalı"
   },
   "sidebar": {
     "thisMonth": "Bu ay",
