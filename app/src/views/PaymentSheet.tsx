@@ -83,6 +83,7 @@ export function PaymentSheet({
   const amountValid = amount.trim() !== '' && Number(amount) >= 0;
   // 卡上换币种结算（USD 卡订日元套餐）：要填的是卡上扣了多少，订单金额是套餐价，只展示、点了才改（优惠、补差另说）
   const cardCcy = getState().methods.find((m) => m.id === method)?.currency;
+  const showCard = !split && (kind === 'charge' || kind === 'refund');
   const cross = kind === 'charge' && !split && ((!!cardCcy && cardCcy !== ccy) || (!!existingPay?.settled && existingPay.settled.currency !== ccy));
   const [amountOpen, setAmountOpen] = useState(false);
   // 没填时用订单金额按当日汇率折出的卡币种金额做占位
@@ -149,7 +150,8 @@ export function PaymentSheet({
       amount: sign * n,
       currency: ccy,
       kind: kind === 'charge' ? undefined : kind,
-      settled: settled !== '' && Number(settled) >= 0 ? { amount: sign * Number(settled), currency: settledCcy } : undefined,
+      // 卡上实扣一行只在扣款、退款且不拆分来源时显示；隐藏时原样保留已记的值，不写入看不见的输入
+      settled: !showCard ? existingPay?.settled : settled !== '' && Number(settled) >= 0 ? { amount: sign * Number(settled), currency: settledCcy } : undefined,
       note: note.trim() || undefined,
       methodId: split ? undefined : changed ? (scope === 'one' && method !== phase.methodId ? method : undefined) : existingPay?.methodId,
       // 只剩一个来源没填金额时，它补上差额；其余校验（来源不同、合计相等）由 savePayment 统一做
@@ -377,7 +379,7 @@ export function PaymentSheet({
           ) : (
             <Group>
               {order}
-              {kind === 'charge' || kind === 'refund' ? card : null}
+              {showCard ? card : null}
             </Group>
           );
         })()}

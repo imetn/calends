@@ -11,6 +11,7 @@ import { loadSearch, matchText, searchIndex } from '../app/src/search.ts';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { t as tr } from './i18n.ts';
 import { waterfallDomain } from './chart-data.ts';
 import { transformSync } from 'oxc-transform-react';
 import * as billing from './billing.ts';
@@ -2738,6 +2739,71 @@ test('卡与套餐币种不同时，扣款表单以卡上实扣为主输入，�
   assert.equal(pay.amount, 27273);
   assert.equal(pay.currency, 'JPY');
   assert.deepEqual(pay.settled, { amount: 176.44, currency: 'USD' });
+});
+
+test('卡上实扣一行隐藏时（失败、调整等类型）不写入看不见的输入，已记的实扣原样保留', async () => {
+  const phases = await import('./phases.ts');
+  const failed = { date: today, amount: 10, currency: 'USD', kind: 'failed' as const, settled: { amount: 72, currency: 'CNY' } };
+  const sub: Subscription = {
+    id: 'fictional-hidden-settled',
+    name: 'Orbit',
+    category: 'Tools',
+    tags: [],
+    price: 10,
+    currency: 'USD',
+    start: '2026-01-01',
+    cycle: { unit: 'month', every: 1 },
+    status: 'active',
+    methodId: 'usd-card',
+    payments: [failed],
+  };
+  let saved: Subscription | undefined;
+  const state = { ...st, methods: [{ id: 'usd-card', name: 'Card', kind: 'credit' as const, currency: 'USD' }], subscriptions: [sub] };
+  const deps = {
+    ...phases,
+    Sheet: 'Sheet',
+    DatePicker: 'DatePicker',
+    CurrencySelect: 'CurrencySelect',
+    CurrencyTag: 'CurrencyTag',
+    MethodPicker: 'MethodPicker',
+    MoneyInput: 'MoneyInput',
+    Picker: 'Picker',
+    ConfirmButton: 'ConfirmButton',
+    getState: () => state,
+    run: (fn: () => Promise<unknown>) => fn(),
+    saveSub: async (s: Subscription) => {
+      saved = s;
+    },
+  };
+  const save = async (render: () => any[]) =>
+    all(render().find((n) => n.type === 'Sheet')!.props.foot)
+      .find((n) => n.type === 'button' && String(n.props.className).includes('primary'))!
+      .props.onClick();
+  const kindPicker = (render: () => any[]) => render().find((n) => n.type === 'Picker' && n.props.value === 'charge')!;
+
+  // 编辑一笔已记实扣的失败扣款：卡上实扣一行不显示，保存后实扣不丢
+  const r1 = harness('../app/src/views/PaymentSheet.tsx', 'PaymentSheet', {}, deps);
+  const edit = () => r1.render('PaymentSheet', { sub, today, edit: { pay: failed, index: 0 }, onClose() {} });
+  assert.equal(
+    edit().some((n) => n.type === 'MoneyInput' && n.props.ccy === 'CNY'),
+    false,
+  );
+  await save(edit);
+  assert.deepEqual(saved!.payments!.find((p) => p.kind === 'failed')!.settled, { amount: 72, currency: 'CNY' });
+
+  // 新记一笔：扣款时填了卡上实扣，再切到失败，这个看不见的值不写进失败记录
+  saved = undefined;
+  const r2 = harness('../app/src/views/PaymentSheet.tsx', 'PaymentSheet', {}, deps);
+  const fresh = () => r2.render('PaymentSheet', { sub: { ...sub, payments: [] }, today, onClose() {} });
+  const card = fresh()
+    .filter((n) => n.type === 'MoneyInput')
+    .find((n) => n.props['aria-label'] === tr('editor.payment.settledAmount'))!;
+  card.props.onChange({ target: { value: '9.5' } });
+  kindPicker(fresh).props.onChange('failed');
+  await save(fresh);
+  const pay = saved!.payments!.at(-1)!;
+  assert.equal(pay.kind, 'failed');
+  assert.equal(pay.settled, undefined);
 });
 
 test('转让和扣款删除通过胶囊执行，保留同日其他记录且不再打开 ask', async () => {
