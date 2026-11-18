@@ -1,6 +1,7 @@
 // 被测服务器：calends Worker 的同步实现（worker/sync.ts），库为内存 SQLite 经 D1 适配层。
 // 接口与模拟器参考服务器相同，用例可原样驱动：sync / prepare / commit、恢复备份、物理快照与回滚（灾备规程）。
 // 线上格式转换只在这里做：模拟器的操作翻译成线上操作，响应里的文档序列化回文本，fx/ 对象与 fx 字段不参与比较。
+// 设了 SYNC_CONTRACT_BASE_URL 时改为远端模式（remote-server.mjs）：同一组用例经 HTTP 驱动一个部署好的托管服务。
 import { canonical, envOf, newDb, readLedger, syncView, worker } from './engine.mjs';
 import { toWire } from './ops.mjs';
 
@@ -10,7 +11,7 @@ export const SERVER_PRIVATE = { channels: [{ id: 'mail', secret: 'srv-secret-fic
 const SYNC_TABLES = ['sync_meta', 'sync_head', 'sync_objects', 'sync_clients', 'sync_rejections'];
 const LEDGER_TABLES = ['subscriptions', 'methods', 'kv', 'fx_daily'];
 
-export class Server {
+class LocalServer {
   /** flags 只为与模拟器同形；服务器侧的 naive 错误写法无法在真实实现上打开（见 cases.mjs 的 SERVER_NAIVE）。 */
   constructor({ oracle, flags = {}, pageBytes = Infinity }) {
     this.db = newDb();
@@ -35,9 +36,13 @@ export class Server {
 
   /** 模拟器请求 → 线上请求体（经 Worker 的整请求校验） */
   async wire(req) {
+    return parseSyncRequest(await this.wireBody(req));
+  }
+  /** 模拟器请求 → 未校验的线上 JSON（远端模式原样 POST） */
+  async wireBody(req) {
     const mutations = [];
     for (const m of req.mutations) mutations.push({ mid: m.mid, op: { ...(await toWire(m.op)), tid: m.op.tid, kind: m.op.kind, imported: m.op.objects } });
-    return parseSyncRequest({
+    return {
       protocol: 1,
       reqId: String(req.reqId),
       installId: req.installId,
@@ -47,7 +52,7 @@ export class Server {
       ackedMid: req.ackedMid ?? 0,
       register: !!req.register,
       mutations,
-    });
+    };
   }
   /** 线上响应 → 模拟器响应：文档序列化为文本，丢掉汇率对象 */
   unwire(req, status, body) {
@@ -112,15 +117,19 @@ export class Server {
   }
   /** 网页「恢复备份」：Worker 的 restoreLedger（整本替换 + 换代际）；sync_clients / sync_rejections 不动 */
   async restoreBackup(i) {
+    await restoreLedger(this.env, this.backupData(i));
+  }
+  /** 备份 → 网页「恢复备份」的上传内容 */
+  backupData(i) {
     const snap = this.backups[i];
     const docs = (p) => [...snap].filter(([k]) => k.startsWith(p)).map(([, d]) => JSON.parse(d));
-    await restoreLedger(this.env, {
+    return {
       subscriptions: docs('sub/'),
       methods: docs('method/'),
       people: JSON.parse(snap.get('kv/people') ?? '[]'),
       settings: snap.has('kv/settings') ? JSON.parse(snap.get('kv/settings')) : undefined,
       fxDaily: [],
-    });
+    };
   }
 
   /** 物理快照（D1 Time Travel / Docker 卷）：整库，包括同步表 */
@@ -158,3 +167,7 @@ export class Server {
     return JSON.parse(readLedger(this.db).get('kv/settings') ?? '{}');
   }
 }
+
+export const Server = process.env.SYNC_CONTRACT_BASE_URL
+  ? (await import('./remote-server.mjs')).remoteServer(LocalServer, { SERVER_PRIVATE, TABLES: [...LEDGER_TABLES, ...SYNC_TABLES] })
+  : LocalServer;
