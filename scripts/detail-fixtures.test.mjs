@@ -20,6 +20,7 @@ import {
 } from '../shared/billing.ts';
 import { convertOn } from '../shared/fx.ts';
 import { parseBackup } from '../worker/backup.ts';
+import { keepSet, staleRow } from '../worker/fx.ts';
 
 const categories = ['周付', '月付', '季付', '半年付', '年付', '两年付', '按天', '买断', '特殊'];
 const counts = [
@@ -245,6 +246,9 @@ for (const today of ['2026-10-24', '2028-02-29', '2027-03-31', '2026-01-31', '20
     assert.equal(parsed.settings.baseCurrency, 'CNY');
     // Complete fictional date coverage avoids triggering network backfill in screenshot imports.
     assert.ok(parsed.fxDaily.every((d) => d.source === 'fictional-detail-fixtures' && !d.rates.XCD && d.rates.TRY));
+    // fx 状态与真实导入同一口径：行不能被判为缺已用币种的旧精简行，否则截图脚本报缺汇率
+    const used = keepSet(parsed);
+    assert.ok(parsed.fxDaily.every((d) => !staleRow({ source: d.source, rates: JSON.stringify(d.rates) }, used)));
     const fxDates = new Set(parsed.fxDaily.map((d) => d.date));
     for (const s of parsed.subscriptions) for (const r of chargesBetween(s, s.start, today, today)) assert.ok(fxDates.has(r.date));
     const first = parsed.subscriptions.map((s) => s.start).sort()[0];

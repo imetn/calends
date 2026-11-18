@@ -338,7 +338,20 @@ export function detailFixtures(today = todayIn('Asia/Shanghai')) {
     const end = addDays(addMonths(d, 1), -1);
     fxDates.add(end < today ? end : today);
   }
-  const rates = { USD: 1, CNY: 7.12, HKD: 7.78, JPY: 151.5, TRY: 34.2 };
+  // 模拟汇率接口的完整行（≥100 币种），否则 worker/fx.ts 会当作缺已用币种的旧精简行要求重抓；
+  // XCD 故意缺席，验证缺汇率时本位币金额显示未知
+  const rates: Record<string, number> = {
+    ...Object.fromEntries(
+      Intl.supportedValuesOf('currency')
+        .filter((c) => c !== 'XCD')
+        .map((c) => [c, 1]),
+    ),
+    USD: 1,
+    CNY: 7.12,
+    HKD: 7.78,
+    JPY: 151.5,
+    TRY: 34.2,
+  };
   return {
     backup: {
       format: 'calends-backup',

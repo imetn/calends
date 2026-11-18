@@ -312,15 +312,22 @@ async function browserRun(input) {
     return browserZoom;
   }
   async function settle() {
+    // 字体和图标在页面外轮询等待：网络慢时 document.fonts.ready 会超过单次 evaluate 的 15 秒上限
+    await page.waitForFunction(
+      () => document.fonts.status === 'loaded' && [...document.querySelectorAll('.sheet img')].every((img) => img.complete),
+      undefined,
+      { timeout: 60_000 },
+    );
+    // 单次 evaluate 上限 15 秒：每步都设上限。标签页不在前台时 requestAnimationFrame 会暂停，用定时器兜底
     await page.evaluate(async () => {
-      await document.fonts.ready;
-      await Promise.all([...document.querySelectorAll('.sheet img')].map((img) => img.decode().catch(() => {})));
+      const capped = (p, ms) => Promise.race([p, new Promise((res) => setTimeout(res, ms))]);
+      await capped(Promise.all([...document.querySelectorAll('.sheet img')].map((img) => img.decode().catch(() => {}))), 3000);
       const finite = document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity);
       await Promise.race([Promise.all(finite.map((a) => a.finished.catch(() => {}))), new Promise((res) => setTimeout(res, 2000))]);
       let previous = '';
       let stable = 0;
       for (let i = 0; i < 40 && stable < 3; i++) {
-        await new Promise((res) => requestAnimationFrame(res));
+        await capped(new Promise((res) => requestAnimationFrame(res)), 100);
         const geometry = [...document.querySelectorAll('.sheet,.dt,.cc,.dt-panel')]
           .map((e) => {
             const r = e.getBoundingClientRect();
@@ -371,6 +378,8 @@ async function browserRun(input) {
           ? !!document.querySelector('.proxy-card .name-link')
           : document.querySelector('input[type="search"]')?.getAttribute('placeholder') === (language === 'en' ? 'Search' : '搜索订阅')),
       { language, proxy },
+      // 全新的 Vite 依赖缓存首次打开要加载数百个模块，默认 10 秒不够
+      { timeout: 120_000 },
     );
     await settle();
     // Proxies intentionally do not appear in /list; their name link opens the same Detail view.
