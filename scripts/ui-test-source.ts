@@ -39,6 +39,7 @@ const groups: Record<string, string[]> = {
     'app/src/views/editor/useEditorDraft.ts',
     'app/src/views/editor/save.ts',
     'app/src/views/editor/useEditorFields.ts',
+    'app/src/views/editor/icon-upload.tsx',
     'app/src/views/editor/Sections.tsx',
     'app/src/views/editor/Form.tsx',
     'app/src/views/editor/new-sub.ts',

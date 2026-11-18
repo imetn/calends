@@ -8,6 +8,8 @@ import { t } from '../../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 
 import { SubIcon } from '../../components/marks.tsx';
+import { Pencil } from 'lucide-react';
+import { useIconUpload } from './icon-upload.tsx';
 
 import { Icon } from '../../components/icons.tsx';
 
@@ -44,6 +46,7 @@ export function Form({
   history?: ReactNode;
 }) {
   const context = useEditorFields({ isNew, stop, setStop, f, setF, up, state, today, history });
+  const pick = useIconUpload(up);
   const { method, lt, extras, transfer, setTransfer, more, setMore, newCat, setNewCat, plans, loadPlans } = context;
   return (
     <div className="ed">
@@ -53,11 +56,28 @@ export function Form({
           填了名称、图标或网址：直接显示它最终的样子（真实图标，或分类色方块加首字母）；
           还没填名称：同样大小的方块淡淡铺上分类色，预告将来的样子，换分类颜色跟着变
         */}
-        {f.icon || f.url || f.name.trim() ? (
-          <SubIcon sub={f} size={36} />
-        ) : (
-          <span className="ico ed-id-ghost" style={{ '--s': '36px', '--tint': catColor(f.category) } as CSSProperties} aria-hidden="true" />
-        )}
+        {/* 点图标（或拖入、粘贴图片）即上传自定义图标；悬停时盖一层半透明铅笔提示 */}
+        <button
+          type="button"
+          className="ed-id-icon"
+          aria-label={t('editor.field.iconChange')}
+          title={t('editor.field.iconUploadHelp')}
+          disabled={pick.busy}
+          onClick={pick.open}
+          onDragOver={pick.onDragOver}
+          onDrop={pick.onDrop}
+          onPaste={pick.onPaste}
+        >
+          {f.icon || f.url || f.name.trim() ? (
+            <SubIcon sub={f} size={36} />
+          ) : (
+            <span className="ico ed-id-ghost" style={{ '--s': '36px', '--tint': catColor(f.category) } as CSSProperties} aria-hidden="true" />
+          )}
+          <span className="ed-id-edit" aria-hidden="true">
+            <Pencil size={15} strokeWidth={2.2} />
+          </span>
+        </button>
+        {pick.input}
         <div className="ed-id-main">
           <NameField
             value={f.name}

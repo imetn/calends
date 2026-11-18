@@ -7375,6 +7375,10 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   background: var(--ink);
   color: var(--on-ink);
 }
+.chip-btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
 
 .topup-rate {
   display: flex;
@@ -7475,6 +7479,47 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 }
 .ed-id > .ico {
   flex-shrink: 0;
+}
+/* 图标本身是上传入口：悬停 / 键盘聚焦时盖一层半透明底，中间显示铅笔 */
+.ed-id-icon {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.ed-id-icon:disabled {
+  cursor: wait;
+}
+/* 图标 36px，四周透明扩出 3px，点击区 42px（粗指针下不小于 40px） */
+.ed-id-icon::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+}
+.ed-id-edit {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  background: var(--black-a8);
+  color: var(--white-a12);
+  opacity: 0;
+  transition: opacity var(--duration) var(--ease);
+  pointer-events: none;
+}
+.ed-id-icon:hover .ed-id-edit,
+.ed-id-icon:focus-visible .ed-id-edit,
+.ed-id-icon:disabled .ed-id-edit {
+  opacity: 1;
+}
+.ed-id-icon:focus-visible {
+  outline: var(--hairline) solid var(--focus-ring);
+  outline-offset: 3px;
 }
 .ed-id-main {
   flex: 1;
@@ -7950,6 +7995,20 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 }
 .logo-field .cell-r {
   gap: 8px;
+}
+/* 订阅图标：标签 + 预览/上传/清除占第一行（按钮保持完整，标签放不下就换行），网址/emoji 输入单独占满整格宽度的第二行 */
+.icon-field {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.icon-field .cell-l {
+  flex: 1 1 0;
+}
+.icon-field .icon-actions {
+  flex: 0 0 auto;
+}
+.icon-field .icon-input {
+  flex-basis: 100%;
 }
 
 /* 年度海报：所有订阅图标按花费分三档铺满，6 列整齐对齐 */

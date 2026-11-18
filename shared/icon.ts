@@ -7,11 +7,26 @@ import type { MethodKind, PaymentMethod } from './types.ts';
 /** 导入时内嵌 logo 的大小上限：与人员头像一致，避免整串 base64 撑大账本 */
 export const ICON_DATA_LIMIT = 64 * 1024;
 
+/** 本地上传的图标边长：按比例缩进这个正方形、四周留透明，长条 logo 也不被裁掉 */
+export const ICON_UPLOAD_SIZE = 128;
+
+/** 把 width × height 的图等比缩进 size 见方的画布并居中（只缩小不放大）；尺寸非法时返回 undefined */
+export function iconFit(width: number, height: number, size = ICON_UPLOAD_SIZE): { x: number; y: number; w: number; h: number } | undefined {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1 || width * height > 40_000_000) return undefined;
+  const k = Math.min(1, size / Math.max(width, height));
+  const w = Math.max(1, Math.round(width * k));
+  const h = Math.max(1, Math.round(height * k));
+  return { x: Math.floor((size - w) / 2), y: Math.floor((size - h) / 2), w, h };
+}
+
 /** 内嵌图片：只认 png、jpeg、webp 的 base64 */
 export const isDataIcon = (icon?: string): boolean => !!icon && /^data:image\/(png|jpeg|webp);base64,/.test(icon.trim());
 
 /** 是图片（网址、站内路径或内嵌图片），而不是 emoji 文字 */
 export const isImageIcon = (icon?: string): boolean => !!icon && (/^(https?:|\/)/.test(icon.trim()) || isDataIcon(icon));
+
+/** 域名订阅显示注册商图标：填了图片（网址、站内路径、上传的内嵌图片）就用它，否则默认 Cloudflare；emoji 不用于域名 */
+export const registrarIcon = (icon?: string): string => (isImageIcon(icon) ? icon!.trim() : '/brands/cloudflare.svg');
 
 /** 文字图标最多几个字符（按字形计，组合 emoji 算一个）：够放 emoji 或简短符号，放不下一段说明 */
 const ICON_TEXT_LIMIT = 4;
