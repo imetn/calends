@@ -846,3 +846,47 @@ test('审查 R3 P1-1：0010 迁移把旧 kv 里的同步令牌搬进新表并删
   ]);
   assert.equal(await env.DB.prepare("SELECT value FROM kv WHERE key IN ('syncTokens', 'syncTokenUse')").first(), null);
 });
+
+test('审查 R3 收口 P1：record_receivable 的 record / waive 只新建；id 已存在（代付或合租成员下）一律 id_conflict，数据不动', async () => {
+  const f = await fixture();
+  const a = await device(f.env);
+  await a.push([SUB()]);
+  assert.deepEqual(
+    (await a.push([{ name: 'set_proxy@1', target: 'sub/s1', args: { subscription: 's1', for_name: 'Fictional Friend' }, expect: { proxy: null } }])).body
+      .rejections,
+    [],
+  );
+  const R = (extra: Record<string, unknown>) => ({
+    name: 'record_receivable@1',
+    args: { subscription: 's1', kind: 'proxy', date: '2026-02-06', count: 1, ...extra },
+  });
+  assert.deepEqual((await a.push([R({ id: 'rc1', amount: 30 })])).body.rejections, []);
+  type Rec = { id: string; amount?: number };
+  const recs = async () => {
+    const p = (await rawSub(f.env)).proxy as { receipts?: Rec[]; waivers?: Rec[] };
+    return { receipts: p.receipts ?? [], waivers: p.waivers ?? [] };
+  };
+  const before = await recs();
+  // action × 目标已存在：record（缺省与显式）、waive 都拒绝；新 id 照常新建
+  for (const extra of [
+    { id: 'rc1', amount: 10 },
+    { id: 'rc1', action: 'record', amount: 10 },
+    { id: 'rc1', action: 'waive' },
+  ]) {
+    assert.deepEqual(codes(await a.push([R(extra)])), ['id_conflict'], JSON.stringify(extra));
+    assert.deepEqual(await recs(), before);
+  }
+  assert.deepEqual((await a.push([R({ id: 'rc2', action: 'waive', date: '2026-03-06' })])).body.rejections, []);
+  assert.ok((await recs()).waivers.some((x) => x.id === 'rc2'));
+  // 别处的 id（代付下已有）也不能借合租成员 record 新建同 id
+  await a.push([
+    { name: 'set_share@1', target: 'sub/s1', args: { subscription: 's1', role: 'owner', seats: 2 }, expect: { share: null } },
+    { name: 'save_share_member@1', target: 'sub/s1', args: { subscription: 's1', name: 'Fictional Member', id: 'mb1', fee: 5 } },
+  ]);
+  const share = (await rawSub(f.env)).share as { members?: Array<{ id: string }> } | undefined;
+  assert.equal(share?.members?.length, 1);
+  const mid = share!.members![0].id;
+  assert.deepEqual(codes(await a.push([{ name: 'record_receivable@1', args: { subscription: 's1', member: mid, id: 'rc1', date: '2026-02-06', count: 1 } }])), [
+    'id_conflict',
+  ]);
+});

@@ -356,6 +356,13 @@ export class SyncExec {
       if (r) return r;
     }
 
+    // 应收 record / waive 只新建：id 已存在（该订阅任一成员或代付下）一律 id_conflict，不按 id 替换；改已有记录走 update + expect.record
+    if (name === 'record_receivable' && typeof a.id === 'string' && a.id && !['update', 'delete', 'charged'].includes(String(a.action ?? 'record'))) {
+      const s = (doc ?? this.current(`sub/${String(a.subscription)}`)) as Subscription | undefined;
+      const owners = [...(s?.share?.members ?? []), ...(s?.proxy ? [s.proxy] : [])];
+      if (owners.some((o) => [...(o.receipts ?? []), ...(o.waivers ?? [])].some((x) => x.id === a.id))) return reject('id_conflict', `receivable/${a.id}`);
+    }
+
     // 内层记录按内容定位（sync-design 4.3）：换算成工具认的序号；设备上的序号一律不用
     const located = await this.locateRecord(name, a, op, target?.id, today);
     if (located) return located;
