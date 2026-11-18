@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { OTHER, flowGraph, netByItem, shareProfile, streamLayers, waterfallDomain } from './chart-data.ts';
+import { OTHER, flowGraph, flowLevels, flowShares, netByItem, roundShares, shareProfile, streamLayers, waterfallDomain } from './chart-data.ts';
 
 const row = (from: string, to: string, value: number) => ({ from, fromLabel: from, to, toLabel: to, value });
 
@@ -159,4 +159,37 @@ test('flowLevels 三层：每层合计相等，订阅只留前几名，其余并
     104,
   );
   assert.equal(g.links.find((l) => l.level === 0 && l.from === 'pp' && l.to === 'AI')?.value, 10);
+});
+
+test('roundShares 取整后相加正好 100，同额的项显示同一个数', () => {
+  assert.deepEqual(roundShares([2, 1, 1], 4), [50, 25, 25]);
+  assert.deepEqual(roundShares([0.4, 99.6], 100), [0, 100]);
+  assert.deepEqual(roundShares([0.1, 0.2], 0.3), [33, 67]);
+  assert.deepEqual(roundShares([5, 0], 0), [0, 0]);
+  // 两笔同额抢一个余数：都不补，宁可合计差 1，也不让同额显示不同、或让小项越过大项
+  assert.deepEqual(roundShares([1, 1, 1], 3), [33, 33, 33]);
+  assert.deepEqual(roundShares([5.5, 5.5, 89], 100), [5, 5, 89]);
+  assert.deepEqual(roundShares([5.6, 5.6, 5.4, 83.4], 100), [6, 6, 5, 83]);
+});
+
+test('flowShares 每层节点合计 100%，节点唯一的出线或入线与节点同数，同额节点同数', () => {
+  const g = flowLevels(
+    [
+      { path: ['a', 'x', '1'], labels: ['A', 'X', 'S1'], value: 50.5 },
+      { path: ['b', 'x', '2'], labels: ['B', 'X', 'S2'], value: 24.75 },
+      { path: ['b', 'y', '3'], labels: ['B', 'Y', 'S3'], value: 24.75 },
+    ],
+    [5, 6, 8],
+  );
+  const s = flowShares(g);
+  g.levels.forEach((nodes, lv) =>
+    assert.equal(
+      nodes.reduce((a, n) => a + s.get(`${lv}\u0001${n.key}`)!, 0),
+      100,
+    ),
+  );
+  // A 只有一条出线，S3 只有一条入线：同一笔钱同一个数
+  assert.equal(s.get('0\u0001a\u0001x'), s.get('0\u0001a'));
+  assert.equal(s.get('1\u0001y\u00013'), s.get('2\u00013'));
+  assert.equal(s.get('2\u00012'), s.get('2\u00013'));
 });

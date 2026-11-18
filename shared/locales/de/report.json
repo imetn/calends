@@ -190,7 +190,9 @@
     "title": "Abo-Regionen"
   },
   "flow": {
-    "title": "Geldfluss"
+    "title": "Geldfluss",
+    "showPercent": "Prozente anzeigen",
+    "showAmount": "Beträge anzeigen"
   },
   "profile": {
     "title": "Ausgabenmix",

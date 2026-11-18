@@ -190,7 +190,9 @@
     "title": "Régions d'abonnement"
   },
   "flow": {
-    "title": "Flux d'argent"
+    "title": "Flux d'argent",
+    "showPercent": "Afficher les pourcentages",
+    "showAmount": "Afficher les montants"
   },
   "profile": {
     "title": "Répartition des dépenses",

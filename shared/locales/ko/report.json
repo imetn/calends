@@ -183,7 +183,9 @@
     "title": "구독 지역"
   },
   "flow": {
-    "title": "돈의 흐름"
+    "title": "돈의 흐름",
+    "showPercent": "비율로 보기",
+    "showAmount": "금액으로 보기"
   },
   "profile": {
     "title": "지출 구성 비교",

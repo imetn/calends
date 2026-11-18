@@ -183,7 +183,9 @@
     "title": "Khu vực đăng ký"
   },
   "flow": {
-    "title": "Dòng tiền"
+    "title": "Dòng tiền",
+    "showPercent": "Hiển thị phần trăm",
+    "showAmount": "Hiển thị số tiền"
   },
   "profile": {
     "title": "Cơ cấu chi tiêu",

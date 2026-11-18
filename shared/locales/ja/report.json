@@ -183,7 +183,9 @@
     "title": "サブスクの地域"
   },
   "flow": {
-    "title": "お金の流れ"
+    "title": "お金の流れ",
+    "showPercent": "割合で表示",
+    "showAmount": "金額で表示"
   },
   "profile": {
     "title": "支出構成の比較",

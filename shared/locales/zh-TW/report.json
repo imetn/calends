@@ -175,7 +175,9 @@
     "title": "訂閱地區"
   },
   "flow": {
-    "title": "資金流向"
+    "title": "資金流向",
+    "showPercent": "顯示百分比",
+    "showAmount": "顯示金額"
   },
   "profile": {
     "title": "支出結構對比",

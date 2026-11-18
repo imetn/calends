@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { OTHER, flowLevels, netByItem, shareProfile } from '../../../shared/chart-data.ts';
+import { Eye, EyeOff } from 'lucide-react';
+import { OTHER, flowLevels, netByItem, flowShares, shareProfile } from '../../../shared/chart-data.ts';
 import { paymentMethodGroups } from '../../../shared/payment-groups.ts';
 import { flow } from '../../../shared/format.ts';
 import { sumTotals, totalNote } from '../../../shared/fx-total.ts';
@@ -7,10 +8,13 @@ import { t } from '../../../shared/i18n.ts';
 import type { SpendPiece } from '../../../shared/scope-report.ts';
 import type { AppState } from '../../../shared/types.ts';
 import { catColor } from '../derive.ts';
-import { CardTitle } from './ui.tsx';
+import { CardTitle, IconButton } from './ui.tsx';
 import { CopyImageButton } from './CopyImageButton.tsx';
 import { useWidth } from './inputs.tsx';
 import { tipProps } from './overlays.tsx';
+import { usePref } from '../prefs.ts';
+
+type FlowUnit = 'amount' | 'pct';
 
 /** 并进的小项写「其他」；没填分类的订阅写「未分类」 */
 const otherLabel = (k: string, label: string) => (k === OTHER ? t('common.other') : label || t('scope.uncategorized'));
@@ -31,6 +35,9 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
   const base = state.settings.baseCurrency;
   const [box, W] = useWidth();
   const [hovered, setHover] = useState<{ lv: number; key: string } | null>(null);
+  // 金额 / 百分比与「每日支出」的平面 / 立体一样随账本同步
+  const [unit, setUnit] = usePref<FlowUnit>('report-flow', 'amount', (v): v is FlowUnit => v === 'amount' || v === 'pct');
+  const asPct = unit === 'pct';
   const g = useMemo(() => {
     const groups = paymentMethodGroups(
       state.methods,
@@ -111,9 +118,17 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
     const P = (c: number, o: number) => (vertical ? `${o},${c}` : `${c},${o}`);
     return `M${P(a, r.s)}C${P(m, r.s)} ${P(m, r.d)} ${P(b, r.d)}L${P(b, r.d + r.w)}C${P(m, r.d + r.w)} ${P(m, r.s + r.w)} ${P(a, r.s + r.w)}Z`;
   };
-  const pct = (v: number) => `${Math.round((v / g.total) * 100)}%`;
+  // 节点和带子的百分比都相对同一个合计，每层合计 100%（见 flowShares）
+  const shares = flowShares(g);
+  const share = (id: string, v: number) => {
+    const n = shares.get(id) ?? 0;
+    return n === 0 && v > 0 ? '<1%' : `${n}%`;
+  };
+  const nodeShare = (lv: number, key: string, v: number) => share(`${lv}\u0001${key}`, v);
+  const linkText = (r: { level: number; from: string; to: string; value: number }) =>
+    asPct ? share(`${r.level}\u0001${r.from}\u0001${r.to}`, r.value) : flow(-r.value, base);
   const nodeProps = (lv: number, key: string, name: string, v: number) => {
-    const tip = tipProps(() => `${name}\n${flow(-v, base)}\n${pct(v)}`);
+    const tip = tipProps(() => (asPct ? `${name}\n${nodeShare(lv, key, v)}` : `${name}\n${flow(-v, base)}\n${nodeShare(lv, key, v)}`));
     return {
       ...tip,
       onMouseEnter: (e: { currentTarget: EventTarget }) => {
@@ -140,6 +155,16 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
           {t('report.flow.title')}
         </CardTitle>
         <div className="copy-tools">
+          <IconButton
+            className="copy-hover"
+            data-snapshot-hide
+            aria-label={t(asPct ? 'report.flow.showAmount' : 'report.flow.showPercent')}
+            title={t(asPct ? 'report.flow.showAmount' : 'report.flow.showPercent')}
+            aria-pressed={asPct}
+            onClick={() => setUnit(asPct ? null : 'pct')}
+          >
+            {asPct ? <EyeOff strokeWidth={1.8} /> : <Eye strokeWidth={1.8} />}
+          </IconButton>
           <CopyImageButton hover />
         </div>
       </div>
@@ -152,7 +177,7 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
           .map((r) => {
             const from = g.levels[r.level].find((x) => x.key === r.from)!;
             const to = g.levels[r.level + 1].find((x) => x.key === r.to)!;
-            return `${label(r.level, from)} → ${label(r.level + 1, to)} ${flow(-r.value, base)}`;
+            return `${label(r.level, from)} → ${label(r.level + 1, to)} ${linkText(r)}`;
           })
           .join(', ')}
       >
@@ -171,7 +196,7 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
                       fill: color(r.level === 0 ? r.to : r.from, 7),
                       fillOpacity: on ? (hover ? 0.85 : 0.55) : 0.15,
                     }}
-                    {...tipProps(() => `${label(r.level, from)} → ${label(r.level + 1, to)}\n${flow(-r.value, base)}`)}
+                    {...tipProps(() => `${label(r.level, from)} → ${label(r.level + 1, to)}\n${linkText(r)}`)}
                   />
                 );
               })}
@@ -211,7 +236,7 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
                     {...nodeProps(lv, nd.key, name, nd.value)}
                   >
                     <span className="flow-name">{name}</span>
-                    <span className="num">{flow(-nd.value, base, { compact: true })}</span>
+                    <span className="num">{asPct ? nodeShare(lv, nd.key, nd.value) : flow(-nd.value, base, { compact: true })}</span>
                   </div>
                 );
               }),

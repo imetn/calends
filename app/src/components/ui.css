@@ -573,6 +573,10 @@
 .copy-hover:focus-visible {
   opacity: 0.65;
 }
+/* 切换类按钮打开后常驻，方便切回 */
+.copy-hover[aria-pressed='true'] {
+  opacity: 0.65;
+}
 .copy-hover:hover,
 .copy-hover:focus-visible {
   opacity: 1;

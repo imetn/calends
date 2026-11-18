@@ -172,6 +172,56 @@ export function flowLevels(rows: Array<{ path: string[]; labels: string[]; value
   };
 }
 
+/**
+ * 各项占合计的整数百分比，最大余数法取整，合计 100。同额的项一起补或一起不补，同额永远显示同一个数；
+ * 同额一组补不下时就此停住，合计差一点（不让小项越过大项）
+ */
+export function roundShares(values: number[], total: number): number[] {
+  if (!(total > 0)) return values.map(() => 0);
+  const raw = values.map((v) => (v / total) * 100);
+  const out = raw.map((v) => Math.floor(v + 1e-9));
+  let left = Math.round(raw.reduce((a, v) => a + v, 0)) - out.reduce((a, v) => a + v, 0);
+  const rest = raw.map((v, i) => v - out[i]);
+  const order = raw.map((_, i) => i).sort((a, b) => rest[b] - rest[a] || a - b);
+  const same = (a: number, b: number) => Math.abs(raw[a] - raw[b]) <= 1e-9 * Math.max(1, raw[a]);
+  for (let k = 0; k < order.length && left > 0;) {
+    const tied = order.filter((i) => out[i] === Math.floor(raw[i] + 1e-9) && same(i, order[k]));
+    if (tied.length > left) break;
+    for (const i of tied) out[i]++;
+    left -= tied.length;
+    k = order.findIndex((i) => out[i] === Math.floor(raw[i] + 1e-9));
+    if (k < 0) break;
+  }
+  return out;
+}
+
+/**
+ * 桑基各节点和带子的整数百分比，都相对同一个合计。每层节点各自取整（合计 100）；
+ * 带子是某节点唯一的出线或入线时就是同一笔钱，沿用该节点的数，其余带子四舍五入
+ */
+export function flowShares(g: Pick<FlowLevels, 'levels' | 'links' | 'total'>): Map<string, number> {
+  const out = new Map<string, number>();
+  g.levels.forEach((nodes, lv) =>
+    roundShares(
+      nodes.map((n) => n.value),
+      g.total,
+    ).forEach((v, i) => out.set(`${lv}\u0001${nodes[i].key}`, v)),
+  );
+  const count = (lv: number, side: 'from' | 'to', key: string) => g.links.filter((l) => l.level === lv && l[side] === key).length;
+  for (const l of g.links) {
+    const v =
+      count(l.level, 'from', l.from) === 1
+        ? out.get(`${l.level}\u0001${l.from}`)!
+        : count(l.level, 'to', l.to) === 1
+          ? out.get(`${l.level + 1}\u0001${l.to}`)!
+          : g.total > 0
+            ? Math.round((l.value / g.total) * 100)
+            : 0;
+    out.set(`${l.level}\u0001${l.from}\u0001${l.to}`, v);
+  }
+  return out;
+}
+
 export interface ProfileAxis {
   key: string;
   /** 0–1，占各自期间合计的比例 */

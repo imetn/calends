@@ -187,7 +187,9 @@
     "title": "Abonelik bölgeleri"
   },
   "flow": {
-    "title": "Para akışı"
+    "title": "Para akışı",
+    "showPercent": "Yüzdeleri göster",
+    "showAmount": "Tutarları göster"
   },
   "profile": {
     "title": "Harcama dağılımı",

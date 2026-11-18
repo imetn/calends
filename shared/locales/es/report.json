@@ -190,7 +190,9 @@
     "title": "Regiones de suscripción"
   },
   "flow": {
-    "title": "Flujo de dinero"
+    "title": "Flujo de dinero",
+    "showPercent": "Mostrar porcentajes",
+    "showAmount": "Mostrar importes"
   },
   "profile": {
     "title": "Distribución del gasto",

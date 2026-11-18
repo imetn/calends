@@ -31,6 +31,7 @@ export const PREF_KEYS = [
   'proxy-sort',
   'proxy-dir',
   'report-daily',
+  'report-flow',
   'overview-period',
   'report-pick',
   'list-cat',

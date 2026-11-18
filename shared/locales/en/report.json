@@ -190,7 +190,9 @@
     "title": "Subscription regions"
   },
   "flow": {
-    "title": "Money flow"
+    "title": "Money flow",
+    "showPercent": "Show percentages",
+    "showAmount": "Show amounts"
   },
   "profile": {
     "title": "Spending mix",

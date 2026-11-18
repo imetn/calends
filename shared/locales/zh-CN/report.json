@@ -175,7 +175,9 @@
     "title": "订阅地区"
   },
   "flow": {
-    "title": "资金流向"
+    "title": "资金流向",
+    "showPercent": "显示百分比",
+    "showAmount": "显示金额"
   },
   "profile": {
     "title": "支出结构对比",

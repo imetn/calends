@@ -190,7 +190,9 @@
     "title": "Regiões das assinaturas"
   },
   "flow": {
-    "title": "Fluxo de dinheiro"
+    "title": "Fluxo de dinheiro",
+    "showPercent": "Mostrar porcentagens",
+    "showAmount": "Mostrar valores"
   },
   "profile": {
     "title": "Composição dos gastos",
