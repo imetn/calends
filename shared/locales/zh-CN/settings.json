@@ -276,7 +276,22 @@
     "passwordFoot": "至少 8 位。修改后，除当前设备外的登录都会失效。",
     "currentPassword": "当前密码",
     "newPassword": "新密码",
-    "confirmPassword": "确认新密码"
+    "confirmPassword": "确认新密码",
+    "apps": {
+      "title": "已连接的设备与应用",
+      "foot": "Calends App 用各自的令牌与本服务器同步。令牌只能用于同步，不能访问网页后台和 AI 工具。",
+      "connect": "连接 App",
+      "name": "名称",
+      "nameFoot": "显示在这个列表里，方便区分设备。",
+      "generate": "生成",
+      "cancel": "取消",
+      "done": "完成",
+      "server": "服务器",
+      "token": "令牌",
+      "tokenOnce": "在 Calends App 中填入服务器和令牌。令牌只显示这一次，点按即可复制。",
+      "copied": "已复制",
+      "removed": "已移除"
+    }
   },
   "cat": {
     "title": "分类",

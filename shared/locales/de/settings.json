@@ -290,7 +290,22 @@
     "passwordFoot": "Mindestens 8 Zeichen. Eine Änderung meldet alle Geräte außer diesem ab.",
     "currentPassword": "Aktuelles Passwort",
     "newPassword": "Neues Passwort",
-    "confirmPassword": "Neues Passwort bestätigen"
+    "confirmPassword": "Neues Passwort bestätigen",
+    "apps": {
+      "title": "Verbundene Geräte und Apps",
+      "foot": "Calends-Apps synchronisieren mit diesem Server über ein eigenes Token. Es gilt nur für die Synchronisierung und hat keinen Zugriff auf die Weboberfläche oder KI-Tools.",
+      "connect": "App verbinden",
+      "name": "Name",
+      "nameFoot": "Wird in dieser Liste angezeigt, damit du Geräte unterscheiden kannst.",
+      "generate": "Erzeugen",
+      "cancel": "Abbrechen",
+      "done": "Fertig",
+      "server": "Server",
+      "token": "Token",
+      "tokenOnce": "Gib Server und Token in der Calends-App ein. Das Token wird nur einmal angezeigt; tippen zum Kopieren.",
+      "copied": "Kopiert",
+      "removed": "Entfernt"
+    }
   },
   "cat": {
     "title": "Kategorien",

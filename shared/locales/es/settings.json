@@ -290,7 +290,22 @@
     "passwordFoot": "Mínimo 8 caracteres. Al cambiarla se cierra la sesión en todos los dispositivos excepto en este.",
     "currentPassword": "Contraseña actual",
     "newPassword": "Nueva contraseña",
-    "confirmPassword": "Confirmar nueva contraseña"
+    "confirmPassword": "Confirmar nueva contraseña",
+    "apps": {
+      "title": "Dispositivos y apps conectados",
+      "foot": "Las apps de Calends se sincronizan con este servidor mediante su propio token. Solo sirve para sincronizar y no puede acceder a la administración web ni a las herramientas de IA.",
+      "connect": "Conectar una app",
+      "name": "Nombre",
+      "nameFoot": "Se muestra en esta lista para distinguir los dispositivos.",
+      "generate": "Generar",
+      "cancel": "Cancelar",
+      "done": "Listo",
+      "server": "Servidor",
+      "token": "Token",
+      "tokenOnce": "Introduce el servidor y el token en la app Calends. El token solo se muestra una vez; toca para copiar.",
+      "copied": "Copiado",
+      "removed": "Eliminado"
+    }
   },
   "cat": {
     "title": "Categorías",

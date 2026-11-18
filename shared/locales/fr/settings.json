@@ -290,7 +290,22 @@
     "passwordFoot": "8 caractères minimum. Le changer déconnecte tous les appareils sauf celui-ci.",
     "currentPassword": "Mot de passe actuel",
     "newPassword": "Nouveau mot de passe",
-    "confirmPassword": "Confirmer le nouveau mot de passe"
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "apps": {
+      "title": "Appareils et applications connectés",
+      "foot": "Les applications Calends se synchronisent avec ce serveur grâce à leur propre jeton. Il sert uniquement à la synchronisation et n’a pas accès à l’administration web ni aux outils d’IA.",
+      "connect": "Connecter une application",
+      "name": "Nom",
+      "nameFoot": "Affiché dans cette liste pour distinguer les appareils.",
+      "generate": "Générer",
+      "cancel": "Annuler",
+      "done": "Terminé",
+      "server": "Serveur",
+      "token": "Jeton",
+      "tokenOnce": "Saisissez le serveur et le jeton dans l’application Calends. Le jeton n’est affiché qu’une fois ; touchez pour copier.",
+      "copied": "Copié",
+      "removed": "Supprimé"
+    }
   },
   "cat": {
     "title": "Catégories",

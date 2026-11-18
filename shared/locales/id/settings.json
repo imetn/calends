@@ -276,7 +276,22 @@
     "passwordFoot": "Minimal 8 karakter. Mengubahnya akan mengeluarkan semua perangkat kecuali yang ini.",
     "currentPassword": "Kata sandi saat ini",
     "newPassword": "Kata sandi baru",
-    "confirmPassword": "Konfirmasi kata sandi baru"
+    "confirmPassword": "Konfirmasi kata sandi baru",
+    "apps": {
+      "title": "Perangkat dan aplikasi terhubung",
+      "foot": "Aplikasi Calends menyinkronkan dengan server ini memakai tokennya sendiri. Token hanya untuk sinkronisasi dan tidak dapat mengakses admin web atau alat AI.",
+      "connect": "Hubungkan aplikasi",
+      "name": "Nama",
+      "nameFoot": "Ditampilkan di daftar ini agar perangkat mudah dibedakan.",
+      "generate": "Buat",
+      "cancel": "Batal",
+      "done": "Selesai",
+      "server": "Server",
+      "token": "Token",
+      "tokenOnce": "Masukkan server dan token di aplikasi Calends. Token hanya ditampilkan sekali; ketuk untuk menyalin.",
+      "copied": "Disalin",
+      "removed": "Dihapus"
+    }
   },
   "cat": {
     "title": "Kategori",

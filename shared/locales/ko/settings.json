@@ -276,7 +276,22 @@
     "passwordFoot": "8자 이상. 변경하면 이 기기를 제외한 모든 기기가 로그아웃됩니다.",
     "currentPassword": "현재 비밀번호",
     "newPassword": "새 비밀번호",
-    "confirmPassword": "새 비밀번호 확인"
+    "confirmPassword": "새 비밀번호 확인",
+    "apps": {
+      "title": "연결된 기기 및 앱",
+      "foot": "Calends 앱은 각자의 토큰으로 이 서버와 동기화합니다. 토큰은 동기화 전용이며 웹 관리 화면과 AI 도구에는 접근할 수 없습니다.",
+      "connect": "앱 연결",
+      "name": "이름",
+      "nameFoot": "이 목록에 표시되어 기기를 구분할 수 있습니다.",
+      "generate": "생성",
+      "cancel": "취소",
+      "done": "완료",
+      "server": "서버",
+      "token": "토큰",
+      "tokenOnce": "Calends 앱에 서버와 토큰을 입력하세요. 토큰은 한 번만 표시되며 탭하면 복사됩니다.",
+      "copied": "복사됨",
+      "removed": "삭제됨"
+    }
   },
   "cat": {
     "title": "카테고리",

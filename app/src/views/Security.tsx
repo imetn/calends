@@ -11,7 +11,8 @@ import { Cell, Group } from '../components/ui.tsx';
 import { Icon } from '../components/icons.tsx';
 import { Picker } from '../components/Picker.tsx';
 import { api, registerPasskey, saveSettings } from '../store.ts';
-import { run } from '../toast.ts';
+import { copyText, run } from '../toast.ts';
+import { base } from '../base.ts';
 import { composing } from '../keyboard.ts';
 import { t } from '../../../shared/i18n.ts';
 import { renameStart } from '../name-edit.ts';
@@ -279,8 +280,115 @@ export function SecurityGroup({ state }: { state: AppState }) {
           </button>
         )}
       </Group>
+      <ConnectedApps tz={tz} />
       {pwSheet && <PasswordSheet onClose={() => setPwSheet(false)} onDone={load} />}
     </>
+  );
+}
+
+interface SyncToken {
+  id: string;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+/** 已连接的设备与应用：Calends App 的同步令牌（与 MCP 令牌分开，只能访问同步接口）。明文只在生成时显示一次 */
+function ConnectedApps({ tz }: { tz: string }) {
+  const [list, setList] = useState<SyncToken[]>();
+  const [failed, setFailed] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const load = () =>
+    api<SyncToken[]>('/api/sync/tokens').then(
+      (v) => {
+        setList(v);
+        setFailed(false);
+      },
+      () => setFailed(true),
+    );
+  useEffect(() => void load(), []);
+  return (
+    <>
+      <Group title={t('settings.security.apps.title')} foot={t('settings.security.apps.foot')}>
+        {failed && !list && <LoadFailed onRetry={() => void load()} />}
+        {list?.map((k) => (
+          <Cell
+            key={k.id}
+            label={k.name}
+            sub={
+              k.lastUsedAt
+                ? t('settings.security.lastUsed', { time: localTime(k.lastUsedAt, tz, { part: 'date' }) })
+                : t('settings.security.addedAt', { time: localTime(k.createdAt, tz, { part: 'date' }) })
+            }
+          >
+            <ConfirmButton
+              onConfirm={() =>
+                run(() => api(`/api/sync/tokens/${encodeURIComponent(k.id)}`, { method: 'DELETE' }).then(load), t('settings.security.apps.removed'))
+              }
+            >
+              {t('settings.security.remove')}
+            </ConfirmButton>
+          </Cell>
+        ))}
+        <Cell label={<span style={{ color: 'var(--accent)' }}>{t('settings.security.apps.connect')}</span>} onClick={() => setSheet(true)} />
+      </Group>
+      {sheet && <ConnectAppSheet onClose={() => setSheet(false)} onCreated={() => void load()} />}
+    </>
+  );
+}
+
+function ConnectAppSheet({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [name, setName] = useState(deviceName());
+  // 明文令牌只留在这个弹层里，关闭即丢弃
+  const [token, setToken] = useState<string>();
+  const server = `${location.origin}${base('/')}`.replace(/\/$/, '');
+  const create = () =>
+    run(async () => {
+      const r = await api<{ token: string }>('/api/sync/tokens', { method: 'POST', body: JSON.stringify({ name: name.trim() }) });
+      setToken(r.token);
+      onCreated();
+    });
+  return (
+    <Sheet
+      narrow
+      title={t('settings.security.apps.connect')}
+      onClose={onClose}
+      foot={
+        <>
+          <span className="grow" />
+          {token ? (
+            <button className="btn primary" onClick={onClose}>
+              {t('settings.security.apps.done')}
+            </button>
+          ) : (
+            <>
+              <button className="btn" onClick={onClose}>
+                {t('settings.security.apps.cancel')}
+              </button>
+              <button className="btn primary" disabled={!name.trim()} onClick={create}>
+                {t('settings.security.apps.generate')}
+              </button>
+            </>
+          )}
+        </>
+      }
+    >
+      <div className="stack">
+        {token ? (
+          <Group foot={t('settings.security.apps.tokenOnce')}>
+            <Cell label={t('settings.security.apps.server')} sub={server} onClick={() => copyText(server, t('settings.security.apps.copied'))} />
+            <Cell label={t('settings.security.apps.token')} sub={token} onClick={() => copyText(token, t('settings.security.apps.copied'))} />
+          </Group>
+        ) : (
+          <Group foot={t('settings.security.apps.nameFoot')}>
+            <Cell label={t('settings.security.apps.name')}>
+              <input value={name} maxLength={60} onChange={(e) => setName((e.target as HTMLInputElement).value)} />
+            </Cell>
+          </Group>
+        )}
+      </div>
+    </Sheet>
   );
 }
 

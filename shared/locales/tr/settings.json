@@ -290,7 +290,22 @@
     "passwordFoot": "En az 8 karakter. Değiştirmek, bu cihaz dışındaki tüm cihazlardan çıkış yapar.",
     "currentPassword": "Mevcut parola",
     "newPassword": "Yeni parola",
-    "confirmPassword": "Yeni parolayı onaylayın"
+    "confirmPassword": "Yeni parolayı onaylayın",
+    "apps": {
+      "title": "Bağlı cihazlar ve uygulamalar",
+      "foot": "Calends uygulamaları bu sunucuyla kendi belirteçleriyle eşitlenir. Belirteç yalnızca eşitleme içindir; web yönetimine ve yapay zekâ araçlarına erişemez.",
+      "connect": "Uygulama bağla",
+      "name": "Ad",
+      "nameFoot": "Cihazları ayırt edebilmeniz için bu listede gösterilir.",
+      "generate": "Oluştur",
+      "cancel": "İptal",
+      "done": "Bitti",
+      "server": "Sunucu",
+      "token": "Belirteç",
+      "tokenOnce": "Sunucuyu ve belirteci Calends uygulamasına girin. Belirteç yalnızca bir kez gösterilir; kopyalamak için dokunun.",
+      "copied": "Kopyalandı",
+      "removed": "Kaldırıldı"
+    }
   },
   "cat": {
     "title": "Kategoriler",

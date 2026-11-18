@@ -290,7 +290,22 @@
     "passwordFoot": "At least 8 characters. Changing it signs out all devices except this one.",
     "currentPassword": "Current password",
     "newPassword": "New password",
-    "confirmPassword": "Confirm new password"
+    "confirmPassword": "Confirm new password",
+    "apps": {
+      "title": "Connected devices and apps",
+      "foot": "Calends apps sync with this server using their own token. It only works for sync and can't access the web admin or AI tools.",
+      "connect": "Connect an app",
+      "name": "Name",
+      "nameFoot": "Shown in this list so you can tell devices apart.",
+      "generate": "Generate",
+      "cancel": "Cancel",
+      "done": "Done",
+      "server": "Server",
+      "token": "Token",
+      "tokenOnce": "Enter the server and token in the Calends app. The token is shown only once; tap to copy.",
+      "copied": "Copied",
+      "removed": "Removed"
+    }
   },
   "cat": {
     "title": "Categories",

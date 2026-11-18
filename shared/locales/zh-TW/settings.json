@@ -276,7 +276,22 @@
     "passwordFoot": "至少 8 個字元。修改後，除了目前裝置以外的登入都會失效。",
     "currentPassword": "目前密碼",
     "newPassword": "新密碼",
-    "confirmPassword": "確認新密碼"
+    "confirmPassword": "確認新密碼",
+    "apps": {
+      "title": "已連接的裝置與應用程式",
+      "foot": "Calends App 用各自的權杖與本伺服器同步。權杖只能用於同步，無法存取網頁後台和 AI 工具。",
+      "connect": "連接 App",
+      "name": "名稱",
+      "nameFoot": "顯示在這個列表中，方便區分裝置。",
+      "generate": "產生",
+      "cancel": "取消",
+      "done": "完成",
+      "server": "伺服器",
+      "token": "權杖",
+      "tokenOnce": "在 Calends App 中填入伺服器和權杖。權杖只顯示這一次，點按即可複製。",
+      "copied": "已複製",
+      "removed": "已移除"
+    }
   },
   "cat": {
     "title": "分類",

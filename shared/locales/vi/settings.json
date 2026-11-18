@@ -276,7 +276,22 @@
     "passwordFoot": "Ít nhất 8 ký tự. Đổi mật khẩu sẽ đăng xuất mọi thiết bị trừ thiết bị này.",
     "currentPassword": "Mật khẩu hiện tại",
     "newPassword": "Mật khẩu mới",
-    "confirmPassword": "Xác nhận mật khẩu mới"
+    "confirmPassword": "Xác nhận mật khẩu mới",
+    "apps": {
+      "title": "Thiết bị và ứng dụng đã kết nối",
+      "foot": "Ứng dụng Calends đồng bộ với máy chủ này bằng mã thông báo riêng. Mã chỉ dùng để đồng bộ, không truy cập được trang quản trị web hay công cụ AI.",
+      "connect": "Kết nối ứng dụng",
+      "name": "Tên",
+      "nameFoot": "Hiển thị trong danh sách này để phân biệt thiết bị.",
+      "generate": "Tạo",
+      "cancel": "Hủy",
+      "done": "Xong",
+      "server": "Máy chủ",
+      "token": "Mã thông báo",
+      "tokenOnce": "Nhập máy chủ và mã thông báo vào ứng dụng Calends. Mã chỉ hiển thị một lần; chạm để sao chép.",
+      "copied": "Đã sao chép",
+      "removed": "Đã xóa"
+    }
   },
   "cat": {
     "title": "Danh mục",
