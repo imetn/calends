@@ -1,15 +1,20 @@
-// 启动时自动迁移：每个 Worker 实例只检查一次，缺哪条补哪条（与 wrangler 的 d1_migrations 表兼容）
+// 启动时自动迁移：每个数据库只检查一次，缺哪条补哪条（与 wrangler 的 d1_migrations 表兼容）。
+// 按 env.DB 记录：一个进程里挂多个库（托管时每个账本一个库）时各自迁移，互不以为已完成。
 import type { Env } from './env.ts';
 import { MIGRATIONS } from './migrations.gen.ts';
 
-let done: Promise<void> | undefined;
+const done = new WeakMap<object, Promise<void>>();
 
 export function ensureMigrated(env: Env): Promise<void> {
-  done ??= run(env).catch((e) => {
-    done = undefined;
-    throw e;
-  });
-  return done;
+  let p = done.get(env.DB);
+  if (!p) {
+    p = run(env).catch((e) => {
+      done.delete(env.DB);
+      throw e;
+    });
+    done.set(env.DB, p);
+  }
+  return p;
 }
 
 async function run(env: Env): Promise<void> {

@@ -89,11 +89,17 @@ test('ensureMigrated applies fresh/upgrade databases and shares Wrangler migrati
       await ensureMigrated(env);
       assert.equal(batches, MIGRATIONS.length - applied.length, mode);
       assert.equal(db.prepare('SELECT count(*) AS n FROM d1_migrations').get()!.n, MIGRATIONS.length);
-      assert.equal(db.prepare("SELECT count(*) AS n FROM sqlite_master WHERE type = 'trigger'").get()!.n, 12);
+      assert.equal(db.prepare("SELECT count(*) AS n FROM sqlite_master WHERE type = 'trigger'").get()!.n, 24);
       const rev = () => Number(db.prepare("SELECT value FROM kv WHERE key = 'rev'").get()!.value);
+      const head = () => Number(db.prepare('SELECT seq FROM sync_head').get()!.seq);
       const before = rev();
+      const seq = head();
+      // 0009 backfills existing objects, so an upgraded fixture is already in the sync stream.
+      assert.equal(seq, mode === 'fresh' ? 0 : 1, mode);
       db.exec("INSERT INTO methods (id, data) VALUES ('fictional', '{}')");
       assert.equal(rev(), before + 1);
+      assert.equal(head(), seq + 1);
+      assert.deepEqual({ ...db.prepare("SELECT seq, deleted FROM sync_objects WHERE kind = 'method' AND id = 'fictional'").get() }, { seq: seq + 1, deleted: 0 });
       if (mode !== 'fresh') assert.equal(db.prepare('SELECT id FROM subscriptions').get()!.id, 'fixture');
       await ensureMigrated(env);
       assert.equal(batches, MIGRATIONS.length - applied.length, mode);
