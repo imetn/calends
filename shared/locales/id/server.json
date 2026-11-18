@@ -64,5 +64,6 @@
     "notConfigured": "Cadangan otomatis belum diatur",
     "interrupted": "Pencadangan terakhir tidak selesai",
     "beforeRestoreFailed": "Pencadangan sebelum pemulihan gagal; buku tidak berubah: {error}"
-  }
+  },
+  "writeConflict": "Data telah diperbarui di tempat lain. Versi terbaru sudah dimuat; silakan coba lagi."
 }

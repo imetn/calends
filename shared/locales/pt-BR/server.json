@@ -69,5 +69,6 @@
     "notConfigured": "O backup automático não está configurado",
     "interrupted": "O último backup não terminou",
     "beforeRestoreFailed": "O backup antes da restauração falhou; o registro não foi alterado: {error}"
-  }
+  },
+  "writeConflict": "Os dados foram atualizados em outro lugar. A versão mais recente foi carregada; tente novamente."
 }

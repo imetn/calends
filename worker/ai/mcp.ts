@@ -9,6 +9,7 @@ import { TOOLS, toolTitle, connectionInfo } from './mcp-tools.ts';
 import type { ToolCtx } from './tool-kit.ts';
 import { todayIn } from '../../shared/billing.ts';
 import { t } from '../../shared/i18n.ts';
+import { withWriteGuard } from '../write-guard.ts';
 
 export interface McpToken {
   id: string;
@@ -124,7 +125,9 @@ async function handle(msg: Rpc, env: Env, token: McpIdentity): Promise<unknown |
       await countServer(env, 'mcp.calls');
       const ctx: ToolCtx = { env, access: { client: 'mcp', scope: token.scope } };
       try {
-        const out = await tool.run((msg.params?.arguments ?? {}) as Record<string, unknown>, ctx);
+        const args = (msg.params?.arguments ?? {}) as Record<string, unknown>;
+        // 写工具在读改写守卫里执行：别处抢先写入时重读重算一次，仍冲突作为工具错误返回（write-guard.ts）
+        const out = tool.write ? await withWriteGuard(env, () => tool.run(structuredClone(args), ctx)) : await tool.run(args, ctx);
         return ok(msg.id, { content: [{ type: 'text', text: JSON.stringify(out, null, 1) }], structuredContent: out });
       } catch (e) {
         // 参数错误、找不到订阅这类问题作为工具结果返回，让 AI 能看到原因并改正

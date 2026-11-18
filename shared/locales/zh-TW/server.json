@@ -60,5 +60,6 @@
     "notConfigured": "尚未設定自動備份",
     "interrupted": "上次備份未完成",
     "beforeRestoreFailed": "還原前的自動備份失敗，帳本未變動：{error}"
-  }
+  },
+  "writeConflict": "資料已在別處更新，已載入最新內容，請重試"
 }

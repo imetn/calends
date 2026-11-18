@@ -7,6 +7,7 @@ import { migrateReceivables } from '../shared/receivables-legacy.ts';
 import type { Prefs } from '../shared/prefs.ts';
 import type { Env } from './env.ts';
 import { keepSet, putFxDayStmt, slimFxHistory } from './fx.ts';
+import { WriteConflict, currentGuard, guardStmts, isConflictError } from './write-guard.ts';
 
 const revSql = "SELECT CAST(value AS INTEGER) AS rev FROM kv WHERE key = 'rev'";
 
@@ -23,8 +24,23 @@ export interface Revision {
 }
 
 async function mutate(env: Env, stmts: D1PreparedStatement[]): Promise<Revision> {
-  const results = await env.DB.batch<{ rev: number }>([env.DB.prepare(revSql), ...stmts, env.DB.prepare(revSql)]);
-  return { from: results[0].results[0].rev, rev: results[results.length - 1].results[0].rev };
+  // 守卫作用域里（网页 REST、MCP、助手的读改写）首条核对读时的序号，别处抢先写入则整批回滚（write-guard.ts）
+  const g = currentGuard();
+  if (!g) {
+    const results = await env.DB.batch<{ rev: number }>([env.DB.prepare(revSql), ...stmts, env.DB.prepare(revSql)]);
+    return { from: results[0].results[0].rev, rev: results[results.length - 1].results[0].rev };
+  }
+  const { head, tail } = guardStmts(env, g);
+  let results: D1Result<{ rev: number }>[];
+  try {
+    results = await env.DB.batch<{ rev: number }>([head, env.DB.prepare(revSql), ...stmts, env.DB.prepare(revSql), tail]);
+  } catch (e) {
+    if (isConflictError(e)) throw new WriteConflict();
+    throw e;
+  }
+  const rev = { from: results[1].results[0].rev, rev: results[results.length - 2].results[0].rev };
+  g.expected = rev.rev;
+  return rev;
 }
 
 export async function getKv<T>(env: Env, key: string): Promise<T | undefined> {
@@ -255,7 +271,12 @@ export interface LedgerWrites {
   kv: Array<{ key: 'settings' | 'people' | 'prefs'; value: string }>;
 }
 
-export function ledgerEditWrites(patch: Partial<AppState>, deletedMethods: string[] = [], deletedSubscriptions: string[] = [], now = new Date().toISOString()): LedgerWrites {
+export function ledgerEditWrites(
+  patch: Partial<AppState>,
+  deletedMethods: string[] = [],
+  deletedSubscriptions: string[] = [],
+  now = new Date().toISOString(),
+): LedgerWrites {
   const kv = (['settings', 'people', 'prefs'] as const).filter((k) => patch[k] !== undefined);
   if (kv.includes('people')) validatePeopleAvatars(patch.people as Person[]);
   return {
@@ -263,7 +284,10 @@ export function ledgerEditWrites(patch: Partial<AppState>, deletedMethods: strin
       ...(patch.subscriptions ?? []).map((s) => ({ table: 'subscriptions' as const, id: s.id, data: JSON.stringify(stamp(s, now)) })),
       ...(patch.methods ?? []).map((m) => ({ table: 'methods' as const, id: m.id, data: JSON.stringify(m) })),
     ],
-    deletes: [...deletedMethods.map((id) => ({ table: 'methods' as const, id })), ...deletedSubscriptions.map((id) => ({ table: 'subscriptions' as const, id }))],
+    deletes: [
+      ...deletedMethods.map((id) => ({ table: 'methods' as const, id })),
+      ...deletedSubscriptions.map((id) => ({ table: 'subscriptions' as const, id })),
+    ],
     kv: kv.map((key) => ({ key, value: JSON.stringify(patch[key]) })),
   };
 }

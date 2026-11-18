@@ -16,18 +16,37 @@ export function createLedgerWrites(
     return { ...s, subscriptions: s.subscriptions.map((x) => by.get(x.id) ?? x) };
   };
 
+  /**
+   * 编辑已有订阅时带 If-Match：所依据记录的 updatedAt（别处改过就 409，不拿旧快照覆盖同步或其他标签页的写入）。
+   * 同一条连续保存时本地那条还是旧的 updatedAt：按 ownStamp 换成自己上一次保存后服务器给的值，并且逐条排队发送。
+   */
+  const ownStamp = new Map<string, { from: string; to: string }>();
+  const subQueue = new Map<string, Promise<unknown>>();
+
   function saveSub(next: Subscription) {
     // 改了开始日期或周期后，新的扣款日需要补汇率
     setTimeout(() => void syncFx(), 500);
     const st = getState();
-    const sub = resyncShares(
-      st,
-      st.subscriptions.find((x) => x.id === next.id),
-      next,
-    );
+    const previous = st.subscriptions.find((x) => x.id === next.id);
+    const sub = resyncShares(st, previous, next);
+    const base = previous ? (previous.updatedAt ?? '-') : undefined;
+    const put = () => {
+      const own = base === undefined ? undefined : ownStamp.get(sub.id);
+      const ifMatch = own && own.from === base ? own.to : base;
+      return api<Subscription>(`/api/subscriptions/${sub.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(sub),
+        headers: ifMatch === undefined ? undefined : { 'if-match': JSON.stringify(ifMatch) },
+      }).then((saved) => {
+        if (base !== undefined && saved?.updatedAt) ownStamp.set(sub.id, { from: base, to: saved.updatedAt });
+        return saved;
+      });
+    };
+    const queued = (subQueue.get(sub.id) ?? Promise.resolve()).catch(() => undefined).then(put);
+    subQueue.set(sub.id, queued);
     return write(
       (s) => ({ ...s, subscriptions: upsertById(s.subscriptions, sub) }),
-      () => api<Subscription>(`/api/subscriptions/${sub.id}`, { method: 'PUT', body: JSON.stringify(sub) }),
+      () => queued,
       // 服务端会规范化（补字段、时间戳）：本地换成它返回的那条，和下次同步拿到的一致；期间本地又改过这一条（更晚的写入）就不覆盖
       (s, saved) =>
         saved?.id === sub.id && s.subscriptions.find((x) => x.id === sub.id) === sub ? { ...s, subscriptions: upsertById(s.subscriptions, saved) } : s,

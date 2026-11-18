@@ -69,5 +69,6 @@
     "notConfigured": "Otomatik yedekleme ayarlanmamış",
     "interrupted": "Son yedekleme tamamlanmadı",
     "beforeRestoreFailed": "Geri yükleme öncesi yedek başarısız oldu; defter değişmedi: {error}"
-  }
+  },
+  "writeConflict": "Veriler başka bir yerde güncellendi. En son sürüm yüklendi, lütfen tekrar deneyin."
 }

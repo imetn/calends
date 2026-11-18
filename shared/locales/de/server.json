@@ -69,5 +69,6 @@
     "notConfigured": "Automatische Sicherung ist nicht eingerichtet",
     "interrupted": "Die letzte Sicherung wurde nicht abgeschlossen",
     "beforeRestoreFailed": "Die Sicherung vor der Wiederherstellung ist fehlgeschlagen; das Konto ist unverändert: {error}"
-  }
+  },
+  "writeConflict": "Die Daten wurden an anderer Stelle geändert. Der neueste Stand wurde geladen – bitte erneut versuchen."
 }

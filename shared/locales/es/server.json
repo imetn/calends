@@ -69,5 +69,6 @@
     "notConfigured": "La copia automática no está configurada",
     "interrupted": "La última copia no terminó",
     "beforeRestoreFailed": "Falló la copia previa a la restauración; el registro no ha cambiado: {error}"
-  }
+  },
+  "writeConflict": "Los datos se actualizaron en otro lugar. Se cargó la versión más reciente; inténtalo de nuevo."
 }

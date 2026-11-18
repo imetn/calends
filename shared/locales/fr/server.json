@@ -69,5 +69,6 @@
     "notConfigured": "La sauvegarde automatique n’est pas configurée",
     "interrupted": "La dernière sauvegarde n’a pas abouti",
     "beforeRestoreFailed": "La sauvegarde avant restauration a échoué ; le registre n’a pas changé : {error}"
-  }
+  },
+  "writeConflict": "Les données ont été modifiées ailleurs. La dernière version a été chargée ; veuillez réessayer."
 }

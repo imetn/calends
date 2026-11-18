@@ -64,5 +64,6 @@
     "notConfigured": "자동 백업이 설정되지 않았습니다",
     "interrupted": "마지막 백업이 완료되지 않았습니다",
     "beforeRestoreFailed": "복원 전 자동 백업에 실패해 장부는 변경되지 않았습니다: {error}"
-  }
+  },
+  "writeConflict": "다른 곳에서 데이터가 업데이트되었습니다. 최신 내용을 불러왔으니 다시 시도하세요"
 }

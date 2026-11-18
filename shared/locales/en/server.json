@@ -69,5 +69,6 @@
     "notConfigured": "Automatic backup is not set up",
     "interrupted": "The last backup did not finish",
     "beforeRestoreFailed": "The backup before restoring failed; the ledger is unchanged: {error}"
-  }
+  },
+  "writeConflict": "The data was updated elsewhere. The latest version has been loaded; please try again."
 }

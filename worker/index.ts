@@ -84,6 +84,7 @@ import { countServer, countUsage, reportTelemetry, saveTelemetry, viewTelemetry 
 import { cleanCounts } from '../shared/telemetry.ts';
 import { apply, chat, clearChats, listChats, saveChat, saveConfig, testConfig, viewConfig } from './ai/assistant.ts';
 import { requestLocale, settingsLocale, applyLocale, withLocaleScope } from './i18n.ts';
+import { WriteConflict, withWriteGuard } from './write-guard.ts';
 import { t } from '../shared/i18n.ts';
 import { ensureMigrated } from './migrate.ts';
 import { edgeCache, HttpError, readJson } from './http.ts';
@@ -167,6 +168,22 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   if (path === '/api/rev' && method === 'GET') return json({ rev: await getRev(env) });
   if (path === '/api/state' && method === 'GET') return json(await loadState(env));
   if (method !== 'GET' && !dev && !sameOrigin(req)) return bad('forbidden', 403);
+  if (method === 'GET' || UNGUARDED.has(path)) return routes(req, env, path);
+  // 读改写守卫（write-guard.ts）：别处抢先写入时整段重读重算一次，仍冲突返回 409
+  const spare = req.clone() as Request;
+  try {
+    return await withWriteGuard(env, (attempt) => routes(attempt ? spare : req, env, path));
+  } catch (e) {
+    if (e instanceof WriteConflict) return json({ error: e.message, code: e.code }, 409);
+    throw e;
+  }
+}
+
+/** 不进守卫的写：整本恢复（本就整体覆盖）、聊天流、汇率补齐与刷新（同日期服务器胜）、测试提醒 */
+const UNGUARDED = new Set(['/api/backup', '/api/assistant/chat', '/api/fx/refresh', '/api/fx/backfill', '/api/notify/test']);
+
+async function routes(req: Request, env: Env, path: string): Promise<Response> {
+  const method = req.method;
 
   // 图片中转：分享图要把订阅图标画进 canvas，跨域图片会污染画布，所以经同源转一道。只转 https 的图片，限 1MB
   if (path === '/api/img' && method === 'GET') {
@@ -231,6 +248,12 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
       if (sub.id !== m[1]) return bad(t('server.idMismatch'));
       const subscriptions = await loadSubs(env);
       const previous = subscriptions.find((x) => x.id === sub.id);
+      // 可选 If-Match：网页编辑所依据的那条记录的 updatedAt（"-" = 当时没有）。记录已被别处改过或删掉时 409，不拿旧快照覆盖
+      const ifMatch = req.headers.get('if-match');
+      if (ifMatch !== null) {
+        const base = ifMatch.replace(/^(W\/)?"|"$/g, '');
+        if (!previous || (previous.updatedAt ?? '-') !== base) return json({ error: t('server.writeConflict'), code: 'write_conflict' }, 409);
+      }
       const today = todayIn((await getSettings(env)).timezone);
       const prepared = prepareSubWrite(previous, sub, today, { subscriptions, methods: await loadMethods(env), fx: await getFx(env) });
       if (prepared.error !== undefined) return bad(prepared.error);
@@ -496,6 +519,8 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
       // A missing revision after commit must not turn a saved change into a retryable error.
       return json(result, 200, await getRev(env).catch(() => undefined));
     } catch (e) {
+      // 并发冲突交给外层守卫重算或返回 409
+      if (e instanceof WriteConflict) throw e;
       return bad(e instanceof Error ? e.message : String(e));
     }
   }
