@@ -65,7 +65,7 @@ const touchStmt = (env: Env, id: string, at: string) =>
   ).bind(USE_KEY, id, at);
 
 /** 校验请求里的令牌；通过时顺手记下最后使用时间（同一小时内不重复写） */
-async function authenticate(req: Request, env: Env): Promise<McpToken | undefined> {
+export async function authenticate(req: Request, env: Env): Promise<McpToken | undefined> {
   const raw = req.headers
     .get('authorization')
     ?.match(/^Bearer\s+(.+)$/i)?.[1]
@@ -86,7 +86,10 @@ type Rpc = { jsonrpc: '2.0'; id?: string | number | null; method: string; params
 const ok = (id: Rpc['id'], result: unknown) => ({ jsonrpc: '2.0', id: id ?? null, result });
 const fail = (id: Rpc['id'], code: number, message: string) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } });
 
-async function handle(msg: Rpc, env: Env, token: McpToken): Promise<unknown | undefined> {
+/** 已验证的调用方：自部署来自 MCP 令牌，官方托管由外层注入（只需要权限范围） */
+export type McpIdentity = Pick<McpToken, 'scope'>;
+
+async function handle(msg: Rpc, env: Env, token: McpIdentity): Promise<unknown | undefined> {
   // 通知（没有 id）只需确认收到
   if (msg.id === undefined) return undefined;
   switch (msg.method) {
@@ -133,18 +136,24 @@ async function handle(msg: Rpc, env: Env, token: McpToken): Promise<unknown | un
   }
 }
 
+const cors = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-headers': 'authorization, content-type, mcp-protocol-version, mcp-session-id',
+  'access-control-allow-methods': 'POST, GET, OPTIONS',
+};
+
 export async function mcp(req: Request, env: Env): Promise<Response> {
-  const cors = {
-    'access-control-allow-origin': '*',
-    'access-control-allow-headers': 'authorization, content-type, mcp-protocol-version, mcp-session-id',
-    'access-control-allow-methods': 'POST, GET, OPTIONS',
-  };
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   // 无状态服务器不提供服务端推送流
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: { ...cors, allow: 'POST' } });
   if ((await getSettings(env)).aiEnabled === false) return Response.json(fail(null, -32002, t('mcp.error.aiDisabled')), { status: 403, headers: cors });
   const token = await authenticate(req, env);
   if (!token) return Response.json(fail(null, -32001, t('mcp.error.badToken')), { status: 401, headers: { ...cors, 'www-authenticate': 'Bearer' } });
+  return mcpHandler(req, env, token);
+}
+
+/** MCP 处理器本体，可单独挂载：调用方已完成鉴权与 aiEnabled 检查，传入已验证的身份 */
+export async function mcpHandler(req: Request, env: Env, token: McpIdentity): Promise<Response> {
   let body: Rpc | Rpc[];
   try {
     body = (await req.json()) as Rpc | Rpc[];
