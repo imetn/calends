@@ -6,7 +6,7 @@ Native apps keep a full local copy of the ledger and sync it with the server thr
 
 ## Authentication
 
-Requests must send `Authorization: Bearer <token>` with a sync token (`cal_sync_…`). The owner issues one under Settings → Security → Connected devices and apps (`GET`/`POST /api/sync/tokens`, `DELETE /api/sync/tokens/:id`, session-authenticated). The plain token is shown once, and only its SHA-256 is stored, one row per token in `sync_tokens`. Issuing is a single `INSERT` and revoking a single `DELETE`, so a concurrent issue can never bring back a token revoked in the meantime. Migration `0010` moves tokens issued under the earlier kv layout into the table. Sync tokens are separate from MCP tokens. An MCP token, including a write-scope one, cannot call `/api/sync/*`, and a sync token cannot call `/mcp` or the web API. Cookies are not accepted, so the route skips the same-origin check. Without a valid sync token, `POST /sync` answers 401 with `WWW-Authenticate: Bearer`, and revoking a token takes effect on the next request. A hosting layer mounts `syncHandler` from [worker/hosting.ts](../worker/hosting.ts) and passes an identity it has already verified (`{ aud: 'sync' }`). The handler does not verify tokens itself in that case.
+Requests must send `Authorization: Bearer <token>` with a sync token (`cal_sync_…`). The owner issues one under Settings → Security → Connected devices and apps (`GET`/`POST /api/sync/tokens`, `DELETE /api/sync/tokens/:id`, session-authenticated). The plain token is shown once, and only its SHA-256 is stored, one row per token in `sync_tokens`. Issuing is a single `INSERT` and revoking a single `DELETE`, so a concurrent issue can never bring back a token revoked in the meantime. Migration `0010` moves tokens issued under the earlier kv layout into the table. Sync tokens are separate from MCP tokens. An MCP token, including a write-scope one, cannot call `/api/sync/*`, and a sync token cannot call `/mcp` or the web API. Cookies are not accepted, so the route skips the same-origin check. Without a valid sync token, `POST /sync` answers 401 with `WWW-Authenticate: Bearer`, and revoking a token takes effect on the next request. A hosting layer mounts `syncHandler` from [worker/hosting.ts](../worker/hosting.ts) and passes an identity it has already verified (`{ aud: 'sync' }`). The handler does not verify tokens itself in that case. The hosting identity may also carry `owner`, a stable principal such as the token family that survives refreshes, and `canWrite`. The first write of an install row records `owner`. Afterwards only that owner can read the install's progress and rejections, push, or retire it; any other principal gets 403 `install_owner_mismatch` and nothing changes. A re-authorized device gets a new owner, so it cannot take over its old `installId`; it registers a new one and resolves its pending changes as on a first connection. Self-hosted servers pass neither field: single user, no ownership check, `owner` stays `NULL`.
 
 ## `GET /api/sync/v1/hello`
 
@@ -25,7 +25,7 @@ Request body:
 | `drEpoch`   | Disaster-recovery epoch last seen. Only a first `register` may send `null`.                   |
 | `register`  | `true` registers the install. A register request must carry no mutations.                     |
 | `cookie`    | `{ gen, seq }` from the previous response, or `null` for a full download.                     |
-| `ackedMid`  | Highest mutation ID whose result the client has stored. Rejections at or below it are pruned. |
+| `ackedMid`  | Highest mutation ID whose result the client has stored. Rejections at or below it are left out of the response (they stay stored). A value above the server's `lastMutationId` retires the install, which needs write access. |
 | `mutations` | Up to 300 entries, each `{ mid, op }`, with `mid` strictly increasing from 1 per install.     |
 
 The response is one of the following:
@@ -43,6 +43,8 @@ Checks run in this order:
 | 413    | `too_many_mutations`                          | More than 300 mutations.                                                                                        |
 | 426    | `op_version`                                  | Operation name or version not in the whitelist.                                                                 |
 | 400    | `register_with_mutations` / `ledger_required` | Register sent with mutations, or mutations sent without a `ledgerId`.                                           |
+| 403    | `install_owner_mismatch`                      | Hosted only: the install was first written by another verified principal (device / token family).              |
+| 403    | `insufficient_scope`                          | Hosted only: a read-only identity would write the install row (register, push, retire, or record an unknown install). |
 | 200    | `ledgerMismatch` or `gone`                    | Described above.                                                                                                |
 | 503    | `conflict`                                    | The commit guard failed three times in a row because concurrent writes kept changing the snapshot. Retry later. |
 

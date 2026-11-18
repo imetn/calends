@@ -108,5 +108,11 @@ export const MIGRATIONS: Array<{ name: string; statements: string[] }> = [
       "-- 迁入此前存放在 kv 的令牌（若有），随后删除旧键\nINSERT OR IGNORE INTO sync_tokens (id, name, hash, prefix, created_at, last_used_at)\nSELECT json_extract(t.value, '$.id'), json_extract(t.value, '$.name'), json_extract(t.value, '$.hash'), json_extract(t.value, '$.prefix'),\n  json_extract(t.value, '$.createdAt'),\n  (SELECT json_extract(u.value, '$.' || json_quote(json_extract(t.value, '$.id'))) FROM kv u WHERE u.key = 'syncTokenUse')\nFROM kv k, json_each(k.value) t\nWHERE k.key = 'syncTokens' AND json_valid(k.value)",
       "DELETE FROM kv WHERE key IN ('syncTokens', 'syncTokenUse')"
     ]
+  },
+  {
+    "name": "0011_sync_owner.sql",
+    "statements": [
+      "-- 安装归属（官方托管）：首次写入安装行的已验证主体（设备／令牌家族）。自部署单用户不填，保持 NULL，行为不变。\nALTER TABLE sync_clients ADD COLUMN owner TEXT;\n"
+    ]
   }
 ];

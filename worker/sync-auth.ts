@@ -10,6 +10,10 @@ export interface SyncIdentity {
   aud: 'sync';
   /** 自部署的令牌 id，或托管侧的主体标识；只用于日志 */
   sub?: string;
+  /** 托管侧：稳定的设备／令牌家族标识，安装归属按它核对（见 sync.ts SyncPrincipal）；自部署不传 */
+  owner?: string;
+  /** 托管侧：false = 只读令牌；自部署不传（同步令牌可写） */
+  canWrite?: boolean;
 }
 
 export interface SyncToken {

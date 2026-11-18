@@ -29,7 +29,21 @@ export interface Rejection {
   detail: string;
 }
 
+/**
+ * 托管方注入的已验证主体（自部署不传：单用户，不做归属核对）。
+ * - owner：稳定的设备／令牌家族标识。安装首次写入 sync_clients 时记下，之后该安装的进度、拒绝与作废只对同一 owner 开放，
+ *   别的 owner 一律 403 install_owner_mismatch（不回进度、不改状态）。owner 不随刷新令牌变化；重新授权得到新 owner，
+ *   旧 installId 不能换绑，客户端须换新 installId 重新注册（未确认的本地变更按首连合并处理）。
+ * - canWrite：false = 只读令牌，任何会写 sync_clients 的结果（注册、推进、作废、记一次未知安装）都 403 insufficient_scope。
+ */
+export interface SyncPrincipal {
+  owner?: string;
+  canWrite?: boolean;
+}
+
 export interface SyncOptions {
+  /** 已验证主体（托管方传入）；不传 = 自部署单用户 */
+  principal?: SyncPrincipal;
   /** 单页对象字节上限（测试用小值验证分页）；默认 PAGE_BYTES */
   pageBytes?: number;
   /** 测试旁路：提交成功后回报每个执行过的操作（op.tid 原样带回）；不属于协议 */
@@ -63,6 +77,7 @@ type Prepared =
 interface ClientRow {
   last: number;
   gone: number;
+  owner: string | null;
 }
 
 export class SyncHttpError extends Error {
@@ -121,11 +136,11 @@ const rejectionsStmt = (env: Env, installId: string, after: number) =>
   );
 
 /** 第 2、3 步：读一致快照、判定资格、在内存行上执行。不写库 */
-export async function prepareSync(env: Env, req: SyncRequest): Promise<Prepared> {
+export async function prepareSync(env: Env, req: SyncRequest, principal?: SyncPrincipal): Promise<Prepared> {
   const reads = [
     env.DB.prepare('SELECT key, value FROM sync_meta'),
     env.DB.prepare('SELECT seq FROM sync_head'),
-    env.DB.prepare('SELECT last_mutation_id AS last, gone FROM sync_clients WHERE install_id = ?1').bind(req.installId),
+    env.DB.prepare('SELECT last_mutation_id AS last, gone, owner FROM sync_clients WHERE install_id = ?1').bind(req.installId),
     rejectionsStmt(env, req.installId, req.ackedMid),
     ...(req.mutations.length ? batchReadStmts(env) : []),
   ];
@@ -140,13 +155,20 @@ export async function prepareSync(env: Env, req: SyncRequest): Promise<Prepared>
   if (req.register && req.mutations.length) return { kind: 'error', status: 400, code: 'register_with_mutations' };
   if (!req.ledgerId && req.mutations.length) return { kind: 'error', status: 400, code: 'ledger_required' };
   if (req.ledgerId && req.ledgerId !== ledgerId) return { kind: 'mismatch', ledgerId };
-  const gone = (insert: boolean, mark: boolean): Prepared => ({ kind: 'gone', ledgerId, drEpoch, row, insert, mark, last: row?.last ?? 0, rejections });
+  // 归属：安装属于首次写入它的主体；别的主体不得读进度、拒绝，也不得推进或作废它
+  if (principal?.owner !== undefined && row && row.owner !== principal.owner) return { kind: 'error', status: 403, code: 'install_owner_mismatch' };
+  const readOnly = principal?.canWrite === false;
+  const denied: Prepared = { kind: 'error', status: 403, code: 'insufficient_scope' };
+  const gone = (insert: boolean, mark: boolean): Prepared =>
+    readOnly && (insert || mark) ? denied : { kind: 'gone', ledgerId, drEpoch, row, insert, mark, last: row?.last ?? 0, rejections };
   if (row?.gone) return gone(false, false);
   // 灾备纪元：只有从未见过纪元的首装注册可以为空
   if (req.drEpoch ? req.drEpoch !== drEpoch : !req.register) return gone(!row, !!row);
   // 只有显式注册过的安装有写入资格；物理回滚抹掉了注册或进度 → 作废
   if (!row && !req.register) return gone(true, false);
   if (row && req.ackedMid > row.last) return gone(false, true);
+
+  if (readOnly && (!row || req.mutations.length)) return denied;
 
   let last = row?.last ?? 0;
   let expected: number | null = null;
@@ -183,18 +205,23 @@ const casStmt = (env: Env) => env.DB.prepare('INSERT INTO sync_cas (ok) SELECT c
 /** 第 4 步：一个 batch 提交。返回 false = 快照已变，需要重算 */
 export async function commitSync(env: Env, req: SyncRequest, p: Prepared, opts: SyncOptions = {}): Promise<boolean> {
   const now = new Date(opts.now?.() ?? Date.now()).toISOString();
+  const owner = opts.principal?.owner ?? null;
   const stmts: D1PreparedStatement[] = [];
   if (p.kind === 'gone') {
     if (p.insert)
       stmts.push(
         env.DB.prepare(
-          'INSERT INTO sync_clients (install_id, last_mutation_id, last_seen, gone) VALUES (?1, 0, ?2, 1) ON CONFLICT(install_id) DO NOTHING',
-        ).bind(req.installId, now),
+          'INSERT INTO sync_clients (install_id, last_mutation_id, last_seen, gone, owner) VALUES (?1, 0, ?2, 1, ?3) ON CONFLICT(install_id) DO NOTHING',
+        ).bind(req.installId, now, owner),
         casStmt(env),
       );
     if (p.mark)
       stmts.push(
-        env.DB.prepare('UPDATE sync_clients SET gone = 1 WHERE install_id = ?1 AND last_mutation_id IS ?2 AND gone = 0').bind(req.installId, p.row!.last),
+        env.DB.prepare('UPDATE sync_clients SET gone = 1 WHERE install_id = ?1 AND last_mutation_id IS ?2 AND gone = 0 AND owner IS ?3').bind(
+          req.installId,
+          p.row!.last,
+          p.row!.owner,
+        ),
         casStmt(env),
       );
   } else if (p.kind === 'run') {
@@ -209,17 +236,14 @@ export async function commitSync(env: Env, req: SyncRequest, p: Prepared, opts: 
     if (!p.row)
       stmts.push(
         env.DB.prepare(
-          'INSERT INTO sync_clients (install_id, last_mutation_id, last_seen, gone) VALUES (?1, ?2, ?3, 0) ON CONFLICT(install_id) DO NOTHING',
-        ).bind(req.installId, p.last, now),
+          'INSERT INTO sync_clients (install_id, last_mutation_id, last_seen, gone, owner) VALUES (?1, ?2, ?3, 0, ?4) ON CONFLICT(install_id) DO NOTHING',
+        ).bind(req.installId, p.last, now, owner),
       );
     else
       stmts.push(
-        env.DB.prepare('UPDATE sync_clients SET last_mutation_id = ?1, last_seen = ?2 WHERE install_id = ?3 AND last_mutation_id IS ?4 AND gone = 0').bind(
-          p.last,
-          now,
-          req.installId,
-          p.row.last,
-        ),
+        env.DB.prepare(
+          'UPDATE sync_clients SET last_mutation_id = ?1, last_seen = ?2 WHERE install_id = ?3 AND last_mutation_id IS ?4 AND gone = 0 AND owner IS ?5',
+        ).bind(p.last, now, req.installId, p.row.last, p.row.owner),
       );
     stmts.push(casStmt(env), ...(p.store?.commitStmts(env) ?? []));
     for (const r of p.fresh)
@@ -295,7 +319,7 @@ export async function runSync(env: Env, req: SyncRequest, opts: SyncOptions = {}
   await ensureMigrated(env);
   if (req.mutations.length) await loadState(env);
   for (let i = 0; i < RETRIES; i++) {
-    const p = await prepareSync(env, req);
+    const p = await prepareSync(env, req, opts.principal);
     if (p.kind === 'error') return { status: p.status, body: { error: p.code, code: p.code } };
     if (p.kind === 'mismatch') return { status: 200, body: { reqId: req.reqId, ledgerMismatch: true, ledgerId: p.ledgerId } };
     await opts.beforeCommit?.();
@@ -357,7 +381,8 @@ export async function syncHandler(req: Request, env: Env, path: string, identity
     return json({ error: 'invalid_request', code: 'invalid_request' }, 400);
   }
   try {
-    const r = await runSync(env, parseSyncRequest(body), opts);
+    const principal = identity!.owner !== undefined || identity!.canWrite !== undefined ? { owner: identity!.owner, canWrite: identity!.canWrite } : undefined;
+    const r = await runSync(env, parseSyncRequest(body), { ...opts, ...(principal ? { principal } : {}) });
     return json(r.body, r.status);
   } catch (e) {
     if (e instanceof SyncHttpError) return json({ error: e.code, code: e.code }, e.status);

@@ -1,6 +1,6 @@
 // 托管接缝：官方托管（每个账本一个库）在自己的 Worker / Durable Object 里挂载这些处理器，鉴权与路由由外层完成。
 // 自部署的 worker/index.ts 走同样的函数，行为不变。
-export { syncHandler, runSync, parseSyncRequest, hello as syncHello, disasterRecovery, type SyncOptions } from './sync.ts';
+export { syncHandler, runSync, parseSyncRequest, hello as syncHello, disasterRecovery, type SyncOptions, type SyncPrincipal } from './sync.ts';
 export { mcpHandler, type McpIdentity } from './ai/mcp.ts';
 /** 托管外层验过 aud=sync 的令牌后把它作为 syncHandler 的 identity 传入；syncHandler 不自己验令牌 */
 export type { SyncIdentity } from './sync-auth.ts';

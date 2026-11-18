@@ -890,3 +890,61 @@ test('审查 R3 收口 P1：record_receivable 的 record / waive 只新建；id 
     'id_conflict',
   ]);
 });
+
+test('审查 M3 P1-1：托管时安装归属首次写入它的主体；别的主体不能冒用进度、吞掉操作或作废它；只读主体不能作废；自部署不填 owner', async () => {
+  const f = await fixture();
+  const create = {
+    name: 'create_subscription@1',
+    args: { id: 's1', name: 'Fictional Svc', price: 9.99, currency: 'USD', cycle: { unit: 'month' }, start: DAY, force: true },
+    at: { date: DAY },
+  };
+  const A = { owner: 'fam-A', canWrite: true };
+  const B = { owner: 'fam-B', canWrite: true };
+  const send = (installId: string, principal: { owner: string; canWrite: boolean }, body: Record<string, unknown>) =>
+    runSync(f.env, parseSyncRequest({ protocol: 1, reqId: 'r', installId, ledgerId: null, drEpoch: null, cookie: null, ...body }), { principal });
+  const reg = await send('install-A', A, { register: true });
+  assert.equal(reg.status, 200);
+  const { ledgerId, drEpoch } = reg.body as { ledgerId: string; drEpoch: string };
+  const row = () => f.env.DB.prepare("SELECT last_mutation_id AS last, gone, owner FROM sync_clients WHERE install_id = 'install-A'").first();
+  assert.deepEqual(await row(), { last: 0, gone: 0, owner: 'fam-A' });
+
+  // 同账户另一家族 B 冒用 install-A：mid=1 的 noop 不能占掉 A 的编号；进度与拒绝都不回
+  const steal = await send('install-A', B, { ledgerId, drEpoch, mutations: [{ mid: 1, op: { name: 'noop@1' } }] });
+  assert.equal(steal.status, 403);
+  assert.equal((steal.body as Body).code, 'install_owner_mismatch');
+  assert.equal((steal.body as Body).lastMutationId, undefined);
+  // B 用 ackedMid 跑到前面也不能作废它
+  const retire = await send('install-A', B, { ledgerId, drEpoch, ackedMid: 99 });
+  assert.equal(retire.status, 403);
+  assert.deepEqual(await row(), { last: 0, gone: 0, owner: 'fam-A' });
+  // A 真正的 mid=1 照常执行
+  const real = await send('install-A', A, { ledgerId, drEpoch, mutations: [{ mid: 1, op: create }] });
+  assert.equal(real.status, 200);
+  assert.equal((real.body as Body).lastMutationId, 1);
+  assert.equal((await loadState(f.env)).subscriptions.length, 1);
+
+  // 只读主体（同一家族、只有 ledger:read）：可以拉取，不能用 ackedMid 作废、不能登记未知安装
+  const RO = { owner: 'fam-A', canWrite: false };
+  const pull = await send('install-A', RO, { ledgerId, drEpoch, ackedMid: 1 });
+  assert.equal(pull.status, 200);
+  const roRetire = await send('install-A', RO, { ledgerId, drEpoch, ackedMid: 2 });
+  assert.equal(roRetire.status, 403);
+  assert.equal((roRetire.body as Body).code, 'insufficient_scope');
+  assert.deepEqual(await row(), { last: 1, gone: 0, owner: 'fam-A' });
+  const roUnknown = await send('install-X', RO, { ledgerId, drEpoch });
+  assert.equal(roUnknown.status, 403);
+  assert.equal(await f.env.DB.prepare("SELECT 1 FROM sync_clients WHERE install_id = 'install-X'").first(), null);
+  // 同一 owner 有写权限时，ackedMid 跑到前面照旧作废（协议行为不变）
+  const ownRetire = await send('install-A', A, { ledgerId, drEpoch, ackedMid: 5 });
+  assert.ok((ownRetire.body as Body).gone);
+
+  // 重新授权 = 新 owner：旧 installId 不能换绑；换新 installId 注册即可
+  const rebind = await send('install-A', B, { register: true, drEpoch });
+  assert.equal(rebind.status, 403);
+  assert.equal((await send('install-B', B, { register: true, drEpoch })).status, 200);
+
+  // 自部署不传主体：owner 保持 NULL，行为同旧版
+  const self = await runSync(f.env, parseSyncRequest({ protocol: 1, reqId: 'r', installId: 'install-self', ledgerId: null, drEpoch, cookie: null, register: true }));
+  assert.equal(self.status, 200);
+  assert.deepEqual(await f.env.DB.prepare("SELECT owner FROM sync_clients WHERE install_id = 'install-self'").first(), { owner: null });
+});
