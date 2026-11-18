@@ -182,9 +182,10 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
         }
       }
     }
+    // 与续费提醒同一口径：按订阅或全局的提前天数，提前多天时前一天再提醒一次
     if (s.end && st === 'ending') {
       const d = diffDays(today, s.end);
-      if (d === 7 || d === 1) {
+      if (d === remind || (remind > 1 && d === 1)) {
         ending.push({ title: s.name, sub: t('notify.ending.sub', { when: relDays(d) }), amount: cnDate(s.end), tone: 'muted', icon: iconOf(s), days: d });
         headline.push(t('notify.ending.headline', { name: s.name, when: relDays(d) }));
       }

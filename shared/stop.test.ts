@@ -1292,3 +1292,15 @@ test('duplicate check skips deliberate multi-account subscriptions and names the
   assert.ok(!same[0].title.includes('· 01'), same[0].title);
   assert.equal(dups([sub('01'), sub('02')]).length, 1);
 });
+
+test('不续订的结束提醒按提前天数发送，关闭提醒后不发 (#18)', () => {
+  const end = '2026-10-31';
+  const s = base({ price: 0, cycle: { unit: 'year', every: 1 }, start: '2025-11-01', end, remindDays: 5 });
+  const at = (days: number, sub = s) => buildDaily(state(sub), addDays(end, -days));
+  assert.equal(effectiveStatus(s, addDays(end, -5)), 'ending');
+  assert.equal(nextCharge(s, addDays(end, -5)), undefined);
+  for (const days of [5, 1]) assert.match(JSON.stringify(at(days)), /Service/, `提前 ${days} 天`);
+  for (const days of [7, 4, 2]) assert.equal(at(days), undefined, `提前 ${days} 天不发`);
+  assert.equal(at(1, { ...s, remindDays: -1 }), undefined);
+  assert.match(JSON.stringify(at(3, { ...s, remindDays: undefined })), /Service/, '沿用全局提前天数');
+});

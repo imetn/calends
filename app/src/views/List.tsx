@@ -325,6 +325,8 @@ export function List({
               const st = effectiveStatus(s, today);
               const n = nextCharge(s, today);
               const d = n ? diffDays(today, n) : undefined;
+              // 不续订且已无扣款时按停止日算临近
+              const left = d ?? (st === 'ending' && s.end ? diffDays(today, s.end) : undefined);
               const v = shown(s, n);
               const cur = currentPhase(s, today);
               const up = upcomingPhase(s, today);
@@ -370,8 +372,14 @@ export function List({
                   </div>
                   <div className="sc-foot">
                     <span>{v.sub ?? '\u00a0'}</span>
-                    <span className={d != null && d <= 3 ? 'soon' : ''}>
-                      {st === 'lifetime' ? s.start.slice(0, 7) : isStopped(st) ? (s.end ? cnDateAuto(s.end, today) : '') : n ? nearDate(n, today) : ''}
+                    <span className={left != null && left <= 3 ? 'soon' : ''}>
+                      {st === 'lifetime'
+                        ? s.start.slice(0, 7)
+                        : n && !isStopped(st)
+                          ? nearDate(n, today)
+                          : s.end && (isStopped(st) || st === 'ending')
+                            ? cnDateAuto(s.end, today)
+                            : ''}
                     </span>
                   </div>
                 </button>
@@ -410,6 +418,8 @@ export function List({
                 const st = effectiveStatus(s, today);
                 const n = nextCharge(s, today);
                 const d = n ? diffDays(today, n) : undefined;
+                // 不续订且已无扣款时按停止日算临近
+                const left = d ?? (st === 'ending' && s.end ? diffDays(today, s.end) : undefined);
                 const cur = currentPhase(s, today);
                 const up = upcomingPhase(s, today);
                 const m = state.methods.find((x) => x.id === cur.methodId);
@@ -471,15 +481,16 @@ export function List({
                       {cnDate(s.start)}
                       <small>{s.start.slice(0, 4)}</small>
                     </span>
-                    <span className={`lt-next ${d != null && d <= 3 ? 'soon' : ''}`}>
+                    <span className={`lt-next ${left != null && left <= 3 ? 'soon' : ''}`}>
                       {st === 'lifetime' ? (
                         t('list.status.lifetime')
                       ) : isStopped(st) ? (
                         <>{tx('list.endedOn', { date: <small>{s.end ? cnDateAuto(s.end, today) : '—'}</small> })}</>
-                      ) : n ? (
+                      ) : n || (st === 'ending' && s.end) ? (
+                        // 不续订、已无下次扣款时显示停止日，与网格卡片一致
                         <>
-                          {cnDate(n)}
-                          <small>{relDays(d!)}</small>
+                          {cnDate(n ?? s.end!)}
+                          <small>{relDays(left!)}</small>
                         </>
                       ) : (
                         '—'
