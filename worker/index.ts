@@ -64,7 +64,8 @@ import {
 import type { Revision } from './store.ts';
 import { mergePrefs, type Prefs } from '../shared/prefs.ts';
 import { cleanCategories, renameInSubs } from '../shared/categories.ts';
-import { createToken, listTokens, mcp, revokeToken } from './ai/mcp.ts';
+import { authenticate, createToken, listTokens, mcp, revokeToken } from './ai/mcp.ts';
+import { syncHandler } from './sync.ts';
 import { fetchPublic } from './url-guard.ts';
 import { TOOLS, toolTitle } from './ai/mcp-tools.ts';
 import { appStorePlans, searchAppStore } from './appstore.ts';
@@ -140,6 +141,9 @@ function methodError(fx: FxTable, previous: PaymentMethod | undefined, pm: Payme
 
 async function api(req: Request, env: Env, path: string): Promise<Response> {
   const method = req.method;
+  // App 同步（docs/sync-api.md）：只认 Bearer 令牌（写权限的 MCP 令牌），不认网页 Cookie，所以不经过同源检查
+  const sync = path.match(/^\/api\/sync\/v1\/([a-z]+)$/);
+  if (sync) return syncHandler(req, env, sync[1], { authed: (await authenticate(req, env))?.scope === 'write' });
   if (path === '/api/login' && method === 'POST') return login(req, env);
   if (path === '/api/logout' && method === 'POST') return logout(req, env);
   // 登录前可用：状态、首次设置、Passkey 登录
