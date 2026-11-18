@@ -37,7 +37,7 @@ export function stopForm(
     refundDate: payment?.date,
     reason: sub.stop?.reason ?? '',
     settled: payment?.settled ? String(-payment.settled.amount) : '',
-    settledCurrency: payment?.settled?.currency ?? settlementCurrencyOf(state, cur.currency, payment?.methodId ?? cur.methodId),
+    settledCurrency: payment?.settled?.currency ?? settlementCurrencyOf(state, payment?.methodId ?? cur.methodId),
     dateUnset: undatedStop(sub) && !sub.stop ? true : undefined,
   };
 }

@@ -68,7 +68,7 @@ export function PaymentSheet({
   const sign = kind === 'refund' ? -1 : 1;
   // 支付方式：缺省为这一笔单独记的，否则是所属这一段的；换了卡时选只改这一笔，还是整段一起改
   const [method, setMethod] = useState(existingPay?.methodId ?? phase.methodId);
-  const settledCcy = settledCcyOverride ?? settlementCurrencyOf(getState(), ccy, method);
+  const settledCcy = settledCcyOverride ?? settlementCurrencyOf(getState(), method);
   const changed = method !== (existingPay?.methodId ?? phase.methodId);
   const [scope, setScope] = useState<'one' | 'phase'>(phase.methodId ? 'one' : 'phase');
   const phaseCount = chargesBetween(phase, phase.start, today, today).length;
