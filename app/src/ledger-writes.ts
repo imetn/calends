@@ -17,43 +17,55 @@ export function createLedgerWrites(
   };
 
   /**
-   * 编辑已有订阅时带 If-Match：所依据记录的 updatedAt（别处改过就 409，不拿旧快照覆盖同步或其他标签页的写入）。
-   * 同一条连续保存时本地那条还是旧的 updatedAt：按 ownStamp 换成自己上一次保存后服务器给的值，并且逐条排队发送。
+   * 编辑已有订阅时带 If-Match = 草稿依据的版本：草稿从记录展开而来，next.updatedAt 就是打开时冻结的版本
+   * （编辑器与最新记录三方合并过时即最新版本）。不在保存时取全局状态里的当前值：编辑期间后台同步刷新过，旧草稿仍须 409。
+   * 新建（本地没有、草稿也没有版本）与撤销本页刚删的那条不带。
+   * 保存进行中，本地那条的版本换成待定标记；基于它继续改的草稿排在它后面发送，届时换成服务器返回的版本。
+   * 其他旧草稿各带自己冻结的版本，不被升级。
    */
-  const ownStamp = new Map<string, { from: string; to: string }>();
+  const PENDING = '~pending:';
+  const pending = new Map<string, { base: string | undefined; saved?: string }>();
   const subQueue = new Map<string, Promise<unknown>>();
+  const deletedHere = new Set<string>();
+  let seq = 0;
 
   function saveSub(next: Subscription) {
     // 改了开始日期或周期后，新的扣款日需要补汇率
     setTimeout(() => void syncFx(), 500);
     const st = getState();
     const previous = st.subscriptions.find((x) => x.id === next.id);
+    const recreate = !previous && deletedHere.delete(next.id);
+    const frozen = recreate ? undefined : (next.updatedAt ?? (previous ? '-' : undefined));
     const sub = resyncShares(st, previous, next);
-    const base = previous ? (previous.updatedAt ?? '-') : undefined;
+    const tag = `${PENDING}${++seq}`;
+    const local = { ...sub, updatedAt: tag };
     const put = () => {
-      const own = base === undefined ? undefined : ownStamp.get(sub.id);
-      const ifMatch = own && own.from === base ? own.to : base;
+      const own = frozen?.startsWith(PENDING) ? pending.get(frozen) : undefined;
+      const ifMatch = own ? (own.saved ?? own.base) : frozen;
+      const mine = { base: ifMatch } as { base: string | undefined; saved?: string };
+      pending.set(tag, mine);
       return api<Subscription>(`/api/subscriptions/${sub.id}`, {
         method: 'PUT',
-        body: JSON.stringify(sub),
+        body: JSON.stringify({ ...sub, updatedAt: undefined }),
         headers: ifMatch === undefined ? undefined : { 'if-match': JSON.stringify(ifMatch) },
       }).then((saved) => {
-        if (base !== undefined && saved?.updatedAt) ownStamp.set(sub.id, { from: base, to: saved.updatedAt });
+        if (saved?.updatedAt) mine.saved = saved.updatedAt;
         return saved;
       });
     };
     const queued = (subQueue.get(sub.id) ?? Promise.resolve()).catch(() => undefined).then(put);
     subQueue.set(sub.id, queued);
     return write(
-      (s) => ({ ...s, subscriptions: upsertById(s.subscriptions, sub) }),
+      (s) => ({ ...s, subscriptions: upsertById(s.subscriptions, local) }),
       () => queued,
       // 服务端会规范化（补字段、时间戳）：本地换成它返回的那条，和下次同步拿到的一致；期间本地又改过这一条（更晚的写入）就不覆盖
       (s, saved) =>
-        saved?.id === sub.id && s.subscriptions.find((x) => x.id === sub.id) === sub ? { ...s, subscriptions: upsertById(s.subscriptions, saved) } : s,
+        saved?.id === sub.id && s.subscriptions.find((x) => x.id === sub.id) === local ? { ...s, subscriptions: upsertById(s.subscriptions, saved) } : s,
     );
   }
 
   function deleteSub(id: string) {
+    deletedHere.add(id);
     // 服务端在同一事务里把它从公开页隐藏列表去掉（与 MCP delete_subscription 相同），本地同步
     return write(
       (s) => ({ ...s, subscriptions: s.subscriptions.filter((x) => x.id !== id), settings: deleteSubscriptionSettings(s.settings, id) }),
@@ -129,11 +141,12 @@ export function createLedgerWrites(
   function saveSettings(patch: Partial<Settings>) {
     return write(
       (s) => ({ ...s, settings: { ...s.settings, ...patch } }),
+      // 只发这次改动的字段，服务端按字段合并：不拿本地旧快照盖掉别处（同步、另一个标签页）刚改的其他设置。
       // 清空的字段（undefined）以 null 传给服务端，否则 JSON 会丢掉这个键，旧值留在库里
       () =>
         api<Settings>('/api/settings', {
           method: 'PUT',
-          body: JSON.stringify(Object.fromEntries(Object.entries({ ...getState().settings, ...patch }).map(([k, v]) => [k, v === undefined ? null : v]))),
+          body: JSON.stringify(Object.fromEntries(Object.entries(patch).map(([k, v]) => [k, v === undefined ? null : v]))),
         }),
       (s, settings) => ({ ...s, settings }),
     );
