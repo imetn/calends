@@ -114,7 +114,6 @@
     "plan": "Тариф",
     "iconImported": "URL или эмодзи для замены",
     "iconImage": "Значок-изображение",
-    "iconLink": "URL",
     "iconUpload": "Загрузить",
     "iconChange": "Сменить значок",
     "iconUploadHelp": "Загрузите PNG/JPEG/WebP (до 8 МБ), будет уменьшено до 128 px; можно перетащить или вставить изображение",

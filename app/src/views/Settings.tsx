@@ -778,7 +778,6 @@ export function AvatarField({
   linkHint?: string;
   onChange: (v: string | null) => void | Promise<unknown>;
 }) {
-  const [link, setLink] = useState(false);
   const linkOf = (v?: string) => (v?.startsWith('data:') ? '' : (v ?? ''));
   const [url, setUrl] = useState(linkOf(avatar));
   // 头像被外部改掉（如恢复默认）时跟上，否则失焦会把旧链接写回去
@@ -803,13 +802,13 @@ export function AvatarField({
       c.getContext('2d')!.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, n, n);
       URL.revokeObjectURL(img.src);
       setUrl('');
-      setLink(false);
       void set(c.toDataURL('image/webp', 0.9));
     };
     img.src = URL.createObjectURL(fl);
   };
   let source = defaultLabel;
-  if (avatar) source = avatar.startsWith('data:') ? t('wallet.logo.uploaded') : t('wallet.logo.link');
+  // 用了外部链接时，标签下换成链接的隐私说明（公开页头像会被访客浏览器直接请求）
+  if (avatar) source = avatar.startsWith('data:') ? t('wallet.logo.uploaded') : (linkHint ?? t('wallet.logo.link'));
   return (
     <>
       <div className="cell logo-field">
@@ -817,15 +816,20 @@ export function AvatarField({
           {t('settings.general.avatar')}
           <small>{source}</small>
         </span>
+        {/* 和订阅图标一样一行写完：图片链接在行内输入（失焦保存），右边是预览与上传；上传的图片输入框里没有内容，单独给清除 */}
         <span className="cell-r">
+          <input
+            value={url}
+            placeholder="https://"
+            aria-label={t('wallet.logo.link')}
+            onChange={(e) => setUrl((e.target as HTMLInputElement).value)}
+            onBlur={() => url.trim() !== (avatar ?? '') && void set(url.trim() || null)}
+          />
           <img className="avatar-preview" src={base(avatarOf({ avatar: avatar ?? fallback }))} alt="" />
           <button type="button" className="chip-btn" onClick={() => file.current?.click()}>
             {t('wallet.logo.upload')}
           </button>
-          <button type="button" className={`chip-btn ${link ? 'on' : ''}`} onClick={() => setLink(!link)}>
-            {t('wallet.logo.linkBtn')}
-          </button>
-          {avatar && (
+          {avatar?.startsWith('data:') && (
             <button type="button" className="chip-btn" onClick={() => (setUrl(''), void set(null))}>
               {t('wallet.logo.clear')}
             </button>
@@ -833,16 +837,6 @@ export function AvatarField({
           <input ref={file} type="file" accept="image/*" hidden onChange={onFile} />
         </span>
       </div>
-      {link && (
-        <Cell label={t('wallet.logo.link')} sub={linkHint}>
-          <input
-            value={url}
-            placeholder="https://…/avatar.png"
-            onChange={(e) => setUrl((e.target as HTMLInputElement).value)}
-            onBlur={() => url.trim() !== (avatar ?? '') && void set(url.trim() || null)}
-          />
-        </Cell>
-      )}
     </>
   );
 }

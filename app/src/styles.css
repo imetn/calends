@@ -8022,20 +8022,24 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 .logo-field .cell-r {
   gap: 8px;
 }
-/* 订阅图标：标签 + 预览/上传/清除占第一行（按钮保持完整，标签放不下就换行），网址/emoji 输入单独占满整格宽度的第二行 */
-.icon-field {
-  flex-wrap: wrap;
-  row-gap: 6px;
+/* 钱包 Logo、头像：链接输入框吃掉剩余宽度，预览和按钮不被挤压 */
+.logo-field .cell-r > input:not([type='file']) {
+  flex: 1 1 0;
+  min-width: 4em;
 }
+.logo-field .cell-r > :not(input) {
+  flex: none;
+}
+/* 订阅图标：标签、行内网址/emoji 输入、预览与上传同一行 */
 .icon-field .cell-l {
+  flex: 0 0 auto;
+}
+/* 输入框吃掉剩余宽度，预览和上传按钮不被挤压 */
+.icon-field .icon-actions > input {
   flex: 1 1 0;
 }
-/* 标签被 .cell-l 的 max-width 限住，右侧这组要自己长满剩下的宽度，才能和其他行一样贴右 */
-.icon-field .icon-actions {
-  flex: 1 0 auto;
-}
-.icon-field .icon-input {
-  flex-basis: 100%;
+.icon-field .icon-actions > :not(input) {
+  flex: none;
 }
 
 /* 年度海报：所有订阅图标按花费分三档铺满，6 列整齐对齐 */

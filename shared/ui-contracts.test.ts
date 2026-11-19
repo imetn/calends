@@ -483,14 +483,14 @@ test('登录与首次设置表单为密码管理器提供同一账号和正确�
   assert.equal(rule('.login-card input').match(/height: (\w+)/)?.[1], rule('.login-card .btn').match(/height: (\w+)/)?.[1]);
 });
 
-test('编辑器图标行：预览与按钮贴右，网址 / emoji 输入点「链接」才展开', () => {
+test('编辑器图标行：网址 / emoji 在行内直接输入，预览与上传跟在后面，不再展开第二行', () => {
   const css = read('../app/src/styles.css');
-  assert.match(css, /\.cell-l \{[^}]*max-width: 62%/);
-  assert.match(css, /\.icon-field \.icon-actions \{\s*flex: 1 0 auto;/);
-  // 网址 / emoji 输入与钱包 Logo 一样点「链接」才展开，平时不在预览下面再写一遍同一个图标
+  assert.match(css, /\.icon-field \.icon-actions > input \{\s*flex: 1 1 0;/);
+  assert.doesNotMatch(css, /\.icon-field \{\s*flex-wrap: wrap/);
   const field = read('../app/src/views/editor/Sections.tsx');
-  assert.match(field, /\{link && \(\s*<span className="cell-r icon-input">/);
-  assert.match(field, /aria-expanded=\{link\} onClick=\{\(\) => setLink\(!link\)\}/);
+  const icon = field.slice(field.indexOf('function IconField'), field.indexOf('function IconField') + 2500);
+  assert.match(icon, /<span className="cell-r icon-actions">\s*\{\/\*[^]*?\*\/\}\s*<input/);
+  assert.doesNotMatch(icon, /setLink|icon-input/);
 });
 
 test('编辑器「账单与缴费」：收在更多选项的续费规则组，和「付费方式」一样用小号胶囊切换', () => {
@@ -508,4 +508,14 @@ test('编辑器合同期：独立成组，期限选项与订阅周期菜单一�
   // 合同期不再塞在续费规则组里
   const renewal = field.slice(field.indexOf("<Group title={t('core.renewal.title')}"));
   assert.ok(renewal.indexOf('<ContractFields') > renewal.indexOf('</Group>'));
+});
+
+test('钱包 Logo 与头像：图片链接行内输入，不再点「链接」展开一行', () => {
+  const css = read('../app/src/styles.css');
+  assert.match(css, /\.logo-field \.cell-r > input:not\(\[type='file'\]\) \{\s*flex: 1 1 0;/);
+  for (const file of ['../app/src/views/Wallet.tsx', '../app/src/views/Settings.tsx']) {
+    const src = read(file);
+    assert.doesNotMatch(src, /setLink|linkBtn/, file);
+    assert.match(src, /<span className="cell-r">\s*<input\s/, file);
+  }
 });

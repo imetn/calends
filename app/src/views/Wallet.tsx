@@ -967,7 +967,6 @@ function MethodEditor({ m, state, onClose }: { m: PaymentMethod; state: AppState
  * 横向字标（如 BYBIT）勾上「横向字标」，卡面上会按宽版显示。
  */
 function LogoField({ f, up }: { f: PaymentMethod; up: (p: Partial<PaymentMethod>) => void }) {
-  const [link, setLink] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target as HTMLInputElement;
@@ -999,15 +998,19 @@ function LogoField({ f, up }: { f: PaymentMethod; up: (p: Partial<PaymentMethod>
           Logo
           <small>{source}</small>
         </span>
+        {/* 和订阅图标一样一行写完：图片链接在行内输入，右边是预览与上传；上传的图片输入框里没有内容，单独给清除 */}
         <span className="cell-r">
+          <input
+            value={f.logo?.startsWith('data:') ? '' : (f.logo ?? '')}
+            placeholder="https://"
+            aria-label={t('wallet.logo.link')}
+            onChange={(e) => up({ logo: (e.target as HTMLInputElement).value.trim() || undefined })}
+          />
           <MethodMark m={f} size={32} />
           <button type="button" className="chip-btn" onClick={() => file.current?.click()}>
             {t('wallet.logo.upload')}
           </button>
-          <button type="button" className={`chip-btn ${link ? 'on' : ''}`} onClick={() => setLink(!link)}>
-            {t('wallet.logo.linkBtn')}
-          </button>
-          {f.logo && (
+          {f.logo?.startsWith('data:') && (
             <button type="button" className="chip-btn" onClick={() => up({ logo: undefined })}>
               {t('wallet.logo.clear')}
             </button>
@@ -1015,15 +1018,6 @@ function LogoField({ f, up }: { f: PaymentMethod; up: (p: Partial<PaymentMethod>
           <input ref={file} type="file" accept="image/*" hidden onChange={onFile} />
         </span>
       </div>
-      {link && (
-        <Cell label={t('wallet.logo.link')}>
-          <input
-            value={f.logo?.startsWith('data:') ? '' : (f.logo ?? '')}
-            placeholder="https://…/logo.png"
-            onChange={(e) => up({ logo: (e.target as HTMLInputElement).value.trim() || undefined })}
-          />
-        </Cell>
-      )}
       {(f.logo || favicon) && (
         <Cell label={t('wallet.logo.wide')}>
           <Toggle label={t('wallet.logo.wide')} checked={!!f.logoWide} onChange={(v) => up({ logoWide: v || undefined })} />
