@@ -107,7 +107,7 @@
     "iconUploadInvalid": "Gambar tidak dapat dipakai: pilih PNG/JPEG/WebP maksimal 8 MB",
     "iconUploadTooLarge": "Gambar masih lebih dari 64 KB setelah dikompresi: coba gambar yang lebih sederhana, misalnya logo berlatar transparan",
     "billing": "Pembayaran",
-    "settlement": "Catat tagihan dan pembayaran terpisah"
+    "settlement": "Tagihan & pembayaran"
   },
   "share": {
     "none": "Hanya saya",
@@ -270,5 +270,9 @@
   "billing": {
     "prepaid": "Prabayar",
     "postpaid": "Pascabayar"
+  },
+  "settlement": {
+    "together": "Bersama",
+    "separate": "Terpisah"
   }
 }

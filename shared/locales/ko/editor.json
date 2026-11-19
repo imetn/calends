@@ -107,7 +107,7 @@
     "iconUploadInvalid": "이 이미지를 사용할 수 없습니다: 8MB 이하의 PNG/JPEG/WebP를 선택하세요",
     "iconUploadTooLarge": "압축 후에도 64KB를 넘습니다: 투명 배경 로고처럼 더 단순한 이미지를 사용해 보세요",
     "billing": "결제 방식",
-    "settlement": "청구와 납부를 따로 기록"
+    "settlement": "청구와 납부"
   },
   "share": {
     "none": "나만 사용",
@@ -270,5 +270,9 @@
   "billing": {
     "prepaid": "선불",
     "postpaid": "후불"
+  },
+  "settlement": {
+    "together": "함께",
+    "separate": "따로"
   }
 }

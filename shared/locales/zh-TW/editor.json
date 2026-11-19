@@ -99,7 +99,7 @@
     "iconUploadInvalid": "無法使用這張圖片：請選擇 8 MB 以內的 PNG/JPEG/WebP",
     "iconUploadTooLarge": "圖片壓縮後仍超過 64 KB：換一張更簡單的圖片（如透明底 logo）試試",
     "billing": "付費方式",
-    "settlement": "帳單與繳費分開記"
+    "settlement": "帳單與繳費"
   },
   "share": {
     "none": "自用",
@@ -254,5 +254,9 @@
   "billing": {
     "prepaid": "先付費",
     "postpaid": "後付費"
+  },
+  "settlement": {
+    "together": "一起記",
+    "separate": "分開記"
   }
 }

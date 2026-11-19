@@ -107,7 +107,7 @@
     "iconUploadInvalid": "Không dùng được ảnh này: hãy chọn PNG/JPEG/WebP tối đa 8 MB",
     "iconUploadTooLarge": "Ảnh vẫn lớn hơn 64 KB sau khi nén: hãy thử ảnh đơn giản hơn, như logo nền trong suốt",
     "billing": "Thanh toán",
-    "settlement": "Ghi hóa đơn và thanh toán riêng"
+    "settlement": "Hóa đơn & thanh toán"
   },
   "share": {
     "none": "Chỉ mình tôi",
@@ -270,5 +270,9 @@
   "billing": {
     "prepaid": "Trả trước",
     "postpaid": "Trả sau"
+  },
+  "settlement": {
+    "together": "Cùng nhau",
+    "separate": "Riêng"
   }
 }

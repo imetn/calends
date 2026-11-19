@@ -112,7 +112,7 @@
     "iconUploadInvalid": "Image inutilisable : choisissez un PNG/JPEG/WebP de 8 Mo maximum",
     "iconUploadTooLarge": "L’image dépasse encore 64 Ko après compression : essayez une image plus simple, comme un logo sur fond transparent",
     "billing": "Paiement",
-    "settlement": "Suivre factures et paiements séparément"
+    "settlement": "Factures et paiements"
   },
   "share": {
     "none": "Moi seul",
@@ -280,5 +280,9 @@
   "billing": {
     "prepaid": "Prépayé",
     "postpaid": "Postpayé"
+  },
+  "settlement": {
+    "together": "Ensemble",
+    "separate": "Séparés"
   }
 }

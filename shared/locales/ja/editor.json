@@ -107,7 +107,7 @@
     "iconUploadInvalid": "この画像は使えません：8 MB 以内の PNG/JPEG/WebP を選んでください",
     "iconUploadTooLarge": "圧縮しても 64 KB を超えています：透過背景のロゴなど、よりシンプルな画像をお試しください",
     "billing": "支払い方式",
-    "settlement": "請求と支払いを分けて記録"
+    "settlement": "請求と支払い"
   },
   "share": {
     "none": "自分だけ",
@@ -270,5 +270,9 @@
   "billing": {
     "prepaid": "前払い",
     "postpaid": "後払い"
+  },
+  "settlement": {
+    "together": "まとめて",
+    "separate": "分けて"
   }
 }

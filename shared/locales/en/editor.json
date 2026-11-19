@@ -112,7 +112,7 @@
     "iconUploadInvalid": "Can't use this image: choose a PNG/JPEG/WebP up to 8 MB",
     "iconUploadTooLarge": "Image is still over 64 KB after compression: try a simpler one, such as a logo on a transparent background",
     "billing": "Payment",
-    "settlement": "Track bills and payments separately"
+    "settlement": "Bills & payments"
   },
   "share": {
     "none": "Just me",
@@ -280,5 +280,9 @@
   "billing": {
     "prepaid": "Prepaid",
     "postpaid": "Postpaid"
+  },
+  "settlement": {
+    "together": "Together",
+    "separate": "Separate"
   }
 }

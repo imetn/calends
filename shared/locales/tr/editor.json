@@ -112,7 +112,7 @@
     "iconUploadInvalid": "Bu görsel kullanılamıyor: en fazla 8 MB PNG/JPEG/WebP seçin",
     "iconUploadTooLarge": "Görsel sıkıştırıldıktan sonra hâlâ 64 KB’tan büyük: şeffaf arka planlı bir logo gibi daha sade bir görsel deneyin",
     "billing": "Ödeme",
-    "settlement": "Faturaları ve ödemeleri ayrı kaydet"
+    "settlement": "Faturalar ve ödemeler"
   },
   "share": {
     "none": "Yalnızca ben",
@@ -279,5 +279,9 @@
   "billing": {
     "prepaid": "Ön ödemeli",
     "postpaid": "Sonradan ödemeli"
+  },
+  "settlement": {
+    "together": "Birlikte",
+    "separate": "Ayrı"
   }
 }

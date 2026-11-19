@@ -492,3 +492,10 @@ test('编辑器图标行：预览与按钮贴右，网址 / emoji 输入点「�
   assert.match(field, /\{link && \(\s*<span className="cell-r icon-input">/);
   assert.match(field, /aria-expanded=\{link\} onClick=\{\(\) => setLink\(!link\)\}/);
 });
+
+test('编辑器「账单与缴费」：收在更多选项的续费规则组，和「付费方式」一样用小号胶囊切换', () => {
+  const field = read('../app/src/views/editor/Sections.tsx');
+  const more = field.slice(field.indexOf('export function MoreFields'));
+  assert.match(more, /<Cell label=\{t\('editor\.field\.settlement'\)\}>\s*<Seg\s+small/);
+  assert.doesNotMatch(field.slice(0, field.indexOf('export function MoreFields')), /editor\.field\.settlement/);
+});

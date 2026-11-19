@@ -112,7 +112,7 @@
     "iconUploadInvalid": "Bild nicht verwendbar: PNG/JPEG/WebP bis 8 MB wählen",
     "iconUploadTooLarge": "Bild ist nach dem Komprimieren noch über 64 KB: ein einfacheres versuchen, etwa ein Logo mit transparentem Hintergrund",
     "billing": "Zahlung",
-    "settlement": "Rechnungen und Zahlungen getrennt erfassen"
+    "settlement": "Rechnungen & Zahlungen"
   },
   "share": {
     "none": "Nur ich",
@@ -280,5 +280,9 @@
   "billing": {
     "prepaid": "Vorauszahlung",
     "postpaid": "Nachträglich"
+  },
+  "settlement": {
+    "together": "Zusammen",
+    "separate": "Getrennt"
   }
 }

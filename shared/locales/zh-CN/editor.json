@@ -99,7 +99,7 @@
     "iconUploadInvalid": "无法使用这张图片：请选择 8 MB 以内的 PNG/JPEG/WebP",
     "iconUploadTooLarge": "图片压缩后仍超过 64 KB：换一张更简单的图片（如透明底 logo）试试",
     "billing": "付费方式",
-    "settlement": "账单与缴费分开记"
+    "settlement": "账单与缴费"
   },
   "share": {
     "none": "自用",
@@ -254,5 +254,9 @@
   "billing": {
     "prepaid": "先付费",
     "postpaid": "后付费"
+  },
+  "settlement": {
+    "together": "一起记",
+    "separate": "分开记"
   }
 }
