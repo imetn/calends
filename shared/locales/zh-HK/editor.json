@@ -91,6 +91,7 @@
     "plan": "方案",
     "iconImported": "輸入網址或 emoji 可替換",
     "iconImage": "圖片圖示",
+    "iconLink": "連結",
     "iconUpload": "上傳",
     "iconChange": "更換圖示",
     "iconUploadHelp": "上傳 PNG/JPEG/WebP（最大 8 MB），會縮成 128px；也可拖入或貼上圖片",

@@ -99,6 +99,7 @@
     "plan": "プラン",
     "iconImported": "URL か絵文字で置き換え",
     "iconImage": "画像アイコン",
+    "iconLink": "URL",
     "iconUpload": "アップロード",
     "iconChange": "アイコンを変更",
     "iconUploadHelp": "PNG/JPEG/WebP（最大 8 MB）をアップロードすると 128px に縮小されます。ドラッグや貼り付けも可",

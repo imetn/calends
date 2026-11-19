@@ -1,4 +1,5 @@
 import { Plus } from 'lucide-react';
+import { useState } from 'react';
 import type { EditorStatus } from './useEditorFields.ts';
 import { MemberSheet } from '../Members.tsx';
 import { isDataIcon } from '../../../../shared/icon.ts';
@@ -350,13 +351,14 @@ export function SharingFields({ context }: { context: ReturnType<typeof useEdito
   );
 }
 
-/** 订阅图标：输入网址 / emoji，或上传本地图片（缩成 128px 内嵌进数据里），也可拖入、粘贴图片 */
+/** 订阅图标：上传本地图片（缩成 128px 内嵌进数据里），也可拖入、粘贴图片；与钱包 Logo 一样，点「链接」才展开网址 / emoji 输入 */
 function IconField({ f, up }: { f: Subscription; up: (p: Partial<Subscription>) => void }) {
   const pick = useIconUpload(up);
   const embedded = isDataIcon(f.icon);
+  const [link, setLink] = useState(false);
   return (
     <div className="cell icon-field" onDragOver={pick.onDragOver} onDrop={pick.onDrop}>
-      {/* 与钱包 Logo 栏一样：「是图片图标」写在标签下（可换行），输入框只留短提示，长文案语言在窄屏也放得下 */}
+      {/* 「是图片图标」写在标签下（可换行），长文案语言在窄屏也放得下 */}
       <span className="cell-l">
         {t('editor.field.icon')}
         {embedded && <small>{t('editor.field.iconImage')}</small>}
@@ -366,7 +368,10 @@ function IconField({ f, up }: { f: Subscription; up: (p: Partial<Subscription>) 
         <button type="button" className="chip-btn" disabled={pick.busy} title={t('editor.field.iconUploadHelp')} onClick={pick.open}>
           {t('editor.field.iconUpload')}
         </button>
-        {embedded && (
+        <button type="button" className={`chip-btn ${link ? 'on' : ''}`} aria-expanded={link} onClick={() => setLink(!link)}>
+          {t('editor.field.iconLink')}
+        </button>
+        {f.icon && (
           <button type="button" className="chip-btn" disabled={pick.busy} onClick={() => up({ icon: undefined })}>
             {t('editor.field.iconClear')}
           </button>
@@ -374,14 +379,17 @@ function IconField({ f, up }: { f: Subscription; up: (p: Partial<Subscription>) 
         {pick.input}
       </span>
       {/* 输入框单独占满整格宽度的第二行；内嵌图片不把整串 base64 塞进来：留空并提示，输入网址或 emoji 即替换 */}
-      <span className="cell-r icon-input">
-        <input
-          value={embedded ? '' : (f.icon ?? '')}
-          placeholder={embedded ? t('editor.field.iconImported') : t('editor.field.auto')}
-          onChange={(e) => up({ icon: (e.target as HTMLInputElement).value || undefined })}
-          onPaste={pick.onPaste}
-        />
-      </span>
+      {link && (
+        <span className="cell-r icon-input">
+          <input
+            autoFocus
+            value={embedded ? '' : (f.icon ?? '')}
+            placeholder={embedded ? t('editor.field.iconImported') : t('editor.field.auto')}
+            onChange={(e) => up({ icon: (e.target as HTMLInputElement).value || undefined })}
+            onPaste={pick.onPaste}
+          />
+        </span>
+      )}
     </div>
   );
 }

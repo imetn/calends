@@ -8030,8 +8030,9 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 .icon-field .cell-l {
   flex: 1 1 0;
 }
+/* 标签被 .cell-l 的 max-width 限住，右侧这组要自己长满剩下的宽度，才能和其他行一样贴右 */
 .icon-field .icon-actions {
-  flex: 0 0 auto;
+  flex: 1 0 auto;
 }
 .icon-field .icon-input {
   flex-basis: 100%;

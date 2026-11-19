@@ -482,3 +482,13 @@ test('登录与首次设置表单为密码管理器提供同一账号和正确�
   assert.match(rule('.login-card .btn'), /height: \d+px/);
   assert.equal(rule('.login-card input').match(/height: (\w+)/)?.[1], rule('.login-card .btn').match(/height: (\w+)/)?.[1]);
 });
+
+test('编辑器图标行：预览与按钮贴右，网址 / emoji 输入点「链接」才展开', () => {
+  const css = read('../app/src/styles.css');
+  assert.match(css, /\.cell-l \{[^}]*max-width: 62%/);
+  assert.match(css, /\.icon-field \.icon-actions \{\s*flex: 1 0 auto;/);
+  // 网址 / emoji 输入与钱包 Logo 一样点「链接」才展开，平时不在预览下面再写一遍同一个图标
+  const field = read('../app/src/views/editor/Sections.tsx');
+  assert.match(field, /\{link && \(\s*<span className="cell-r icon-input">/);
+  assert.match(field, /aria-expanded=\{link\} onClick=\{\(\) => setLink\(!link\)\}/);
+});
