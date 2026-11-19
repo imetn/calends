@@ -181,7 +181,9 @@ export function CarSheet({
           {/* 指标下面：订阅周期与收费周期并排，与订阅详情的本期同一块 */}
           {/* 各人收费周期不一样时只画订阅周期，收费周期看下面成员表的时间线 */}
           {periodLive(s, today) && (
-            <Panel className="dt-about">{collect || contract ? <PeriodPair sub={s} today={today} collect={collect} contract={contract} /> : <PeriodBar sub={s} today={today} split />}</Panel>
+            <Panel className="dt-about">
+              {collect || contract ? <PeriodPair sub={s} today={today} collect={collect} contract={contract} /> : <PeriodBar sub={s} today={today} split />}
+            </Panel>
           )}
 
           {cost && (

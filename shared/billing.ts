@@ -228,8 +228,7 @@ export function contractError(c: Contract, cycle: Cycle): string | undefined {
   if (!c || typeof c !== 'object') return 'contract';
   if (!validDay(c.start)) return 'contract.start';
   const term = c.term;
-  if (!term || !['month', 'year'].includes(term.unit) || !Number.isInteger(term.every) || term.every < 1 || cycleDays(term) > 36525)
-    return 'contract.term';
+  if (!term || !['month', 'year'].includes(term.unit) || !Number.isInteger(term.every) || term.every < 1 || cycleDays(term) > 36525) return 'contract.term';
   if (c.renew != null && c.renew !== 'none') return 'contract.renew';
   if (c.noticeDays != null && (!Number.isInteger(c.noticeDays) || c.noticeDays < 0 || c.noticeDays > 3660)) return 'contract.noticeDays';
   if (!contractFits(term, cycle)) return 'contract.term';

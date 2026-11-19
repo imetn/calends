@@ -309,14 +309,26 @@ test('contract: invalid terms never write; get_subscription reports the current 
   t.after(() => f.db.close());
   const before = await f.snapshot();
   const day = todayIn('UTC');
-  for (const contract of [{ start: day, term: { unit: 'week' } }, { start: 'bad', term: { unit: 'year' } }, { start: day, term: { unit: 'year' }, noticeDays: -2 }]) {
+  for (const contract of [
+    { start: day, term: { unit: 'week' } },
+    { start: 'bad', term: { unit: 'year' } },
+    { start: day, term: { unit: 'year' }, noticeDays: -2 },
+  ]) {
     const r = await f.call('update_subscription', { subscription: 's', set: { contract } });
     assert.equal(r.isError, true, JSON.stringify(contract));
   }
   assert.deepEqual(await f.snapshot(), before);
-  assert.equal((await f.call('update_subscription', { subscription: 's', set: { contract: { start: day, term: { unit: 'year' }, noticeDays: 30 } } })).isError, undefined);
+  assert.equal(
+    (await f.call('update_subscription', { subscription: 's', set: { contract: { start: day, term: { unit: 'year' }, noticeDays: 30 } } })).isError,
+    undefined,
+  );
   const got = await f.call('get_subscription', { subscription: 's' });
-  assert.deepEqual(got.structuredContent.contract, { from: day, until: addDays(nthYear(day), -1), renews_on: nthYear(day), notice_by: addDays(nthYear(day), -30) });
+  assert.deepEqual(got.structuredContent.contract, {
+    from: day,
+    until: addDays(nthYear(day), -1),
+    renews_on: nthYear(day),
+    notice_by: addDays(nthYear(day), -30),
+  });
   assert.equal((await f.call('update_subscription', { subscription: 's', set: { contract: null } })).isError, undefined);
   assert.equal((await f.snapshot()).subscriptions[0].contract, undefined);
 });

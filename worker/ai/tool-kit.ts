@@ -187,7 +187,10 @@ export const CONTRACT = {
   type: 'object',
   properties: {
     start: { type: 'string', description: 'YYYY-MM-DD first day of the first contract term; later terms follow from it.' },
-    term: { ...CYCLE, description: 'Contract length in months or years, e.g. {"unit":"year","every":1} for annual insurance paid monthly. Not shorter than the billing cycle.' },
+    term: {
+      ...CYCLE,
+      description: 'Contract length in months or years, e.g. {"unit":"year","every":1} for annual insurance paid monthly. Not shorter than the billing cycle.',
+    },
     renew: { type: 'string', enum: ['none'], description: 'none: expires after the first term. Omit to renew every term.' },
     noticeDays: { type: 'integer', minimum: 0, maximum: 3660, description: 'Remind this many days before renewal/expiry; omit for no reminder.' },
   },
