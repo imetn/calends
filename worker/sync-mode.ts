@@ -147,7 +147,12 @@ export const disableSql = (): string[] => [
 const MODE_SQL = "coalesce((SELECT value FROM sync_meta WHERE key = 'mode'), 'off')";
 const stateSql = `SELECT ${MODE_SQL} AS mode, (SELECT count(*) FROM sqlite_master WHERE type = 'trigger' AND name IN (${SYNC_TRIGGERS.map((n) => `'${n}'`).join(', ')})) AS n`;
 
-export const isCasError = (e: unknown) => e instanceof Error && /CHECK constraint failed/i.test(e.message);
+/**
+ * sync_cas 核对失败：只认 sync_cas 的 CHECK（ok = 1），别的约束失败照常抛出。实测文案：
+ * D1（workerd）「D1_ERROR: CHECK constraint failed: ok = 1: SQLITE_CONSTRAINT …」；托管 d1-adapter 包一层「D1_ERROR: batch statement i failed: …」；
+ * Docker（node:sqlite）与 App d1-shim（系统 sqlite3_errmsg）「CHECK constraint failed: ok = 1」。老版 SQLite 报表名，一并认。
+ */
+export const isCasError = (e: unknown) => e instanceof Error && /CHECK constraint failed: (?:ok = 1|sync_cas)\b/i.test(e.message);
 
 /** 当前 mode 与已装的同步触发器个数 */
 export async function syncState(env: Env): Promise<{ mode: SyncMode; triggers: number }> {
@@ -158,9 +163,9 @@ export async function syncState(env: Env): Promise<{ mode: SyncMode; triggers: n
 
 export const syncEnabled = (mode: string | undefined) => mode === 'tokens' || mode === 'hosted';
 
-/** 批次首条：mode 仍是 expect，否则整批回滚（CHECK 失败）；extra 是附加条件 SQL */
-export const modeCas = (env: Env, expect: SyncMode, extra = '1'): D1PreparedStatement =>
-  env.DB.prepare(`INSERT INTO sync_cas (ok) SELECT ${MODE_SQL} = ?1 AND (${extra})`).bind(expect);
+/** 批次首条：mode 仍是 expect，否则整批回滚（CHECK 失败）；extra 是附加条件 SQL，其参数从 ?2 起依次对应 binds */
+export const modeCas = (env: Env, expect: SyncMode, extra = '1', ...binds: unknown[]): D1PreparedStatement =>
+  env.DB.prepare(`INSERT INTO sync_cas (ok) SELECT ${MODE_SQL} = ?1 AND (${extra})`).bind(expect, ...binds);
 
 export const stmts = (env: Env, sql: string[]): D1PreparedStatement[] => sql.map((s) => env.DB.prepare(s));
 export const casTail = (env: Env): D1PreparedStatement => env.DB.prepare('DELETE FROM sync_cas');

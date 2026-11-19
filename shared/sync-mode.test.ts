@@ -10,7 +10,7 @@ import type { Env } from '../worker/env.ts';
 import { MIGRATIONS } from '../worker/migrations.gen.ts';
 import { ensureMigrated } from '../worker/migrate.ts';
 import { createSyncToken, revokeSyncToken } from '../worker/sync-auth.ts';
-import { SYNC_TRIGGERS, enableSql, syncState } from '../worker/sync-mode.ts';
+import { SYNC_TRIGGERS, enableSql, isCasError, syncState } from '../worker/sync-mode.ts';
 import { loadState, upsert } from '../worker/store.ts';
 import { withWriteGuard } from '../worker/write-guard.ts';
 
@@ -195,6 +195,54 @@ test('吊销最后一个令牌停用；再次启用换代际，旧 cookie 只得
   assert.equal(replay.status, 200);
   assert.equal(replay.body.lastMutationId, 1);
   assert.equal((await loadState(env)).subscriptions.find((s) => s.id === 's1')?.notes, 'while-off');
+});
+
+test('吊销最后一个令牌：删令牌与停用同批提交，停用批次失败时令牌也不删，不会出现「无令牌却仍启用」', async () => {
+  const env = await fresh();
+  const a = await createSyncToken(env, 'Fictional A');
+  const batch = env.DB.batch.bind(env.DB);
+  const seen: string[][] = [];
+  env.DB.batch = (async (s: D1PreparedStatement[]) => {
+    const sql = s.map((x) => (x as unknown as { sql: string }).sql);
+    seen.push(sql);
+    if (sql.some((q) => q.startsWith('DROP TRIGGER'))) throw new Error('D1_ERROR: fictional storage hiccup');
+    return batch(s);
+  }) as typeof env.DB.batch;
+  await assert.rejects(revokeSyncToken(env, a.item.id), /fictional storage hiccup/);
+  env.DB.batch = batch;
+  assert.ok(seen[0].some((q) => q.startsWith('DELETE FROM sync_tokens')) && seen[0].some((q) => q.startsWith('DROP TRIGGER')), '同一批次');
+  assert.equal(await count(env, 'SELECT count(*) AS n FROM sync_tokens'), 1, '整批回滚，令牌还在');
+  assert.deepEqual(await syncState(env), { mode: 'tokens', triggers: SYNC_TRIGGERS.length });
+  await revokeSyncToken(env, a.item.id);
+  assert.equal(await count(env, 'SELECT count(*) AS n FROM sync_tokens'), 0);
+  assert.deepEqual(await syncState(env), { mode: 'off', triggers: 0 });
+});
+
+test('吊销：还有别的令牌只删这一个；并发吊销最后两个令牌最终停用；吊销不存在的 id 不停用', async () => {
+  const env = await fresh();
+  const a = await createSyncToken(env, 'Fictional A');
+  const b = await createSyncToken(env, 'Fictional B');
+  await revokeSyncToken(env, 'no-such-id');
+  assert.equal((await syncState(env)).mode, 'tokens');
+  await Promise.all([revokeSyncToken(env, a.item.id), revokeSyncToken(env, b.item.id)]);
+  assert.equal(await count(env, 'SELECT count(*) AS n FROM sync_tokens'), 0);
+  assert.deepEqual(await syncState(env), { mode: 'off', triggers: 0 });
+  // 0013 迁移成 tokens 却没有令牌的旧开发库（只有 sync_clients）：吊销不存在的 id 不会把它停用
+  const old = await fresh();
+  await old.DB.batch(enableSql('tokens').map((q) => old.DB.prepare(q)));
+  await revokeSyncToken(old, 'no-such-id');
+  assert.equal((await syncState(old)).mode, 'tokens');
+});
+
+test('isCasError 只认 sync_cas 的核对失败（D1、托管 d1-adapter、node:sqlite 与 App 的实测文案），其他约束失败照常抛', () => {
+  assert.ok(isCasError(new Error('D1_ERROR: CHECK constraint failed: ok = 1: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_CHECK)')));
+  assert.ok(isCasError(new Error('D1_ERROR: batch statement 0 failed: CHECK constraint failed: ok = 1: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_CHECK)')));
+  assert.ok(isCasError(new Error('CHECK constraint failed: ok = 1')));
+  assert.ok(isCasError(new Error('CHECK constraint failed: sync_cas')));
+  assert.ok(!isCasError(new Error('CHECK constraint failed: id = 1')));
+  assert.ok(!isCasError(new Error('CHECK constraint failed: ok = 10')));
+  assert.ok(!isCasError(new Error('UNIQUE constraint failed: sync_tokens.hash')));
+  assert.ok(!isCasError('CHECK constraint failed: ok = 1'));
 });
 
 test('停用与提交交错：停用换代际，停用前算好的提交被守卫拒绝，重算后 409，不写入不完整的进度', async () => {

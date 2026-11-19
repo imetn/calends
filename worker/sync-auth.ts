@@ -75,13 +75,24 @@ export async function createSyncToken(env: Env, name: string): Promise<{ token: 
   throw new Error('sync mode kept changing');
 }
 
-/** 吊销；吊销的是最后一个令牌且由令牌启用（mode = tokens）时停用同步，卸触发器、清空对象表（托管 hosted 不受影响） */
+/**
+ * 吊销；吊销的是最后一个令牌且由令牌启用（mode = tokens）时停用同步，卸触发器、清空对象表（托管 hosted 不受影响）。
+ * 删令牌与停用同批提交：首条核对 mode 仍是 tokens 且除它之外没有别的令牌，不会出现「令牌已删、同步仍开」的中间态。
+ * 核对不过（还有别的令牌、mode 不是 tokens、或并发签发先提交）就只删这一个；真删掉了再按「一个不剩」核对一次停用。
+ * mode = tokens 而没有令牌的库（0013 迁移时只有 sync_clients 的旧开发库）照常保持启用，直到签发再吊销。
+ */
 export async function revokeSyncToken(env: Env, id: string): Promise<void> {
-  await env.DB.prepare('DELETE FROM sync_tokens WHERE id = ?1').bind(id).run();
-  const { mode } = await syncState(env);
-  if (mode !== 'tokens') return;
+  const del = env.DB.prepare('DELETE FROM sync_tokens WHERE id = ?1').bind(id);
   try {
-    // 核对 mode 仍是 tokens 且确实没有令牌了：并发签发先提交时整批回滚，同步保持启用
+    await env.DB.batch([modeCas(env, 'tokens', 'EXISTS (SELECT 1 FROM sync_tokens WHERE id = ?2) AND NOT EXISTS (SELECT 1 FROM sync_tokens WHERE id <> ?2)', id), del, ...stmts(env, disableSql()), casTail(env)]);
+    return;
+  } catch (e) {
+    if (!isCasError(e)) throw e;
+  }
+  const r = await del.run();
+  if (!r.meta.changes) return;
+  // 并发吊销最后两个令牌时双方都看到对方还在、都走了单删：删完再核对一次，确实一个不剩就停用
+  try {
     await env.DB.batch([modeCas(env, 'tokens', 'NOT EXISTS (SELECT 1 FROM sync_tokens)'), ...stmts(env, disableSql()), casTail(env)]);
   } catch (e) {
     if (!isCasError(e)) throw e;
