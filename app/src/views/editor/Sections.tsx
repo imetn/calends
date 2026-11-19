@@ -122,27 +122,6 @@ export function BillingFields({ context }: { context: ReturnType<typeof useEdito
           />
         </Cell>
       )}
-      {f.cycle.unit !== 'lifetime' && (
-        <Cell label={t('editor.field.settlement')}>
-          <Toggle
-            checked={f.settlement === 'separate'}
-            onChange={(v) =>
-              up(
-                v
-                  ? // 打开时记下追踪起点（最早一笔缴费对应的账单，没有缴费时是离今天最近的一期），之前的账单视为已缴；不动账单锚点
-                    { settlement: 'separate', settledBefore: f.settledBefore ?? trackingStart(f, today) }
-                  : // 关掉时不留痕：追踪起点与各笔缴费指定的账单一并清掉
-                    {
-                      settlement: undefined,
-                      settledBefore: undefined,
-                      payments: f.payments?.map(({ periods: _, ...p }) => p),
-                      ...(f.phases ? { phases: f.phases.map((ph) => ({ ...ph, payments: ph.payments?.map(({ periods: _, ...p }) => p) })) } : {}),
-                    },
-              )
-            }
-          />
-        </Cell>
-      )}
       <Cell label={t('editor.field.category')}>
         <Picker
           value={f.category}
@@ -487,6 +466,26 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
             </Group>
             {/* 天数是手填的：减号、可直接输入的数字、加号收在一个胶囊里；说明放在组下方 */}
             <Group title={t('core.renewal.title')} foot={t('core.renewal.hint')}>
+              {/* 账单与缴费分开记是少数账单才用的计费方式，收在这里；打开后下次扣款日改由账单推算，下面那行随之隐藏 */}
+              <Cell label={t('editor.field.settlement')}>
+                <Toggle
+                  checked={f.settlement === 'separate'}
+                  onChange={(v) =>
+                    up(
+                      v
+                        ? // 打开时记下追踪起点（最早一笔缴费对应的账单，没有缴费时是离今天最近的一期），之前的账单视为已缴；不动账单锚点
+                          { settlement: 'separate', settledBefore: f.settledBefore ?? trackingStart(f, today) }
+                        : // 关掉时不留痕：追踪起点与各笔缴费指定的账单一并清掉
+                          {
+                            settlement: undefined,
+                            settledBefore: undefined,
+                            payments: f.payments?.map(({ periods: _, ...p }) => p),
+                            ...(f.phases ? { phases: f.phases.map((ph) => ({ ...ph, payments: ph.payments?.map(({ periods: _, ...p }) => p) })) } : {}),
+                          },
+                    )
+                  }
+                />
+              </Cell>
               {manualDue && (
                 <Cell label={t('core.renewal.nextDue')}>
                   <DatePicker value={manualDue} onChange={(v) => v && up({ nextDue: v })} />

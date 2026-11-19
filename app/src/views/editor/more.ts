@@ -7,7 +7,7 @@ export function editorMoreKeys(f: Subscription, domainCategory = false): string[
     recurring && f.intro && 'editor.more.intro',
     recurring && f.bonus && 'editor.more.bonus',
     recurring && f.remindDays != null && 'editor.more.remind',
-    recurring && (f.chargeLeadDays || f.cancelLeadDays || f.contract) && 'core.renewal.title',
+    recurring && (f.chargeLeadDays || f.cancelLeadDays || f.contract || f.settlement === 'separate') && 'core.renewal.title',
     (f.url?.trim() || f.manageUrl?.trim() || f.icon?.trim() || (domainCategory && f.showOnPublic)) && 'editor.more.links',
     !!f.tags?.length && 'editor.more.tags',
     f.notes?.trim() && 'editor.more.notes',

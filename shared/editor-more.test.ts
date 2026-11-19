@@ -22,6 +22,7 @@ const fields: Partial<Subscription>[] = [
   { chargeLeadDays: 1 },
   { cancelLeadDays: 2 },
   { contract: { start: '2026-01-17', term: { unit: 'year', every: 1 } } },
+  { settlement: 'separate', settledBefore: '2026-10-01' },
   { url: 'https://example.test' },
   { manageUrl: 'https://example.test/account' },
   { icon: '🌟' },
