@@ -413,8 +413,9 @@ function PairSheet({ onClose, onConnected }: { onClose: () => void; onConnected:
     return run(async () => {
       const r = await api<{ code: string; ttlMs: number }>('/api/sync/pair', { method: 'POST' });
       if (n === seq.current) {
-        setNow(performance.now());
-        setPair({ code: r.code, deadline: performance.now() + r.ttlMs });
+        const at = performance.now();
+        setNow(at);
+        setPair({ code: r.code, deadline: at + r.ttlMs });
       }
     });
   };
