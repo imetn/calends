@@ -5,7 +5,7 @@
 import { canonical, envOf, newDb, readLedger, syncView, worker } from './engine.mjs';
 import { toWire } from './ops.mjs';
 
-const { runSync, prepareSync, commitSync, changesSince, disasterRecovery, parseSyncRequest, ensureMigrated, loadState, restoreLedger } = worker;
+const { runSync, prepareSync, commitSync, changesSince, disasterRecovery, parseSyncRequest, ensureMigrated, loadState, restoreLedger, enableSql } = worker;
 
 export const SERVER_PRIVATE = { channels: [{ id: 'mail', secret: 'srv-secret-fictional' }], notifyEmail: 'owner@example.test' };
 const SYNC_TABLES = ['sync_meta', 'sync_head', 'sync_objects', 'sync_clients', 'sync_rejections'];
@@ -20,6 +20,8 @@ class LocalServer {
     this.flags = flags;
     this.pageBytes = pageBytes;
     this.day = 0;
+    // 同步默认休眠；被测服务器按托管方式启用（与 hosting.ts 的 enableSync 同一组语句），再写入的行经触发器推进序号
+    for (const sql of enableSql('hosted')) this.db.exec(sql);
     // 服务器私有设置字段（渠道凭据等）与一个白名单字段；经触发器正常推进序号
     this.db.prepare("INSERT INTO kv (key, value) VALUES ('settings', ?)").run(JSON.stringify({ ...SERVER_PRIVATE, weekStart: 1 }));
     this.backups = [];

@@ -1,5 +1,9 @@
 // 托管接缝：官方托管（每个账本一个库）在自己的 Worker / Durable Object 里挂载这些处理器，鉴权与路由由外层完成。
 // 自部署的 worker/index.ts 走同样的函数，行为不变。
+import type { Env } from './env.ts';
+import { ensureMigrated } from './migrate.ts';
+import { enableHostedSync } from './sync-mode.ts';
+
 export { syncHandler, runSync, parseSyncRequest, hello as syncHello, disasterRecovery, type SyncOptions, type SyncPrincipal } from './sync.ts';
 export { mcpHandler, type McpIdentity } from './ai/mcp.ts';
 /** 托管外层验过 aud=sync 的令牌后把它作为 syncHandler 的 identity 传入；syncHandler 不自己验令牌 */
@@ -8,3 +12,14 @@ export type { SyncIdentity } from './sync-auth.ts';
 export { withLocaleScope, applyLocale, settingsLocale } from './i18n.ts';
 /** 自动迁移按 env.DB 记录完成状态：同一进程里的多个库各自迁移 */
 export { ensureMigrated } from './migrate.ts';
+
+/**
+ * 托管账本的同步启用入口：迁移后把同步置为 hosted（始终启用，不依赖自部署的 sync_tokens 表，吊销令牌也不会停用）。
+ * 托管外层在 provision 账本时、以及每个库的首个请求（调用 syncHandler / runSync 之前）调用；幂等，按 env.DB 只查一次库。
+ * 已经在跑旧版 0009（触发器一直开着）且连接过设备的库只改状态，不换代际；从休眠启用时换代际并补登全部对象。
+ * 不调用时 syncHandler 对该库回 409 sync_disabled。
+ */
+export async function enableSync(env: Env): Promise<void> {
+  await ensureMigrated(env);
+  await enableHostedSync(env);
+}

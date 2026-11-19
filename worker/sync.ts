@@ -1,7 +1,7 @@
 // App 同步协议 v1（docs/sync-api.md）：GET hello、POST sync（推拉合一）。
 // 执行分两段：prepareSync 读一份一致快照，在内存行上用 BatchStore + 现有写工具逐个执行（每个操作一个保存点）；
 // commitSync 一个 D1 batch：首条守卫核对 head、代际与本安装的行未变，再写账本差异、行与拒绝，变了整批回滚，重算最多 3 次后 503。
-// 网页、MCP 等现有路径不经过这里；不调用同步接口时对现有自部署零影响。
+// 网页、MCP 等现有路径不经过这里。同步默认休眠（sync-mode.ts）：未启用时 POST sync 回 409 sync_disabled，不返回不完整的数据。
 import pkg from '../package.json' with { type: 'json' };
 import { MAX_MUTATIONS, MIN_CLIENT_PROTOCOL, PAGE_BYTES, SYNC_PROTOCOL, projectSettings, type RejectCode } from '../shared/sync-check.ts';
 import type { Env } from './env.ts';
@@ -10,6 +10,7 @@ import { ensureMigrated } from './migrate.ts';
 import { loadState, rotateGenerationStmt } from './store.ts';
 import { OP_VERSIONS, parseOpName, SyncExec, type SyncOp } from './sync-ops.ts';
 import { BatchStore, batchReadStmts } from './sync-store.ts';
+import { syncEnabled } from './sync-mode.ts';
 
 export interface SyncRequest {
   protocol: number;
@@ -150,6 +151,8 @@ export async function prepareSync(env: Env, req: SyncRequest, principal?: SyncPr
   const row = (results[2].results[0] as ClientRow | undefined) ?? null;
   const rejections = results[3].results as unknown as Rejection[];
   const { generation: gen, ledgerId, drEpoch } = meta;
+  // 休眠时 sync_objects 不完整（没有触发器），不能回任何进度或数据
+  if (!syncEnabled(meta.mode)) return { kind: 'error', status: 409, code: 'sync_disabled' };
 
   // 写入资格（sync-design 3.2）：注册是单独一步、不带操作；未绑定账本只许纯拉取
   if (req.register && req.mutations.length) return { kind: 'error', status: 400, code: 'register_with_mutations' };
@@ -276,7 +279,7 @@ export async function changesSince(env: Env, cookie: SyncRequest['cookie'], page
       WHEN 'method' THEN (SELECT data FROM methods WHERE id = o.id)
       WHEN 'kv' THEN (SELECT value FROM kv WHERE key = o.id)
       WHEN 'fx' THEN (SELECT json_object('rates', json(rates), 'source', source) FROM fx_daily WHERE date = o.id) END`;
-  const [g, rows, fx] = await env.DB.batch([
+  const [g, rows, fx, m] = await env.DB.batch([
     env.DB.prepare("SELECT value FROM sync_meta WHERE key = 'generation'"),
     env.DB.prepare(
       `SELECT o.kind, o.id, o.seq, o.deleted, ${doc} AS doc FROM sync_objects o
@@ -285,7 +288,10 @@ export async function changesSince(env: Env, cookie: SyncRequest['cookie'], page
        ORDER BY o.seq LIMIT ${LIMIT}`,
     ).bind(cookie?.gen ?? null, cookie?.seq ?? 0),
     env.DB.prepare("SELECT value FROM kv WHERE key = 'fx'"),
+    env.DB.prepare("SELECT value FROM sync_meta WHERE key = 'mode'"),
   ]);
+  // 与对象在同一份快照里核对：提交之后、拉取之前被停用（吊销最后一个令牌）也不会交出被清空的对象表
+  if (!syncEnabled((m.results[0] as { value: string } | undefined)?.value)) throw new SyncHttpError(409, 'sync_disabled');
   const gen = (g.results[0] as { value: string }).value;
   const full = !cookie || cookie.gen !== gen;
   const list = rows.results as Array<{ kind: string; id: string; seq: number; deleted: number; doc: string | null }>;
@@ -327,7 +333,13 @@ export async function runSync(env: Env, req: SyncRequest, opts: SyncOptions = {}
     if (p.kind === 'gone')
       return { status: 200, body: { reqId: req.reqId, ledgerId: p.ledgerId, drEpoch: p.drEpoch, gone: { lastMutationId: p.last, rejections: p.rejections } } };
     opts.onCommitted?.(p.executed);
-    const page = await changesSince(env, req.cookie, opts.pageBytes);
+    let page: Awaited<ReturnType<typeof changesSince>>;
+    try {
+      page = await changesSince(env, req.cookie, opts.pageBytes);
+    } catch (e) {
+      if (e instanceof SyncHttpError) return { status: e.status, body: { error: e.code, code: e.code } };
+      throw e;
+    }
     return {
       status: 200,
       body: {

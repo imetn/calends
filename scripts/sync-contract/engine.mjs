@@ -20,6 +20,7 @@ export const worker = {
   ...(await import('../../worker/sync-store.ts')),
   ...(await import('../../worker/store.ts')),
   ...(await import('../../worker/migrate.ts')),
+  ...(await import('../../worker/sync-mode.ts')),
   ...(await import('../../shared/sync-check.ts')),
 };
 hook.deregister();
@@ -155,7 +156,7 @@ export function newDb() {
   for (const s of template.schema) if (s.type === 'table') db.exec(s.sql);
   for (const t of template.tables) insertRows(db, t, template.data[t]);
   for (const s of template.schema) if (s.type !== 'table') db.exec(s.sql);
-  db.exec("UPDATE sync_meta SET value = lower(hex(randomblob(CASE key WHEN 'ledgerId' THEN 16 ELSE 8 END)))");
+  db.exec("UPDATE sync_meta SET value = lower(hex(randomblob(CASE key WHEN 'ledgerId' THEN 16 ELSE 8 END))) WHERE key IN ('ledgerId', 'generation', 'drEpoch')");
   return db;
 }
 

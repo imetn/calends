@@ -2,6 +2,7 @@
 // 按 env.DB 记录：一个进程里挂多个库（托管时每个账本一个库）时各自迁移，互不以为已完成。
 import type { Env } from './env.ts';
 import { MIGRATIONS } from './migrations.gen.ts';
+import { reconcileSync } from './sync-mode.ts';
 
 const done = new WeakMap<object, Promise<void>>();
 
@@ -28,4 +29,6 @@ async function run(env: Env): Promise<void> {
     await env.DB.batch([...m.statements.map((s) => env.DB.prepare(s)), env.DB.prepare('INSERT INTO d1_migrations (name) VALUES (?1)').bind(m.name)]);
     console.log('[migrate]', m.name);
   }
+  // App 同步默认休眠：mode 与触发器不一致时修正（旧版 0009 装过触发器、又没有令牌的库在这里卸掉）
+  await reconcileSync(env);
 }

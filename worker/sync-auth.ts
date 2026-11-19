@@ -4,6 +4,7 @@
 // 官方托管不用这里：外层验过 aud=sync 的令牌后直接把 SyncIdentity 传给 syncHandler。
 import { randomToken, sha256 } from './auth.ts';
 import type { Env } from './env.ts';
+import { casTail, disableSql, enableSql, isCasError, modeCas, stmts, syncState } from './sync-mode.ts';
 
 /** 已验证的同步主体：自部署来自同步令牌，官方托管由外层注入 */
 export interface SyncIdentity {
@@ -52,14 +53,39 @@ export async function createSyncToken(env: Env, name: string): Promise<{ token: 
     prefix: token.slice(0, SYNC_TOKEN_PREFIX.length + 4),
     createdAt: new Date().toISOString(),
   };
-  await env.DB.prepare('INSERT INTO sync_tokens (id, name, hash, prefix, created_at) VALUES (?1, ?2, ?3, ?4, ?5)')
-    .bind(item.id, item.name, item.hash, item.prefix, item.createdAt)
-    .run();
-  return { token, item };
+  const insert = env.DB.prepare('INSERT INTO sync_tokens (id, name, hash, prefix, created_at) VALUES (?1, ?2, ?3, ?4, ?5)').bind(
+    item.id,
+    item.name,
+    item.hash,
+    item.prefix,
+    item.createdAt,
+  );
+  // 第一个令牌启用同步（sync-mode.ts）：令牌、补登与触发器在同一个批次里，要么都成，要么都不成。
+  // 首条核对 mode 未变；与并发的吊销、签发交错时按新状态重来
+  for (let i = 0; i < 5; i++) {
+    const { mode } = await syncState(env);
+    const body = mode === 'off' ? [insert, ...stmts(env, enableSql('tokens'))] : [insert];
+    try {
+      await env.DB.batch([modeCas(env, mode), ...body, casTail(env)]);
+      return { token, item };
+    } catch (e) {
+      if (!isCasError(e)) throw e;
+    }
+  }
+  throw new Error('sync mode kept changing');
 }
 
+/** 吊销；吊销的是最后一个令牌且由令牌启用（mode = tokens）时停用同步，卸触发器、清空对象表（托管 hosted 不受影响） */
 export async function revokeSyncToken(env: Env, id: string): Promise<void> {
   await env.DB.prepare('DELETE FROM sync_tokens WHERE id = ?1').bind(id).run();
+  const { mode } = await syncState(env);
+  if (mode !== 'tokens') return;
+  try {
+    // 核对 mode 仍是 tokens 且确实没有令牌了：并发签发先提交时整批回滚，同步保持启用
+    await env.DB.batch([modeCas(env, 'tokens', 'NOT EXISTS (SELECT 1 FROM sync_tokens)'), ...stmts(env, disableSql()), casTail(env)]);
+  } catch (e) {
+    if (!isCasError(e)) throw e;
+  }
 }
 
 /** 校验 Bearer 同步令牌；只认同步令牌，MCP 令牌与网页 Cookie 一律不认 */

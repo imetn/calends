@@ -778,29 +778,33 @@ test('审查 R3 P1-1：签发 B 读到旧状态后暂停、期间吊销 A，再�
   const auth = (token: string) => authenticateSync(new Request('https://example.test/', { headers: { authorization: `Bearer ${token}` } }), f.env);
   const A = await createSyncToken(f.env, 'Fictional A');
   const C = await createSyncToken(f.env, 'Fictional C');
-  // 确定交错：拦下签发 B 的写入语句，等吊销 A 完成后再执行
+  // 确定交错：拦下签发 B 的写入批次（含 INSERT INTO sync_tokens），等吊销 A 完成后再执行
   const db = f.env.DB;
   let release!: () => void;
   const gate = new Promise<void>((r) => (release = r));
   let held = false;
   const prepare = db.prepare.bind(db);
+  const batch = db.batch.bind(db);
+  const tagged = new WeakSet<object>();
   (db as { prepare: unknown }).prepare = (sql: string) => {
     const stmt = prepare(sql);
     if (!/INSERT INTO sync_tokens/.test(sql)) return stmt;
     const bind = stmt.bind.bind(stmt);
+    tagged.add(stmt);
     return Object.assign(stmt, {
       bind: (...v: unknown[]) => {
         const b = bind(...v);
-        const run = b.run.bind(b);
-        return Object.assign(b, {
-          run: async () => {
-            held = true;
-            await gate;
-            return run();
-          },
-        });
+        tagged.add(b);
+        return b;
       },
     });
+  };
+  (db as { batch: unknown }).batch = async (list: object[]) => {
+    if (!held && list.some((x) => tagged.has(x))) {
+      held = true;
+      await gate;
+    }
+    return batch(list as never);
   };
   const creating = createSyncToken(f.env, 'Fictional B');
   const isHeld = () => held;
@@ -810,6 +814,7 @@ test('审查 R3 P1-1：签发 B 读到旧状态后暂停、期间吊销 A，再�
   release();
   const B = await creating;
   (db as { prepare: unknown }).prepare = prepare;
+  (db as { batch: unknown }).batch = batch;
   assert.equal(await auth(A.token), undefined, '吊销的 A 不被签发 B 恢复');
   assert.ok(await auth(B.token));
   // 两个并发吊销：各删各的行
