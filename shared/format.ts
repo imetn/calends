@@ -2,6 +2,7 @@ import { DAYS_PER_MONTH } from './billing.ts';
 import { LIFETIME_BILL_MONTHS } from './types.ts';
 import { intlLocale, t } from './i18n.ts';
 import { dateFormat, numberFormat, relativeFormat } from './intl.ts';
+import type { DateOrder } from './date-input.ts';
 
 /** 按当前语言缓存一份货币名称表 */
 let namesLoc = '';
@@ -201,6 +202,25 @@ export function cnDateFull(d: string): string {
 /** 数字日期，顺序与分隔符跟随语言：短的「11/15」「15/11」「15.11.」，带年份的「11/15/2026」「15/11/2026」「2026/11/15」 */
 export function numericDate(d: string, opts: { year?: boolean } = {}): string {
   return fmtDate(d, opts.year ? { year: 'numeric', month: '2-digit', day: '2-digit' } : { month: 'numeric', day: 'numeric' });
+}
+
+/** 当前语言数字日期的字段顺序与写法：en-AU「dmy」「DD/MM/YYYY」，zh-CN「ymd」「YYYY/MM/DD」；手动输入日期时预填与解析都按它 */
+function numericParts(): Intl.DateTimeFormatPart[] {
+  return dateFormat(intlLocale(), { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' }).formatToParts(new Date(Date.UTC(2026, 10, 19)));
+}
+export function dateOrder(): DateOrder {
+  const order = numericParts()
+    .map((p) => p.type[0])
+    .filter((c) => c === 'y' || c === 'm' || c === 'd')
+    .join('');
+  return order === 'dmy' || order === 'mdy' ? order : 'ymd';
+}
+const PATTERN: Partial<Record<string, string>> = { year: 'YYYY', month: 'MM', day: 'DD' };
+export function datePattern(): string {
+  return numericParts()
+    .map((p) => PATTERN[p.type] ?? p.value)
+    .join('')
+    .trim();
 }
 
 /** 「2026年10月」「Oct 2026」；month 为 YYYY-MM。numeric 写成两位年份的数字月份：「10/26」「26/10」 */

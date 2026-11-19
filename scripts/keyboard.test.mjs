@@ -187,3 +187,9 @@ test('a region skips primary buttons owned by a nested submit region', () => {
   assert.equal(nestedClicks, 0);
   assert.deepEqual(f.clicks(), [0, 1]);
 });
+
+test('issue #20: the inline date input handles Enter itself instead of saving the sheet with an uncommitted draft', async () => {
+  const { readFileSync } = await import('node:fs');
+  const source = readFileSync(new URL('../app/src/components/DatePicker.tsx', import.meta.url), 'utf8');
+  assert.match(source, /className=\{`dp-btn editing[^>]*data-submit=""/);
+});

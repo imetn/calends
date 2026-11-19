@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { dateFormat } from '../../../shared/intl.ts';
 import { addDays, addMonths, parseDay } from '../../../shared/billing.ts';
-import { cnDateFull, monthLabel, numericDate, weekdayShort } from '../../../shared/format.ts';
+import { cnDateFull, dateOrder, datePattern, monthLabel, numericDate, weekdayShort } from '../../../shared/format.ts';
 import { intlLocale, t } from '../../../shared/i18n.ts';
 import { parseDateInput } from '../../../shared/date-input.ts';
 import { getState, today as todayOf } from '../store.ts';
@@ -131,7 +131,8 @@ export function DatePicker({
     setEditWidth(trigger.current?.offsetWidth || undefined);
     setOpen(false);
     setError(undefined);
-    setDraft(value ?? '');
+    // 按当前语言的数字日期预填（en-AU「19/11/2026」、zh-CN「2026/11/19」），与显示一致
+    setDraft(value ? numericDate(value, { year: true }) : '');
     setEditing(true);
   };
   const disabled = (d: string) => (!!min && d < min) || (!!max && d > max);
@@ -154,7 +155,7 @@ export function DatePicker({
       setEditing(false);
       return;
     }
-    const parsed = parseDateInput(draft);
+    const parsed = parseDateInput(draft, dateOrder());
     if (!parsed) {
       setError(t('picker.date.invalid'));
       return;
@@ -179,11 +180,12 @@ export function DatePicker({
   return (
     <div className="dp">
       {editing ? (
-        <span className={`dp-btn editing ${error ? 'invalid' : ''}`} style={editWidth ? { width: editWidth } : undefined}>
+        // data-submit=""：回车在这里提交日期，不要越过它去点弹窗的「完成」（会丢掉还没提交的输入）
+        <span className={`dp-btn editing ${error ? 'invalid' : ''}`} style={editWidth ? { width: editWidth } : undefined} data-submit="">
           <input
             ref={input}
             value={draft}
-            placeholder={placeholder}
+            placeholder={datePattern()}
             aria-label={ariaLabel ?? t('picker.date.placeholder')}
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
