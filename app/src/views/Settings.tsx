@@ -823,7 +823,7 @@ export function AvatarField({
             placeholder="https://"
             aria-label={t('wallet.logo.link')}
             onChange={(e) => setUrl((e.target as HTMLInputElement).value)}
-            onBlur={() => url.trim() !== (avatar ?? '') && void set(url.trim() || null)}
+            onBlur={() => url.trim() !== linkOf(avatar) && void set(url.trim() || null)}
           />
           <img className="avatar-preview" src={base(avatarOf({ avatar: avatar ?? fallback }))} alt="" />
           <button type="button" className="chip-btn" onClick={() => file.current?.click()}>

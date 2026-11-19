@@ -650,7 +650,7 @@ function ContractFields({ f, up, today }: { f: Subscription; up: (p: Partial<Sub
             value={unit}
             onChange={(u) => {
               const next = u === 'month' ? 'month' : 'year';
-              setTerm({ unit: next, every: Math.max(c.term.every, minEvery(next, f.cycle)) });
+              setTerm({ unit: next, every: Math.min(next === 'month' ? 1200 : 100, Math.max(c.term.every, minEvery(next, f.cycle))) });
             }}
             options={[
               { value: 'month', label: t('editor.unit.month', { count: c.term.every }) },

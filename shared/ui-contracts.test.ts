@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { transformSync } from 'oxc-transform-react';
 import { DEFAULT_SETTINGS } from './types.ts';
-import { FALLBACK_FX, todayIn, addDays } from './billing.ts';
+import { FALLBACK_FX, todayIn, addDays, contractFits, contractError } from './billing.ts';
 import { TRANSLATED_LOCALES } from './i18n.ts';
 import { buildIcs } from '../worker/ics.ts';
 
@@ -517,5 +517,86 @@ test('钱包 Logo 与头像：图片链接行内输入，不再点「链接」�
     const src = read(file);
     assert.doesNotMatch(src, /setLink|linkBtn/, file);
     assert.match(src, /<span className="cell-r">\s*<input\s/, file);
+  }
+});
+
+test('上传头像的空链接框未编辑时失焦保留头像，编辑链接与清除仍生效', () => {
+  const source = read('../app/src/views/Settings.tsx').split('export function AvatarField')[1];
+  const result = transformSync('AvatarField.tsx', `function AvatarField${source}`, { lang: 'tsx', jsx: { runtime: 'classic' }, reactCompiler: false });
+  assert.equal(result.fatal, false);
+  const React = { Fragment: 'fragment', createElement: (type: unknown, props: unknown, ...children: unknown[]) => ({ type, props, children }) };
+  for (const avatar of [undefined, 'data:image/webp;base64,AAAA', 'https://example.test/avatar.png']) {
+    for (const edit of [undefined, '', ' https://example.test/new.png ']) {
+      const states: unknown[] = [];
+      let cursor = 0;
+      const changes: unknown[] = [];
+      const useState = (initial: unknown) => {
+        const i = cursor++;
+        if (!(i in states)) states[i] = initial;
+        return [states[i], (v: unknown) => (states[i] = v)];
+      };
+      const AvatarField = new Function('React', 'useState', 'useRef', 't', 'base', 'avatarOf', `${result.code}; return AvatarField;`)(
+        React,
+        useState,
+        () => ({ current: null }),
+        (k: string) => k,
+        (v: unknown) => v,
+        (v: { avatar?: string }) => v.avatar,
+      );
+      const render = () => {
+        cursor = 0;
+        return aiNodes(AvatarField({ avatar, onChange: (v: unknown) => changes.push(v) }));
+      };
+      let nodes = render();
+      let input = nodes.find((n) => n.type === 'input' && n.props.placeholder === 'https://')!;
+      if (edit !== undefined) {
+        input.props.onChange({ target: { value: edit } });
+        nodes = render();
+        input = nodes.find((n) => n.type === 'input' && n.props.placeholder === 'https://')!;
+      }
+      input.props.onBlur();
+      const initial = avatar?.startsWith('data:') ? '' : (avatar ?? '');
+      assert.deepEqual(changes, edit === undefined || edit.trim() === initial ? [] : [edit.trim() || null]);
+      if (avatar?.startsWith('data:')) {
+        changes.length = 0;
+        nodes.find((n) => n.type === 'button' && n.children.includes('wallet.logo.clear' as any))!.props.onClick();
+        assert.deepEqual(changes, [null]);
+      }
+    }
+  }
+});
+
+test('自定义合同切换月年单位保留可用数值，并限制目标单位范围', () => {
+  const source = read('../app/src/views/editor/Sections.tsx').split('const CONTRACT_TERMS =')[1];
+  const result = transformSync('ContractFields.tsx', `const CONTRACT_TERMS =${source}`, { lang: 'tsx', jsx: { runtime: 'classic' }, reactCompiler: false });
+  assert.equal(result.fatal, false);
+  const React = { Fragment: 'fragment', createElement: (type: unknown, props: unknown, ...children: unknown[]) => ({ type, props, children }) };
+  const deps = {
+    React,
+    useState: () => [true, () => {}],
+    RENEW_CYCLES: [],
+    contractFits,
+    t: (k: string) => k,
+    cycleName: (k: string) => k,
+    Group: 'Group',
+    Cell: 'Cell',
+    Picker: 'Picker',
+    Stepper: 'Stepper',
+    DatePicker: 'DatePicker',
+    Toggle: 'Toggle',
+  };
+  const ContractFields = new Function(...Object.keys(deps), `${result.code}; return ContractFields;`)(...Object.values(deps));
+  for (const [unit, every, next, expected] of [
+    ['month', 120, 'year', 100],
+    ['month', 1200, 'year', 100],
+    ['month', 18, 'year', 18],
+    ['year', 100, 'month', 100],
+  ] as const) {
+    let saved: any;
+    const f = { cycle: { unit: 'month', every: 1 }, contract: { start: '2026-01-01', term: { unit, every } } };
+    const nodes = aiNodes(ContractFields({ f, today: '2026-11-19', up: (v: unknown) => (saved = v) }));
+    nodes.find((n) => n.type === 'Picker' && n.props.ariaLabel === 'editor.unit.label')!.props.onChange(next);
+    assert.deepEqual(saved.contract.term, { unit: next, every: expected });
+    assert.equal(contractError(saved.contract, f.cycle as any), undefined);
   }
 });
