@@ -2,7 +2,7 @@ import { amountTotal, chargesTotal, formatTotal, sumTotals } from '../../../../s
 import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { Plus } from 'lucide-react';
-import { chargeDay, chargeServicePeriod, isPostpaid, isSeparate, type Charge } from '../../../../shared/billing.ts';
+import { addDays, chargeDay, chargeServicePeriod, isPostpaid, isSeparate, type Charge } from '../../../../shared/billing.ts';
 import { meterDecimals, meterRows, meterView } from '../../../../shared/meters.ts';
 import { chargesUsage, chargeUsage, fixedQty, periodLabel, withUnit } from './ChargeTip.tsx';
 import { flow, cnDate, cnDateFull, wholeCurrencies, wholeOpts } from '../../../../shared/format.ts';
@@ -131,23 +131,19 @@ export function Charges({
         : rows.some((r) => periodOf(r.c))
           ? 'service'
           : undefined;
-  // 起止日各自不断开，列窄时在「–」后换行
-  const rangeCell = (label: string) => {
-    const [a, b] = label.split(' – ');
-    return b == null ? (
-      label
-    ) : (
-      <>
-        <span className="dt-nw">{a} –</span> <span className="dt-nw">{b}</span>
-      </>
-    );
+  // 服务期只写月日，跨年也不写年份（年份看左边的扣款日）；从扣款日当天起时只写止日
+  const serviceCell = (c: Charge) => {
+    const p = periodOf(c);
+    if (!p) return null;
+    const last = cnDate(addDays(p.until, -1));
+    return p.from === c.date ? t('detail.charges.to', { date: last }) : `${cnDate(p.from)} – ${last}`;
   };
+  // 年份行写这一年的扣款服务到哪天
   const yearRange = (cs: Charge[]) => {
     const ps = cs.map(periodOf).filter((p) => !!p);
     if (!ps.length) return null;
-    const from = ps.reduce((a, p) => (p.from < a ? p.from : a), ps[0].from);
     const until = ps.reduce((a, p) => (p.until > a ? p.until : a), ps[0].until);
-    return rangeCell(periodLabel({ from, until }, today));
+    return t('detail.charges.to', { date: cnDate(addDays(until, -1)) });
   };
   return (
     <Panel
@@ -263,10 +259,7 @@ export function Charges({
                   <time dateTime={c.date}>{cnDateFull(c.date)}</time>
                 ) : null
               ) : fourth === 'service' ? (
-                (() => {
-                  const p = periodOf(c);
-                  return p ? rangeCell(periodLabel(p, today)) : null;
-                })()
+                serviceCell(c)
               ) : null,
             origClass: fourth !== 'cost' && b < 0 ? 'dt-in' : undefined,
             baseClass: fourth === 'cost' && b < 0 ? 'dt-in' : undefined,

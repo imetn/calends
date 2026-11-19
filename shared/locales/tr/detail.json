@@ -81,7 +81,8 @@
     "head": {
       "service": "Hizmet dönemi",
       "paid": "Ödeme tarihi"
-    }
+    },
+    "to": "{date} tarihine kadar"
   },
   "stats": {
     "spent": "Toplam harcama",

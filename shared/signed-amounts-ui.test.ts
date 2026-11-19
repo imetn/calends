@@ -286,6 +286,19 @@ test('Detail charge rows and annual totals show expenses/refunds consistently, i
   assert.ok(same.includes('detail.charges.head.service'));
   assert.ok(same.includes('dt-ledger-text'));
   assert.ok(!same.includes('proxy.table.cost'));
+  // 从扣款日当天起只写止日（月日，跨年也不写年份），不重复起点
+  const yearly = { ...sub, id: 'fictional-yearly', start: '2025-04-09', cycle: { unit: 'year', every: 1 } };
+  const annual = renderToStaticMarkup(
+    React.createElement(Charges, {
+      sub: yearly,
+      state,
+      today: '2026-10-22',
+      history: [{ sub: yearly, date: '2025-04-09', amount: 60, currency: 'USD' }],
+      onRow() {},
+    }),
+  );
+  assert.ok(annual.includes('detail.charges.to'));
+  assert.ok(!annual.includes(' – '));
   const foreign = [...monthly.slice(1), { ...monthly[0], settled: { amount: 150, currency: 'CNY' } }];
   const cross = renderToStaticMarkup(React.createElement(Charges, { sub, state, today: '2026-10-22', history: foreign, onRow() {} }));
   assert.ok(cross.includes('proxy.table.cost'));

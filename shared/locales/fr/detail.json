@@ -84,7 +84,8 @@
     "head": {
       "service": "Période de service",
       "paid": "Payé le"
-    }
+    },
+    "to": "Jusqu’au {date}"
   },
   "stats": {
     "spent": "Total dépensé",

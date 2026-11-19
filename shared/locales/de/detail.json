@@ -84,7 +84,8 @@
     "head": {
       "service": "Leistungszeitraum",
       "paid": "Bezahlt am"
-    }
+    },
+    "to": "bis {date}"
   },
   "stats": {
     "spent": "Gesamtausgaben",

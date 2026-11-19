@@ -81,7 +81,8 @@
     "head": {
       "service": "서비스 기간",
       "paid": "납부일"
-    }
+    },
+    "to": "{date}까지"
   },
   "stats": {
     "spent": "총 지출",

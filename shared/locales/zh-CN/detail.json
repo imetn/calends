@@ -81,7 +81,8 @@
     "head": {
       "service": "服务期",
       "paid": "缴费日"
-    }
+    },
+    "to": "至 {date}"
   },
   "stats": {
     "spent": "累计花了",

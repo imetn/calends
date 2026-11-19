@@ -81,7 +81,8 @@
     "head": {
       "service": "Kỳ dịch vụ",
       "paid": "Ngày thanh toán"
-    }
+    },
+    "to": "Đến {date}"
   },
   "stats": {
     "spent": "Tổng chi",

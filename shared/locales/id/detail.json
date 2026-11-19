@@ -81,7 +81,8 @@
     "head": {
       "service": "Periode layanan",
       "paid": "Dibayar pada"
-    }
+    },
+    "to": "Sampai {date}"
   },
   "stats": {
     "spent": "Total pengeluaran",

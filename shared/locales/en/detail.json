@@ -84,7 +84,8 @@
     "head": {
       "service": "Service period",
       "paid": "Paid on"
-    }
+    },
+    "to": "Until {date}"
   },
   "stats": {
     "spent": "Total spent",
