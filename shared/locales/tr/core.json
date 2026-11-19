@@ -229,6 +229,24 @@
     "cancelReminder": "Sonraki ödemeyi önlemek için {date} tarihine kadar iptal edin.",
     "none": "Yok"
   },
+  "contract": {
+    "title": "Sözleşme",
+    "term": "Sözleşme süresi",
+    "start": "Sözleşme başlangıcı",
+    "renews": "Süre sonunda yenilenir",
+    "noticeDays": "Yenileme hatırlatıcısı",
+    "noticeOff": "Kapalı",
+    "off": "Yok",
+    "renewsOn": "Sözleşme {date} tarihinde yenilenir",
+    "endsOn": "Sözleşme {date} tarihinde sona erer",
+    "renewNotice": "Yenileme hatırlatıcısı",
+    "endNotice": "Bitiş hatırlatıcısı",
+    "renewed": "Sözleşme yenilendi",
+    "renewing": "Sözleşme yenilenecek",
+    "ended": "Sözleşme sona erdi",
+    "ending": "Sözleşme sona erecek",
+    "invalid": "Geçersiz sözleşme süresi: başlangıç tarihi gerekir ve ödeme döngüsünden kısa olamaz."
+  },
   "import": {
     "invalid": "Bu dosya abonelik verisi olarak okunamadı.",
     "tooLarge": "En fazla 32 MB boyutunda bir dosya seçin.",

@@ -1,5 +1,6 @@
 import { isImageIcon } from '../shared/icon.ts';
 import { addDays, addMonths, chargesBetween, renewalRuleAt, todayIn, chargeMethodId, isSeparate, type Charge } from '../shared/billing.ts';
+import { contractEvents } from '../shared/contract.ts';
 import { cnDateFull, money } from '../shared/format.ts';
 import { t } from '../shared/i18n.ts';
 import type { AppState, Subscription } from '../shared/types.ts';
@@ -105,6 +106,31 @@ export function buildIcs(state: AppState, siteUrl: string): string {
             'END:VALARM',
           );
       }
+      lines.push('END:VEVENT');
+    }
+    // 合同续约 / 到期单独成事件，提醒按合同期自己的提前天数
+    for (const e of contractEvents(s, from, to, today)) {
+      const end = e.kind === 'end';
+      const day = end ? e.until : e.date;
+      const d = day.replace(/-/g, '');
+      lines.push(
+        'BEGIN:VEVENT',
+        `UID:${s.id}-contract-${d}@${new URL(siteUrl).host}`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${d}`,
+        `DTEND;VALUE=DATE:${addDays(day, 1).replace(/-/g, '')}`,
+        fold(`SUMMARY:${icsText(t(end ? 'server.ics.contractEnd' : 'server.ics.contract', { name: s.name }))}`),
+        fold(`DESCRIPTION:${icsText(`${siteUrl}/`)}`),
+        'TRANSP:TRANSPARENT',
+      );
+      if (e.noticeDays != null && day > today)
+        lines.push(
+          'BEGIN:VALARM',
+          'ACTION:DISPLAY',
+          fold(`DESCRIPTION:${icsText(t(end ? 'server.ics.contractEnd' : 'server.ics.contract', { name: s.name }))}`),
+          `TRIGGER:${e.noticeDays === 0 ? 'PT9H' : `-P${e.noticeDays - 1}DT15H`}`,
+          'END:VALARM',
+        );
       lines.push('END:VEVENT');
     }
   }

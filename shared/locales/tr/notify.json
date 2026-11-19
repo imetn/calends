@@ -51,7 +51,8 @@
     "carpool": "Ortak plan ödemeleri",
     "proxy": "Başkaları için ödemelerden alacaklar",
     "ending": "Yakında sona erenler",
-    "month": "Bu ayın ödemeleri"
+    "month": "Bu ayın ödemeleri",
+    "contract": "Sözleşme yenilemeleri"
   },
   "daily": {
     "subject": "Abonelik hatırlatması: {title}",
@@ -116,5 +117,11 @@
     },
     "emailNotConfigured": "Bu sunucuda e-posta gönderimi ayarlı değil (EMAIL bağlaması ve MAIL_FROM gerekli). Başka bir kanal kullanın veya README'ye bakın."
   },
-  "sender": "Calends"
+  "sender": "Calends",
+  "contract": {
+    "sub": "Sözleşme {when} yenilenir ({date})",
+    "endSub": "Sözleşme {when} sona erer ({date})",
+    "headline": "{name} sözleşmesi {when} yenilenir",
+    "endHeadline": "{name} sözleşmesi {when} sona erer"
+  }
 }

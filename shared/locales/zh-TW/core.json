@@ -198,6 +198,24 @@
     "cancelReminder": "請在 {date} 前取消，避免下一期扣款。",
     "none": "不需要"
   },
+  "contract": {
+    "title": "合約期",
+    "term": "合約期限",
+    "start": "合約開始",
+    "renews": "期滿自動續約",
+    "noticeDays": "續約提醒",
+    "noticeOff": "不提醒",
+    "off": "無",
+    "renewsOn": "合約 {date} 續約",
+    "endsOn": "合約 {date} 到期",
+    "renewNotice": "續約提醒",
+    "endNotice": "到期提醒",
+    "renewed": "合約續約",
+    "renewing": "合約續約",
+    "ended": "合約到期",
+    "ending": "合約到期",
+    "invalid": "合約期無效：需要開始日期，且不能短於付費週期。"
+  },
   "import": {
     "invalid": "無法將此檔案讀取為訂閱資料。",
     "tooLarge": "請選擇不超過 32 MB 的檔案。",

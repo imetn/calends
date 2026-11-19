@@ -51,7 +51,8 @@
     "carpool": "Cobros de planes compartidos",
     "proxy": "Pendiente por pagos por otros",
     "ending": "Terminan pronto",
-    "month": "Cobros de este mes"
+    "month": "Cobros de este mes",
+    "contract": "Renovaciones de contrato"
   },
   "daily": {
     "subject": "Recordatorio de suscripción: {title}",
@@ -116,5 +117,11 @@
     },
     "emailNotConfigured": "El correo no está configurado en este servidor (requiere el binding EMAIL y MAIL_FROM). Usa otro canal o consulta el README."
   },
-  "sender": "Calends"
+  "sender": "Calends",
+  "contract": {
+    "sub": "El contrato se renueva {when} ({date})",
+    "endSub": "El contrato termina {when} ({date})",
+    "headline": "El contrato de {name} se renueva {when}",
+    "endHeadline": "El contrato de {name} termina {when}"
+  }
 }

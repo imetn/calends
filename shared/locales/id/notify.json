@@ -49,7 +49,8 @@
     "carpool": "Pembayaran paket bersama",
     "proxy": "Talangan yang belum diganti",
     "ending": "Segera berakhir",
-    "month": "Tagihan bulan ini"
+    "month": "Tagihan bulan ini",
+    "contract": "Perpanjangan kontrak"
   },
   "daily": {
     "subject": "Pengingat langganan: {title}",
@@ -113,5 +114,11 @@
     },
     "emailNotConfigured": "Email belum diatur di server ini (perlu binding EMAIL dan MAIL_FROM). Gunakan kanal lain atau lihat README."
   },
-  "sender": "Calends"
+  "sender": "Calends",
+  "contract": {
+    "sub": "Kontrak diperpanjang {when} ({date})",
+    "endSub": "Kontrak berakhir {when} ({date})",
+    "headline": "Kontrak {name} diperpanjang {when}",
+    "endHeadline": "Kontrak {name} berakhir {when}"
+  }
 }

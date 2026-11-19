@@ -21,8 +21,8 @@ for (let i = 0; i < args.length; i++) {
 }
 assert.ok(out, 'Usage: node scripts/detail-shots.mjs --out <directory> [--cases 4,15] [--keep]');
 assert.ok(
-  !selected || (selected.length && selected.every((n) => Number.isInteger(n) && n >= 1 && n <= 41)),
-  'Cases must be 1–41 (38 and 41 select both variants)',
+  !selected || (selected.length && selected.every((n) => Number.isInteger(n) && n >= 1 && n <= 42)),
+  'Cases must be 1–42 (38 and 41 select both variants)',
 );
 out = resolve(out);
 await mkdir(out, { recursive: true });

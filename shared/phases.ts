@@ -5,6 +5,7 @@ import {
   billingPeriod,
   chargesBetween,
   collectionAnchor,
+  contractFits,
   currentPhase,
   chargeBefore,
   chargeOfService,
@@ -51,6 +52,7 @@ function fromTop(s: Subscription, start: string): Phase {
     cancelLeadDays: s.cancelLeadDays,
     renewalHistory: s.renewalHistory,
     renewalOffsetDays: s.renewalOffsetDays,
+    contract: s.contract,
     end: s.end,
     stop: s.stop,
     price: s.price,
@@ -78,6 +80,7 @@ function phaseToTop(s: Subscription, p: Phase): Subscription {
     cancelLeadDays: p.cancelLeadDays,
     renewalHistory: p.renewalHistory,
     renewalOffsetDays: p.renewalOffsetDays,
+    contract: p.contract,
     end: p.end,
     stop: p.stop,
     price: p.price,
@@ -106,6 +109,7 @@ function phaseBase(sub: Subscription): Subscription {
     cancelLeadDays: undefined,
     renewalHistory: undefined,
     renewalOffsetDays: undefined,
+    contract: undefined,
     stop: undefined,
     billing: undefined,
     methodId: undefined,
@@ -138,6 +142,7 @@ function mirror(s: Subscription, phases: Phase[]): Subscription {
     cancelLeadDays: last.cancelLeadDays,
     renewalHistory: last.renewalHistory,
     renewalOffsetDays: last.renewalOffsetDays,
+    contract: last.contract,
 
     priceHistory: undefined,
     // 首期优惠、赠送时长跟着最后一段走，编辑表单才能看到并修改；计费只读阶段，不会重复生效
@@ -181,7 +186,9 @@ export function switchPlan(s: Subscription, at: string, next: PlanChange, keepUn
   // 已经结束的段保持原结束日，中间的空档就是断更期
   if (!last.stop && !(last.end && last.end < at)) last.end = keepUntil ?? addDays(at, -1);
   endBefore(phases, at, last);
-  phases.push({ start: at, ...next });
+  // 换套餐默认沿用原合同期；新周期比合同期还长时合同期失效
+  const contract = next.contract ?? (last.contract && contractFits(last.contract.term, next.cycle) ? last.contract : undefined);
+  phases.push({ start: at, ...next, contract });
   return { ...mirror(s, phases), status: 'active', pausedAt: undefined };
 }
 
@@ -456,6 +463,7 @@ export function toEditForm(s: Subscription, today: string): Subscription {
     cancelLeadDays: p.cancelLeadDays,
     renewalHistory: p.renewalHistory,
     renewalOffsetDays: p.renewalOffsetDays,
+    contract: p.contract,
     intro: p.intro,
     bonus: p.bonus,
     nextDue: p.nextDue,
@@ -480,6 +488,7 @@ export function syncPhase(s: Subscription, today: string): Subscription {
     cancelLeadDays: s.cancelLeadDays,
     renewalHistory: s.renewalHistory,
     renewalOffsetDays: s.renewalOffsetDays,
+    contract: s.contract,
     intro: s.intro,
     bonus: s.bonus,
     // 旧草稿没有这个键时不清掉这一段的下次扣款日

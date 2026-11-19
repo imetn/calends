@@ -292,7 +292,35 @@ const mutations: Array<[string, object, (st: AppState) => unknown]> = [
     { subscription: 's', action: 'edit', at: todayIn('UTC'), set: { price: 15, priceHistory: [{ from: todayIn('UTC'), amount: 15 }], nextDue: '2026-12-01' } },
     (st) => st.subscriptions[0].phases?.[0].price === 15,
   ],
+  [
+    'update_subscription',
+    { subscription: 's', set: { contract: { start: todayIn('UTC'), term: { unit: 'year' }, noticeDays: 30 } } },
+    (st) => st.subscriptions[0].contract?.term.every === 1 && st.subscriptions[0].contract.noticeDays === 30,
+  ],
+  [
+    'change_plan',
+    { subscription: 's', action: 'edit', at: todayIn('UTC'), set: { contract: { start: todayIn('UTC'), term: { unit: 'month', every: 6 }, renew: 'none' } } },
+    (st) => st.subscriptions[0].phases?.[0].contract?.renew === 'none',
+  ],
 ];
+
+test('contract: invalid terms never write; get_subscription reports the current term', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const before = await f.snapshot();
+  const day = todayIn('UTC');
+  for (const contract of [{ start: day, term: { unit: 'week' } }, { start: 'bad', term: { unit: 'year' } }, { start: day, term: { unit: 'year' }, noticeDays: -2 }]) {
+    const r = await f.call('update_subscription', { subscription: 's', set: { contract } });
+    assert.equal(r.isError, true, JSON.stringify(contract));
+  }
+  assert.deepEqual(await f.snapshot(), before);
+  assert.equal((await f.call('update_subscription', { subscription: 's', set: { contract: { start: day, term: { unit: 'year' }, noticeDays: 30 } } })).isError, undefined);
+  const got = await f.call('get_subscription', { subscription: 's' });
+  assert.deepEqual(got.structuredContent.contract, { from: day, until: addDays(nthYear(day), -1), renews_on: nthYear(day), notice_by: addDays(nthYear(day), -30) });
+  assert.equal((await f.call('update_subscription', { subscription: 's', set: { contract: null } })).isError, undefined);
+  assert.equal((await f.snapshot()).subscriptions[0].contract, undefined);
+});
+const nthYear = (day: string) => `${Number(day.slice(0, 4)) + 1}${day.slice(4) === '-02-29' ? '-02-28' : day.slice(4)}`;
 for (const [name, args, verify] of mutations)
   test(`${name} ${JSON.stringify(args)}: MCP preview, permission denial, save and reread`, async (t) => {
     const f = await setup();

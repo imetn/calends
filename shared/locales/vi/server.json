@@ -37,7 +37,9 @@
   "ics": {
     "calName": "Khoản phí gói đăng ký",
     "method": "Thanh toán: {name}",
-    "alarm": "{name} sắp gia hạn"
+    "alarm": "{name} sắp gia hạn",
+    "contract": "Hợp đồng {name} gia hạn",
+    "contractEnd": "Hợp đồng {name} kết thúc"
   },
   "invalidPerson": "Cần nhập tên",
   "personNotFound": "Không tìm thấy người này",

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
-import { migrateRenewalRules } from '../../../../shared/billing.ts';
+import { contractFits, migrateRenewalRules } from '../../../../shared/billing.ts';
 import { toEditForm } from '../../../../shared/phases.ts';
 import { stopForm, type StopForm } from '../../../../shared/stop-form.ts';
 import { newSub } from './new-sub.ts';
@@ -32,7 +32,12 @@ export function useEditorDraft({ sub, state, today, onClose }: { sub: Subscripti
       setStop(form.stop || form.end || ['cancelled', 'terminated'].includes(form.status) ? stopForm(form, today, state) : undefined);
     }
   };
-  const up = (p: Partial<Subscription>) => setFRaw((x) => ({ ...x, ...p }));
+  // 改周期（如改成买断）后合同期不再成立时一并清掉，否则字段被隐藏却拦住保存
+  const up = (p: Partial<Subscription>) =>
+    setFRaw((x) => {
+      const next = { ...x, ...p };
+      return p.cycle && !('contract' in p) && next.contract && !contractFits(next.contract.term, p.cycle) ? { ...next, contract: undefined } : next;
+    });
   const dirty =
     sig(f) !== initial ||
     !priceValid ||

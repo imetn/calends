@@ -49,7 +49,8 @@
     "carpool": "Thanh toán gói chia sẻ",
     "proxy": "Tiền trả hộ cần thu lại",
     "ending": "Sắp kết thúc",
-    "month": "Khoản phí tháng này"
+    "month": "Khoản phí tháng này",
+    "contract": "Gia hạn hợp đồng"
   },
   "daily": {
     "subject": "Nhắc nhở gói đăng ký: {title}",
@@ -113,5 +114,11 @@
     },
     "emailNotConfigured": "Máy chủ này chưa cấu hình gửi email (cần binding EMAIL và MAIL_FROM). Hãy dùng kênh khác hoặc xem README."
   },
-  "sender": "Calends"
+  "sender": "Calends",
+  "contract": {
+    "sub": "Hợp đồng gia hạn {when} ({date})",
+    "endSub": "Hợp đồng kết thúc {when} ({date})",
+    "headline": "Hợp đồng {name} gia hạn {when}",
+    "endHeadline": "Hợp đồng {name} kết thúc {when}"
+  }
 }

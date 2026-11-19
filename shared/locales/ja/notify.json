@@ -49,7 +49,8 @@
     "carpool": "共有プランの集金",
     "proxy": "立て替えの未回収",
     "ending": "まもなく終了",
-    "month": "今月の請求"
+    "month": "今月の請求",
+    "contract": "契約の更新"
   },
   "daily": {
     "subject": "サブスクのお知らせ：{title}",
@@ -113,5 +114,11 @@
     },
     "emailNotConfigured": "このサーバーではメール送信が設定されていません（EMAIL バインディングと MAIL_FROM が必要）。別のチャネルを使うか、README を参照してください。"
   },
-  "sender": "Calends"
+  "sender": "Calends",
+  "contract": {
+    "sub": "契約は{when}（{date}）に更新",
+    "endSub": "契約は{when}（{date}）に満了",
+    "headline": "{name}の契約が{when}に更新",
+    "endHeadline": "{name}の契約が{when}に満了"
+  }
 }

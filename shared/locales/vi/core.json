@@ -218,6 +218,24 @@
     "cancelReminder": "Hủy trước {date} để tránh khoản thu tiếp theo.",
     "none": "Không"
   },
+  "contract": {
+    "title": "Hợp đồng",
+    "term": "Thời hạn hợp đồng",
+    "start": "Bắt đầu hợp đồng",
+    "renews": "Tự gia hạn khi hết hạn",
+    "noticeDays": "Nhắc gia hạn",
+    "noticeOff": "Tắt",
+    "off": "Không có",
+    "renewsOn": "Hợp đồng gia hạn ngày {date}",
+    "endsOn": "Hợp đồng kết thúc ngày {date}",
+    "renewNotice": "Nhắc gia hạn",
+    "endNotice": "Nhắc kết thúc",
+    "renewed": "Đã gia hạn hợp đồng",
+    "renewing": "Hợp đồng sẽ gia hạn",
+    "ended": "Hợp đồng đã kết thúc",
+    "ending": "Hợp đồng sẽ kết thúc",
+    "invalid": "Thời hạn hợp đồng không hợp lệ: cần ngày bắt đầu và không được ngắn hơn chu kỳ thanh toán."
+  },
   "import": {
     "invalid": "Không thể đọc tệp này thành dữ liệu đăng ký.",
     "tooLarge": "Chọn tệp không quá 32 MB.",

@@ -13,6 +13,7 @@ import {
   Pause,
   Play,
   Repeat2,
+  ScrollText,
   Tag,
   TrendingDown,
   TrendingUp,
@@ -21,7 +22,8 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { coveredUntil, cycleLabel, diffDays, isGap, phaseSubs, servedTime, upcomingPhase } from '../../../../shared/billing.ts';
+import { addDays, coveredUntil, cycleLabel, diffDays, isGap, phaseSubs, servedTime, upcomingPhase } from '../../../../shared/billing.ts';
+import { contractEvents } from '../../../../shared/contract.ts';
 import { cnDateFull, money } from '../../../../shared/format.ts';
 import { transfersOf } from '../../../../shared/transfers.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
@@ -130,6 +132,16 @@ export function Events({ sub, state, today }: { sub: Subscription; state: AppSta
       sub: tr.note,
       tone: tr.kind === 'sell' ? 'ok' : 'acc',
       future: tr.date > today,
+    });
+  // 合同续约与到期：已发生的都列，未来只列下一次
+  const contract = contractEvents(sub, sub.start, addDays(today, 3660), today);
+  for (const e of contract.filter((e, i) => e.date <= today || i === contract.findIndex((x) => x.date > today)))
+    evs.push({
+      date: e.kind === 'end' ? e.until : e.date,
+      icon: ScrollText,
+      title: t(`core.contract.${e.kind === 'end' ? (e.until < today ? 'ended' : 'ending') : e.date <= today ? 'renewed' : 'renewing'}`),
+      tone: e.kind === 'end' ? 'ink' : undefined,
+      future: e.date > today,
     });
   if (sub.end && !sub.stop)
     evs.push({ date: sub.end, icon: Flag, title: sub.end <= today ? t('detail.ev.ended') : t('detail.ev.ending'), tone: 'ink', future: sub.end > today });

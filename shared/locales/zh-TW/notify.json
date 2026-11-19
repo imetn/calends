@@ -45,7 +45,8 @@
     "carpool": "共享收款",
     "proxy": "代付待收",
     "ending": "即將到期",
-    "month": "本月扣款"
+    "month": "本月扣款",
+    "contract": "合約續約"
   },
   "daily": {
     "subject": "訂閱提醒｜{title}",
@@ -107,5 +108,11 @@
     },
     "emailNotConfigured": "這台伺服器尚未設定郵件寄送（需要 EMAIL 綁定和 MAIL_FROM），請改用其他管道，或參照 README 設定。"
   },
-  "sender": "訂閱帳本"
+  "sender": "訂閱帳本",
+  "contract": {
+    "sub": "合約{when}續約（{date}）",
+    "endSub": "合約{when}到期（{date}）",
+    "headline": "{name} 合約{when}續約",
+    "endHeadline": "{name} 合約{when}到期"
+  }
 }

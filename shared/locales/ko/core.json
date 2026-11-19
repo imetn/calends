@@ -218,6 +218,24 @@
     "cancelReminder": "다음 결제를 피하려면 {date}까지 취소하세요.",
     "none": "없음"
   },
+  "contract": {
+    "title": "계약 기간",
+    "term": "계약 기간",
+    "start": "계약 시작일",
+    "renews": "만료 시 자동 갱신",
+    "noticeDays": "갱신 알림",
+    "noticeOff": "알림 없음",
+    "off": "없음",
+    "renewsOn": "계약 갱신 {date}",
+    "endsOn": "계약 만료 {date}",
+    "renewNotice": "갱신 알림",
+    "endNotice": "만료 알림",
+    "renewed": "계약 갱신",
+    "renewing": "계약 갱신 예정",
+    "ended": "계약 만료",
+    "ending": "계약 만료 예정",
+    "invalid": "계약 기간이 올바르지 않습니다. 시작일이 필요하며 결제 주기보다 짧을 수 없습니다."
+  },
   "import": {
     "invalid": "이 파일을 구독 데이터로 읽을 수 없습니다.",
     "tooLarge": "32 MB 이하의 파일을 선택하세요.",

@@ -1170,10 +1170,10 @@
 .dt-period {
   --fill-c: var(--chart-ink);
 }
-/* 我发起的合租：订阅周期与收费周期左右并排；日期放不下时到期日折到下一行靠右 */
+/* 订阅周期与收费周期、合同期并排，放不下时折行；日期放不下时到期日折到下一行靠右 */
 .dt-period-pair {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 24px;
 }
 .dt-period-pair .dt-period-ends {

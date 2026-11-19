@@ -21,6 +21,7 @@ const fields: Partial<Subscription>[] = [
   { remindDays: -1 },
   { chargeLeadDays: 1 },
   { cancelLeadDays: 2 },
+  { contract: { start: '2026-01-17', term: { unit: 'year', every: 1 } } },
   { url: 'https://example.test' },
   { manageUrl: 'https://example.test/account' },
   { icon: '🌟' },

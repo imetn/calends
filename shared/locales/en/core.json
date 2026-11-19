@@ -229,6 +229,24 @@
     "cancelReminder": "Cancel by {date} to avoid the next charge.",
     "none": "None"
   },
+  "contract": {
+    "title": "Contract",
+    "term": "Contract term",
+    "start": "Contract start",
+    "renews": "Renews at term end",
+    "noticeDays": "Renewal reminder",
+    "noticeOff": "Off",
+    "off": "None",
+    "renewsOn": "Contract renews {date}",
+    "endsOn": "Contract ends {date}",
+    "renewNotice": "Renewal reminder",
+    "endNotice": "End reminder",
+    "renewed": "Contract renewed",
+    "renewing": "Contract renews",
+    "ended": "Contract ended",
+    "ending": "Contract ends",
+    "invalid": "Contract term is invalid: it needs a start date and can't be shorter than the billing cycle."
+  },
   "import": {
     "invalid": "This file could not be read as subscription data.",
     "tooLarge": "Choose a file no larger than 32 MB.",

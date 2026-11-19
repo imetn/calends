@@ -39,7 +39,9 @@
   "ics": {
     "calName": "Abonelik ödemeleri",
     "method": "Ödeme: {name}",
-    "alarm": "{name} yakında yenileniyor"
+    "alarm": "{name} yakında yenileniyor",
+    "contract": "{name} sözleşmesi yenilenir",
+    "contractEnd": "{name} sözleşmesi sona erer"
   },
   "invalidPerson": "Ad gerekli",
   "personNotFound": "Kişi bulunamadı",

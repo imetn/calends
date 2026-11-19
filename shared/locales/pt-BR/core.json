@@ -229,6 +229,24 @@
     "cancelReminder": "Cancele até {date} para evitar a próxima cobrança.",
     "none": "Nenhum"
   },
+  "contract": {
+    "title": "Contrato",
+    "term": "Vigência do contrato",
+    "start": "Início do contrato",
+    "renews": "Renova ao fim da vigência",
+    "noticeDays": "Lembrete de renovação",
+    "noticeOff": "Desativado",
+    "off": "Nenhum",
+    "renewsOn": "O contrato renova em {date}",
+    "endsOn": "O contrato termina em {date}",
+    "renewNotice": "Lembrete de renovação",
+    "endNotice": "Lembrete de término",
+    "renewed": "Contrato renovado",
+    "renewing": "O contrato renova",
+    "ended": "Contrato encerrado",
+    "ending": "O contrato termina",
+    "invalid": "Vigência de contrato inválida: precisa de data de início e não pode ser menor que o ciclo de cobrança."
+  },
   "import": {
     "invalid": "Não foi possível ler este arquivo como dados de assinaturas.",
     "tooLarge": "Escolha um arquivo de até 32 MB.",

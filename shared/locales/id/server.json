@@ -37,7 +37,9 @@
   "ics": {
     "calName": "Tagihan langganan",
     "method": "Pembayaran: {name}",
-    "alarm": "{name} segera diperpanjang"
+    "alarm": "{name} segera diperpanjang",
+    "contract": "Kontrak {name} diperpanjang",
+    "contractEnd": "Kontrak {name} berakhir"
   },
   "invalidPerson": "Nama wajib diisi",
   "personNotFound": "Orang tidak ditemukan",

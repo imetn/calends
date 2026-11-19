@@ -379,3 +379,49 @@ test('默认提醒设为关闭：跟随默认的订阅不提醒，单独设了�
   assert.match(editor, /REMIND_DAYS\.map[\s\S]{0,200}\{ value: '-1', label: t\('editor\.remind\.never'\) \}/);
   assert.match(editor, /remindDays < 0[\s\S]{0,80}editor\.remind\.defaultNever/);
 });
+
+test('合同续约提醒按合同期自己的提前天数，扣款提醒关掉也照发；ICS 单独成事件', async () => {
+  const st = state();
+  st.settings.remindDays = 3;
+  const insurance = {
+    id: 'ins',
+    name: 'Fictional Insurance',
+    category: 'Insurance',
+    tags: [],
+    price: 120,
+    currency: 'USD',
+    cycle: { unit: 'month' as const, every: 1 },
+    start: '2026-01-17',
+    status: 'active' as const,
+    remindDays: -1,
+    contract: { start: '2026-01-17', term: { unit: 'year' as const, every: 1 }, noticeDays: 30 },
+  };
+  st.subscriptions = [insurance];
+  const daily = buildDaily(st, '2026-12-18');
+  assert.equal(daily?.sections.length, 1);
+  assert.equal(daily!.sections[0].heading, 'Contract renewals');
+  assert.match(daily!.sections[0].rows[0].sub, /Contract renews in 30 days/);
+  assert.match(daily!.title, /Fictional Insurance contract renews in 30 days/);
+  // 提前多天时前一天再提醒一次，其余日子不提醒
+  assert.ok(buildDaily(st, '2027-01-16'));
+  assert.equal(buildDaily(st, '2026-12-19'), undefined);
+  // 不续约：到期提醒按合同最后一天（1-16）倒数，括号里的日期与天数一致
+  st.subscriptions = [{ ...insurance, contract: { ...insurance.contract, renew: 'none' as const } }];
+  assert.equal(buildDaily(st, '2026-12-18'), undefined);
+  assert.match(buildDaily(st, '2026-12-17')!.sections[0].rows[0].sub, /Contract ends in 30 days \(.*16/);
+  // 暂停中续约当天也不提醒
+  st.subscriptions = [{ ...insurance, contract: { ...insurance.contract, noticeDays: 0 }, status: 'paused' as const, pausedAt: '2026-11-01' }];
+  assert.equal(buildDaily(st, '2027-01-17'), undefined);
+  // 没设提前天数不提醒
+  st.subscriptions = [{ ...insurance, contract: { start: '2026-01-17', term: { unit: 'year' as const, every: 1 } } }];
+  assert.equal(buildDaily(st, '2027-01-17'), undefined);
+  const { buildIcs } = await import('../worker/ics.ts');
+  st.subscriptions = [{ ...insurance, start: addMonthsBack(), contract: { ...insurance.contract, start: addMonthsBack() } }];
+  const ics = buildIcs(st, 'https://fictional.example');
+  assert.match(ics, /UID:ins-contract-\d{8}@fictional\.example/);
+  assert.ok(ics.includes('TRIGGER:-P29DT15H'));
+});
+const addMonthsBack = () => {
+  const d = new Date();
+  return `${d.getUTCFullYear() - 1}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-15`;
+};

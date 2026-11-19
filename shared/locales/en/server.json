@@ -39,7 +39,9 @@
   "ics": {
     "calName": "Subscription charges",
     "method": "Payment: {name}",
-    "alarm": "{name} renews soon"
+    "alarm": "{name} renews soon",
+    "contract": "{name} contract renews",
+    "contractEnd": "{name} contract ends"
   },
   "invalidPerson": "Name is required",
   "personNotFound": "Person not found",

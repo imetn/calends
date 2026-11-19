@@ -3,6 +3,7 @@ import {
   LIFETIME_BILL_MONTHS,
   validBillMonths,
   type AppState,
+  type Contract,
   type Cycle,
   type FxTable,
   type PaymentMethod,
@@ -215,10 +216,29 @@ export function subError(s: Subscription): string | undefined {
       )
     )
       return t('core.renewal.invalid');
+    if (v.contract != null && contractError(v.contract, v.cycle)) return t('core.contract.invalid');
     const error = stopError(v) ?? paymentError(v) ?? periodsError(v);
     if (error) return error;
   }
   return undefined;
+}
+
+/** 合同期格式：有开始日，期限是整月或整年且不短于付费周期，买断没有合同期；返回问题字段名 */
+export function contractError(c: Contract, cycle: Cycle): string | undefined {
+  if (!c || typeof c !== 'object') return 'contract';
+  if (!validDay(c.start)) return 'contract.start';
+  const term = c.term;
+  if (!term || !['month', 'year'].includes(term.unit) || !Number.isInteger(term.every) || term.every < 1 || cycleDays(term) > 36525)
+    return 'contract.term';
+  if (c.renew != null && c.renew !== 'none') return 'contract.renew';
+  if (c.noticeDays != null && (!Number.isInteger(c.noticeDays) || c.noticeDays < 0 || c.noticeDays > 3660)) return 'contract.noticeDays';
+  if (!contractFits(term, cycle)) return 'contract.term';
+  return undefined;
+}
+
+/** 合同期限不短于付费周期（1 年与 12 个月等长）；买断没有合同期 */
+export function contractFits(term: Cycle, cycle: Cycle): boolean {
+  return cycle.unit !== 'lifetime' && cycleDays(term) + 1e-6 >= cycleDays(cycle);
 }
 
 /**
@@ -352,6 +372,7 @@ export function phaseSubs(s: Subscription): Subscription[] {
       cancelLeadDays: p.cancelLeadDays,
       renewalHistory: p.renewalHistory,
       renewalOffsetDays: p.renewalOffsetDays,
+      contract: p.contract,
       end: s.end && (!natural || natural > s.end) ? s.end : natural,
       price: p.price,
       currency: p.currency,

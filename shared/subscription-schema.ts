@@ -63,6 +63,18 @@ const renewal = {
   cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
   renewalOffsetDays: { type: 'integer', minimum: 0, maximum: 3660 },
   renewalHistory: list(record({ from: day, chargeLeadDays: positive, cancelLeadDays: positive }, ['from', 'chargeLeadDays', 'cancelLeadDays'])),
+  contract: {
+    ...record(
+      {
+        start: { ...day, description: 'First day of the first contract term; later terms follow from it.' },
+        term: { ...cycle, description: 'Contract length in months or years, e.g. year/1 for annual insurance paid monthly. Not shorter than the billing cycle.' },
+        renew: { type: 'string', enum: ['none'], description: 'none: the contract expires at the end of the first term. Omit to renew each term.' },
+        noticeDays: { type: 'integer', minimum: 0, maximum: 3660, description: 'Remind this many days before renewal or expiry. Omit for no reminder.' },
+      },
+      ['start', 'term'],
+    ),
+    description: 'Contract term separate from billing (display and renewal reminders only; never changes charges).',
+  },
 };
 const phaseFields = {
   ...renewal,

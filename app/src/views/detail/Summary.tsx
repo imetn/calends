@@ -8,7 +8,7 @@ import { CarMembers } from '../carpool/Members.tsx';
 import { carRule } from '../../../../shared/carpool.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { detailHistoryEnd } from '../detail-data.ts';
-import { collectNow, PeriodBar, PeriodPair, periodLive } from './Periods.tsx';
+import { collectNow, contractNow, PeriodBar, PeriodPair, periodLive } from './Periods.tsx';
 import { Note, Panel, Prop } from '../../components/DetailKit.tsx';
 
 /** 详情：本期进度（我发起的合租另并排收费周期）、订阅期间、试用截止与付给谁；账号只在编辑里，备注放在详情最下面 */
@@ -18,9 +18,10 @@ export function Summary({ sub, state, today }: { sub: Subscription; state: AppSt
   const live = periodLive(sub, today);
   const end = detailHistoryEnd(sub, today);
   const collect = collectNow(sub, state, today);
+  const contract = contractNow(sub, today);
   return (
     <Panel className="dt-about">
-      {collect ? <PeriodPair sub={sub} today={today} collect={collect} /> : live && <PeriodBar sub={sub} today={today} />}
+      {collect || contract ? <PeriodPair sub={sub} today={today} collect={collect} contract={contract} /> : live && <PeriodBar sub={sub} today={today} />}
       <dl className="dt-about-grid">
         {/* 计费中只画当前这一期；买断、未开始、已结束、暂停写订阅期间（买断的开始日就是那一笔扣款，不再重复） */}
         {!lifetime && !live && (

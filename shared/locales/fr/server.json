@@ -39,7 +39,9 @@
   "ics": {
     "calName": "Prélèvements d’abonnements",
     "method": "Paiement : {name}",
-    "alarm": "{name} se renouvelle bientôt"
+    "alarm": "{name} se renouvelle bientôt",
+    "contract": "Reconduction du contrat {name}",
+    "contractEnd": "Fin du contrat {name}"
   },
   "invalidPerson": "Le nom est requis",
   "personNotFound": "Personne introuvable",

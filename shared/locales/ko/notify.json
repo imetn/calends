@@ -49,7 +49,8 @@
     "carpool": "공유 플랜 납부",
     "proxy": "대신 결제 미수금",
     "ending": "곧 종료",
-    "month": "이번 달 결제"
+    "month": "이번 달 결제",
+    "contract": "계약 갱신"
   },
   "daily": {
     "subject": "구독 알림: {title}",
@@ -113,5 +114,11 @@
     },
     "emailNotConfigured": "이 서버에는 이메일 발송이 설정되어 있지 않습니다(EMAIL 바인딩과 MAIL_FROM 필요). 다른 채널을 사용하거나 README를 참고하세요."
   },
-  "sender": "Calends"
+  "sender": "Calends",
+  "contract": {
+    "sub": "계약이 {when} 갱신됩니다 ({date})",
+    "endSub": "계약이 {when} 만료됩니다 ({date})",
+    "headline": "{name} 계약이 {when} 갱신됩니다",
+    "endHeadline": "{name} 계약이 {when} 만료됩니다"
+  }
 }

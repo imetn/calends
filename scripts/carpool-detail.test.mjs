@@ -104,6 +104,7 @@ function compile(names, extra = {}) {
     useTimelinePan: noop,
     tipProps: () => ({}),
     collectNow: () => undefined,
+    contractNow: () => undefined,
     PeriodPair: noop,
     PeriodBar: noop,
     periodLive: () => false,

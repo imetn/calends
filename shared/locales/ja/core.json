@@ -218,6 +218,24 @@
     "cancelReminder": "次回の請求を避けるには {date} までに解約してください。",
     "none": "なし"
   },
+  "contract": {
+    "title": "契約期間",
+    "term": "契約期間",
+    "start": "契約開始日",
+    "renews": "満了時に自動更新",
+    "noticeDays": "更新リマインダー",
+    "noticeOff": "通知しない",
+    "off": "なし",
+    "renewsOn": "契約更新 {date}",
+    "endsOn": "契約満了 {date}",
+    "renewNotice": "更新リマインダー",
+    "endNotice": "満了リマインダー",
+    "renewed": "契約更新",
+    "renewing": "契約更新予定",
+    "ended": "契約満了",
+    "ending": "契約満了予定",
+    "invalid": "契約期間が無効です。開始日が必要で、支払いサイクルより短くできません。"
+  },
   "import": {
     "invalid": "このファイルを購読データとして読み込めません。",
     "tooLarge": "32 MB 以下のファイルを選択してください。",

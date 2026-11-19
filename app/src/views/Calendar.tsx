@@ -20,6 +20,7 @@ import {
   chargeMethodId,
   isStopped,
 } from '../../../shared/billing.ts';
+import { contractEvents } from '../../../shared/contract.ts';
 import { flow, cnDate, cnDateAuto, monthLabel, relDays, weekdayShort } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
@@ -261,6 +262,12 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                           : postpaid
                             ? (({ from, until }) => ({ from, paidThrough: addDays(until, -1) }))(chargeServicePeriod(c.sub, c.date, c.serviceDate))
                             : billingPeriod(c.sub, c.date);
+                      // 这一期服务里有合同续约或到期时顺带标出
+                      const renewal =
+                        period &&
+                        contractEvents(sub, period.from, addDays(period.paidThrough, 1), today).find((e) =>
+                          e.kind === 'end' ? e.until >= period.from && e.until <= period.paidThrough : e.date <= period.paidThrough,
+                        );
                       const endedOn = cur.stop?.date ?? cur.end;
                       const stopped = !state.readonly && c.kind !== 'refund' && stopLabel(cur, today);
                       return (
@@ -312,6 +319,13 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                               // 下次扣款就是选中的这一天时，标题已写明日期，不再重复
                               <small>{copyParts(t(isPostpaid(cur) ? 'calendar.nextBill' : 'calendar.nextCharge', { date: cnDateAuto(next, today) }))}</small>
                             ) : null}
+                            {renewal && (
+                              <small>
+                                {renewal.kind === 'end'
+                                  ? t('core.contract.endsOn', { date: cnDateAuto(renewal.until, today) })
+                                  : t('core.contract.renewsOn', { date: cnDateAuto(renewal.date, today) })}
+                              </small>
+                            )}
                             {stopped && (
                               <small title={stopDescription(cur, today)}>
                                 <StopText sub={cur} today={today} />

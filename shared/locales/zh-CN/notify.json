@@ -45,7 +45,8 @@
     "carpool": "合租收款",
     "proxy": "代付待收",
     "ending": "即将到期",
-    "month": "本月扣款"
+    "month": "本月扣款",
+    "contract": "合同续约"
   },
   "daily": {
     "subject": "订阅提醒｜{title}",
@@ -107,5 +108,11 @@
     },
     "emailNotConfigured": "这台服务器没有配置邮件发送（需要 EMAIL 绑定和 MAIL_FROM），请改用其他渠道，或参照 README 配置。"
   },
-  "sender": "订阅账本"
+  "sender": "订阅账本",
+  "contract": {
+    "sub": "合同{when}续约（{date}）",
+    "endSub": "合同{when}到期（{date}）",
+    "headline": "{name} 合同{when}续约",
+    "endHeadline": "{name} 合同{when}到期"
+  }
 }

@@ -229,6 +229,24 @@
     "cancelReminder": "Cancela antes del {date} para evitar el próximo cobro.",
     "none": "Ninguno"
   },
+  "contract": {
+    "title": "Contrato",
+    "term": "Duración del contrato",
+    "start": "Inicio del contrato",
+    "renews": "Se renueva al vencer",
+    "noticeDays": "Aviso de renovación",
+    "noticeOff": "Desactivado",
+    "off": "Ninguno",
+    "renewsOn": "El contrato se renueva el {date}",
+    "endsOn": "El contrato termina el {date}",
+    "renewNotice": "Aviso de renovación",
+    "endNotice": "Aviso de fin",
+    "renewed": "Contrato renovado",
+    "renewing": "El contrato se renueva",
+    "ended": "Contrato terminado",
+    "ending": "El contrato termina",
+    "invalid": "Duración de contrato no válida: necesita fecha de inicio y no puede ser más corta que el ciclo de cobro."
+  },
   "import": {
     "invalid": "No se pudo leer este archivo como datos de suscripciones.",
     "tooLarge": "Elige un archivo de hasta 32 MB.",

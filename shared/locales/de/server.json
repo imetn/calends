@@ -39,7 +39,9 @@
   "ics": {
     "calName": "Abo-Abbuchungen",
     "method": "Zahlung: {name}",
-    "alarm": "{name} verlängert sich bald"
+    "alarm": "{name} verlängert sich bald",
+    "contract": "Vertrag von {name} verlängert sich",
+    "contractEnd": "Vertrag von {name} endet"
   },
   "invalidPerson": "Name ist erforderlich",
   "personNotFound": "Person nicht gefunden",

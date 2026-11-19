@@ -8,6 +8,9 @@ import { StopFields } from '../../components/StopPanel.tsx';
 import {
   addDays,
   addMonths,
+  contractFits,
+  currentPhase,
+  cycleLabel,
   isPostpaid,
   isSeparate,
   nextCharge,
@@ -18,7 +21,7 @@ import {
 } from '../../../../shared/billing.ts';
 import { cnDateFull, flow, money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
-import { REMIND_DAYS, type Cycle, type SubStatus, type Subscription } from '../../../../shared/types.ts';
+import { REMIND_DAYS, type Contract, type Cycle, type SubStatus, type Subscription } from '../../../../shared/types.ts';
 import { DatePicker } from '../../components/DatePicker.tsx';
 import { CatIcon, SubIcon } from '../../components/marks.tsx';
 import { Cell, Group } from '../../components/ui.tsx';
@@ -491,6 +494,7 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
                   />
                 </Cell>
               ))}
+              <ContractFields f={f} up={up} today={today} />
             </Group>
             <Group title={t('editor.more.remind')}>
               <Cell
@@ -586,5 +590,61 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
         </Group>
       </>
     )
+  );
+}
+
+const CONTRACT_TERMS: Cycle[] = [
+  { unit: 'month', every: 6 },
+  { unit: 'year', every: 1 },
+  { unit: 'year', every: 2 },
+  { unit: 'year', every: 3 },
+];
+const CONTRACT_NOTICE = [0, 7, 14, 30, 60, 90];
+const termKey = (c: Cycle) => `${c.unit}:${c.every}`;
+
+/** 合同期：期限、起始日、到期续约与续约提醒；只影响展示与提醒，不改扣款 */
+function ContractFields({ f, up, today }: { f: Subscription; up: (p: Partial<Subscription>) => void; today: string }) {
+  const c = f.contract;
+  const terms = CONTRACT_TERMS.filter((x) => contractFits(x, f.cycle));
+  if (c && !terms.some((x) => termKey(x) === termKey(c.term))) terms.push(c.term);
+  if (!terms.length) return null;
+  const set = (p: Partial<Contract>) => up({ contract: { ...c!, ...p } });
+  return (
+    <>
+      <Cell label={t('core.contract.term')}>
+        <Picker
+          value={c ? termKey(c.term) : ''}
+          onChange={(v) => {
+            const term = terms.find((x) => termKey(x) === v);
+            up({ contract: term ? { start: c?.start ?? currentPhase(f, today).start, ...c, term } : undefined });
+          }}
+          options={[{ value: '', label: t('core.contract.off') }, ...terms.map((x) => ({ value: termKey(x), label: cycleLabel(x) }))]}
+          ariaLabel={t('core.contract.term')}
+        />
+      </Cell>
+      {c && (
+        <>
+          <Cell label={t('core.contract.start')}>
+            <DatePicker value={c.start} onChange={(v) => v && set({ start: v })} />
+          </Cell>
+          <Cell label={t('core.contract.renews')}>
+            <Toggle label={t('core.contract.renews')} checked={c.renew !== 'none'} onChange={(v) => set({ renew: v ? undefined : 'none' })} />
+          </Cell>
+          <Cell label={t('core.contract.noticeDays')}>
+            <Picker
+              value={c.noticeDays == null ? '' : String(c.noticeDays)}
+              onChange={(v) => set({ noticeDays: v === '' ? undefined : Number(v) })}
+              options={[
+                { value: '', label: t('core.contract.noticeOff') },
+                ...[...new Set([...CONTRACT_NOTICE, ...(c.noticeDays != null ? [c.noticeDays] : [])])]
+                  .sort((a, b) => a - b)
+                  .map((n) => ({ value: String(n), label: n === 0 ? t('editor.remind.sameDay') : t('editor.remind.before', { count: n }) })),
+              ]}
+              ariaLabel={t('core.contract.noticeDays')}
+            />
+          </Cell>
+        </>
+      )}
+    </>
   );
 }

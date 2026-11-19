@@ -51,7 +51,8 @@
     "carpool": "Shared plan payments",
     "proxy": "Owed for paying on behalf",
     "ending": "Ending soon",
-    "month": "This month's charges"
+    "month": "This month's charges",
+    "contract": "Contract renewals"
   },
   "daily": {
     "subject": "Subscription reminder: {title}",
@@ -116,5 +117,11 @@
     },
     "emailNotConfigured": "Email isn't set up on this server (needs the EMAIL binding and MAIL_FROM). Use another channel or see the README."
   },
-  "sender": "Calends"
+  "sender": "Calends",
+  "contract": {
+    "sub": "Contract renews {when} ({date})",
+    "endSub": "Contract ends {when} ({date})",
+    "headline": "{name} contract renews {when}",
+    "endHeadline": "{name} contract ends {when}"
+  }
 }

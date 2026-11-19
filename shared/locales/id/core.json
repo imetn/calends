@@ -218,6 +218,24 @@
     "cancelReminder": "Batalkan sebelum {date} untuk menghindari tagihan berikutnya.",
     "none": "Tidak ada"
   },
+  "contract": {
+    "title": "Kontrak",
+    "term": "Masa kontrak",
+    "start": "Mulai kontrak",
+    "renews": "Perpanjang otomatis saat berakhir",
+    "noticeDays": "Pengingat perpanjangan",
+    "noticeOff": "Mati",
+    "off": "Tidak ada",
+    "renewsOn": "Kontrak diperpanjang {date}",
+    "endsOn": "Kontrak berakhir {date}",
+    "renewNotice": "Pengingat perpanjangan",
+    "endNotice": "Pengingat berakhir",
+    "renewed": "Kontrak diperpanjang",
+    "renewing": "Kontrak akan diperpanjang",
+    "ended": "Kontrak berakhir",
+    "ending": "Kontrak akan berakhir",
+    "invalid": "Masa kontrak tidak valid: perlu tanggal mulai dan tidak boleh lebih pendek dari siklus tagihan."
+  },
   "import": {
     "invalid": "File ini tidak dapat dibaca sebagai data langganan.",
     "tooLarge": "Pilih file maksimal 32 MB.",

@@ -10,6 +10,7 @@ import {
   renewalDates,
 } from '../../../../shared/billing.ts';
 import { carRule, collectionPeriod, memberStatus } from '../../../../shared/carpool.ts';
+import { currentContract, type ContractTerm } from '../../../../shared/contract.ts';
 import { cnDateAuto } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
@@ -44,7 +45,8 @@ export function PeriodBar({ sub, today, split = false }: { sub: Subscription; to
   const cancelBy = renewal.cancelBy && renewal.cancelBy >= today && renewal.cancelBy < end ? renewal.cancelBy : undefined;
   const charge = next.date > today && next.date < end ? next.date : undefined;
   const title = t(split && kind === 'paid' ? 'detail.period.sub' : `detail.period.${kind}`);
-  return <Bar kind={kind} title={title} from={from} end={end} today={today} short={split} cancelBy={cancelBy} charge={charge} />;
+  const mark = cancelBy ? { date: cancelBy, label: t('core.renewal.cancelBy'), tone: 'cb' as const } : undefined;
+  return <Bar kind={kind} title={title} from={from} end={end} today={today} short={split} mark={mark} charge={charge} />;
 }
 
 /** 一条周期进度：end 是下一期的第一天，图例写到前一天 */
@@ -55,7 +57,7 @@ function Bar({
   end,
   today,
   short,
-  cancelBy,
+  mark,
   charge,
 }: {
   kind: string;
@@ -64,7 +66,8 @@ function Bar({
   end: string;
   today: string;
   short: boolean;
-  cancelBy?: string;
+  /** 带图例的刻度：最晚取消（cb）或合同续约提醒（ch） */
+  mark?: { date: string; label: string; tone: 'cb' | 'ch' };
   charge?: string;
 }) {
   const span = Math.max(1, diffDays(from, end));
@@ -79,18 +82,18 @@ function Bar({
       </p>
       <div className="dt-period-bar" role="img" aria-label={`${title} ${t('detail.renewal.elapsed', { pct })}`}>
         <i style={{ width: `${pct}%` }} />
-        {cancelBy && <b className="cb" style={{ left: at(cancelBy) }} />}
+        {mark && <b className={mark.tone} style={{ left: at(mark.date) }} />}
         {charge && <b className="ch" style={{ left: at(charge) }} />}
       </div>
       <p className="dt-period-ends">
         <span>{cnDateAuto(from, today)}</span>
         <span>{cnDateAuto(addDays(end, -1), today)}</span>
       </p>
-      {cancelBy && (
+      {mark && (
         <p className="dt-period-keys">
-          <span className="cb">
+          <span className={mark.tone}>
             <i />
-            {t('core.renewal.cancelBy')} {cnDateAuto(cancelBy, today)}
+            {mark.label} {cnDateAuto(mark.date, today)}
           </span>
         </p>
       )}
@@ -118,12 +121,39 @@ export function collectNow(sub: Subscription, state: AppState, today: string) {
   return { from: now.map((p) => p.from).sort()[0], next: addDays(now[0].until, 1) };
 }
 
-/** 订阅周期与收费周期左右并排；订阅详情与合租详情共用 */
-export function PeriodPair({ sub, today, collect }: { sub: Subscription; today: string; collect: { from: string; next: string } }) {
+/** 计费中且今天在合同期内时的这一期合同 */
+export function contractNow(sub: Subscription, today: string): ContractTerm | undefined {
+  return periodLive(sub, today) ? currentContract(sub, today) : undefined;
+}
+
+/** 订阅周期与收费周期、合同期并排；订阅详情与合租详情共用 */
+export function PeriodPair({
+  sub,
+  today,
+  collect,
+  contract,
+}: {
+  sub: Subscription;
+  today: string;
+  collect?: { from: string; next: string };
+  contract?: ContractTerm;
+}) {
+  const notice = contract?.noticeBy && contract.noticeBy >= today ? contract.noticeBy : undefined;
   return (
     <div className="dt-period-pair">
       <PeriodBar sub={sub} today={today} split />
-      <Bar kind="collect" title={t('detail.period.collect')} from={collect.from} end={collect.next} today={today} short />
+      {collect && <Bar kind="collect" title={t('detail.period.collect')} from={collect.from} end={collect.next} today={today} short />}
+      {contract && (
+        <Bar
+          kind="contract"
+          title={t('core.contract.title')}
+          from={contract.from}
+          end={contract.next}
+          today={today}
+          short
+          mark={notice ? { date: notice, label: t(contract.renews ? 'core.contract.renewNotice' : 'core.contract.endNotice'), tone: 'ch' } : undefined}
+        />
+      )}
     </div>
   );
 }

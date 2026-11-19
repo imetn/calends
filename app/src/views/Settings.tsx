@@ -4,13 +4,13 @@ import { base } from '../base.ts';
 import { closestCenter, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { toCsv } from '../../../shared/csv.ts';
+import { exportSubscriptionsCsv } from '../../../shared/csv.ts';
 import type { ImportSource } from '../../../shared/import-ledger.ts';
 import { readImportFile } from '../import-file.ts';
 import { ImportSheet } from './ImportSheet.tsx';
 import { AutoBackupCell, UnlockSheet } from './AutoBackup.tsx';
 import { isEncryptedBackup, type EncryptedBackup } from '../../../shared/backup-crypto.ts';
-import { avatarOf, REMIND_DAYS, type AppState, type Subscription } from '../../../shared/types.ts';
+import { avatarOf, REMIND_DAYS, type AppState } from '../../../shared/types.ts';
 import { IconButton, Cell, Group, Toolbar } from '../components/ui.tsx';
 import { Icon } from '../components/icons.tsx';
 import { LoadFailed, Sheet } from '../components/overlays.tsx';
@@ -241,29 +241,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
     }
   };
 
-  const exportCsv = () => {
-    const head = ['Name', 'Currency', 'Price', 'Category', 'Cycle', 'Starts', 'Ends', 'Tags', 'Payment Account', 'URL', 'Notes'];
-    const cyc = (x: Subscription) =>
-      x.cycle.unit === 'lifetime'
-        ? 'Lifetime'
-        : x.cycle.every === 1
-          ? { day: 'Daily', week: 'Weekly', month: 'Monthly', year: 'Yearly' }[x.cycle.unit]
-          : `Every ${x.cycle.every} ${x.cycle.unit}s`;
-    const rows = state.subscriptions.map((x) => [
-      x.name,
-      x.currency,
-      x.price,
-      x.category,
-      cyc(x),
-      x.start,
-      x.end ?? '',
-      x.tags.join(' '),
-      state.methods.find((m) => m.id === x.methodId)?.name ?? '',
-      x.url ?? '',
-      x.notes ?? '',
-    ]);
-    download(`subscriptions-${today}.csv`, toCsv([head, ...rows]), 'text/csv');
-  };
+  const exportCsv = () => download(`subscriptions-${today}.csv`, exportSubscriptionsCsv(state), 'text/csv');
 
   const hour = (h: number) => `${String(h).padStart(2, '0')}:00`;
   return (

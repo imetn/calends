@@ -43,6 +43,8 @@ import {
   SUBREF,
   SUBREF_EXACT,
   CYCLE,
+  CONTRACT,
+  contractInput,
   ICON_DESCRIPTION,
   SHIFT_BILLING,
   CATEGORY,
@@ -101,6 +103,7 @@ export const create_subscription: Tool = {
       trial_end: DATE,
       chargeLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
       cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
+      contract: CONTRACT,
       end: { ...DATE, description: 'Will not renew after this date.' },
       intro: {
         type: 'object',
@@ -178,6 +181,7 @@ export const create_subscription: Tool = {
       start,
       chargeLeadDays: a.chargeLeadDays == null ? undefined : Number(a.chargeLeadDays),
       cancelLeadDays: a.cancelLeadDays == null ? undefined : Number(a.cancelLeadDays),
+      contract: contractInput(a.contract),
       status: (['trial', 'cancelled', 'terminated'].includes(String(a.status)) ? a.status : 'active') as Subscription['status'],
       // null 明确不绑定支付方式；省略时才用默认的
       methodId: a.method === null ? undefined : (methodRef(st, a.method) ?? st.settings.defaultMethodId),
@@ -301,6 +305,7 @@ export const update_subscription: Tool = {
         expires: { type: ['string', 'null'] },
         chargeLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
         cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
+        contract: { ...nullable(CONTRACT), description: `${CONTRACT.description} Applies to the current phase; null removes it.` },
       }),
       ...CATEGORY_CREATE,
       shift_billing: SHIFT_BILLING,
@@ -327,6 +332,7 @@ export const update_subscription: Tool = {
     };
     if ('chargeLeadDays' in set) put('chargeLeadDays', Number(set.chargeLeadDays));
     if ('cancelLeadDays' in set) put('cancelLeadDays', Number(set.cancelLeadDays));
+    if ('contract' in set) put('contract', contractInput(set.contract));
     if ('icon' in set) put('icon', iconInput(set.icon));
     if ('show_on_public' in set) put('showOnPublic', set.show_on_public as boolean);
     if ('start' in set) changed.push('start');
@@ -433,6 +439,7 @@ export const change_plan: Tool = {
           additionalProperties: false,
         },
         bonus: { type: ['object', 'null'], properties: { from: DATE, until: DATE }, required: ['from', 'until'], additionalProperties: false },
+        contract: nullable(CONTRACT),
       }),
       plan: obj(
         {
@@ -482,6 +489,7 @@ export const change_plan: Tool = {
         delete patch.method;
       }
       if (patch.currency) validateCurrency(st, String(patch.currency));
+      if (patch.contract != null) patch.contract = contractInput(patch.contract);
       if (a.shift_billing != null && (act !== 'edit' || patch.start == null))
         throw new Error(t('mcp.error.invalidInput', { field: 'shift_billing requires set.start' }));
       // 改开始日走网页同一个 movePhaseStart（保留扣款锚点）；其余字段再按新开始日修改

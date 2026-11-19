@@ -37,7 +37,9 @@
   "ics": {
     "calName": "サブスクの請求",
     "method": "支払い方法：{name}",
-    "alarm": "{name}がまもなく更新されます"
+    "alarm": "{name}がまもなく更新されます",
+    "contract": "{name}の契約更新",
+    "contractEnd": "{name}の契約満了"
   },
   "invalidPerson": "呼び名を入力してください",
   "personNotFound": "相手が見つかりません",

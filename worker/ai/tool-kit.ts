@@ -1,7 +1,7 @@
 import { personSummary } from '../../shared/avatar.ts';
 import { addDays, addMonths, chargesBetween, todayIn, type Charge, validDay } from '../../shared/billing.ts';
 import { normName, peopleLedger } from '../../shared/people.ts';
-import type { AppState, Payment, PaymentMethod, Person, ShareMember, Subscription } from '../../shared/types.ts';
+import type { AppState, Contract, Cycle, Payment, PaymentMethod, Person, ShareMember, Subscription } from '../../shared/types.ts';
 import type { Env } from '../env.ts';
 import { loadState, saveLedgerEdit } from '../store.ts';
 import { resyncShares } from '../../shared/carpool.ts';
@@ -182,6 +182,31 @@ export const CYCLE = {
   required: ['unit'],
   description: 'Billing cycle, e.g. {"unit":"month","every":1}; lifetime = one-time purchase.',
 };
+
+export const CONTRACT = {
+  type: 'object',
+  properties: {
+    start: { type: 'string', description: 'YYYY-MM-DD first day of the first contract term; later terms follow from it.' },
+    term: { ...CYCLE, description: 'Contract length in months or years, e.g. {"unit":"year","every":1} for annual insurance paid monthly. Not shorter than the billing cycle.' },
+    renew: { type: 'string', enum: ['none'], description: 'none: expires after the first term. Omit to renew every term.' },
+    noticeDays: { type: 'integer', minimum: 0, maximum: 3660, description: 'Remind this many days before renewal/expiry; omit for no reminder.' },
+  },
+  required: ['start', 'term'],
+  additionalProperties: false,
+  description: 'Contract term separate from billing (insurance, phone plans). Display and renewal reminders only; never changes charges.',
+};
+
+/** MCP 入参 → 合同期；格式问题交给 subError 统一报 */
+export function contractInput(v: unknown): Contract | undefined {
+  if (v == null) return undefined;
+  const c = v as { start?: unknown; term?: { unit?: unknown; every?: unknown }; renew?: unknown; noticeDays?: unknown };
+  return {
+    start: String(c.start ?? ''),
+    term: { unit: c.term?.unit as Cycle['unit'], every: c.term?.every == null ? 1 : Number(c.term.every) },
+    ...(c.renew != null ? { renew: c.renew as 'none' } : {}),
+    ...(c.noticeDays != null ? { noticeDays: Number(c.noticeDays) } : {}),
+  };
+}
 
 export const ICON_DESCRIPTION =
   'Icon: an http(s) image URL (e.g. artwork from search_app_store), a site path such as /ai/claude.svg, or one emoji / short symbol (up to 4 characters). Invalid values are rejected.';

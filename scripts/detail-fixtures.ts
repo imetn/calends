@@ -332,6 +332,14 @@ export function detailFixtures(today = todayIn('Asia/Shanghai')) {
     '导入后已有一笔已知扣款：提示不再显示，只留扣款表，检查表格全宽。',
   );
 
+  // issue #18：年险月付，合同一年一签、每年同日续约；续约提醒落在本期内，时间线有一次已续约
+  const signed = addDays(addMonths(today, -24), 45);
+  add(
+    42,
+    paid(base('月付 · 年险月付 · 合同期', signed, { contract: { start: signed, term: cycles.年付, noticeDays: 30 } })),
+    '月付但一年一签：合同期条与续约提醒并排在本期旁，时间线有一次合同续约，扣款不受影响。',
+  );
+
   const fxDates = new Set(subscriptions.flatMap((s) => chargesBetween(s, s.start, today, today).map((c) => c.date)).concat(today));
   const first = subscriptions.map((s) => s.start).sort()[0];
   for (let d = `${first.slice(0, 7)}-01`; d <= today; d = addMonths(d, 1)) {

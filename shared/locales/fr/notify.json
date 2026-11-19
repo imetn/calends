@@ -51,7 +51,8 @@
     "carpool": "Paiements des abonnements partagés",
     "proxy": "À rembourser pour des paiements pour d’autres",
     "ending": "Se termine bientôt",
-    "month": "Prélèvements du mois"
+    "month": "Prélèvements du mois",
+    "contract": "Reconductions de contrat"
   },
   "daily": {
     "subject": "Rappel d’abonnement : {title}",
@@ -116,5 +117,11 @@
     },
     "emailNotConfigured": "L’e-mail n’est pas configuré sur ce serveur (binding EMAIL et MAIL_FROM requis). Utilise un autre canal ou consulte le README."
   },
-  "sender": "Calends"
+  "sender": "Calends",
+  "contract": {
+    "sub": "Le contrat est reconduit {when} ({date})",
+    "endSub": "Le contrat prend fin {when} ({date})",
+    "headline": "Le contrat {name} est reconduit {when}",
+    "endHeadline": "Le contrat {name} prend fin {when}"
+  }
 }

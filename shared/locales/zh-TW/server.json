@@ -33,7 +33,9 @@
   "ics": {
     "calName": "訂閱扣款",
     "method": "付款：{name}",
-    "alarm": "{name} 即將扣款"
+    "alarm": "{name} 即將扣款",
+    "contract": "{name} 合約續約",
+    "contractEnd": "{name} 合約到期"
   },
   "invalidPerson": "稱呼不能為空",
   "personNotFound": "找不到這個人",

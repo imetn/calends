@@ -43,7 +43,9 @@
   "ics": {
     "calName": "Списания по подпискам",
     "method": "Оплата: {name}",
-    "alarm": "Скоро продление {name}"
+    "alarm": "Скоро продление {name}",
+    "contract": "Договор {name} продлевается",
+    "contractEnd": "Договор {name} заканчивается"
   },
   "invalidPerson": "Укажите имя",
   "personNotFound": "Человек не найден",

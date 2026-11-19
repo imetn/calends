@@ -25,6 +25,7 @@ import {
   stopSummary,
   type Charge,
 } from '../../shared/billing.ts';
+import { currentContract } from '../../shared/contract.ts';
 import { chargeBaseOrNaN, toBaseOrNaN } from '../../shared/fx.ts';
 import { type LedgerPeriod } from '../../shared/receivables.ts';
 import { personAmounts, type PersonLedger } from '../../shared/people.ts';
@@ -141,6 +142,12 @@ export function ruleOut(st: AppState, s: Subscription, today: string) {
   return { fee: r.fee, currency: r.currency, every_months: r.billEvery, stored: !!s.share?.rule };
 }
 
+/** 当前合同期：until 含当天，renews_on 为续约日；不续约时 renews_on 为 null */
+function contractView(s: Subscription, today: string) {
+  const c = currentContract(s, today);
+  return c ? { contract: { from: c.from, until: c.until, renews_on: c.renews ? c.next : null, notice_by: c.noticeBy ?? null } } : {};
+}
+
 export type Scope = 'mine' | 'share_owner' | 'share_member' | 'proxy';
 
 export const kindOf = (s: Subscription): Scope =>
@@ -167,6 +174,7 @@ export function row(st: AppState, s: Subscription, today: string, out?: string) 
     next_charge: next ?? null,
     service_expires: renewalDates(s, today).serviceExpires ?? null,
     cancel_by: renewalDates(s, today).cancelBy ?? null,
+    ...contractView(s, today),
     last_charge: lastCharge(s, today) ?? null,
     method: st.methods.find((m) => m.id === cur.methodId)?.name ?? null,
     method_id: cur.methodId ?? null,

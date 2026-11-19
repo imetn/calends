@@ -39,7 +39,9 @@
   "ics": {
     "calName": "Cobros de suscripciones",
     "method": "Pago: {name}",
-    "alarm": "{name} se renueva pronto"
+    "alarm": "{name} se renueva pronto",
+    "contract": "Se renueva el contrato de {name}",
+    "contractEnd": "Termina el contrato de {name}"
   },
   "invalidPerson": "El nombre es obligatorio",
   "personNotFound": "Persona no encontrada",

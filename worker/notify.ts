@@ -10,6 +10,7 @@ import {
   isPostpaid,
   isSeparate,
   nextCharge,
+  phaseSubs,
   renewalDates,
   memberAboard,
   memberUnpaidFrom,
@@ -22,6 +23,7 @@ import {
   chargeMethodId,
   type Runway,
 } from '../shared/billing.ts';
+import { contractEvents } from '../shared/contract.ts';
 import { toBaseOrNaN } from '../shared/fx.ts';
 import { billLabel, cnDate, money, monthLabel, relDays } from '../shared/format.ts';
 import { t } from '../shared/i18n.ts';
@@ -113,11 +115,31 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
   const carpool: Row[] = [];
   const proxy: Row[] = [];
   const balance: Row[] = [];
+  const contracts: Row[] = [];
   const headline: string[] = [];
 
   for (const s of state.subscriptions) {
     const st = effectiveStatus(s, today);
     const remind = s.remindDays ?? settings.remindDays;
+    // 合同续约（或到期）提醒只看合同期自己的提前天数，与扣款提醒互不影响
+    const notice = Math.max(-1, ...phaseSubs(s).map((p) => p.contract?.noticeDays ?? -1));
+    // 续约按续约日倒数，到期按合同最后一天倒数，与详情页的提醒日一致
+    for (const e of notice < 0 ? [] : contractEvents(s, today, addDays(today, notice + 1), today)) {
+      const end = e.kind === 'end';
+      const day = end ? e.until : e.date;
+      const d = diffDays(today, day);
+      const n = e.noticeDays;
+      if (n == null || !(d === n || (n > 1 && d === 1))) continue;
+      contracts.push({
+        title: s.name,
+        sub: t(end ? 'notify.contract.endSub' : 'notify.contract.sub', { when: relDays(d), date: cnDate(day, true) }),
+        amount: cnDate(day),
+        tone: end ? 'muted' : undefined,
+        icon: iconOf(s),
+        days: d,
+      });
+      headline.push(t(end ? 'notify.contract.endHeadline' : 'notify.contract.headline', { name: s.name, when: relDays(d) }));
+    }
     if (remind < 0) continue;
     if (st === 'trial' && s.trialEnd) {
       const d = diffDays(today, s.trialEnd);
@@ -276,6 +298,7 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
     { heading: t('notify.section.renew'), rows: renew },
     { heading: t('notify.section.trials'), rows: trials },
     { heading: t('core.renewal.cancelBy'), rows: cancellation },
+    { heading: t('notify.section.contract'), rows: contracts },
     { heading: t('notify.section.balance'), rows: balance },
     { heading: t('notify.section.carpool'), rows: carpool },
     { heading: t('notify.section.proxy'), rows: proxy },

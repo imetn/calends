@@ -253,7 +253,21 @@ export interface RenewalRule {
   cancelLeadDays: number;
 }
 
+/**
+ * 合同期：与付费周期分开的签约期限（如年险月付）。只用于展示与续约提醒，不影响扣款。
+ * start 是首个合同期的开始日（绝对日期，换套餐沿用）；期满按同一期限续约，renew 为 'none' 时期满即到期。
+ * noticeDays：续约（或到期）前几天提醒，缺省不提醒；与扣款提醒的 remindDays 互不影响。
+ */
+export interface Contract {
+  start: string;
+  term: Cycle;
+  renew?: 'none';
+  noticeDays?: number;
+}
+
 export interface RenewalRules {
+  /** 随阶段走的合同期 */
+  contract?: Contract;
   chargeLeadDays?: number;
   cancelLeadDays?: number;
   renewalHistory?: RenewalRule[];

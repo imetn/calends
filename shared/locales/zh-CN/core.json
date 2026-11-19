@@ -198,6 +198,24 @@
     "cancelReminder": "请在 {date} 前取消，避免下一期扣款。",
     "none": "不需要"
   },
+  "contract": {
+    "title": "合同期",
+    "term": "合同期限",
+    "start": "合同开始",
+    "renews": "期满自动续约",
+    "noticeDays": "续约提醒",
+    "noticeOff": "不提醒",
+    "off": "无",
+    "renewsOn": "合同 {date} 续约",
+    "endsOn": "合同 {date} 到期",
+    "renewNotice": "续约提醒",
+    "endNotice": "到期提醒",
+    "renewed": "合同续约",
+    "renewing": "合同续约",
+    "ended": "合同到期",
+    "ending": "合同到期",
+    "invalid": "合同期无效：需要开始日期，且不能短于付费周期。"
+  },
   "import": {
     "invalid": "无法将此文件读取为订阅数据。",
     "tooLarge": "请选择不超过 32 MB 的文件。",

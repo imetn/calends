@@ -229,6 +229,24 @@
     "cancelReminder": "Bis {date} kündigen, um die nächste Abbuchung zu vermeiden.",
     "none": "Keine"
   },
+  "contract": {
+    "title": "Vertrag",
+    "term": "Vertragslaufzeit",
+    "start": "Vertragsbeginn",
+    "renews": "Verlängert sich automatisch",
+    "noticeDays": "Verlängerungserinnerung",
+    "noticeOff": "Aus",
+    "off": "Keine",
+    "renewsOn": "Vertrag verlängert sich am {date}",
+    "endsOn": "Vertrag endet am {date}",
+    "renewNotice": "Verlängerungserinnerung",
+    "endNotice": "Enderinnerung",
+    "renewed": "Vertrag verlängert",
+    "renewing": "Vertrag verlängert sich",
+    "ended": "Vertrag beendet",
+    "ending": "Vertrag endet",
+    "invalid": "Ungültige Vertragslaufzeit: Ein Beginn ist erforderlich und sie darf nicht kürzer als der Abrechnungszeitraum sein."
+  },
   "import": {
     "invalid": "Diese Datei konnte nicht als Abonnementdaten gelesen werden.",
     "tooLarge": "Wähle eine Datei mit höchstens 32 MB.",

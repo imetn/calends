@@ -20,6 +20,7 @@ import * as fx from './fx.ts';
 import * as reports from './scope-report.ts';
 import * as metrics from './metrics.ts';
 import * as carpool from './carpool.ts';
+import * as contract from './contract.ts';
 import * as carpoolTimeline from './carpool-timeline.ts';
 import * as proxy from './proxy.ts';
 import * as receivables from './receivables.ts';
@@ -109,6 +110,8 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     shouldGroupYears,
     canUseSingleKey,
     ...billing,
+    ...contract,
+    contractNow: () => undefined,
     ...listScope,
     ...transfers,
     ...format,

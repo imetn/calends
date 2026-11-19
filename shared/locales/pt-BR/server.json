@@ -39,7 +39,9 @@
   "ics": {
     "calName": "Cobranças de assinaturas",
     "method": "Pagamento: {name}",
-    "alarm": "{name} renova em breve"
+    "alarm": "{name} renova em breve",
+    "contract": "Contrato de {name} renova",
+    "contractEnd": "Contrato de {name} termina"
   },
   "invalidPerson": "O nome é obrigatório",
   "personNotFound": "Pessoa não encontrada",

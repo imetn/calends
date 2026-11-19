@@ -229,6 +229,24 @@
     "cancelReminder": "Annulez avant le {date} pour éviter le prochain prélèvement.",
     "none": "Aucun"
   },
+  "contract": {
+    "title": "Contrat",
+    "term": "Durée du contrat",
+    "start": "Début du contrat",
+    "renews": "Reconduit à l’échéance",
+    "noticeDays": "Rappel de reconduction",
+    "noticeOff": "Désactivé",
+    "off": "Aucun",
+    "renewsOn": "Le contrat est reconduit le {date}",
+    "endsOn": "Le contrat prend fin le {date}",
+    "renewNotice": "Rappel de reconduction",
+    "endNotice": "Rappel de fin",
+    "renewed": "Contrat reconduit",
+    "renewing": "Reconduction du contrat",
+    "ended": "Contrat terminé",
+    "ending": "Fin du contrat",
+    "invalid": "Durée de contrat invalide : une date de début est requise et elle ne peut pas être plus courte que le cycle de facturation."
+  },
   "import": {
     "invalid": "Ce fichier ne peut pas être lu comme des données d’abonnements.",
     "tooLarge": "Choisissez un fichier de 32 Mo maximum.",

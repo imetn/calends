@@ -75,7 +75,7 @@ for (const today of ['2026-10-24', '2028-02-29', '2027-03-31', '2026-01-31', '20
     const { backup, cases } = fixture;
     const parsed = parseBackup(JSON.parse(JSON.stringify(backup)));
     const again = detailFixtures(today);
-    assert.equal(parsed.subscriptions.length, 43);
+    assert.equal(parsed.subscriptions.length, 44);
     assert.deepEqual(cases, again.cases, 'same date, seed and manifest');
     assert.deepEqual(backup.subscriptions, again.backup.subscriptions);
     assert.deepEqual(
@@ -83,10 +83,10 @@ for (const today of ['2026-10-24', '2028-02-29', '2027-03-31', '2026-01-31', '20
       detailFixtures('2025-06-15').cases.map((c) => c.id),
       'ids survive date changes',
     );
-    assert.equal(new Set(cases.map((c) => c.name)).size, 43);
+    assert.equal(new Set(cases.map((c) => c.name)).size, 44);
     assert.deepEqual(
       cases.map((c) => c.case),
-      [...Array.from({ length: 38 }, (_, i) => i + 1), 38, 39, 40, 41, 41],
+      [...Array.from({ length: 38 }, (_, i) => i + 1), 38, 39, 40, 41, 41, 42],
     );
     assert.deepEqual(
       parsed.settings.categories.map((c) => c.name),

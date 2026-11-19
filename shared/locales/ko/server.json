@@ -37,7 +37,9 @@
   "ics": {
     "calName": "구독 결제",
     "method": "결제 수단: {name}",
-    "alarm": "{name} 곧 갱신"
+    "alarm": "{name} 곧 갱신",
+    "contract": "{name} 계약 갱신",
+    "contractEnd": "{name} 계약 만료"
   },
   "invalidPerson": "이름을 입력하세요",
   "personNotFound": "사람을 찾을 수 없어요",

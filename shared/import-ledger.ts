@@ -2,7 +2,7 @@ import { addDays, CURRENCY_CODE, subError, uid, validDay } from './billing.ts';
 import { importCycle, parseCsv, importSubscriptionsCsv } from './csv.ts';
 
 export { importCycle };
-import type { Cycle, PaymentMethod, Subscription } from './types.ts';
+import type { Contract, Cycle, PaymentMethod, Subscription } from './types.ts';
 import { t } from './i18n.ts';
 
 /** 导入文件（CSV、ZIP、数据库）大小与解压总量的上限 */
@@ -31,6 +31,7 @@ export interface ImportRow {
   end?: string;
   region?: string;
   remindDays?: number;
+  contract?: Contract;
 }
 
 export interface ImportSource {
@@ -102,6 +103,7 @@ export function readImportCsv(csv: string, existing: PaymentMethod[], today: str
         url: webUrl(s.url),
         end: s.end,
         region: s.region,
+        contract: s.contract,
       })),
     };
   }
@@ -269,6 +271,7 @@ export function prepareImport(
       createdAt: today,
       remindDays: r.remindDays,
       ...(r.icon ? { icon: r.icon } : {}),
+      ...(r.contract ? { contract: r.contract } : {}),
     };
     // An old next-payment date is preserved as source metadata, not invented as a payment.
     if (sub.nextDue && sub.nextDue < start) sub.billingStart = sub.nextDue;

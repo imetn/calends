@@ -51,7 +51,8 @@
     "carpool": "Zahlungen für geteilte Abos",
     "proxy": "Offen aus Zahlungen für andere",
     "ending": "Endet bald",
-    "month": "Abbuchungen diesen Monat"
+    "month": "Abbuchungen diesen Monat",
+    "contract": "Vertragsverlängerungen"
   },
   "daily": {
     "subject": "Abo-Erinnerung: {title}",
@@ -116,5 +117,11 @@
     },
     "emailNotConfigured": "E-Mail ist auf diesem Server nicht eingerichtet (EMAIL-Binding und MAIL_FROM nötig). Nutze einen anderen Kanal oder sieh ins README."
   },
-  "sender": "Calends"
+  "sender": "Calends",
+  "contract": {
+    "sub": "Vertrag verlängert sich {when} ({date})",
+    "endSub": "Vertrag endet {when} ({date})",
+    "headline": "Vertrag von {name} verlängert sich {when}",
+    "endHeadline": "Vertrag von {name} endet {when}"
+  }
 }

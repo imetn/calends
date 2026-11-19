@@ -1,4 +1,4 @@
-import type { Cycle, MethodKind, PaymentMethod, Subscription } from './types.ts';
+import type { AppState, Contract, Cycle, MethodKind, PaymentMethod, Subscription } from './types.ts';
 import { uid } from './billing.ts';
 import { t } from './i18n.ts';
 
@@ -58,6 +58,36 @@ export function importCycle(raw: unknown): Cycle | undefined {
   if (common[value]) return common[value];
   const match = value.match(/^every\s+(\d+)\s+(day|week|month|year)s?$/);
   return match && Number(match[1]) > 0 ? { unit: match[2] as Cycle['unit'], every: Number(match[1]) } : undefined;
+}
+
+/** 导出的周期写法，importCycle 能原样读回 */
+export function exportCycle(c: Cycle): string {
+  if (c.unit === 'lifetime') return 'Lifetime';
+  return c.every === 1 ? { day: 'Daily', week: 'Weekly', month: 'Monthly', year: 'Yearly' }[c.unit] : `Every ${c.every} ${c.unit}s`;
+}
+
+/** 本站导出的 CSV：Subscriptions 应用的列，加上合同期四列；顶层字段即最后一段 */
+export function exportSubscriptionsCsv(state: Pick<AppState, 'subscriptions' | 'methods'>): string {
+  const head = ['Name', 'Currency', 'Price', 'Category', 'Cycle', 'Starts', 'Ends', 'Tags', 'Payment Account', 'URL', 'Notes'];
+  const contractHead = ['Contract Start', 'Contract Term', 'Contract Renews', 'Contract Notice Days'];
+  const rows = state.subscriptions.map((x) => [
+    x.name,
+    x.currency,
+    x.price,
+    x.category,
+    exportCycle(x.cycle),
+    x.start,
+    x.end ?? '',
+    x.tags.join(' '),
+    state.methods.find((m) => m.id === x.methodId)?.name ?? '',
+    x.url ?? '',
+    x.notes ?? '',
+    x.contract?.start ?? '',
+    x.contract ? exportCycle(x.contract.term) : '',
+    x.contract ? (x.contract.renew === 'none' ? 'No' : 'Yes') : '',
+    x.contract?.noticeDays ?? '',
+  ]);
+  return toCsv([[...head, ...contractHead], ...rows]);
 }
 
 function mdy(s: string): string | undefined {
@@ -153,6 +183,19 @@ export function importSubscriptionsCsv(text: string, existing: PaymentMethod[], 
       const tags = col(r, 'tags')
         .split(/[\s,，]+/)
         .filter(Boolean);
+      // 合同期：开始日和期限都空时没有；认不出的原样保留，交给 prepareImport 报错
+      const contractStart = col(r, 'contract start');
+      const contractTerm = col(r, 'contract term');
+      const notice = col(r, 'contract notice days');
+      const contract: Contract | undefined =
+        contractStart || contractTerm
+          ? {
+              start: mdy(contractStart) ?? contractStart,
+              term: importCycle(contractTerm) as Cycle,
+              ...(/^(no|false|0)$/i.test(col(r, 'contract renews')) ? { renew: 'none' as const } : {}),
+              ...(notice ? { noticeDays: /^\d+$/.test(notice) ? Number(notice) : NaN } : {}),
+            }
+          : undefined;
       const sub: ImportedSubscription = {
         id: uid(),
         name: col(r, 'name'),
@@ -168,6 +211,7 @@ export function importSubscriptionsCsv(text: string, existing: PaymentMethod[], 
         url: col(r, 'url') || undefined,
         notes: col(r, 'notes') || undefined,
         region: REGION_BY_CCY[ccy] !== 'CN' && REGION_BY_CCY[ccy] !== 'US' ? REGION_BY_CCY[ccy] : undefined,
+        ...(contract ? { contract } : {}),
         createdAt: today,
       };
       return sub;
