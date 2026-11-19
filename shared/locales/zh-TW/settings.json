@@ -278,9 +278,7 @@
     "newPassword": "新密碼",
     "confirmPassword": "確認新密碼",
     "apps": {
-      "title": "已連接的裝置與應用程式",
       "foot": "Calends App 用各自的權杖與本伺服器同步。權杖只能用於同步，無法存取網頁後台和 AI 工具。",
-      "connect": "連接 App",
       "name": "名稱",
       "nameFoot": "顯示在這個列表中，方便區分裝置。",
       "generate": "產生",
@@ -290,7 +288,20 @@
       "token": "權杖",
       "tokenOnce": "在 Calends App 中填入伺服器和權杖。權杖只顯示這一次，點按即可複製。",
       "copied": "已複製",
-      "removed": "已移除"
+      "removed": "已移除",
+      "entry": "連接 Calends App",
+      "pair": "連接手機",
+      "scan": "在手機上開啟 Calends App，掃描這個 QR 碼。",
+      "expiresIn": "{time} 後失效",
+      "expired": "QR 碼已失效",
+      "regenerate": "重新產生",
+      "manual": "無法掃描？手動輸入",
+      "code": "配對碼",
+      "manualFoot": "在 App 中選擇自己的伺服器，填入伺服器位址和配對碼。配對碼 5 分鐘內有效，只能使用一次。",
+      "httpsWarn": "目前網址不是 HTTPS，Calends App 無法連線。請透過 HTTPS 開啟本伺服器後重新產生。",
+      "connected": "已連接 {name}",
+      "advanced": "手動產生權杖",
+      "advancedSub": "進階：產生長期權杖，在 App 中手動填寫"
     }
   },
   "cat": {

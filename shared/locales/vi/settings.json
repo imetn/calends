@@ -278,9 +278,7 @@
     "newPassword": "Mật khẩu mới",
     "confirmPassword": "Xác nhận mật khẩu mới",
     "apps": {
-      "title": "Thiết bị và ứng dụng đã kết nối",
       "foot": "Ứng dụng Calends đồng bộ với máy chủ này bằng mã thông báo riêng. Mã chỉ dùng để đồng bộ, không truy cập được trang quản trị web hay công cụ AI.",
-      "connect": "Kết nối ứng dụng",
       "name": "Tên",
       "nameFoot": "Hiển thị trong danh sách này để phân biệt thiết bị.",
       "generate": "Tạo",
@@ -290,7 +288,20 @@
       "token": "Mã thông báo",
       "tokenOnce": "Nhập máy chủ và mã thông báo vào ứng dụng Calends. Mã chỉ hiển thị một lần; chạm để sao chép.",
       "copied": "Đã sao chép",
-      "removed": "Đã xóa"
+      "removed": "Đã xóa",
+      "entry": "Kết nối Calends App",
+      "pair": "Kết nối điện thoại",
+      "scan": "Mở ứng dụng Calends trên điện thoại và quét mã này.",
+      "expiresIn": "Hết hạn sau {time}",
+      "expired": "Mã này đã hết hạn",
+      "regenerate": "Tạo mã mới",
+      "manual": "Không quét được? Nhập thủ công",
+      "code": "Mã ghép nối",
+      "manualFoot": "Trong ứng dụng, chọn máy chủ của bạn rồi nhập địa chỉ máy chủ và mã ghép nối. Mã chỉ dùng được một lần trong 5 phút.",
+      "httpsWarn": "Trang này không dùng HTTPS nên ứng dụng Calends không thể kết nối. Hãy mở máy chủ này qua HTTPS rồi tạo mã mới.",
+      "connected": "Đã kết nối {name}",
+      "advanced": "Tạo token thủ công",
+      "advancedSub": "Nâng cao: tạo token dài hạn để nhập thủ công trong ứng dụng"
     }
   },
   "cat": {

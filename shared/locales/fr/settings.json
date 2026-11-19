@@ -292,9 +292,7 @@
     "newPassword": "Nouveau mot de passe",
     "confirmPassword": "Confirmer le nouveau mot de passe",
     "apps": {
-      "title": "Appareils et applications connectés",
       "foot": "Les applications Calends se synchronisent avec ce serveur grâce à leur propre jeton. Il sert uniquement à la synchronisation et n’a pas accès à l’administration web ni aux outils d’IA.",
-      "connect": "Connecter une application",
       "name": "Nom",
       "nameFoot": "Affiché dans cette liste pour distinguer les appareils.",
       "generate": "Générer",
@@ -304,7 +302,20 @@
       "token": "Jeton",
       "tokenOnce": "Saisissez le serveur et le jeton dans l’application Calends. Le jeton n’est affiché qu’une fois ; touchez pour copier.",
       "copied": "Copié",
-      "removed": "Supprimé"
+      "removed": "Supprimé",
+      "entry": "Connecter Calends App",
+      "pair": "Connecter un téléphone",
+      "scan": "Ouvrez l'app Calends sur votre téléphone et scannez ce code.",
+      "expiresIn": "Expire dans {time}",
+      "expired": "Ce code a expiré",
+      "regenerate": "Nouveau code",
+      "manual": "Impossible de scanner ? Saisie manuelle",
+      "code": "Code d'association",
+      "manualFoot": "Dans l'app, choisissez votre propre serveur et saisissez l'adresse du serveur et le code d'association. Le code ne sert qu'une fois, pendant 5 minutes.",
+      "httpsWarn": "Cette page n'est pas en HTTPS : l'app Calends ne peut pas se connecter. Ouvrez ce serveur en HTTPS, puis générez un nouveau code.",
+      "connected": "{name} connecté",
+      "advanced": "Générer un jeton manuellement",
+      "advancedSub": "Avancé : créer un jeton durable à saisir dans l'app"
     }
   },
   "cat": {

@@ -292,9 +292,7 @@
     "newPassword": "Nova senha",
     "confirmPassword": "Confirmar nova senha",
     "apps": {
-      "title": "Dispositivos e apps conectados",
       "foot": "Os apps Calends sincronizam com este servidor usando um token próprio. Ele serve apenas para sincronizar e não acessa a administração web nem as ferramentas de IA.",
-      "connect": "Conectar um app",
       "name": "Nome",
       "nameFoot": "Aparece nesta lista para diferenciar os dispositivos.",
       "generate": "Gerar",
@@ -304,7 +302,20 @@
       "token": "Token",
       "tokenOnce": "Informe o servidor e o token no app Calends. O token é mostrado só uma vez; toque para copiar.",
       "copied": "Copiado",
-      "removed": "Removido"
+      "removed": "Removido",
+      "entry": "Conectar Calends App",
+      "pair": "Conectar celular",
+      "scan": "Abra o app Calends no celular e escaneie este código.",
+      "expiresIn": "Expira em {time}",
+      "expired": "Este código expirou",
+      "regenerate": "Novo código",
+      "manual": "Não consegue escanear? Digite manualmente",
+      "code": "Código de pareamento",
+      "manualFoot": "No app, escolha seu próprio servidor e informe o endereço do servidor e o código de pareamento. O código vale uma vez, por 5 minutos.",
+      "httpsWarn": "Esta página não usa HTTPS, então o app Calends não consegue se conectar. Abra este servidor por HTTPS e gere um novo código.",
+      "connected": "{name} conectado",
+      "advanced": "Gerar token manualmente",
+      "advancedSub": "Avançado: crie um token de longa duração para digitar no app"
     }
   },
   "cat": {

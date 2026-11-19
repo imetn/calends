@@ -657,6 +657,54 @@ a {
   width: 14px;
   height: 14px;
 }
+/* 折叠入口（安全 › 连接 Calends App）：展开时箭头朝上 */
+.cell > .disclose {
+  display: inline-flex;
+  color: var(--label-3);
+  transition: transform 0.2s ease;
+}
+.cell > .disclose .i {
+  width: 14px;
+  height: 14px;
+}
+.cell[aria-expanded='true'] > .disclose {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cell > .disclose {
+    transition: none;
+  }
+}
+/* 扫码连接手机：二维码始终白底，深色模式下也能扫 */
+.pair-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.pair-qr {
+  width: min(240px, 70vw);
+  aspect-ratio: 1;
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: 0 0 0 0.5px var(--sep);
+}
+.pair-hint {
+  margin: 0;
+  font-size: var(--fs-1);
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+.pair-warn {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  font-size: var(--fs-1);
+  line-height: 1.5;
+  color: var(--orange);
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+}
 .cell-l {
   overflow-wrap: anywhere;
   min-width: 0;

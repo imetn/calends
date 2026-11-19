@@ -278,9 +278,7 @@
     "newPassword": "新密码",
     "confirmPassword": "确认新密码",
     "apps": {
-      "title": "已连接的设备与应用",
       "foot": "Calends App 用各自的令牌与本服务器同步。令牌只能用于同步，不能访问网页后台和 AI 工具。",
-      "connect": "连接 App",
       "name": "名称",
       "nameFoot": "显示在这个列表里，方便区分设备。",
       "generate": "生成",
@@ -290,7 +288,20 @@
       "token": "令牌",
       "tokenOnce": "在 Calends App 中填入服务器和令牌。令牌只显示这一次，点按即可复制。",
       "copied": "已复制",
-      "removed": "已移除"
+      "removed": "已移除",
+      "entry": "连接 Calends App",
+      "pair": "连接手机",
+      "scan": "在手机上打开 Calends App，扫描这个二维码。",
+      "expiresIn": "{time} 后失效",
+      "expired": "二维码已失效",
+      "regenerate": "重新生成",
+      "manual": "无法扫码？手动输入",
+      "code": "配对码",
+      "manualFoot": "在 App 中选择自己的服务器，填入服务器地址和配对码。配对码 5 分钟内有效，只能使用一次。",
+      "httpsWarn": "当前地址不是 HTTPS，Calends App 无法连接。请通过 HTTPS 访问本服务器后重新生成。",
+      "connected": "已连接 {name}",
+      "advanced": "手动生成令牌",
+      "advancedSub": "高级：生成长期令牌，在 App 中手动填写"
     }
   },
   "cat": {

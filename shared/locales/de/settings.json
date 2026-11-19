@@ -292,9 +292,7 @@
     "newPassword": "Neues Passwort",
     "confirmPassword": "Neues Passwort bestätigen",
     "apps": {
-      "title": "Verbundene Geräte und Apps",
       "foot": "Calends-Apps synchronisieren mit diesem Server über ein eigenes Token. Es gilt nur für die Synchronisierung und hat keinen Zugriff auf die Weboberfläche oder KI-Tools.",
-      "connect": "App verbinden",
       "name": "Name",
       "nameFoot": "Wird in dieser Liste angezeigt, damit du Geräte unterscheiden kannst.",
       "generate": "Erzeugen",
@@ -304,7 +302,20 @@
       "token": "Token",
       "tokenOnce": "Gib Server und Token in der Calends-App ein. Das Token wird nur einmal angezeigt; tippen zum Kopieren.",
       "copied": "Kopiert",
-      "removed": "Entfernt"
+      "removed": "Entfernt",
+      "entry": "Calends App verbinden",
+      "pair": "Telefon verbinden",
+      "scan": "Öffne die Calends-App auf deinem Telefon und scanne diesen Code.",
+      "expiresIn": "Läuft in {time} ab",
+      "expired": "Dieser Code ist abgelaufen",
+      "regenerate": "Neuer Code",
+      "manual": "Scannen nicht möglich? Manuell eingeben",
+      "code": "Kopplungscode",
+      "manualFoot": "Wähle in der App deinen eigenen Server und gib Serveradresse und Kopplungscode ein. Der Code gilt einmal und 5 Minuten lang.",
+      "httpsWarn": "Diese Seite nutzt kein HTTPS, daher kann die Calends-App keine Verbindung herstellen. Öffne diesen Server über HTTPS und erzeuge einen neuen Code.",
+      "connected": "{name} verbunden",
+      "advanced": "Token manuell erzeugen",
+      "advancedSub": "Erweitert: dauerhaftes Token zur manuellen Eingabe in der App erstellen"
     }
   },
   "cat": {

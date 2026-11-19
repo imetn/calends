@@ -292,9 +292,7 @@
     "newPassword": "New password",
     "confirmPassword": "Confirm new password",
     "apps": {
-      "title": "Connected devices and apps",
       "foot": "Calends apps sync with this server using their own token. It only works for sync and can't access the web admin or AI tools.",
-      "connect": "Connect an app",
       "name": "Name",
       "nameFoot": "Shown in this list so you can tell devices apart.",
       "generate": "Generate",
@@ -304,7 +302,20 @@
       "token": "Token",
       "tokenOnce": "Enter the server and token in the Calends app. The token is shown only once; tap to copy.",
       "copied": "Copied",
-      "removed": "Removed"
+      "removed": "Removed",
+      "entry": "Connect Calends App",
+      "pair": "Connect phone",
+      "scan": "Open the Calends app on your phone and scan this code.",
+      "expiresIn": "Expires in {time}",
+      "expired": "This code has expired",
+      "regenerate": "New code",
+      "manual": "Can't scan? Enter manually",
+      "code": "Pairing code",
+      "manualFoot": "In the app, choose your own server and enter the server address and pairing code. The code works once, within 5 minutes.",
+      "httpsWarn": "This page isn't on HTTPS, so the Calends app can't connect. Open this server over HTTPS, then generate a new code.",
+      "connected": "Connected {name}",
+      "advanced": "Generate a token manually",
+      "advancedSub": "Advanced: create a long-lived token to enter in the app"
     }
   },
   "cat": {

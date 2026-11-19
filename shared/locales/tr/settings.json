@@ -292,9 +292,7 @@
     "newPassword": "Yeni parola",
     "confirmPassword": "Yeni parolayı onaylayın",
     "apps": {
-      "title": "Bağlı cihazlar ve uygulamalar",
       "foot": "Calends uygulamaları bu sunucuyla kendi belirteçleriyle eşitlenir. Belirteç yalnızca eşitleme içindir; web yönetimine ve yapay zekâ araçlarına erişemez.",
-      "connect": "Uygulama bağla",
       "name": "Ad",
       "nameFoot": "Cihazları ayırt edebilmeniz için bu listede gösterilir.",
       "generate": "Oluştur",
@@ -304,7 +302,20 @@
       "token": "Belirteç",
       "tokenOnce": "Sunucuyu ve belirteci Calends uygulamasına girin. Belirteç yalnızca bir kez gösterilir; kopyalamak için dokunun.",
       "copied": "Kopyalandı",
-      "removed": "Kaldırıldı"
+      "removed": "Kaldırıldı",
+      "entry": "Calends App'i bağla",
+      "pair": "Telefonu bağla",
+      "scan": "Telefonunuzda Calends uygulamasını açın ve bu kodu tarayın.",
+      "expiresIn": "{time} içinde sona erer",
+      "expired": "Bu kodun süresi doldu",
+      "regenerate": "Yeni kod",
+      "manual": "Tarayamıyor musunuz? Elle girin",
+      "code": "Eşleştirme kodu",
+      "manualFoot": "Uygulamada kendi sunucunuzu seçin, sunucu adresini ve eşleştirme kodunu girin. Kod 5 dakika içinde yalnızca bir kez kullanılabilir.",
+      "httpsWarn": "Bu sayfa HTTPS değil, bu yüzden Calends uygulaması bağlanamaz. Sunucuyu HTTPS ile açıp yeni kod oluşturun.",
+      "connected": "{name} bağlandı",
+      "advanced": "Elle token oluştur",
+      "advancedSub": "Gelişmiş: uygulamaya elle girilecek uzun süreli token oluşturun"
     }
   },
   "cat": {

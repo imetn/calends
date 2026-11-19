@@ -3,7 +3,8 @@ import { copyParts } from '../components/copy.tsx';
 import { FlagBox } from '../components/marks.tsx';
 import { FLAGS } from '../display.ts';
 import { deviceLocation } from '../region.ts';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { encode } from 'uqr';
 import type { AppState } from '../../../shared/types.ts';
 import { localTime } from '../../../shared/format.ts';
 import { ask, LoadFailed, Sheet } from '../components/overlays.tsx';
@@ -11,7 +12,7 @@ import { Cell, Group } from '../components/ui.tsx';
 import { Icon } from '../components/icons.tsx';
 import { Picker } from '../components/Picker.tsx';
 import { api, registerPasskey, saveSettings } from '../store.ts';
-import { copyText, run } from '../toast.ts';
+import { copyText, run, toast } from '../toast.ts';
 import { base } from '../base.ts';
 import { composing } from '../keyboard.ts';
 import { t } from '../../../shared/i18n.ts';
@@ -294,11 +295,15 @@ interface SyncToken {
   lastUsedAt?: string;
 }
 
-/** 已连接的设备与应用：Calends App 的同步令牌（与 MCP 令牌分开，只能访问同步接口）。明文只在生成时显示一次 */
+/**
+ * 连接 Calends App：默认折叠成一行入口，不用 App 的自部署用户只看到这一行（docs/sync-api.md「Dormant until enabled」）。
+ * 展开后是已连接设备（同步令牌，与 MCP 令牌分开）、扫码连接手机，以及高级的手动生成令牌。
+ */
 function ConnectedApps({ tz }: { tz: string }) {
   const [list, setList] = useState<SyncToken[]>();
   const [failed, setFailed] = useState(false);
-  const [sheet, setSheet] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [sheet, setSheet] = useState<'pair' | 'token'>();
   const load = () =>
     api<SyncToken[]>('/api/sync/tokens').then(
       (v) => {
@@ -310,31 +315,166 @@ function ConnectedApps({ tz }: { tz: string }) {
   useEffect(() => void load(), []);
   return (
     <>
-      <Group title={t('settings.security.apps.title')} foot={t('settings.security.apps.foot')}>
-        {failed && !list && <LoadFailed onRetry={() => void load()} />}
-        {list?.map((k) => (
-          <Cell
-            key={k.id}
-            label={k.name}
-            sub={
-              k.lastUsedAt
-                ? t('settings.security.lastUsed', { time: localTime(k.lastUsedAt, tz, { part: 'date' }) })
-                : t('settings.security.addedAt', { time: localTime(k.createdAt, tz, { part: 'date' }) })
-            }
-          >
-            <ConfirmButton
-              onConfirm={() =>
-                run(() => api(`/api/sync/tokens/${encodeURIComponent(k.id)}`, { method: 'DELETE' }).then(load), t('settings.security.apps.removed'))
-              }
-            >
-              {t('settings.security.remove')}
-            </ConfirmButton>
-          </Cell>
-        ))}
-        <Cell label={<span style={{ color: 'var(--accent)' }}>{t('settings.security.apps.connect')}</span>} onClick={() => setSheet(true)} />
+      <Group foot={open ? t('settings.security.apps.foot') : undefined}>
+        <button className="cell tap" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <span className="cell-l">{t('settings.security.apps.entry')}</span>
+          <span className="cell-r">{list?.length ? t('settings.security.deviceCount', { count: list.length }) : null}</span>
+          <span className="disclose">
+            <Icon name="down" />
+          </span>
+        </button>
+        {open && (
+          <>
+            {failed && !list && <LoadFailed onRetry={() => void load()} />}
+            {list?.map((k) => (
+              <Cell
+                key={k.id}
+                label={k.name}
+                sub={
+                  k.lastUsedAt
+                    ? t('settings.security.lastUsed', { time: localTime(k.lastUsedAt, tz, { part: 'date' }) })
+                    : t('settings.security.addedAt', { time: localTime(k.createdAt, tz, { part: 'date' }) })
+                }
+              >
+                <ConfirmButton
+                  onConfirm={() =>
+                    run(() => api(`/api/sync/tokens/${encodeURIComponent(k.id)}`, { method: 'DELETE' }).then(load), t('settings.security.apps.removed'))
+                  }
+                >
+                  {t('settings.security.remove')}
+                </ConfirmButton>
+              </Cell>
+            ))}
+            <Cell label={<span style={{ color: 'var(--accent)' }}>{t('settings.security.apps.pair')}</span>} onClick={() => setSheet('pair')} />
+            <Cell label={t('settings.security.apps.advanced')} sub={t('settings.security.apps.advancedSub')} onClick={() => setSheet('token')} />
+          </>
+        )}
       </Group>
-      {sheet && <ConnectAppSheet onClose={() => setSheet(false)} onCreated={() => void load()} />}
+      {sheet === 'pair' && (
+        <PairSheet
+          known={(list ?? []).map((k) => k.id)}
+          onClose={() => setSheet(undefined)}
+          onConnected={(v, item) => {
+            setList(v);
+            setSheet(undefined);
+            toast(t('settings.security.apps.connected', { name: item.name }), 'success');
+          }}
+        />
+      )}
+      {sheet === 'token' && <ConnectAppSheet onClose={() => setSheet(undefined)} onCreated={() => void load()} />}
     </>
+  );
+}
+
+/** 本服务器给 App 用的地址：站点根加部署前缀，不带结尾斜杠 */
+const serverUrl = () => `${location.origin}${base('/')}`.replace(/\/$/, '');
+/** App 不放行明文 HTTP（无 ATS 例外）；本机开发地址除外 */
+const insecureOrigin = () => location.protocol === 'http:' && !/^(localhost|127\.0\.0\.1|\[::1\])$|\.localhost$/.test(location.hostname);
+
+/** 本地生成的二维码（uqr，无网络请求）；始终白底黑块，深色模式下也能扫 */
+function QrCode({ text, dim }: { text: string; dim?: boolean }) {
+  const { size, path } = useMemo(() => {
+    const qr = encode(text, { ecc: 'M', border: 3 });
+    let d = '';
+    qr.data.forEach((row, y) => row.forEach((on, x) => on && (d += `M${x} ${y}h1v1h-1z`)));
+    return { size: qr.size, path: d };
+  }, [text]);
+  return (
+    <svg
+      className="pair-qr"
+      viewBox={`0 0 ${size} ${size}`}
+      shapeRendering="crispEdges"
+      role="img"
+      aria-label={t('settings.security.apps.scan')}
+      style={{ opacity: dim ? 0.15 : 1 }}
+    >
+      <rect width={size} height={size} fill="#fff" />
+      <path d={path} fill="#000" />
+    </svg>
+  );
+}
+
+/**
+ * 扫码连接手机：生成一次性配对码（5 分钟、用一次），二维码内容 calends://connect?server=…&code=…；
+ * 显示期间每 3 秒查一次设备列表，出现新设备即视为连接成功。
+ */
+function PairSheet({ known, onClose, onConnected }: { known: string[]; onClose: () => void; onConnected: (list: SyncToken[], item: SyncToken) => void }) {
+  const [pair, setPair] = useState<{ code: string; expiresAt: string }>();
+  const [now, setNow] = useState(() => Date.now());
+  const [manual, setManual] = useState(false);
+  const server = serverUrl();
+  const generate = () => run(async () => setPair(await api<{ code: string; expiresAt: string }>('/api/sync/pair', { method: 'POST' })));
+  useEffect(() => void generate(), []);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const connected = useEffectEvent(onConnected);
+  useEffect(() => {
+    let stop = false;
+    const id = setInterval(() => {
+      api<SyncToken[]>('/api/sync/tokens').then(
+        (v) => {
+          const item = v.find((x) => !known.includes(x.id));
+          if (item && !stop) {
+            stop = true;
+            connected(v, item);
+          }
+        },
+        () => undefined,
+      );
+    }, 3000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, []);
+  const left = pair ? Math.max(0, Date.parse(pair.expiresAt) - now) : 0;
+  const expired = !!pair && left === 0;
+  const secs = Math.ceil(left / 1000);
+  const clock = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+  const url = pair ? `calends://connect?server=${encodeURIComponent(server)}&code=${encodeURIComponent(pair.code)}` : '';
+  return (
+    <Sheet
+      narrow
+      title={t('settings.security.apps.pair')}
+      onClose={onClose}
+      foot={
+        <>
+          <button className="btn" onClick={generate}>
+            {t('settings.security.apps.regenerate')}
+          </button>
+          <span className="grow" />
+          <button className="btn primary" onClick={onClose}>
+            {t('settings.security.apps.done')}
+          </button>
+        </>
+      }
+    >
+      <div className="stack">
+        {insecureOrigin() && (
+          <p className="pair-warn" role="alert">
+            {t('settings.security.apps.httpsWarn')}
+          </p>
+        )}
+        <div className="pair-box">
+          <p className="pair-hint">{t('settings.security.apps.scan')}</p>
+          {pair ? <QrCode text={url} dim={expired} /> : <div className="pair-qr" />}
+          <p className="pair-hint" aria-live="polite" style={expired ? { color: 'var(--red)' } : undefined}>
+            {!pair ? '\u00a0' : expired ? t('settings.security.apps.expired') : t('settings.security.apps.expiresIn', { time: clock })}
+          </p>
+          <button className="as-link pair-hint" aria-expanded={manual} onClick={() => setManual(!manual)}>
+            {t('settings.security.apps.manual')}
+          </button>
+        </div>
+        {manual && pair && (
+          <Group foot={t('settings.security.apps.manualFoot')}>
+            <Cell label={t('settings.security.apps.server')} sub={server} onClick={() => copyText(server, t('settings.security.apps.copied'))} />
+            <Cell label={t('settings.security.apps.code')} sub={pair.code} onClick={() => copyText(pair.code, t('settings.security.apps.copied'))} />
+          </Group>
+        )}
+      </div>
+    </Sheet>
   );
 }
 
@@ -342,7 +482,7 @@ function ConnectAppSheet({ onClose, onCreated }: { onClose: () => void; onCreate
   const [name, setName] = useState(deviceName());
   // 明文令牌只留在这个弹层里，关闭即丢弃
   const [token, setToken] = useState<string>();
-  const server = `${location.origin}${base('/')}`.replace(/\/$/, '');
+  const server = serverUrl();
   const create = () =>
     run(async () => {
       const r = await api<{ token: string }>('/api/sync/tokens', { method: 'POST', body: JSON.stringify({ name: name.trim() }) });
@@ -352,7 +492,7 @@ function ConnectAppSheet({ onClose, onCreated }: { onClose: () => void; onCreate
   return (
     <Sheet
       narrow
-      title={t('settings.security.apps.connect')}
+      title={t('settings.security.apps.advanced')}
       onClose={onClose}
       foot={
         <>

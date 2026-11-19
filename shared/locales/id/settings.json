@@ -278,9 +278,7 @@
     "newPassword": "Kata sandi baru",
     "confirmPassword": "Konfirmasi kata sandi baru",
     "apps": {
-      "title": "Perangkat dan aplikasi terhubung",
       "foot": "Aplikasi Calends menyinkronkan dengan server ini memakai tokennya sendiri. Token hanya untuk sinkronisasi dan tidak dapat mengakses admin web atau alat AI.",
-      "connect": "Hubungkan aplikasi",
       "name": "Nama",
       "nameFoot": "Ditampilkan di daftar ini agar perangkat mudah dibedakan.",
       "generate": "Buat",
@@ -290,7 +288,20 @@
       "token": "Token",
       "tokenOnce": "Masukkan server dan token di aplikasi Calends. Token hanya ditampilkan sekali; ketuk untuk menyalin.",
       "copied": "Disalin",
-      "removed": "Dihapus"
+      "removed": "Dihapus",
+      "entry": "Hubungkan Calends App",
+      "pair": "Hubungkan ponsel",
+      "scan": "Buka aplikasi Calends di ponsel Anda dan pindai kode ini.",
+      "expiresIn": "Kedaluwarsa dalam {time}",
+      "expired": "Kode ini sudah kedaluwarsa",
+      "regenerate": "Kode baru",
+      "manual": "Tidak bisa memindai? Masukkan manual",
+      "code": "Kode pemasangan",
+      "manualFoot": "Di aplikasi, pilih server Anda sendiri lalu masukkan alamat server dan kode pemasangan. Kode hanya berlaku sekali dalam 5 menit.",
+      "httpsWarn": "Halaman ini tidak memakai HTTPS, jadi aplikasi Calends tidak dapat terhubung. Buka server ini lewat HTTPS, lalu buat kode baru.",
+      "connected": "{name} terhubung",
+      "advanced": "Buat token secara manual",
+      "advancedSub": "Lanjutan: buat token jangka panjang untuk dimasukkan di aplikasi"
     }
   },
   "cat": {
