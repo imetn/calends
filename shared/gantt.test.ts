@@ -862,6 +862,13 @@ test('图例只列可见窗口里实际画出的标记，颜色、公开页与�
   assert.equal(marks([{ segs: [seg(v({ planned: true, start: '2026-09-01' }))], gaps: [] }]).planned, false);
   assert.equal(marks([{ segs: [seg(v({ planned: true, start: '2026-05-01', cycle: { unit: 'lifetime', every: 1 } }))], gaps: [] }]).planned, false);
 
+  // 试用 / 赠送：竖条纹落在窗口内才列，两者合成一项
+  assert.equal(marks([plain]).free, false);
+  assert.equal(marks([{ segs: [seg(v({ start: '2026-04-01', trialEnd: '2026-04-15' }))], gaps: [] }]).free, true);
+  assert.equal(marks([{ segs: [seg(v({ trialEnd: '2025-01-15' }))], gaps: [] }]).free, false);
+  assert.equal(marks([{ segs: [seg(v({ bonus: { from: '2026-05-01', until: '2026-06-01' } }))], gaps: [] }]).free, true);
+  assert.equal(marks([{ segs: [seg(v({ bonus: { from: '2026-08-01', until: '2026-10-01' } }))], gaps: [] }]).free, false);
+
   // 服务方停用与未退款段：窗口内才列；公开页不画未退款，图例也不列
   const stop = v({ status: 'terminated', start: '2026-01-01', end: '2026-04-10', stop: { kind: 'terminate', date: '2026-04-10', paidThrough: '2026-05-01' } });
   const stopped = { segs: [seg(stop)], gaps: [] };

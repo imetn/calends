@@ -7231,6 +7231,10 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   background: var(--unpaid-hatch);
   box-shadow: var(--unpaid-border);
 }
+/* 试用 / 赠送：与条上的竖条纹同一画法，底色不跟某种支付方式 */
+.gt-legend .lg-free {
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--white-a12) 45%, transparent) 0 2px, transparent 2px 4px), var(--label-3);
+}
 .gt-legend .lg-gap {
   height: 0;
   border-top: var(--hairline) dashed var(--label-3);

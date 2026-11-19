@@ -442,7 +442,7 @@ export function Gantt({
   const keys = useMemo(() => [...new Set(rows.flatMap((r) => r.segs.map((g) => colorKey(g.v, colorBy))))], [rows, colorBy]);
   const color = (v: Subscription) => PALETTE[keys.indexOf(keyOf(v)) % PALETTE.length];
   const legend = ganttLegendMarks(rows, start, end, today, { readonly: !!state.readonly, compact, keyOf: (v) => colorKey(v, colorBy) });
-  const legendShown = legend.unused || legend.terminate || legend.planned || legend.gap || legend.colors.size > 0;
+  const legendShown = legend.unused || legend.terminate || legend.planned || legend.free || legend.gap || legend.colors.size > 0;
   const labelOf = (key: string) =>
     colorBy === 'method' ? (state.methods.find((m) => m.id === key)?.name ?? t('list.unassigned')) : key === '—' ? t('list.gantt.noRegion') : key;
 
@@ -642,7 +642,9 @@ export function Gantt({
                         .filter((c) => c.date > g.from && c.date < to)
                         .map((c) => c.date);
                       const paidUntil = ganttPaidUntil(g.v, g.from, today);
-                      const cycleCuts = new Set(renewals);
+                      // 赠送期起止也断开：与试用期一样自成一截，期内没有扣款也不按周期再切
+                      const bonusCuts = g.v.bonus ? [g.v.bonus.from, g.v.bonus.until].filter((d) => d > g.from && d < to) : [];
+                      const cycleCuts = new Set([...renewals, ...bonusCuts]);
                       const cuts = [
                         ...new Set([g.from, ...(g.v.priceHistory ?? []).map((p) => p.from), ...(g.v.intro ? [g.v.intro.until] : []), ...cycleCuts, to]),
                       ]
@@ -653,7 +655,8 @@ export function Gantt({
                           if (i === 0 || i === all.length - 1 || (x(d) - x(kept[kept.length - 1]) >= BAR && x(to) - x(d) >= BAR)) kept.push(d);
                           return kept;
                         }, []);
-                      const priceRun = (d: string) => `${priceAt(g.v, d)}|${g.v.intro && d < g.v.intro.until ? 1 : 0}`;
+                      const priceRun = (d: string) =>
+                        `${priceAt(g.v, d)}|${g.v.intro && d < g.v.intro.until ? 1 : 0}|${g.v.bonus && d >= g.v.bonus.from && d < g.v.bonus.until ? 1 : 0}`;
                       const labelRoom = (d: string, unit: boolean) => {
                         const prefix = g.v.intro && d < g.v.intro.until ? t('list.gantt.introShort') : '';
                         return (
@@ -700,6 +703,10 @@ export function Gantt({
                             const pl = capped ? Math.min(x(a), x(b) - STOP_CAP) : x(a);
                             const pw = Math.max(BAR, x(b) - pl);
                             const intro = g.v.intro && a < g.v.intro.until;
+                            // 免费时长 [from, until)：与试用期同样叠条纹；整截都在其中时不标金额
+                            const bonusL = g.v.bonus && g.v.bonus.until > a && g.v.bonus.from < b ? Math.max(x(g.v.bonus.from), pl) : undefined;
+                            const bonusW = bonusL != null && g.v.bonus ? Math.min(x(g.v.bonus.until), pl + pw) - bonusL : 0;
+                            const free = !!g.v.bonus && a >= g.v.bonus.from && b <= g.v.bonus.until;
                             const price = priceAt(g.v, a);
                             const last = n === cuts.length - 2;
                             const pnow = paidUntil >= b ? pw : paidUntil <= a ? 0 : Math.min(pw, Math.max(0, x(paidUntil) - pl));
@@ -712,9 +719,11 @@ export function Gantt({
                             // 已过去却没有账单的账期（试用、扣款失败）不标金额，免得看起来扣过款；待出账和零元账期照常标
                             const known = actual != null || multiCycle || !!pending || b > today || price === 0;
                             const label =
-                              known && seen.r - seen.l >= amountWidth(text) + LABEL_PAD + (n === 0 && g.v.region ? FLAG_ROOM : 0) && labeled !== text;
+                              !free && known && seen.r - seen.l >= amountWidth(text) + LABEL_PAD + (n === 0 && g.v.region ? FLAG_ROOM : 0) && labeled !== text;
                             if (label) labeled = text;
-                            const ptip = `${intro ? t('list.gantt.introPrefix') : ''}${money(amount, g.v.currency)}/${perLabel(g.v)}\n${cnDate(a)} – ${last && g.open ? t('list.gantt.present') : cnDate(b)}${g.v.region ? `\n${g.v.region}` : ''}${g.v.planned ? t('list.gantt.plannedSuffix') : ''}`;
+                            const ptip = free
+                              ? `${t('detail.period.bonus')}\n${cnDate(g.v.bonus!.from)} – ${cnDate(g.v.bonus!.until)}`
+                              : `${intro ? t('list.gantt.introPrefix') : ''}${money(amount, g.v.currency)}/${perLabel(g.v)}\n${cnDate(a)} – ${last && g.open ? t('list.gantt.present') : cnDate(b)}${g.v.region ? `\n${g.v.region}` : ''}${g.v.planned ? t('list.gantt.plannedSuffix') : ''}`;
                             return (
                               <span
                                 key={a}
@@ -725,6 +734,7 @@ export function Gantt({
                                 {g.v.trialEnd && a < g.v.trialEnd && x(g.v.trialEnd) > pl && (
                                   <i className="gt-trial" style={{ width: Math.min(pw, x(g.v.trialEnd) - pl) }} />
                                 )}
+                                {bonusL != null && bonusW > 0 && <i className="gt-trial" style={{ left: bonusL - pl, width: bonusW }} />}
                                 {label && (
                                   <em className="icon-text" style={seen.l > pl ? { marginLeft: seen.l - pl } : undefined}>
                                     {n === 0 && g.v.region ? <FlagImg cc={g.v.region} /> : null}
@@ -798,21 +808,7 @@ export function Gantt({
       </div>
       {legendShown && (
         <div className="gt-legend">
-          {legend.unused && (
-            <span>
-              <i className="lg-unused" />
-              {t('core.stop.unusedTitle')}
-            </span>
-          )}
-          {legend.terminate && (
-            <span>
-              <svg className="lg-stop" viewBox="0 0 20 20" aria-hidden="true">
-                <circle cx="10" cy="10" r="8.75" />
-                <path d="M4.7 15.3 15.3 4.7" />
-              </svg>
-              {t('core.stop.terminate')}
-            </span>
-          )}
+          {/* 先列支付方式的颜色，再列各种画法代表的类型 */}
           {/* 颜色按全部行的固定顺序分配，这里只过滤显示，平移时颜色不跳 */}
           {keys.map(
             (key, i) =>
@@ -827,6 +823,27 @@ export function Gantt({
             <span>
               <i className="lg-planned" />
               {t('list.gantt.planned')}
+            </span>
+          )}
+          {legend.free && (
+            <span>
+              <i className="lg-free" />
+              {t('list.gantt.free')}
+            </span>
+          )}
+          {legend.unused && (
+            <span>
+              <i className="lg-unused" />
+              {t('core.stop.unusedTitle')}
+            </span>
+          )}
+          {legend.terminate && (
+            <span>
+              <svg className="lg-stop" viewBox="0 0 20 20" aria-hidden="true">
+                <circle cx="10" cy="10" r="8.75" />
+                <path d="M4.7 15.3 15.3 4.7" />
+              </svg>
+              {t('core.stop.terminate')}
             </span>
           )}
           {legend.gap && (

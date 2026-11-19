@@ -271,7 +271,7 @@ export function ganttLegendMarks(
   today: string,
   { readonly, compact, keyOf }: { readonly: boolean; compact: boolean; keyOf: (v: Subscription) => string },
 ) {
-  const marks = { unused: false, terminate: false, planned: false, gap: false, colors: new Set<string>() };
+  const marks = { unused: false, terminate: false, planned: false, gap: false, free: false, colors: new Set<string>() };
   const seen = (from: string, to: string) => from < end && to > start;
   for (const row of rows) {
     if (row.gaps.some((g) => seen(g.from, g.to))) marks.gap = true;
@@ -282,6 +282,15 @@ export function ganttLegendMarks(
       if (drawn) {
         marks.colors.add(keyOf(g.v));
         if (g.v.planned && !lifetime) marks.planned = true;
+        // 试用期与赠送期画同一种竖条纹，图例合成一项
+        // 买断没有周期，开放段终点算不出；它也不画条纹，下面先排除再算
+        const overlaps = (a: string, b: string) => {
+          const to = g.open ? ganttOpenEnd(g.v, today) : g.to;
+          const from = a > g.from ? a : g.from;
+          const until = b < to ? b : to;
+          return from < until && seen(from, until);
+        };
+        if (!lifetime && ((g.v.trialEnd && overlaps(g.from, g.v.trialEnd)) || (g.v.bonus && overlaps(g.v.bonus.from, g.v.bonus.until)))) marks.free = true;
       }
       const { stopped, unused, wastedUntil } = ganttStopMark(g.v, today, readonly);
       if (stopped?.kind === 'terminate' && stopped.date >= start && stopped.date < end) marks.terminate = true;
