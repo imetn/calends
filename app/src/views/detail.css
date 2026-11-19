@@ -1145,6 +1145,57 @@
   color: var(--label-2);
   font-weight: 400;
 }
+/*
+ * 各列按内容取宽，列间空白相等：固定比例下日期与支付方式之间、支付方式与金额之间空出一大片，
+ * 后两列却挤在一起，窄屏时服务期还会压到金额上。行是表格的直接子元素，用 subgrid 共用同一套列，
+ * 间隔列 1fr 均分余下宽度。窄时支付方式收起，可见的列少一列
+ */
+@container detail-charges (min-width: 0px) {
+  .ld-table.dt-ledger:not(.dt-ledger-5) {
+    --ld-c: minmax(0, max-content);
+    --ld-g: minmax(12px, 1fr);
+    display: grid;
+    grid-template-columns: var(--ld-c) var(--ld-g) var(--ld-c) var(--ld-g) var(--ld-c) var(--ld-g) var(--ld-c);
+  }
+  .ld-table.dt-ledger.dt-ledger-3:not(.dt-ledger-5) {
+    grid-template-columns: var(--ld-c) var(--ld-g) var(--ld-c) var(--ld-g) var(--ld-c);
+  }
+  .ld-table.dt-ledger:not(.dt-ledger-5) > .ld-row.ld-row {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    column-gap: 0;
+  }
+  .ld-table.dt-ledger:not(.dt-ledger-5) > .ld-row > span:nth-child(2) {
+    grid-column: 3;
+  }
+  .ld-table.dt-ledger:not(.dt-ledger-5) > .ld-row > span:nth-child(3) {
+    grid-column: 5;
+  }
+  .ld-table.dt-ledger:not(.dt-ledger-5) > .ld-row > span:nth-child(4) {
+    grid-column: 7;
+  }
+}
+@container detail-charges (max-width: 480px) {
+  .ld-table.dt-ledger:not(.dt-ledger-5) {
+    grid-template-columns: var(--ld-c) var(--ld-g) var(--ld-c) var(--ld-g) var(--ld-c);
+  }
+  .ld-table.dt-ledger.dt-ledger-3:not(.dt-ledger-5) {
+    grid-template-columns: var(--ld-c) var(--ld-g) var(--ld-c);
+  }
+  .ld-table.dt-ledger.dt-ledger-3:not(.dt-ledger-5):has(> .ld-row > .dt-ledger-keep) {
+    grid-template-columns: var(--ld-c) var(--ld-g) var(--ld-c) var(--ld-g) var(--ld-c);
+  }
+  .ld-table.dt-ledger:not(.dt-ledger-5) > .ld-row > span.dt-ledger-pay ~ span:nth-child(3) {
+    grid-column: 3;
+  }
+  .ld-table.dt-ledger:not(.dt-ledger-5) > .ld-row > span.dt-ledger-pay ~ span:nth-child(4) {
+    grid-column: 5;
+  }
+  /* 转账表窄时留第二列、收起第四列 */
+  .ld-table.dt-ledger:not(.dt-ledger-5):not(.dt-ledger-3) > .ld-row > span.dt-ledger-keep ~ span:nth-child(3) {
+    grid-column: 5;
+  }
+}
 @container detail-charges (max-width: 480px) {
   .dt-ledger .ld-row:not(.car-more) {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
