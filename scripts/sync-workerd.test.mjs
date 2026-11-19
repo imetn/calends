@@ -25,7 +25,7 @@ writeFileSync(
 import { ensureMigrated } from ${JSON.stringify(join(root, 'worker/migrate.ts'))};
 import { isConflictError } from ${JSON.stringify(join(root, 'worker/write-guard.ts'))};
 const out = (v) => Response.json(v);
-// 守卫探针：给 D1 套一层，只在测试里存在。认出守卫批（首条写 sync_cas）后可以
+// 守卫探针：给 D1 套一层，只在测试里存在。认出守卫批（首条写 write_cas）后可以
 // - 屏障：凑齐 n 个守卫批再一起放行（它们都读到了同一个旧序号）
 // - 抢写：本请求的前 k 个守卫批提交前，先由「别处」写一笔（让这次 CAS 必然失败）
 // 并统计守卫批次数与 CAS 失败次数。
@@ -49,7 +49,7 @@ const probeDb = (db, interfere, times) => {
       if (k === 'prepare') return (sql) => tag(t.prepare(sql), sql);
       if (k === 'batch')
         return async (stmts) => {
-          const guarded = (sqlOf.get(stmts[0]) ?? '').includes('sync_cas');
+          const guarded = (sqlOf.get(stmts[0]) ?? '').includes('write_cas');
           if (guarded) {
             stats.guarded++;
             if (barrier && barrier.left > 0) {

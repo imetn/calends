@@ -40,7 +40,7 @@ async function fixture() {
   };
   const batch = db.batch.bind(db);
   db.batch = async (stmts: Stmt[]) => {
-    if (races > 0 && stmts[0]?.sql.includes('sync_cas') && stmts[0].sql.includes("key = 'rev'")) {
+    if (races > 0 && stmts[0]?.sql.includes('write_cas') && stmts[0].sql.includes("key = 'rev'")) {
       races--;
       rival();
     }
@@ -220,5 +220,5 @@ test('守卫作用域外（定时任务、迁移、恢复）不加守卫语句',
   };
   const { putKv } = await import('../worker/store.ts');
   await putKv(f.env, 'prefs', { theme: 'dark' });
-  assert.ok(!seen.some((s) => s.includes('sync_cas')));
+  assert.ok(!seen.some((s) => s.includes('write_cas')));
 });

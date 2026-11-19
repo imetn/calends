@@ -114,5 +114,11 @@ export const MIGRATIONS: Array<{ name: string; statements: string[] }> = [
     "statements": [
       "-- 安装归属（官方托管）：首次写入安装行的已验证主体（设备／令牌家族）。自部署单用户不填，保持 NULL，行为不变。\nALTER TABLE sync_clients ADD COLUMN owner TEXT;\n"
     ]
+  },
+  {
+    "name": "0012_write_cas.sql",
+    "statements": [
+      "-- 网页、MCP 读改写守卫（worker/write-guard.ts）的提交核对表：首条 INSERT 核对账本序号未变，否则 CHECK 失败、整批回滚。\n-- 与同步的 sync_cas 分开：写守卫是通用并发修复（多标签页、MCP 互相覆盖），不依赖 App 同步是否启用。\nCREATE TABLE write_cas (ok INTEGER NOT NULL CHECK (ok = 1));\n"
+    ]
   }
 ];

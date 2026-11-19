@@ -2,6 +2,7 @@
 // 作用域开始时记下账本序号（kv.rev），作用域里每次 mutate 在同一个 batch 首条核对序号未变；
 // 别处（同步、另一个标签页、MCP）抢先写入时整批回滚并抛 WriteConflict，调用方重读重算一次，仍冲突则 409 / 工具错误。
 // 作用域外的 mutate 行为不变（定时任务、迁移、备份恢复等）。
+// 只依赖 kv.rev（0007 的触发器维护）与 write_cas（0012），与 App 同步是否启用无关。
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { t } from '../shared/i18n.ts';
 import type { Env } from './env.ts';
@@ -28,8 +29,8 @@ const readRev = async (env: Env) => (await env.DB.prepare("SELECT CAST(value AS 
 
 /** 守卫首条：序号仍是读时的值，否则 CHECK(ok = 1) 失败、整批回滚 */
 export const guardStmts = (env: Env, g: Guard): { head: D1PreparedStatement; tail: D1PreparedStatement } => ({
-  head: env.DB.prepare("INSERT INTO sync_cas (ok) SELECT (SELECT CAST(value AS INTEGER) FROM kv WHERE key = 'rev') IS ?1").bind(g.expected),
-  tail: env.DB.prepare('DELETE FROM sync_cas'),
+  head: env.DB.prepare("INSERT INTO write_cas (ok) SELECT (SELECT CAST(value AS INTEGER) FROM kv WHERE key = 'rev') IS ?1").bind(g.expected),
+  tail: env.DB.prepare('DELETE FROM write_cas'),
 });
 
 /**
