@@ -499,3 +499,13 @@ test('编辑器「账单与缴费」：收在更多选项的续费规则组，�
   assert.match(more, /<Cell label=\{t\('editor\.field\.settlement'\)\}>\s*<Seg\s+small/);
   assert.doesNotMatch(field.slice(0, field.indexOf('export function MoreFields')), /editor\.field\.settlement/);
 });
+
+test('编辑器合同期：独立成组，期限选项与订阅周期菜单一致（去掉每周与买断）并可自定义', () => {
+  const field = read('../app/src/views/editor/Sections.tsx');
+  assert.match(field, /const CONTRACT_TERMS = RENEW_CYCLES\.filter\(\(\[, c\]\) => c\.unit === 'month' \|\| c\.unit === 'year'\)/);
+  assert.match(field, /<Group title=\{t\('core\.contract\.title'\)\}>/);
+  assert.match(field, /\{ value: 'custom', label: cycleName\('custom'\) \}/);
+  // 合同期不再塞在续费规则组里
+  const renewal = field.slice(field.indexOf("<Group title={t('core.renewal.title')}"));
+  assert.ok(renewal.indexOf('<ContractFields') > renewal.indexOf('</Group>'));
+});

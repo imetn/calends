@@ -53,3 +53,7 @@ test('hidden lifetime/proxy fields do not force expansion and summaries share th
   assert.equal(editorMoreOpen(proxy, false), false);
   assert.deepEqual(editorMoreKeys({ ...lifetime, notes: 'note' }), ['editor.more.notes']);
 });
+test('contract term has its own More group, separate from renewal rules', () => {
+  assert.deepEqual(editorMoreKeys({ ...empty, contract: { start: '2026-01-17', term: { unit: 'month', every: 18 } } }), ['core.contract.title']);
+  assert.deepEqual(editorMoreKeys({ ...empty, chargeLeadDays: 1 }), ['core.renewal.title']);
+});

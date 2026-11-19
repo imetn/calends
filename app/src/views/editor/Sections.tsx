@@ -11,7 +11,6 @@ import {
   addMonths,
   contractFits,
   currentPhase,
-  cycleLabel,
   isPostpaid,
   isSeparate,
   nextCharge,
@@ -32,7 +31,7 @@ import { isDomainCat } from '../../derive.ts';
 
 import { stopForm } from '../../../../shared/stop-form.ts';
 import { syncPhase, reactivate } from '../../../../shared/phases.ts';
-import { cycleName } from '../../components/ChangePanel.tsx';
+import { CYCLES as RENEW_CYCLES, cycleName } from '../../components/ChangePanel.tsx';
 import { MethodPicker } from '../../components/MethodPicker.tsx';
 import { ContactField, contactText } from '../../components/Contact.tsx';
 import { getState } from '../../store.ts';
@@ -506,8 +505,8 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
                   />
                 </Cell>
               ))}
-              <ContractFields f={f} up={up} today={today} />
             </Group>
+            <ContractFields f={f} up={up} today={today} />
             <Group title={t('editor.more.remind')}>
               <Cell
                 label={
@@ -605,35 +604,68 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
   );
 }
 
-const CONTRACT_TERMS: Cycle[] = [
-  { unit: 'month', every: 6 },
-  { unit: 'year', every: 1 },
-  { unit: 'year', every: 2 },
-  { unit: 'year', every: 3 },
-];
+// 合同期限的选项与订阅周期菜单一致：去掉按周计的和买断，末尾是自定义；合同只按整月或整年算
+const CONTRACT_TERMS = RENEW_CYCLES.filter(([, c]) => c.unit === 'month' || c.unit === 'year');
 const CONTRACT_NOTICE = [0, 7, 14, 30, 60, 90];
-const termKey = (c: Cycle) => `${c.unit}:${c.every}`;
+const sameTerm = (a: Cycle, b: Cycle) => a.unit === b.unit && a.every === b.every;
+/** 某个单位下不短于付费周期的最小期数，用作自定义步进器的下限 */
+const minEvery = (unit: 'month' | 'year', cycle: Cycle) => {
+  for (let n = 1; n < 1200; n++) if (contractFits({ unit, every: n }, cycle)) return n;
+  return 1200;
+};
 
 /** 合同期：期限、起始日、到期续约与续约提醒；只影响展示与提醒，不改扣款 */
 function ContractFields({ f, up, today }: { f: Subscription; up: (p: Partial<Subscription>) => void; today: string }) {
   const c = f.contract;
-  const terms = CONTRACT_TERMS.filter((x) => contractFits(x, f.cycle));
-  if (c && !terms.some((x) => termKey(x) === termKey(c.term))) terms.push(c.term);
-  if (!terms.length) return null;
+  const terms = CONTRACT_TERMS.filter(([, x]) => contractFits(x, f.cycle));
+  const [custom, setCustom] = useState(!!c && !terms.some(([, x]) => sameTerm(x, c.term)));
   const set = (p: Partial<Contract>) => up({ contract: { ...c!, ...p } });
+  const setTerm = (term: Cycle) => up({ contract: { start: c?.start ?? currentPhase(f, today).start, ...c, term } });
+  const unit = c?.term.unit === 'month' ? 'month' : 'year';
   return (
-    <>
+    <Group title={t('core.contract.title')}>
       <Cell label={t('core.contract.term')}>
         <Picker
-          value={c ? termKey(c.term) : ''}
+          value={!c ? '' : custom ? 'custom' : (terms.find(([, x]) => sameTerm(x, c.term))?.[0] ?? 'custom')}
           onChange={(v) => {
-            const term = terms.find((x) => termKey(x) === v);
-            up({ contract: term ? { start: c?.start ?? currentPhase(f, today).start, ...c, term } : undefined });
+            setCustom(v === 'custom');
+            if (v === '') return up({ contract: undefined });
+            // 自定义沿用当前期限；还没有合同期时从不短于付费周期的整年起
+            const term = v === 'custom' ? (c?.term ?? { unit: 'year', every: minEvery('year', f.cycle) }) : terms.find(([k]) => k === v)?.[1];
+            if (term) setTerm(term);
           }}
-          options={[{ value: '', label: t('core.contract.off') }, ...terms.map((x) => ({ value: termKey(x), label: cycleLabel(x) }))]}
+          options={[
+            { value: '', label: t('core.contract.off') },
+            ...terms.map(([k]) => ({ value: k, label: cycleName(k) })),
+            { value: 'custom', label: cycleName('custom') },
+          ]}
           ariaLabel={t('core.contract.term')}
         />
       </Cell>
+      {c && custom && (
+        <Cell label={t('editor.unit.every')}>
+          <Stepper
+            label={t('editor.unit.every')}
+            value={c.term.every}
+            min={minEvery(unit, f.cycle)}
+            max={unit === 'month' ? 1200 : 100}
+            unit={() => ''}
+            onChange={(n) => setTerm({ unit, every: n })}
+          />
+          <Picker
+            value={unit}
+            onChange={(u) => {
+              const next = u === 'month' ? 'month' : 'year';
+              setTerm({ unit: next, every: Math.max(c.term.every, minEvery(next, f.cycle)) });
+            }}
+            options={[
+              { value: 'month', label: t('editor.unit.month', { count: c.term.every }) },
+              { value: 'year', label: t('editor.unit.year', { count: c.term.every }) },
+            ]}
+            ariaLabel={t('editor.unit.label')}
+          />
+        </Cell>
+      )}
       {c && (
         <>
           <Cell label={t('core.contract.start')}>
@@ -657,6 +689,6 @@ function ContractFields({ f, up, today }: { f: Subscription; up: (p: Partial<Sub
           </Cell>
         </>
       )}
-    </>
+    </Group>
   );
 }
