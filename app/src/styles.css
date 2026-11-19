@@ -661,7 +661,7 @@ a {
 .cell > .disclose {
   display: inline-flex;
   color: var(--label-3);
-  transition: transform 0.2s ease;
+  transition: transform var(--duration) var(--ease);
 }
 .cell > .disclose .i {
   width: 14px;
@@ -675,7 +675,7 @@ a {
     transition: none;
   }
 }
-/* 扫码连接手机：二维码始终白底，深色模式下也能扫 */
+/* 扫码连接手机：SVG 自带白底与静区，深色模式下也能扫；加载占位用系统填充色 */
 .pair-box {
   display: flex;
   flex-direction: column;
@@ -687,7 +687,8 @@ a {
   width: min(240px, 70vw);
   aspect-ratio: 1;
   border-radius: var(--radius-lg);
-  background: #fff;
+  overflow: hidden;
+  background: var(--fill);
   box-shadow: 0 0 0 0.5px var(--sep);
 }
 .pair-hint {
