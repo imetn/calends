@@ -9,7 +9,8 @@ import '../views/detail.css';
 
 /**
  * 按年分组的收付款表：订阅详情的扣款记录、合租的收款与付款共用这一套。
- * 四列（日期 · 第二列 · 原币金额 · 折合本位币）；给了 extraHead 时在第二列后多一列（如代付的「当时成本」，窄时收起）。
+ * 四列（日期 · 第二列 · 原币金额 · 第四列）；第四列多是折合本位币，也可以是服务期这类文字（textLast，靠左），不给表头时只有三列。
+ * 给了 extraHead 时在第二列后多一列（如代付的「当时成本」，窄时收起）。
  * 每年最多一条时平铺；任意一年多条时整表按年分组且默认全部折叠；没有合计行，总数在上方的指标卡里。
  * 年份行是小计：点一下展开或折叠这一年；表头点一下全部展开或全部收起。
  * 第二列默认是支付方式，窄时收起（keepSecond 时保留，如合租收款的成员）
@@ -27,15 +28,17 @@ export function YearLedger<T>({
   rowTitle,
   keepSecond = false,
   extraHead,
+  textLast = false,
 }: {
   /** 新的在前 */
   items: T[];
   dateOf: (x: T) => string;
-  head: [string, string, string, string];
+  /** 第四个表头缺省时整表只有三列 */
+  head: [string, string, string, string?];
   /** 年份行的后几格：第二列、（多出的一列）、原币合计、本位币合计（baseClass 给本位币合计那一格） */
-  yearCells: (list: T[]) => { second: ReactNode; extra?: ReactNode; orig: ReactNode; base: ReactNode; baseClass?: string };
+  yearCells: (list: T[]) => { second: ReactNode; extra?: ReactNode; orig: ReactNode; origClass?: string; base?: ReactNode; baseClass?: string };
   /** 数据行的各格 */
-  row: (x: T) => { date: ReactNode; second: ReactNode; extra?: ReactNode; orig: ReactNode; base: ReactNode; baseClass?: string };
+  row: (x: T) => { date: ReactNode; second: ReactNode; extra?: ReactNode; orig: ReactNode; origClass?: string; base?: ReactNode; baseClass?: string };
   rowKey: (x: T, i: number) => string;
   onRow?: (x: T) => void;
   /** 有 onRow 时哪些行能点开；缺省都能 */
@@ -45,12 +48,15 @@ export function YearLedger<T>({
   keepSecond?: boolean;
   /** 第二列后多出的一列的表头；窄时收起 */
   extraHead?: string;
+  /** 第四列是文字（服务期、缴费日）：靠左、常规字重，年份行不当合计加粗 */
+  textLast?: boolean;
 }) {
   const yearsOf = [...new Set(items.map((x) => dateOf(x).slice(0, 4)))];
   const grouped = shouldGroupYears(items, dateOf);
   const years = grouped ? yearsOf : [''];
   const [open, setOpen] = useState<Set<string>>(() => new Set());
   const inYear = (y: string) => items.filter((x) => dateOf(x).startsWith(y));
+  const four = head[3] != null;
   const second = keepSecond ? 'dt-ledger-keep' : 'dt-ledger-pay';
   const cells = (
     <>
@@ -58,12 +64,14 @@ export function YearLedger<T>({
       <span className={second}>{head[1]}</span>
       {extraHead && <span className="dt-ledger-extra">{extraHead}</span>}
       <span>{head[2]}</span>
-      <span>{head[3]}</span>
+      {four && <span>{head[3]}</span>}
     </>
   );
   const allOpen = years.every((y) => open.has(y));
   return (
-    <div className={`ld-table ld-receipts ld-out dt-ledger ${grouped ? 'ld-grouped' : ''} ${extraHead ? 'dt-ledger-5' : ''}`}>
+    <div
+      className={`ld-table ld-receipts ld-out dt-ledger ${grouped ? 'ld-grouped' : ''} ${extraHead ? 'dt-ledger-5' : ''} ${four ? '' : 'dt-ledger-3'} ${textLast ? 'dt-ledger-text' : ''}`}
+    >
       {grouped ? (
         <button
           type="button"
@@ -100,8 +108,8 @@ export function YearLedger<T>({
                 </span>
                 <span className={second}>{sum.second}</span>
                 {extraHead && <span className="dt-ledger-extra">{sum.extra}</span>}
-                <span>{sum.orig}</span>
-                <span className={sum.baseClass}>{sum.base}</span>
+                <span className={sum.origClass}>{sum.orig}</span>
+                {four && <span className={sum.baseClass}>{sum.base}</span>}
               </button>
             )}
             {(!grouped || open.has(y)) &&
@@ -112,8 +120,8 @@ export function YearLedger<T>({
                     <span className="ld-date">{r.date}</span>
                     <span className={second}>{r.second}</span>
                     {extraHead && <span className="dt-ledger-extra">{r.extra}</span>}
-                    <span className="o">{r.orig}</span>
-                    <span className={`c ${r.baseClass ?? ''}`}>{r.base}</span>
+                    <span className={`o ${r.origClass ?? ''}`}>{r.orig}</span>
+                    {four && <span className={`c ${r.baseClass ?? ''}`}>{r.base}</span>}
                   </>
                 );
                 const key = rowKey(x, i);

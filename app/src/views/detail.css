@@ -1102,7 +1102,7 @@
 
 /*
  * 扣款记录与代付、合租的收付款表同一套（.ld-table / .ld-receipts）：
- * 扣款日 · 支付方式 · 卡上实扣 · 当时成本；支付方式多是图标，让出宽度给卡上实扣，
+ * 扣款日 · 支付方式 · 卡上实扣，第四列动态（当时成本、用量、缴费日或服务期，都没有时只三列）；支付方式多是图标，让出宽度给卡上实扣，
  * 年份行多币种合计（如 −₱44,598.20 −$200.34）一行放得下；窄时去掉支付方式一列
  */
 .dt-ledger .ld-row:not(.car-more) {
@@ -1136,6 +1136,26 @@
   align-items: flex-end;
   justify-content: flex-end;
 }
+/* 全是本位币又没有服务期（买断）时只有三列：扣款日 · 支付方式 · 卡上实扣 */
+.ld-table.dt-ledger.dt-ledger-3 .ld-row:not(.car-more) {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+/* 第四列是服务期或缴费日这类文字：靠左，与右对齐的金额隔开；年份行写当年覆盖的起止，不当合计加粗 */
+.ld-table.dt-ledger.dt-ledger-text .ld-row:not(.car-more) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(0, 1.7fr);
+}
+.ld-table.ld-receipts.dt-ledger.dt-ledger-text .ld-row > span:nth-child(4) {
+  display: block;
+  white-space: normal;
+  text-align: left;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-left: 16px;
+}
+.ld-table.ld-receipts.dt-ledger.dt-ledger-text .ld-year > span:nth-child(4) {
+  color: var(--label-2);
+  font-weight: 400;
+}
 @container detail-charges (max-width: 480px) {
   .dt-ledger .ld-row:not(.car-more) {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
@@ -1147,6 +1167,14 @@
   .ld-table.dt-ledger.dt-ledger-5 .ld-row:not(.car-more):has(> .dt-ledger-pay) {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
   }
+  /* 三列表窄时收起支付方式，剩日期与金额 */
+  .ld-table.dt-ledger.dt-ledger-3 .ld-row:not(.car-more) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  /* 第四列是文字时收起支付方式后剩三列，起止日给最宽的一列 */
+  .ld-table.dt-ledger.dt-ledger-text .ld-row:not(.car-more) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 1.4fr);
+  }
   .dt-ledger-extra {
     display: none !important;
   }
@@ -1157,6 +1185,9 @@
   .dt-ledger:not(.dt-ledger-5) .ld-row:has(> .dt-ledger-keep) > span:nth-child(4) {
     display: none;
   }
+}
+.dt-ledger .dt-nw {
+  white-space: nowrap;
 }
 /* 本期与属性都没有时（如没有账号的买断）不留空白 */
 .dt-about-grid:empty {

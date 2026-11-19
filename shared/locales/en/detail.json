@@ -80,7 +80,11 @@
       "adjust": "Adjustment",
       "failed": "Failed"
     },
-    "add": "Add a record (refund, adjustment, failed charge, card amount…)"
+    "add": "Add a record (refund, adjustment, failed charge, card amount…)",
+    "head": {
+      "service": "Service period",
+      "paid": "Paid on"
+    }
   },
   "stats": {
     "spent": "Total spent",

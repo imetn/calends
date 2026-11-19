@@ -80,7 +80,11 @@
       "adjust": "Ajustement",
       "failed": "Échec"
     },
-    "add": "Ajouter une opération (remboursement, ajustement, échec, montant carte…)"
+    "add": "Ajouter une opération (remboursement, ajustement, échec, montant carte…)",
+    "head": {
+      "service": "Période de service",
+      "paid": "Payé le"
+    }
   },
   "stats": {
     "spent": "Total dépensé",

@@ -77,7 +77,11 @@
       "adjust": "Düzeltme",
       "failed": "Başarısız"
     },
-    "add": "Kayıt ekle (iade, düzeltme, başarısız ödeme, kart tutarı…)"
+    "add": "Kayıt ekle (iade, düzeltme, başarısız ödeme, kart tutarı…)",
+    "head": {
+      "service": "Hizmet dönemi",
+      "paid": "Ödeme tarihi"
+    }
   },
   "stats": {
     "spent": "Toplam harcama",

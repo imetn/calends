@@ -79,7 +79,7 @@ export function settlesLabel(settles: string[], paid: string) {
   return settles.length > 1 ? `${day(settles[0])} – ${day(settles[settles.length - 1])}` : day(settles[0]);
 }
 
-/** 扣款记录：按年分组（组头带合计），日期 · 原币 · 折合本位币；点一行改这笔 */
+/** 扣款记录：按年分组（组头带合计），扣款日 · 支付方式 · 卡上实扣，第四列按币种与计费方式取当时成本、用量、缴费日或服务期；点一行改这笔 */
 export function Charges({
   sub,
   state,
@@ -117,6 +117,38 @@ export function Charges({
   const regular = rows.filter((r) => !r.c.kind);
   const usageFmt = meter && fixedQty(meterDecimals(usageSub, meter.id));
   const usageCell = (v: number | undefined) => (v != null ? withUnit(v, meter!.unit, usageFmt) : '—');
+  // 前三列固定（日期 · 支付方式 · 卡上实扣），第四列看情况：
+  // 有一笔不是本位币时写当时成本；全是本位币时成本与实扣是同一个数，换成用量、缴费日或服务期，都没有时只留三列
+  const postMode = regular.length > 0 && regular.every((r) => post(r.c));
+  const periodOf = (c: Charge) =>
+    c.kind || c.settles || post(c) || c.sub.cycle.unit === 'lifetime' ? undefined : chargeServicePeriod(c.sub, c.date, c.serviceDate);
+  const fourth: 'cost' | 'usage' | 'paid' | 'service' | undefined = rows.some((r) => card(r.c).currency !== base)
+    ? 'cost'
+    : readings
+      ? 'usage'
+      : postMode
+        ? 'paid'
+        : rows.some((r) => periodOf(r.c))
+          ? 'service'
+          : undefined;
+  // 起止日各自不断开，列窄时在「–」后换行
+  const rangeCell = (label: string) => {
+    const [a, b] = label.split(' – ');
+    return b == null ? (
+      label
+    ) : (
+      <>
+        <span className="dt-nw">{a} –</span> <span className="dt-nw">{b}</span>
+      </>
+    );
+  };
+  const yearRange = (cs: Charge[]) => {
+    const ps = cs.map(periodOf).filter((p) => !!p);
+    if (!ps.length) return null;
+    const from = ps.reduce((a, p) => (p.from < a ? p.from : a), ps[0].from);
+    const until = ps.reduce((a, p) => (p.until > a ? p.until : a), ps[0].until);
+    return rangeCell(periodLabel({ from, until }, today));
+  };
   return (
     <Panel
       // 还没有记录时只是一条带「记一笔」的细条，不进列表网格被拉高
@@ -142,9 +174,18 @@ export function Charges({
             t(regular.length && regular.every((r) => post(r.c)) ? 'detail.chart.period' : 'proxy.table.date'),
             t('detail.field.method'),
             t('proxy.table.charged'),
-            t('proxy.table.cost'),
+            fourth === 'cost'
+              ? t('proxy.table.cost')
+              : fourth === 'usage'
+                ? meter!.name
+                : fourth === 'paid'
+                  ? t('detail.charges.head.paid')
+                  : fourth === 'service'
+                    ? t('detail.charges.head.service')
+                    : undefined,
           ]}
-          extraHead={readings && meter!.name}
+          extraHead={fourth === 'cost' && readings ? meter!.name : undefined}
+          textLast={fourth === 'paid' || fourth === 'service'}
           yearCells={(ys) => {
             const total = ys.reduce((a, r) => a + r.b, 0);
             return {
@@ -166,15 +207,29 @@ export function Charges({
                   (sum, ccy) => orig(-sum, ccy),
                 ),
               ),
-              base: formatTotal(
-                chargesTotal(
-                  state,
-                  ys.map((r) => r.c),
-                ),
-                base,
-                { direction: -1, ...(wholeBase.has(base) ? { decimals: 0 } : {}) },
-              ),
-              baseClass: total < 0 ? 'dt-in' : undefined,
+              base:
+                fourth === 'cost'
+                  ? formatTotal(
+                      chargesTotal(
+                        state,
+                        ys.map((r) => r.c),
+                      ),
+                      base,
+                      { direction: -1, ...(wholeBase.has(base) ? { decimals: 0 } : {}) },
+                    )
+                  : fourth === 'usage'
+                    ? usageCell(
+                        chargesUsage(
+                          readings,
+                          ys.map((r) => r.c),
+                        ),
+                      )
+                    : fourth === 'service'
+                      ? yearRange(ys.map((r) => r.c))
+                      : null,
+              // 净退款记绿色：有当时成本时标在成本上，没有时标在卡上实扣上
+              origClass: fourth !== 'cost' && total < 0 ? 'dt-in' : undefined,
+              baseClass: fourth === 'cost' && total < 0 ? 'dt-in' : undefined,
             };
           }}
           row={({ c, b }) => ({
@@ -194,13 +249,32 @@ export function Charges({
                 {!!c.settles?.length && <small className="dt-settles">{settlesLabel(c.settles, c.date)}</small>}
               </>
             ),
-            base: Number.isFinite(b) ? cost(-b) : '—',
-            baseClass: b < 0 ? 'dt-in' : undefined,
+            base:
+              fourth === 'cost' ? (
+                Number.isFinite(b) ? (
+                  cost(-b)
+                ) : (
+                  '—'
+                )
+              ) : fourth === 'usage' ? (
+                usageCell(usageOf(c))
+              ) : fourth === 'paid' ? (
+                post(c) && !c.settles ? (
+                  <time dateTime={c.date}>{cnDateFull(c.date)}</time>
+                ) : null
+              ) : fourth === 'service' ? (
+                (() => {
+                  const p = periodOf(c);
+                  return p ? rangeCell(periodLabel(p, today)) : null;
+                })()
+              ) : null,
+            origClass: fourth !== 'cost' && b < 0 ? 'dt-in' : undefined,
+            baseClass: fourth === 'cost' && b < 0 ? 'dt-in' : undefined,
           })}
           rowKey={({ c }, i) => `${c.date}-${c.sub.start}-${i}`}
           rowClass={({ c }) => c.kind ?? ''}
           rowTitle={({ c }) =>
-            post(c) && !c.settles
+            post(c) && !c.settles && fourth !== 'paid'
               ? [t('detail.charges.paidOn', { date: cnDateFull(c.date) }), c.note].filter(Boolean).join('\n')
               : c.settles?.length
                 ? [c.settles.map((d) => cnDateFull(d)).join('\n'), c.note].filter(Boolean).join('\n')

@@ -80,7 +80,11 @@
       "adjust": "Ajuste",
       "failed": "Falhou"
     },
-    "add": "Adicionar registro (reembolso, ajuste, cobrança com falha, valor no cartão…)"
+    "add": "Adicionar registro (reembolso, ajuste, cobrança com falha, valor no cartão…)",
+    "head": {
+      "service": "Período de serviço",
+      "paid": "Pago em"
+    }
   },
   "stats": {
     "spent": "Total gasto",

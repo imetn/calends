@@ -77,7 +77,11 @@
       "adjust": "Penyesuaian",
       "failed": "Gagal"
     },
-    "add": "Tambah catatan (refund, penyesuaian, tagihan gagal, jumlah di kartu…)"
+    "add": "Tambah catatan (refund, penyesuaian, tagihan gagal, jumlah di kartu…)",
+    "head": {
+      "service": "Periode layanan",
+      "paid": "Dibayar pada"
+    }
   },
   "stats": {
     "spent": "Total pengeluaran",

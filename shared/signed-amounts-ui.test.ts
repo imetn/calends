@@ -274,7 +274,36 @@ test('Detail charge rows and annual totals show expenses/refunds consistently, i
   assert.ok(post.includes('<time dateTime="2025-12-31">2025-12-01</time>'));
   assert.ok(!post.includes('</time><small'));
   assert.ok(post.includes('detail.chart.period'));
-  assert.ok(post.includes('title="detail.charges.paidOn"'));
+  // 全是本位币：第四列不再重复当时成本，后付费改写缴费日，悬停提示不再重复
+  assert.ok(post.includes('detail.charges.head.paid'));
+  assert.ok(!post.includes('proxy.table.cost'));
+  assert.ok(!post.includes('title="detail.charges.paidOn"'));
+  assert.ok(post.includes('<time dateTime="2026-02-01">'));
+
+  // 预付费全是本位币：第四列是服务期；有一笔卡上实扣是外币时恢复当时成本
+  const monthly = Array.from({ length: 3 }, (_, i) => ({ sub, date: `2026-0${i + 1}-01`, amount: 20, currency: 'USD' }));
+  const same = renderToStaticMarkup(React.createElement(Charges, { sub, state, today: '2026-10-22', history: monthly, onRow() {} }));
+  assert.ok(same.includes('detail.charges.head.service'));
+  assert.ok(same.includes('dt-ledger-text'));
+  assert.ok(!same.includes('proxy.table.cost'));
+  const foreign = [...monthly.slice(1), { ...monthly[0], settled: { amount: 150, currency: 'CNY' } }];
+  const cross = renderToStaticMarkup(React.createElement(Charges, { sub, state, today: '2026-10-22', history: foreign, onRow() {} }));
+  assert.ok(cross.includes('proxy.table.cost'));
+  assert.ok(!cross.includes('detail.charges.head.service'));
+
+  // 买断全是本位币：没有服务期，只剩三列
+  const once = { ...sub, id: 'fictional-once', cycle: { unit: 'lifetime', every: 1 } };
+  const buy = renderToStaticMarkup(
+    React.createElement(Charges, {
+      sub: once,
+      state,
+      today: '2026-10-22',
+      history: [{ sub: once, date: '2026-03-01', amount: 99, currency: 'USD' }],
+      onRow() {},
+    }),
+  );
+  assert.ok(buy.includes('dt-ledger-3'));
+  assert.ok(!buy.includes('proxy.table.cost'));
 });
 
 test('Detail charge history groups every year when one year has multiple rows, and sparse years stay directly editable', () => {

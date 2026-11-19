@@ -77,7 +77,11 @@
       "adjust": "Điều chỉnh",
       "failed": "Thất bại"
     },
-    "add": "Thêm bản ghi (hoàn tiền, điều chỉnh, trừ tiền thất bại, số tiền trên thẻ…)"
+    "add": "Thêm bản ghi (hoàn tiền, điều chỉnh, trừ tiền thất bại, số tiền trên thẻ…)",
+    "head": {
+      "service": "Kỳ dịch vụ",
+      "paid": "Ngày thanh toán"
+    }
   },
   "stats": {
     "spent": "Tổng chi",

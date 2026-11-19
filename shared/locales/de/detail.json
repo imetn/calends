@@ -80,7 +80,11 @@
       "adjust": "Korrektur",
       "failed": "Fehlgeschlagen"
     },
-    "add": "Eintrag hinzufügen (Erstattung, Korrektur, fehlgeschlagene Abbuchung, Kartenbetrag …)"
+    "add": "Eintrag hinzufügen (Erstattung, Korrektur, fehlgeschlagene Abbuchung, Kartenbetrag …)",
+    "head": {
+      "service": "Leistungszeitraum",
+      "paid": "Bezahlt am"
+    }
   },
   "stats": {
     "spent": "Gesamtausgaben",
