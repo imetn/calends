@@ -73,6 +73,7 @@
   },
   "notCounted": "Не учитывается",
   "endedOn": "Завершена {date}",
+  "serviceUntil": "Доступ до {date}",
   "change": {
     "noMethod": "Способ оплаты не выбран",
     "planned": "В планах\n",

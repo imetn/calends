@@ -71,6 +71,7 @@
   },
   "notCounted": "Nicht mitgezählt",
   "endedOn": "Beendet am {date}",
+  "serviceUntil": "Läuft bis {date}",
   "change": {
     "noMethod": "Zahlungsmethode offen",
     "planned": "Geplant\n",

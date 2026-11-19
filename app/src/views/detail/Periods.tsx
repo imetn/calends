@@ -98,8 +98,10 @@ function Bar({
   );
 }
 
-/** 计费中（未结束、未暂停、非买断）才画本期进度 */
-export const periodLive = (sub: Subscription, today: string) => !['ended', 'terminated', 'lifetime', 'paused'].includes(effectiveStatus(sub, today));
+/** 计费中（已开始、未结束、未暂停、非买断）才画本期进度；还没开始的没有「本期」，也没有取消截止 */
+export function periodLive(sub: Subscription, today: string) {
+  return !['upcoming', 'ended', 'terminated', 'lifetime', 'paused'].includes(effectiveStatus(sub, today));
+}
 
 /**
  * 我发起且仍在计费的合租：今天所在的收款期；其余为 undefined。

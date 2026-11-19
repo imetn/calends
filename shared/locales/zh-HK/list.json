@@ -68,6 +68,7 @@
   },
   "notCounted": "不計入",
   "endedOn": "結束 {date}",
+  "serviceUntil": "服務至 {date}",
   "change": {
     "noMethod": "付款方式未定",
     "planned": "計劃\n",

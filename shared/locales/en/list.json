@@ -71,6 +71,7 @@
   },
   "notCounted": "Not counted",
   "endedOn": "Ended {date}",
+  "serviceUntil": "Service until {date}",
   "change": {
     "noMethod": "Payment method TBD",
     "planned": "Planned\n",

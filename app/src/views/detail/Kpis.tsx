@@ -116,8 +116,11 @@ export function Kpis({
   // 后付费账单随用量起落（电费头几期可能只有几块），首末两期之比不是涨价，不画走势
   const perTrend =
     !cost.incomplete && !young && !phaseSubs(sub).some(isPostpaid) && per.length > 1 && per[0] > 0 ? per[per.length - 1] / per[0] - 1 : undefined;
-  const duration =
-    active < 1
+  // 还没到开始日：没有已订时长，写「—」；顶部已标未开始、下方已写生效日，这里不重复
+  const upcoming = st === 'upcoming';
+  const duration = upcoming
+    ? '—'
+    : active < 1
       ? t('detail.kpi.startedToday')
       : years
         ? months
@@ -199,7 +202,9 @@ export function Kpis({
           ? copyParts([t('detail.field.endedUnknown'), t('detail.stats.count', { count: history.length })].join('\n'))
           : copyParts(
               [
-                gaps > 0 ? t('detail.stats.gaps', { count: gaps }) : t('detail.period.since', { date: cnDateFull(transferred ? cost.from : sub.start) }),
+                ...(upcoming
+                  ? []
+                  : [gaps > 0 ? t('detail.stats.gaps', { count: gaps }) : t('detail.period.since', { date: cnDateFull(transferred ? cost.from : sub.start) })]),
                 t('detail.stats.count', { count: history.length }),
               ].join('\n'),
             )

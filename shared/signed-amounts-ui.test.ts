@@ -585,6 +585,7 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     cnDateAuto,
     Note: empty,
     collectNow: () => undefined,
+    periodLive: load(file, 'periodLive', extractUiFunction(new URL(file, import.meta.url), 'periodLive'), { effectiveStatus: billing.effectiveStatus }),
   });
   const Charges = load(file, 'Charges', extractUiFunction(new URL(file, import.meta.url), 'Charges'), {
     isSeparate: billing.isSeparate,

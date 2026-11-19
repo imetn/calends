@@ -71,6 +71,7 @@
   },
   "notCounted": "No se cuenta",
   "endedOn": "Finalizó {date}",
+  "serviceUntil": "Servicio hasta el {date}",
   "change": {
     "noMethod": "Método de pago por definir",
     "planned": "Previsto\n",

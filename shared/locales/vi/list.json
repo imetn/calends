@@ -70,6 +70,7 @@
   },
   "notCounted": "Không tính",
   "endedOn": "Kết thúc {date}",
+  "serviceUntil": "Dịch vụ đến {date}",
   "change": {
     "noMethod": "Chưa chọn phương thức thanh toán",
     "planned": "Dự định\n",

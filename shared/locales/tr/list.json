@@ -71,6 +71,7 @@
   },
   "notCounted": "Sayılmaz",
   "endedOn": "{date} sona erdi",
+  "serviceUntil": "{date} tarihine kadar hizmet",
   "change": {
     "noMethod": "Ödeme yöntemi belirsiz",
     "planned": "Planlandı\n",

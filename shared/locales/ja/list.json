@@ -70,6 +70,7 @@
   },
   "notCounted": "集計対象外",
   "endedOn": "{date}に終了",
+  "serviceUntil": "{date}まで利用可",
   "change": {
     "noMethod": "支払い方法未定",
     "planned": "予定\n",

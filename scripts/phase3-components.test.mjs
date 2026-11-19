@@ -1,4 +1,5 @@
 import * as fxTotals from '../shared/fx-total.ts';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { transformSync } from 'oxc-transform-react';
@@ -211,4 +212,19 @@ test('incomplete annual totals keep finite receipt decoration and unavailable pe
   const shared = Review({ state: { methods: [], settings: { baseCurrency: 'USD' } }, today: '2026-10-25', onClose() {} });
   const poster = shared.props.render('poster', { hide: true, m: String });
   assert.equal(poster.props.pct(10), '—');
+});
+
+test('issue #18: a subscription that has not started has no current period or cancel-by date', async () => {
+  const { effectiveStatus } = await import('../shared/billing.ts');
+  const periodLive = component('Detail.tsx', 'periodLive', { effectiveStatus });
+  const sub = { id: 's', name: 'Gift', price: 0, currency: 'AUD', cycle: { n: 1, unit: 'year' }, start: '2026-12-07', end: '2027-12-06', status: 'active' };
+  assert.equal(periodLive(sub, '2026-11-19'), false);
+  assert.equal(periodLive(sub, '2026-12-07'), true);
+  const kpis = extractUiFunction(new URL('../app/src/views/Detail.tsx', import.meta.url), 'Kpis');
+  assert.match(kpis, /const duration = upcoming\s*\?\s*'—'/);
+});
+
+test('issue #18: non-renewing tiles label the stop date as the last day of service', () => {
+  const src = readFileSync(new URL('../app/src/views/List.tsx', import.meta.url), 'utf8');
+  assert.equal(src.match(/list\.serviceUntil/g)?.length, 2);
 });

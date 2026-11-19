@@ -378,9 +378,11 @@ export function List({
                         ? s.start.slice(0, 7)
                         : n && !isStopped(st)
                           ? nearDate(n, today)
-                          : s.end && (isStopped(st) || st === 'ending')
+                          : s.end && isStopped(st)
                             ? cnDateAuto(s.end, today)
-                            : ''}
+                            : s.end && st === 'ending'
+                              ? t('list.serviceUntil', { date: cnDateAuto(s.end, today) })
+                              : ''}
                     </span>
                   </div>
                 </button>
@@ -487,12 +489,14 @@ export function List({
                         t('list.status.lifetime')
                       ) : isStopped(st) ? (
                         <>{tx('list.endedOn', { date: <small>{s.end ? cnDateAuto(s.end, today) : '—'}</small> })}</>
-                      ) : n || (st === 'ending' && s.end) ? (
-                        // 不续订、已无下次扣款时显示停止日，与网格卡片一致
+                      ) : n ? (
                         <>
-                          {cnDate(n ?? s.end!)}
-                          <small>{relDays(left!)}</small>
+                          {cnDate(n)}
+                          <small>{relDays(d!)}</small>
                         </>
+                      ) : st === 'ending' && s.end ? (
+                        // 不续订、已无下次扣款时显示停止日（含当天的最后服务日），与网格卡片一致
+                        <>{tx('list.serviceUntil', { date: <small>{cnDateAuto(s.end, today)}</small> })}</>
                       ) : (
                         '—'
                       )}

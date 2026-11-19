@@ -70,6 +70,7 @@
   },
   "notCounted": "Tidak dihitung",
   "endedOn": "Berakhir {date}",
+  "serviceUntil": "Layanan sampai {date}",
   "change": {
     "noMethod": "Metode pembayaran belum ditentukan",
     "planned": "Rencana\n",

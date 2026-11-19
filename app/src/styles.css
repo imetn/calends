@@ -4376,13 +4376,30 @@ button.h-price-row:focus-visible {
 .sc-foot {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 0 8px;
   font-size: var(--fs-1);
   color: var(--label-3);
   font-variant-numeric: tabular-nums;
   /* 贴卡片底边：同一行有卡片因多一行说明被拉高时，各卡底部信息仍在同一高度 */
   margin-top: auto;
   padding-top: 2px;
+}
+/* 窄卡放不下时右侧日期整段换到下一行并靠右（如「Service until 7 Aug 2027」），两段各自不折行 */
+.scard .sc-foot {
+  flex-wrap: wrap;
+}
+.scard .sc-foot > span {
+  white-space: nowrap;
+}
+.scard .sc-foot > span:last-child {
+  margin-left: auto;
+}
+/* 最窄屏两列卡片连一整行都放不下时，右侧日期允许折行，不被裁掉 */
+@media (max-width: 359px) {
+  .scard .sc-foot > span:last-child {
+    white-space: normal;
+    text-align: right;
+  }
 }
 .sc-foot .soon {
   color: var(--orange);

@@ -70,6 +70,7 @@
   },
   "notCounted": "집계 제외",
   "endedOn": "{date} 종료",
+  "serviceUntil": "{date}까지 이용",
   "change": {
     "noMethod": "결제 수단 미정",
     "planned": "예정\n",
