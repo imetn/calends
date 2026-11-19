@@ -529,7 +529,14 @@ function App() {
   // 检查更新只在登录后的应用里做（公开页是另一个入口，不引入）；只读演示没有设置页，不查
   const checkUpdates = loaded && !state.readonly;
   useEffect(() => {
-    if (checkUpdates) autoCheckUpdate();
+    if (!checkUpdates) return;
+    autoCheckUpdate();
+    // 标签页或 PWA 长时间开着：回到前台时再按间隔查一次
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') autoCheckUpdate();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [checkUpdates]);
   // 匿名使用统计：同样只在登录后的应用里记；开关和发送在服务端
   useEffect(() => {

@@ -28,8 +28,8 @@ import { FlagBox } from '../components/marks.tsx';
 import { timeZones } from '../timezones.ts';
 import { zoneCountry } from '../zone-countries.ts';
 import { preferredLocale } from '../i18n.ts';
-import { APP_VERSION, availableUpdate, checkUpdateNow, useUpdateState } from '../update-check.ts';
-import type { ReleaseInfo } from '../../../shared/version.ts';
+import { APP_VERSION, autoCheckUpdate, availableUpdate, checkUpdateNow, useUpdateState } from '../update-check.ts';
+import { SETTINGS_CHECK_INTERVAL, type ReleaseInfo } from '../../../shared/version.ts';
 
 /** 可设为启动页的页面（标签取 app.nav.*） */
 const START_PAGES: Array<[string, string]> = [
@@ -666,6 +666,8 @@ function TelemetryGroup() {
 function VersionCells() {
   const u = useUpdateState();
   const update = availableUpdate(u);
+  // 打开设置页时结果超过几分钟就重查，不让版本行停在过时的「已是最新」
+  useEffect(() => autoCheckUpdate(SETTINGS_CHECK_INTERVAL), []);
   // 已检查过且没有新版：显示「最新」徽标；从未检查过才显示「检查更新」
   const status = u.checking ? (
     '…'

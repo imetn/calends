@@ -5,8 +5,10 @@
 /** 发布仓库：最新稳定版取它的 releases/latest（GitHub 已排除 prerelease 和 draft） */
 export const RELEASE_REPO = 'imetn/calends';
 export const LATEST_RELEASE_API = `https://api.github.com/repos/${RELEASE_REPO}/releases/latest`;
-/** 每台设备自动检查的最短间隔 */
-export const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000;
+/** 每台设备自动检查的最短间隔：一天可能发几个版本，按天查会让「已是最新」和更新红点过时（issue #21） */
+export const UPDATE_CHECK_INTERVAL = 60 * 60 * 1000;
+/** 打开设置页时，上次检查早于这个间隔就再查一次，版本行不显示过时的「已是最新」 */
+export const SETTINGS_CHECK_INTERVAL = 5 * 60 * 1000;
 
 interface SemVer {
   core: [number, number, number];
@@ -91,8 +93,11 @@ export function parseUpdateCache(raw: string | null): UpdateCache | null {
 }
 
 /** 自动检查是否到期：从没查过、已满间隔，或记录的时间在未来（设备时钟被调过）时到期 */
-export function autoCheckDue(cache: UpdateCache | null, now: number, interval = UPDATE_CHECK_INTERVAL): boolean {
+export function autoCheckDue(cache: UpdateCache | null, now: number, interval = UPDATE_CHECK_INTERVAL, current?: string): boolean {
   if (!cache) return true;
+  // 刚升级过：缓存里的「最新版」比正在运行的还旧，多半是升级前查的，按设置页的短间隔重查；
+  // 不直接放行，GitHub 的 latest 落后于运行版本（先部署后建 Release、自改版本号）时会每次都请求、耗尽限额
+  if (current && cache.latest && isNewer(current, cache.latest.version)) interval = Math.min(interval, SETTINGS_CHECK_INTERVAL);
   return now - cache.checkedAt >= interval || cache.checkedAt > now;
 }
 

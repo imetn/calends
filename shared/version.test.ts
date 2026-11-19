@@ -12,6 +12,7 @@ import {
   parseRelease,
   parseUpdateCache,
   parseVersion,
+  SETTINGS_CHECK_INTERVAL,
   UPDATE_CHECK_INTERVAL,
 } from './version.ts';
 
@@ -57,7 +58,7 @@ test('GitHub release 解析：只认本仓库的正式版发布页', () => {
   assert.equal(parseRelease(null), null);
 });
 
-test('自动检查每台设备每天最多一次；失败只记时间并保留上次版本', () => {
+test('自动检查每台设备每小时最多一次；失败只记时间并保留上次版本', () => {
   const now = Date.UTC(2026, 10, 16, 8);
   assert.equal(autoCheckDue(null, now), true);
   assert.equal(autoCheckDue({ checkedAt: now - UPDATE_CHECK_INTERVAL + 1 }, now), false);
@@ -108,4 +109,29 @@ test('公开页不检查更新：入口依赖里没有检查模块，也不请�
   // 登录后的应用确实接入了自动检查
   assert.ok(importGraph(join(root, 'app.tsx')).has(join(root, 'update-check.ts')));
   assert.match(readFileSync(join(root, 'app.tsx'), 'utf8'), /autoCheckUpdate\(\)/);
+});
+
+test('issue #21：一天发多个版本时不会整天停在「已是最新」', () => {
+  const now = Date.UTC(2026, 10, 19, 12, 45);
+  const r = (version: string) => ({ version, url: `https://github.com/imetn/calends/releases/tag/v${version}` });
+  // 10:47 升到 1.43.0 后查过一次，12:41 发了 1.44.0：一小时后的刷新或回到前台会重查
+  assert.equal(UPDATE_CHECK_INTERVAL, 60 * 60 * 1000);
+  assert.equal(autoCheckDue({ checkedAt: now - 2 * 60 * 60 * 1000, latest: r('1.43.0') }, now, UPDATE_CHECK_INTERVAL, '1.43.0'), true);
+  // 打开设置页：结果超过 5 分钟就重查，5 分钟内不重复请求
+  assert.equal(autoCheckDue({ checkedAt: now - SETTINGS_CHECK_INTERVAL, latest: r('1.43.0') }, now, SETTINGS_CHECK_INTERVAL, '1.43.0'), true);
+  assert.equal(autoCheckDue({ checkedAt: now - 60_000, latest: r('1.43.0') }, now, SETTINGS_CHECK_INTERVAL, '1.43.0'), false);
+  // 刚升级：缓存里的最新版比正在运行的旧，是升级前查的，按五分钟重查
+  assert.equal(autoCheckDue({ checkedAt: now - SETTINGS_CHECK_INTERVAL, latest: r('1.42.0') }, now, UPDATE_CHECK_INTERVAL, '1.43.0'), true);
+  // 但 GitHub 的 latest 一直落后于运行版本时不能每次都请求（未认证每 IP 每小时 60 次）
+  assert.equal(autoCheckDue({ checkedAt: now - 60_000, latest: r('1.42.0') }, now, UPDATE_CHECK_INTERVAL, '1.43.0'), false);
+  assert.equal(autoCheckDue({ checkedAt: now - 60_000, latest: r('1.44.0') }, now, UPDATE_CHECK_INTERVAL, '1.43.0'), false);
+
+  const root = fileURLToPath(new URL('../app/src/', import.meta.url));
+  const app = readFileSync(join(root, 'app.tsx'), 'utf8');
+  assert.match(app, /if \(document\.visibilityState === 'visible'\) autoCheckUpdate\(\);/);
+  assert.match(app, /document\.addEventListener\('visibilitychange', onVisible\);/);
+  const settings = readFileSync(join(root, 'views/Settings.tsx'), 'utf8');
+  assert.match(settings, /useEffect\(\(\) => autoCheckUpdate\(SETTINGS_CHECK_INTERVAL\), \[\]\);/);
+  const check = readFileSync(join(root, 'update-check.ts'), 'utf8');
+  assert.match(check, /autoCheckDue\(state\.cache, now, interval, APP_VERSION\)/);
 });

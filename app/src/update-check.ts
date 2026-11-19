@@ -8,6 +8,7 @@ import {
   parseUpdateCache,
   parseVersion,
   type UpdateCache,
+  UPDATE_CHECK_INTERVAL,
 } from '../../shared/version.ts';
 import { readStored, storageKey } from './base.ts';
 
@@ -77,14 +78,17 @@ async function check(manual: boolean) {
 export const checkUpdateNow = () => check(true);
 
 /**
- * 应用加载后调用：每台设备每天最多一次，失败静默。
+ * 应用加载、回到前台时调用（每台设备每小时最多一次），打开设置页时按更短的间隔调用；失败静默。
  * vite dev 和非正式版本号（不是 x.y.z）不自动检查，避免开发时反复请求、拿开发版本去比；手动检查不受影响。
  */
-export function autoCheckUpdate(now = Date.now()) {
+export function autoCheckUpdate(interval = UPDATE_CHECK_INTERVAL, now = Date.now()) {
   if (import.meta.env.DEV) return;
   const v = parseVersion(APP_VERSION);
   if (!v || v.pre.length) return;
-  if (!autoCheckDue(state.cache, now)) return;
+  // 其他标签页可能刚查过：先读本机存储里更新的结果，免得每个长开的标签各请求一次
+  const stored = parseUpdateCache(readStored(KEY));
+  if (stored && (!state.cache || stored.checkedAt > state.cache.checkedAt)) set({ cache: stored });
+  if (!autoCheckDue(state.cache, now, interval, APP_VERSION)) return;
   void check(false);
 }
 
