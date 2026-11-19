@@ -113,5 +113,11 @@ export const MIGRATIONS: Array<{ name: string; statements: string[] }> = [
     "statements": [
       "-- App 同步改为默认休眠（worker/sync-mode.ts）：sync_meta.mode = off | tokens | hosted。\n-- 新库的 0009 只建表；此前按旧版 0009 装过触发器的库在这里定状态：\n-- 已有同步令牌或已有安装记录（自部署在用，或官方托管已连接过设备）→ tokens，触发器与 sync_objects 原样保留；\n-- 否则 → off，迁移之后 reconcileSync 卸掉触发器、清空对象表。托管外层随后调用 enableSync 置为 hosted。\nINSERT INTO sync_meta (key, value)\nSELECT 'mode', CASE WHEN EXISTS (SELECT 1 FROM sync_tokens) OR EXISTS (SELECT 1 FROM sync_clients) THEN 'tokens' ELSE 'off' END\nWHERE 1\nON CONFLICT(key) DO NOTHING;\n"
     ]
+  },
+  {
+    "name": "0014_sync_pair.sql",
+    "statements": [
+      "-- 扫码连接 App 的一次性配对码（docs/sync-api.md「扫码配对」）：\n-- 至多一个有效码（id 固定为 1，新码覆盖旧码），只存 SHA-256，5 分钟过期，用一次即删，错 5 次作废\nCREATE TABLE sync_pair (\n  id INTEGER PRIMARY KEY CHECK (id = 1),\n  hash TEXT NOT NULL,\n  expires_at INTEGER NOT NULL,\n  failures INTEGER NOT NULL DEFAULT 0\n);\n"
+    ]
   }
 ];

@@ -67,6 +67,7 @@ import { cleanCategories, renameInSubs } from '../shared/categories.ts';
 import { createToken, listTokens, mcp, revokeToken } from './ai/mcp.ts';
 import { syncHandler } from './sync.ts';
 import { authenticateSync, createSyncToken, listSyncTokens, revokeSyncToken } from './sync-auth.ts';
+import { createPairCode, PairError, redeemPairCode } from './sync-pair.ts';
 import { fetchPublic } from './url-guard.ts';
 import { TOOLS, toolTitle } from './ai/mcp-tools.ts';
 import { appStorePlans, searchAppStore } from './appstore.ts';
@@ -144,6 +145,19 @@ function methodError(fx: FxTable, previous: PaymentMethod | undefined, pm: Payme
 async function api(req: Request, env: Env, path: string): Promise<Response> {
   const method = req.method;
   // App 同步（docs/sync-api.md）：只认同步令牌（Bearer），不认 MCP 令牌与网页 Cookie，所以不经过同源检查
+  // 扫码配对兑换（sync-pair.ts）：App 凭一次性配对码换同步令牌，无需登录；码本身是凭据，错 5 次作废
+  if (path === '/api/sync/v1/pair/redeem') {
+    if (method !== 'POST') return json({ error: 'method_not_allowed', code: 'method_not_allowed' }, 405);
+    const b = await req.json().catch(() => null);
+    if (!b || typeof b !== 'object' || typeof (b as { code?: unknown }).code !== 'string') return json({ error: 'invalid_request', code: 'invalid_request' }, 400);
+    const { code, name } = b as { code: string; name?: unknown };
+    try {
+      return json(await redeemPairCode(env, code, typeof name === 'string' ? name : ''));
+    } catch (e) {
+      if (e instanceof PairError) return json({ error: e.code, code: e.code }, e.status);
+      throw e;
+    }
+  }
   const sync = path.match(/^\/api\/sync\/v1\/([a-z]+)$/);
   if (sync) return syncHandler(req, env, sync[1], (await authenticateSync(req, env)) ?? null);
   if (path === '/api/login' && method === 'POST') return login(req, env);
@@ -236,6 +250,8 @@ async function routes(req: Request, env: Env, path: string): Promise<Response> {
     const { hash: _h, ...rest } = item;
     return json({ token, item: rest });
   }
+  // 扫码配对：生成一次性配对码（覆盖旧码），二维码由网页本地生成
+  if (path === '/api/sync/pair' && method === 'POST') return json(await createPairCode(env));
   const st = path.match(/^\/api\/sync\/tokens\/([\w-]+)$/);
   if (st && method === 'DELETE') {
     await revokeSyncToken(env, st[1]);
