@@ -104,11 +104,16 @@ function navOf(st: AppState['settings']) {
 
 function useRoute() {
   const [r, setR] = useState(currentRoute());
+  const last = useRef(r);
   useEffect(
     () =>
       onRoute(() => {
-        setR(currentRoute());
-        window.scrollTo({ top: 0 });
+        const next = currentRoute();
+        // 再点一次当前页回到起点；助手的起点是底部的最新对话，由助手页自己定位（见 Assistant 的 jump）
+        const same = last.current === next;
+        last.current = next;
+        setR(next);
+        if (!(same && next === 'assistant')) window.scrollTo({ top: 0 });
       }),
     [],
   );

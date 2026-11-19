@@ -2,6 +2,7 @@ import { base } from '../base.ts';
 import { dragScroll } from '../drag-scroll.ts';
 import type { ReactNode } from 'react';
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
+import { currentRoute, onRoute } from '../router.ts';
 import {
   ArrowDown,
   ArrowUp,
@@ -68,6 +69,17 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
   const confirmingRef = useRef(false);
   const abort = useRef<AbortController | null>(null);
   const [atBottom, setAtBottom] = useState(true);
+  // 侧栏或底栏再点一次「助手」：回到最新对话，并重新对齐历史分割线
+  const [jump, setJump] = useState(0);
+  useEffect(
+    () =>
+      onRoute(() => {
+        if (currentRoute() !== 'assistant') return;
+        setAtBottom(true);
+        setJump((n) => n + 1);
+      }),
+    [],
+  );
   const composer = useRef<ComposerHandle>(null);
 
   useEffect(() => {
@@ -115,7 +127,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
   // 新内容到来时贴着底部滚；用户往上翻了就不打扰，显示「回到底部」
   useLayoutEffect(() => {
     if (atBottom) window.scrollTo(0, document.documentElement.scrollHeight);
-  }, [chat, atBottom, fill, past]);
+  }, [chat, atBottom, fill, past, jump]);
   // 布局完成后直接校正滚动位置，不把受滚动影响的坐标反写为高度。
   // 浏览器缩放或滚动尚未完成时，反复 setFill 会形成同步更新循环。
   const session = useRef<HTMLElement>(null);
@@ -130,7 +142,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
       if (Math.abs(d) > 1) window.scrollTo({ top: window.scrollY + d, behavior: 'instant' });
     });
     return () => cancelAnimationFrame(frame);
-  }, [fill, past, chat.id, atBottom]);
+  }, [fill, past, chat.id, atBottom, jump]);
   useEffect(() => {
     const onScroll = () => {
       const el = document.documentElement;

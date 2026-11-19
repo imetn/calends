@@ -289,3 +289,14 @@ test('复制卡片里按卡片宽度算几何的图表都按导出宽度重画�
   }
   assert.ok(checked.includes('FlowCard') && checked.includes('ProfileCard'), checked.join());
 });
+
+test('侧边栏再点一次「助手」停在最新对话，不回到顶部的旧历史', () => {
+  const app = readFileSync(new URL('../app/src/app.tsx', import.meta.url), 'utf8');
+  const route = app.slice(app.indexOf('function useRoute('), app.indexOf('/** 整页提示'));
+  assert.match(route, /if \(!\(same && next === 'assistant'\)\) window\.scrollTo\(\{ top: 0 \}\);/);
+  // 助手页自己回到底部并重跑历史分割线的对齐
+  const assistant = readFileSync(new URL('../app/src/views/Assistant.tsx', import.meta.url), 'utf8');
+  assert.match(assistant, /onRoute\(\(\) => \{\s*if \(currentRoute\(\) !== 'assistant'\) return;\s*setAtBottom\(true\);\s*setJump\(\(n\) => n \+ 1\);/);
+  assert.match(assistant, /\}, \[chat, atBottom, fill, past, jump\]\);/);
+  assert.match(assistant, /\}, \[fill, past, chat\.id, atBottom, jump\]\);/);
+});
