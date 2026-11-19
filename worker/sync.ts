@@ -10,7 +10,7 @@ import { ensureMigrated } from './migrate.ts';
 import { loadState, rotateGenerationStmt } from './store.ts';
 import { OP_VERSIONS, parseOpName, SyncExec, type SyncOp } from './sync-ops.ts';
 import { BatchStore, batchReadStmts } from './sync-store.ts';
-import { syncEnabled } from './sync-mode.ts';
+import { forgetHostedSync, syncEnabled } from './sync-mode.ts';
 
 export interface SyncRequest {
   protocol: number;
@@ -360,17 +360,20 @@ export async function runSync(env: Env, req: SyncRequest, opts: SyncOptions = {}
 export async function hello(env: Env, authed: boolean) {
   const base = { protocol: SYNC_PROTOCOL, minClientProtocol: MIN_CLIENT_PROTOCOL, ops: OP_VERSIONS, engine: pkg.version };
   if (!authed) return base;
-  const [subs, methods, people, meta] = await env.DB.batch([
+  const [subs, methods, people, meta, mode] = await env.DB.batch([
     env.DB.prepare('SELECT count(*) AS n FROM subscriptions'),
     env.DB.prepare('SELECT count(*) AS n FROM methods'),
     env.DB.prepare("SELECT coalesce(json_array_length(value), 0) AS n FROM kv WHERE key = 'people'"),
     env.DB.prepare("SELECT value FROM sync_meta WHERE key = 'ledgerId'"),
+    env.DB.prepare("SELECT value FROM sync_meta WHERE key = 'mode'"),
   ]);
   const n = (r: D1Result) => Number((r.results[0] as { n: number } | undefined)?.n ?? 0);
   return {
     ...base,
     counts: { sub: n(subs), method: n(methods), people: n(people) },
     ledgerId: (meta.results[0] as { value: string } | undefined)?.value ?? null,
+    // 休眠时 hello 照常回 200，POST sync 才回 409 sync_disabled；App 可据此提前提示
+    syncEnabled: syncEnabled((mode.results[0] as { value: string } | undefined)?.value),
   };
 }
 
@@ -412,4 +415,6 @@ export async function disasterRecovery(env: Env): Promise<void> {
     rotateGenerationStmt(env),
     env.DB.prepare("UPDATE sync_meta SET value = lower(hex(randomblob(8))) WHERE key = 'drEpoch'"),
   ]);
+  // 恢复的库 mode 可能不是 hosted 了：清掉 enableHostedSync 的记忆，下一次 enableSync 重新核对并启用
+  forgetHostedSync(env);
 }

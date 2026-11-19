@@ -195,6 +195,11 @@ export async function reconcileSync(env: Env): Promise<void> {
 
 const hosted = new WeakMap<object, Promise<void>>();
 
+/** 忘掉该库的托管启用记录（disasterRecovery 之后调用）：恢复的库 mode 可能回到 off，下一次 enableSync 重新核对 */
+export function forgetHostedSync(env: Env): void {
+  hosted.delete(env.DB);
+}
+
 /**
  * 托管启用（hosting.ts 的 enableSync 在迁移之后调用）：mode 置为 hosted，之后不随令牌停用。
  * 已经是 tokens 且触发器齐全（旧版 0009 一直开着的托管库）时只改 mode，不换代际，已连接的设备照常增量。

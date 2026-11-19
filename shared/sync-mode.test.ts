@@ -245,6 +245,31 @@ test('isCasError 只认 sync_cas 的核对失败（D1、托管 d1-adapter、node
   assert.ok(!isCasError('CHECK constraint failed: ok = 1'));
 });
 
+test('鉴权 hello 带 syncEnabled；休眠时 hello 仍 200', async () => {
+  const env = await fresh();
+  const { syncHello } = await import('../worker/hosting.ts');
+  assert.equal(((await syncHello(env, true)) as { syncEnabled: boolean }).syncEnabled, false);
+  assert.equal('syncEnabled' in (await syncHello(env, false)), false);
+  const hello = await worker.fetch(new Request('https://example.test/api/sync/v1/hello'), env);
+  assert.equal(hello.status, 200);
+  await createSyncToken(env, 'Fictional A');
+  assert.equal(((await syncHello(env, true)) as { syncEnabled: boolean }).syncEnabled, true);
+});
+
+test('灾备后重新核对托管启用：恢复的库回到休眠时，enableSync 不被旧记忆跳过', async () => {
+  const env = await fresh();
+  const { disasterRecovery } = await import('../worker/hosting.ts');
+  await enableSync(env);
+  assert.equal((await syncState(env)).mode, 'hosted');
+  // 模拟物理回滚到一份尚未启用托管的快照
+  await env.DB.batch([...SYNC_TRIGGERS.map((n) => env.DB.prepare(`DROP TRIGGER ${n}`)), env.DB.prepare("UPDATE sync_meta SET value = 'off' WHERE key = 'mode'")]);
+  await enableSync(env);
+  assert.equal((await syncState(env)).mode, 'off', '同一进程里记忆生效，没有重查');
+  await disasterRecovery(env);
+  await enableSync(env);
+  assert.deepEqual(await syncState(env), { mode: 'hosted', triggers: SYNC_TRIGGERS.length });
+});
+
 test('停用与提交交错：停用换代际，停用前算好的提交被守卫拒绝，重算后 409，不写入不完整的进度', async () => {
   const env = await fresh();
   await upsert(env, 'subscriptions', 's1', sub('s1', 'Fictional 1'));

@@ -32,23 +32,23 @@ After a 401 or 410, the owner generates a new code on the web page. Issuing a to
 
 ## `GET /api/sync/v1/hello`
 
-Returns `{ protocol, minClientProtocol, ops, engine }`. `ops` maps each operation name to its supported version range. With a valid token the response also includes `counts: { sub, method, people }` and `ledgerId`, which the app uses on first connection to decide how to merge.
+Returns `{ protocol, minClientProtocol, ops, engine }`. `ops` maps each operation name to its supported version range. With a valid token the response also includes `counts: { sub, method, people }` and `ledgerId`, which the app uses on first connection to decide how to merge, and `syncEnabled`. Hello answers 200 even while sync is dormant; only `POST /sync` answers 409 `sync_disabled`, and `syncEnabled: false` lets the app say so before it syncs.
 
 ## `POST /api/sync/v1/sync`
 
 Request body:
 
-| Field       | Meaning                                                                                       |
-| ----------- | --------------------------------------------------------------------------------------------- |
-| `protocol`  | Client protocol version (currently 1).                                                        |
-| `reqId`     | Echoed back in the response.                                                                  |
-| `installId` | Stable ID of one app install.                                                                 |
-| `ledgerId`  | Ledger the install is bound to. `null` allows pull-only requests.                             |
-| `drEpoch`   | Disaster-recovery epoch last seen. Only a first `register` may send `null`.                   |
-| `register`  | `true` registers the install. A register request must carry no mutations.                     |
-| `cookie`    | `{ gen, seq }` from the previous response, or `null` for a full download.                     |
+| Field       | Meaning                                                                                                                                                                                                                       |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `protocol`  | Client protocol version (currently 1).                                                                                                                                                                                        |
+| `reqId`     | Echoed back in the response.                                                                                                                                                                                                  |
+| `installId` | Stable ID of one app install.                                                                                                                                                                                                 |
+| `ledgerId`  | Ledger the install is bound to. `null` allows pull-only requests.                                                                                                                                                             |
+| `drEpoch`   | Disaster-recovery epoch last seen. Only a first `register` may send `null`.                                                                                                                                                   |
+| `register`  | `true` registers the install. A register request must carry no mutations.                                                                                                                                                     |
+| `cookie`    | `{ gen, seq }` from the previous response, or `null` for a full download.                                                                                                                                                     |
 | `ackedMid`  | Highest mutation ID whose result the client has stored. Rejections at or below it are left out of the response (they stay stored). A value above the server's `lastMutationId` retires the install, which needs write access. |
-| `mutations` | Up to 300 entries, each `{ mid, op }`, with `mid` strictly increasing from 1 per install.     |
+| `mutations` | Up to 300 entries, each `{ mid, op }`, with `mid` strictly increasing from 1 per install.                                                                                                                                     |
 
 The response is one of the following:
 
@@ -58,18 +58,18 @@ The response is one of the following:
 
 Checks run in this order:
 
-| Status | Code                                          | Condition                                                                                                       |
-| ------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| 400    | `invalid_request`                             | Malformed body or field.                                                                                        |
-| 409    | `sync_disabled`                               | Sync is not enabled on this database (no sync token, and no hosting layer called `enableSync`). Nothing is returned. |
-| 426    | `client_too_old` / `server_too_old`           | Protocol outside the supported range.                                                                           |
-| 413    | `too_many_mutations`                          | More than 300 mutations.                                                                                        |
-| 426    | `op_version`                                  | Operation name or version not in the whitelist.                                                                 |
-| 400    | `register_with_mutations` / `ledger_required` | Register sent with mutations, or mutations sent without a `ledgerId`.                                           |
-| 403    | `install_owner_mismatch`                      | Hosted only: the install was first written by another verified principal (device / token family).              |
+| Status | Code                                          | Condition                                                                                                             |
+| ------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 400    | `invalid_request`                             | Malformed body or field.                                                                                              |
+| 409    | `sync_disabled`                               | Sync is not enabled on this database (no sync token, and no hosting layer called `enableSync`). Nothing is returned.  |
+| 426    | `client_too_old` / `server_too_old`           | Protocol outside the supported range.                                                                                 |
+| 413    | `too_many_mutations`                          | More than 300 mutations.                                                                                              |
+| 426    | `op_version`                                  | Operation name or version not in the whitelist.                                                                       |
+| 400    | `register_with_mutations` / `ledger_required` | Register sent with mutations, or mutations sent without a `ledgerId`.                                                 |
+| 403    | `install_owner_mismatch`                      | Hosted only: the install was first written by another verified principal (device / token family).                     |
 | 403    | `insufficient_scope`                          | Hosted only: a read-only identity would write the install row (register, push, retire, or record an unknown install). |
-| 200    | `ledgerMismatch` or `gone`                    | Described above.                                                                                                |
-| 503    | `conflict`                                    | The commit guard failed three times in a row because concurrent writes kept changing the snapshot. Retry later. |
+| 200    | `ledgerMismatch` or `gone`                    | Described above.                                                                                                      |
+| 503    | `conflict`                                    | The commit guard failed three times in a row because concurrent writes kept changing the snapshot. Retry later.       |
 
 Each mutation runs at most once. A mutation whose `mid` is at or below the install's `lastMutationId` is skipped, so retries are safe. A mutation that fails its semantic check is rolled back and recorded in `rejections` as `{ mid, code, detail }`, but it still advances `lastMutationId`. The rejection codes are `target_deleted`, `field_changed`, `expect_failed`, `id_conflict` and `invalid`. All accepted mutations and the cursor update commit in one D1 batch, guarded by a compare-and-set on the head sequence.
 
@@ -130,12 +130,12 @@ A page holds at most 2 MiB of objects, counted in UTF-8 bytes (`PAGE_BYTES`); a 
 
 ## Dormant until enabled
 
-Sync starts dormant. Migrations only create empty tables, and `sync_meta.mode` is `off`. No triggers are installed on ledger tables, so business writes create no `sync_objects` rows and cost nothing extra. Both endpoints answer 409 `sync_disabled` instead of returning partial data. A self-hoster who never connects an app sees only these empty tables and one collapsed "Connect Calends App" row under Settings → Security.
+Sync starts dormant. Migrations only create empty tables, and `sync_meta.mode` is `off`. No triggers are installed on ledger tables, so business writes create no `sync_objects` rows and cost nothing extra. `POST /sync` answers 409 `sync_disabled` instead of returning partial data; `GET /hello` still answers 200, with `syncEnabled: false` when authenticated. A self-hoster who never connects an app sees only these empty tables and one collapsed "Connect Calends App" row under Settings → Security.
 
 Enabling runs in one atomic batch ([worker/sync-mode.ts](../worker/sync-mode.ts) `enableSql`): it rotates the data generation, clears `sync_objects`, backfills one row per current object (subscriptions, methods, `kv/settings`, `kv/people`, dated FX) with consecutive sequence numbers, sets `sync_head` to the last one, installs the 12 change-tracking triggers and sets the mode. The first pull after that is a complete download, and later writes advance the sequence through the triggers as before.
 
 - **Self-hosted (`mode = tokens`).** Issuing the first sync token, including by redeeming a pairing code, enables sync in the same batch as the token row. Revoking the last token drops the triggers, clears `sync_objects`, resets the head and rotates the generation (`mode = off`), in the same batch that deletes the token row; that batch first checks that the mode is still `tokens` and no other token exists, and if not, only the token row is deleted (then, if no token is left, a second checked batch disables). A database that migration `0013` judged `tokens` because it had installs but no tokens (an old development database) stays enabled until a token is issued and revoked. Enabling again rotates the generation once more, so an app holding an old cookie gets `full: true` and rebuilds its copy instead of continuing incrementally across the gap. `ledgerId`, `drEpoch`, installs and rejections are kept, so already applied mutation IDs stay deduplicated, the same as after a backup restore. Both switches compare-and-set the mode, and a sync commit checks the head and generation, so a disable racing a sync makes that request answer 409 without writing.
-- **Hosted (`mode = hosted`).** A hosting layer with one database per ledger and no `sync_tokens` must call `enableSync(env)` from [worker/hosting.ts](../worker/hosting.ts) when it provisions a database and before serving the first request on each database instance. It runs migrations and enables sync, is idempotent and is memoized per binding. Token revocation never disables a hosted database.
+- **Hosted (`mode = hosted`).** A hosting layer with one database per ledger and no `sync_tokens` must call `enableSync(env)` from [worker/hosting.ts](../worker/hosting.ts) when it provisions a database and before serving the first request on each database instance. It runs migrations and enables sync, is idempotent and is memoized per binding. `disasterRecovery` clears that memo, so the next `enableSync` checks the restored database again. Token revocation never disables a hosted database.
 - **Databases that ran the earlier 0009.** That version installed the triggers in the migration itself. Migration `0013_sync_mode.sql` records `tokens` when the database has sync tokens or app installs and `off` otherwise; `ensureMigrated()` then reconciles the triggers with the mode, dropping them on self-hosted databases without tokens. A hosted database that already has installs is upgraded to `hosted` by `enableSync` without rotating the generation, so connected apps are unaffected; one without installs is enabled again from scratch.
 
 The write guard does not depend on any of this (see below).
