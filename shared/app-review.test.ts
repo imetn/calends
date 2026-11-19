@@ -268,3 +268,24 @@ test('河流图复制成图片：按导出宽度重画，未来月份淡化不�
   const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
   assert.match(css, /\.act-stream-future \{[^}]*fill: var\(--card\);[^}]*fill-opacity: 0\.6;/);
 });
+
+test('复制卡片里按卡片宽度算几何的图表都按导出宽度重画（桑基图在宽屏复制时右侧被 760 导出宽度截断）', async () => {
+  const { readdirSync } = await import('node:fs');
+  const { parsers } = await import('prettier/plugins/typescript');
+  const root = new URL('../app/src/', import.meta.url);
+  const files = readdirSync(root, { recursive: true }).filter((f) => String(f).endsWith('.tsx'));
+  const checked: string[] = [];
+  for (const file of files) {
+    const src = readFileSync(new URL(String(file), root), 'utf8');
+    if (!src.includes('useWidth(')) continue;
+    for (const n of parsers.typescript.parse(src).body as any[]) {
+      const fn = n.declaration ?? n;
+      if (fn.type !== 'FunctionDeclaration') continue;
+      const body = src.slice(...fn.range);
+      if (!body.includes('useWidth(') || !body.includes('data-copy-card')) continue;
+      checked.push(fn.id.name);
+      assert.match(body, /useSnapshotRender\(/, `${file} ${fn.id.name}`);
+    }
+  }
+  assert.ok(checked.includes('FlowCard') && checked.includes('ProfileCard'), checked.join());
+});

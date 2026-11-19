@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { OTHER, flowLevels, netByItem, flowShares, shareProfile } from '../../../shared/chart-data.ts';
 import { paymentMethodGroups } from '../../../shared/payment-groups.ts';
@@ -13,6 +13,7 @@ import { CopyImageButton } from './CopyImageButton.tsx';
 import { useWidth } from './inputs.tsx';
 import { tipProps } from './overlays.tsx';
 import { usePref } from '../prefs.ts';
+import { useSnapshotRender } from '../snapshot-render.tsx';
 
 type FlowUnit = 'amount' | 'pct';
 
@@ -34,6 +35,9 @@ function spread(ys: number[], gap: number, lo: number, hi: number) {
 export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiece[] }) {
   const base = state.settings.baseCurrency;
   const [box, W] = useWidth();
+  // 复制成图片时按导出宽度重画：节点位置、带子路径和标签都由卡片宽度算出，直接拷页面上的像素会裁掉右侧
+  const captureRef = useRef<HTMLDivElement>(null);
+  useSnapshotRender(captureRef, () => <FlowCard state={state} pieces={pieces} />);
   const [hovered, setHover] = useState<{ lv: number; key: string } | null>(null);
   // 金额 / 百分比与「每日支出」的平面 / 立体一样随账本同步
   const [unit, setUnit] = usePref<FlowUnit>('report-flow', 'amount', (v): v is FlowUnit => v === 'amount' || v === 'pct');
@@ -149,7 +153,7 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
     return nodes.map((nd, i) => ({ nd, c: ys[i], len: at[lv].get(nd.key)!.len }));
   };
   return (
-    <div className="card copy-card" data-copy-card>
+    <div className="card copy-card" data-copy-card ref={captureRef}>
       <div className="card-h">
         <CardTitle as="h3" hint={note || undefined}>
           {t('report.flow.title')}
@@ -252,6 +256,9 @@ export function FlowCard({ state, pieces }: { state: AppState; pieces: SpendPiec
 export function ProfileCard({ pieces, prev, names }: { pieces: SpendPiece[]; prev: SpendPiece[]; names: [string, string] }) {
   const [now, before] = names;
   const [box, W] = useWidth();
+  // 复制成图片时按导出宽度重画，雷达图尺寸由卡片宽度算出
+  const captureRef = useRef<HTMLDivElement>(null);
+  useSnapshotRender(captureRef, () => <ProfileCard pieces={pieces} prev={prev} names={names} />);
   const axes = useMemo(() => {
     const cats = (xs: SpendPiece[]) =>
       netByItem(xs.map((p) => ({ id: p.sub.id, from: '', to: p.sub.category, value: p.amount }))).map((x) => ({ key: x.to, value: x.value }));
@@ -280,7 +287,7 @@ export function ProfileCard({ pieces, prev, names }: { pieces: SpendPiece[]; pre
   const poly = (f: (x: (typeof axes)[number]) => number) => axes.map((x, i) => pt(i, f(x)).join(',')).join(' ');
   const pct = (v: number) => `${Math.round(v * 100)}%`;
   return (
-    <div className="card copy-card" data-copy-card>
+    <div className="card copy-card" data-copy-card ref={captureRef}>
       <div className="card-h">
         <CardTitle as="h3" hint={note || undefined}>
           {t('report.profile.title')}
