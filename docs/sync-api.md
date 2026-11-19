@@ -12,22 +12,23 @@ Requests must send `Authorization: Bearer <token>` with a sync token (`cal_sync_
 
 Self-hosted servers connect an app by QR code instead of a pasted token. Implementation: [worker/sync-pair.ts](../worker/sync-pair.ts), table `sync_pair` (migration `0014_sync_pair.sql`).
 
-1. In Settings → Security → Connect Calends App → Connect phone, the signed-in web page calls `POST /api/sync/pair` (session-authenticated, same-origin, empty body). The response is `{ code, expiresAt }`, for example `{ "code": "K7QM-3XZP-9HTW", "expiresAt": "2026-11-19T08:05:00.000Z" }`. Creating a code replaces any earlier one, so at most one code is valid at a time.
+1. In Settings → Security → Connect Calends App → Connect phone, the signed-in web page calls `POST /api/sync/pair` (session-authenticated, same-origin, empty body). The response is `{ code, expiresAt, ttlMs }`, for example `{ "code": "K7QM-3XZP-9HTW", "expiresAt": "2026-11-19T08:05:00.000Z", "ttlMs": 300000 }`. The page counts down from `ttlMs` on its own monotonic clock, so a skewed browser clock does not distort the countdown. Creating a code replaces any earlier one, so at most one code is valid at a time.
 2. The page renders a QR code locally, with no network request, for `calends://connect?server=<origin>&code=<code>`. `server` is the URL-encoded origin plus base path of the web app with no trailing slash, such as `https://subs.example.com`. The same server address and code are shown in text below the QR code for manual entry. Apps require HTTPS (no App Transport Security exception), so the page warns when the origin is plain `http` and not `localhost`.
 3. The app sends `POST <server>/api/sync/v1/pair/redeem` with `{ "code": "<code>", "name": "<device name>" }`. No authentication is needed: the code is the credential. The code is matched case-insensitively, with spaces and dashes ignored, and `name` is optional and trimmed to 40 characters.
-4. On success the response is `200 { token, id, name }`. `token` is a new sync token (`cal_sync_…`) created through the same path as a manually issued one, so the first token enables sync in the same batch. The app stores it and uses it on `/api/sync/v1/*`. The web page polls `GET /api/sync/tokens` while the code is shown and closes when the new device appears.
+4. On success the response is `200 { token, id, name }`. `token` is a new sync token (`cal_sync_…`) created through the same path as a manually issued one, so the first token enables sync in the same batch. The app stores it and uses it on `/api/sync/v1/*`.
+5. While the code is valid, the web page polls `POST /api/sync/pair/status` with `{ "code": "<code>" }` every 3 seconds (session-authenticated; the code stays out of the URL). The answer is `{ status: 'pending', expiresAt }`, `{ status: 'connected', device: { id, name } }`, `{ status: 'expired' }`, or `{ status: 'invalid' }` when this is not the current code (for example a newer code replaced it). Only the token created by redeeming this code counts as connected; a token issued manually in another tab does not. The page stops polling once the code expires or is replaced.
 
-Codes are 12 characters from a 31-letter alphabet without look-alike characters (about 59 bits), shown in groups of four. Only the SHA-256 is stored. A code expires after 5 minutes, is deleted by the redeem that uses it (a single `DELETE … RETURNING`, so two concurrent redeems cannot both succeed), and is discarded after 5 wrong attempts while it is valid. Errors use the body `{ error, code }`:
+Codes are 12 characters from a 31-letter alphabet without look-alike characters (about 59 bits), shown in groups of four. Only the SHA-256 is stored. A code expires after 5 minutes and can be redeemed once. Redeeming marks the code with the token it produced in the same batch that inserts the token (and, for the first token, enables sync). That batch starts by checking that the code is still current, unexpired and unredeemed, so two concurrent redeems cannot both succeed, and a failed batch leaves the code usable. The redeemed row stays until the next code is created so the page can read the result. There is no wrong-attempt limit: redeeming is unauthenticated, so a shared counter would let anyone discard the owner's code with a few wrong guesses, and about 59 bits within 5 minutes is out of reach of guessing. Errors use the body `{ error, code }`:
 
-| Status | Code                | Meaning                                                                                |
-| ------ | ------------------- | -------------------------------------------------------------------------------------- |
-| 400    | `invalid_request`   | Body is not JSON or `code` is not a string.                                            |
-| 401    | `invalid_code`      | Wrong code, no active code, or the code was already used. Counts as a failed attempt.  |
-| 410    | `code_expired`      | The code matched but is older than 5 minutes. It is deleted.                           |
-| 429    | `too_many_attempts` | This attempt was the fifth wrong one for the active code, which is now discarded.      |
-| 405    | `method_not_allowed`| Anything but `POST`.                                                                   |
+| Status | Code                 | Meaning                                                                                       |
+| ------ | -------------------- | --------------------------------------------------------------------------------------------- |
+| 400    | `invalid_request`    | Body is not JSON or `code` is not a string.                                                   |
+| 401    | `invalid_code`       | Wrong code, no current code, a code replaced by a newer one, or a code that was already used. |
+| 410    | `code_expired`       | The code is current and unused but older than 5 minutes.                                      |
+| 503    | `pair_failed`        | Creating the token failed. Nothing was written and the code is still valid; retry later.      |
+| 405    | `method_not_allowed` | Anything but `POST`.                                                                          |
 
-After any failure, the owner generates a new code on the web page. Issuing a token manually, with the plain token shown once, stays available as an advanced option on the same page.
+After a 401 or 410, the owner generates a new code on the web page. Issuing a token manually, with the plain token shown once, stays available as an advanced option on the same page.
 
 ## `GET /api/sync/v1/hello`
 

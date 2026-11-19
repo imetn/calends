@@ -44,7 +44,18 @@ export async function listSyncTokens(env: Env): Promise<SyncToken[]> {
   return results.map(fromRow);
 }
 
-export async function createSyncToken(env: Env, name: string): Promise<{ token: string; item: SyncToken }> {
+/**
+ * 兑换配对码等调用方附带的额外核对：guard 与 mode 核对合成批次首条（参数从 ?2 起），
+ * extra(item) 跟在插入令牌之后同批执行；核对失败时先调 recheck，它抛错即放弃，不再按 mode 重试。
+ */
+export interface TokenClaim {
+  guard: string;
+  binds: unknown[];
+  extra: (item: SyncToken) => D1PreparedStatement[];
+  recheck: () => Promise<void>;
+}
+
+export async function createSyncToken(env: Env, name: string, claim?: TokenClaim): Promise<{ token: string; item: SyncToken }> {
   const token = `${SYNC_TOKEN_PREFIX}${randomToken(24)}`;
   const item: SyncToken = {
     id: randomToken(6),
@@ -65,11 +76,13 @@ export async function createSyncToken(env: Env, name: string): Promise<{ token: 
   for (let i = 0; i < 5; i++) {
     const { mode } = await syncState(env);
     const body = mode === 'off' ? [insert, ...stmts(env, enableSql('tokens'))] : [insert];
+    const cas = claim ? modeCas(env, mode, claim.guard, ...claim.binds) : modeCas(env, mode);
     try {
-      await env.DB.batch([modeCas(env, mode), ...body, casTail(env)]);
+      await env.DB.batch([cas, ...body, ...(claim ? claim.extra(item) : []), casTail(env)]);
       return { token, item };
     } catch (e) {
       if (!isCasError(e)) throw e;
+      await claim?.recheck();
     }
   }
   throw new Error('sync mode kept changing');

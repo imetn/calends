@@ -1,5 +1,5 @@
-// 扫码配对（worker/sync-pair.ts、docs/sync-api.md「扫码配对」）：一次性码过期、复用、错次上限、未登录不能生成；
-// 兑换成功即启用同步，换到的令牌能用于 /api/sync/v1。只用虚构数据。
+// 扫码配对（worker/sync-pair.ts、docs/sync-api.md「扫码配对」）：一次性码过期、复用、错码不作废、未登录不能生成；
+// 兑换成功即启用同步，换到的令牌能用于 /api/sync/v1；网页凭码查结果，失败不丢码。只用虚构数据。
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
@@ -8,7 +8,7 @@ import { openD1 } from '../docker/d1.mjs';
 import type { Env } from '../worker/env.ts';
 import { ensureMigrated } from '../worker/migrate.ts';
 import { syncState } from '../worker/sync-mode.ts';
-import { createPairCode, PAIR_TTL_MS, redeemPairCode } from '../worker/sync-pair.ts';
+import { createPairCode, PAIR_TTL_MS, pairStatus, redeemPairCode } from '../worker/sync-pair.ts';
 import { loadState } from '../worker/store.ts';
 
 const hook = registerHooks({
@@ -35,7 +35,8 @@ test('网页会话生成配对码 → App 兑换：拿到令牌、同步启用�
   const env = await fresh();
   const created = await call(env, '/api/sync/pair');
   assert.equal(created.status, 200);
-  const { code, expiresAt } = (await created.json()) as { code: string; expiresAt: string };
+  const { code, expiresAt, ttlMs } = (await created.json()) as { code: string; expiresAt: string; ttlMs: number };
+  assert.equal(ttlMs, PAIR_TTL_MS);
   assert.match(code, /^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$/);
   assert.ok(Math.abs(Date.parse(expiresAt) - Date.now() - PAIR_TTL_MS) < 5000);
   // 只存哈希
@@ -68,45 +69,90 @@ test('网页会话生成配对码 → App 兑换：拿到令牌、同步启用�
     [got.id],
   );
 
+  // 网页凭码查到的是这个码换出的令牌
+  const st = await call(env, '/api/sync/pair/status', { code });
+  assert.deepEqual(await st.json(), { status: 'connected', device: { id: got.id, name: 'Fictional iPhone' } });
+
   // 复用
   const again = await redeem(env, code);
   assert.equal(again.status, 401);
   assert.equal(((await again.json()) as { code: string }).code, 'invalid_code');
 });
 
-test('过期：5 分钟后兑换 410 code_expired，码被删除', async () => {
+test('过期：5 分钟后兑换 410 code_expired，查询为 expired；不是当前码 401', async () => {
   const env = await fresh();
   const t0 = Date.now();
   const { code } = await createPairCode(env, t0);
   await assert.rejects(redeemPairCode(env, code, 'x', t0 + PAIR_TTL_MS), { status: 410, code: 'code_expired' });
-  assert.equal(await pairRows(env), 0);
-  await assert.rejects(redeemPairCode(env, code, 'x', t0 + 1000), { status: 401, code: 'invalid_code' });
+  assert.deepEqual(await pairStatus(env, code, t0 + PAIR_TTL_MS), { status: 'expired' });
+  await assert.rejects(redeemPairCode(env, 'DDDD-DDDD-DDDD', 'x', t0 + PAIR_TTL_MS), { status: 401, code: 'invalid_code' });
   assert.equal((await syncState(env)).mode, 'off');
 });
 
-test('错次上限：错 4 次仍可用正确码；错满 5 次 429 并作废，正确码也失效', async () => {
+test('错码不作废主人的码：未登录的人连错多少次，正确码仍可兑换（不设全局错次上限）', async () => {
   const env = await fresh();
   const a = await createPairCode(env);
-  for (let i = 0; i < 4; i++) assert.equal((await redeem(env, 'AAAA-AAAA-AAAA')).status, 401);
+  for (let i = 0; i < 20; i++) assert.equal((await redeem(env, 'AAAA-AAAA-AAAA')).status, 401);
+  assert.deepEqual((await pairStatus(env, a.code)).status, 'pending');
   assert.equal((await redeem(env, a.code)).status, 200);
-
-  const b = await createPairCode(env);
-  for (let i = 0; i < 4; i++) assert.equal((await redeem(env, 'BBBB-BBBB-BBBB')).status, 401);
-  const fifth = await redeem(env, 'BBBB-BBBB-BBBB');
-  assert.equal(fifth.status, 429);
-  assert.equal(((await fifth.json()) as { code: string }).code, 'too_many_attempts');
-  assert.equal(await pairRows(env), 0);
-  assert.equal((await redeem(env, b.code)).status, 401);
 });
 
-test('至多一个有效码：新码覆盖旧码，并清零失败计数', async () => {
+test('至多一个码：新码覆盖旧码，旧码 401、查询为 invalid', async () => {
   const env = await fresh();
   const a = await createPairCode(env);
-  for (let i = 0; i < 4; i++) await redeem(env, 'CCCC-CCCC-CCCC');
   const b = await createPairCode(env);
   assert.equal(await pairRows(env), 1);
   assert.equal((await redeem(env, a.code)).status, 401);
+  assert.deepEqual(await pairStatus(env, a.code), { status: 'invalid' });
   assert.equal((await redeem(env, b.code)).status, 200);
+});
+
+test('查询只认这个码换出的令牌：别处手动签发不算连上；查询要网页登录', async () => {
+  const env = await fresh();
+  const { code } = await createPairCode(env);
+  assert.equal((await call(env, '/api/sync/tokens', { name: 'Manual' })).status, 200);
+  const st = (await (await call(env, '/api/sync/pair/status', { code })).json()) as { status: string; expiresAt?: string };
+  assert.equal(st.status, 'pending');
+  assert.ok(st.expiresAt);
+  assert.equal((await call(env, '/api/sync/pair/status', {})).status, 400);
+  const anon = await fresh(false);
+  const c2 = await createPairCode(anon);
+  assert.equal((await call(anon, '/api/sync/pair/status', { code: c2.code }, { origin: 'https://example.test' })).status, 401);
+});
+
+test('兑换失败不丢码：令牌批次出错时 503 pair_failed，码仍有效，重试成功', async () => {
+  const env = await fresh();
+  const { code } = await createPairCode(env);
+  const batch = env.DB.batch.bind(env.DB);
+  let fail = true;
+  env.DB.batch = (async (s: D1PreparedStatement[]) => {
+    if (fail) {
+      fail = false;
+      throw new Error('D1_ERROR: fictional storage hiccup');
+    }
+    return batch(s);
+  }) as typeof env.DB.batch;
+  const orig = console.error;
+  console.error = () => {};
+  try {
+    const r = await redeem(env, code);
+    assert.equal(r.status, 503);
+    assert.equal(((await r.json()) as { code: string }).code, 'pair_failed');
+  } finally {
+    console.error = orig;
+  }
+  assert.equal((await pairStatus(env, code)).status, 'pending');
+  assert.equal((await syncState(env)).mode, 'off');
+  assert.equal((await redeem(env, code)).status, 200);
+});
+
+test('并发兑换同一个码：只有一个拿到令牌', async () => {
+  const env = await fresh();
+  const { code } = await createPairCode(env);
+  const rs = await Promise.all([redeem(env, code, 'A'), redeem(env, code, 'B'), redeem(env, code, 'C')]);
+  assert.deepEqual(rs.map((r) => r.status).sort(), [200, 401, 401]);
+  const n = Number(((await env.DB.prepare('SELECT count(*) AS n FROM sync_tokens').first()) as { n: number }).n);
+  assert.equal(n, 1);
 });
 
 test('未登录不能生成配对码；兑换不需要登录但要合法请求体', async () => {

@@ -117,7 +117,7 @@ export const MIGRATIONS: Array<{ name: string; statements: string[] }> = [
   {
     "name": "0014_sync_pair.sql",
     "statements": [
-      "-- 扫码连接 App 的一次性配对码（docs/sync-api.md「扫码配对」）：\n-- 至多一个有效码（id 固定为 1，新码覆盖旧码），只存 SHA-256，5 分钟过期，用一次即删，错 5 次作废\nCREATE TABLE sync_pair (\n  id INTEGER PRIMARY KEY CHECK (id = 1),\n  hash TEXT NOT NULL,\n  expires_at INTEGER NOT NULL,\n  failures INTEGER NOT NULL DEFAULT 0\n);\n"
+      "-- 扫码连接 App 的一次性配对码（docs/sync-api.md「扫码配对」）：\n-- 至多一个码（id 固定为 1，新码覆盖旧码），只存 SHA-256，5 分钟过期，只能兑换一次。\n-- 兑换后保留这一行并记下换出的令牌（token_id、token_name），网页凭配对码查询结果，直到生成下一个码\nCREATE TABLE sync_pair (\n  id INTEGER PRIMARY KEY CHECK (id = 1),\n  hash TEXT NOT NULL,\n  expires_at INTEGER NOT NULL,\n  token_id TEXT,\n  token_name TEXT\n);\n"
     ]
   }
 ];

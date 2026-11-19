@@ -67,7 +67,7 @@ import { cleanCategories, renameInSubs } from '../shared/categories.ts';
 import { createToken, listTokens, mcp, revokeToken } from './ai/mcp.ts';
 import { syncHandler } from './sync.ts';
 import { authenticateSync, createSyncToken, listSyncTokens, revokeSyncToken } from './sync-auth.ts';
-import { createPairCode, PairError, redeemPairCode } from './sync-pair.ts';
+import { createPairCode, PairError, pairStatus, redeemPairCode } from './sync-pair.ts';
 import { fetchPublic } from './url-guard.ts';
 import { TOOLS, toolTitle } from './ai/mcp-tools.ts';
 import { appStorePlans, searchAppStore } from './appstore.ts';
@@ -145,7 +145,7 @@ function methodError(fx: FxTable, previous: PaymentMethod | undefined, pm: Payme
 async function api(req: Request, env: Env, path: string): Promise<Response> {
   const method = req.method;
   // App 同步（docs/sync-api.md）：只认同步令牌（Bearer），不认 MCP 令牌与网页 Cookie，所以不经过同源检查
-  // 扫码配对兑换（sync-pair.ts）：App 凭一次性配对码换同步令牌，无需登录；码本身是凭据，错 5 次作废
+  // 扫码配对兑换（sync-pair.ts）：App 凭一次性配对码换同步令牌，无需登录；码本身是凭据，5 分钟过期、只能用一次
   if (path === '/api/sync/v1/pair/redeem') {
     if (method !== 'POST') return json({ error: 'method_not_allowed', code: 'method_not_allowed' }, 405);
     const b = await req.json().catch(() => null);
@@ -252,6 +252,12 @@ async function routes(req: Request, env: Env, path: string): Promise<Response> {
   }
   // 扫码配对：生成一次性配对码（覆盖旧码），二维码由网页本地生成
   if (path === '/api/sync/pair' && method === 'POST') return json(await createPairCode(env));
+  // 网页凭配对码查兑换结果（码不放进 URL）
+  if (path === '/api/sync/pair/status' && method === 'POST') {
+    const b = (await readJson(req)) as { code?: unknown };
+    if (typeof b?.code !== 'string') return bad('invalid_request');
+    return json(await pairStatus(env, b.code));
+  }
   const st = path.match(/^\/api\/sync\/tokens\/([\w-]+)$/);
   if (st && method === 'DELETE') {
     await revokeSyncToken(env, st[1]);

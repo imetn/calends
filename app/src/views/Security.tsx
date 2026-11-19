@@ -352,12 +352,11 @@ function ConnectedApps({ tz }: { tz: string }) {
       </Group>
       {sheet === 'pair' && (
         <PairSheet
-          known={(list ?? []).map((k) => k.id)}
           onClose={() => setSheet(undefined)}
-          onConnected={(v, item) => {
-            setList(v);
+          onConnected={(device) => {
+            void load();
             setSheet(undefined);
-            toast(t('settings.security.apps.connected', { name: item.name }), 'success');
+            toast(t('settings.security.apps.connected', { name: device.name }), 'success');
           }}
         />
       )}
@@ -374,7 +373,7 @@ const insecureOrigin = () => location.protocol === 'http:' && !/^(localhost|127\
 /** 本地生成的二维码（uqr，无网络请求）；始终白底黑块，深色模式下也能扫 */
 function QrCode({ text, dim }: { text: string; dim?: boolean }) {
   const { size, path } = useMemo(() => {
-    const qr = encode(text, { ecc: 'M', border: 3 });
+    const qr = encode(text, { ecc: 'M', border: 4 });
     let d = '';
     qr.data.forEach((row, y) => row.forEach((on, x) => on && (d += `M${x} ${y}h1v1h-1z`)));
     return { size: qr.size, path: d };
@@ -394,32 +393,53 @@ function QrCode({ text, dim }: { text: string; dim?: boolean }) {
   );
 }
 
+type PairStatus = { status: 'pending' | 'expired' | 'invalid' } | { status: 'connected'; device: { id: string; name: string } };
+
 /**
- * 扫码连接手机：生成一次性配对码（5 分钟、用一次），二维码内容 calends://connect?server=…&code=…；
- * 显示期间每 3 秒查一次设备列表，出现新设备即视为连接成功。
+ * 扫码连接手机：生成一次性配对码（5 分钟、用一次），二维码内容 calends://connect?server=…&code=…。
+ * 倒计时按服务器给的 ttlMs 与本地单调时钟，不受两端时钟偏差影响；码有效期间每 3 秒凭码查一次兑换结果，
+ * 只有这个码换出的令牌才算连上（别的标签页手动签发不算），过期或被新码覆盖即停查。
  */
-function PairSheet({ known, onClose, onConnected }: { known: string[]; onClose: () => void; onConnected: (list: SyncToken[], item: SyncToken) => void }) {
-  const [pair, setPair] = useState<{ code: string; expiresAt: string }>();
-  const [now, setNow] = useState(() => Date.now());
+function PairSheet({ onClose, onConnected }: { onClose: () => void; onConnected: (device: { id: string; name: string }) => void }) {
+  const [pair, setPair] = useState<{ code: string; deadline: number; gone?: boolean }>();
+  const [now, setNow] = useState(() => performance.now());
   const [manual, setManual] = useState(false);
   const server = serverUrl();
-  const generate = () => run(async () => setPair(await api<{ code: string; expiresAt: string }>('/api/sync/pair', { method: 'POST' })));
+  // 连点「重新生成」时只认最后一次请求的结果，先回来的旧响应丢弃
+  const seq = useRef(0);
+  const generate = () => {
+    const n = ++seq.current;
+    setPair(undefined);
+    return run(async () => {
+      const r = await api<{ code: string; ttlMs: number }>('/api/sync/pair', { method: 'POST' });
+      if (n === seq.current) {
+        setNow(performance.now());
+        setPair({ code: r.code, deadline: performance.now() + r.ttlMs });
+      }
+    });
+  };
   useEffect(() => void generate(), []);
+  const left = pair && !pair.gone ? Math.max(0, pair.deadline - now) : 0;
+  const expired = !!pair && left === 0;
+  const live = !!pair && !expired;
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    if (!live) return;
+    const id = setInterval(() => setNow(performance.now()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [live]);
   const connected = useEffectEvent(onConnected);
+  const code = live ? pair.code : undefined;
   useEffect(() => {
+    if (!code) return;
     let stop = false;
     const id = setInterval(() => {
-      api<SyncToken[]>('/api/sync/tokens').then(
+      api<PairStatus>('/api/sync/pair/status', { method: 'POST', body: JSON.stringify({ code }) }).then(
         (v) => {
-          const item = v.find((x) => !known.includes(x.id));
-          if (item && !stop) {
+          if (stop) return;
+          if (v.status === 'connected') {
             stop = true;
-            connected(v, item);
-          }
+            connected(v.device);
+          } else if (v.status !== 'pending') setPair((p) => (p?.code === code ? { ...p, gone: true } : p));
         },
         () => undefined,
       );
@@ -428,9 +448,7 @@ function PairSheet({ known, onClose, onConnected }: { known: string[]; onClose: 
       stop = true;
       clearInterval(id);
     };
-  }, []);
-  const left = pair ? Math.max(0, Date.parse(pair.expiresAt) - now) : 0;
-  const expired = !!pair && left === 0;
+  }, [code]);
   const secs = Math.ceil(left / 1000);
   const clock = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
   const url = pair ? `calends://connect?server=${encodeURIComponent(server)}&code=${encodeURIComponent(pair.code)}` : '';
