@@ -352,6 +352,63 @@ for (const [name, args, verify] of mutations)
     assert.ok(after.rev! > before.rev!);
   });
 
+test('update_subscription switches settlement like the editor: on keeps payments, off clears periods', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  await upsert(f.env, 'subscriptions', 'fee', {
+    ...sub(),
+    id: 'fee',
+    name: 'Fictional property fee',
+    start: '2026-01-01',
+    share: undefined,
+    proxy: undefined,
+    payments: [{ date: '2026-01-01', amount: 10 }],
+  });
+  const before = await f.snapshot();
+  // 只给起点、没打开分开记：拒绝且不写
+  assert.equal((await f.call('update_subscription', { subscription: 'fee', set: { settledBefore: '2026-03-01' } })).isError, true);
+  assert.deepEqual(await f.snapshot(), before);
+  const on = await f.call('update_subscription', { subscription: 'fee', set: { settlement: 'separate', settledBefore: '2026-03-01' } });
+  assert.equal(on.isError, undefined, JSON.stringify(on));
+  let fee = (await f.snapshot()).subscriptions.find((x) => x.id === 'fee')!;
+  assert.equal(fee.settlement, 'separate');
+  assert.equal(fee.settledBefore, '2026-03-01');
+  assert.deepEqual(fee.payments, [{ date: '2026-01-01', amount: 10 }]);
+  const paid = await f.call('record_payment', { subscription: 'fee', date: '2026-05-20', amount: 20, periods: ['2026-03-01', '2026-04-01'] });
+  assert.equal(paid.isError, undefined, JSON.stringify(paid));
+  fee = (await f.snapshot()).subscriptions.find((x) => x.id === 'fee')!;
+  assert.ok(fee.payments?.some((p) => p.periods?.length === 2));
+  const off = await f.call('update_subscription', { subscription: 'fee', set: { settlement: null } });
+  assert.equal(off.isError, undefined, JSON.stringify(off));
+  fee = (await f.snapshot()).subscriptions.find((x) => x.id === 'fee')!;
+  assert.equal(fee.settlement, undefined);
+  assert.equal(fee.settledBefore, undefined);
+  assert.equal(fee.payments?.length, 2);
+  assert.ok(fee.payments?.every((p) => p.periods === undefined));
+  // 旧的分开记记录没存起点、也没有缴费：再设一次不能把逾期账单变成已缴
+  await upsert(f.env, 'subscriptions', 'old', {
+    ...sub(),
+    id: 'old',
+    name: 'Fictional old fee',
+    start: '2026-01-01',
+    share: undefined,
+    proxy: undefined,
+    settlement: 'separate',
+  });
+  assert.equal((await f.call('update_subscription', { subscription: 'old', set: { settlement: 'separate' } })).isError, undefined);
+  assert.equal((await f.snapshot()).subscriptions.find((x) => x.id === 'old')!.settledBefore, '2026-01-01');
+  // 买断不适用：与编辑器一致，拒绝
+  await upsert(f.env, 'subscriptions', 'once', {
+    ...sub(),
+    id: 'once',
+    name: 'Fictional lifetime',
+    cycle: { unit: 'lifetime', every: 1 },
+    share: undefined,
+    proxy: undefined,
+  });
+  assert.equal((await f.call('update_subscription', { subscription: 'once', set: { settlement: 'separate' } })).isError, true);
+});
+
 test('every new read tool and connection catalogue: read token visibility, titles, secrets, all writes denied', async (t) => {
   const f = await setup();
   t.after(() => f.db.close());

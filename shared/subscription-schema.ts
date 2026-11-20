@@ -79,6 +79,9 @@ const renewal = {
     description: 'Contract term separate from billing (display and renewal reminders only; never changes charges).',
   },
 };
+export const BONUS_DESCRIPTION =
+  'Free interval [from, until); until is the first paid day, with no charge in between. The advertised gift list price is not a payment. One bonus per phase: when free time is given both at the start and after the end, split it into two phases, each with its own bonus, instead of a zero-price phase.';
+
 const phaseFields = {
   ...renewal,
   start: { ...day, description: 'First service day of this phase, NOT an early payment date.' },
@@ -99,7 +102,7 @@ const phaseFields = {
   intro: record({ price: positive, until: day }, ['price', 'until']),
   bonus: {
     ...record({ from: day, until: day }, ['from', 'until']),
-    description: 'Free interval [from, until); until is the first paid day. The advertised gift list price is not a payment.',
+    description: BONUS_DESCRIPTION,
   },
   payments: {
     ...list(payment),
@@ -142,6 +145,17 @@ const member = record(
   },
   ['id', 'name', 'share'],
 );
+export const SETTLEMENT: Schema = {
+  type: 'string',
+  enum: ['separate'],
+  description:
+    'Bills and payments recorded separately (e.g. property fees paid late, merged or in advance): bills follow the cycle; each payment settles bills in its periods, the rest goes to the oldest unpaid. Omit for ordinary charges.',
+};
+export const SETTLED_BEFORE: Schema = {
+  ...day,
+  description: 'Only when settlement=separate: first bill tracked; earlier bills count as paid. Omit to start from the bill nearest the first payment.',
+};
+
 const full = {
   ...phaseFields,
   id: text,
@@ -154,16 +168,8 @@ const full = {
   start: day,
   status: { type: 'string', enum: ['active', 'trial', 'paused', 'cancelled', 'terminated'] },
   estimateFrom: day,
-  settlement: {
-    type: 'string',
-    enum: ['separate'],
-    description:
-      'Bills and payments recorded separately (e.g. property fees paid late, merged or in advance): bills follow the cycle; each payment settles bills in its periods, the rest goes to the oldest unpaid. Omit for ordinary charges.',
-  },
-  settledBefore: {
-    ...day,
-    description: 'Only when settlement=separate: first bill tracked; earlier bills count as paid. Omit to start from the bill nearest the first payment.',
-  },
+  settlement: SETTLEMENT,
+  settledBefore: SETTLED_BEFORE,
   trialEnd: { ...day, description: 'First paid day after the free trial.' },
   pausedAt: day,
   share: record(

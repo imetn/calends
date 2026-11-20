@@ -1,4 +1,14 @@
-import { preserveRenewalHistory, cashChargesBetween, currentPhase, isSeparate, effectiveStatus, pauseDay, phaseSubs, uid } from '../../shared/billing.ts';
+import {
+  preserveRenewalHistory,
+  setSettlement,
+  cashChargesBetween,
+  currentPhase,
+  isSeparate,
+  effectiveStatus,
+  pauseDay,
+  phaseSubs,
+  uid,
+} from '../../shared/billing.ts';
 import {
   editPhase,
   removePhase,
@@ -29,7 +39,7 @@ import { iconInput } from '../../shared/icon.ts';
 import type { Payment, Subscription } from '../../shared/types.ts';
 import { t } from '../../shared/i18n.ts';
 import { billingSchema, drySchema, nullable, objectSchema as obj } from '../../shared/tool-schema.ts';
-import { SUBSCRIPTION_SCHEMA } from '../../shared/subscription-schema.ts';
+import { BONUS_DESCRIPTION, SETTLED_BEFORE, SETTLEMENT, SUBSCRIPTION_SCHEMA } from '../../shared/subscription-schema.ts';
 import { prepareSubWrite } from '../../shared/sub-write.ts';
 import { validateCurrency, deleteSubscriptionSettings } from '../../shared/ledger-edit.ts';
 import { cleanTransfers } from '../../shared/transfers.ts';
@@ -272,7 +282,7 @@ function outsidePayments(previous: Subscription, moved: Subscription) {
 export const update_subscription: Tool = {
   name: 'update_subscription',
   description:
-    'Change descriptive fields and settings of a subscription (name, category, tags, url, notes, icon, payment method, region, billing (prepaid / postpaid), reminder days, start, end date (no renewal after it), next due date, trial end). Only provided keys change. A start correction keeps the original billing anchor and future charge dates (preview next_charges) unless shift_billing=true. For price changes use change_price; for plan/region switches use change_plan. Call list_categories before assigning a category. Unknown names fail; use save_category action=create or create_category=true with optional category_icon/category_color to explicitly create one.',
+    'Change descriptive fields and settings of a subscription (name, category, tags, url, notes, icon, payment method, region, billing (prepaid / postpaid), bills-and-payments settlement, reminder days, start, end date (no renewal after it), next due date, trial end). Only provided keys change. A start correction keeps the original billing anchor and future charge dates (preview next_charges) unless shift_billing=true. For price changes use change_price; for plan/region switches use change_plan. Call list_categories before assigning a category. Unknown names fail; use save_category action=create or create_category=true with optional category_icon/category_color to explicitly create one.',
   write: true,
   inputSchema: obj(
     {
@@ -287,7 +297,13 @@ export const update_subscription: Tool = {
           required: ['price', 'until'],
           additionalProperties: false,
         },
-        bonus: { type: ['object', 'null'], properties: { from: DATE, until: DATE }, required: ['from', 'until'], additionalProperties: false },
+        bonus: {
+          type: ['object', 'null'],
+          properties: { from: DATE, until: DATE },
+          required: ['from', 'until'],
+          additionalProperties: false,
+          description: `${BONUS_DESCRIPTION} null clears it.`,
+        },
         name: { type: 'string' },
         category: CATEGORY,
         tags: { type: 'array', items: { type: 'string' } },
@@ -306,6 +322,12 @@ export const update_subscription: Tool = {
         chargeLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
         cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
         contract: { ...nullable(CONTRACT), description: `${CONTRACT.description} Applies to the current phase; null removes it.` },
+        settlement: {
+          type: ['string', 'null'],
+          enum: ['separate', null],
+          description: `${SETTLEMENT.description} Switching on keeps existing payments and treats bills before settledBefore as paid; then record_payment with periods. null switches back and clears every payment's periods.`,
+        },
+        settledBefore: { ...DATE, description: `${SETTLED_BEFORE.description} Requires settlement separate.` },
       }),
       ...CATEGORY_CREATE,
       shift_billing: SHIFT_BILLING,
@@ -333,6 +355,13 @@ export const update_subscription: Tool = {
     if ('chargeLeadDays' in set) put('chargeLeadDays', Number(set.chargeLeadDays));
     if ('cancelLeadDays' in set) put('cancelLeadDays', Number(set.cancelLeadDays));
     if ('contract' in set) put('contract', contractInput(set.contract));
+    if ('settlement' in set || 'settledBefore' in set) {
+      const separate = 'settlement' in set ? set.settlement === 'separate' : next.settlement === 'separate';
+      if (separate && next.cycle.unit === 'lifetime') throw new Error(t('mcp.error.invalidInput', { field: 'settlement: not for lifetime purchases' }));
+      if (!separate && 'settledBefore' in set) throw new Error(t('mcp.error.invalidInput', { field: 'settledBefore requires settlement separate' }));
+      Object.assign(next, setSettlement(next, separate, today, 'settledBefore' in set ? date(set.settledBefore, 'settledBefore') : undefined));
+      changed.push('settlement');
+    }
     if ('icon' in set) put('icon', iconInput(set.icon));
     if ('show_on_public' in set) put('showOnPublic', set.show_on_public as boolean);
     if ('start' in set) changed.push('start');
@@ -438,7 +467,13 @@ export const change_plan: Tool = {
           required: ['price', 'until'],
           additionalProperties: false,
         },
-        bonus: { type: ['object', 'null'], properties: { from: DATE, until: DATE }, required: ['from', 'until'], additionalProperties: false },
+        bonus: {
+          type: ['object', 'null'],
+          properties: { from: DATE, until: DATE },
+          required: ['from', 'until'],
+          additionalProperties: false,
+          description: `${BONUS_DESCRIPTION} null clears it.`,
+        },
         contract: nullable(CONTRACT),
       }),
       plan: obj(
@@ -652,7 +687,7 @@ export const set_status: Tool = {
 export const record_payment: Tool = {
   name: 'record_payment',
   description:
-    "Record or replace an actual charge (replace={date,index}, same-day zero-based index; phase selects overlapping history), refund (positive amount — stored negative; total refunds cannot exceed the current period paid amount), adjustment or failed charge for a subscription, in the subscription’s currency. Optional currency must equal the selected phase currency for every kind (charge, refund, adjust, failed); a different card currency belongs in settled. settled = what the card was actually charged in another currency (e.g. TRY subscription billed in USD). method = payment method (id or name) used for this one charge when it differs from the phase’s method; null clears it; omitted keeps a replaced charge’s own method. funding = one order paid from several sources (amounts in the subscription currency summing to amount, e.g. 178.80 = PayPal 168.05 + Balance 10.75); wallet balances are reduced by each part. funding and method are exclusive; null clears a split; omitted keeps a replaced charge’s split. periods = bill dates this charge settles, only for subscriptions with settlement 'separate' (one payment may settle several bills, a bill may take several payments); omitted pays the oldest unpaid bills first; null clears; omitted keeps a replaced charge’s periods. Rejects same-day same-amount duplicates unless allow_duplicate.",
+    "Record or replace an actual charge (replace={date,index}, same-day zero-based index; phase selects overlapping history), refund (positive amount — stored negative; total refunds cannot exceed the current period paid amount), adjustment or failed charge for a subscription, in the subscription’s currency. Optional currency must equal the selected phase currency for every kind (charge, refund, adjust, failed); a different card currency belongs in settled. settled = what the card was actually charged in another currency (e.g. TRY subscription billed in USD). method = payment method (id or name) used for this one charge when it differs from the phase’s method; null clears it; omitted keeps a replaced charge’s own method. funding = one order paid from several sources (amounts in the subscription currency summing to amount, e.g. 178.80 = PayPal 168.05 + Balance 10.75); wallet balances are reduced by each part. funding and method are exclusive; null clears a split; omitted keeps a replaced charge’s split. periods = bill dates this charge settles, only for subscriptions with settlement 'separate' (one payment may settle several bills, a bill may take several payments); omitted pays the oldest unpaid bills first; null clears; omitted keeps a replaced charge’s periods. When the user pays several bills late in one payment, or pays future bills ahead, on a subscription without settlement 'separate', first switch it with update_subscription set.settlement='separate' (settledBefore = the first unpaid bill), then record the payment with periods; do not delete or rewrite inferred charges to fake the timing. Rejects same-day same-amount duplicates unless allow_duplicate.",
   write: true,
   inputSchema: obj(
     {

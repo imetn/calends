@@ -17,7 +17,7 @@ import {
   nthCharge,
   pauseDay,
   preserveRenewalHistory,
-  trackingStart,
+  setSettlement,
 } from '../../../../shared/billing.ts';
 import { cnDateFull, flow, money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
@@ -468,20 +468,7 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
                     ['together', t('editor.settlement.together')],
                     ['separate', t('editor.settlement.separate')],
                   ]}
-                  onChange={(v) =>
-                    up(
-                      v === 'separate'
-                        ? // 打开时记下追踪起点（最早一笔缴费对应的账单，没有缴费时是离今天最近的一期），之前的账单视为已缴；不动账单锚点
-                          { settlement: 'separate', settledBefore: f.settledBefore ?? trackingStart(f, today) }
-                        : // 关掉时不留痕：追踪起点与各笔缴费指定的账单一并清掉
-                          {
-                            settlement: undefined,
-                            settledBefore: undefined,
-                            payments: f.payments?.map(({ periods: _, ...p }) => p),
-                            ...(f.phases ? { phases: f.phases.map((ph) => ({ ...ph, payments: ph.payments?.map(({ periods: _, ...p }) => p) })) } : {}),
-                          },
-                    )
-                  }
+                  onChange={(v) => up(setSettlement(f, v === 'separate', today))}
                 />
               </Cell>
               {manualDue && (

@@ -884,6 +884,19 @@ export function trackingStart(s: Subscription, today: string): string {
   return first.p.periods?.length ? [...first.p.periods].sort()[0] : on;
 }
 
+/** 切换「账单与缴费」（网页编辑器与 MCP update_subscription 共用）：打开时记下追踪起点、不动账单锚点；关掉时不留痕，追踪起点与各笔缴费指定的账单一并清掉 */
+export function setSettlement(s: Subscription, separate: boolean, today: string, settledBefore?: string): Partial<Subscription> {
+  // 已是分开记的旧记录（没存起点）沿用读取时正在用的起点，不改变欠多少
+  if (separate) return { settlement: 'separate', settledBefore: settledBefore ?? (s.settlement === 'separate' ? trackOf(s) : trackingStart(s, today)) };
+  const strip = (ps?: Payment[]) => ps?.map(({ periods: _, ...p }) => p);
+  return {
+    settlement: undefined,
+    settledBefore: undefined,
+    payments: strip(s.payments),
+    ...(s.phases ? { phases: s.phases.map((ph) => ({ ...ph, payments: strip(ph.payments) })) } : {}),
+  };
+}
+
 /**
  * 读取时的追踪起点：settledBefore；旧数据没写时有缴费按缴费推（与日期无关），
  * 没有缴费时按建档日推，没有建档日就从第一期起追踪，不随今天移动（否则逾期会随时间悄悄变成已缴）。
