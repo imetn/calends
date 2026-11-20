@@ -72,7 +72,8 @@ export interface ReleaseInfo {
 
 /** 摘录最多保留的段落和列表项（小标题不计） */
 export const RELEASE_NOTES_MAX = 8;
-const NOTE_TEXT_MAX = 300;
+/** 单条上限只防异常正文撑大缓存；条数已限制面板长度，正常的条目应完整显示 */
+const NOTE_TEXT_MAX = 1000;
 const NOTES_STORED_MAX = 40;
 /** 只有命令、校验值、附件的小节：对决定升不升级没帮助 */
 const SKIP_SECTION = /^(images?|docker( images?)?|assets|checksums?|镜像)\b/i;
@@ -95,12 +96,19 @@ function plainInline(s: string): string {
   return text.length > NOTE_TEXT_MAX ? clip(text) : text;
 }
 
-/** 过长时尽量停在整句处，句子太长才在词边界截断加省略号，避免半句话 */
+/**
+ * 过长时尽量停在整句处，句子太长才在词边界截断；只要丢了内容就以省略号结尾，不悄悄少一截。
+ * 分号不算句末，否则会停在半句话上。
+ */
 function clip(text: string): string {
-  const head = text.slice(0, NOTE_TEXT_MAX);
-  const ends = [...head.matchAll(/[.!?。！？；;](?=\s|$)|[。！？；]/g)].map((m) => m.index + 1);
+  // 句末之后要留「 …」两个字符；多取一个字符，让句号后面是不是空白看得到（避免把 1.47 的点当句末）
+  const room = NOTE_TEXT_MAX - 2;
+  const ends = [...text.slice(0, room + 1).matchAll(/[.!?](?=\s)|[。！？]/g)].map((m) => m.index + 1).filter((i) => i <= room);
   const end = ends.length ? ends[ends.length - 1] : 0;
-  if (end >= NOTE_TEXT_MAX / 2) return head.slice(0, end).trimEnd();
+  if (end >= room / 2) {
+    const s = text.slice(0, end);
+    return /[。！？]$/.test(s) ? `${s}…` : `${s} …`;
+  }
   const cut = text.slice(0, NOTE_TEXT_MAX - 1);
   const space = cut.lastIndexOf(' ');
   return `${(space >= NOTE_TEXT_MAX / 2 ? cut.slice(0, space) : cut).trimEnd()}…`;

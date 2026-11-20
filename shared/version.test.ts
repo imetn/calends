@@ -122,16 +122,32 @@ test('更新内容摘录：太长时截断，升级注意事项不被挤掉', ()
     { kind: 'p', text: 'Run the new migration before starting.' },
   ]);
   assert.equal(releaseNotes(body).filter((n) => n.kind !== 'h').length, RELEASE_NOTES_MAX);
-  // 列表续行并进上一项；单条过长截成 300 字以内
+  // 列表续行并进上一项；单条过长截成 1000 字以内
   assert.deepEqual(releaseNotes('- first line\n  continues here'), [{ kind: 'li', text: 'first line continues here' }]);
-  const long = releaseNotes(`x${'y'.repeat(400)}`)[0].text;
-  assert.equal(long.length, 300);
+  const long = releaseNotes(`x${'y'.repeat(1200)}`)[0].text;
+  assert.equal(long.length, 1000);
   assert.ok(long.endsWith('…'));
-  // 有整句可停时停在句末，不留半句；没有时在词边界截断
-  const sentence = `${'a'.repeat(200)}. ${'b '.repeat(100)}`;
-  assert.equal(releaseNotes(sentence)[0].text, `${'a'.repeat(200)}.`);
-  const words = releaseNotes('word '.repeat(80))[0].text;
-  assert.ok(words.endsWith('word…') && words.length <= 300);
+  // 有整句可停时停在句末并标出省略，不留半句；分号、版本号里的点不算句末；没有整句时在词边界截断
+  const sentence = `${'a'.repeat(600)}. ${'b'.repeat(300)}; v1.47 ${'c '.repeat(100)}`;
+  assert.equal(releaseNotes(sentence)[0].text, `${'a'.repeat(600)}. …`);
+  assert.equal(releaseNotes(`${'甲'.repeat(600)}。${'乙'.repeat(600)}`)[0].text, `${'甲'.repeat(600)}。…`);
+  const words = releaseNotes('word '.repeat(220))[0].text;
+  assert.ok(words.endsWith('word…') && words.length <= 1000);
+});
+
+test('更新内容摘录：几百字的正常条目完整保留，不截半句', () => {
+  // 1.47.0 发布说明里的条目在 300 到 360 字之间，曾被截成「…older ca…」「…on your device;」
+  const item =
+    'Release notes at a glance. The upgrade panel shows plain-text headings, paragraphs and lists from the GitHub release, prioritizing upgrade notes and limiting the remaining excerpt to eight items. Links open the complete notes or all releases. Excerpts are cached per version on your device; older caches keep their links until the next successful check.';
+  const upgrading =
+    'There are no new database migrations, dependency changes or MCP changes. Existing ledgers and backups remain fully compatible. Upgrade from 1.46.0 using the same configuration and data volume; back up first. Update checks use the same public GitHub API and request frequency as before. Nothing upgrades automatically.';
+  assert.ok(item.length > 300 && upgrading.length > 300);
+  assert.deepEqual(releaseNotes(`## Highlights\n\n- **${item.slice(0, 26)}**${item.slice(26)}\n\n## Upgrading\n\n${upgrading}\n`), [
+    { kind: 'h', text: 'Highlights' },
+    { kind: 'li', text: item },
+    { kind: 'h', text: 'Upgrading' },
+    { kind: 'p', text: upgrading },
+  ]);
 });
 
 test('自动检查每台设备每小时最多一次；失败只记时间并保留上次版本', () => {
@@ -158,7 +174,7 @@ test('缓存读回：坏数据当作没有缓存', () => {
   // 摘录随版本一起存取；形状不对时只丢摘录，版本照常
   const notes = [{ kind: 'p', text: 'Faster checks.' }];
   assert.deepEqual(parseUpdateCache(JSON.stringify({ checkedAt: 5, latest: { ...latest, notes } })), { checkedAt: 5, latest: { ...latest, notes } });
-  for (const bad of [[{ kind: 'script', text: 'x' }], [{ kind: 'p', text: 1 }], [{ kind: 'p', text: 'x'.repeat(301) }], 'x', []])
+  for (const bad of [[{ kind: 'script', text: 'x' }], [{ kind: 'p', text: 1 }], [{ kind: 'p', text: 'x'.repeat(1001) }], 'x', []])
     assert.deepEqual(parseUpdateCache(JSON.stringify({ checkedAt: 5, latest: { ...latest, notes: bad } })), { checkedAt: 5, latest }, JSON.stringify(bad));
 });
 

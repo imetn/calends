@@ -189,7 +189,7 @@ function AutoBackupSheet({ view, timezone, onChange, onClose }: { view: View; ti
           {kind === 's3' ? (
             <>
               <Cell label={t('settings.autobackup.endpoint')}>
-                <input {...field} value={s3.endpoint} placeholder="https://" onChange={onS3('endpoint')} />
+                <input {...field} value={s3.endpoint} onChange={onS3('endpoint')} />
               </Cell>
               <Cell label={t('settings.autobackup.bucket')}>
                 <input {...field} value={s3.bucket} onChange={onS3('bucket')} />
@@ -213,7 +213,7 @@ function AutoBackupSheet({ view, timezone, onChange, onClose }: { view: View; ti
           ) : (
             <>
               <Cell label={t('settings.autobackup.endpoint')}>
-                <input {...field} value={dav.url} placeholder="https://" onChange={onDav('url')} />
+                <input {...field} value={dav.url} onChange={onDav('url')} />
               </Cell>
               <Cell label={t('settings.autobackup.folder')}>
                 <input {...field} value={dav.folder} placeholder={t('settings.channels.optional')} onChange={onDav('folder')} />

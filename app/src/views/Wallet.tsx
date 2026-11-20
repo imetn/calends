@@ -1002,7 +1002,6 @@ function LogoField({ f, up }: { f: PaymentMethod; up: (p: Partial<PaymentMethod>
         <span className="cell-r">
           <input
             value={f.logo?.startsWith('data:') ? '' : (f.logo ?? '')}
-            placeholder="https://"
             aria-label={t('wallet.logo.link')}
             onChange={(e) => up({ logo: (e.target as HTMLInputElement).value.trim() || undefined })}
           />

@@ -550,7 +550,7 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
         )}
         <Group title={t('editor.group.links')}>
           <Cell label={t('editor.field.url')}>
-            <input value={f.url ?? ''} placeholder="https://" onChange={(e) => up({ url: val(e) || undefined })} />
+            <input value={f.url ?? ''} onChange={(e) => up({ url: val(e) || undefined })} />
           </Cell>
           <Cell label={t('editor.field.manageUrl')}>
             <input value={f.manageUrl ?? ''} placeholder={t('editor.field.optional')} onChange={(e) => up({ manageUrl: val(e) || undefined })} />
