@@ -78,6 +78,9 @@ import {
 } from './tool-kit.ts';
 import { row, fieldChanges, computedOf } from './tool-views.ts';
 
+const LEAD_CHARGE = 'Days before each service period starts that the provider charges (e.g. charged Dec 22 for a year starting Jan 1 = 10); start and service periods stay unchanged.';
+const LEAD_CANCEL = 'Days before renewal by which the user must cancel to avoid the next charge.';
+
 export const create_subscription: Tool = {
   name: 'create_subscription',
   description:
@@ -90,7 +93,7 @@ export const create_subscription: Tool = {
       currency: { type: 'string', description: 'ISO code, e.g. USD, CNY, TRY.' },
       cycle: CYCLE,
       billing: billingSchema,
-      start: { ...DATE, description: 'First charge / purchase date (postpaid: first service day). Defaults to today.' },
+      start: { ...DATE, description: 'First service / purchase date (postpaid: first service day); with chargeLeadDays the first charge is that many days earlier. Defaults to today.' },
       category: { ...CATEGORY, description: `${CATEGORY.description} Defaults to the existing Tools category; if absent, specify an existing category.` },
       ...CATEGORY_CREATE,
       tags: { type: 'array', items: { type: 'string' } },
@@ -111,8 +114,8 @@ export const create_subscription: Tool = {
           'cancelled / terminated: already stopped. cancelled + end: did not renew after end (last service day). terminated + end: the provider disabled it on end. Without end the stop date is unknown.',
       },
       trial_end: DATE,
-      chargeLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
-      cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
+      chargeLeadDays: { type: 'integer', minimum: 0, maximum: 3660, description: LEAD_CHARGE },
+      cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660, description: LEAD_CANCEL },
       contract: CONTRACT,
       end: { ...DATE, description: 'Will not renew after this date.' },
       intro: {
@@ -319,8 +322,8 @@ export const update_subscription: Tool = {
         next_due: { type: ['string', 'null'] },
         trial_end: { type: ['string', 'null'] },
         expires: { type: ['string', 'null'] },
-        chargeLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
-        cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
+        chargeLeadDays: { type: 'integer', minimum: 0, maximum: 3660, description: LEAD_CHARGE },
+        cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660, description: LEAD_CANCEL },
         contract: { ...nullable(CONTRACT), description: `${CONTRACT.description} Applies to the current phase; null removes it.` },
         settlement: {
           type: ['string', 'null'],
