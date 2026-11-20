@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FALLBACK_FX, memberDues } from './billing.ts';
 import { maskForPublic } from './mask.ts';
-import { linkPeople, mergePeople, normContact, peopleLedger, peopleListRows, personKey, personLink, refsFor, syncPerson } from './people.ts';
+import { linkPeople, mergePeople, namesInQuery, normContact, peopleLedger, peopleListRows, personKey, personLink, refsFor, syncPerson } from './people.ts';
 import { proxyRows } from './proxy.ts';
 import { DEFAULT_SETTINGS, type AppState, type Person, type Subscription } from './types.ts';
 
@@ -310,4 +310,18 @@ test('人员颜色：预设名原样，色盘自选的 #rrggbb 统一小写，�
   const re = new RegExp(PERSON_COLOR_PATTERN, 'u');
   assert.ok(re.test('indigo') && re.test('#A1B2C3'));
   assert.ok(!re.test('#a1b2c') && !re.test('url(x)'));
+});
+
+test('namesInQuery 从整句查询里认出称呼，单字与 ASCII 半词不误中，多个命中取最长', () => {
+  const ps = ['小柏', '小柏刚', '岚', 'Al', 'Bob Lee', '阿岚'].map((name, i) => ({ id: `p${i}`, name }));
+  const pick = (q: string) => namesInQuery(ps, (p) => p.name, q).map((p) => p.name);
+  assert.deepEqual(pick('小柏转了我'), ['小柏']);
+  assert.deepEqual(pick('小柏刚转了我'), ['小柏刚']);
+  assert.deepEqual(pick('岚姐'), []);
+  assert.deepEqual(pick('always'), []);
+  assert.deepEqual(pick('Al paid'), ['Al']);
+  assert.deepEqual(pick('Alé paid'), []);
+  assert.deepEqual(pick('ＢＯＢ LEE sent 30'), ['Bob Lee']);
+  assert.deepEqual(pick('小柏和阿岚'), ['小柏', '阿岚']);
+  assert.deepEqual(pick('陈叔'), []);
 });

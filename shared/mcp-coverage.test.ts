@@ -304,6 +304,22 @@ const mutations: Array<[string, object, (st: AppState) => unknown]> = [
   ],
 ];
 
+test('people: a whole-phrase name query ("<name> just paid") resolves to the roster person', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const listed = await f.call('list_people', { query: 'Target person just paid' });
+  assert.deepEqual(
+    listed.structuredContent.people.map((p: { name: string; matched?: string }) => [p.name, p.matched]),
+    [['Target person', 'name_in_query']],
+  );
+  assert.equal((await f.call('list_people', { query: 'Target' })).structuredContent.people[0].matched, undefined);
+  assert.equal((await f.call('list_people', { query: 'Nobody here' })).structuredContent.people.length, 0);
+  assert.equal((await f.call('list_people', { query: 'Target person just paid', owing_only: true })).structuredContent.people.length, 0);
+  // 写入不靠反查定人：包含已有称呼的新名字仍是查无此人，不会记到 Target person 头上
+  assert.equal((await f.call('set_proxy', { subscription: 's', person: 'Target person wife' })).isError, true);
+  assert.notEqual((await f.snapshot()).subscriptions[0].proxy?.personId, 'target');
+});
+
 test('contract: invalid terms never write; get_subscription reports the current term', async (t) => {
   const f = await setup();
   t.after(() => f.db.close());

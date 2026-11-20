@@ -13,6 +13,23 @@ import { PERSON_COLORS, type AppState, type CustomColor, type Person, type Perso
 /** 称呼：全角半角统一、去首尾空白、合并空格、不分大小写 */
 export const normName = (s: string | undefined): string => (s ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
 
+/**
+ * 反向兜底：查询里包含已有称呼时认出这个人，比如「小柏刚转了我」认出「小柏」。
+ * 只用于 list_people 这类读取，且只在正向匹配落空时用；写入不靠它定人，「老王媳妇」不能记到老王头上。称呼至少 2 个字，纯 ASCII 称呼须整词出现；多个命中只留最长的。
+ */
+export function namesInQuery<T>(items: T[], nameOf: (x: T) => string | undefined, query: string): T[] {
+  const q = normName(query);
+  const hits = items.filter((x) => {
+    const n = normName(nameOf(x));
+    if ([...n].length < 2 || n === q) return false;
+    if (/^[\x00-\x7f]+$/.test(n)) return new RegExp(`(^|[^\\p{L}\\p{N}])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^\\p{L}\\p{N}])`, 'u').test(q);
+    return q.includes(n);
+  });
+  const len = (x: T) => [...normName(nameOf(x))].length;
+  const top = Math.max(0, ...hits.map(len));
+  return hits.filter((x) => len(x) === top);
+}
+
 /** 联系方式：渠道 + 账号；Telegram、X 去掉 @，手机、WhatsApp 只留数字。没有账号时为空串 */
 export function normContact(via?: string, contact?: string, tg?: string): string {
   const v = via ?? (tg ? 'Telegram' : '');

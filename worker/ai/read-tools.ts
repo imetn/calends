@@ -30,7 +30,7 @@ import { cancelSavings, cashVsAccrual, events, insights, movement, mrrSeries, pr
 import { proxyLedger } from '../../shared/proxy.ts';
 import { yearOutlook } from '../../shared/scope-report.ts';
 import { paidThrough } from '../../shared/receivables.ts';
-import { normName, peopleLedger, personAmounts } from '../../shared/people.ts';
+import { namesInQuery, normName, peopleLedger, personAmounts } from '../../shared/people.ts';
 import { t } from '../../shared/i18n.ts';
 import { searchAppStore } from '../appstore.ts';
 import { filteredSubs, LIST_FILTER, monthReportOut, scopeReportOut } from './report-tools.ts';
@@ -556,8 +556,12 @@ export const list_people: Tool = {
     const { st, today } = await state(ctx);
     const out = outCcy(st, a) ?? st.settings.baseCurrency;
     const q = normName(str(a.query));
-    const list = peopleLedger(st, today).filter((l) => (!q || normName(l.person.name).includes(q)) && (!a.owing_only || l.periodsOwed > 0));
-    const rows = list.map((l) => personRow(st, l, out, today));
+    const all = peopleLedger(st, today);
+    const forward = all.filter((l) => !q || normName(l.person.name).includes(q));
+    // 查询整句带了称呼（「小柏刚」）时，反过来认出名册里的人并标明；只在读取里猜，写入工具仍按原名精确匹配
+    const inQuery = forward.length || !q ? [] : namesInQuery(all, (l) => l.person.name, str(a.query) ?? '');
+    const list = (forward.length ? forward : inQuery).filter((l) => !a.owing_only || l.periodsOwed > 0);
+    const rows = list.map((l) => ({ ...personRow(st, l, out, today), ...(inQuery.length ? { matched: 'name_in_query' } : {}) }));
     const total = rows.reduce((x, r) => x + (r.owed ?? NaN), 0);
     return {
       currency: out,
