@@ -153,7 +153,7 @@ sudo systemctl start calends
 
 ## 升级
 
-有新版本时，设置里的版本行会标出来；点开可以看到更新内容和本节说明，一行安装还会给出升级命令。升级前先在设置里导出备份。
+有新版本时，设置里的版本行会标出来；点开可以看到更新内容摘录，以及按部署方式给出的一句升级说明（链接到本节），一行安装还会给出升级命令。升级前先在设置里导出备份。
 
 - **Cloudflare 部署按钮**：按钮把仓库复制到了你的 Git 账号，并接上了 Workers Builds，每次推送都会部署。把新版本合进你的仓库即可，例如在本地克隆里执行 `git pull https://github.com/imetn/calends main`，再 `git push`。如果 Git 提示历史不相关、拒绝合并，改为克隆 `imetn/calends` 按源码方式部署。
 - **从源码部署 Cloudflare**：`git pull && npm ci && npm run deploy`，部署时会执行新的迁移。

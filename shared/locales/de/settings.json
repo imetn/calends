@@ -486,7 +486,14 @@
     "copy": "Befehl kopieren",
     "copied": "Befehl kopiert",
     "guide": "Anleitung",
-    "notes": "Versionshinweise"
+    "notes": "Versionshinweise",
+    "howCloudflare": "Im eigenen Repository aktualisieren: neue Version zusammenführen und pushen, dann wird automatisch neu bereitgestellt. Bei Bereitstellung aus dem Quellcode den Deploy-Befehl erneut ausführen.",
+    "howNode": "Auf dem Server aktualisieren: neues Image oder neue Version holen und neu starten.",
+    "howInstaller": "Auf dem Server aktualisieren: diesen Befehl erneut ausführen.",
+    "howOther": "Dort aktualisieren, wo Calends läuft; hier ist kein direktes Update möglich.",
+    "backup": "Vorher ein Backup exportieren.",
+    "fullNotes": "Vollständige Versionshinweise",
+    "allReleases": "Alle Versionen"
   },
   "autobackup": {
     "title": "Automatische Sicherung",

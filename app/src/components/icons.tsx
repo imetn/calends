@@ -117,6 +117,8 @@ export const P: Record<string, JSX.Element> = {
     </>
   ),
   receipt: <path d="M6 2.5h12v19l-3-2-3 2-3-2-3 2zM9 7.5h6M9 11.5h6M9 15.5h3" />,
+  // 在新标签页打开的外部链接
+  external: <path d="M8 7h9v9M17 7 7 17" />,
   link: <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />,
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   download: <path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16" />,

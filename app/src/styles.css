@@ -3163,6 +3163,91 @@ button.bl-col {
   color: var(--label);
   background: var(--fill);
 }
+/* 待处理的提示（如可更新）：和侧边栏、更多菜单上的提醒点同色 */
+.badge.accent {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* 升级面板：怎么升级的一句话、命令，以及 release 正文摘录 */
+.upgrade {
+  gap: 18px;
+}
+.upgrade a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: none;
+}
+.upgrade a:hover {
+  text-decoration: underline;
+}
+.upgrade-how a {
+  margin-left: 6px;
+}
+.upgrade-how {
+  margin: 0;
+  font-size: var(--fs-2);
+  line-height: 1.55;
+  color: var(--label-2);
+}
+.upgrade-command {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.upgrade-command .codebox {
+  align-self: stretch;
+}
+.release-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  font-size: var(--fs-2);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.release-notes h3 {
+  margin: 0;
+  font-size: var(--fs-1);
+  font-weight: 600;
+  color: var(--label-2);
+}
+.release-notes h4 {
+  margin: 6px 0 0;
+  font-size: var(--fs-2);
+  font-weight: 600;
+}
+.release-notes p {
+  margin: 0;
+}
+.release-notes p.li {
+  position: relative;
+  padding-left: 14px;
+}
+.release-notes p.li::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0.7em;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--label-3);
+}
+.release-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 4px;
+  font-size: var(--fs-1);
+}
 
 /* 弹层 */
 .scrim {

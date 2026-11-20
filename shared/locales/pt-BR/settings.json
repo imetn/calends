@@ -486,7 +486,14 @@
     "copy": "Copiar comando",
     "copied": "Comando copiado",
     "guide": "Guia de atualização",
-    "notes": "Notas da versão"
+    "notes": "Notas da versão",
+    "howCloudflare": "Atualize pelo seu repositório: mescle a nova versão e faça push; a implantação é refeita automaticamente. Se você implanta a partir do código-fonte, execute de novo o comando de deploy.",
+    "howNode": "Atualize no seu servidor: baixe a nova imagem ou versão e reinicie.",
+    "howInstaller": "Atualize no seu servidor: execute este comando de novo.",
+    "howOther": "Atualize onde o Calends está implantado; não é possível atualizar por aqui.",
+    "backup": "Exporte um backup antes.",
+    "fullNotes": "Notas completas",
+    "allReleases": "Todas as versões"
   },
   "autobackup": {
     "title": "Backup automático",

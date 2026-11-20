@@ -486,7 +486,14 @@
     "copy": "Komutu kopyala",
     "copied": "Komut kopyalandı",
     "guide": "Yükseltme rehberi",
-    "notes": "Sürüm notları"
+    "notes": "Sürüm notları",
+    "howCloudflare": "Kendi deponuzdan yükseltin: yeni sürümü birleştirip push edin, otomatik olarak yeniden dağıtılır. Kaynaktan dağıttıysanız dağıtım komutunu yeniden çalıştırın.",
+    "howNode": "Sunucunuzda yükseltin: yeni imajı veya sürümü çekip yeniden başlatın.",
+    "howInstaller": "Sunucunuzda yükseltin: bu komutu yeniden çalıştırın.",
+    "howOther": "Calends'in kurulu olduğu yerde yükseltin; buradan güncellenemez.",
+    "backup": "Önce yedeği dışa aktarın.",
+    "fullNotes": "Tüm sürüm notları",
+    "allReleases": "Tüm sürümler"
   },
   "autobackup": {
     "title": "Otomatik yedekleme",

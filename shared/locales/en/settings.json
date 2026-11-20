@@ -486,7 +486,14 @@
     "copy": "Copy command",
     "copied": "Command copied",
     "guide": "Upgrade guide",
-    "notes": "Release notes"
+    "notes": "Release notes",
+    "howCloudflare": "Upgrade from your repository: merge the new release and push, and it redeploys automatically. If you deploy from source, run the deploy command again.",
+    "howNode": "Upgrade on your server: pull the new image or release, then restart.",
+    "howInstaller": "Upgrade on your server: run this command again.",
+    "howOther": "Upgrade where Calends is deployed; it can't update itself from here.",
+    "backup": "Export a backup first.",
+    "fullNotes": "Full release notes",
+    "allReleases": "All releases"
   },
   "autobackup": {
     "title": "Automatic backup",

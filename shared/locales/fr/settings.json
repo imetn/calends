@@ -486,7 +486,14 @@
     "copy": "Copier la commande",
     "copied": "Commande copiée",
     "guide": "Guide de mise à jour",
-    "notes": "Notes de version"
+    "notes": "Notes de version",
+    "howCloudflare": "Mettez à jour depuis votre dépôt : fusionnez la nouvelle version et poussez, le redéploiement est automatique. Si vous déployez depuis les sources, relancez la commande de déploiement.",
+    "howNode": "Mettez à jour sur votre serveur : récupérez la nouvelle image ou version, puis redémarrez.",
+    "howInstaller": "Mettez à jour sur votre serveur : relancez cette commande.",
+    "howOther": "Mettez à jour là où Calends est déployé ; impossible de le faire d’ici.",
+    "backup": "Exportez d’abord une sauvegarde.",
+    "fullNotes": "Notes de version complètes",
+    "allReleases": "Toutes les versions"
   },
   "autobackup": {
     "title": "Sauvegarde automatique",

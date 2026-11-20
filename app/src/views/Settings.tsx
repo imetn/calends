@@ -29,7 +29,7 @@ import { timeZones } from '../timezones.ts';
 import { zoneCountry } from '../zone-countries.ts';
 import { preferredLocale } from '../i18n.ts';
 import { APP_VERSION, autoCheckUpdate, availableUpdate, checkUpdateNow, useUpdateState } from '../update-check.ts';
-import { SETTINGS_CHECK_INTERVAL, type ReleaseInfo } from '../../../shared/version.ts';
+import { RELEASES_PAGE, SETTINGS_CHECK_INTERVAL, type ReleaseInfo } from '../../../shared/version.ts';
 
 /** 可设为启动页的页面（标签取 app.nav.*） */
 const START_PAGES: Array<[string, string]> = [
@@ -683,12 +683,15 @@ function VersionCells() {
   useEffect(() => {
     if (!update) setSheet(false);
   }, [update]);
-  // 有新版时整行打开升级面板；否则整行就是「检查更新」
+  // 有新版时整行打开升级面板；从没查过或查失败时整行就是「检查更新」；
+  // 已是最新（含重查途中）不可点：打开设置页本身就会按短间隔重查，不需要再手动点
+  const upToDate = !u.failed && !!u.cache?.latest;
+  const onClick = update ? () => setSheet(true) : upToDate || u.checking ? undefined : () => void checkUpdateNow();
   return (
     <>
-      <Cell label={t('settings.update.current')} onClick={update ? () => setSheet(true) : () => void checkUpdateNow()}>
+      <Cell label={t('settings.update.current')} onClick={onClick}>
         {`v${APP_VERSION}`}
-        {update ? <span className="badge green">{`${t('settings.update.available')} v${update.version}`}</span> : status}
+        {update ? <span className="badge accent">{`${t('settings.update.available')} v${update.version}`}</span> : status}
       </Cell>
       {sheet && update && <UpgradeSheet release={update} onClose={() => setSheet(false)} />}
     </>
@@ -705,8 +708,15 @@ const upgradeDocs = () =>
     ? 'https://github.com/imetn/calends/blob/main/docs/self-hosting.zh-CN.md#%E5%8D%87%E7%BA%A7'
     : 'https://github.com/imetn/calends/blob/main/docs/self-hosting.md#upgrading';
 
+/** 各运行方式怎么升级的一句话；Docker 和自己解压的压缩包都报 node，说法要两者都适用 */
+const UPGRADE_HOW: Record<string, string> = {
+  cloudflare: 'settings.update.howCloudflare',
+  node: 'settings.update.howNode',
+  installer: 'settings.update.howInstaller',
+};
+
 function UpgradeSheet({ release, onClose }: { release: ReleaseInfo; onClose: () => void }) {
-  // 读不到运行方式时当作没有命令，只给文档
+  // 读不到运行方式时当作没有命令，只给通用说明和文档
   const [runtime, setRuntime] = useState<string | null>(null);
   useEffect(() => {
     api<{ runtime: string }>('/api/runtime').then(
@@ -715,25 +725,50 @@ function UpgradeSheet({ release, onClose }: { release: ReleaseInfo; onClose: () 
     );
   }, []);
   const command = runtime ? UPGRADE_COMMANDS[runtime] : undefined;
+  const link = (href: string, label: string) => (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {label}
+      <Icon name="external" size={12} />
+    </a>
+  );
   return (
     <Sheet narrow title={t('settings.update.title', { version: release.version })} onClose={onClose}>
-      {/* 运行方式读回来之前不排内容，免得命令框插进来时按钮跳动 */}
+      {/* 运行方式读回来之前不排内容，免得说明和命令框插进来时内容跳动 */}
       {runtime !== null && (
-        <div className="stack">
-          {command && <div className="codebox">{command}</div>}
-          <div className="sheet-actions">
-            {command && (
+        <div className="stack upgrade">
+          {/* 自托管不能在应用里一键升级：先说清楚在哪升级、升级前备份 */}
+          <p className="upgrade-how">
+            {/* 中日文句号后不留空格 */}
+            {[t(UPGRADE_HOW[runtime ?? ''] ?? 'settings.update.howOther'), t('settings.update.backup')].join(/^(zh|ja)/.test(locale()) ? '' : ' ')}
+            {link(upgradeDocs(), t('settings.update.guide'))}
+          </p>
+          {command && (
+            <div className="upgrade-command">
+              <div className="codebox">{command}</div>
               <button className="btn" onClick={() => void copyText(command, t('settings.update.copied'))}>
                 {t('settings.update.copy')}
               </button>
+            </div>
+          )}
+          {/* 摘录只有纯文本，唯一的链接是校验过的发布页；旧缓存没有摘录时只留链接 */}
+          <section className="release-notes">
+            {release.notes && <h3>{t('settings.update.notes')}</h3>}
+            {release.notes?.map((n, i) =>
+              n.kind === 'h' ? (
+                <h4 key={i}>{n.text}</h4>
+              ) : n.kind === 'li' ? (
+                <p key={i} className="li">
+                  {n.text}
+                </p>
+              ) : (
+                <p key={i}>{n.text}</p>
+              ),
             )}
-            <a className="btn" href={upgradeDocs()} target="_blank" rel="noopener noreferrer">
-              {t('settings.update.guide')}
-            </a>
-            <a className="btn primary" href={release.url} target="_blank" rel="noopener noreferrer">
-              {t('settings.update.notes')}
-            </a>
-          </div>
+            <div className="release-links">
+              {link(release.url, t('settings.update.fullNotes'))}
+              {link(RELEASES_PAGE, t('settings.update.allReleases'))}
+            </div>
+          </section>
         </div>
       )}
     </Sheet>

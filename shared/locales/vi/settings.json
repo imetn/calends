@@ -468,7 +468,14 @@
     "copy": "Sao chép lệnh",
     "copied": "Đã sao chép lệnh",
     "guide": "Hướng dẫn nâng cấp",
-    "notes": "Ghi chú phát hành"
+    "notes": "Ghi chú phát hành",
+    "howCloudflare": "Nâng cấp từ kho mã của bạn: gộp bản phát hành mới rồi push, hệ thống sẽ tự triển khai lại. Nếu triển khai từ mã nguồn, hãy chạy lại lệnh deploy.",
+    "howNode": "Nâng cấp trên máy chủ: kéo image hoặc bản phát hành mới rồi khởi động lại.",
+    "howInstaller": "Nâng cấp trên máy chủ: chạy lại lệnh này.",
+    "howOther": "Nâng cấp ở nơi đã triển khai Calends; không thể cập nhật từ đây.",
+    "backup": "Hãy xuất bản sao lưu trước.",
+    "fullNotes": "Ghi chú phát hành đầy đủ",
+    "allReleases": "Tất cả phiên bản"
   },
   "autobackup": {
     "title": "Sao lưu tự động",

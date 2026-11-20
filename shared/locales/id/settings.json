@@ -468,7 +468,14 @@
     "copy": "Salin perintah",
     "copied": "Perintah disalin",
     "guide": "Panduan pembaruan",
-    "notes": "Catatan rilis"
+    "notes": "Catatan rilis",
+    "howCloudflare": "Perbarui dari repositori Anda: gabungkan rilis baru lalu push, dan akan diterapkan ulang otomatis. Jika menerapkan dari kode sumber, jalankan lagi perintah deploy.",
+    "howNode": "Perbarui di server Anda: tarik image atau rilis baru, lalu mulai ulang.",
+    "howInstaller": "Perbarui di server Anda: jalankan lagi perintah ini.",
+    "howOther": "Perbarui di tempat Calends diterapkan; tidak bisa diperbarui dari sini.",
+    "backup": "Ekspor cadangan terlebih dahulu.",
+    "fullNotes": "Catatan rilis lengkap",
+    "allReleases": "Semua rilis"
   },
   "autobackup": {
     "title": "Cadangan otomatis",

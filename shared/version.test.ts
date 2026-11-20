@@ -12,6 +12,8 @@ import {
   parseRelease,
   parseUpdateCache,
   parseVersion,
+  RELEASE_NOTES_MAX,
+  releaseNotes,
   SETTINGS_CHECK_INTERVAL,
   UPDATE_CHECK_INTERVAL,
 } from './version.ts';
@@ -56,6 +58,75 @@ test('GitHub release 解析：只认本仓库的正式版发布页', () => {
   assert.equal(parseRelease({ tag_name: 'v1.38.0', html_url: 'https://evil.example/releases/x' }), null);
   assert.equal(parseRelease({ message: 'API rate limit exceeded' }), null);
   assert.equal(parseRelease(null), null);
+  // 正文为空或不是字符串：不带 notes 键
+  assert.deepEqual(parseRelease({ tag_name: 'v1.38.0', html_url: url, body: '' }), { version: '1.38.0', url });
+  assert.deepEqual(parseRelease({ tag_name: 'v1.38.0', html_url: url, body: 42 }), { version: '1.38.0', url });
+});
+
+const BODY_145 = [
+  'Calends 1.45.0 checks for updates more promptly when you return to the app or open **Settings**.',
+  '',
+  '## Highlights',
+  '',
+  '- Automatic checks now run at most hourly and resume when the page returns to the foreground.',
+  '',
+  '## Fixes',
+  '',
+  '- Fixed update status remaining “up to date” for the whole day. Fixes [#21](https://github.com/imetn/calends/issues/21).',
+  '',
+  '## Upgrading',
+  '',
+  'No new database migrations, dependency changes, or API/MCP changes.',
+  '',
+  '## Images',
+  '',
+  'Multi-architecture images for linux/amd64 and linux/arm64:',
+  '',
+  '```bash',
+  'docker pull xizozhe/calends:1.45.0',
+  '```',
+  '',
+  '`1.45` follows this release series; `latest` follows main.',
+].join('\r\n');
+
+test('更新内容摘录：按小节取纯文本，去掉镜像小节、代码块和链接地址', () => {
+  assert.deepEqual(releaseNotes(BODY_145), [
+    { kind: 'p', text: 'Calends 1.45.0 checks for updates more promptly when you return to the app or open Settings.' },
+    { kind: 'h', text: 'Highlights' },
+    { kind: 'li', text: 'Automatic checks now run at most hourly and resume when the page returns to the foreground.' },
+    { kind: 'h', text: 'Fixes' },
+    { kind: 'li', text: 'Fixed update status remaining “up to date” for the whole day. Fixes #21.' },
+    { kind: 'h', text: 'Upgrading' },
+    { kind: 'p', text: 'No new database migrations, dependency changes, or API/MCP changes.' },
+  ]);
+  const url = 'https://github.com/imetn/calends/releases/tag/v1.45.0';
+  assert.deepEqual(parseRelease({ tag_name: 'v1.45.0', html_url: url, body: BODY_145 })?.notes, releaseNotes(BODY_145));
+  // HTML、图片、表格、分隔线不进摘录；没有小标题时就是前几段
+  assert.deepEqual(releaseNotes('<img src="x.png"> Intro ![shot](a.png)\n\n---\n\n| a | b |\n|---|---|\n\n<script>alert(1)</script>next'), [
+    { kind: 'p', text: 'Intro' },
+    { kind: 'p', text: 'alert(1)next' },
+  ]);
+  assert.deepEqual(releaseNotes(''), []);
+});
+
+test('更新内容摘录：太长时截断，升级注意事项不被挤掉', () => {
+  const many = Array.from({ length: 12 }, (_, i) => `- change ${i + 1}`).join('\n');
+  const body = `## Highlights\n${many}\n\n## Upgrading\n\nRun the new migration before starting.\n  `;
+  const notes = releaseNotes(body, 4);
+  assert.deepEqual(notes, [
+    { kind: 'h', text: 'Highlights' },
+    { kind: 'li', text: 'change 1' },
+    { kind: 'li', text: 'change 2' },
+    { kind: 'li', text: 'change 3' },
+    { kind: 'h', text: 'Upgrading' },
+    { kind: 'p', text: 'Run the new migration before starting.' },
+  ]);
+  assert.equal(releaseNotes(body).filter((n) => n.kind !== 'h').length, RELEASE_NOTES_MAX);
+  // 列表续行并进上一项；单条过长截成 300 字以内
+  assert.deepEqual(releaseNotes('- first line\n  continues here'), [{ kind: 'li', text: 'first line continues here' }]);
+  const long = releaseNotes(`x${'y'.repeat(400)}`)[0].text;
+  assert.equal(long.length, 300);
+  assert.ok(long.endsWith('…'));
 });
 
 test('自动检查每台设备每小时最多一次；失败只记时间并保留上次版本', () => {
@@ -79,6 +150,11 @@ test('缓存读回：坏数据当作没有缓存', () => {
   assert.deepEqual(parseUpdateCache(JSON.stringify({ checkedAt: 5, latest })), { checkedAt: 5, latest });
   assert.deepEqual(parseUpdateCache(JSON.stringify({ checkedAt: 5, latest: { version: 'x', url: 1 } })), { checkedAt: 5, latest: undefined });
   for (const raw of [null, '', '{', '[]', '{"checkedAt":"5"}', 'null']) assert.equal(parseUpdateCache(raw), null, String(raw));
+  // 摘录随版本一起存取；形状不对时只丢摘录，版本照常
+  const notes = [{ kind: 'p', text: 'Faster checks.' }];
+  assert.deepEqual(parseUpdateCache(JSON.stringify({ checkedAt: 5, latest: { ...latest, notes } })), { checkedAt: 5, latest: { ...latest, notes } });
+  for (const bad of [[{ kind: 'script', text: 'x' }], [{ kind: 'p', text: 1 }], [{ kind: 'p', text: 'x'.repeat(301) }], 'x', []])
+    assert.deepEqual(parseUpdateCache(JSON.stringify({ checkedAt: 5, latest: { ...latest, notes: bad } })), { checkedAt: 5, latest }, JSON.stringify(bad));
 });
 
 /** 从入口出发收集静态与动态 import 到的本地源码 */
