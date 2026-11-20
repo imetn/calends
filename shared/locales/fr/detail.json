@@ -168,7 +168,9 @@
       "one": "Afficher {count} plus ancien",
       "other": "Afficher {count} plus anciens"
     },
-    "shareStart": "Partage commencé"
+    "shareStart": "Partage commencé",
+    "list": "Liste",
+    "trend": "Évolution"
   },
   "stop": {
     "title": "Arrêt et remboursement",

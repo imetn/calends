@@ -154,7 +154,9 @@
     "ending": "Akan berakhir",
     "phases": "{count} fase",
     "more": "Tampilkan {count} sebelumnya",
-    "shareStart": "Mulai patungan"
+    "shareStart": "Mulai patungan",
+    "list": "Daftar",
+    "trend": "Tren"
   },
   "stop": {
     "title": "Penghentian dan pengembalian dana",

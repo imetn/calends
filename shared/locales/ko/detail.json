@@ -154,7 +154,9 @@
     "ending": "종료 예정",
     "phases": "{count}개 구간",
     "more": "이전 {count}건 보기",
-    "shareStart": "공유 시작"
+    "shareStart": "공유 시작",
+    "list": "목록",
+    "trend": "추이"
   },
   "stop": {
     "title": "종료 및 환불",

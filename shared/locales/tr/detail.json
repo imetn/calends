@@ -159,7 +159,9 @@
     "ending": "Bitiyor",
     "phases": "{count} dönem",
     "more": "Önceki {count} kaydı göster",
-    "shareStart": "Paylaşım başladı"
+    "shareStart": "Paylaşım başladı",
+    "list": "Liste",
+    "trend": "Eğilim"
   },
   "stop": {
     "title": "Sonlandırma ve iade",

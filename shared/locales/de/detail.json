@@ -168,7 +168,9 @@
       "one": "{count} frühere anzeigen",
       "other": "{count} frühere anzeigen"
     },
-    "shareStart": "Teilen begonnen"
+    "shareStart": "Teilen begonnen",
+    "list": "Liste",
+    "trend": "Verlauf"
   },
   "stop": {
     "title": "Beendigung & Erstattung",

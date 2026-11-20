@@ -168,7 +168,9 @@
       "one": "Show {count} earlier",
       "other": "Show {count} earlier"
     },
-    "shareStart": "Sharing started"
+    "shareStart": "Sharing started",
+    "list": "List",
+    "trend": "Trend"
   },
   "stop": {
     "title": "Stop & refund",

@@ -154,7 +154,9 @@
     "ending": "Sắp kết thúc",
     "phases": "{count} giai đoạn",
     "more": "Xem {count} mục trước",
-    "shareStart": "Bắt đầu dùng chung"
+    "shareStart": "Bắt đầu dùng chung",
+    "list": "Danh sách",
+    "trend": "Xu hướng"
   },
   "stop": {
     "title": "Dừng dịch vụ và hoàn tiền",

@@ -371,6 +371,13 @@
   font-weight: 600;
   letter-spacing: -0.005em;
 }
+.dt-title-note {
+  margin-left: 8px;
+  font-size: var(--fs-1);
+  font-weight: 400;
+  color: var(--label-3);
+  font-variant-numeric: tabular-nums;
+}
 .dt-aside {
   display: flex;
   align-items: center;
@@ -461,6 +468,26 @@
   stroke-width: 1.5;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+/* 历程的标价台阶：单一数据，与柱子同一种墨色 */
+.cc-step {
+  fill: none;
+  stroke: var(--chart-ink);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.cc-pt {
+  fill: var(--card);
+  stroke: var(--chart-ink);
+  stroke-width: 1.5;
+}
+.cc-pt.on {
+  fill: var(--chart-ink);
+}
+.cc-cross {
+  stroke: var(--label-3);
+  stroke-width: var(--hairline);
+  stroke-dasharray: 2 3;
 }
 .cc-today {
   position: absolute;

@@ -144,7 +144,9 @@
     "ending": "將結束",
     "phases": "{count} 段",
     "more": "顯示更早的 {count} 項",
-    "shareStart": "開始合租"
+    "shareStart": "開始合租",
+    "list": "列表",
+    "trend": "走勢"
   },
   "stop": {
     "title": "停止與退款",

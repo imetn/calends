@@ -30,7 +30,13 @@ import type { AppState, Subscription } from '../../../../shared/types.ts';
 import { pricePoints } from '../../../../shared/phases.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { Panel } from '../../components/DetailKit.tsx';
-import { Region } from './shared.tsx';
+import { Seg } from '../../components/inputs.tsx';
+import { priceSeries, type PriceSeries } from '../../../../shared/price-steps.ts';
+import { moneyTick } from '../../../../shared/format.ts';
+import { phaseLanes } from '../../../../shared/billing.ts';
+import { PriceSteps, type ChartLane } from '../DetailChart.tsx';
+import { detailHistoryEnd } from '../detail-data.ts';
+import { LANE_COLORS, Region } from './shared.tsx';
 import { methodOf } from './shared.tsx';
 
 export interface Ev {
@@ -46,6 +52,7 @@ export interface Ev {
 /** 历程：开始、换方案、调价、断档、暂停、结束，以及计划中的变更 */
 export function Events({ sub, state, today }: { sub: Subscription; state: AppState; today: string }) {
   const [all, setAll] = useState(false);
+  const [view, setView] = useState<'list' | 'trend'>('list');
   const vs = phaseSubs(sub);
   const plan = (v: Subscription) => {
     const m = methodOf(state, v.methodId);
@@ -152,12 +159,53 @@ export function Events({ sub, state, today }: { sub: Subscription; state: AppSta
   if (evs.length < 3) return null;
   const shown = all || evs.length <= 6 ? evs : evs.slice(0, 6);
   const gaps = servedTime(sub, today).gaps.length;
+  // 标价走势：价格变过才有，见 priceSeries
+  const series = priceSeries(
+    vs,
+    vs.map((v) => detailHistoryEnd(v, today).date ?? v.end),
+    today,
+    state.settings.baseCurrency,
+    state.fxHistory,
+    state.fx,
+  );
+  const trend = series && view === 'trend';
   return (
     <Panel
-      className="dt-events"
-      title={t('detail.history')}
-      aside={`${t('detail.ev.phases', { count: vs.length })}\n${gaps ? t('detail.stats.gaps', { count: gaps }) : t('detail.kpi.noGaps')}`}
+      className={`dt-events ${trend ? 'dt-chart' : ''}`}
+      title={
+        <>
+          {t('detail.history')}
+          <small className="dt-title-note">
+            {copyParts(`${t('detail.ev.phases', { count: vs.length })}\n${gaps ? t('detail.stats.gaps', { count: gaps }) : t('detail.kpi.noGaps')}`)}
+          </small>
+        </>
+      }
+      aside={
+        series && (
+          <Seg
+            small
+            value={view}
+            onChange={setView}
+            options={[
+              ['list', t('detail.ev.list')],
+              ['trend', t('detail.ev.trend')],
+            ]}
+          />
+        )
+      }
     >
+      {trend ? (
+        <PriceTrend sub={sub} state={state} series={series} events={evs} />
+      ) : (
+        <EventList shown={shown} more={evs.length - shown.length} onMore={() => setAll(true)} />
+      )}
+    </Panel>
+  );
+}
+
+function EventList({ shown, more, onMore }: { shown: Ev[]; more: number; onMore: () => void }) {
+  return (
+    <>
       <ol className="dt-evs">
         {shown.map((e, i) => (
           <li key={`${e.date}-${i}`} className={`dt-ev ${e.future ? 'fut' : ''} ${e.tone ?? ''}`}>
@@ -171,11 +219,79 @@ export function Events({ sub, state, today }: { sub: Subscription; state: AppSta
           </li>
         ))}
       </ol>
-      {evs.length > shown.length && (
-        <button className="dt-link" onClick={() => setAll(true)}>
-          {t('detail.ev.more', { count: evs.length - shown.length })}
+      {more > 0 && (
+        <button className="dt-link" onClick={onMore}>
+          {t('detail.ev.more', { count: more })}
         </button>
       )}
-    </Panel>
+    </>
+  );
+}
+
+/** 走势视图：标价台阶加方案轨道；悬停一级时写它从哪天起、怎么来的（开始、切换方案或调价），说明与列表里同一条一致 */
+function PriceTrend({ sub, state, series, events }: { sub: Subscription; state: AppState; series: PriceSeries; events: Ev[] }) {
+  const { steps, currency, perMonth } = series;
+  const vs = phaseSubs(sub).filter((v) => steps.some((s) => s.phase === v.start));
+  const laneIdx = phaseLanes(vs);
+  const methodIds = [...new Set(vs.map((v) => v.methodId ?? ''))];
+  const lanes: ChartLane[] = vs.map((v, i) => {
+    const own = steps.filter((s) => s.phase === v.start);
+    // 轨道写这段画到的最后一级标价，与折线末端一致；v.price 可能是今天之后才生效的调价
+    const price = money(own[own.length - 1].price, v.currency);
+    return {
+      key: v.start,
+      from: own[0].from,
+      to: own[own.length - 1].to,
+      lane: laneIdx[i],
+      color: LANE_COLORS[methodIds.indexOf(v.methodId ?? '') % LANE_COLORS.length],
+      label: (
+        <>
+          {v.region && <Region cc={v.region} />}
+          {price} {cycleLabel(v.cycle)}
+        </>
+      ),
+      short: (
+        <>
+          {v.region && <Region cc={v.region} />}
+          {price}
+        </>
+      ),
+      aside: methodOf(state, v.methodId)?.name,
+    };
+  });
+  const fmt = (v: number) => (perMonth ? t('detail.kpi.perMonthValue', { amount: money(v, currency) }) : money(v, currency));
+  return (
+    <PriceSteps
+      steps={steps}
+      fmt={fmt}
+      tick={(v) => (Number.isInteger(v) ? moneyTick(v, currency) : money(v, currency))}
+      lanes={lanes}
+      tip={(i) => {
+        const s = steps[i];
+        const ev = events.find(
+          (e) => e.date === s.from && e.title === t(s.kind === 'price' ? 'detail.ev.price' : s.kind === 'switch' ? 'detail.ev.switch' : 'detail.ev.start'),
+        );
+        return (
+          <>
+            <div className="cc-tip-h">
+              <b>{cnDateFull(s.from)}</b>
+              <span>{ev?.title}</span>
+            </div>
+            {ev?.sub && (
+              <div className="cc-tip-r">
+                <span>{ev.sub}</span>
+              </div>
+            )}
+            {/* 折成本位币或按月折算时，图上的高度不是标价本身，写出折合值 */}
+            {(perMonth || vs.find((v) => v.start === s.phase)?.currency !== currency) && (
+              <div className="cc-tip-r">
+                <span>{t('detail.chart.converted')}</span>
+                <b>{fmt(s.amount)}</b>
+              </div>
+            )}
+          </>
+        );
+      }}
+    />
   );
 }

@@ -206,17 +206,7 @@ export function ChargeBars({
 
   // 月份刻度：间隔按宽度挑，最多约每 90px 一个。后付费的柱子画在所属周期中间，标签也写在那个月中间（15 日），
   // 柱子正好落在自己的月份上，不被误读成下个月；预付费在 1 日扣款，标签留在月初
-  const months = Math.max(1, Math.round(span / DAYS_PER_MONTH));
-  const every = [1, 2, 3, 6, 12, 24, 36].find((m) => (months / m) * 90 <= iw) ?? 48;
-  const xt: Array<{ d: string; label: string }> = [];
-  for (let d = `${from.slice(0, 7)}-${midMonth ? '15' : '01'}`; d <= to; d = addMonths(d, 1)) {
-    if (d <= from) continue;
-    const m = Number(d.slice(5, 7)) - 1;
-    if (every >= 12 ? m !== 0 || Number(d.slice(0, 4)) % (every / 12) : m % every) continue;
-    xt.push({ d, label: m === 0 ? d.slice(0, 4) : monthLabel(d.slice(0, 7), { year: false }) });
-  }
-  // 首末两个刻度同名（一年范围两头都是「11月」）时，第一个带上年份
-  if (xt.length > 1 && xt[0].label === xt[xt.length - 1].label) xt[0].label = monthLabel(xt[0].d.slice(0, 7));
+  const xt = monthTicks(from, to, span, iw, midMonth);
   // 范围不到两个月（新订阅的几次读数）时月份标签不够定位，改写首末两根柱的日期，挨得太近只写最后一根
   if (xt.length < 2 && bars.length) {
     xt.length = 0;
@@ -374,33 +364,10 @@ export function ChargeBars({
               </text>
             )}
           </svg>
-          {nLanes > 0 && (
-            <div className="cc-lanes" style={{ height: nLanes * LANE + 4, marginLeft: padL, marginRight: PAD_R }}>
-              {lanes.map((l) => {
-                const a = Math.max(padL, x(l.from));
-                const b = Math.min(w - PAD_R, x(l.to > to ? to : l.to));
-                return (
-                  <div
-                    key={l.key}
-                    className="cc-lane"
-                    style={{ left: a - padL, width: Math.max(6, b - a), top: l.lane * LANE + 4, '--tint': l.color } as Record<string, string | number>}
-                  >
-                    {b - a > 56 && <b>{b - a > 120 ? l.label : (l.short ?? l.label)}</b>}
-                    {l.aside && b - a > 260 && <span>{l.aside}</span>}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <LaneStrip lanes={lanes} x={x} padL={padL} w={w} to={to} />
           {/* 「今天」一条线从柱区贯穿到方案轨道底部，不分 SVG 与轨道两段画 */}
           {showToday && <i className="cc-today" style={{ left: tx, top: T - 4, height: H - T + 4 + (nLanes > 0 ? nLanes * LANE + 4 : 0) }} />}
-          <div className="cc-xt" style={{ marginLeft: padL, marginRight: PAD_R }}>
-            {xt.map((t) => (
-              <span key={t.d} style={{ left: x(t.d) - padL }}>
-                {t.label}
-              </span>
-            ))}
-          </div>
+          <XTicks xt={xt} x={x} padL={padL} />
           {hover != null && (
             <div className="cc-tip" ref={tipRef}>
               {tip(groups[hover].idx, !groups[hover].stack)}
@@ -424,5 +391,182 @@ function PeakLabel({ x, y, w, text, avoid }: { x: number; y: number; w: number; 
     <text ref={ref} className="cc-tk" x={cx} y={y} textAnchor="middle">
       {text}
     </text>
+  );
+}
+
+/** 月份刻度：间隔按宽度挑，最多约每 90px 一个；mid 时写在每月 15 日（后付费柱子画在周期中间） */
+function monthTicks(from: string, to: string, span: number, iw: number, mid?: boolean) {
+  const months = Math.max(1, Math.round(span / DAYS_PER_MONTH));
+  const every = [1, 2, 3, 6, 12, 24, 36].find((m) => (months / m) * 90 <= iw) ?? 48;
+  const xt: Array<{ d: string; label: string }> = [];
+  for (let d = `${from.slice(0, 7)}-${mid ? '15' : '01'}`; d <= to; d = addMonths(d, 1)) {
+    if (d <= from) continue;
+    const m = Number(d.slice(5, 7)) - 1;
+    if (every >= 12 ? m !== 0 || Number(d.slice(0, 4)) % (every / 12) : m % every) continue;
+    xt.push({ d, label: m === 0 ? d.slice(0, 4) : monthLabel(d.slice(0, 7), { year: false }) });
+  }
+  // 首末两个刻度同名（一年范围两头都是「11月」）时，第一个带上年份
+  if (xt.length > 1 && xt[0].label === xt[xt.length - 1].label) xt[0].label = monthLabel(xt[0].d.slice(0, 7));
+  return xt;
+}
+
+function XTicks({ xt, x, padL }: { xt: Array<{ d: string; label: string }>; x: (d: string) => number; padL: number }) {
+  return (
+    <div className="cc-xt" style={{ marginLeft: padL, marginRight: PAD_R }}>
+      {xt.map((t) => (
+        <span key={t.d} style={{ left: x(t.d) - padL }}>
+          {t.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** 图表下方的方案轨道：每段方案一条色带，够宽才写价格与支付方式 */
+function LaneStrip({ lanes, x, padL, w, to }: { lanes: ChartLane[]; x: (d: string) => number; padL: number; w: number; to: string }) {
+  const nLanes = lanes.reduce((m, l) => Math.max(m, l.lane + 1), 0);
+  if (!nLanes) return null;
+  return (
+    <div className="cc-lanes" style={{ height: nLanes * LANE + 4, marginLeft: padL, marginRight: PAD_R }}>
+      {lanes.map((l) => {
+        const a = Math.max(padL, x(l.from));
+        const b = Math.min(w - PAD_R, x(l.to > to ? to : l.to));
+        return (
+          <div
+            key={l.key}
+            className="cc-lane"
+            style={{ left: a - padL, width: Math.max(6, b - a), top: l.lane * LANE + 4, '--tint': l.color } as Record<string, string | number>}
+          >
+            {b - a > 56 && <b>{b - a > 120 ? l.label : (l.short ?? l.label)}</b>}
+            {l.aside && b - a > 260 && <span>{l.aside}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * 历程的标价走势：每级价格一段水平线，变价处竖直跳上（下）去，下面浅色铺底；横轴是真实日期，下面是方案轨道。
+ * 够宽时画纵轴刻度，窄屏只在末端标当前价。悬停、点按或手指滑动时高亮最近的一次变价并出现说明。
+ */
+export function PriceSteps({
+  steps,
+  fmt,
+  tick,
+  lanes,
+  tip,
+}: {
+  steps: Array<{ from: string; to: string; amount: number }>;
+  fmt: (v: number) => string;
+  tick: (v: number, ticks: number[]) => string;
+  lanes: ChartLane[];
+  tip: (i: number) => ReactNode;
+}) {
+  const [box, w] = useWidth();
+  const [hover, setHover] = useState<number | null>(null);
+  const fill = `cc-step-${useId().replace(/[^a-z0-9]/gi, '')}`;
+  const axis = w >= AXIS_MIN_W;
+  const padL = axis ? PAD_AXIS : PAD_L;
+  const from = steps[0].from;
+  const to = steps[steps.length - 1].to;
+  const span = Math.max(1, diffDays(from, to));
+  const iw = Math.max(1, w - padL - PAD_R);
+  const x = (d: string) => padL + (Math.min(span, Math.max(0, diffDays(from, d))) / span) * iw;
+  const maxV = Math.max(...steps.map((s) => s.amount)) || 1;
+  const ticks = axis ? niceTicks(maxV, 3) : [];
+  const top = ticks.length ? ticks[ticks.length - 1] : maxV;
+  const headroom = axis ? 0 : PEAK;
+  const y = (v: number) => T + headroom + (1 - v / top) * (H - T - headroom - 6);
+  // 相邻两级首尾相接时竖直连上；中间断档（停订一段时间）就断开，不画成连续的价格
+  let line = '';
+  let area = '';
+  let run = '';
+  steps.forEach((s, i) => {
+    const joined = i > 0 && diffDays(steps[i - 1].to, s.from) <= 1;
+    const x0 = x(s.from);
+    const x1 = x(s.to);
+    if (!joined) {
+      if (run) area += `${run}V${y(0)}Z`;
+      line += `M${x0},${y(s.amount)}`;
+      run = `M${x0},${y(0)}V${y(s.amount)}`;
+    } else {
+      line += `V${y(s.amount)}`;
+      run += `V${y(s.amount)}`;
+    }
+    line += `H${x1}`;
+    run += `H${x1}`;
+  });
+  if (run) area += `${run}V${y(0)}Z`;
+  const xt = monthTicks(from, to, span, iw);
+  const cx = steps.map((s) => x(s.from));
+  const nearest = (e: React.PointerEvent) => {
+    const px = e.clientX - box.current!.getBoundingClientRect().left;
+    let best = 0;
+    for (let i = 1; i < cx.length; i++) if (Math.abs(cx[i] - px) < Math.abs(cx[best] - px)) best = i;
+    return best;
+  };
+  useEffect(() => {
+    if (hover == null) return;
+    const off = (e: PointerEvent) => {
+      if (!box.current?.contains(e.target as Node)) setHover(null);
+    };
+    document.addEventListener('pointerdown', off);
+    return () => document.removeEventListener('pointerdown', off);
+  }, [hover != null]);
+  const hx = hover != null ? cx[hover] : 0;
+  const tipRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = tipRef.current;
+    if (!el) return;
+    const tw = el.offsetWidth;
+    el.style.left = `${Math.max(0, Math.min(hx > w / 2 ? hx - 14 - tw : hx + 14, w - tw))}px`;
+  });
+  const last = steps[steps.length - 1];
+
+  return (
+    <div
+      className="cc"
+      ref={box}
+      onPointerMove={(e) => setHover(nearest(e))}
+      onPointerDown={(e) => setHover(nearest(e))}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && setHover(null)}
+    >
+      {w > 0 && (
+        <>
+          <svg className="cc-plot" width={w} height={H}>
+            <defs>
+              <linearGradient id={fill} x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stopColor="var(--chart-ink)" stopOpacity="0.12" />
+                <stop offset="1" stopColor="var(--chart-ink)" stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+            {ticks.map((v) => (
+              <g key={v}>
+                {v > 0 && <line className="cc-grid dash" x1={padL} x2={w - PAD_R} y1={y(v)} y2={y(v)} />}
+                <text className="cc-tk" x={padL - 8} y={y(v) + 4} textAnchor="end">
+                  {tick(v, ticks)}
+                </text>
+              </g>
+            ))}
+            <line className="cc-grid" x1={padL} x2={w - PAD_R} y1={y(0)} y2={y(0)} />
+            <path d={area} fill={`url(#${fill})`} />
+            <path className="cc-step" d={line} />
+            {hover != null && <line className="cc-cross" x1={hx} x2={hx} y1={T} y2={y(0)} />}
+            {steps.map((s, i) => (
+              <circle key={i} className={`cc-pt ${hover === i ? 'on' : ''}`} cx={cx[i]} cy={y(s.amount)} r={hover === i ? 4 : 2.5} />
+            ))}
+            {!axis && <PeakLabel x={x(last.to)} y={y(last.amount) - 6} w={w} text={fmt(last.amount)} />}
+          </svg>
+          <LaneStrip lanes={lanes} x={x} padL={padL} w={w} to={to} />
+          <XTicks xt={xt} x={x} padL={padL} />
+          {hover != null && (
+            <div className="cc-tip" ref={tipRef}>
+              {tip(hover)}
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }

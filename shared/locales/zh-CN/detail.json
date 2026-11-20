@@ -144,7 +144,9 @@
     "ending": "将结束",
     "phases": "{count} 段",
     "more": "显示更早的 {count} 条",
-    "shareStart": "开始合租"
+    "shareStart": "开始合租",
+    "list": "列表",
+    "trend": "走势"
   },
   "stop": {
     "title": "停止与退款",

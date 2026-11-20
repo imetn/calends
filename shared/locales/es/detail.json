@@ -168,7 +168,9 @@
       "one": "Ver {count} anterior",
       "other": "Ver {count} anteriores"
     },
-    "shareStart": "Empezó a compartirse"
+    "shareStart": "Empezó a compartirse",
+    "list": "Lista",
+    "trend": "Tendencia"
   },
   "stop": {
     "title": "Cese y reembolso",

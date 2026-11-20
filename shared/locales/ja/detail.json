@@ -154,7 +154,9 @@
     "ending": "終了予定",
     "phases": "{count} 期間",
     "more": "以前の {count} 件を表示",
-    "shareStart": "シェア開始"
+    "shareStart": "シェア開始",
+    "list": "リスト",
+    "trend": "推移"
   },
   "stop": {
     "title": "停止と返金",
