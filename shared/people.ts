@@ -22,7 +22,8 @@ export function namesInQuery<T>(items: T[], nameOf: (x: T) => string | undefined
   const hits = items.filter((x) => {
     const n = normName(nameOf(x));
     if ([...n].length < 2 || n === q) return false;
-    if (/^[\x00-\x7f]+$/.test(n)) return new RegExp(`(^|[^\\p{L}\\p{N}])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^\\p{L}\\p{N}])`, 'u').test(q);
+    if ([...n].every((c) => c.codePointAt(0)! <= 0x7f))
+      return new RegExp(`(^|[^\\p{L}\\p{N}])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^\\p{L}\\p{N}])`, 'u').test(q);
     return q.includes(n);
   });
   const len = (x: T) => [...normName(nameOf(x))].length;

@@ -78,7 +78,8 @@ import {
 } from './tool-kit.ts';
 import { row, fieldChanges, computedOf } from './tool-views.ts';
 
-const LEAD_CHARGE = 'Days before each service period starts that the provider charges (e.g. charged Dec 22 for a year starting Jan 1 = 10); start and service periods stay unchanged.';
+const LEAD_CHARGE =
+  'Days before each service period starts that the provider charges (e.g. charged Dec 22 for a year starting Jan 1 = 10); start and service periods stay unchanged.';
 const LEAD_CANCEL = 'Days before renewal by which the user must cancel to avoid the next charge.';
 
 export const create_subscription: Tool = {
@@ -93,7 +94,11 @@ export const create_subscription: Tool = {
       currency: { type: 'string', description: 'ISO code, e.g. USD, CNY, TRY.' },
       cycle: CYCLE,
       billing: billingSchema,
-      start: { ...DATE, description: 'First service / purchase date (postpaid: first service day); with chargeLeadDays the first charge is that many days earlier. Defaults to today.' },
+      start: {
+        ...DATE,
+        description:
+          'First service / purchase date (postpaid: first service day); with chargeLeadDays the first charge is that many days earlier. Defaults to today.',
+      },
       category: { ...CATEGORY, description: `${CATEGORY.description} Defaults to the existing Tools category; if absent, specify an existing category.` },
       ...CATEGORY_CREATE,
       tags: { type: 'array', items: { type: 'string' } },
