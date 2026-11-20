@@ -9,7 +9,7 @@ import type { Env } from '../worker/env.ts';
 import { TOOLS } from '../worker/ai/mcp-tools.ts';
 import type { ToolCtx } from '../worker/ai/tool-kit.ts';
 import { createToken } from '../worker/ai/mcp.ts';
-import { ASSISTANT_TOOLS, apply, chat, enrichDraft } from '../worker/ai/assistant.ts';
+import { ASSISTANT_TOOLS, appMatches, apply, chat, enrichDraft } from '../worker/ai/assistant.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 import { addDays, memberRate, runwayFor, todayIn } from './billing.ts';
 import { SUBSCRIPTION_SCHEMA } from './subscription-schema.ts';
@@ -408,6 +408,53 @@ test('update_subscription switches settlement like the editor: on keeps payments
   });
   assert.equal((await f.call('update_subscription', { subscription: 'once', set: { settlement: 'separate' } })).isError, true);
 });
+
+test('App Store auto-fill matches the same product only', () => {
+  for (const [name, app] of [
+    ['Netflix', 'Netflix'],
+    ['Spotify', 'Spotify: Music and Podcasts'],
+    ['ChatGPT Plus', 'ChatGPT'],
+    ['YouTube Premium', 'YouTube: Watch, Listen, Stream'],
+    ['Disney+', 'Disney+'],
+    ['Netflix 标准版', 'Netflix'],
+    ['QQ音乐会员', 'QQ音乐 - 听我想听'],
+    ['Claude', 'Claude by Anthropic'],
+    ['Telegram', 'Telegram Messenger'],
+    ['Microsoft 365', 'Microsoft 365 Copilot'],
+    ['哔哩哔哩', '哔哩哔哩-弹幕番剧直播高清视频'],
+    ['微博 会员', '微博'],
+    ['知乎会员', '知乎'],
+  ])
+    assert.equal(appMatches(name, app), true, `${name} ~ ${app}`);
+  for (const [name, app] of [
+    ['车险', '车险计算器-车险查询 报价 理赔计算'],
+    ['宽带', '宽带测速大师'],
+    ['Google One', 'Google Drive'],
+    ['Max', 'Maxthon Browser'],
+    ['X', 'X'],
+  ])
+    assert.equal(appMatches(name, app), false, `${name} !~ ${app}`);
+});
+
+const nthYear = (day: string) => `${Number(day.slice(0, 4)) + 1}${day.slice(4) === '-02-29' ? '-02-28' : day.slice(4)}`;
+for (const [name, args, verify] of mutations)
+  test(`${name} ${JSON.stringify(args)}: MCP preview, permission denial, save and reread`, async (t) => {
+    const f = await setup();
+    t.after(() => f.db.close());
+    const before = await f.snapshot();
+    const preview = await f.call(name, { ...args, dry_run: true });
+    assert.equal(preview.isError, undefined, JSON.stringify(preview));
+    assert.equal(preview.structuredContent.dry_run, true);
+    assert.deepEqual(await f.snapshot(), before);
+    const denied = await f.call(name, args, f.read);
+    assert.equal(denied.isError, true);
+    assert.deepEqual(await f.snapshot(), before);
+    const saved = await f.call(name, args);
+    assert.equal(saved.isError, undefined, JSON.stringify(saved));
+    const after = await f.snapshot();
+    assert.ok(verify(after), JSON.stringify(after));
+    assert.ok(after.rev! > before.rev!);
+  });
 
 test('every new read tool and connection catalogue: read token visibility, titles, secrets, all writes denied', async (t) => {
   const f = await setup();

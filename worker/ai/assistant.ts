@@ -143,6 +143,27 @@ const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
  * 新增订阅的草稿补全：模型没给图标或链接时，按名称（和地区）查 App Store，
  * 名称对得上才采用，补上图标和链接，并告诉模型补了什么
  */
+/** 名称拆成词：去掉套餐名（Premium、会员等）后按空格分词，每个词只留字母数字 */
+const words = (s: string) =>
+  s
+    .replace(/\s+(premium|plus|pro|max|family|team|business)$/i, '')
+    .replace(/\s*(个人|家庭|会员|年费|月费)$/u, '')
+    .split(/\s+/)
+    .map(norm)
+    .filter(Boolean);
+
+/**
+ * 订阅名与 App 名是否同一个产品：App 名取「-」「:」等之前的主名，两边按整词比较，一方的词是另一方的开头即可
+ * （Claude ~ Claude by Anthropic，Netflix 标准版 ~ Netflix，微博 会员 ~ 微博）；只共享半个词不算（车险 ≠ 车险计算器）。
+ */
+export function appMatches(name: string, appName: string): boolean {
+  const a = words(name);
+  const b = words(appName.split(/\s*[-–—|:：]\s*|[（(]/)[0] || appName);
+  if (a.join('').length < 2 || !b.length) return false;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  return short.every((w, i) => w === long[i]);
+}
+
 export async function enrichDraft(args: Record<string, unknown>): Promise<{ args: Record<string, unknown>; filled: string[] }> {
   const name = decodeEntities(String(args.name ?? '').trim());
   const fixed: Record<string, unknown> = { ...args, ...(args.name != null ? { name } : {}) };
@@ -152,9 +173,7 @@ export async function enrichDraft(args: Record<string, unknown>): Promise<{ args
   if (!name || (args.icon && args.url)) return { args, filled: [] };
   const country = String(args.region ?? 'us').toLowerCase();
   const hits = await searchAppStore(name, country).catch(() => []);
-  // 取名称的主干（去掉套餐名）去匹配 App 名
-  const stem = norm(name.split(/\s+(premium|plus|pro|max|family|team|business|个人|家庭|会员|年费|月费)\b/i)[0] || name);
-  const hit = hits.find((h) => stem.length >= 2 && (norm(h.name).startsWith(stem) || stem.startsWith(norm(h.name).slice(0, Math.max(3, stem.length)))));
+  const hit = hits.find((h) => appMatches(name, h.name));
   if (!hit) return { args, filled: [] };
   const filled: string[] = [];
   const out = { ...args };
