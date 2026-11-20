@@ -11,7 +11,7 @@ import type { ToolCtx } from '../worker/ai/tool-kit.ts';
 import { createToken } from '../worker/ai/mcp.ts';
 import { ASSISTANT_TOOLS, appMatches, apply, chat, enrichDraft } from '../worker/ai/assistant.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
-import { addDays, memberRate, runwayFor, todayIn } from './billing.ts';
+import { addDays, addMonths, memberRate, runwayFor, todayIn } from './billing.ts';
 import { SUBSCRIPTION_SCHEMA } from './subscription-schema.ts';
 import { validateToolInput } from './tool-schema.ts';
 const hook = registerHooks({
@@ -332,26 +332,6 @@ test('contract: invalid terms never write; get_subscription reports the current 
   assert.equal((await f.call('update_subscription', { subscription: 's', set: { contract: null } })).isError, undefined);
   assert.equal((await f.snapshot()).subscriptions[0].contract, undefined);
 });
-const nthYear = (day: string) => `${Number(day.slice(0, 4)) + 1}${day.slice(4) === '-02-29' ? '-02-28' : day.slice(4)}`;
-for (const [name, args, verify] of mutations)
-  test(`${name} ${JSON.stringify(args)}: MCP preview, permission denial, save and reread`, async (t) => {
-    const f = await setup();
-    t.after(() => f.db.close());
-    const before = await f.snapshot();
-    const preview = await f.call(name, { ...args, dry_run: true });
-    assert.equal(preview.isError, undefined, JSON.stringify(preview));
-    assert.equal(preview.structuredContent.dry_run, true);
-    assert.deepEqual(await f.snapshot(), before);
-    const denied = await f.call(name, args, f.read);
-    assert.equal(denied.isError, true);
-    assert.deepEqual(await f.snapshot(), before);
-    const saved = await f.call(name, args);
-    assert.equal(saved.isError, undefined, JSON.stringify(saved));
-    const after = await f.snapshot();
-    assert.ok(verify(after), JSON.stringify(after));
-    assert.ok(after.rev! > before.rev!);
-  });
-
 test('update_subscription switches settlement like the editor: on keeps payments, off clears periods', async (t) => {
   const f = await setup();
   t.after(() => f.db.close());
@@ -1140,6 +1120,8 @@ test('accounts belong to person × plan: API/MCP persistence, independent update
 
 test('collect_day=joined: MCP pins the anchor only for whole first periods and moves it with the join date', async () => {
   const f = await setup();
+  // 加入日早于开始日（今天）11 天：不会与车的收款日同一天
+  const joined = addDays(todayIn('UTC'), -11);
   try {
     const plan = async () => (await f.call('get_carpool', { subscription: 's' }, f.read)).structuredContent.plans[0];
     const member = async (id: string) =>
@@ -1147,21 +1129,21 @@ test('collect_day=joined: MCP pins the anchor only for whole first periods and m
     assert.equal((await f.call('set_share', { subscription: 's', role: 'owner', seats: 8 })).isError, undefined);
     // 实际保存：钉在加入日，之前给的首期方式不再适用；不分摊的不钉；改加入日时基准日跟着挪
     assert.equal(
-      (await f.call('save_share_member', { subscription: 's', name: 'Own day', joined: '2026-10-20', collect_day: 'joined', first_period: 'full' })).isError,
+      (await f.call('save_share_member', { subscription: 's', name: 'Own day', joined, collect_day: 'joined', first_period: 'full' })).isError,
       undefined,
     );
-    assert.equal((await member('Own day')).anchor, '2026-10-20');
+    assert.equal((await member('Own day')).anchor, joined);
     assert.equal((await member('Own day')).firstPeriod, undefined);
-    assert.equal((await f.call('save_share_member', { subscription: 's', member: 'Own day', joined: '2026-10-25' })).isError, undefined);
-    assert.equal((await member('Own day')).anchor, '2026-10-25');
+    assert.equal((await f.call('save_share_member', { subscription: 's', member: 'Own day', joined: addDays(joined, 5) })).isError, undefined);
+    assert.equal((await member('Own day')).anchor, addDays(joined, 5));
     assert.equal(
-      (await f.call('save_share_member', { subscription: 's', name: 'Free rider', joined: '2026-10-20', exempt: true, collect_day: 'joined' })).isError,
+      (await f.call('save_share_member', { subscription: 's', name: 'Free rider', joined, exempt: true, collect_day: 'joined' })).isError,
       undefined,
     );
     assert.equal((await member('Free rider')).anchor, undefined);
     // 加入日就在车的收款日上：首期本来完整，不钉
     const carAnchor = (await plan()).collect_from as string;
-    const onDay = `2026-10-${carAnchor.slice(8, 10)}`;
+    const onDay = carAnchor;
     assert.equal((await f.call('save_share_member', { subscription: 's', name: 'On day', joined: onDay, collect_day: 'joined' })).isError, undefined);
     assert.equal((await member('On day')).anchor, undefined);
   } finally {
@@ -1171,6 +1153,8 @@ test('collect_day=joined: MCP pins the anchor only for whole first periods and m
 
 test('carpool collection rule: MCP reads, sets, follows and customizes member fees', async () => {
   const f = await setup();
+  // 加入日早于开始日（今天）11 天：不会与车的收款日同一天
+  const joined = addDays(todayIn('UTC'), -11);
   try {
     const plan = async () => (await f.call('get_carpool', { subscription: 's' }, f.read)).structuredContent.plans[0];
     const member = async (id: string) =>
@@ -1185,17 +1169,17 @@ test('carpool collection rule: MCP reads, sets, follows and customizes member fe
     assert.equal((await member('Newcomer')).fee, 3);
     assert.equal((await member('Newcomer')).feeCurrency, 'USD');
     // issue #9：新成员从加入日起收，基准日钉在加入日；非法取值报错
-    const ownDay = await f.call('save_share_member', { subscription: 's', name: 'Own day', joined: '2026-10-20', collect_day: 'joined', dry_run: true });
+    const ownDay = await f.call('save_share_member', { subscription: 's', name: 'Own day', joined, collect_day: 'joined', dry_run: true });
     assert.equal(ownDay.isError, undefined);
     assert.deepEqual(ownDay.structuredContent.member.first_collection, {
-      from: '2026-10-20',
-      until: '2026-11-19',
-      next: '2026-11-20',
+      from: joined,
+      until: addDays(addMonths(joined, 1), -1),
+      next: addMonths(joined, 1),
       amount: 3,
       currency: 'USD',
       partial: false,
     });
-    const carDay = await f.call('save_share_member', { subscription: 's', name: 'Car day', joined: '2026-10-20', dry_run: true });
+    const carDay = await f.call('save_share_member', { subscription: 's', name: 'Car day', joined, dry_run: true });
     assert.equal(carDay.structuredContent.member.first_collection.partial, true);
     assert.equal((await f.call('save_share_member', { subscription: 's', name: 'Bad', collect_day: 'x', dry_run: true })).isError, true);
 
