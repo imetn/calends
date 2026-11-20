@@ -743,11 +743,16 @@ function UpgradeSheet({ release, onClose }: { release: ReleaseInfo; onClose: () 
             {link(upgradeDocs(), t('settings.update.guide'))}
           </p>
           {command && (
-            <div className="upgrade-command">
-              <div className="codebox">{command}</div>
-              <button className="btn" onClick={() => void copyText(command, t('settings.update.copied'))}>
-                {t('settings.update.copy')}
-              </button>
+            <div className="codebox upgrade-command">
+              <code>{command}</code>
+              <IconButton
+                className="codebox-copy"
+                aria-label={t('settings.update.copy')}
+                title={t('settings.update.copy')}
+                onClick={() => void copyText(command, t('settings.update.copied'))}
+              >
+                <Icon name="copy" size={16} />
+              </IconButton>
             </div>
           )}
           {/* 摘录只有纯文本，唯一的链接是校验过的发布页；旧缓存没有摘录时只留链接 */}

@@ -3193,14 +3193,31 @@ button.bl-col {
   line-height: 1.55;
   color: var(--label-2);
 }
+/* 命令和复制图标同在代码框里：命令可换行，图标贴右上角 */
 .upgrade-command {
   display: flex;
-  flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
+  padding-right: 6px;
 }
-.upgrade-command .codebox {
-  align-self: stretch;
+.upgrade-command code {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+}
+.upgrade-command .codebox-copy {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  margin: -4px 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--label-2);
+}
+.upgrade-command .codebox-copy:hover {
+  background: var(--hover);
+  color: var(--label);
 }
 .release-notes {
   display: flex;
