@@ -92,7 +92,18 @@ function plainInline(s: string): string {
     .replace(/\\([\\`*_{}[\]()#+\-.!>|~])/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();
-  return text.length > NOTE_TEXT_MAX ? `${text.slice(0, NOTE_TEXT_MAX - 1).trimEnd()}…` : text;
+  return text.length > NOTE_TEXT_MAX ? clip(text) : text;
+}
+
+/** 过长时尽量停在整句处，句子太长才在词边界截断加省略号，避免半句话 */
+function clip(text: string): string {
+  const head = text.slice(0, NOTE_TEXT_MAX);
+  const ends = [...head.matchAll(/[.!?。！？；;](?=\s|$)|[。！？；]/g)].map((m) => m.index + 1);
+  const end = ends.length ? ends[ends.length - 1] : 0;
+  if (end >= NOTE_TEXT_MAX / 2) return head.slice(0, end).trimEnd();
+  const cut = text.slice(0, NOTE_TEXT_MAX - 1);
+  const space = cut.lastIndexOf(' ');
+  return `${(space >= NOTE_TEXT_MAX / 2 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
 /**

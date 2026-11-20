@@ -127,6 +127,11 @@ test('更新内容摘录：太长时截断，升级注意事项不被挤掉', ()
   const long = releaseNotes(`x${'y'.repeat(400)}`)[0].text;
   assert.equal(long.length, 300);
   assert.ok(long.endsWith('…'));
+  // 有整句可停时停在句末，不留半句；没有时在词边界截断
+  const sentence = `${'a'.repeat(200)}. ${'b '.repeat(100)}`;
+  assert.equal(releaseNotes(sentence)[0].text, `${'a'.repeat(200)}.`);
+  const words = releaseNotes('word '.repeat(80))[0].text;
+  assert.ok(words.endsWith('word…') && words.length <= 300);
 });
 
 test('自动检查每台设备每小时最多一次；失败只记时间并保留上次版本', () => {

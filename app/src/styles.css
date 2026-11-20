@@ -3204,6 +3204,9 @@ button.bl-col {
   flex: 1;
   min-width: 0;
   font: inherit;
+  /* 只在空格处换行，网址等长词放不下时才断开 */
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 .upgrade-command .codebox-copy {
   width: 28px;

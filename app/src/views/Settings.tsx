@@ -732,7 +732,7 @@ function UpgradeSheet({ release, onClose }: { release: ReleaseInfo; onClose: () 
     </a>
   );
   return (
-    <Sheet narrow title={t('settings.update.title', { version: release.version })} onClose={onClose}>
+    <Sheet title={t('settings.update.title', { version: release.version })} onClose={onClose}>
       {/* 运行方式读回来之前不排内容，免得说明和命令框插进来时内容跳动 */}
       {runtime !== null && (
         <div className="stack upgrade">
