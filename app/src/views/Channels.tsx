@@ -130,7 +130,7 @@ export const KINDS = (): Record<
     color: 'var(--slate-9)',
     logo: base('/channels/webhook.svg'),
     fields: [
-      { key: 'url', label: 'URL', placeholder: 'https://…' },
+      { key: 'url', label: 'URL' },
       { key: 'header', label: t('settings.channels.kind.webhook.header'), placeholder: 'Authorization: Bearer …', secret: true, optional: true },
     ],
     help: t('settings.channels.kind.webhook.help'),

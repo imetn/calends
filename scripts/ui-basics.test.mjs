@@ -216,6 +216,20 @@ test('native system controls stay out of the UI', async () => {
   assert.deepEqual(failures, []);
 });
 
+test('link inputs carry no bare "https://" placeholder that reads as filled-in text', () => {
+  const bare = /^https?:\/\/(?:…|\.\.\.)?$/;
+  const failures = [];
+  for (const [file, ast] of sources) {
+    visit(ast, (node) => {
+      const jsx = node.type === 'JSXAttribute' && node.name.name === 'placeholder' && node.value;
+      const prop = node.type === 'Property' && (node.key.name ?? node.key.value) === 'placeholder' && node.value;
+      const value = jsx || prop;
+      if (value?.type === 'Literal' && typeof value.value === 'string' && bare.test(value.value)) failures.push(`${file}: ${value.value}`);
+    });
+  }
+  assert.deepEqual(failures, []);
+});
+
 test('title attributes render through the shared tip in both bundles', () => {
   for (const entry of ['app.tsx', 'public/main.tsx']) assert.match(readFileSync(new URL(entry, root), 'utf8'), /^\s*installTitleTips\(\);/m);
   const source = readFileSync(new URL('components/title-tips.ts', root), 'utf8');
