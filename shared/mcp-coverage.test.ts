@@ -458,7 +458,7 @@ test('every new read tool and connection catalogue: read token visibility, title
   const before = await f.snapshot();
   const listed = await f.rpc('tools/list', {}, f.read);
   assert.equal(listed.tools.length, TOOLS.filter((x) => !x.write).length);
-  assert.equal(TOOLS.length, 36);
+  assert.equal(TOOLS.length, 37);
   assert.deepEqual(
     ASSISTANT_TOOLS.map((x) => x.name),
     TOOLS.map((x) => x.name),
@@ -2468,4 +2468,130 @@ test('assistant clears malformed-argument failure after the same tool successful
   assert.equal(es.filter((e) => e.type === 'proposal').length, 1);
   assert.deepEqual(es.find((e) => e.type === 'done').outcome, { status: 'complete', drafts: 1, failures: [] });
   assert.deepEqual(await f.snapshot(), before);
+});
+
+test('common services: search shares the web catalogue and create fills only omitted fields', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const { settings } = await f.snapshot();
+  const categories = [...(settings.categories ?? []), { name: 'AI tools', preset: 'ai' }, { name: 'Utilities', preset: 'tools' }];
+  assert.equal((await f.request('settings', 'PUT', { ...settings, categories })).status, 200);
+  const before = await f.snapshot();
+  const data = (r: { content: Array<{ text: string }> }) => JSON.parse(r.content[0].text);
+  const base = { price: 10, currency: 'USD', cycle: { unit: 'month' }, dry_run: true };
+  const found = data(await f.call('search_services', { query: 'google ai' }, f.read));
+  assert.equal(found.results[0].name, 'Gemini');
+  assert.equal(found.results[0].icon, '/ai/gemini.svg');
+  // Localized catalog names resolve to current locale and match by English/localized alias
+  const kling = data(await f.call('search_services', { query: 'Kling AI' }, f.read));
+  assert.equal(kling.results[0].name, 'Kling AI');
+  assert.equal(kling.results[0].icon, '/brands/kling.webp');
+  // Preset renewal lead days are surfaced by search_services (but not silently applied on create)
+  const cf = data(await f.call('search_services', { query: 'Cloudflare Registrar' }, f.read));
+  assert.equal(cf.results[0].chargeLeadDays, 30);
+  for (const name of ['Google AI Pro', 'Gemini', 'Kling AI']) {
+    const out = data(await f.call('create_subscription', { ...base, name }));
+    assert.equal(out.after.name, name);
+    assert.equal(out.after.icon, name === 'Kling AI' ? '/brands/kling.webp' : '/ai/gemini.svg');
+    assert.equal(out.after.url, name === 'Kling AI' ? 'https://klingai.com' : 'https://gemini.google.com');
+    assert.equal(out.after.category, 'AI tools');
+    assert.equal(out.service_match.status, 'matched');
+  }
+  const cfCreated = data(await f.call('create_subscription', { ...base, name: 'Cloudflare Registrar' }));
+  assert.equal(cfCreated.after.chargeLeadDays, undefined);
+  const kept = data(await f.call('create_subscription', { ...base, name: 'Gemini', url: 'https://example.test/' }));
+  assert.equal(kept.after.url, 'https://example.test/');
+  const chosen = data(await f.call('create_subscription', { ...base, name: 'Gemini', category: 'Other' }));
+  assert.equal(chosen.after.category, 'Other');
+  assert.equal(chosen.after.icon, '/ai/gemini.svg');
+  const explicit = data(await f.call('create_subscription', { ...base, name: 'Gemini', icon: '' }));
+  assert.equal(explicit.after.icon, undefined);
+  assert.equal(explicit.service_match, undefined);
+  assert.equal(data(await f.call('create_subscription', { ...base, name: 'Gemini Fan Club' })).service_match.status, 'none');
+  assert.deepEqual(await f.snapshot(), before);
+  const record = { ...sub(), id: 'catalog-existing', name: 'Gemini', share: undefined, methodId: undefined, icon: undefined, url: undefined };
+  const created = data(await f.call('save_subscription', { subscription: { ...record, id: 'catalog-new' }, force: true, dry_run: true }));
+  assert.equal(created.after.icon, '/ai/gemini.svg');
+  assert.equal(created.service_match.status, 'matched');
+  // Explicit icon: null skips auto-fill; explicit url: null keeps url empty while filling icon/category
+  const skipNull = data(await f.call('save_subscription', { subscription: { ...record, id: 'catalog-null-icon', icon: null }, force: true, dry_run: true }));
+  assert.equal(skipNull.after.icon, undefined);
+  assert.equal(skipNull.service_match, undefined);
+  const keepNullUrl = data(await f.call('save_subscription', { subscription: { ...record, id: 'catalog-null-url', url: null }, force: true, dry_run: true }));
+  assert.equal(keepNullUrl.after.icon, '/ai/gemini.svg');
+  assert.equal(keepNullUrl.after.url, undefined);
+  assert.equal(keepNullUrl.service_match.status, 'matched');
+  const stored = { ...sub(), id: 'catalog-existing', name: 'Gemini', share: undefined };
+  assert.equal((await f.call('save_subscription', { subscription: stored, force: true })).isError, undefined);
+  const replaced = data(await f.call('save_subscription', { subscription: stored, dry_run: true }));
+  assert.equal(replaced.after.icon, undefined);
+  assert.equal(replaced.service_match, undefined);
+
+  // Deleted preset category: search returns category: null and create falls back to defaultCategory while still filling icon & url
+  const withoutAi = categories.filter((c) => c.preset !== 'ai');
+  assert.equal((await f.request('settings', 'PUT', { ...settings, categories: withoutAi })).status, 200);
+  const noCatFound = data(await f.call('search_services', { query: 'Gemini' }, f.read));
+  assert.equal(noCatFound.results[0].category, null);
+  const noCatCreate = data(await f.call('create_subscription', { ...base, name: 'Gemini', force: true }));
+  assert.equal(noCatCreate.after.icon, '/ai/gemini.svg');
+  assert.equal(noCatCreate.after.url, 'https://gemini.google.com');
+  assert.equal(noCatCreate.after.category, 'Utilities');
+  assert.equal(noCatCreate.service_match.applied.category, undefined);
+});
+
+test('assistant pins service-catalogue auto-fill into proposal args and skips App Store lookup on exact match or icon=""', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const { settings } = await f.snapshot();
+  const categories = [...(settings.categories ?? []), { name: 'AI tools', preset: 'ai' }, { name: 'Utilities', preset: 'tools' }];
+  assert.equal((await f.request('settings', 'PUT', { ...settings, categories })).status, 200);
+  await putKv(f.env, 'assistant', { apiKey: 'fictional', baseUrl: 'https://fictional.example.test' });
+
+  let appStoreCalls = 0;
+  let n = 0;
+  t.mock.method(globalThis, 'fetch', async (url: string | URL) => {
+    const s = String(url);
+    if (s.includes('itunes.apple.com')) {
+      appStoreCalls++;
+      return new Response(
+        JSON.stringify({
+          results: [{ trackName: 'Gemini', artworkUrl100: 'https://example.test/100x100bb.jpg', trackViewUrl: 'https://apps.apple.com/us/app/gemini/id1' }],
+        }),
+      );
+    }
+    return modelReply(
+      [
+        functionCall('add-gemini', 'create_subscription', { name: 'Gemini', price: 20, currency: 'USD', cycle: { unit: 'month' } }),
+        { content: 'Draft ready.' },
+      ][n++],
+    );
+  });
+
+  // enrichDraft respects explicit icon: "" without overwriting it from App Store
+  const noIcon = await enrichDraft({ name: 'Gemini', icon: '', url: 'https://example.test/' }, true);
+  assert.equal(noIcon.args.icon, '');
+  assert.equal(appStoreCalls, 0);
+  const noIconNoUrl = await enrichDraft({ name: 'Gemini', icon: '' }, true);
+  assert.equal(noIconNoUrl.args.icon, '');
+  assert.equal(noIconNoUrl.args.url, 'https://apps.apple.com/us/app/gemini/id1');
+  assert.equal(appStoreCalls, 1);
+
+  // Assistant chat creates proposal with pinned icon/url/category so card & Edit match apply()
+  appStoreCalls = 0;
+  const es = eventsOf(await chat(f.env, { text: 'Add Gemini $20/mo' }, new AbortController().signal).text());
+  assert.equal(appStoreCalls, 0);
+  const prop = es.find((e) => e.type === 'proposal');
+  assert.ok(prop);
+  assert.equal(prop.args.icon, '/ai/gemini.svg');
+  assert.equal(prop.args.url, 'https://gemini.google.com');
+  assert.equal(prop.args.category, 'AI tools');
+  assert.deepEqual(prop.filled, []);
+
+  // Confirming the pinned proposal persists and verifies cleanly
+  const applied = await apply(f.env, { tool: prop.tool, args: prop.args });
+  assert.equal(applied.verification.status, 'verified');
+  const saved = (await f.snapshot()).subscriptions.find((s) => s.id === prop.args.id);
+  assert.equal(saved?.icon, '/ai/gemini.svg');
+  assert.equal(saved?.url, 'https://gemini.google.com');
+  assert.equal(saved?.category, 'AI tools');
 });
