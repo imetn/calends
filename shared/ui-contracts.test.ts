@@ -548,11 +548,13 @@ test('上传头像的空链接框未编辑时失焦保留头像，编辑链接�
         return aiNodes(AvatarField({ avatar, onChange: (v: unknown) => changes.push(v) }));
       };
       let nodes = render();
-      let input = nodes.find((n) => n.type === 'input' && n.props.placeholder === 'https://')!;
+      let input = nodes.find((n) => n.type === 'input' && n.props['aria-label'] === 'wallet.logo.link')!;
+      // 空着时不显示「https://」占位，免得看着像已经填了内容
+      assert.equal(input.props.placeholder, undefined);
       if (edit !== undefined) {
         input.props.onChange({ target: { value: edit } });
         nodes = render();
-        input = nodes.find((n) => n.type === 'input' && n.props.placeholder === 'https://')!;
+        input = nodes.find((n) => n.type === 'input' && n.props['aria-label'] === 'wallet.logo.link')!;
       }
       input.props.onBlur();
       const initial = avatar?.startsWith('data:') ? '' : (avatar ?? '');

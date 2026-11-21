@@ -862,7 +862,6 @@ export function AvatarField({
         <span className="cell-r">
           <input
             value={url}
-            placeholder="https://"
             aria-label={t('wallet.logo.link')}
             onChange={(e) => setUrl((e.target as HTMLInputElement).value)}
             onBlur={() => url.trim() !== linkOf(avatar) && void set(url.trim() || null)}
