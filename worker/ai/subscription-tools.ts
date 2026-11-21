@@ -45,7 +45,7 @@ import { validateCurrency, deleteSubscriptionSettings } from '../../shared/ledge
 import { cleanTransfers } from '../../shared/transfers.ts';
 import { meterLinkError, meterView, removeMeter, stableId } from '../../shared/meters.ts';
 import type { Meter, Reading } from '../../shared/types.ts';
-import type { Tool } from './tool-kit.ts';
+import type { CategoryCreation, Tool } from './tool-kit.ts';
 import {
   state,
   findSub,
@@ -75,6 +75,7 @@ import {
   fundingOf,
   subscriptionCategory,
   dropNulls,
+  serviceFill,
 } from './tool-kit.ts';
 import { row, fieldChanges, computedOf } from './tool-views.ts';
 
@@ -85,7 +86,7 @@ const LEAD_CANCEL = 'Days before renewal by which the user must cancel to avoid 
 export const create_subscription: Tool = {
   name: 'create_subscription',
   description:
-    'Create a subscription. price is per cycle in the given currency. Same name and start date with explicitly different login accounts are independent subscriptions. Otherwise a possible duplicate requires force=true. Use dry_run=true to preview first. Call list_categories first and reuse an existing code/name. Unknown categories fail; use save_category action=create or create_category=true with optional category_icon/category_color to explicitly create one. Past records can be created already stopped: status=cancelled with end = last service day, or status=cancelled / terminated without end when the stop date is unknown. method=null creates it without a payment method (no default). For a complete record with phases or stop details use save_subscription.',
+    'Create a subscription. price is per cycle in the given currency. Same name and start date with explicitly different login accounts are independent subscriptions. Otherwise a possible duplicate requires force=true. Use dry_run=true to preview first. When icon is omitted, a name or alias exactly matching a common service (see search_services) fills icon, url if omitted and category if omitted; service_match reports the result, and icon="" skips it. Call list_categories first and reuse an existing code/name. Unknown categories fail; use save_category action=create or create_category=true with optional category_icon/category_color to explicitly create one. Past records can be created already stopped: status=cancelled with end = last service day, or status=cancelled / terminated without end when the stop date is unknown. method=null creates it without a payment method (no default). For a complete record with phases or stop details use save_subscription.',
   write: true,
   inputSchema: obj(
     {
@@ -184,7 +185,8 @@ export const create_subscription: Tool = {
     if (!st.fx.rates[currency]) throw new Error(t('mcp.error.unsupportedCurrency', { code: currency }));
     const account = str(a.account)?.trim();
     if (!a.force) assertNotDuplicate(st, name, start, account);
-    const category = a.category === undefined ? { name: defaultCategory(st) } : subscriptionCategory(st, a.category, a);
+    const service = a.icon === undefined ? serviceFill(st, name, { url: a.url !== undefined, category: a.category !== undefined }) : undefined;
+    const category = a.category === undefined ? { name: service?.category ?? defaultCategory(st) } : subscriptionCategory(st, a.category, a);
     const cyc = a.cycle as { unit: Subscription['cycle']['unit']; every?: number };
     let sub: Subscription = {
       // 确认草稿时沿用草稿里生成的 id，后续基于它的草稿（合租、成员）才能对上
@@ -204,8 +206,8 @@ export const create_subscription: Tool = {
       // null 明确不绑定支付方式；省略时才用默认的
       methodId: a.method === null ? undefined : (methodRef(st, a.method) ?? st.settings.defaultMethodId),
       region: str(a.region)?.toUpperCase(),
-      url: str(a.url),
-      icon: iconInput(a.icon),
+      url: str(a.url) ?? service?.url,
+      icon: service?.icon ?? iconInput(a.icon),
       notes: str(a.notes),
       account,
       trialEnd: a.trial_end ? date(a.trial_end, 'trial_end') : undefined,
@@ -222,14 +224,15 @@ export const create_subscription: Tool = {
       if (sub.end > today) throw new Error(t('mcp.error.invalidStop'));
       sub = stopSubscription({ ...sub, status: 'active', end: undefined }, today, 'terminate', sub.end);
     }
-    return commit(ctx, st, today, sub, a.dry_run, ['created'], category.creation);
+    const result = await commit(ctx, st, today, sub, a.dry_run, ['created'], category.creation);
+    return service ? { ...result, service_match: service.match } : result;
   },
 };
 
 export const save_subscription: Tool = {
   name: 'save_subscription',
   description:
-    'Create or fully replace one subscription from a complete Subscription record (same shape as get_subscription.record): phases, payments with per-charge methodId / settled / kind (refund, adjust, failed) / funding (split across sources), status (active, trial, paused, cancelled, terminated), stop and end. Use it to enter a whole history at once (several phases, region or plan switches, every past charge) or to record an already-stopped subscription; for single edits prefer the narrower tools. The record is the entire new state, stored as given like the web editor’s save (keep top-level price/currency/cycle/methodId equal to the last phase): omitted fields are removed and null values are dropped; methodId absent or null means no payment method (no default is applied). cancelled / terminated without end or stop means stopped on an unknown date. Runs the same normalization and validation as saving in the web editor (renewal-rule history, clearing a member exit clears its refund, full-record and status-transition checks); referenced payment methods must exist. Without id, or with an id that does not exist, it creates a subscription; a same-name same-start duplicate then requires force=true. Preview returns changes (field-level before/after against the stored record) and computed before/after: status, next charge, last charge, total spent to date and charge count.',
+    'Create or fully replace one subscription from a complete Subscription record (same shape as get_subscription.record): phases, payments with per-charge methodId / settled / kind (refund, adjust, failed) / funding (split across sources), status (active, trial, paused, cancelled, terminated), stop and end. Use it to enter a whole history at once (several phases, region or plan switches, every past charge) or to record an already-stopped subscription; for single edits prefer the narrower tools. The record is the entire new state, stored as given like the web editor’s save (keep top-level price/currency/cycle/methodId equal to the last phase): omitted fields are removed and null values are dropped; methodId absent or null means no payment method (no default is applied). cancelled / terminated without end or stop means stopped on an unknown date. Runs the same normalization and validation as saving in the web editor (renewal-rule history, clearing a member exit clears its refund, full-record and status-transition checks); referenced payment methods must exist. Without id, or with an id that does not exist, it creates a subscription, and when icon is absent a name or alias exactly matching a common service (see search_services) fills icon, url if absent and category if absent (service_match reports it; existing subscriptions are never auto-filled); a same-name same-start duplicate then requires force=true. Preview returns changes (field-level before/after against the stored record) and computed before/after: status, next charge, last charge, total spent to date and charge count.',
   write: true,
   destructive: true,
   inputSchema: obj(
@@ -250,18 +253,24 @@ export const save_subscription: Tool = {
     if (!['active', 'trial', 'paused', 'cancelled', 'terminated'].includes(String(raw.status)))
       throw new Error(t('mcp.error.invalidInput', { field: 'subscription.status' }));
     if (!previous && !a.force) assertNotDuplicate(st, name, start, str(raw.account)?.trim());
+    // 整条替换时省略即删除，所以只在新建时补常用服务；传了 icon: null 也算明确不要
+    const source = a.subscription as Record<string, unknown>;
+    const service =
+      !previous && source.icon === undefined ? serviceFill(st, name, { url: source.url !== undefined, category: raw.category != null }) : undefined;
     // 原分类不变时照旧（包括历史名称）；改了或新建时按分类规则解析
-    const category =
+    const category: { name: string; creation?: CategoryCreation } =
       raw.category == null
         ? previous
           ? { name: previous.category }
-          : { name: defaultCategory(st) }
+          : { name: service?.category ?? defaultCategory(st) }
         : previous && raw.category === previous.category
           ? { name: previous.category }
           : subscriptionCategory(st, raw.category, a);
     const { updatedAt: _u, ...rest } = raw;
     const next = {
       ...rest,
+      ...(service?.icon ? { icon: service.icon } : {}),
+      ...(service?.url ? { url: service.url } : {}),
       id: previous?.id ?? str(raw.id) ?? uid(),
       name,
       category: category.name,
@@ -277,6 +286,7 @@ export const save_subscription: Tool = {
       changes: changes.slice(0, 300),
       ...(changes.length > 300 ? { changes_truncated: changes.length - 300 } : {}),
       computed: { before: previous ? computedOf(st, previous, today) : null, after: computedOf(st, after, today) },
+      ...(service ? { service_match: service.match } : {}),
     });
   },
 };

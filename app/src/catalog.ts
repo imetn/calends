@@ -3,7 +3,10 @@
 // 收录规则：只收 App Store 搜索覆盖不好的服务（网页订阅、AI、域名、开发者账号等），或需要预设续费规则的；
 // 图标放在 public 下的本地文件，不外链。
 import { t } from '../../shared/i18n.ts';
+import { searchServices, serviceDisplayName, type CatalogCat, type CatalogEntry } from '../../shared/service-catalog.ts';
 import { presetCat } from './derive.ts';
+
+export type { CatalogCat, CatalogEntry };
 
 export interface CatalogItem {
   name: string;
@@ -16,27 +19,12 @@ export interface CatalogItem {
   cancelLeadDays?: number;
 }
 
-export type CatalogCat =
-  'ai' | 'tools' | 'productivity' | 'domains' | 'storage' | 'media' | 'music' | 'shopping' | 'education' | 'news' | 'social' | 'developer';
-/** 目录里只存分类代码；localized 的条目在 catalog.name.<file> 里有译名，按当前语言显示，原名仍参与搜索 */
-export type CatalogEntry = {
-  name: string;
-  file: string;
-  aka: string[];
-  cat: CatalogCat;
-  url: string;
-  icon: string;
-  localized?: boolean;
-  chargeLeadDays?: number;
-  cancelLeadDays?: number;
-};
-
 const PACKS = import.meta.glob<{ default: CatalogEntry[] }>('./catalog/*.ts', { eager: true });
 const CATALOG: CatalogEntry[] = Object.values(PACKS).flatMap((m) => m.default);
 
 /** 选中目录项时才取文案：分类会写进订阅，所以按当前语言给默认值 */
 function resolve(e: CatalogEntry): CatalogItem {
-  const name = e.localized ? t(`catalog.name.${e.file}`) : e.name;
+  const name = serviceDisplayName(e, t);
   return {
     name,
     aka: name === e.name ? e.aka : [e.name, ...e.aka],
@@ -48,20 +36,7 @@ function resolve(e: CatalogEntry): CatalogItem {
   };
 }
 
-/** 名称联想：前缀命中排前面，其次是包含 */
+/** 名称联想：复用 shared/service-catalog.ts（完全一致 > 前缀 > 包含） */
 export function searchCatalog(q: string, limit = 4): CatalogItem[] {
-  const k = q.trim().toLowerCase();
-  if (k.length < 1) return [];
-  const score = (c: CatalogEntry) => {
-    const names = [c.name, ...c.aka].map((x) => x.toLowerCase());
-    if (names.some((n) => n === k)) return 3;
-    if (names.some((n) => n.startsWith(k))) return 2;
-    if (names.some((n) => n.includes(k) || (k.length >= 3 && k.includes(n)))) return 1;
-    return 0;
-  };
-  return CATALOG.map((c) => ({ c, s: score(c) }))
-    .filter((x) => x.s > 0)
-    .sort((a, b) => b.s - a.s)
-    .slice(0, limit)
-    .map((x) => resolve(x.c));
+  return searchServices(CATALOG, q, limit).map(resolve);
 }

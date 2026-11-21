@@ -7,7 +7,9 @@ package-lock.json
 shared/locales/server.gen.ts
 public
 worker/migrations.gen.ts
+worker/ai/service-packs.gen.ts
 app/src/components/cat-icons.gen.ts
 shared/locales/categories.gen.ts
+shared/locales/catalog-aliases.gen.ts
 # Prettier has no SQL parser; migrations are verified by SQLite and Wrangler.
 worker/migrations/*.sql
