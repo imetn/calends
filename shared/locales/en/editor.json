@@ -268,7 +268,9 @@
   "ai": {
     "title": "Fill in with AI",
     "hint": "Paste a receipt, screenshot or any text and let it sort things out",
-    "go": "Paste"
+    "go": "Paste",
+    "open": "Open Assistant",
+    "setup": "Set up AI Assistant to paste receipts"
   },
   "plan": {
     "choose": {

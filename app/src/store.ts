@@ -1,4 +1,5 @@
 import { createAuth, CACHE_KEY, ASSISTANT_KEY, HANDOFF_KEY } from './auth.ts';
+import { setAssistantConfigured } from './handoff.ts';
 import { createLedgerWrites } from './ledger-writes.ts';
 import { configurePrefs, notifyPrefs, mirrorPrefs, migratePrefs } from './prefs.ts';
 
@@ -476,6 +477,7 @@ export const { login, authStatus, setupPassword, loginPasskey, startPasskeyAutof
   snapshot: () => store,
   saveSettings,
   resetSessionRevision: () => {
+    setAssistantConfigured(null);
     knownRev = undefined;
     ownRevisions = [];
   },

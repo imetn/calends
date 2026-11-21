@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { ConfirmButton } from '../components/ConfirmButton.tsx';
 import { useEditorDraft } from './editor/useEditorDraft.ts';
 import { prepareEditorSave, mergeEditorSave } from './editor/save.ts';
 
-import { ReceiptText } from 'lucide-react';
-import { compressImage, handoff } from '../handoff.ts';
+import { ArrowUpRight, ReceiptText } from 'lucide-react';
+import type { AssistantConfigView } from '../../../shared/deepseek.ts';
+import { cachedAssistantConfigured, compressImage, handoff, loadAssistantConfigured } from '../handoff.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { ask, Sheet } from '../components/overlays.tsx';
@@ -13,7 +15,8 @@ import { pauseDay } from '../../../shared/billing.ts';
 import { affectedPriceCharges } from '../../../shared/phases.ts';
 import { ChangePanel } from '../components/ChangePanel.tsx';
 
-import { deleteSub, getState, savePerson, saveSettings, saveSub } from '../store.ts';
+import { currentRoute } from '../router.ts';
+import { api, deleteSub, getState, savePerson, saveSettings, saveSub } from '../store.ts';
 import { run } from '../toast.ts';
 import { linkPerson } from './person-fields.tsx';
 
@@ -27,10 +30,23 @@ export function Editor({ sub, state, today, onClose }: { sub: Subscription; stat
     today,
     onClose,
   });
-  /** 交给 AI 助手：已经填的名称一并带过去 */
+  const [aiReady, setAiReady] = useState<boolean | null>(cachedAssistantConfigured);
+  useEffect(() => {
+    if (!isNew) return;
+    let dead = false;
+    void loadAssistantConfigured(() => api<AssistantConfigView>('/api/assistant/config')).then((v) => {
+      if (!dead && v !== null) setAiReady(v);
+    });
+    return () => {
+      dead = true;
+    };
+  }, [isNew]);
+
+  /** 交给 AI 助手：带上已填名称，并记录当前页面与表单快照以便一键返回 */
   const toAssistant = (images: string[] = []) => {
+    const returnTo = { route: currentRoute() || 'overview', draft: f };
     close();
-    handoff(f.name.trim() ? `${f.name.trim()}\n` : '', images);
+    handoff(f.name.trim() ? `${f.name.trim()}\n` : '', images, returnTo);
   };
 
   const [busy, submit] = useSubmit();
@@ -122,17 +138,27 @@ export function Editor({ sub, state, today, onClose }: { sub: Subscription; stat
       }
     >
       {restored && dirty && <div className="ed-draft">{t('editor.draftRestored')}</div>}
-      {isNew && (
-        <button type="button" className="ed-ai" onClick={() => toAssistant()}>
-          <span className="ed-ai-ico">
-            <ReceiptText size={18} />
-          </span>
-          <span className="ed-ai-text">
-            <b>{t('editor.ai.title')}</b>
-          </span>
-          <span className="ed-ai-go">{t('editor.ai.go')}</span>
-        </button>
-      )}
+      {isNew &&
+        (aiReady ? (
+          <button type="button" className="ed-ai" onClick={() => toAssistant()}>
+            <span className="ed-ai-ico">
+              <ReceiptText size={18} />
+            </span>
+            <span className="ed-ai-text">
+              <b>{t('editor.ai.title')}</b>
+            </span>
+            <span className="ed-ai-go">
+              {t('editor.ai.open')}
+              <ArrowUpRight size={14} aria-hidden="true" />
+            </span>
+          </button>
+        ) : (
+          <button type="button" className="ed-ai muted" onClick={() => toAssistant()}>
+            <ReceiptText size={15} className="ed-ai-muted-ico" aria-hidden="true" />
+            <span className="ed-ai-muted-text">{t('editor.ai.setup')}</span>
+            <ArrowUpRight size={14} className="ed-ai-arrow" aria-hidden="true" />
+          </button>
+        ))}
       <div
         onPaste={(e) => {
           // 新建时在表单里粘贴截图：交给 AI 助手识别

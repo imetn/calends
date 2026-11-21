@@ -1,11 +1,53 @@
 import { AVATAR_INPUT_MAX_BYTES, avatarCrop, prepareAvatarThumbnail } from '../../shared/avatar.ts';
+import type { AssistantConfigView } from '../../shared/deepseek.ts';
 import { t } from '../../shared/i18n.ts';
 import { ICON_UPLOAD_SIZE, iconFit, iconInput, isDataIcon } from '../../shared/icon.ts';
+import type { Subscription } from '../../shared/types.ts';
 // 从别的页面（新建订阅表单）把文字、图片交给 AI 助手：先存进 sessionStorage，助手页打开时取走
+import { HANDOFF_KEY } from './auth.ts';
 import { go } from './router.ts';
-import { HANDOFF_KEY } from './store.ts';
 
 const KEY = HANDOFF_KEY;
+
+export interface HandoffReturn {
+  /** 离开新建订阅弹窗前所在路由，返回时先切回原页面再重开表单 */
+  route: string;
+  /** 离开前的表单快照（保留合租/代付模板和刚填的字段） */
+  draft: Subscription;
+}
+
+export interface HandoffPayload {
+  text: string;
+  images: string[];
+  returnTo?: HandoffReturn;
+}
+
+let assistantConfigured: boolean | null = null;
+let assistantConfiguredInflight: Promise<boolean | null> | null = null;
+
+export function cachedAssistantConfigured(): boolean | null {
+  return assistantConfigured;
+}
+
+export function setAssistantConfigured(v: boolean | null) {
+  assistantConfigured = v;
+}
+
+export function loadAssistantConfigured(fetcher: () => Promise<AssistantConfigView>): Promise<boolean | null> {
+  if (assistantConfigured !== null) return Promise.resolve(assistantConfigured);
+  if (!assistantConfiguredInflight) {
+    assistantConfiguredInflight = fetcher()
+      .then((c) => {
+        assistantConfigured = !!c?.configured;
+        return assistantConfigured;
+      })
+      .catch(() => null)
+      .finally(() => {
+        assistantConfiguredInflight = null;
+      });
+  }
+  return assistantConfiguredInflight;
+}
 
 /** 压缩成长边不超过 1600px 的 JPEG（data URL）：截图够清晰，请求体也不大 */
 export async function compressImage(file: Blob): Promise<string> {
@@ -21,13 +63,14 @@ export async function compressImage(file: Blob): Promise<string> {
   return c.toDataURL('image/jpeg', 0.86);
 }
 
-export function handoff(text: string, images: string[] = []) {
+export function handoff(text: string, images: string[] = [], returnTo?: HandoffReturn) {
+  const payload: HandoffPayload = { text, images, ...(returnTo ? { returnTo } : {}) };
   try {
-    sessionStorage.setItem(KEY, JSON.stringify({ text, images }));
+    sessionStorage.setItem(KEY, JSON.stringify(payload));
   } catch {
-    /* 存不下（图片太大）就只带文字 */
+    /* 存不下（图片太大）就只带文字与返回信息 */
     try {
-      sessionStorage.setItem(KEY, JSON.stringify({ text, images: [] }));
+      sessionStorage.setItem(KEY, JSON.stringify({ ...payload, images: [] }));
     } catch {
       /* 隐私模式：直接跳过去 */
     }
@@ -35,12 +78,20 @@ export function handoff(text: string, images: string[] = []) {
   go('assistant');
 }
 
-export function takeHandoff(): { text: string; images: string[] } | null {
+export function takeHandoff(): HandoffPayload | null {
   try {
     const raw = sessionStorage.getItem(KEY);
     if (!raw) return null;
     sessionStorage.removeItem(KEY);
-    return JSON.parse(raw) as { text: string; images: string[] };
+    const parsed = JSON.parse(raw) as Partial<HandoffPayload> | null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    const ret = parsed.returnTo;
+    const returnTo = ret && typeof ret.route === 'string' && ret.draft && typeof ret.draft === 'object' ? { route: ret.route, draft: ret.draft } : undefined;
+    return {
+      text: typeof parsed.text === 'string' ? parsed.text : '',
+      images: Array.isArray(parsed.images) ? parsed.images.filter((x): x is string => typeof x === 'string') : [],
+      ...(returnTo ? { returnTo } : {}),
+    };
   } catch {
     return null;
   }

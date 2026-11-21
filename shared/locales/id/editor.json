@@ -259,7 +259,9 @@
   "ai": {
     "title": "Isi dengan AI",
     "hint": "Tempel struk, tangkapan layar, atau teks, sisanya otomatis",
-    "go": "Tempel"
+    "go": "Tempel",
+    "open": "Buka Asisten",
+    "setup": "Siapkan Asisten AI untuk menempel struk"
   },
   "plan": {
     "choose": {

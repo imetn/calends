@@ -268,7 +268,9 @@
   "ai": {
     "title": "Mit KI ausfüllen",
     "hint": "Beleg, Screenshot oder Text einfügen – der Rest geht automatisch",
-    "go": "Einfügen"
+    "go": "Einfügen",
+    "open": "Assistent öffnen",
+    "setup": "KI-Assistent einrichten, um Belege einzufügen"
   },
   "plan": {
     "choose": {

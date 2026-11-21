@@ -268,7 +268,9 @@
   "ai": {
     "title": "Preencher com IA",
     "hint": "Cole um recibo, uma captura ou texto e o resto é automático",
-    "go": "Colar"
+    "go": "Colar",
+    "open": "Abrir assistente",
+    "setup": "Configure o assistente de IA para colar recibos"
   },
   "plan": {
     "choose": {
