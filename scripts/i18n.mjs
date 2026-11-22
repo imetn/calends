@@ -5,8 +5,8 @@ import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = new URL('../shared/locales/', import.meta.url).pathname;
-// Worker 端会用到的命名空间：共享逻辑、服务端接口、提醒邮件、MCP
-const SERVER_NS = ['common', 'core', 'server', 'notify', 'mcp'];
+// Worker 端会用到的命名空间：共享逻辑、服务端接口、提醒邮件、MCP、常用服务译名
+const SERVER_NS = ['common', 'core', 'server', 'notify', 'mcp', 'catalog'];
 
 const locales = readdirSync(ROOT, { withFileTypes: true })
   .filter((d) => d.isDirectory())
@@ -42,6 +42,22 @@ const aliasObj = Object.fromEntries(Object.entries(aliases).map(([k, v]) => [k, 
 writeFileSync(
   join(ROOT, 'categories.gen.ts'),
   `// 由 scripts/i18n.mjs 生成，请勿手改\nexport const CATEGORY_ALIASES: Record<string, string[]> = ${JSON.stringify(aliasObj)};\n`,
+);
+
+// 常用服务在各语言里的译名：无论用户用英文还是繁简体搜索/新建都能认回同一条目
+const catalogAliases = {};
+for (const loc of locales) {
+  const file = join(ROOT, loc, 'catalog.json');
+  if (!existsSync(file)) continue;
+  for (const [code, name] of Object.entries(JSON.parse(readFileSync(file, 'utf8')).name ?? {})) {
+    if (typeof name !== 'string') continue;
+    (catalogAliases[code] ??= new Set()).add(name);
+  }
+}
+const catalogAliasObj = Object.fromEntries(Object.entries(catalogAliases).map(([k, v]) => [k, [...v].sort()]));
+writeFileSync(
+  join(ROOT, 'catalog-aliases.gen.ts'),
+  `// 由 scripts/i18n.mjs 生成，请勿手改\nexport const CATALOG_ALIASES: Record<string, string[]> = ${JSON.stringify(catalogAliasObj)};\n`,
 );
 
 if (process.argv.includes('--check')) {

@@ -1,5 +1,5 @@
 // 通用：域名、应用商店等需要预设续费规则的条目
-import type { CatalogEntry } from '../catalog.ts';
+import type { CatalogEntry } from '../../../shared/service-catalog.ts';
 
 const entries: CatalogEntry[] = [
   {

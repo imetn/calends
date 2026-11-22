@@ -1,5 +1,7 @@
 // AI 助手：用 DeepSeek 识别用户粘贴的文字、截图，整理成订阅草稿；查询与修改直接复用 MCP 工具。
 // 写操作一律先 dry_run 出草稿，由用户在页面上确认后再经同一个工具真正执行。
+import { exactServices } from '../../shared/service-catalog.ts';
+import { SERVICES } from './tool-kit.ts';
 import { todayIn } from '../../shared/billing.ts';
 import { categoryList } from '../../shared/categories.ts';
 import {
@@ -97,7 +99,7 @@ async function systemPrompt(env: Env): Promise<string> {
     '- Figures in replies (yearly cost, my share, per month) come from tool results such as get_carpool or get_subscription; do not do mental arithmetic.',
     '- Call list_categories first and reuse an existing category code/name. If the requested category is missing, use save_category action=create or explicitly pass create_category=true (optional category_icon/category_color). Unknown or ambiguous references fail. Pick the payment method that matches the card, store account or wallet mentioned; omit method if unclear.',
     '- Fill in as much as the input supports: name WITH the plan/tier (e.g. "Spotify Premium Family", "iCloud+ 200GB", "ChatGPT Plus"), price, currency, cycle, start, region, method, category, url, icon, account (the login email, phone number for carriers, or username shown), and notes for useful extras (order number, seats). Never leave out a field you can read or infer.',
-    '- Icon and url are required for every app or service: call search_app_store (country = the store region, else us) and pass the matching result’s icon (prefer the 256x256 artwork) and url; for web-only services and ones that are not mainly an app (carriers, utilities, cloud hosting) use the official homepage as url. If nothing matches, still give the official url.',
+    '- Icon and url are required for every app or service: call search_services first and use its icon and url when it matches; otherwise call search_app_store (country = the store region, else us) and pass the matching result’s icon (prefer the 256x256 artwork) and url; for web-only services and ones that are not mainly an app (carriers, utilities, cloud hosting) use the official homepage as url. If nothing matches, still give the official url.',
     '- Bill tables and statements covering several months (one row per month, one column per service or line): each column/service is ONE subscription — never one per month or per amount. Keep each name exactly as written (fix only obvious typos such as "T-Moblie" → "T-Mobile"); never translate it or swap it for a different provider, and do not search the ledger under other names. start = its first month with an amount (billing day 1 unless a day is shown); months shown as —/blank are before it started or unknown, not charges. price = the latest month’s amount. Usage-based amounts that vary month to month are actual charges, not price changes: pass ALL of them in create_subscription.payments (every month listed, including ones equal to price), and do not call change_price or record_payment for them. Ignore total/sum columns. If no currency is shown, use the currency of the provider’s home market (T-Mobile, AT&T → USD; CUniq → HKD) and say in the reply which currency you assumed.',
     '- Before creating, search list_subscriptions by service and account. Same-name subscriptions may intentionally have different accounts, regions or uses. Preserve each one independently; never recommend merging or cancelling merely because names match. Update an existing record only when its identity and the user intent match; clarify ambiguous candidates using account, region and payment method.',
     '- If a required field (price, currency or cycle) truly cannot be inferred, ask one short question instead of guessing.',
@@ -164,20 +166,23 @@ export function appMatches(name: string, appName: string): boolean {
   return short.every((w, i) => w === long[i]);
 }
 
-export async function enrichDraft(args: Record<string, unknown>): Promise<{ args: Record<string, unknown>; filled: string[] }> {
+export async function enrichDraft(args: Record<string, unknown>, catalogue = false): Promise<{ args: Record<string, unknown>; filled: string[] }> {
   const name = decodeEntities(String(args.name ?? '').trim());
   const fixed: Record<string, unknown> = { ...args, ...(args.name != null ? { name } : {}) };
   // App Store 图标给的是 100px，卡片上显得糊：换成 256px
   if (typeof fixed.icon === 'string') fixed.icon = fixed.icon.replace(/\/\d+x\d+bb\.(jpg|png)$/, '/256x256bb.$1');
   args = fixed;
-  if (!name || (args.icon && args.url)) return { args, filled: [] };
+  // 传了 icon: "" 表示明确不要图标；常用服务由 create_subscription 自己补，别先被 App Store 结果占掉
+  const skipIcon = args.icon === '';
+  if (!name || ((args.icon || skipIcon) && args.url) || (catalogue && args.icon === undefined && exactServices(SERVICES, name).length === 1))
+    return { args, filled: [] };
   const country = String(args.region ?? 'us').toLowerCase();
   const hits = await searchAppStore(name, country).catch(() => []);
   const hit = hits.find((h) => appMatches(name, h.name));
   if (!hit) return { args, filled: [] };
   const filled: string[] = [];
   const out = { ...args };
-  if (!out.icon && hit.icon) {
+  if (!out.icon && !skipIcon && hit.icon) {
     out.icon = hit.icon.replace(/\/\d+x\d+bb\.(jpg|png)$/, '/256x256bb.$1');
     filled.push('icon');
   }
@@ -287,7 +292,9 @@ export function chat(env: Env, body: { history?: ApiMessage[]; text?: string; im
             if (parseError) throw new Error(`invalid arguments: ${parseError}`);
             if (tool.write) {
               const { args: full, filled } =
-                tool.name === 'create_subscription' || tool.name === 'update_subscription' ? await enrichDraft(args) : { args, filled: [] as string[] };
+                tool.name === 'create_subscription' || tool.name === 'update_subscription'
+                  ? await enrichDraft(args, tool.name === 'create_subscription')
+                  : { args, filled: [] as string[] };
               const draft = { ...full, dry_run: true };
               const preview = await tool.run(draft, ctx);
               const clean = confirmationArgs(tool.name, draft, preview);
@@ -399,11 +406,26 @@ function confirmationArgs(name: string, args: Record<string, unknown>, preview: 
     subscription?: { id: string };
     member?: { id: string; leave_refund?: unknown };
     after?: { id?: string; periods?: string[]; amount?: number; currency?: string; date?: string };
+    service_match?: { status?: string; applied?: { icon?: string; url?: string; category?: string } };
   };
   if (p.created?.id) clean.id = p.created.id;
   if (name === 'create_subscription' && p.subscription?.id) clean.id = p.subscription.id;
-  if (name === 'save_subscription' && p.subscription?.id && clean.subscription && typeof clean.subscription === 'object')
-    clean.subscription = { ...clean.subscription, id: p.subscription.id };
+  if (name === 'create_subscription' && p.service_match?.status === 'matched' && p.service_match.applied) {
+    const { icon, url, category } = p.service_match.applied;
+    if (icon && clean.icon === undefined) clean.icon = icon;
+    if (url && clean.url === undefined) clean.url = url;
+    if (category && clean.category === undefined) clean.category = category;
+  }
+  if (name === 'save_subscription' && p.subscription?.id && clean.subscription && typeof clean.subscription === 'object') {
+    const sub: Record<string, unknown> = { ...(clean.subscription as Record<string, unknown>), id: p.subscription.id };
+    if (p.service_match?.status === 'matched' && p.service_match.applied) {
+      const { icon, url, category } = p.service_match.applied;
+      if (icon && sub.icon === undefined) sub.icon = icon;
+      if (url && sub.url === undefined) sub.url = url;
+      if (category && sub.category === undefined) sub.category = category;
+    }
+    clean.subscription = sub;
+  }
   if (name === 'save_share_member' && !clean.member && p.member) clean.id = p.member.id;
   if (name === 'save_share_member' && clean.leave_refund && p.member?.leave_refund) clean.leave_refund = p.member.leave_refund;
   if (name === 'record_receivable' && p.after?.periods) {
