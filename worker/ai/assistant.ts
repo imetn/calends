@@ -422,7 +422,7 @@ function confirmationArgs(name: string, args: Record<string, unknown>, preview: 
       const { icon, url, category } = p.service_match.applied;
       if (icon && sub.icon === undefined) sub.icon = icon;
       if (url && sub.url === undefined) sub.url = url;
-      if (category && sub.category == null) sub.category = category;
+      if (category && sub.category === undefined) sub.category = category;
     }
     clean.subscription = sub;
   }

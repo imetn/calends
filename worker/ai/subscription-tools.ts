@@ -253,10 +253,10 @@ export const save_subscription: Tool = {
     if (!['active', 'trial', 'paused', 'cancelled', 'terminated'].includes(String(raw.status)))
       throw new Error(t('mcp.error.invalidInput', { field: 'subscription.status' }));
     if (!previous && !a.force) assertNotDuplicate(st, name, start, str(raw.account)?.trim());
-    // 整条替换时省略即删除，所以只在新建时补常用服务；传了 icon: null 也算明确不要
+    // 整条替换时省略即删除，所以只在新建时补常用服务；显式传 null 也算已给出，不自动补全
     const source = a.subscription as Record<string, unknown>;
     const service =
-      !previous && source.icon === undefined ? serviceFill(st, name, { url: source.url !== undefined, category: raw.category != null }) : undefined;
+      !previous && source.icon === undefined ? serviceFill(st, name, { url: source.url !== undefined, category: source.category !== undefined }) : undefined;
     // 原分类不变时照旧（包括历史名称）；改了或新建时按分类规则解析
     const category: { name: string; creation?: CategoryCreation } =
       raw.category == null

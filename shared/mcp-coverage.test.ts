@@ -2508,12 +2508,29 @@ test('common services: search shares the web catalogue and create fills only omi
   assert.equal(explicit.after.icon, undefined);
   assert.equal(explicit.service_match, undefined);
   assert.equal(data(await f.call('create_subscription', { ...base, name: 'Gemini Fan Club' })).service_match.status, 'none');
+  // Vendor names and generic aka terms stay searchable via search_services, but must not silently auto-fill on create/save
+  for (const name of ['Vercel', 'Domain', '域名', 'Apple', 'Copilot']) {
+    assert.ok(data(await f.call('search_services', { query: name }, f.read)).results.length > 0, `${name} should still appear in search_services`);
+    const createdByGeneric = data(await f.call('create_subscription', { ...base, name }));
+    assert.equal(createdByGeneric.after.icon, undefined, `${name} must not auto-fill icon`);
+    assert.equal(createdByGeneric.after.url, undefined, `${name} must not auto-fill url`);
+    assert.equal(createdByGeneric.after.category, 'Utilities', `${name} must keep default category`);
+    assert.equal(createdByGeneric.service_match.status, 'none', `${name} must not exact-match`);
+  }
   assert.deepEqual(await f.snapshot(), before);
   const record = { ...sub(), id: 'catalog-existing', name: 'Gemini', share: undefined, methodId: undefined, icon: undefined, url: undefined };
-  const created = data(await f.call('save_subscription', { subscription: { ...record, id: 'catalog-new' }, force: true, dry_run: true }));
+  const savedGeneric = data(
+    await f.call('save_subscription', { subscription: { ...record, id: 'catalog-vercel', name: 'Vercel', category: undefined }, force: true, dry_run: true }),
+  );
+  assert.equal(savedGeneric.after.icon, undefined);
+  assert.equal(savedGeneric.after.url, undefined);
+  assert.equal(savedGeneric.after.category, 'Utilities');
+  assert.equal(savedGeneric.service_match.status, 'none');
+  const created = data(await f.call('save_subscription', { subscription: { ...record, id: 'catalog-new', category: undefined }, force: true, dry_run: true }));
   assert.equal(created.after.icon, '/ai/gemini.svg');
+  assert.equal(created.after.category, 'AI tools');
   assert.equal(created.service_match.status, 'matched');
-  // Explicit icon: null skips auto-fill; explicit url: null keeps url empty while filling icon/category
+  // Explicit icon: null skips auto-fill; explicit url: null / category: null keep those fields un-overridden by the catalogue
   const skipNull = data(await f.call('save_subscription', { subscription: { ...record, id: 'catalog-null-icon', icon: null }, force: true, dry_run: true }));
   assert.equal(skipNull.after.icon, undefined);
   assert.equal(skipNull.service_match, undefined);
@@ -2521,6 +2538,14 @@ test('common services: search shares the web catalogue and create fills only omi
   assert.equal(keepNullUrl.after.icon, '/ai/gemini.svg');
   assert.equal(keepNullUrl.after.url, undefined);
   assert.equal(keepNullUrl.service_match.status, 'matched');
+  const keepNullCat = data(
+    await f.call('save_subscription', { subscription: { ...record, id: 'catalog-null-cat', category: null }, force: true, dry_run: true }),
+  );
+  assert.equal(keepNullCat.after.icon, '/ai/gemini.svg');
+  assert.equal(keepNullCat.after.url, 'https://gemini.google.com');
+  assert.equal(keepNullCat.after.category, 'Utilities');
+  assert.equal(keepNullCat.service_match.status, 'matched');
+  assert.equal(keepNullCat.service_match.applied.category, undefined);
   const stored = { ...sub(), id: 'catalog-existing', name: 'Gemini', share: undefined };
   assert.equal((await f.call('save_subscription', { subscription: stored, force: true })).isError, undefined);
   const replaced = data(await f.call('save_subscription', { subscription: stored, dry_run: true }));
