@@ -11,7 +11,9 @@ import {
   dropOldImages,
   emptyTurn,
   errorKind,
+  messagesFor,
   normBaseUrl,
+  reasoningParams,
   parseArgs,
   userMessage,
   type ApiMessage,
@@ -202,14 +204,13 @@ async function complete(cfg: AssistantConfig, messages: ApiMessage[], emit: Emit
     headers: { authorization: `Bearer ${cfg.apiKey}`, 'content-type': 'application/json' },
     body: JSON.stringify({
       model: cfg.model || 'deepseek-flash',
-      messages,
+      messages: messagesFor(cfg.baseUrl, messages),
       ...(tools
         ? { tools: ASSISTANT_TOOLS.map((x) => ({ type: 'function', function: { name: x.name, description: x.description, parameters: x.inputSchema } })) }
         : {}),
       stream: true,
       stream_options: { include_usage: true },
-      thinking: { type: effort === 'none' ? 'disabled' : 'enabled' },
-      ...(effort === 'none' ? {} : { reasoning_effort: effort }),
+      ...reasoningParams(effort, cfg.baseUrl, cfg.model || 'deepseek-flash'),
     }),
   });
   if (!res.ok || !res.body) {
