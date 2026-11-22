@@ -248,6 +248,23 @@ test('stylesheets keep no selector list left dangling by a deleted rule', () => 
   }
 });
 
+test('flag images are plain PNGs: no outline, ring or shadow anywhere', () => {
+  // 国旗 PNG 自带外形，外面不能再加描边；甘特条里国旗和金额靠 icon-text 的 flex 间距分开
+  for (const file of ['styles.css', 'components/ui.css', 'public/index.css']) {
+    const css = readFileSync(new URL(file, root), 'utf8');
+    for (const [, selector, body] of css.matchAll(/([^{}]*flag[^{}]*)\{([^}]*)\}/g)) {
+      if (!/flag/.test(selector.replace(/:not\([^)]*\)/g, ''))) continue;
+      assert.doesNotMatch(body, /box-shadow:\s*(?!none)|(^|;|\s)border:\s*(?!0|none)|outline:\s*(?!0|none)/, `${file}: ${selector.trim()}`);
+    }
+  }
+  for (const [file, , source] of sources.filter(([, , src]) => src.includes('/flags/'))) {
+    assert.doesNotMatch(source, /<img[^>]*(shadow-|ring-|border)[^>]*flags\//, file);
+  }
+  assert.doesNotMatch(readUiSource(new URL('public/widgets/globe.tsx', root)), /(shadow-|ring-)[^"]*"[^>]*flags\//);
+  const css = readFileSync(new URL('styles.css', root), 'utf8');
+  assert.match(css, /\.gt-seg em\.icon-text\s*\{[^}]*display:\s*flex/);
+});
+
 test('import preview never hands an unrecognized source date to the calendar', () => {
   // 月历拿到 Jan 5 2026 这类值会抛 RangeError，整页崩溃
   const [, ast, source] = sources.find(([file]) => file === 'views/ImportSheet.tsx');
