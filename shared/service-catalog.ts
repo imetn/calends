@@ -24,7 +24,7 @@ export type CatalogEntry = ServiceEntry & {
 
 /**
  * 单独维护的可安全自动填充别名（按条目的 file 索引）：只收明确指向同一服务的产品名、套餐名或标准译名。
- * 目录条目里的 aka 还包含厂商名（vercel、apple、openai、cloudflare 等）和泛称（domain、域名、copilot、流程图等），
+ * 目录条目里的 aka 还包含厂商名（vercel、apple、openai、cloudflare 等）和泛称（domain、域名、copilot、流程图等）以及多家共用的套餐名（copilot pro 同时指 GitHub 与 Microsoft），
  * 只用于模糊联想，不参与新建订阅时的静默自动填充。
  */
 export const EXACT_ALIASES: Record<string, string[]> = {
@@ -36,7 +36,7 @@ export const EXACT_ALIASES: Record<string, string[]> = {
   perplexity: ['perplexity pro'],
   kimi: ['kimi code'],
   mistral: ['le chat'],
-  copilot: ['copilot pro', 'microsoft 365 copilot'],
+  copilot: ['microsoft 365 copilot'],
   cursor: ['cursor pro'],
   runway: ['runwayml'],
   kling: ['kling'],

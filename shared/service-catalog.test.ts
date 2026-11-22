@@ -53,6 +53,7 @@ test('vendor names and generic aka terms stay in suggestions only and never trig
     ['App Store', 'Apple App Store'],
     ['苹果订阅', 'Apple App Store'],
     ['Copilot', 'GitHub Copilot'],
+    ['Copilot Pro', 'Microsoft Copilot'],
     ['OpenAI', 'ChatGPT'],
     ['Anthropic', 'Claude'],
     ['GPT', 'ChatGPT'],
