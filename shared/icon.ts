@@ -91,6 +91,22 @@ export function domainOf(url?: string): string | undefined {
   }
 }
 
+/** 输入框失焦时的长链接简写：只留域名和文件名（img.example.com/…/logo.png），短链接、emoji、站内路径原样 */
+export function shortLink(value: string, max = 32): string {
+  if (value.length <= max || !/^https?:\/\//i.test(value)) return value;
+  try {
+    const u = new URL(value);
+    const host = u.hostname.replace(/^www\./, '');
+    const parts = u.pathname.split('/').filter(Boolean);
+    let file = parts.pop() ?? '';
+    if (file.length > 24) file = `${file.slice(0, 11)}…${file.slice(-12)}`;
+    if (!file) return host;
+    return `${host}/${parts.length ? '…/' : ''}${file}`;
+  } catch {
+    return value;
+  }
+}
+
 /** 官网图标（Google favicon 服务） */
 export function faviconOf(url?: string): string | undefined {
   const d = domainOf(url);

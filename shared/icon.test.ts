@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { iconFit, iconInput, isDataIcon, isImageIcon, registrarIcon } from './icon.ts';
+import { iconFit, iconInput, isDataIcon, isImageIcon, registrarIcon, shortLink } from './icon.ts';
 
 test('域名订阅的注册商图标：上传的内嵌图片、网址、站内路径都生效，emoji 和空值回落 Cloudflare', () => {
   const png = 'data:image/png;base64,iVBORw0KGgo=';
@@ -56,4 +56,14 @@ test('iconFit：等比缩进 128 见方并居中，小图不放大，非法尺�
     [10000, 10000],
   ])
     assert.equal(iconFit(w, h), undefined);
+});
+
+test('长图片链接失焦时只留域名和文件名，短链接、emoji、站内路径原样', () => {
+  assert.equal(shortLink('https://cdn.example.com/uploads/2026/11/avatar-final.png?v=3&size=256'), 'cdn.example.com/…/avatar-final.png');
+  assert.equal(shortLink('https://www.example.com/assets/a-very-long-generated-file-name-0123456789.webp'), 'example.com/…/a-very-long…3456789.webp');
+  assert.equal(shortLink('https://images.example.org/x?token=abcdefghijklmnopqrstuvwxyz'), 'images.example.org/x');
+  assert.equal(shortLink('https://example.com/a.png'), 'https://example.com/a.png');
+  assert.equal(shortLink('🎬'), '🎬');
+  assert.equal(shortLink('/brands/namecheap.svg'), '/brands/namecheap.svg');
+  assert.equal(shortLink('not a url but quite a long piece of text here'), 'not a url but quite a long piece of text here');
 });

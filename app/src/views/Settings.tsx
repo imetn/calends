@@ -14,7 +14,7 @@ import { avatarOf, REMIND_DAYS, type AppState } from '../../../shared/types.ts';
 import { IconButton, Cell, Group, Toolbar } from '../components/ui.tsx';
 import { Icon } from '../components/icons.tsx';
 import { LoadFailed, Sheet } from '../components/overlays.tsx';
-import { Toggle } from '../components/inputs.tsx';
+import { ClearablePreview, LinkInput, Toggle } from '../components/inputs.tsx';
 import { adoptRestored, api, logout, refreshFx, rotateIcs, saveSettings, saveSub, syncFx } from '../store.ts';
 import { copyText, run, toast } from '../toast.ts';
 import { MethodPicker } from '../components/MethodPicker.tsx';
@@ -858,23 +858,20 @@ export function AvatarField({
           {t('settings.general.avatar')}
           <small>{source}</small>
         </span>
-        {/* 和订阅图标一样一行写完：图片链接在行内输入（失焦保存），右边是预览与上传；上传的图片输入框里没有内容，单独给清除 */}
+        {/* 和订阅图标一样一行写完：链接输入与上传在左，实际图标固定在最右（失焦保存）；上传的图片输入框里没有内容，悬停图标出现 × 清除 */}
         <span className="cell-r">
-          <input
+          <LinkInput
             value={url}
             aria-label={t('wallet.logo.link')}
             onChange={(e) => setUrl((e.target as HTMLInputElement).value)}
             onBlur={() => url.trim() !== linkOf(avatar) && void set(url.trim() || null)}
           />
-          <img className="avatar-preview" src={base(avatarOf({ avatar: avatar ?? fallback }))} alt="" />
           <button type="button" className="chip-btn" onClick={() => file.current?.click()}>
             {t('wallet.logo.upload')}
           </button>
-          {avatar?.startsWith('data:') && (
-            <button type="button" className="chip-btn" onClick={() => (setUrl(''), void set(null))}>
-              {t('wallet.logo.clear')}
-            </button>
-          )}
+          <ClearablePreview label={t('wallet.logo.clear')} onClear={avatar?.startsWith('data:') ? () => (setUrl(''), void set(null)) : undefined}>
+            <img className="avatar-preview" src={base(avatarOf({ avatar: avatar ?? fallback }))} alt="" />
+          </ClearablePreview>
           <input ref={file} type="file" accept="image/*" hidden onChange={onFile} />
         </span>
       </div>

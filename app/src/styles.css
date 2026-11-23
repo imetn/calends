@@ -8137,6 +8137,36 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 .icon-field .icon-actions > :not(input) {
   flex: none;
 }
+/* 图标预览上的清除：悬停（或键盘聚焦）时右上角出现 ×，触屏常显 */
+.clearable-preview {
+  position: relative;
+  display: inline-flex;
+}
+.preview-clear {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
+  cursor: pointer;
+  opacity: 0;
+}
+.clearable-preview:hover > .preview-clear,
+.preview-clear:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .preview-clear {
+    opacity: 1;
+  }
+}
 
 /* 年度海报：所有订阅图标按花费分三档铺满，6 列整齐对齐 */
 .ps-wall {

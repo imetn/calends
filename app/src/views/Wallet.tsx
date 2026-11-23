@@ -28,7 +28,7 @@ import { intlLocale } from '../../../shared/i18n.ts';
 import { BALANCE_KINDS, type AppState, type CardNetwork, type MethodKind, type PaymentMethod, type Subscription, type TopUp } from '../../../shared/types.ts';
 import { DatePicker } from '../components/DatePicker.tsx';
 import { IconButton, Cell, Group, Toolbar } from '../components/ui.tsx';
-import { NumInput, MoneyInput, Seg, Toggle } from '../components/inputs.tsx';
+import { ClearablePreview, LinkInput, NumInput, MoneyInput, Seg, Toggle } from '../components/inputs.tsx';
 import { Sheet } from '../components/overlays.tsx';
 import { Icon } from '../components/icons.tsx';
 import { MethodMark, NetworkMark, SubIcon } from '../components/marks.tsx';
@@ -998,22 +998,19 @@ function LogoField({ f, up }: { f: PaymentMethod; up: (p: Partial<PaymentMethod>
           Logo
           <small>{source}</small>
         </span>
-        {/* 和订阅图标一样一行写完：图片链接在行内输入，右边是预览与上传；上传的图片输入框里没有内容，单独给清除 */}
+        {/* 和订阅图标一样一行写完：链接输入与上传在左，实际图标固定在最右；上传的图片输入框里没有内容，悬停图标出现 × 清除 */}
         <span className="cell-r">
-          <input
+          <LinkInput
             value={f.logo?.startsWith('data:') ? '' : (f.logo ?? '')}
             aria-label={t('wallet.logo.link')}
             onChange={(e) => up({ logo: (e.target as HTMLInputElement).value.trim() || undefined })}
           />
-          <MethodMark m={f} size={32} />
           <button type="button" className="chip-btn" onClick={() => file.current?.click()}>
             {t('wallet.logo.upload')}
           </button>
-          {f.logo?.startsWith('data:') && (
-            <button type="button" className="chip-btn" onClick={() => up({ logo: undefined })}>
-              {t('wallet.logo.clear')}
-            </button>
-          )}
+          <ClearablePreview label={t('wallet.logo.clear')} onClear={f.logo?.startsWith('data:') ? () => up({ logo: undefined }) : undefined}>
+            <MethodMark m={f} size={32} />
+          </ClearablePreview>
           <input ref={file} type="file" accept="image/*" hidden onChange={onFile} />
         </span>
       </div>

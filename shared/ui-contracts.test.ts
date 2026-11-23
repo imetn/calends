@@ -483,13 +483,14 @@ test('登录与首次设置表单为密码管理器提供同一账号和正确�
   assert.equal(rule('.login-card input').match(/height: (\w+)/)?.[1], rule('.login-card .btn').match(/height: (\w+)/)?.[1]);
 });
 
-test('编辑器图标行：网址 / emoji 在行内直接输入，预览与上传跟在后面，不再展开第二行', () => {
+test('编辑器图标行：网址 / emoji 在行内直接输入，上传在后，实际图标固定在最右，不再展开第二行', () => {
   const css = read('../app/src/styles.css');
   assert.match(css, /\.icon-field \.icon-actions > input \{\s*flex: 1 1 0;/);
   assert.doesNotMatch(css, /\.icon-field \{\s*flex-wrap: wrap/);
   const field = read('../app/src/views/editor/Sections.tsx');
   const icon = field.slice(field.indexOf('function IconField'), field.indexOf('function IconField') + 2500);
-  assert.match(icon, /<span className="cell-r icon-actions">\s*\{\/\*[^]*?\*\/\}\s*<input/);
+  assert.match(icon, /<span className="cell-r icon-actions">\s*\{\/\*[^]*?\*\/\}\s*<LinkInput\s/);
+  assert.ok(icon.indexOf('<SubIcon') > icon.lastIndexOf('chip-btn'), '图标在上传、清除按钮之后');
   assert.doesNotMatch(icon, /setLink|icon-input/);
 });
 
@@ -510,13 +511,16 @@ test('编辑器合同期：独立成组，期限选项与订阅周期菜单一�
   assert.ok(renewal.indexOf('<ContractFields') > renewal.indexOf('</Group>'));
 });
 
-test('钱包 Logo 与头像：图片链接行内输入，不再点「链接」展开一行', () => {
+test('钱包 Logo 与头像：图片链接行内输入，实际图标固定在最右，不再点「链接」展开一行', () => {
   const css = read('../app/src/styles.css');
   assert.match(css, /\.logo-field \.cell-r > input:not\(\[type='file'\]\) \{\s*flex: 1 1 0;/);
   for (const file of ['../app/src/views/Wallet.tsx', '../app/src/views/Settings.tsx']) {
     const src = read(file);
     assert.doesNotMatch(src, /setLink|linkBtn/, file);
-    assert.match(src, /<span className="cell-r">\s*<input\s/, file);
+    assert.match(src, /<span className="cell-r">\s*<LinkInput\s/, file);
+    const row = src.slice(src.indexOf('<div className="cell logo-field">'));
+    const preview = row.search(/<MethodMark|className="avatar-preview"/);
+    assert.ok(preview > row.indexOf("t('wallet.logo.clear')"), `${file}：图标在上传、清除按钮之后`);
   }
 });
 
@@ -535,13 +539,25 @@ test('上传头像的空链接框未编辑时失焦保留头像，编辑链接�
         if (!(i in states)) states[i] = initial;
         return [states[i], (v: unknown) => (states[i] = v)];
       };
-      const AvatarField = new Function('React', 'useState', 'useRef', 't', 'base', 'avatarOf', `${result.code}; return AvatarField;`)(
+      const AvatarField = new Function(
+        'React',
+        'useState',
+        'useRef',
+        't',
+        'base',
+        'avatarOf',
+        'LinkInput',
+        'ClearablePreview',
+        `${result.code}; return AvatarField;`,
+      )(
         React,
         useState,
         () => ({ current: null }),
         (k: string) => k,
         (v: unknown) => v,
         (v: { avatar?: string }) => v.avatar,
+        'input',
+        'ClearablePreview',
       );
       const render = () => {
         cursor = 0;
@@ -559,9 +575,12 @@ test('上传头像的空链接框未编辑时失焦保留头像，编辑链接�
       input.props.onBlur();
       const initial = avatar?.startsWith('data:') ? '' : (avatar ?? '');
       assert.deepEqual(changes, edit === undefined || edit.trim() === initial ? [] : [edit.trim() || null]);
+      // 只有上传的图片才在预览上给 ×；链接和默认图标没有
+      const preview = nodes.find((n) => n.type === 'ClearablePreview')!;
+      assert.equal(typeof preview.props.onClear, avatar?.startsWith('data:') ? 'function' : 'undefined');
       if (avatar?.startsWith('data:')) {
         changes.length = 0;
-        nodes.find((n) => n.type === 'button' && n.children.includes('wallet.logo.clear' as any))!.props.onClick();
+        preview.props.onClear();
         assert.deepEqual(changes, [null]);
       }
     }
