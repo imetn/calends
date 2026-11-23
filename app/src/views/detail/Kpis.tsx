@@ -7,6 +7,7 @@ import {
   chargeDay,
   currentPhase,
   cycleDays,
+  cycleLabel,
   diffDays,
   effectiveStatus,
   chargesBetween,
@@ -20,6 +21,7 @@ import {
   servedTime,
   type Charge,
 } from '../../../../shared/billing.ts';
+import { bundleSource, displayCycle, followsParent, hasFinancialHistory, isFreeBundlePhase } from '../../../../shared/bundle.ts';
 import { flow, cnDateAuto, cnDateFull, relDays } from '../../../../shared/format.ts';
 import { netCost, transfersOf } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
@@ -192,25 +194,47 @@ export function Kpis({
   // 账单与缴费分开记且有欠缴时，第一格换成最早未缴的那期：欠几期、共欠多少
   const owed = overdueBills(sub, today);
   // 停止的订阅由下方停止卡片写停止日，这里不再重复
-  const ended = isStopped(st) && sub.end && !phaseSubs(sub).some((p) => p.stop);
+  const cur = currentPhase(sub, today);
+  const endedDate = sub.end ?? (!end.unknown ? end.date : undefined);
+  const ended = isStopped(st) && !!endedDate && !phaseSubs(sub).some((p) => p.stop);
+  const pureFreePerk = isFreeBundlePhase(cur) && !hasFinancialHistory(sub, history);
   const durationCell = (
     <Metric
       label={transferred ? t('detail.transfer.held') : lifetime ? t('detail.stats.owned') : t('detail.stats.subscribed')}
       value={undated ? '—' : duration}
       note={
         undated
-          ? copyParts([t('detail.field.endedUnknown'), t('detail.stats.count', { count: history.length })].join('\n'))
+          ? copyParts([t('detail.field.endedUnknown'), ...(pureFreePerk ? [] : [t('detail.stats.count', { count: history.length })])].join('\n'))
           : copyParts(
               [
                 ...(upcoming
                   ? []
                   : [gaps > 0 ? t('detail.stats.gaps', { count: gaps }) : t('detail.period.since', { date: cnDateFull(transferred ? cost.from : sub.start) })]),
-                t('detail.stats.count', { count: history.length }),
+                ...(pureFreePerk && !history.length ? [] : [t('detail.stats.count', { count: history.length })]),
               ].join('\n'),
             )
       }
     />
   );
+
+  // 纯免费附赠且无真实财务历史：收成三格（归属主订阅 · 已用多久 · 费用附赠），不堆 $0 指标
+  if (pureFreePerk) {
+    const parentInfo = bundleSource(sub, state.subscriptions, today);
+    return (
+      <Panel className="dt-metrics metric-stack">
+        <MetricCards inline>
+          <Metric
+            label={t('detail.bundle.includedWith')}
+            value={parentInfo ? parentInfo.parent.name : t('detail.bundle.parentMissing')}
+            note={t(followsParent(cur) ? 'detail.bundle.modeFollow' : 'detail.bundle.modeIndependent')}
+          />
+          {durationCell}
+          <Metric label={t('detail.bundle.cost')} value={t('list.badge.included')} note={cycleLabel(displayCycle(cur, today))} />
+        </MetricCards>
+        {usage && <MetricCards inline>{usage}</MetricCards>}
+      </Panel>
+    );
+  }
 
   const firstCell = owed.length ? (
     <Metric
@@ -230,7 +254,7 @@ export function Kpis({
       )}
     />
   ) : ended ? (
-    <Metric label={t('detail.field.endedOn')} value={cnDateAuto(sub.end!, today)} note={relDays(diffDays(today, sub.end!))} />
+    <Metric label={t('detail.field.endedOn')} value={cnDateAuto(endedDate!, today)} note={relDays(diffDays(today, endedDate!))} />
   ) : (
     durationCell
   );

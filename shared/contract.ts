@@ -1,5 +1,6 @@
 // 合同期：与付费周期分开的签约期限（如年险月付）。只用于展示与续约提醒，扣款、历史与统计都不读它。
 import { addDays, currentPhase, cycleDays, diffDays, effectiveStatus, isStopped, nthCharge, pausedFromOf, phaseSubs, undatedStop } from './billing.ts';
+import { availActiveSpans, availCoversDay, availPausedOn } from './bundle.ts';
 import type { Contract, Subscription } from './types.ts';
 
 export interface ContractTerm {
@@ -34,9 +35,9 @@ const noticeDay = (days: number | undefined, day: string) => (days != null ? add
 /** 同一份合同：起始日与期限相同（换套餐沿用时是同一份） */
 const same = (a: Contract | undefined, b: Contract) => !!a && a.start === b.start && a.term.unit === b.term.unit && a.term.every === b.term.every;
 
-/** day 仍在服务内、且带着这份合同的阶段 */
+/** day 仍在服务内、且带着这份合同的阶段（跟随父订阅的阶段同步检查父可用期） */
 const contractPhaseAt = (s: Subscription, day: string, c: Contract) =>
-  phaseSubs(s).findLast((p) => same(p.contract, c) && p.start <= day && (!p.end || day <= p.end));
+  phaseSubs(s).findLast((p) => same(p.contract, c) && p.start <= day && (!p.end || day <= p.end) && (!p.bundleAvail || availCoversDay(p.bundleAvail, day)));
 
 /** 今天的合同期；订阅已停、买断或今天不在合同期内时没有。订阅在续约日前结束时不算续约 */
 export function currentContract(s: Subscription, today: string): ContractTerm | undefined {
@@ -68,18 +69,25 @@ export function contractEvents(s: Subscription, from: string, to: string, today:
   for (const p of phaseSubs(s)) {
     const c = p.contract;
     if (!c || c.start > to) continue;
+    const avail = p.bundleAvail;
+    let availEnd: string | undefined;
+    if (avail) {
+      const activeSpans = availActiveSpans(p.start, p.end, avail);
+      if (!activeSpans.length) continue;
+      if (!activeSpans.some((sp) => !sp.to)) availEnd = activeSpans.at(-1)!.to;
+    }
     const first = contractTerm(c, from < c.start ? c.start : from);
     for (let k = Math.max(1, first ? first.index : 1), n = 0; n < 1200; k++, n++) {
       if (c.renew === 'none' && k > 1) break;
       const date = nthCharge(c.start, c.term, k);
       if (date > to) break;
       if (date < from) continue;
-      if (date >= today && (undated || (paused && paused <= date))) break;
+      if (date >= today && (undated || (paused && paused <= date) || avail?.undatedStop || (avail && availPausedOn(avail, date)))) break;
       const until = addDays(date, -1);
       const prev = nthCharge(c.start, c.term, k - 1);
       // 这一期须在本阶段里跑过；续约日落在别的阶段时由那一段（或下一轮循环）负责
-      if (p.end && until > p.end) break;
-      if (until < p.start) continue;
+      if ((p.end && until > p.end) || (availEnd && until > availEnd)) break;
+      if (until < p.start || (avail && !availCoversDay(avail, until))) continue;
       const renewing = c.renew !== 'none' && !!contractPhaseAt(s, date, c);
       const kind = renewing ? 'renew' : c.renew === 'none' || p.end === until ? 'end' : undefined;
       if (kind && !out.has(date)) out.set(date, { kind, date, from: prev, until, noticeDays: c.noticeDays });

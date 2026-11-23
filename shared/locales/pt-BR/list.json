@@ -56,7 +56,9 @@
     "proxy": "Pago para outros",
     "proxyFor": "Pago para {name}",
     "someone": "alguém",
-    "parallel": "Em paralelo"
+    "parallel": "Em paralelo",
+    "included": "Inclusa",
+    "addon": "Adicional"
   },
   "col": {
     "name": "Assinatura",
@@ -138,5 +140,8 @@
   "network": {
     "unionpay": "UnionPay"
   },
-  "monthlySame": "Igual ao preço"
+  "monthlySame": "Igual ao preço",
+  "bundle": {
+    "followsParent": "Segue a principal"
+  }
 }

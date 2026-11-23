@@ -249,7 +249,8 @@
     "payments": "Cargos registrados",
     "spent": "Gastado hasta hoy",
     "changes": "Campos cambiados",
-    "funding": "Pagado con"
+    "funding": "Pagado con",
+    "bundle": "Vinculada a"
   },
   "v": {
     "exempt": "No paga",
@@ -262,7 +263,8 @@
     "charge": "Cobro",
     "deleteAll": "Elimina la suscripción y todos sus cobros. No se puede deshacer.",
     "dateUnknown": "Fecha desconocida",
-    "terminate": "Cancelada por el proveedor"
+    "terminate": "Cancelada por el proveedor",
+    "unlinked": "Independiente (desvinculada)"
   },
   "interrupted": "La respuesta se interrumpió antes de terminar.",
   "saveUnknown": "No se pudo confirmar si se guardó. Revisa el registro antes de volver a intentarlo.",

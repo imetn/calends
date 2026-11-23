@@ -61,7 +61,12 @@
     "reading": "Registro de uso inválido: é preciso um id único, uma data válida e valores numéricos",
     "meterLink": "O medidor vinculado não existe ou também está vinculado a outro medidor",
     "meterLinkUsed": "“{meter}” está vinculado em “{name}”; remova esse vínculo primeiro",
-    "readingMeter": "Um registro de uso se refere a um medidor não definido"
+    "readingMeter": "Um registro de uso se refere a um medidor não definido",
+    "bundle": "Vínculo de assinatura inválido",
+    "bundleLink": "A assinatura principal não existe, é um pagamento para terceiros ou já está vinculada",
+    "bundleProxy": "Pagamentos para terceiros não podem ser vinculados a uma assinatura principal",
+    "bundleUsed": "Vinculada por {names}; desvincule primeiro",
+    "bundleHistory": "Vincular apagaria cobranças anteriores. Vincule a partir da data do vínculo em Histórico → Mudar plano."
   },
   "phase": {
     "switchTooEarly": "A data de vigência deve ser posterior ao início da fase atual",

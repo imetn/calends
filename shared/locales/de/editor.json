@@ -285,5 +285,13 @@
   "settlement": {
     "together": "Zusammen",
     "separate": "Getrennt"
+  },
+  "bundle": {
+    "parent": "Verknüpft mit",
+    "none": "Keines (eigenständig)",
+    "mode": "Zeitplan",
+    "follow": "Folgt Hauptabo",
+    "independent": "Eigener Zyklus",
+    "followsCycle": "Folgt Hauptabo ({cycle})"
   }
 }

@@ -28,6 +28,16 @@ export function summaryRows(
   const day = proposalDay;
   const collect = collectCurrencyOf(state.settings);
   const method = (v: unknown) => state.methods.find((m) => m.id === v || m.name === v);
+  const bundleLabel = (v: unknown) => {
+    if (v === null) return t('assistant.v.unlinked');
+    if (!v || typeof v !== 'object') return undefined;
+    const b = v as { parent?: string; parentId?: string; follow?: boolean };
+    const ref = b.parent ?? b.parentId ?? '';
+    const prevParent = (preview?.subscription as { bundle?: { parent_name?: string | null } } | undefined)?.bundle?.parent_name;
+    const found = state.subscriptions.find((s) => s.id === ref || s.name === ref)?.name ?? prevParent ?? ref;
+    if (!found) return undefined;
+    return `${found} (${t(b.follow === false ? 'detail.bundle.modeIndependent' : 'detail.bundle.modeFollow')})`;
+  };
   switch (tool) {
     case 'record_receivable': {
       // 预览里带着写入后的那一笔：抵扣哪几期、金额（没写金额时按应收算出来的）
@@ -192,15 +202,17 @@ export function summaryRows(
         if (['subscription', 'id', 'force', 'dry_run', 'set', 'plan'].includes(k)) continue;
         const label = t(`assistant.f.${k}`) === `assistant.f.${k}` ? k : t(`assistant.f.${k}`);
         const val =
-          k === 'method'
-            ? (method(v)?.name ?? String(v))
-            : isDateField(k)
-              ? day(v)
-              : Array.isArray(v)
-                ? v.join('、')
-                : typeof v === 'object'
-                  ? JSON.stringify(v)
-                  : String(v);
+          k === 'bundle'
+            ? bundleLabel(v)
+            : k === 'method'
+              ? (method(v)?.name ?? String(v))
+              : isDateField(k)
+                ? day(v)
+                : Array.isArray(v)
+                  ? v.join('、')
+                  : typeof v === 'object'
+                    ? JSON.stringify(v)
+                    : String(v);
         add(label, val);
       }
       if (tool === 'change_plan') add(t('assistant.f.from'), day(a.at));
@@ -236,11 +248,19 @@ export function Proposal(props: {
     category: String(a.category ?? sub?.category ?? ''),
   };
   const cyc = a.cycle as { unit: Subscription['cycle']['unit']; every?: number } | undefined;
+  const bundle = a.bundle as { parent?: string; follow?: boolean } | undefined;
+  const freeBundle = create && !!bundle && !(Number(a.price) > 0);
+  const bundleParentName = bundle
+    ? (state.subscriptions.find((s) => s.id === bundle.parent || s.name === bundle.parent)?.name ??
+      props.siblings.find((x) => x.tool === 'create_subscription' && x.args.id === bundle.parent)?.args.name ??
+      (part.preview.subscription as { bundle?: { parent_name?: string | null } } | undefined)?.bundle?.parent_name ??
+      bundle.parent)
+    : undefined;
   const history = create && Array.isArray(a.payments) ? (a.payments as Array<{ amount: number }>) : [];
-  // method=null 明确不绑定支付方式，卡片上不显示默认卡
+  // method=null 或免费附赠省略 method 时不绑定支付方式，卡片上不显示默认卡
   const method =
     state.methods.find((m) => m.id === a.method || m.name === a.method) ??
-    (create && a.method !== null ? state.methods.find((m) => m.id === state.settings.defaultMethodId) : undefined);
+    (create && a.method !== null && !freeBundle ? state.methods.find((m) => m.id === state.settings.defaultMethodId) : undefined);
   const done = part.state === 'applied';
   const destructive =
     part.tool === 'delete_subscription' ||
@@ -255,17 +275,27 @@ export function Proposal(props: {
     (part.tool === 'set_share' && a.role === 'none');
   // 没识别出来、用了默认值的字段：提醒用户核对
   const missing = create
-    ? [!a.start && t('assistant.card.start'), a.method === undefined && t('detail.field.method'), !a.category && t('detail.field.category')].filter(
-        (x): x is string => !!x,
-      )
+    ? [
+        !a.start && t('assistant.card.start'),
+        a.method === undefined && !freeBundle && t('detail.field.method'),
+        !a.category && t('detail.field.category'),
+      ].filter((x): x is string => !!x)
     : [];
   const gone = part.state === 'dismissed';
   const rows: Array<[string, ReactNode]> = create
     ? [
+        ...(bundle && bundleParentName
+          ? [
+              [
+                t('assistant.f.bundle'),
+                `${String(bundleParentName)} (${t(bundle.follow === false ? 'detail.bundle.modeIndependent' : 'detail.bundle.modeFollow')})`,
+              ] as [string, ReactNode],
+            ]
+          : []),
         [t('assistant.card.start'), proposalDay(a.start) ?? t('assistant.card.today')],
         ...(a.region ? [[t('detail.field.region'), String(a.region).toUpperCase()] as [string, ReactNode]] : []),
         ...(a.status === 'trial' && a.trial_end ? [[t('detail.field.trialEnd'), proposalDay(a.trial_end)] as [string, ReactNode]] : []),
-        [t('detail.field.method'), <PayBadge key="m" m={method} />],
+        ...(!freeBundle || method ? [[t('detail.field.method'), <PayBadge key="m" m={method} />] as [string, ReactNode]] : []),
         ...(history.length
           ? [
               [
@@ -287,7 +317,8 @@ export function Proposal(props: {
           <b className="text-ellipsis">{name}</b>
           {create && cyc ? (
             <span>
-              {money(Number(a.price), String(a.currency))} {cycleLabel({ unit: cyc.unit, every: Number(cyc.every ?? 1) })}
+              {freeBundle ? t('list.badge.included') : money(Number(a.price), String(a.currency))}{' '}
+              {cycleLabel({ unit: cyc.unit, every: Number(cyc.every ?? 1) })}
               {copyParts(a.category ? `\n${String(a.category)}` : '')}
             </span>
           ) : (

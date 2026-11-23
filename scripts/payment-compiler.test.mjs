@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { transformSync } from 'oxc-transform-react';
 import * as billing from '../shared/billing.ts';
+import * as bundle from '../shared/bundle.ts';
 import * as phases from '../shared/phases.ts';
 import { settlementCurrencyOf, toBaseOrNaN } from '../shared/fx.ts';
 import { DEFAULT_SETTINGS } from '../shared/types.ts';
@@ -48,6 +49,8 @@ test('compiled payment renders the whole new form including its unused delete ca
     earlyRenewalEffect: () => undefined,
     currencyDecimals: () => 2,
     useSubmit: () => [false, () => {}],
+    phaseSubs: (s) => [s],
+    ...bundle,
     getState: () => ({ methods: [], settings: { baseCurrency: 'CNY' } }),
     settlementCurrencyOf: () => 'CNY',
     toBaseOrNaN: () => Number.NaN,
@@ -95,6 +98,7 @@ test('editing an early payment keeps its owning phase unassigned and saves witho
   let closed = false;
   const deps = {
     ...billing,
+    ...bundle,
     ...phases,
     settlementCurrencyOf,
     toBaseOrNaN,
@@ -171,6 +175,7 @@ test('separate settlement payment preselects the oldest unpaid bills the amount 
   let saved;
   const deps = {
     ...billing,
+    ...bundle,
     ...phases,
     settlementCurrencyOf,
     toBaseOrNaN,

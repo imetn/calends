@@ -26,6 +26,7 @@ import {
   type Charge,
 } from '../../shared/billing.ts';
 import { currentContract } from '../../shared/contract.ts';
+import { bundleSource, bundleView, childrenOf, displayCycle, followsParent } from '../../shared/bundle.ts';
 import { chargeBaseOrNaN, toBaseOrNaN } from '../../shared/fx.ts';
 import { type LedgerPeriod } from '../../shared/receivables.ts';
 import { personAmounts, type PersonLedger } from '../../shared/people.ts';
@@ -154,28 +155,31 @@ export const kindOf = (s: Subscription): Scope =>
   s.proxy ? 'proxy' : s.share?.role === 'owner' ? 'share_owner' : s.share?.role === 'member' ? 'share_member' : 'mine';
 
 export function row(st: AppState, s: Subscription, today: string, out?: string) {
-  const cur = currentPhase(s, today);
-  const next = nextCharge(s, today);
+  const view = bundleView(s, st.subscriptions);
+  const cur = currentPhase(view, today);
+  const next = nextCharge(view, today);
   // 换区后旧阶段还在跑：每月成本按并行各段之和，另列出同时进行的旧阶段
-  const monthly = monthlyGross(s, today, st.fx);
-  const parallel = s.phases?.length ? activePhases(s, today).filter((v) => v.start !== cur.start) : [];
+  const monthly = monthlyGross(view, today, st.fx);
+  const parallel = view.phases?.length ? activePhases(view, today).filter((v) => v.start !== cur.start) : [];
+  const bundleParent = cur.bundle?.parentId ? bundleSource(s, st.subscriptions, today)?.parent : undefined;
+  const linkedChildren = childrenOf(s.id, st.subscriptions, today);
   return {
     id: s.id,
     name: s.name,
     account: s.account ?? null,
     category: s.category,
     tags: s.tags,
-    status: effectiveStatus(s, today),
+    status: effectiveStatus(view, today),
     kind: kindOf(s),
-    price: money(st, next && (!cur.end || next < cur.end) ? priceAt(s, next) : cur.price, cur.currency, undefined, out),
-    cycle: cycleLabel(cur.cycle),
-    monthly: { ...money(st, monthly, cur.currency, undefined, out), ...partialOut(monthlyPriceTotal(st, s, today, out ?? st.settings.baseCurrency)) },
+    price: money(st, next && (!cur.end || next < cur.end) ? priceAt(view, next) : cur.price, cur.currency, undefined, out),
+    cycle: cycleLabel(displayCycle(cur, today)),
+    monthly: { ...money(st, monthly, cur.currency, undefined, out), ...partialOut(monthlyPriceTotal(st, view, today, out ?? st.settings.baseCurrency)) },
     my_share_factor: round(myShareFactor(cur, today)),
     next_charge: next ?? null,
-    service_expires: renewalDates(s, today).serviceExpires ?? null,
-    cancel_by: renewalDates(s, today).cancelBy ?? null,
-    ...contractView(s, today),
-    last_charge: lastCharge(s, today) ?? null,
+    service_expires: renewalDates(view, today).serviceExpires ?? null,
+    cancel_by: renewalDates(view, today).cancelBy ?? null,
+    ...contractView(view, today),
+    last_charge: lastCharge(view, today) ?? null,
     method: st.methods.find((m) => m.id === cur.methodId)?.name ?? null,
     method_id: cur.methodId ?? null,
     region: cur.region ?? null,
@@ -184,13 +188,40 @@ export function row(st: AppState, s: Subscription, today: string, out?: string) 
     end: s.end ?? null,
     stop: stopSummary(cur, today) ?? null,
     has_planned_change: !!s.phases?.some((p) => p.planned),
+    ...(cur.bundle?.parentId
+      ? {
+          bundle: {
+            parent_id: cur.bundle.parentId,
+            parent_name: bundleParent?.name ?? null,
+            follow: followsParent(cur),
+            ...(bundleParent ? {} : { parent_missing: true }),
+          },
+        }
+      : {}),
+    ...(linkedChildren.length
+      ? {
+          linked_children: linkedChildren.map(({ sub: c, link, phase: cc, upcoming }) => {
+            const cv = bundleView(c, st.subscriptions);
+            const cycleDay = upcoming ? cc.start : today;
+            return {
+              id: c.id,
+              name: c.name,
+              status: effectiveStatus(cv, today),
+              price: money(st, cc.price, cc.currency, undefined, out),
+              cycle: cycleLabel(displayCycle(cc, cycleDay)),
+              follow: link.follow !== false,
+              ...(upcoming ? { upcoming: true } : {}),
+            };
+          }),
+        }
+      : {}),
     ...(parallel.length
       ? {
           also_running: parallel.map((v) => ({
             start: v.start,
             until: v.end ?? null,
             price: money(st, v.price, v.currency, undefined, out),
-            cycle: cycleLabel(v.cycle),
+            cycle: cycleLabel(displayCycle(v, today)),
             region: v.region ?? null,
             method: st.methods.find((m) => m.id === v.methodId)?.name ?? null,
           })),
@@ -247,6 +278,7 @@ export function fieldChanges(before: unknown, after: unknown, path = ''): Array<
 export const chargeCcy = (c: Charge) => (c.settled && !c.projected ? c.settled.currency : c.currency);
 
 export function computedOf(st: AppState, s: Subscription, today: string) {
+  s = bundleView(s, st.subscriptions);
   const all = cashChargesBetween(s, '1970-01-01', today, today).filter((c) => !c.projected);
   const gaps = fxGaps();
   const spent = all.reduce((sum, c) => sum + (gaps.note(chargeBaseOrNaN(st, c), chargeCcy(c)) as number), 0);
@@ -279,7 +311,7 @@ const unitRound = (n: number) => Math.round(n * 1e4) / 1e4;
 
 /** 业务数据：每个指标的累计、最近一期与时间窗内逐条派生（用量、期间扣款、单价，币种为扣款原币） */
 export function metersOut(raw: Subscription, today: string, from: string, subs: Subscription[]) {
-  const s = meterView(raw, subs);
+  const s = meterView(bundleView(raw, subs), subs);
   const one = (r: MeterRow) => ({
     reading_id: r.reading.id,
     date: r.reading.date,

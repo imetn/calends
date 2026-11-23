@@ -24,6 +24,7 @@ import { ShareSheet } from '../components/ShareSheet.tsx';
 import { MetricCards, Metric } from '../components/ui.tsx';
 import { FlagImg, SubIcon } from '../components/marks.tsx';
 import { catColor } from '../derive.ts';
+import { bundleView } from '../../../shared/bundle.ts';
 
 type Style = 'card' | 'receipt' | 'timeline' | 'poster' | 'years';
 const STYLES = (): Array<[Style, string]> => [
@@ -36,6 +37,7 @@ const STYLES = (): Array<[Style, string]> => [
 
 /** 一个订阅的完整故事：花了多少、订了多久、换过几次、每年多少 */
 function story(state: AppState, sub: Subscription, today: string) {
+  sub = bundleView(sub, state.subscriptions);
   const base = state.settings.baseCurrency;
   const charges = chargesBetween(sub, historyStart(sub), today, today).filter((c) => c.kind !== 'failed' && !c.unpaid);
   // 图形（柱高）用缺汇率按 0 的值；显示的合计与年度金额缺汇率时为 NaN，显示「—」

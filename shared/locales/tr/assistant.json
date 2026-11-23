@@ -246,7 +246,8 @@
     "payments": "Kayıtlı ödemeler",
     "spent": "Bugüne kadar harcanan",
     "changes": "Değişen alanlar",
-    "funding": "Ödeme kaynakları"
+    "funding": "Ödeme kaynakları",
+    "bundle": "Bağlı olduğu"
   },
   "v": {
     "exempt": "Ödemiyor",
@@ -259,7 +260,8 @@
     "charge": "Ödeme",
     "deleteAll": "Abonelik ve tüm ödeme kayıtları silinir. Bu işlem geri alınamaz.",
     "dateUnknown": "Tarih bilinmiyor",
-    "terminate": "Sağlayıcı sonlandırdı"
+    "terminate": "Sağlayıcı sonlandırdı",
+    "unlinked": "Bağımsız (bağlantısız)"
   },
   "interrupted": "Yanıt tamamlanmadan kesildi.",
   "saveUnknown": "Kaydedilip kaydedilmediği doğrulanamadı. Yeniden denemeden önce defteri kontrol edin.",

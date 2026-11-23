@@ -285,5 +285,13 @@
   "settlement": {
     "together": "Juntos",
     "separate": "Separados"
+  },
+  "bundle": {
+    "parent": "Vinculada a",
+    "none": "Nenhuma (independente)",
+    "mode": "Ciclo",
+    "follow": "Segue a principal",
+    "independent": "Independente",
+    "followsCycle": "Segue a principal ({cycle})"
   }
 }

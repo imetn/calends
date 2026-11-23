@@ -249,7 +249,8 @@
     "payments": "Paiements enregistrés",
     "spent": "Dépensé à ce jour",
     "changes": "Champs modifiés",
-    "funding": "Payé avec"
+    "funding": "Payé avec",
+    "bundle": "Lié à"
   },
   "v": {
     "exempt": "Ne paie pas",
@@ -262,7 +263,8 @@
     "charge": "Prélèvement",
     "deleteAll": "Supprime l’abonnement et tous ses prélèvements. Action irréversible.",
     "dateUnknown": "Date inconnue",
-    "terminate": "Résilié par le fournisseur"
+    "terminate": "Résilié par le fournisseur",
+    "unlinked": "Autonome (dissocié)"
   },
   "interrupted": "La réponse a été interrompue avant la fin.",
   "saveUnknown": "Impossible de confirmer l’enregistrement. Vérifiez le registre avant de réessayer.",

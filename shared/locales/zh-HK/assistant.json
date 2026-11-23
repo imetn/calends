@@ -244,7 +244,8 @@
     "payments": "扣款紀錄",
     "spent": "累計支出",
     "changes": "變更欄位",
-    "funding": "付款來源"
+    "funding": "付款來源",
+    "bundle": "關聯主訂閱"
   },
   "v": {
     "exempt": "不分攤",
@@ -257,7 +258,8 @@
     "charge": "扣款",
     "deleteAll": "刪除訂閱及全部扣款記錄，無法復原",
     "dateUnknown": "日期不詳",
-    "terminate": "被停用"
+    "terminate": "被停用",
+    "unlinked": "取消關聯（獨立訂閱）"
   },
   "interrupted": "回覆中途中斷，沒有完整收到。",
   "saveUnknown": "無法確認是否儲存成功。請先核對帳簿，勿重複提交。",

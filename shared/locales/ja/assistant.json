@@ -244,7 +244,8 @@
     "payments": "支払い記録",
     "spent": "累計支出",
     "changes": "変更項目",
-    "funding": "支払い元"
+    "funding": "支払い元",
+    "bundle": "親サブスクリプション"
   },
   "v": {
     "exempt": "支払いなし",
@@ -257,7 +258,8 @@
     "charge": "請求",
     "deleteAll": "サブスクリプションとすべての請求記録を削除します。元に戻せません",
     "dateUnknown": "日付不明",
-    "terminate": "提供側が停止"
+    "terminate": "提供側が停止",
+    "unlinked": "単独（関連付け解除）"
   },
   "interrupted": "返信が途中で途切れました。",
   "saveUnknown": "保存されたか確認できませんでした。再送信する前に台帳を確認してください。",

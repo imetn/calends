@@ -24,6 +24,7 @@ import {
   type Runway,
 } from '../shared/billing.ts';
 import { contractEvents } from '../shared/contract.ts';
+import { resolveState } from '../shared/bundle.ts';
 import { toBaseOrNaN } from '../shared/fx.ts';
 import { billLabel, cnDate, money, monthLabel, relDays } from '../shared/format.ts';
 import { t } from '../shared/i18n.ts';
@@ -106,6 +107,8 @@ function balanceNote(r: Runway, m: PaymentMethod, today: string): string {
 
 /** 计算 today 应发出的提醒；不产生副作用，供 cron、预览与测试共用 */
 export function buildDaily(state: AppState, today: string): Digest | undefined {
+  const rawById = new Map(state.subscriptions.map((s) => [s.id, s]));
+  state = resolveState(state);
   const { settings, fx } = state;
   const base = settings.baseCurrency;
   const renew: Row[] = [];
@@ -119,6 +122,7 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
   const headline: string[] = [];
 
   for (const s of state.subscriptions) {
+    const raw = rawById.get(s.id) ?? s;
     const st = effectiveStatus(s, today);
     const remind = s.remindDays ?? settings.remindDays;
     // 合同续约（或到期）提醒只看合同期自己的提前天数，与扣款提醒互不影响
@@ -141,12 +145,12 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
       headline.push(t(end ? 'notify.contract.endHeadline' : 'notify.contract.headline', { name: s.name, when: relDays(d) }));
     }
     if (remind < 0) continue;
-    if (st === 'trial' && s.trialEnd) {
-      const d = diffDays(today, s.trialEnd);
+    if (st === 'trial' && raw.status === 'trial' && raw.trialEnd) {
+      const d = diffDays(today, raw.trialEnd);
       if (d === remind || d === 1 || d === 0) {
         trials.push({
           title: s.name,
-          sub: t('notify.trial.sub', { when: relDays(d), date: cnDate(s.trialEnd), price: money(s.price, s.currency) }),
+          sub: t('notify.trial.sub', { when: relDays(d), date: cnDate(raw.trialEnd), price: money(s.price, s.currency) }),
           amount: money(s.price, s.currency),
           tone: 'warn',
           icon: iconOf(s),
@@ -325,6 +329,7 @@ export function buildDaily(state: AppState, today: string): Digest | undefined {
 
 export function buildMonthly(state: AppState, today: string): Digest | undefined {
   if (!state.settings.monthlyDigest || !today.endsWith('-01')) return undefined;
+  state = resolveState(state);
   const base = state.settings.baseCurrency;
   const end = addMonths(today, 1);
   // 月度账单只列我自己的订阅；代付在「代付待收」里单独提醒

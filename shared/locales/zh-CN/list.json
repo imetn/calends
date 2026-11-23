@@ -53,7 +53,9 @@
     "proxy": "代付",
     "proxyFor": "替{name}代付",
     "someone": "他人",
-    "parallel": "并行"
+    "parallel": "并行",
+    "included": "附赠",
+    "addon": "加购"
   },
   "col": {
     "name": "订阅",
@@ -123,5 +125,8 @@
   "network": {
     "unionpay": "银联"
   },
-  "monthlySame": "同标价"
+  "monthlySame": "同标价",
+  "bundle": {
+    "followsParent": "跟随主订阅"
+  }
 }

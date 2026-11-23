@@ -8,6 +8,7 @@ import { base as appPath } from '../base.ts';
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { canUseSingleKey } from '../keyboard.ts';
 import { addDays, addMonths, diffDays, effectiveStatus, isStopped } from '../../../shared/billing.ts';
+import { bundleView } from '../../../shared/bundle.ts';
 import { flow, cnDate, money, moneyTick, monthLabel, numericDate, servedSpan } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { tx } from '../i18n.ts';
@@ -361,7 +362,7 @@ function AllHero({ state, today }: { state: AppState; today: string }) {
 function AllCard({ state, today, first, onOpen }: { state: AppState; today: string; first: number; onOpen: (s: Subscription) => void }) {
   const base = state.settings.baseCurrency;
   const subs = useMemo(() => allOutlook(state, today).bySub.map((x) => x.sub), [state, today]);
-  const stopped = state.subscriptions.filter((s) => !s.proxy && isStopped(effectiveStatus(s, today)));
+  const stopped = state.subscriptions.filter((s) => !s.proxy && isStopped(effectiveStatus(bundleView(s, state.subscriptions), today)));
   const extras = useMemo(() => {
     const years = Array.from({ length: Number(today.slice(0, 4)) - first + 1 }, (_, i) => String(first + i));
     const cars = years.map((y) => carpoolYear(state, today, y));

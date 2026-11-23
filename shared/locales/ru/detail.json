@@ -277,5 +277,23 @@
       "many": "{count} счетов не оплачено",
       "other": "{count} счёта не оплачено"
     }
+  },
+  "bundle": {
+    "title": "Связанные подписки ({count})",
+    "add": "Добавить связанную подписку",
+    "includedWith": "Включена в",
+    "cost": "Стоимость",
+    "linkedTo": "Основная подписка",
+    "parentMissing": "Основная не найдена",
+    "parentPeriod": "Период основной подписки",
+    "modeFollow": "По основной",
+    "modeIndependent": "Свой цикл",
+    "upcoming": "Скоро",
+    "withParent": "с {name}",
+    "openParent": "Открыть основную",
+    "noticePaused": "На паузе вместе с «{name}»",
+    "noticeEnding": "Завершается вместе с «{name}»",
+    "noticeEnded": "Завершена вместе с «{name}»",
+    "noticeTrial": "Пробный период с «{name}»"
   }
 }

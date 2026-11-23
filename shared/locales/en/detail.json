@@ -274,5 +274,23 @@
       "one": "{count} bill owed",
       "other": "{count} bills owed"
     }
+  },
+  "bundle": {
+    "title": "Linked subscriptions ({count})",
+    "add": "Add linked subscription",
+    "includedWith": "Included with",
+    "cost": "Cost",
+    "linkedTo": "Linked to",
+    "parentMissing": "Parent missing",
+    "parentPeriod": "Parent billing period",
+    "modeFollow": "Follows parent",
+    "modeIndependent": "Independent cycle",
+    "upcoming": "Upcoming",
+    "withParent": "with {name}",
+    "openParent": "Open parent",
+    "noticePaused": "Paused with “{name}”",
+    "noticeEnding": "Ending with “{name}”",
+    "noticeEnded": "Ended with “{name}”",
+    "noticeTrial": "Following “{name}”’s trial"
   }
 }

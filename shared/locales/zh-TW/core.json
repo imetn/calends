@@ -46,7 +46,12 @@
     "reading": "用量紀錄無效：每筆需要唯一的 id、有效日期和數值",
     "meterLink": "關聯的指標不存在，或它本身也是從其他訂閱關聯而來的",
     "meterLinkUsed": "「{meter}」正被「{name}」關聯，請先在那邊取消關聯",
-    "readingMeter": "用量紀錄引用了未定義的指標"
+    "readingMeter": "用量紀錄引用了未定義的指標",
+    "bundle": "關聯訂閱資訊無效",
+    "bundleLink": "關聯的主訂閱不存在、是代付訂閱，或本身已關聯其他訂閱",
+    "bundleProxy": "代付訂閱無法關聯到主訂閱",
+    "bundleUsed": "正被 {names} 關聯，請先在該訂閱取消關聯",
+    "bundleHistory": "關聯會抹除先前的扣款，請在「歷程與變更 → 換方案」從關聯日開始關聯"
   },
   "phase": {
     "switchTooEarly": "生效日期要晚於目前階段的開始日期",

@@ -5,6 +5,7 @@ import { DetailHead, DetailSheet, Panel, Prop } from '../../components/DetailKit
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
 import { copyParts } from '../../components/copy.tsx';
 import { chargesBetween, cycleLabel, effectiveStatus, memberDues, nextCharge, isStopped, collectCurrencyOf } from '../../../../shared/billing.ts';
+import { bundleView } from '../../../../shared/bundle.ts';
 import { useRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { carpoolSnapshot } from '../carpool-snapshot.ts';
@@ -69,28 +70,29 @@ export function CarSheet({
   const [masked, setMasked] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
   const base = state.settings.baseCurrency;
+  const vs = bundleView(s, state.subscriptions);
   const sh = s.share!;
-  const st = effectiveStatus(s, today);
+  const st = effectiveStatus(vs, today);
   const stopped = isStopped(st);
-  const next = nextCharge(s, today);
-  const roster = carpoolRoster(s, today);
-  const dues = memberDues(s, today, collectCurrencyOf(state.settings), state).filter((d) => d.periodsOwed > 0);
+  const next = nextCharge(vs, today);
+  const roster = carpoolRoster(vs, today);
+  const dues = memberDues(vs, today, collectCurrencyOf(state.settings), state).filter((d) => d.periodsOwed > 0);
   const owe = dues.length;
   const owePartial = sumTotals(dues.map((d) => dueTotal(state, d)));
   const oweSum = owePartial.incomplete ? NaN : owePartial.value;
   const hasPending = oweSum > 0 || !Number.isFinite(oweSum);
-  const rule = carRule(state, s, today);
-  const collect = collectNow(s, state, today);
-  const contract = contractNow(s, today);
+  const rule = carRule(state, vs, today);
+  const collect = collectNow(vs, state, today);
+  const contract = contractNow(vs, today);
   const [editingRule, setEditingRule] = useState(false);
   // 订阅调价后提醒一次是否调整收费标准；只提示，不自动改
-  const cost = stopped ? undefined : costChange(s, today);
+  const cost = stopped ? undefined : costChange(vs, today);
   const actual = -book.net;
   // 历来所有收款，已退出的成员也保留
   const receipts = sh.members.flatMap((m) => memberCashFlows(m).map((p) => ({ m, p, base: memberFlowValue(state, p) })));
   // 收款、付款切换：两张表都按年分组，与订阅详情的扣款记录同一套
   const [tab, setTab] = useState<'in' | 'out'>('in');
-  const outs = chargesBetween(s, book.since ?? s.start, today, today)
+  const outs = chargesBetween(vs, book.since ?? vs.start, today, today)
     .filter((c) => c.kind !== 'failed' && !c.unpaid)
     // 缺汇率的一笔为 NaN：行与年小计显示「—」
     .map((c) => ({ c, base: chargeBaseOrNaN(state, c) }))
@@ -180,9 +182,9 @@ export function CarSheet({
 
           {/* 指标下面：订阅周期与收费周期并排，与订阅详情的本期同一块 */}
           {/* 各人收费周期不一样时只画订阅周期，收费周期看下面成员表的时间线 */}
-          {periodLive(s, today) && (
+          {periodLive(vs, today) && (
             <Panel className="dt-about">
-              {collect || contract ? <PeriodPair sub={s} today={today} collect={collect} contract={contract} /> : <PeriodBar sub={s} today={today} split />}
+              {collect || contract ? <PeriodPair sub={vs} today={today} collect={collect} contract={contract} /> : <PeriodBar sub={vs} today={today} split />}
             </Panel>
           )}
 
@@ -209,7 +211,7 @@ export function CarSheet({
           {/* 与订阅详情一样：成员表、收付款表各在一张卡片里，标题在卡片内 */}
           {/* 成员卡片不加标题：表头第一列已经是「成员」 */}
           <Panel className="dt-share car-members-panel">
-            <CarMembers state={state} s={s} today={today} onMember={onMember} masked={masked} billEvery={rule.billEvery} />
+            <CarMembers state={state} s={vs} today={today} onMember={onMember} masked={masked} billEvery={rule.billEvery} />
           </Panel>
 
           {/* 收进来的和我付出去的切换着看；表格与订阅详情的扣款记录同一套（YearLedger） */}

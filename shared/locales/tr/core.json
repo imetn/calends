@@ -61,7 +61,12 @@
     "reading": "Geçersiz kullanım kaydı: benzersiz bir id, geçerli bir tarih ve sayısal değerler gerekli",
     "meterLink": "Bağlanan ölçüt mevcut değil veya kendisi de başka bir ölçüte bağlı",
     "meterLinkUsed": "“{name}” aboneliği “{meter}” ölçütüne bağlı; önce o abonelikteki bağlantıyı kaldırın",
-    "readingMeter": "Bir kullanım kaydı tanımlanmamış bir ölçüte başvuruyor"
+    "readingMeter": "Bir kullanım kaydı tanımlanmamış bir ölçüte başvuruyor",
+    "bundle": "Geçersiz bağlı abonelik bilgisi",
+    "bundleLink": "Bağlı ana abonelik bulunamadı, başkası adına ödeniyor veya kendisi başka bir aboneliğe bağlı",
+    "bundleProxy": "Başkası adına ödenen abonelikler ana aboneliğe bağlanamaz",
+    "bundleUsed": "{names} tarafından bağlı; önce oradan bağlantıyı kaldırın",
+    "bundleHistory": "Bağlamak önceki ödemeleri siler. Geçmiş → Plan değiştir bölümünden bağlantı tarihinden itibaren bağlayın."
   },
   "phase": {
     "switchTooEarly": "Geçerlilik tarihi mevcut dönemin başlangıcından sonra olmalı",

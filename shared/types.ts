@@ -275,6 +275,36 @@ export interface RenewalRules {
   renewalOffsetDays?: number;
 }
 
+/**
+ * 关联到主订阅（如 Google AI Ultra 附赠 YouTube Premium、主方案的半价加购）。
+ * follow 缺省或为 true 时跟随主订阅的可用期（免费时显示周期也随主订阅）；follow 为 false 为独立周期，只保留归属关系。
+ * 仅一层：主订阅本身不能再关联别的订阅，也不能是代付。
+ */
+export interface BundleLink {
+  parentId: string;
+  /** 是否跟随主订阅：缺省 / true 为跟随，false 为独立周期 */
+  follow?: boolean;
+}
+
+/**
+ * 派生自父订阅的只读可用区间（不含父订阅身份，可安全用于内存解析与隐藏父订阅时的公开投影；私有写入禁止携带）。
+ */
+export interface ParentAvailability {
+  /** 父订阅有效覆盖日并集 [from, to]（两端含；to 缺省表示持续有效） */
+  spans: Array<{ from: string; to?: string }>;
+  /** 父订阅暂停区间 [from, to)（含 Stop.pausedAt 与当前生效的暂停，to 缺省表示暂停至今） */
+  pauses: Array<{ from: string; to?: string }>;
+  /** 父订阅在未知日期已停用 */
+  undatedStop?: 'cancel' | 'terminate';
+  /** 父订阅试用区间 [from, until) */
+  trial?: { from: string; until: string };
+  /** 父订阅整体结束原因（用于详情提示与提醒去重，不伪造子订阅的 Stop 记录） */
+  ended?:
+    { kind: 'stop'; date: string; stopKind: 'cancel' | 'terminate' } | { kind: 'end'; date: string } | { kind: 'undated'; stopKind: 'cancel' | 'terminate' };
+  /** 父订阅各阶段的周期区间（免费跟随权益按查询日取显示周期） */
+  cycles: Array<{ from: string; to?: string; cycle: Cycle }>;
+}
+
 /** 订阅的一个阶段：区域、币种、价格、周期、支付方式在阶段内不变（阶段内调价用 priceHistory） */
 export interface Phase extends RenewalRules {
   start: string;
@@ -299,6 +329,12 @@ export interface Phase extends RenewalRules {
   note?: string;
   /** 只是打算（比如到期后可能改年付），还没确定；照常计入预测，界面上标「计划」，可一键确认或取消 */
   planned?: boolean;
+  /** 关联到主订阅（附赠或加购） */
+  bundle?: BundleLink;
+  /** 仅用于隐藏父订阅后的公开投影：标记此阶段为附赠免费权益，不推算 0 元扣款；不写入私有账本 */
+  included?: true;
+  /** 仅用于只读视图或隐藏父订阅后的公开投影：父订阅可用期；不写入私有账本 */
+  bundleAvail?: ParentAvailability;
 }
 
 export interface Subscription extends RenewalRules {
@@ -363,6 +399,12 @@ export interface Subscription extends RenewalRules {
   intro?: { price: number; until: string };
   /** 赠送时长（如买一年送一年）：[from, until) 期间不扣款，之后从 until 起重新按周期扣 */
   bonus?: { from: string; until: string };
+  /** 关联到主订阅（附赠或加购）；有阶段时镜像最后一个阶段 */
+  bundle?: BundleLink;
+  /** 仅用于隐藏父订阅后的公开投影：标记为附赠免费权益；不写入私有账本 */
+  included?: true;
+  /** 仅用于只读视图或隐藏父订阅后的公开投影：父订阅可用期；不写入私有账本 */
+  bundleAvail?: ParentAvailability;
   /** 业务数据：自定义指标与按期记录（用电、里程、流量……）；私密，公开页不下发。派生计算见 shared/meters.ts */
   meters?: Meter[];
   readings?: Reading[];

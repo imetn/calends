@@ -305,5 +305,13 @@
   "settlement": {
     "together": "Вместе",
     "separate": "Отдельно"
+  },
+  "bundle": {
+    "parent": "Основная подписка",
+    "none": "Нет (отдельная)",
+    "mode": "Режим цикла",
+    "follow": "По основной",
+    "independent": "Свой цикл",
+    "followsCycle": "По основной ({cycle})"
   }
 }

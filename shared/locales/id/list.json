@@ -55,7 +55,9 @@
     "proxy": "Talangan",
     "proxyFor": "Ditalangi untuk {name}",
     "someone": "seseorang",
-    "parallel": "Paralel"
+    "parallel": "Paralel",
+    "included": "Termasuk",
+    "addon": "Tambahan"
   },
   "col": {
     "name": "Langganan",
@@ -133,5 +135,8 @@
   "network": {
     "unionpay": "UnionPay"
   },
-  "monthlySame": "Sama dengan harga"
+  "monthlySame": "Sama dengan harga",
+  "bundle": {
+    "followsParent": "Ikuti utama"
+  }
 }

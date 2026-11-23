@@ -275,5 +275,13 @@
   "settlement": {
     "together": "Cùng nhau",
     "separate": "Riêng"
+  },
+  "bundle": {
+    "parent": "Liên kết với",
+    "none": "Không (độc lập)",
+    "mode": "Chu kỳ",
+    "follow": "Theo gói chính",
+    "independent": "Độc lập",
+    "followsCycle": "Theo gói chính ({cycle})"
   }
 }

@@ -1,4 +1,5 @@
 import * as fxTotals from '../shared/fx-total.ts';
+import * as bundle from '../shared/bundle.ts';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -128,6 +129,8 @@ test('proxy card metrics share one precision: a cents-only profit keeps the larg
 
 test('card and row badge rules distinguish empty owners, joined members and scheduled starts', () => {
   const SubBadges = component('List.tsx', 'SubBadges', {
+    ...bundle,
+    currentPhase: (s) => s,
     effectiveStatus: (s) => s.testStatus ?? 'active',
     upcomingPhase: (s) => s.testUp,
     t: String,

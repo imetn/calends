@@ -14,6 +14,7 @@ import {
   servedTime,
   validDay,
 } from './billing.ts';
+import { bundleView } from './bundle.ts';
 import { chargeBaseOrNaN, convertOn } from './fx.ts';
 import { t } from './i18n.ts';
 import type { AppState, Subscription, Transfer } from './types.ts';
@@ -79,6 +80,7 @@ export interface NetCost {
 
 /** 生命周期净成本 = 服务付款 + 买入 − 卖出；月均、日均按持有期摊（今天之后的转让不计） */
 export function netCost(state: AppState, s: Subscription, today: string, to = state.settings.baseCurrency): NetCost {
+  s = bundleView(s, state.subscriptions);
   // 累计按实际付款：账单与缴费分开记时预缴的钱算进去，没缴的欠款不算
   const history = cashChargesBetween(s, historyStart(s), today, today).filter((c) => c.kind !== 'failed');
   const service = history.reduce((a, c) => a + chargeBaseOrNaN(state, c, to), 0);

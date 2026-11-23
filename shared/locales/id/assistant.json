@@ -244,7 +244,8 @@
     "payments": "Tagihan tercatat",
     "spent": "Total pengeluaran",
     "changes": "Kolom berubah",
-    "funding": "Dibayar dengan"
+    "funding": "Dibayar dengan",
+    "bundle": "Tertaut ke"
   },
   "v": {
     "exempt": "Tidak membayar",
@@ -257,7 +258,8 @@
     "charge": "Tagihan",
     "deleteAll": "Menghapus langganan beserta semua tagihannya. Tidak dapat dibatalkan.",
     "dateUnknown": "Tanggal tidak diketahui",
-    "terminate": "Dihentikan penyedia"
+    "terminate": "Dihentikan penyedia",
+    "unlinked": "Mandiri (tidak tertaut)"
   },
   "interrupted": "Balasan terputus sebelum selesai.",
   "saveUnknown": "Tidak dapat memastikan apakah perubahan tersimpan. Periksa buku sebelum mencoba lagi.",

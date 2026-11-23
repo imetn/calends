@@ -10,6 +10,7 @@ import {
   stopSummary,
   isStopped,
 } from '../../../shared/billing.ts';
+import { bundleView } from '../../../shared/bundle.ts';
 import { flow, cnDateFull } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { reactivate } from '../../../shared/phases.ts';
@@ -87,14 +88,16 @@ export function StopBadge({ sub, today }: { sub: Subscription; today: string }) 
 
 /** Standalone proxy action: fields plus an explicit confirmation. */
 export function StopPanel({ sub, today, onApply }: { sub: Subscription; today: string; onApply: (s: Subscription) => unknown }) {
-  const [form, setForm] = useState(() => stopForm(sub, today, getState()));
+  const state = getState();
+  const view = state?.subscriptions ? bundleView(sub, state.subscriptions) : sub;
+  const [form, setForm] = useState(() => stopForm(sub, today, state));
   const ended = isStopped(effectiveStatus(sub, today));
-  const stops = phaseSubs(sub).filter((p) => p.stop);
+  const stops = phaseSubs(view).filter((p) => p.stop);
   const [busy, submit] = useSubmit();
   const apply = () =>
     submit(() => {
       try {
-        return onApply(applyStopForm(sub, form, today));
+        return onApply(applyStopForm(sub, form, today, getState()?.subscriptions));
       } catch (error) {
         toast(error instanceof Error ? error.message : String(error), 'error');
       }
@@ -118,7 +121,7 @@ export function StopPanel({ sub, today, onApply }: { sub: Subscription; today: s
     );
   return (
     <div className="stop-panel">
-      <StopFields sub={sub} today={today} value={form} onChange={setForm} />
+      <StopFields sub={view} today={today} value={form} onChange={setForm} />
       <div className="cell sheet-actions">
         {sub.end && (
           <button type="button" className="btn" disabled={busy} onClick={restore}>

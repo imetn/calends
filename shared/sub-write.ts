@@ -3,18 +3,19 @@ import { migrateLegacyRefunds, reconcileRenewalRules, subError, trackOf, trackin
 import { updateMemberLeave } from './carpool.ts';
 import { t } from './i18n.ts';
 import { subRefsError } from './ledger-edit.ts';
+import { bundleHistoryError, bundleLinkError } from './bundle.ts';
 import { meterLinkError } from './meters.ts';
 import { closePause, statusChangeError } from './phases.ts';
 import type { AppState, Subscription } from './types.ts';
 
-export function validSub(s: Subscription): string | undefined {
+export function validSub(s: Subscription, subs?: readonly Subscription[]): string | undefined {
   if (!s || typeof s.id !== 'string' || !s.id) return t('server.missingId');
-  return subError(s);
+  return subError(s, subs);
 }
 
 /**
  * 以 previous（库里现有记录，新建时为空）为基准准备一条完整替换的订阅：
- * 暂停结束时记下暂停区间；续费规则改动按生效日记入历史；成员的退出日被清掉时一并清掉退款；最后做完整校验、引用校验（支付方式、币种，见 subRefsError）、状态迁移约束和指标关联校验（meterLinkError，看整个账本）。
+ * 暂停结束时记下暂停区间；续费规则改动按生效日记入历史；成员的退出日被清掉时一并清掉退款；最后做完整校验、引用校验（支付方式、币种，见 subRefsError）、状态迁移约束、指标关联校验（meterLinkError）、订阅关联校验（bundleLinkError）和关联不抹掉已发生扣款的校验（bundleHistoryError）。
  */
 export function prepareSubWrite(
   previous: Subscription | undefined,
@@ -38,6 +39,12 @@ export function prepareSubWrite(
       },
     };
   const after = [...refs.subscriptions.filter((x) => x.id !== sub.id), sub];
-  const error = validSub(sub) ?? subRefsError(refs, previous, sub) ?? statusChangeError(previous, sub, today) ?? meterLinkError(refs.subscriptions, after);
+  const error =
+    validSub(sub, after) ??
+    subRefsError(refs, previous, sub) ??
+    statusChangeError(previous, sub, today, after) ??
+    meterLinkError(refs.subscriptions, after) ??
+    bundleLinkError(refs.subscriptions, after) ??
+    bundleHistoryError(previous, sub, refs.subscriptions, after, today);
   return error ? { error } : { sub };
 }

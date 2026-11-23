@@ -2,6 +2,7 @@ import type { AppState } from '../../shared/types.ts';
 import { t } from '../../shared/i18n.ts';
 import { ledgerTools, paymentMethodTool } from './ledger-tools.ts';
 import { validateToolInput, type Schema } from '../../shared/tool-schema.ts';
+import { RevConflictError } from '../store.ts';
 import type { ToolCtx, Tool } from './tool-kit.ts';
 import {
   get_overview,
@@ -99,6 +100,14 @@ export const TOOLS: Tool[] = CATALOGUE.map((tool) => ({
   ...tool,
   run: async (args, ctx) => {
     validateToolInput(tool.inputSchema as Schema, args);
-    return tool.run(args, ctx);
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        return await tool.run(args, ctx);
+      } catch (e) {
+        if (e instanceof RevConflictError && attempt < 3) continue;
+        throw e;
+      }
+    }
+    throw new RevConflictError();
   },
 }));

@@ -1,5 +1,6 @@
 import { personFor } from '../components/PersonAvatar.tsx';
 import { addMonths, cycleLabel, todayIn, memberBillMonths, memberLedger, collectionAnchor, collectCurrencyOf } from '../../../shared/billing.ts';
+import { bundleView } from '../../../shared/bundle.ts';
 import { money } from '../../../shared/format.ts';
 import type { AppState, ShareMember, Subscription } from '../../../shared/types.ts';
 import { type Receivable } from '../../../shared/receivables.ts';
@@ -21,9 +22,9 @@ export async function saveReceivable(s: Subscription, memberId: string, r: Recei
   await saveSub({ ...current, share: { ...sh, collectFrom: collectionAnchor(current), members } });
 }
 
-/** 成员的各期：算到十年后，可以提前收 */
+/** 成员的各期：算到十年后，可以提前收；按解析后的关联可用期计算，保存仍用原始记录 */
 export const memberLedgerAhead = (state: AppState, s: Subscription, m: ShareMember, today: string) =>
-  memberLedger(s, m, today, collectCurrencyOf(state.settings), addMonths(today, 120));
+  memberLedger(bundleView(s, state.subscriptions), m, today, collectCurrencyOf(state.settings), addMonths(today, 120));
 
 /**
  * 收款表单（全站唯一）：上面是这辆车和收费标准（只读），下面勾选这笔钱抵扣哪几期、实际收了多少。
@@ -82,7 +83,9 @@ export function ReceiptForm({
           )}
         </>
       }
-      ledger={(through, dues) => memberLedger(s, dues ? { ...m, periodDues: putPeriodDues(m.periodDues, dues) } : m, today, collectCcy, through).periods}
+      ledger={(through, dues) =>
+        memberLedger(bundleView(s, state.subscriptions), dues ? { ...m, periodDues: putPeriodDues(m.periodDues, dues) } : m, today, collectCcy, through).periods
+      }
       dueEditable={!m.exempt}
       record={m}
       edit={edit}

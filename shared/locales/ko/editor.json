@@ -275,5 +275,13 @@
   "settlement": {
     "together": "함께",
     "separate": "따로"
+  },
+  "bundle": {
+    "parent": "상위 구독",
+    "none": "없음 (독립 구독)",
+    "mode": "주기 방식",
+    "follow": "상위 구독 따름",
+    "independent": "독립 주기",
+    "followsCycle": "상위 구독 따름 ({cycle})"
   }
 }

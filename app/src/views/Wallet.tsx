@@ -22,6 +22,7 @@ import {
   type Runway,
   isStopped,
 } from '../../../shared/billing.ts';
+import { bundleView } from '../../../shared/bundle.ts';
 import { flow, cnDate, cnDateAuto, cnDateFull, money, relDays } from '../../../shared/format.ts';
 import { toBaseAt } from '../../../shared/fx.ts';
 import { intlLocale } from '../../../shared/i18n.ts';
@@ -366,7 +367,7 @@ function MethodSheet({
 }) {
   const r = runwayFor(m, state, today);
   // 关联订阅：还在用的（含买断）在前，已退订、被停用的排到后面；同组内保持原有顺序
-  const stopped = (s: Subscription) => isStopped(effectiveStatus(s, today));
+  const stopped = (s: Subscription) => isStopped(effectiveStatus(bundleView(s, state.subscriptions), today));
   const subs = state.subscriptions.filter((s) => s.methodId === m.id).sort((a, b) => Number(stopped(a)) - Number(stopped(b)));
   const ro = !!state.readonly;
   return (

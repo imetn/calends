@@ -247,5 +247,23 @@
     "this": "本筆",
     "earliest": "最早未繳",
     "owed": "欠 {count} 期"
+  },
+  "bundle": {
+    "title": "關聯訂閱（{count}）",
+    "add": "新增關聯訂閱",
+    "includedWith": "隨主訂閱附贈",
+    "cost": "費用",
+    "linkedTo": "關聯主訂閱",
+    "parentMissing": "找不到主訂閱",
+    "parentPeriod": "主訂閱週期",
+    "modeFollow": "跟隨主訂閱",
+    "modeIndependent": "獨立週期",
+    "upcoming": "即將生效",
+    "withParent": "隨 {name}",
+    "openParent": "檢視主訂閱",
+    "noticePaused": "隨「{name}」暫停",
+    "noticeEnding": "隨「{name}」即將到期",
+    "noticeEnded": "隨「{name}」已結束",
+    "noticeTrial": "隨「{name}」試用中"
   }
 }

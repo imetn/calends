@@ -285,5 +285,13 @@
   "settlement": {
     "together": "Together",
     "separate": "Separate"
+  },
+  "bundle": {
+    "parent": "Linked to",
+    "none": "None (standalone)",
+    "mode": "Schedule",
+    "follow": "Follows parent",
+    "independent": "Independent",
+    "followsCycle": "Follows parent ({cycle})"
   }
 }

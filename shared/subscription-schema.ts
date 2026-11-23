@@ -111,7 +111,17 @@ const phaseFields = {
   nextDue: { ...day, description: 'Next renewal/billing anchor AFTER recorded payments; may be later than end when sold before the prepaid year expired.' },
   note: text,
   planned: bool,
-} satisfies Record<keyof Phase, Schema>;
+  bundle: {
+    ...record(
+      {
+        parentId: { ...text, description: 'Existing parent subscription id (one level deep; parent cannot be a proxy or itself linked).' },
+        follow: { ...bool, description: 'true (default): follow parent availability (and display cycle when free). false: independent cycle and status.' },
+      },
+      ['parentId'],
+    ),
+    description: 'Link this phase as an included perk (price 0) or discounted add-on of a parent subscription.',
+  },
+} satisfies Record<Exclude<keyof Phase, 'included' | 'bundleAvail'>, Schema>;
 const receipt = record({ id: text, date: day, amount: positive, currency: text, periods: list(day), note: text, opening: bool }, ['id', 'date', 'periods']);
 const waiver = record({ id: text, date: day, periods: list(day), note: text }, ['id', 'date', 'periods']);
 const member = record(
@@ -240,8 +250,8 @@ const full = {
   notes: text,
   createdAt: text,
   updatedAt: text,
-  // pauses is recorded by the write path when a pause ends, so it is not an editable field.
-} satisfies Record<Exclude<keyof Subscription, 'pauses'>, Schema> & { note: Schema };
+  // pauses is recorded by the write path when a pause ends; included and bundleAvail are read-only projections.
+} satisfies Record<Exclude<keyof Subscription, 'pauses' | 'included' | 'bundleAvail'>, Schema> & { note: Schema };
 
 // note is a Phase field; a Subscription stores notes instead.
 const { note: _note, ...subscription } = full;

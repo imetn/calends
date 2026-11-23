@@ -21,6 +21,19 @@ import { chargeBaseOrNaN, convertOn } from './fx.ts';
 import { isSettled, settle, type Period } from './receivables.ts';
 import { transferError } from './transfers.ts';
 import { meterError } from './meters.ts';
+import {
+  availActiveDays,
+  availCoversDay,
+  availInSpan,
+  availPausedOn,
+  bundleError,
+  bundleView,
+  displayCycle,
+  intersectSpans,
+  isFreeBundlePhase,
+  mergeInclusiveSpans,
+  resolveState,
+} from './bundle.ts';
 
 // ---------- 日期：全部按 UTC 日计算 ----------
 
@@ -144,11 +157,11 @@ function receivableError(r: { receipts?: unknown; waivers?: unknown }): string |
 }
 
 /** 订阅基本字段的校验：有问题时返回错误文案（后台接口与 MCP 共用） */
-export function subError(s: Subscription): string | undefined {
+export function subError(s: Subscription, subs?: readonly Subscription[]): string | undefined {
   if (!s.name?.trim()) return t('core.subError.name');
   if (!Number.isFinite(s.price) || s.price < 0) return t('core.subError.price');
   if (!validDay(s.start) || (s.share?.collectFrom && !validDay(s.share.collectFrom))) return t('core.subError.start');
-  const transfer = transferError(s) ?? meterError(s);
+  const transfer = transferError(s) ?? meterError(s) ?? bundleError(s);
   if (transfer) return transfer;
   for (const m of s.share?.members ?? []) {
     if (
@@ -201,7 +214,8 @@ export function subError(s: Subscription): string | undefined {
   if (s.billing != null && s.billing !== 'postpaid') return t('mcp.error.invalidInput', { field: 'billing' });
   if (s.settlement != null && s.settlement !== 'separate') return t('mcp.error.invalidInput', { field: 'settlement' });
   if (s.settledBefore != null && !validDay(s.settledBefore)) return t('mcp.error.invalidInput', { field: 'settledBefore' });
-  for (const v of phaseSubs(s)) {
+  const view = subs ? bundleView(s, subs) : s;
+  for (const v of phaseSubs(view)) {
     if (v.billing != null && v.billing !== 'postpaid') return t('mcp.error.invalidInput', { field: 'billing' });
     if (v.estimateFrom && !validDay(v.estimateFrom)) return t('core.subError.start');
     if (v.billingStart && !validDay(v.billingStart)) return t('core.subError.start');
@@ -385,6 +399,9 @@ export function phaseSubs(s: Subscription): Subscription[] {
       payments: p.payments,
       nextDue: p.nextDue,
       planned: p.planned,
+      bundle: p.bundle,
+      included: p.included,
+      bundleAvail: p.bundleAvail,
       trialEnd: i === 0 ? s.trialEnd : undefined,
       status: last ? s.status : paused ? 'paused' : cancelled ? 'cancelled' : 'active',
       pausedAt: last ? s.pausedAt : paused ? pausedAt : undefined,
@@ -425,6 +442,30 @@ export function coveredUntil(vs: Array<{ start: string; end?: string }>, i: numb
 /** 实际在订的天数（并行的阶段不重复计，截到 today），以及中间没有任何阶段在跑的断更空档 */
 export function servedTime(s: Subscription, today: string): { days: number; gaps: Array<{ from: string; to: string; days: number }> } {
   const vs = phaseSubs(s);
+  // 存在跟随主订阅的阶段时，先按各段与父订阅覆盖区的交集全局归并再计天数与断档（避免父断档期间被其他并行独立段覆盖时漏计）
+  if (vs.some((v) => v.bundleAvail)) {
+    const raw: Array<{ from: string; to?: string }> = [];
+    for (const v of vs) {
+      if (v.bundleAvail) {
+        raw.push(...intersectSpans(v.start, v.end, v.bundleAvail));
+      } else {
+        raw.push({ from: v.start, ...(v.end ? { to: v.end } : {}) });
+      }
+    }
+    const merged = mergeInclusiveSpans(raw);
+    let days = 0;
+    const gaps: Array<{ from: string; to: string; days: number }> = [];
+    merged.forEach((sp, i) => {
+      if (i > 0 && merged[i - 1].to) {
+        const gapStart = addDays(merged[i - 1].to!, 1);
+        if (gapStart < sp.from) gaps.push({ from: gapStart, to: sp.from, days: diffDays(gapStart, sp.from) });
+      }
+      if (sp.from > today) return;
+      const b = sp.to && sp.to < today ? addDays(sp.to, 1) : today;
+      if (b > sp.from) days += diffDays(sp.from, b);
+    });
+    return { days, gaps };
+  }
   let days = 0;
   let cursor = '';
   const gaps: Array<{ from: string; to: string; days: number }> = [];
@@ -506,6 +547,28 @@ export function effectiveStatus(s: Subscription, today: string): 'upcoming' | 'a
     }
     if (vs.some((x) => x.start > today)) return vs[0].start > today ? 'upcoming' : 'paused'; // 尚未开始，或断更中已安排续订
     return effectiveStatus(vs[vs.length - 1], today);
+  }
+  if (s.bundleAvail) {
+    const avail = s.bundleAvail;
+    if (s.stop && s.stop.date <= today) return s.stop.kind === 'terminate' ? 'terminated' : 'ended';
+    if (undatedStop(s)) return s.status === 'terminated' ? 'terminated' : 'ended';
+    if (avail.undatedStop) return 'ended';
+    // 子阶段自身结束日已过，直接已结束（即使父订阅尚未开始也不能算 upcoming）
+    if (s.end && s.end < today) return 'ended';
+    const eff = intersectSpans(s.start, s.end, avail);
+    if (!eff.length) return 'ended';
+    const effStart = eff[0].from;
+    const effOpen = eff.some((sp) => !sp.to);
+    const effEnd = effOpen ? undefined : eff.at(-1)!.to;
+    if (today < effStart) return 'upcoming';
+    if (!effOpen && effEnd && today > effEnd) return 'ended';
+    if (s.status === 'paused' && (!s.pausedAt || s.pausedAt <= today)) return 'paused';
+    if (availPausedOn(avail, today) || !availInSpan(avail, today)) return 'paused';
+    if (isFreeBundlePhase(s) && avail.trial && today >= avail.trial.from && today < avail.trial.until) return 'trial';
+    if (s.status === 'trial' && s.trialEnd && s.trialEnd > today) return 'trial';
+    if (displayCycle(s, today).unit === 'lifetime') return 'lifetime';
+    if (s.end || !effOpen) return 'ending';
+    return 'active';
   }
   if (s.start > today) return 'upcoming';
   if (s.stop && s.stop.date <= today) return s.stop.kind === 'terminate' ? 'terminated' : 'ended';
@@ -748,6 +811,11 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
       if (s.end && serviceDate > s.end) break;
       if (undatedStop(s) && serviceDate > original) break;
       if (pausedFrom && serviceDate >= pausedFrom) break;
+      if (s.bundleAvail) {
+        const open = s.bundleAvail.spans.some((sp) => !sp.to);
+        const lastDay = open ? undefined : s.bundleAvail.spans.at(-1)?.to;
+        if (!open && (!lastDay || serviceDate > lastDay)) break;
+      }
       if (serviceDate < s.start || d < from || d <= after || (cashAnchor && d < begin)) continue;
       if (s.status === 'trial' && s.trialEnd && serviceDate < s.trialEnd) continue;
       // 金额按所用那一期的价格（首期优惠、调价都看服务期起点）；结束日（含）在期中时只收用到的天数，换方案不重复计费
@@ -756,8 +824,15 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
       // 服务期从暂停里开始：只收恢复之后用到的天数，整期都在暂停里就没有账单；暂停前开始的那期金额不变
       const resumed = s.pauses?.find((p) => p.from <= serviceDate && serviceDate < p.to)?.to;
       if (resumed && (cut ?? boundary) <= resumed) continue;
-      const amount =
-        cut || resumed ? Math.round(((full * diffDays(resumed ?? serviceDate, cut ?? boundary)) / diffDays(serviceDate, boundary)) * 100) / 100 : full;
+      let amount: number;
+      if (s.bundleAvail) {
+        const totalDays = diffDays(serviceDate, boundary);
+        const active = availActiveDays(s.bundleAvail, resumed ?? serviceDate, cut ?? boundary);
+        if (active <= 0) continue;
+        amount = active === totalDays ? full : Math.round(((full * active) / totalDays) * 100) / 100;
+      } else {
+        amount = cut || resumed ? Math.round(((full * diffDays(resumed ?? serviceDate, cut ?? boundary)) / diffDays(serviceDate, boundary)) * 100) / 100 : full;
+      }
       out.push({ sub: s, date: d, serviceDate, amount, currency: s.currency, projected: d > today });
       continue;
     }
@@ -769,6 +844,12 @@ function schedule(s: Subscription, anchor: string, from: string, to: string, tod
     // end is inclusive service coverage; no purchase of service starting after it.
     if (s.end && serviceDate > s.end) break;
     if (undatedStop(s) && boundary > original) break;
+    if (s.bundleAvail) {
+      const open = s.bundleAvail.spans.some((sp) => !sp.to);
+      const lastDay = open ? undefined : s.bundleAvail.spans.at(-1)?.to;
+      if (!open && (!lastDay || serviceDate > lastDay)) break;
+      if (!availCoversDay(s.bundleAvail, serviceDate)) continue;
+    }
     if (serviceDate < s.start || d < s.start || d < from || d <= after || (cashAnchor && d < begin)) continue;
     if (s.status === 'trial' && s.trialEnd && d < s.trialEnd) continue;
     if (pausedFrom && d >= pausedFrom) break;
@@ -1166,9 +1247,32 @@ function separateCharges(s: Subscription, from: string, to: string, today: strin
   return out.sort((a, b) => a.date.localeCompare(b.date));
 }
 
+/** 仅输出显式记下的付款（免费附赠阶段不推算 0 元周期账单，也不因赠送期重新生成） */
+function recordedOnlyCharges(s: Subscription, from: string, to: string, today: string): Charge[] {
+  const pays = (s.payments ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
+  if (!pays.length) return [];
+  const postpaidBefore = (date: string, stop: string) => isPostpaid(s) && chargeServicePeriod(s, date).from <= stop;
+  return pays
+    .filter((p) => p.date >= from && p.date <= to && (!s.stop || p.date <= s.stop.date || p.kind === 'refund' || postpaidBefore(p.date, s.stop.date)))
+    .map((p) => ({
+      sub: s,
+      date: p.date,
+      amount: p.kind === 'failed' ? 0 : p.amount,
+      currency: s.currency,
+      projected: p.date > today,
+      kind: p.kind,
+      settled: p.kind === 'failed' ? undefined : p.settled,
+      note: p.note,
+      ...(p.serviceDate ? { serviceDate: p.serviceDate } : {}),
+      ...(p.methodId ? { methodId: p.methodId } : {}),
+      ...(p.funding?.length ? { funding: p.funding } : {}),
+    }));
+}
+
 /** 按记录原样算，不再识别旧版提前续费；账期计算去掉停用状态后用它，否则会绕过 settleLegacyEarly 的停用判断 */
 function chargesAsRecorded(s: Subscription, from: string, to: string, today: string): Charge[] {
   if (s.expires && s.chargeLeadDays == null) s = migrateRenewalRules(s);
+  if (isFreeBundlePhase(s)) return recordedOnlyCharges(s, from, to, today);
   const recorded = new Set((s.payments ?? []).map((p) => p.date));
   const known = (c: Charge) => !s.estimateFrom || c.date >= s.estimateFrom || recorded.has(c.date);
   const raw = rawCharges(s, from, to, today).filter(known);
@@ -1222,6 +1326,7 @@ function rawCharges(s: Subscription, from: string, to: string, today: string): C
     return earlier.concat(out, future).sort((a, b) => a.date.localeCompare(b.date));
   }
   if (s.cycle.unit === 'lifetime') {
+    if (s.bundleAvail && !availCoversDay(s.bundleAvail, s.start)) return [];
     return s.start >= from && s.start <= to ? [{ sub: s, date: s.start, amount: priceAt(s, s.start), currency: s.currency, projected: s.start > today }] : [];
   }
   const anchor = billingAnchor(s);
@@ -1460,7 +1565,11 @@ export function reconcileRenewalRules(previous: Subscription | undefined, next: 
 
 /** 今天及以后的第一次扣款；今天扣款的仍算下次扣款，界面、MCP 与提醒都传今天 */
 export function nextCharge(s: Subscription, today: string): string | undefined {
-  if (s.cycle.unit === 'lifetime') return s.start > today ? s.start : undefined;
+  if (!s.phases?.length && s.cycle.unit === 'lifetime') {
+    if (isFreeBundlePhase(s)) return undefined;
+    if (s.bundleAvail && !availCoversDay(s.bundleAvail, s.start)) return undefined;
+    return s.start > today ? s.start : undefined;
+  }
   // 后付费停止后还有最后一张账单，交给 chargesBetween 判断
   if (s.stop && s.stop.date <= today && !isPostpaid(s)) return undefined;
   // 提前续费后下一笔可能在将近两个周期之后；分开记时已预缴的账单（带 paidOn）不算下一笔
@@ -1491,8 +1600,26 @@ export function billingPeriod(s: Subscription, at: string): { from: string; paid
   return periodAsRecorded(settleLegacyEarly(s), at);
 }
 
-function periodAsRecorded(s: Subscription, at: string): { from: string; paidThrough: string; paid: number; days: number } {
-  const pausedFrom = s.pauses?.find((p) => p.from <= at && at < p.to)?.from ?? pausedFromOf(s);
+function periodAsRecorded(s: Subscription, at: string, skipPauseCheck = false): { from: string; paidThrough: string; paid: number; days: number } {
+  // 修正服务开始日后，之前的实付/计费锚点仍决定已付账期。
+  const paidFrom = [s.start, s.billingStart, s.nextDue, ...(s.payments ?? []).filter((p) => !p.kind).map((p) => p.date)]
+    .filter((d): d is string => !!d)
+    .sort()[0];
+  const availPausedFrom = (() => {
+    const avail = s.bundleAvail;
+    if (!avail || availCoversDay(avail, at)) return undefined;
+    const hit = avail.pauses.find((p) => p.from <= at && (!p.to || at < p.to));
+    if (hit) return hit.from;
+    const prevEnd = avail.spans
+      .filter((sp) => sp.to && sp.to < at)
+      .map((sp) => sp.to!)
+      .sort()
+      .at(-1);
+    return prevEnd ? addDays(prevEnd, 1) : undefined;
+  })();
+  const pausedFrom = skipPauseCheck
+    ? undefined
+    : [s.pauses?.find((p) => p.from <= at && at < p.to)?.from, pausedFromOf(s), availPausedFrom].filter((d): d is string => !!d && d <= at).sort()[0];
   if (pausedFrom && at >= pausedFrom) {
     // 暂停后没有新账期：已付期算到暂停前那期（或暂停后记下的最后一笔实付），停在这之后就没有未用天数
     const paid = (s.payments ?? [])
@@ -1501,10 +1628,9 @@ function periodAsRecorded(s: Subscription, at: string): { from: string; paidThro
       .sort()
       .at(-1);
     const before = s.pauses?.filter((p) => p.to <= pausedFrom);
-    const period = periodAsRecorded(
-      { ...s, pausedAt: undefined, pauses: before, stop: s.stop && { ...s.stop, pausedAt: undefined } },
-      paid ?? addDays(pausedFrom, -1),
-    );
+    const prevDay = addDays(pausedFrom, -1);
+    if (!paid && prevDay < paidFrom) return { from: s.start, paidThrough: at, paid: 0, days: 1 };
+    const period = periodAsRecorded({ ...s, pausedAt: undefined, pauses: before, stop: s.stop && { ...s.stop, pausedAt: undefined } }, paid ?? prevDay, !!paid);
     return period.paidThrough < at ? { ...period, paidThrough: at } : period;
   }
   const open = {
@@ -1518,40 +1644,65 @@ function periodAsRecorded(s: Subscription, at: string): { from: string; paidThro
   if (isPostpaid(s)) {
     // 后付费没有预付：已付 0、不可退款、不浪费，用到哪天算到哪天；from 为 at 所在服务期的起点
     const span = Math.ceil(cycleDays(s.cycle) * 2) + maxChargeLead(s) + 32;
-    const next = chargesBetween(open, addDays(at, 1), addDays(at, span), at).find((c) => !c.kind);
+    const next = chargesBetween({ ...open, bundleAvail: undefined }, addDays(at, 1), addDays(at, span), at).find((c) => !c.kind);
     const period = next ? chargeServicePeriod(s, next.date, next.serviceDate) : undefined;
     const from = period && period.from <= at ? period.from : s.start <= at ? s.start : at;
     return { from, paidThrough: at, paid: 0, days: Math.max(1, diffDays(from, period?.until ?? addDays(at, 1))) };
   }
-  // 修正服务开始日后，之前的实付/计费锚点仍决定已付账期。
-  const paidFrom = [s.start, s.billingStart, s.nextDue, ...(s.payments ?? []).filter((p) => !p.kind).map((p) => p.date)]
-    .filter((d): d is string => !!d)
-    .sort()[0];
   // 账期按完整计费规则推算：导入边界（estimateFrom）只决定统计里算不算边界前的推算扣款，
   // 不能让当前账期的那一笔消失，否则已付金额为 0、退款上限和浪费天数全错
   const paidOpen = { ...open, start: paidFrom, estimateFrom: undefined };
   const past = chargesAsRecorded(paidOpen, paidFrom, at, at).filter((c) => !c.kind);
   const last = past.at(-1);
   // 恢复后还在被暂停跳过的那一期里：账期按原节奏算，但这期没付过钱
-  const natural = open.pauses?.length
-    ? chargesAsRecorded({ ...paidOpen, pauses: undefined }, paidFrom, at, at)
-        .filter((c) => !c.kind)
-        .at(-1)
-    : last;
+  const freeBundle = isFreeBundlePhase(s);
+  const noAvail = { ...paidOpen, pauses: undefined, bundleAvail: undefined };
+  let naturalOpen = noAvail;
+  if (!freeBundle && s.nextDue && (open.pauses?.length || s.bundleAvail)) {
+    // savePayment 在父订阅或自身暂停时会把 nextDue 跳到暂停后的下一期（如 04-01，提前扣款时为 03-27）；
+    // 若最后实付至 s.nextDue 之间缺省生成的自然扣款日全被暂停/不可用跳过，则账期与被跳期识别必须按未跳期节奏算。
+    const lastPaidObj = (s.payments ?? [])
+      .filter((p) => !p.kind && p.date < s.nextDue!)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .at(-1);
+    const unskippedUntil = lastPaidObj ? chargeServicePeriod(noAvail, lastPaidObj.date, lastPaidObj.serviceDate).until : undefined;
+    const unskippedNext = unskippedUntil ? chargeOfService(noAvail, unskippedUntil) : undefined;
+    const unskipped = { ...noAvail, nextDue: unskippedNext && unskippedNext < s.nextDue ? unskippedNext : undefined };
+    const afterDay = lastPaidObj ? addDays(lastPaidObj.date, 1) : paidFrom;
+    const skippedOn = (c: Charge) =>
+      (s.bundleAvail ? !availCoversDay(s.bundleAvail, c.serviceDate ?? c.date) : false) ||
+      (s.pauses ?? []).some((p) => p.from <= c.date && c.date < p.to) ||
+      (!!pausedFromOf(s) && c.date >= pausedFromOf(s)!);
+    const missing = afterDay < s.nextDue ? chargesAsRecorded(unskipped, afterDay, addDays(s.nextDue, -1), at).filter((c) => !c.kind) : [];
+    if (missing.length && missing.every(skippedOn)) naturalOpen = unskipped;
+  }
+  const natural =
+    !freeBundle && (open.pauses?.length || s.bundleAvail)
+      ? chargesAsRecorded(naturalOpen, paidFrom, at, at)
+          .filter((c) => !c.kind && (!c.serviceDate || c.serviceDate <= at || c.date === last?.date))
+          .at(-1)
+      : last;
   const skipped = !!natural && (!last || natural.date > last.date);
   const current = skipped ? natural : last;
   // 这期没有扣款，账期从恢复日算，不显示一个不存在的扣款日
-  const resumedAt = skipped ? open.pauses?.at(-1)?.to : undefined;
+  const resumedAt = skipped
+    ? [...(open.pauses ?? []).map((p) => p.to), ...(s.bundleAvail?.pauses ?? []).map((p) => p.to), ...(s.bundleAvail?.spans ?? []).map((sp) => sp.from)]
+        .filter((d): d is string => !!d && d <= at && (!natural || d > natural.date))
+        .sort()
+        .at(-1)
+    : undefined;
   const sinceResume = (day: string) => (resumedAt && resumedAt > day ? resumedAt : day);
   // 提前续费：现金日早于服务日，服务开始后账期从服务日算
   const from = sinceResume(current?.serviceDate && current.serviceDate <= at ? current.serviceDate : (current?.date ?? s.start));
-  // 下一账期开始日：实付的提前续费按它结清的那一期算
+  // 下一账期开始日：实付的提前续费按它结清的那一期算；被暂停跳过的账单不能延长当前已付期的覆盖长度
   const nextPaid = (day?: string) => s.payments?.find((p) => p.date === day && p.serviceDate)?.serviceDate ?? day;
   const horizon = addDays(at, Math.ceil(cycleDays(s.cycle) === Infinity ? 366 : cycleDays(s.cycle) * 2) + 32);
   const next =
     s.cycle.unit === 'lifetime'
       ? addDays(at, 1)
-      : (nextPaid(chargesAsRecorded(paidOpen, addDays(at, 1), horizon, at).find((c) => !c.kind)?.date) ?? nthCharge(from, s.cycle, 1));
+      : freeBundle
+        ? nthCharge(from, s.cycle, 1)
+        : (nextPaid(chargesAsRecorded(naturalOpen, addDays(at, 1), horizon, at).find((c) => !c.kind)?.date) ?? nthCharge(from, s.cycle, 1));
   if ((s.chargeLeadDays ?? 0) > 0 || s.renewalHistory?.length) {
     const service = current ? chargeServicePeriod(s, current.date, current.serviceDate) : { from: s.start, until: next };
     const serviceFrom = sinceResume(service.from);
@@ -1741,11 +1892,25 @@ export function memberSince(s: Subscription, m: Pick<ShareMember, 'joined'>): st
   return m.joined ?? s.share?.since ?? s.start;
 }
 
-/** 合租向成员收钱的最后一天：订阅结束日；暂停中的订阅到暂停前一天（与 memberDues 同一口径，暂停期间不生成新的应收期） */
-export function shareLastDay(s: Pick<Subscription, 'end' | 'status' | 'pausedAt' | 'stop'>): string | undefined {
+/** 订阅自身的最后收款日（不含父订阅暂停/结束截断，供 memberPeriods/memberCollection 保留预收期次归属） */
+function ownShareLastDay(s: Pick<Subscription, 'end' | 'status' | 'pausedAt' | 'stop'>): string | undefined {
   const pausedFrom = pausedFromOf(s);
   const paused = pausedFrom ? addDays(pausedFrom, -1) : undefined;
   return [s.end, paused].filter((d): d is string => !!d).sort()[0];
+}
+
+/** 合租向成员收钱的最后一天：订阅结束日；暂停中的订阅到暂停前一天（与 memberDues 同一口径，暂停期间不生成新的应收期） */
+export function shareLastDay(s: Pick<Subscription, 'end' | 'status' | 'pausedAt' | 'stop' | 'bundleAvail' | 'phases'>): string | undefined {
+  const own = ownShareLastDay(s);
+  let parentCut: string | undefined;
+  if (!s.phases?.length && s.bundleAvail) {
+    const openPause = s.bundleAvail.pauses.find((p) => !p.to);
+    const parentPaused = openPause && openPause.from !== '0000-01-01' ? addDays(openPause.from, -1) : undefined;
+    const parentEnded =
+      s.bundleAvail.ended?.kind === 'stop' ? addDays(s.bundleAvail.ended.date, -1) : s.bundleAvail.ended?.kind === 'end' ? s.bundleAvail.ended.date : undefined;
+    parentCut = [parentPaused, parentEnded].filter((d): d is string => !!d).sort()[0];
+  }
+  return [own, parentCut].filter((d): d is string => !!d).sort()[0];
 }
 
 /** 加入日当天生效，退出日当天已离开。 */
@@ -1785,6 +1950,7 @@ export function monthlyGross(s: Subscription, day?: string, fx: FxTable = FALLBA
 
 /** monthlyGross's plan-price basis, retaining each concurrent phase's native currency. */
 export function monthlyPriceTotal(state: AppState, s: Subscription, day: string, to = state.settings.baseCurrency): FxTotal {
+  s = bundleView(s, state.subscriptions);
   if (!s.phases?.length) return convertedTotal(state, monthlyGross(s, day), s.currency, undefined, to);
   const cur = currentPhase(s, day);
   return sumTotals([cur, ...activePhases(s, day).filter((v) => v.start !== cur.start)].map((v) => monthlyPriceTotal(state, v, day, to)));
@@ -1801,7 +1967,7 @@ function billedPhases(s: Subscription, day: string): Subscription[] {
  * 给了 methodId 时只算用这个支付方式付的那几段（钱包按卡统计）
  */
 export function monthlyMine(state: AppState, s: Subscription, day: string, methodId?: string): number {
-  return billedMonthly(state, s, day, methodId).mine;
+  return billedMonthly(state, bundleView(s, state.subscriptions), day, methodId).mine;
 }
 
 /** 计费中各段的每月全额与我承担的部分（本位币）；折算不了时返回 NaN。monthlyMine 与 totals 共用 */
@@ -1819,6 +1985,7 @@ function billedMonthly(state: AppState, s: Subscription, day: string, methodId?:
 
 /** Monthly totals keep the billing/status and built-in current-FX fallback rules. */
 export function monthlyTotal(state: AppState, s: Subscription, day: string, methodId?: string, gross = false, to = state.settings.baseCurrency): FxTotal {
+  s = bundleView(s, state.subscriptions);
   return sumTotals(
     billedPhases(s, day)
       .filter((v) => (methodId === undefined || v.methodId === methodId) && ['active', 'ending'].includes(effectiveStatus(v, day)))
@@ -1838,6 +2005,7 @@ export interface Totals {
 }
 
 export function totals(state: AppState, today: string): Totals {
+  state = resolveState(state);
   let mrr = 0;
   let gross = 0;
   let count = 0;
@@ -1917,6 +2085,7 @@ export function liveExpiry(m: Pick<PaymentMethod, 'balance' | 'balanceAsOf' | 'b
 
 export function runwayFor(method: PaymentMethod, state: AppState, today: string, horizonMonths = 36): Runway | undefined {
   if (method.balance == null) return undefined;
+  state = resolveState(state);
   // 按阶段展开：换区前后可能用不同的支付方式。月消耗仍按阶段的支付方式
   const phases = state.subscriptions.flatMap(phaseSubs);
   const subs = phases.filter((s) => s.methodId === method.id);
@@ -2119,10 +2288,34 @@ const STUB_DAYS = 7;
  */
 export function memberPeriods(s: Subscription, m: ShareMember, last: string, collectCurrency: string, legacyDrift = false): Period[] {
   const out: Period[] = [];
-  const end = shareLastDay(s);
+  const end = ownShareLastDay(s);
+  const settledKeys = [...(m.receipts ?? []), ...(m.waivers ?? [])].flatMap((x) => x.periods);
+  const laterPhaseAfter = (day: string) => !!s.phases?.some((p) => p.start > day);
   for (let from = memberSince(s, m), guard = 0; from <= last && guard < 1200; guard++) {
     if ((m.left && from >= m.left) || (end && from > end)) break;
     const c = memberCollection(s, m, from, collectCurrency, legacyDrift);
+    const ph = s.phases?.length ? phaseAt(s, c.from) : s;
+    const avail = ph?.bundleAvail;
+    if (avail) {
+      const keepSettled = settledKeys.some((k) => k >= c.from && k <= c.until);
+      if (!keepSettled) {
+        const hasLaterSettled = settledKeys.some((k) => k >= c.next);
+        if (avail.undatedStop) {
+          if (!laterPhaseAfter(c.from) && !hasLaterSettled) break;
+          if (c.next <= from) break;
+          from = c.next;
+          continue;
+        }
+        if (availActiveDays(avail, c.from, addDays(c.until, 1)) === 0) {
+          const endedBefore = !!avail.ended && !avail.spans.some((sp) => !sp.to || sp.to >= c.from);
+          const openPaused = avail.pauses.some((p) => !p.to && p.from <= c.from);
+          if ((endedBefore || openPaused) && !laterPhaseAfter(c.from) && !hasLaterSettled) break;
+          if (c.next <= from) break;
+          from = c.next;
+          continue;
+        }
+      }
+    }
     out.push({ key: c.from, from: c.from, until: c.until, due: c.amount, currency: c.currency });
     if (c.next <= from) break;
     from = c.next;
@@ -2189,7 +2382,7 @@ export function memberCollection(s: Subscription, m: ShareMember, from: string, 
   }
   const fixed = m.periodDues?.find((d) => d.from === from);
   if (fixed) amount = fixed.amount;
-  const end = shareLastDay(s);
+  const end = ownShareLastDay(s);
   if (m.exempt || until < from || (m.left && from >= m.left) || (end && from > end)) amount = 0;
   return { from, until, next: addDays(until, 1) > from ? addDays(until, 1) : next, amount: Math.round(amount * 100) / 100, currency: rate.currency, partial };
 }
@@ -2207,7 +2400,7 @@ export function memberUnpaidFrom(s: Subscription, m: ShareMember): string {
     const open = periods.find((p) => !isSettled(p));
     if (open) return open.from;
     const last = periods.at(-1);
-    const end = shareLastDay(s);
+    const end = shareLastDay(s.phases?.length ? phaseSubs(s).at(-1)! : s);
     if (last && ((m.left && addDays(last.until, 1) >= m.left) || (end && addDays(last.until, 1) > end))) return addDays(last.until, 1);
   }
   return joined;
@@ -2215,10 +2408,11 @@ export function memberUnpaidFrom(s: Subscription, m: ShareMember): string {
 
 export function memberDues(s: Subscription, today: string, collectCurrency: string, fxState?: Pick<AppState, 'fx' | 'fxHistory' | 'settings'>): MemberDue[] {
   if (!s.share || s.share.role !== 'owner') return [];
+  const parentOpenPause = s.bundleAvail?.pauses.find((p) => !p.to);
   const stop = [
     shareLastDay(s),
-    s.status === 'paused' && !s.pausedAt ? addDays(today, -1) : undefined,
-    undatedStop(s) ? latestDay(lastCharge(s, today), s.start) : undefined,
+    (s.status === 'paused' && !s.pausedAt) || parentOpenPause?.from === '0000-01-01' ? addDays(today, -1) : undefined,
+    undatedStop(s) || s.bundleAvail?.undatedStop ? latestDay(lastCharge(s, today), s.start) : undefined,
     today,
   ]
     .filter((d): d is string => !!d)

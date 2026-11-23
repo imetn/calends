@@ -1,6 +1,7 @@
 // 业务数据：订阅上用户自定义的指标（电量、里程、出站流量……）与按期记录。
 // 读数和付款分开存：服务器年付但按月看流量、车险一年一交但里程随时记。这里只放纯计算与校验，浏览器与 Worker 共用。
 import { addDays, chargeServicePeriod, chargesBetween, diffDays, fnv1a, isPostpaid, nthCharge, phaseSubs, shareLastDay, validDay } from './billing.ts';
+import { availActiveSpans, bundleView } from './bundle.ts';
 import { t } from './i18n.ts';
 import type { Charge } from './billing.ts';
 import type { Meter, Reading, Subscription } from './types.ts';
@@ -236,10 +237,15 @@ const BASE_MAX_DAYS = 31;
  */
 export function meterView(s: Subscription, subs: Subscription[]): Subscription {
   if (!s.meters?.some((m) => m.link)) return s;
-  // 只算真正在服务的日子：阶段之间的空档、暂停之后、停用之后都不算；相邻或并行的阶段并成一段连续服务
+  s = bundleView(s, subs);
+  // 只算真正在服务的日子：阶段之间的空档、暂停之后、停用之后以及父订阅暂停/断档都不算；相邻或并行的阶段并成一段连续服务
   const spans: Array<{ from: string; to?: string }> = [];
   for (const p of phaseSubs(s)
-    .map((p) => ({ from: p.start, to: [shareLastDay(p), p.stop?.date].filter((d): d is string => !!d).sort()[0] }))
+    .flatMap((p) => {
+      const to = [shareLastDay(p), p.stop?.date].filter((d): d is string => !!d).sort()[0];
+      if (p.bundleAvail) return availActiveSpans(p.start, to, p.bundleAvail);
+      return [{ from: p.start, ...(to ? { to } : {}) }];
+    })
     .sort((a, b) => a.from.localeCompare(b.from))) {
     const last = spans.at(-1);
     if (!last || (last.to && p.from > addDays(last.to, 1))) spans.push({ ...p });
@@ -247,7 +253,7 @@ export function meterView(s: Subscription, subs: Subscription[]): Subscription {
   }
   const spanOf = (day: string) => spans.find(({ from, to }) => day >= from && (!to || day <= to));
   const readings = [...(s.readings ?? [])];
-  const meters = s.meters.map((m) => {
+  const meters = (s.meters ?? []).map((m) => {
     const source = meterSource(s, m, subs);
     if (!source) return m;
     const kind = source.meter.kind;

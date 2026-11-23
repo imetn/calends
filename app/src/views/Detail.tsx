@@ -1,5 +1,6 @@
 import { CopyImageButton } from '../components/CopyImageButton.tsx';
 import { isStopped, pauseDay } from '../../../shared/billing.ts';
+import { bundleSource, bundleView, displayCycle, followsParent, hasFinancialHistory, isFreeBundlePhase } from '../../../shared/bundle.ts';
 import { meterView } from '../../../shared/meters.ts';
 import { createPortal } from 'react-dom';
 import { useRef, useState } from 'react';
@@ -51,6 +52,7 @@ import { Notices } from './detail/Notices.tsx';
 import { NoteBlock, ShareCard } from './detail/Summary.tsx';
 import { Charges } from './detail/Ledgers.tsx';
 import { Meters, usageMetrics } from './detail/Meters.tsx';
+import { BundleCard } from './detail/BundleCard.tsx';
 
 /**
  * 详情顶部的操作按钮。宽屏：常用的带文字（胶囊），次要的只有图标（正圆）；
@@ -102,20 +104,41 @@ export async function detailImage(el: HTMLElement) {
   }))!;
 }
 
-export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscription; state: AppState; today: string; onEdit: () => void; onClose: () => void }) {
+export function Detail({
+  sub,
+  state,
+  today,
+  onEdit,
+  onOpen,
+  onAddLinked,
+  onClose,
+}: {
+  sub: Subscription;
+  state: AppState;
+  today: string;
+  onEdit: () => void;
+  onOpen?: (s: Subscription) => void;
+  onAddLinked?: (parent: Subscription) => void;
+  onClose: () => void;
+}) {
   const pair = useMoneyPair(state);
-  const st = effectiveStatus(sub, today);
-  const next = nextCharge(sub, today);
+  // view 带父订阅可用期（只读展示与计算），所有保存/编辑动作仍用原始 sub
+  const view = bundleView(sub, state.subscriptions);
+  const st = effectiveStatus(view, today);
+  const next = nextCharge(view, today);
   // 显示今天生效的那一段（换区前仍是旧区的价格与支付方式），未来的变更单独列出
-  const cur = currentPhase(sub, today);
+  const cur = currentPhase(view, today);
+  const freeBundle = isFreeBundlePhase(cur);
+  const parentInfo = bundleSource(sub, state.subscriptions, today);
+  const parentMissing = !!cur.bundle?.parentId && !parentInfo;
   // 账单（权责）：走势图、用量按账单日期；扣款记录与指标按实际付款。账单与缴费分开记时两者不同，其余订阅是同一份
   // 逾期未缴的部分由走势图另行画成虚线（overdueBills），这里不重复
   const history = withProxyCharged(
-    sub,
-    chargesBetween(sub, historyStart(sub), today, today).filter((c) => c.unpaid !== 'overdue'),
+    view,
+    chargesBetween(view, historyStart(view), today, today).filter((c) => c.unpaid !== 'overdue'),
   );
-  const separate = phaseSubs(sub).some(isSeparate);
-  const paid = separate ? cashChargesBetween(sub, historyStart(sub), today, today) : history;
+  const separate = phaseSubs(view).some(isSeparate);
+  const paid = separate ? cashChargesBetween(view, historyStart(view), today, today) : history;
   const [pay, setPay] = useState<{ pay?: Payment; index?: number; phase?: string } | null>(null);
   const [share, setShare] = useState(false);
   // 合租弹窗：从详情的合租区点进去，看收了多少、付了多少；成员资料再叠一层
@@ -124,10 +147,10 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   const [transfer, setTransfer] = useState<{ index?: number } | null>(null);
   const root = useRef<HTMLDivElement>(null);
 
-  const nowPrice = next && (!cur.end || next < cur.end) ? priceAt(sub, next) : cur.price;
-  const forecast = detailForecast(sub, today);
+  const nowPrice = next && (!cur.end || next < cur.end) ? priceAt(view, next) : cur.price;
+  const forecast = detailForecast(view, today);
   const showForecast = !forecast.sparse && forecast.charges.length > 0;
-  const once = sub.cycle.unit === 'lifetime' && phaseSubs(sub).length === 1;
+  const once = view.cycle.unit === 'lifetime' && phaseSubs(view).length === 1;
   // 买断按买下那天的汇率折算，与扣款记录、摊到每月同一口径；按今天汇率会和记录里的金额对不上
   const big = pair(nowPrice, cur.currency, { compact: false, plain: true, date: once ? history[0]?.date : undefined });
 
@@ -152,19 +175,22 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
   };
 
   const paused = sub.status === 'paused';
-  // 买断，或刚开始的长周期订阅（一段、不合租，不到两笔扣款画不出走势，也没有未来扣款图）：
+  const parentPaused = !paused && st === 'paused' && followsParent(cur);
+  const pureFreePerk = freeBundle && !hasFinancialHistory(sub, paid);
+  // 买断、纯免费附赠，或刚开始的长周期订阅（一段、不合租，不到两笔扣款画不出走势，也没有未来扣款图）：
   // 主栏只剩指标卡，换成窄的单列，不留半屏空白
-  const compact = phaseSubs(sub).length === 1 && !sub.share && (sub.cycle.unit === 'lifetime' || (!showForecast && regular(history).length < 2));
+  const compact =
+    pureFreePerk || (phaseSubs(view).length === 1 && !sub.share && (view.cycle.unit === 'lifetime' || (!showForecast && regular(history).length < 2)));
   // 费用图与用量图共用一个范围和横轴；换订阅时回到默认范围
   const [rangePick, setRangePick] = useState<{ id: string; range: Range }>();
-  const axis = timelineAxis(sub, today, history, rangePick?.id === sub.id ? rangePick.range : undefined);
+  const axis = timelineAxis(view, today, history, rangePick?.id === sub.id ? rangePick.range : undefined);
   // 当前看的用量指标：顶部用量行与用量卡共用
   const [meterPick, setMeterPick] = useState<{ id: string; meter: string }>();
-  const usageSub = meterView(sub, state.subscriptions);
+  const usageSub = meterView(view, state.subscriptions);
   const meter = usageSub.meters?.find((m) => meterPick?.id === sub.id && m.id === meterPick.meter) ?? usageSub.meters?.[0];
   const charges = (
     <Charges
-      sub={sub}
+      sub={view}
       state={state}
       today={today}
       history={paid}
@@ -173,10 +199,10 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
       onAdd={once && paid.length ? undefined : () => setPay({})}
     />
   );
-  const events = !compact ? <Events sub={sub} state={state} today={today} /> : null;
+  const events = !compact ? <Events sub={view} state={state} today={today} /> : null;
   const actions = (
     <>
-      {sub.cycle.unit !== 'lifetime' && !isStopped(st) && (
+      {sub.cycle.unit !== 'lifetime' && !isStopped(st) && !parentPaused && (
         <Act
           icon={paused ? <Play size={15} /> : <Pause size={15} />}
           label={paused ? t('detail.action.resume') : t('detail.action.pause')}
@@ -219,10 +245,27 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
         }
         meta={
           <>
-            <b>
-              {big.main} {st !== 'lifetime' && cycleLabel(cur.cycle)}
-            </b>
-            {big.alt && <span>{big.alt}</span>}
+            {freeBundle ? (
+              <>
+                <b>{t('list.badge.included')}</b>
+                {st !== 'lifetime' && <span>{cycleLabel(displayCycle(cur, today))}</span>}
+              </>
+            ) : (
+              <>
+                <b>
+                  {big.main} {st !== 'lifetime' && cycleLabel(cur.cycle)}
+                </b>
+                {big.alt && <span>{big.alt}</span>}
+              </>
+            )}
+            {parentInfo ? (
+              <button type="button" className="who-chip dt-parent-chip" onClick={() => onOpen?.(parentInfo.parent)}>
+                <SubIcon sub={parentInfo.parent} size={16} proxied />
+                <span>{parentInfo.parent.name}</span>
+              </button>
+            ) : (
+              parentMissing && <span className="dt-badge warn">{t('detail.bundle.parentMissing')}</span>
+            )}
             <RegionTag
               cc={subRegion(
                 cur,
@@ -253,11 +296,11 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
           提醒仍是卡片，其余（走势、记录、合租、详情、历程）用分隔线隔开
         */}
       <div className="dt-body dt-flow">
-        <Kpis sub={sub} state={state} today={today} history={paid} usage={meter && usageMetrics(usageSub, meter, today)} />
+        <Kpis sub={view} state={state} today={today} history={paid} usage={meter && usageMetrics(usageSub, meter, today)} />
         {/* 指标下面：本期进度与属性（不加标题），然后是扣款走势、提醒和记录 */}
-        <Summary key={sub.id} sub={sub} state={state} today={today} />
+        <Summary key={sub.id} sub={view} state={state} today={today} onOpen={onOpen} />
         {!compact && (
-          <Timeline sub={sub} state={state} today={today} history={history} range={axis.range} onRange={(range) => setRangePick({ id: sub.id, range })} />
+          <Timeline sub={view} state={state} today={today} history={history} range={axis.range} onRange={(range) => setRangePick({ id: sub.id, range })} />
         )}
         {/* 用量紧跟费用走势：横轴日期对齐，切换范围两张图一起变 */}
         {!!sub.meters?.length && (
@@ -272,12 +315,14 @@ export function Detail({ sub, state, today, onEdit, onClose }: { sub: Subscripti
             axis={!compact && axis.drawn ? axis : undefined}
           />
         )}
-        <Notices sub={sub} state={state} today={today} />
-        {/* 合租比扣款记录重要，放在前面 */}
-        <ShareCard sub={sub} state={state} today={today} onCar={() => setCar(true)} onMember={(m) => setMember({ m })} />
+        <Notices sub={sub} state={state} today={today} onOpen={onOpen} />
+        {/* 合租、关联订阅比扣款记录重要，放在前面 */}
+        <ShareCard sub={view} state={state} today={today} onCar={() => setCar(true)} onMember={(m) => setMember({ m })} />
+        <BundleCard sub={sub} state={state} today={today} onOpen={onOpen} onAddLinked={onAddLinked} />
         {charges}
         <Transfers sub={sub} state={state} onRow={(index) => setTransfer({ index })} onAdd={() => setTransfer({})} />
-        {/* 还没有指标时只有一个添加入口，放在记录后面不抢走势的位置 */}
+        {/* 还没有关联订阅 / 指标时只留轻入口，放在记录后面不抢走势的位置 */}
+        <BundleCard sub={sub} state={state} today={today} onOpen={onOpen} onAddLinked={onAddLinked} emptyOnly />
         {!sub.meters?.length && <Meters key={`m${sub.id}`} sub={sub} state={state} today={today} />}
         {events}
         <NoteBlock sub={sub} />

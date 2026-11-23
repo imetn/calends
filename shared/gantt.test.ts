@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { transformSync } from 'oxc-transform-react';
 import * as billing from './billing.ts';
+import * as bundle from './bundle.ts';
 import * as format from './format.ts';
 import * as gantt from './gantt.ts';
 import { TRANSLATED_LOCALES, flatten, intlLocale, setLocale, t } from './i18n.ts';
@@ -159,6 +160,7 @@ function mount(rawZoom?: string, width = 214, today = '2026-10-21') {
   const useRef = (current: unknown) => useState({ current })[0];
   const deps = {
     ...billing,
+    ...bundle,
     ...transfers,
     ...format,
     ...gantt,

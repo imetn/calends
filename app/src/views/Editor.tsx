@@ -54,7 +54,7 @@ export function Editor({ sub, state, today, onClose }: { sub: Subscription; stat
     if (!priceValid) return;
     let out: Subscription;
     try {
-      out = prepareEditorSave(sub, f, today, isNew, basePrice, stop);
+      out = prepareEditorSave(sub, f, today, isNew, basePrice, stop, state.subscriptions);
     } catch (e) {
       await run(async () => {
         throw e;

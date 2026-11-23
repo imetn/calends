@@ -5,6 +5,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts';
 import { addDays, addMonths, currentPhase, cycleLabel, diffDays, effectiveStatus, monthlyGross, myShareFactor, nextCharge, todayIn, isStopped } from '../../../shared/billing.ts';
+import { bundleSource, displayCycle, isFreeBundlePhase, resolveState } from '../../../shared/bundle.ts';
 import { cnDate, flow, moneyTick, money, monthLabel, setSignedAmounts, symbol } from '../../../shared/format.ts';
 import { locale, t, type Params } from '../../../shared/i18n.ts';
 import { chargeBaseOrNaN, chargeValue, toBaseAt, toBaseOrNaN } from '../../../shared/fx.ts';
@@ -352,7 +353,7 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
     ),
     composition: <Composition cats={d.cats} total={d.mrr} k={rate} fmt={fmt} />,
     fx: <Currencies d={d} ccy={ccy} fmt={fmt} />,
-    list: <SubList d={d} today={today} ccy={ccy} k={rate} fmt={fmt} />,
+    list: <SubList d={d} subs={state.subscriptions} today={today} ccy={ccy} k={rate} fmt={fmt} />,
     ended: d.ended.length > 0 && (
               <Card className={cn(roomy, 'h-full')}>
                 <CardHeader>
@@ -535,6 +536,7 @@ function metricInputs(state: AppState, today: string, d: Derived, ccy: Ccy, rate
 }
 
 function derive(state: AppState, today: string) {
+  state = resolveState(state);
   syncCategories(state);
   const base = state.settings.baseCurrency;
   const first = firstStart(state, today);
@@ -787,7 +789,7 @@ function Currencies({ d, ccy, fmt }: { d: Derived; ccy: Ccy; fmt: (v: number) =>
   );
 }
 
-function SubList({ d, today, ccy, k, fmt }: { d: Derived; today: string; ccy: Ccy; k: number; fmt: (v: number) => string }) {
+function SubList({ d, subs, today, ccy, k, fmt }: { d: Derived; subs: Subscription[]; today: string; ccy: Ccy; k: number; fmt: (v: number) => string }) {
   // 空字符串代表「全部」，避免和名为「全部」的分类撞车
   const [tab, setTab] = useState('');
   const rows = tab === '' ? d.live : d.live.filter((x) => x.s.category === tab);
@@ -821,7 +823,7 @@ function SubList({ d, today, ccy, k, fmt }: { d: Derived; today: string; ccy: Cc
           <AnimatePresence initial={false} mode="popLayout">
             {rows.map(({ s, v }) => (
               <motion.li key={s.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }} className="border-b-[0.5px] border-border/60">
-                <Row s={s} v={v} today={today} ccy={ccy} k={k} fmt={fmt} />
+                <Row s={s} subs={subs} v={v} today={today} ccy={ccy} k={k} fmt={fmt} />
               </motion.li>
             ))}
           </AnimatePresence>
@@ -831,14 +833,23 @@ function SubList({ d, today, ccy, k, fmt }: { d: Derived; today: string; ccy: Cc
   );
 }
 
-function Row({ s, v, today, ccy, k, fmt }: { s: Subscription; v: number; today: string; ccy: Ccy; k: number; fmt: (v: number) => string }) {
+function Row({ s, subs, v, today, ccy, k, fmt }: { s: Subscription; subs: Subscription[]; v: number; today: string; ccy: Ccy; k: number; fmt: (v: number) => string }) {
   const ph = currentPhase(s, today);
   const status = effectiveStatus(s, today);
   const ending = ['ending', 'ended', 'terminated'].includes(status);
-  const end = ph.stop?.date ?? ph.end ?? s.stop?.date ?? s.end;
+  const freeBundle = isFreeBundlePhase(ph);
+  // 父订阅在公开页被隐藏或匿名时，maskForPublic 已剥离 bundle，这里绝不显示父订阅名
+  const parent = ph.bundle?.parentId ? bundleSource(s, subs, today)?.parent : undefined;
+  const end =
+    ph.stop?.date ??
+    ph.end ??
+    s.stop?.date ??
+    s.end ??
+    (ph.bundleAvail?.ended && ph.bundleAvail.ended.kind !== 'undated' ? ph.bundleAvail.ended.date : undefined);
   const n = ending ? undefined : nextCharge(s, today);
   const soon = n !== undefined && diffDays(today, n) <= 7;
-  const monthly = ph.currency === ccy && ph.cycle.unit === 'month' && ph.cycle.every === 1;
+  const cyc = displayCycle(ph, today);
+  const monthly = ph.currency === ccy && cyc.unit === 'month' && cyc.every === 1;
   const repeatsPrice = monthly && Math.abs(v * k - ph.price) < 0.005;
   return (
     <div className="flex items-center gap-3 py-3">
@@ -854,14 +865,32 @@ function Row({ s, v, today, ccy, k, fmt }: { s: Subscription; v: number; today: 
           )}
         </div>
         <div className="truncate text-[length:var(--fs-2)] text-muted-foreground tnum">
-          {cycleLabel(ph.cycle)}{!repeatsPrice && ` ${money(ph.price, ph.currency)}`}
-          {ending && end ? <span>{copyParts(t('public.row.ends', { date: cnDate(end) }))}</span> : n && <span className={cn(soon && 'text-foreground')}>{copyParts(t('public.row.renews', { date: cnDate(n) }))}</span>}
+          {freeBundle ? (
+            <>
+              {cycleLabel(cyc)}
+              {parent ? <span>{copyParts(`\n${t('detail.bundle.withParent', { name: clean(parent.name) })}`)}</span> : null}
+              {ending && end ? <span>{copyParts(t('public.row.ends', { date: cnDate(end) }))}</span> : null}
+            </>
+          ) : (
+            <>
+              {cycleLabel(ph.cycle)}
+              {!repeatsPrice && ` ${money(ph.price, ph.currency)}`}
+              {parent ? <span>{copyParts(`\n${t('detail.bundle.withParent', { name: clean(parent.name) })}`)}</span> : null}
+              {ending && end ? <span>{copyParts(t('public.row.ends', { date: cnDate(end) }))}</span> : n && <span className={cn(soon && 'text-foreground')}>{copyParts(t('public.row.renews', { date: cnDate(n) }))}</span>}
+            </>
+          )}
         </div>
       </div>
       <div className="text-right tnum">
-        <div className="font-medium">{fmt(v * k)}</div>
-        {/* 每月扣的左边已写「每月」，右边不再重复；其他周期写明是折合每月 */}
-        {!monthly && <div className="text-[length:var(--fs-2)] text-muted-foreground">{t('public.row.perMonthEq')}</div>}
+        {freeBundle ? (
+          <div className="text-[length:var(--fs-2)] font-medium text-muted-foreground">{t('list.badge.included')}</div>
+        ) : (
+          <>
+            <div className="font-medium">{fmt(v * k)}</div>
+            {/* 每月扣的左边已写「每月」，右边不再重复；其他周期写明是折合每月 */}
+            {!monthly && <div className="text-[length:var(--fs-2)] text-muted-foreground">{t('public.row.perMonthEq')}</div>}
+          </>
+        )}
       </div>
     </div>
   );

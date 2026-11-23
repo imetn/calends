@@ -240,7 +240,8 @@
     "payments": "扣款记录",
     "spent": "累计支出",
     "changes": "改动字段",
-    "funding": "付款来源"
+    "funding": "付款来源",
+    "bundle": "关联主订阅"
   },
   "v": {
     "exempt": "不分摊",
@@ -253,7 +254,8 @@
     "charge": "扣款",
     "deleteAll": "删除订阅及全部扣款记录，无法恢复",
     "dateUnknown": "日期不详",
-    "terminate": "被停用"
+    "terminate": "被停用",
+    "unlinked": "取消关联（独立订阅）"
   },
   "interrupted": "回复中途中断，没有完整收到。",
   "saveUnknown": "未能确认是否保存成功。请先核对账本，不要重复提交。",

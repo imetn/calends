@@ -26,7 +26,8 @@ import {
   subError,
   validDay,
 } from './billing.ts';
-import type { Cycle, Payment, Phase, PricePoint, Stop, Subscription, RenewalRules } from './types.ts';
+import { bundleView } from './bundle.ts';
+import type { BundleLink, Cycle, Payment, Phase, PricePoint, Stop, Subscription, RenewalRules } from './types.ts';
 import { t } from './i18n.ts';
 import { applyFields } from './ledger-edit.ts';
 import { currencyDecimals } from './format.ts';
@@ -41,6 +42,8 @@ export interface PlanChange extends RenewalRules {
   note?: string;
   /** 只是计划，还没确定 */
   planned?: boolean;
+  /** 关联到主订阅 */
+  bundle?: BundleLink;
 }
 
 /** 当前顶层字段 → 一个阶段 */
@@ -66,6 +69,7 @@ function fromTop(s: Subscription, start: string): Phase {
     bonus: s.bonus,
     payments: s.payments,
     nextDue: s.nextDue,
+    bundle: s.bundle,
   };
 }
 
@@ -94,6 +98,9 @@ function phaseToTop(s: Subscription, p: Phase): Subscription {
     bonus: p.bonus,
     payments: p.payments,
     nextDue: p.nextDue,
+    bundle: p.bundle,
+    included: undefined,
+    bundleAvail: undefined,
   };
 }
 
@@ -119,6 +126,9 @@ function phaseBase(sub: Subscription): Subscription {
     bonus: undefined,
     payments: undefined,
     nextDue: undefined,
+    bundle: undefined,
+    included: undefined,
+    bundleAvail: undefined,
   };
 }
 
@@ -143,6 +153,9 @@ function mirror(s: Subscription, phases: Phase[]): Subscription {
     renewalHistory: last.renewalHistory,
     renewalOffsetDays: last.renewalOffsetDays,
     contract: last.contract,
+    bundle: last.bundle,
+    included: undefined,
+    bundleAvail: undefined,
 
     priceHistory: undefined,
     // 首期优惠、赠送时长跟着最后一段走，编辑表单才能看到并修改；计费只读阶段，不会重复生效
@@ -314,7 +327,7 @@ export function confirmPlan(s: Subscription, start: string): Subscription {
 }
 
 /** 日期未知的停用撤掉后一段：上一段成为末段，结束日不能变成停用日；清掉前固化它已发生的扣款，否则只剩首笔 */
-function reopenUndatedLast(s: Subscription, last: Phase, removedStart: string): Phase {
+function reopenUndatedLast(s: Subscription, last: Phase, removedStart: string, subs?: readonly Subscription[]): Phase {
   const all = phasesOf(s);
   const until = addDays(removedStart, -1);
   return {
@@ -324,18 +337,19 @@ function reopenUndatedLast(s: Subscription, last: Phase, removedStart: string): 
       s,
       until,
       until,
+      subs,
     ),
     end: undefined,
   };
 }
 
 /** 不切换了：删掉这个计划阶段，上一阶段就在原定的切换日结束（到期不续）；原本就打算并行跑得更久的，保留它自己的结束日 */
-export function dropPlan(s: Subscription, start: string): Subscription {
+export function dropPlan(s: Subscription, start: string, subs?: readonly Subscription[]): Subscription {
   const phases = phasesOf(s).filter((p) => p.start !== start);
   const last = phases[phases.length - 1];
   // 日期未知的停用不因撤掉一段而得到结束日：上一段的切换边界也不能变成停用日
   if (undatedStop(s)) {
-    if (last.start < start) phases[phases.length - 1] = reopenUndatedLast(s, last, start);
+    if (last.start < start) phases[phases.length - 1] = reopenUndatedLast(s, last, start, subs);
   } else if (!last.end || last.end < start) last.end = addDays(start, -1);
   if (phases.length === 1) return phaseToTop(s, phases[0]);
   return mirror({ ...s, start: phases[0].start }, phases);
@@ -467,6 +481,7 @@ export function toEditForm(s: Subscription, today: string): Subscription {
     intro: p.intro,
     bonus: p.bonus,
     nextDue: p.nextDue,
+    bundle: p.bundle,
   };
 }
 
@@ -491,6 +506,7 @@ export function syncPhase(s: Subscription, today: string): Subscription {
     contract: s.contract,
     intro: s.intro,
     bonus: s.bonus,
+    bundle: s.bundle,
     // 旧草稿没有这个键时不清掉这一段的下次扣款日
     ...('nextDue' in s ? { nextDue: s.nextDue } : {}),
   });
@@ -612,13 +628,13 @@ function phaseIndexAt(phases: Phase[], date: string, sub?: Subscription, phase?:
  * 把推算出来的历史扣款固化成记录：一段一旦有了扣款记录，就完全以记录为准，
  * 所以第一次手动改之前，先把到今天为止推算出的扣款写进去，并记下原本的下次扣款日，未来照旧。
  */
-function materialize(phases: Phase[], k: number, sub: Subscription, today: string, target?: string): Phase {
+function materialize(phases: Phase[], k: number, sub: Subscription, today: string, target?: string, subs?: readonly Subscription[]): Phase {
   const p = phases[k];
   if (p.cycle.unit === 'lifetime') return p;
   const recorded = p.payments ?? [];
   // 已有记录且要改的那笔就在记录里：保持原样，不额外改写其他推算
   if (recorded.length && (!target || recorded.some((r) => r.date === target))) return p;
-  const v = phaseView(phases, k, sub);
+  const v = phaseView(phases, k, sub, subs);
   const past = chargesBetween(v, p.start, today, today);
   const next = p.stop ? addDays(p.stop.paidThrough, 1) : chargesBetween(v, addDays(today, 1), addDays(today, 800), today).find((c) => !c.kind)?.date;
   // 要改的是记录之后推算出的扣款（如结束日当天的一期）：把推算的过去扣款补成记录，这一行才能修改或删除
@@ -628,13 +644,23 @@ function materialize(phases: Phase[], k: number, sub: Subscription, today: strin
   return { ...p, payments, nextDue: p.nextDue ?? next ?? (p.end ? addDays(p.end, 1) : v.end && v.end < today ? addDays(v.end, 1) : undefined) };
 }
 
-/** 这一段的计费视图：没写结束日时到下一段开始前为止 */
-function phaseView(phases: Phase[], k: number, sub: Subscription): Subscription {
+/** 这一段的计费视图：没写结束日时到下一段开始前为止；传入完整账本 subs 时解析父可用期但不写回原始记录 */
+function phaseView(phases: Phase[], k: number, sub: Subscription, subs?: readonly Subscription[]): Subscription {
   const p = phases[k];
-  // 多段时与读取同一套视图：状态、试用、暂停、结束日都按这一段算
-  const own = phases.length > 1 || sub.phases?.length ? phaseSubs({ ...sub, phases }).find((v) => v.start === p.start) : undefined;
-  if (own) return own;
-  return { ...phaseBase(sub), ...p, end: p.end ?? (k + 1 < phases.length ? addDays(phases[k + 1].start, -1) : undefined) };
+  const multi = phases.length > 1 || !!sub.phases?.length;
+  const candidate: Subscription = multi ? { ...sub, phases } : { ...sub, ...p };
+  const resolved = subs ? bundleView(candidate, subs) : candidate;
+  // 多段时与读取同一套视图：状态、试用、暂停、结束日和父可用期都按这一段算
+  if (multi) {
+    const own = phaseSubs(resolved).find((v) => v.start === p.start);
+    if (own) return own;
+  }
+  return {
+    ...phaseBase(resolved),
+    ...p,
+    ...(resolved.bundleAvail ? { bundleAvail: resolved.bundleAvail } : {}),
+    end: p.end ?? (k + 1 < phases.length ? addDays(phases[k + 1].start, -1) : undefined),
+  };
 }
 
 /** 存储的 trial 到期后不会自动改写：这笔付款已在试用结束之后，就是正常计费。试用结束日存在订阅上，视图只有首段带着它 */
@@ -660,10 +686,17 @@ function pendingCharge(v: Subscription, p: Phase, pay: Payment, today: string) {
  * 正常续费归入当期：早于下次扣款日、上一期已结清的算提前结清这一期，下次扣款日顺延一期，到期日不随付款日漂移；
  * 逾期付款同样按原计费日继续；上一期没结清时这笔归上一期，不顺延。
  */
-function settleRenewal(phases: Phase[], k: number, sub: Subscription, pay: Payment, today: string): { phase: Phase; pay: Payment } {
+function settleRenewal(
+  phases: Phase[],
+  k: number,
+  sub: Subscription,
+  pay: Payment,
+  today: string,
+  subs?: readonly Subscription[],
+): { phase: Phase; pay: Payment } {
   const p = phases[k];
   const same = { phase: p, pay };
-  const v = phaseView(phases, k, sub);
+  const v = phaseView(phases, k, sub, subs);
   if (!settles(v, pay, sub.trialEnd) || pay.date <= latest(renewalsOf(p).map((x) => x.date))) return same;
   const charge = pendingCharge(v, p, pay, today);
   if (!charge) return same;
@@ -710,10 +743,10 @@ function dropSettledEstimate(p: Phase, v: Subscription, pay: Payment, today: str
 }
 
 /** 写入前把旧版提前记账落成记录，后面的顺延和回退都按它算。 */
-function settleLegacyPhases(phases: Phase[], sub: Subscription, stopAt?: string): void {
+function settleLegacyPhases(phases: Phase[], sub: Subscription, stopAt?: string, subs?: readonly Subscription[]): void {
   phases.forEach((p, k) => {
     if (stopAt && p.payments?.some((x) => !x.kind && x.date >= stopAt)) return;
-    const v = phaseView(phases, k, sub);
+    const v = phaseView(phases, k, sub, subs);
     const settled = settleLegacyEarly(v);
     if (settled !== v) phases[k] = { ...p, nextDue: settled.nextDue, payments: settled.payments };
   });
@@ -726,14 +759,16 @@ export function earlyRenewalEffect(
   pay: Payment,
   old?: { date: string; index: number },
   phase?: string,
+  subs?: readonly Subscription[],
 ): { settles: string; next: string } | undefined {
   if (pay.kind || old?.date === pay.date) return undefined;
   let saved: Subscription;
   try {
-    saved = savePayment(s, today, pay, old, phase);
+    saved = savePayment(s, today, pay, old, phase, subs);
   } catch {
     return undefined;
   }
+  const savedView = subs ? bundleView(saved, subs) : saved;
   // 只看这次新增的结清：同一段同一天已有一笔提前续费时，再记一笔不算
   const had = new Map(
     phaseSubs(s).map((v) => [
@@ -745,7 +780,7 @@ export function earlyRenewalEffect(
       ),
     ]),
   );
-  for (const v of phaseSubs(saved)) {
+  for (const v of phaseSubs(savedView)) {
     const service = settleLegacyEarly(v).payments?.find((x) => x.date === pay.date && x.serviceDate && !had.get(v.start)?.has(x.serviceDate))?.serviceDate;
     if (!service) continue;
     const settles = chargeOfService(v, service);
@@ -757,18 +792,25 @@ export function earlyRenewalEffect(
   return undefined;
 }
 
-/** 新增或修改一笔扣款记录；old 为原记录的日期与序号（修改时） */
-export function savePayment(s: Subscription, today: string, pay: Payment, old?: { date: string; index: number }, phase?: string): Subscription {
-  if (isSeparate(s)) return saveSeparatePayment(s, pay, old, phase);
+/** 新增或修改一笔扣款记录；old 为原记录的日期与序号（修改时）；subs 为完整账本以正确跳过父订阅暂停期间的推算扣款 */
+export function savePayment(
+  s: Subscription,
+  today: string,
+  pay: Payment,
+  old?: { date: string; index: number },
+  phase?: string,
+  subs?: readonly Subscription[],
+): Subscription {
+  if (isSeparate(s)) return saveSeparatePayment(s, pay, old, phase, subs);
   const phases = phasesOf(s);
-  settleLegacyPhases(phases, s);
+  settleLegacyPhases(phases, s, undefined, subs);
   // 改写一笔时没有带 methodId 这个键（如 MCP 只改金额），沿用原来那一笔单独记的支付方式；明确传 undefined 才清除
   let originalPhase: number | undefined;
   let keptService: string | undefined;
   let sameDay = false;
   if (old) {
     const oi = phaseIndexAt(phases, old.date, s, phase, true);
-    phases[oi] = materialize(phases, oi, s, today, old.date);
+    phases[oi] = materialize(phases, oi, s, today, old.date, subs);
     originalPhase = oi;
     const list = (phases[oi].payments ?? []).filter((x) => x.date === old.date);
     const target = list[old.index];
@@ -778,9 +820,9 @@ export function savePayment(s: Subscription, today: string, pay: Payment, old?: 
     else if (!('methodId' in pay) && !pay.funding?.length && target.methodId) pay = { ...pay, methodId: target.methodId };
     const kept = { ...phases[oi], payments: (phases[oi].payments ?? []).filter((x) => x !== target) };
     // 改金额、改支付方式，或日期仍早于到期日：仍结清原来那一期，留在原段
-    if (target.serviceDate && !pay.kind && pay.date < chargeOfService(phaseView(phases, oi, s), target.serviceDate)) keptService = target.serviceDate;
+    if (target.serviceDate && !pay.kind && pay.date < chargeOfService(phaseView(phases, oi, s, subs), target.serviceDate)) keptService = target.serviceDate;
     sameDay = pay.date === target.date;
-    phases[oi] = keptService ? kept : unsettleRenewal(kept, phaseView(phases, oi, s), target);
+    phases[oi] = keptService ? kept : unsettleRenewal(kept, phaseView(phases, oi, s, subs), target);
   }
   if (pay.serviceDate !== keptService) pay = { ...pay, serviceDate: keptService };
   if (pay.funding && !pay.funding.length) pay = { ...pay, funding: undefined };
@@ -798,14 +840,14 @@ export function savePayment(s: Subscription, today: string, pay: Payment, old?: 
   const fresh = i !== originalPhase;
   const prepare = (k: number) => {
     const bare = !phases[k].payments?.length;
-    const p = materialize(phases, k, s, today);
-    const v = phaseView(phases, k, s);
+    const p = materialize(phases, k, s, today, undefined, subs);
+    const v = phaseView(phases, k, s, subs);
     return bare && settles(v, pay, s.trialEnd) ? dropSettledEstimate(p, v, pay, today) : { phase: p };
   };
   // 当前一段已经没有待付期、下一段还没开始：这笔是提前付下一段的首期
-  if (!old && keep < 0 && i + 1 < phases.length && phases[i + 1].start > pay.date && settles(phaseView(phases, i, s), pay, s.trialEnd)) {
+  if (!old && keep < 0 && i + 1 < phases.length && phases[i + 1].start > pay.date && settles(phaseView(phases, i, s, subs), pay, s.trialEnd)) {
     const current = prepare(i).phase;
-    if (pay.date > latest(renewalsOf(current).map((x) => x.date)) && !pendingCharge(phaseView(phases, i, s), current, pay, today)) i += 1;
+    if (pay.date > latest(renewalsOf(current).map((x) => x.date)) && !pendingCharge(phaseView(phases, i, s, subs), current, pay, today)) i += 1;
   }
   if (fresh) {
     const prepared = prepare(i);
@@ -815,10 +857,10 @@ export function savePayment(s: Subscription, today: string, pay: Payment, old?: 
       pay = { ...pay, serviceDate: keptService };
     }
   }
-  const settled = keptService ? { phase: phases[i], pay } : settleRenewal(phases, i, s, pay, today);
+  const settled = keptService ? { phase: phases[i], pay } : settleRenewal(phases, i, s, pay, today, subs);
   phases[i] = { ...settled.phase, payments: [...(settled.phase.payments ?? []), settled.pay].sort((a, b) => a.date.localeCompare(b.date)) };
   const next = fromPhases(s, phases);
-  const error = subError(next);
+  const error = subError(next, subs);
   if (error) throw new Error(error);
   return next;
 }
@@ -851,7 +893,13 @@ function findSeparatePayment(phases: Phase[], date: string, index: number, phase
  * 账单与缴费分开记：缴费原样记下，不固化推算、不推下次扣款日、不识别提前续费；分配由 settleBills 按 periods 与先后顺序算出。
  * 指定了结清哪几期时记在第一期所在的阶段，否则按缴费日归段
  */
-function saveSeparatePayment(s: Subscription, pay: Payment, old?: { date: string; index: number }, phase?: string): Subscription {
+function saveSeparatePayment(
+  s: Subscription,
+  pay: Payment,
+  old?: { date: string; index: number },
+  phase?: string,
+  subs?: readonly Subscription[],
+): Subscription {
   const phases = phasesOf(s);
   if (old) {
     const [oi, target] = findSeparatePayment(phases, old.date, old.index, phase);
@@ -865,12 +913,12 @@ function saveSeparatePayment(s: Subscription, pay: Payment, old?: { date: string
   const i = phaseIndexAt(phases, periods?.[0] ?? pay.date, s, phase);
   phases[i] = { ...phases[i], payments: [...(phases[i].payments ?? []), pay].sort((a, b) => a.date.localeCompare(b.date)) };
   const next = fromPhases(s, phases);
-  const error = subError(next);
+  const error = subError(next, subs);
   if (error) throw new Error(error);
   return next;
 }
 
-export function deletePayment(s: Subscription, today: string, date: string, index: number, phase?: string): Subscription {
+export function deletePayment(s: Subscription, today: string, date: string, index: number, phase?: string, subs?: readonly Subscription[]): Subscription {
   if (isSeparate(s)) {
     const phases = phasesOf(s);
     const [i, target] = findSeparatePayment(phases, date, index, phase);
@@ -878,19 +926,19 @@ export function deletePayment(s: Subscription, today: string, date: string, inde
     return fromPhases(s, phases);
   }
   const phases = phasesOf(s);
-  settleLegacyPhases(phases, s);
+  settleLegacyPhases(phases, s, undefined, subs);
   const i = phaseIndexAt(phases, date, s, phase, true);
-  phases[i] = materialize(phases, i, s, today, date);
+  phases[i] = materialize(phases, i, s, today, date, subs);
   const list = (phases[i].payments ?? []).filter((x) => x.date === date);
   const target = list[index];
   if (!target) throw new Error(t('mcp.error.invalidTarget'));
   const payments = (phases[i].payments ?? []).filter((x) => x !== target);
   // 删掉已结束阶段的最后一笔：这笔本就不该有，下次扣款推到结束日之后，不再被推算回来
-  const end = phaseView(phases, i, s).end;
+  const end = phaseView(phases, i, s, subs).end;
   const due = phases[i].nextDue;
   // 旧段还在跑、下次扣款仍在结束日前：删的只是其中一期，后面的预测不动
   const last = end && (end < today || !due || due > end) && !payments.some((x) => x.date >= date);
-  phases[i] = { ...unsettleRenewal({ ...phases[i], payments }, phaseView(phases, i, s), target), ...(last ? { nextDue: addDays(end, 1) } : {}) };
+  phases[i] = { ...unsettleRenewal({ ...phases[i], payments }, phaseView(phases, i, s, subs), target), ...(last ? { nextDue: addDays(end, 1) } : {}) };
   return fromPhases(s, phases);
 }
 
@@ -911,19 +959,28 @@ export interface StopRefund {
 }
 
 /** 提前停止：撤销所有后续阶段，保留已发生的扣款与原已付服务期。 */
-export function stopSubscription(s: Subscription, today: string, kind: Stop['kind'], at = today, reason?: string, refund?: StopRefund): Subscription {
+export function stopSubscription(
+  s: Subscription,
+  today: string,
+  kind: Stop['kind'],
+  at = today,
+  reason?: string,
+  refund?: StopRefund,
+  subs?: readonly Subscription[],
+): Subscription {
   if (!validDay(at)) throw new Error(t('mcp.error.notDate', { what: 'at' }));
   if (at < s.start) throw new Error(t('mcp.error.stopBeforeStart'));
   if (s.stop || isStopped(effectiveStatus(s, today))) throw new Error(t('mcp.error.subscriptionEnded'));
   // 旧版提前续费先写进记录：停用后读取不再识别，已付账期要和停用前算的一致
   if (s.phases?.length) {
     const phases = phasesOf(s);
-    settleLegacyPhases(phases, s, at);
+    settleLegacyPhases(phases, s, at, subs);
     s = mirror(s, phases);
   } else if (!s.payments?.some((p) => !p.kind && p.date >= at)) s = settleLegacyEarly(s);
   const current = currentPhase(s, at);
   if (at < current.start) throw new Error(t('mcp.error.stopBeforeStart'));
-  const period = stopBillingPeriod(current, at, today);
+  const viewCur = subs ? currentPhase(bundleView(s, subs), at) : current;
+  const period = stopBillingPeriod(viewCur, at, today);
   if (at > period.paidThrough) throw new Error(t('mcp.error.stopAfterPaidThrough'));
   const stop: Stop = { kind, date: at, paidThrough: period.paidThrough, reason: kind === 'terminate' ? reason?.trim() || undefined : undefined };
   // 停在暂停之后：记下暂停日，暂停期间没发生的扣款不复活
@@ -960,9 +1017,10 @@ export function stopSubscription(s: Subscription, today: string, kind: Stop['kin
       },
       undefined,
       current.start,
+      subs,
     );
   }
-  const error = subError(next);
+  const error = subError(next, subs);
   if (error) throw new Error(error);
   return next;
 }
@@ -1006,7 +1064,7 @@ export function reactivate(s: Subscription): Subscription {
 }
 
 /** API 与 MCP 共用的状态迁移约束；重新订阅必须保留原停用阶段并新增阶段。调用方已先做 subError 整体校验。 */
-export function statusChangeError(previous: Subscription | undefined, next: Subscription, today: string): string | undefined {
+export function statusChangeError(previous: Subscription | undefined, next: Subscription, today: string, subs?: readonly Subscription[]): string | undefined {
   if (
     next.status === 'paused' &&
     next.pausedAt &&
@@ -1021,7 +1079,8 @@ export function statusChangeError(previous: Subscription | undefined, next: Subs
     const undated = (previous.status === 'cancelled' || previous.status === 'terminated') && !previous.end;
     const status = effectiveStatus(previous, today);
     if (!undated && (status === 'terminated' || (status === 'ended' && !previous.end))) return t('mcp.error.subscriptionEnded');
-    const period = stopBillingPeriod(currentPhase(previous, next.stop.date), next.stop.date, today);
+    const prevView = subs ? bundleView(previous, subs) : previous;
+    const period = stopBillingPeriod(currentPhase(prevView, next.stop.date), next.stop.date, today);
     if (next.stop.date > period.paidThrough) return t('mcp.error.stopAfterPaidThrough');
   }
   // 日期未知的被停用：改别的字段时仍是同一状态，不算改停用方式
@@ -1058,7 +1117,7 @@ export function statusChangeError(previous: Subscription | undefined, next: Subs
  * 已停用、日期未知：只记 cancelled / terminated 状态，不填 end 与 stop，也不把今天当停用日；
  * 撤销今天之后才开始的计划阶段。已记录的扣款原样保留，之后不再预测扣款。
  */
-export function stopUndated(s: Subscription, kind: Stop['kind'], today: string): Subscription {
+export function stopUndated(s: Subscription, kind: Stop['kind'], today: string, subs?: readonly Subscription[]): Subscription {
   if (s.stop || isStopped(effectiveStatus(s, today))) throw new Error(t('mcp.error.subscriptionEnded'));
   // 直接去掉未来阶段，不用 dropPlan：它会给前一段补一个结束日，那就成了编造的停用日期
   const kept = s.phases?.length ? phasesOf(s).filter((p) => p.start <= today) : [];
@@ -1067,19 +1126,19 @@ export function stopUndated(s: Subscription, kind: Stop['kind'], today: string):
   kept.forEach((p, i) => {
     if (!p.end || p.end < today) return;
     if (i === kept.length - 1) p.end = undefined;
-    else kept[i] = { ...materialize(kept, i, s, today, today), nextDue: addDays(p.end, 1) };
+    else kept[i] = { ...materialize(kept, i, s, today, today, subs), nextDue: addDays(p.end, 1) };
   });
   const c = kept.length && (futureEnd || kept.length < s.phases!.length) ? mirror(s, kept) : s;
   return { ...c, status: kind === 'terminate' ? 'terminated' : 'cancelled', pausedAt: undefined, end: undefined, stop: undefined };
 }
 
 /** 到期不续：只有 end，没有 stop；撤销结束日之后的阶段。 */
-export function cancelAtEnd(s: Subscription, at: string, today: string): Subscription {
+export function cancelAtEnd(s: Subscription, at: string, today: string, subs?: readonly Subscription[]): Subscription {
   if (s.stop || isStopped(effectiveStatus(s, today))) throw new Error(t('mcp.error.subscriptionEnded'));
   if (!validDay(at)) throw new Error(t('mcp.error.notDate', { what: 'at' }));
   if (at < s.start) throw new Error(t('mcp.error.stopBeforeStart'));
   // 暂停到期后不续没有已付期可等，就是在这天停用；要记下暂停日，同 stopSubscription
-  if (s.status === 'paused' && s.pausedAt && s.pausedAt <= at) return stopSubscription(s, today, 'cancel', at);
+  if (s.status === 'paused' && s.pausedAt && s.pausedAt <= at) return stopSubscription(s, today, 'cancel', at, undefined, undefined, subs);
   let c = s;
   for (const p of (s.phases ?? []).filter((p) => p.start > at).sort((a, b) => b.start.localeCompare(a.start))) c = dropPlan(c, p.start);
   return syncPhase({ ...toEditForm(c, today), status: 'cancelled', end: at, stop: undefined }, today);

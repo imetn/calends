@@ -23,6 +23,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { addDays, coveredUntil, cycleLabel, diffDays, isGap, phaseSubs, servedTime, upcomingPhase } from '../../../../shared/billing.ts';
+import { displayCycle, isFreeBundlePhase } from '../../../../shared/bundle.ts';
 import { contractEvents } from '../../../../shared/contract.ts';
 import { cnDateFull, money } from '../../../../shared/format.ts';
 import { transfersOf } from '../../../../shared/transfers.ts';
@@ -56,10 +57,14 @@ export function Events({ sub, state, today }: { sub: Subscription; state: AppSta
   const vs = phaseSubs(sub);
   const plan = (v: Subscription) => {
     const m = methodOf(state, v.methodId);
+    const parent = v.bundle?.parentId ? state.subscriptions.find((x) => x.id === v.bundle!.parentId)?.name : undefined;
+    const pricePart = isFreeBundlePhase(v)
+      ? `${t('list.badge.included')} ${cycleLabel(displayCycle(v, today))}`
+      : `${money(pricePoints(v)[0].amount, v.currency)} ${cycleLabel(v.cycle)}`;
     return (
       <span className="dt-inline">
         {v.region && <Region cc={v.region} />}
-        {copyParts([`${money(pricePoints(v)[0].amount, v.currency)} ${cycleLabel(v.cycle)}`, m?.name].filter(Boolean).join('\n'))}
+        {copyParts([pricePart, parent ? t('detail.bundle.withParent', { name: parent }) : undefined, m?.name].filter(Boolean).join('\n'))}
       </span>
     );
   };

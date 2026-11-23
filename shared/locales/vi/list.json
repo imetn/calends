@@ -55,7 +55,9 @@
     "proxy": "Trả hộ",
     "proxyFor": "Trả hộ {name}",
     "someone": "ai đó",
-    "parallel": "Song song"
+    "parallel": "Song song",
+    "included": "Đi kèm",
+    "addon": "Mua thêm"
   },
   "col": {
     "name": "Gói đăng ký",
@@ -133,5 +135,8 @@
   "network": {
     "unionpay": "UnionPay"
   },
-  "monthlySame": "Bằng giá niêm yết"
+  "monthlySame": "Bằng giá niêm yết",
+  "bundle": {
+    "followsParent": "Theo gói chính"
+  }
 }

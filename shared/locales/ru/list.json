@@ -58,7 +58,9 @@
     "proxy": "Оплата за других",
     "proxyFor": "Оплата за {name}",
     "someone": "кого-то",
-    "parallel": "Параллельно"
+    "parallel": "Параллельно",
+    "included": "Включена",
+    "addon": "Дополнение"
   },
   "col": {
     "name": "Подписка",
@@ -148,5 +150,8 @@
   "network": {
     "unionpay": "UnionPay"
   },
-  "monthlySame": "Равно цене"
+  "monthlySame": "Равно цене",
+  "bundle": {
+    "followsParent": "По основной"
+  }
 }

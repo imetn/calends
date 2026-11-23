@@ -249,7 +249,8 @@
     "payments": "Cobranças registradas",
     "spent": "Gasto até hoje",
     "changes": "Campos alterados",
-    "funding": "Pago com"
+    "funding": "Pago com",
+    "bundle": "Vinculada a"
   },
   "v": {
     "exempt": "Não paga",
@@ -262,7 +263,8 @@
     "charge": "Cobrança",
     "deleteAll": "Exclui a assinatura e todas as cobranças. Não é possível desfazer.",
     "dateUnknown": "Data desconhecida",
-    "terminate": "Encerrada pelo provedor"
+    "terminate": "Encerrada pelo provedor",
+    "unlinked": "Independente (desvinculada)"
   },
   "interrupted": "A resposta foi interrompida antes de terminar.",
   "saveUnknown": "Não foi possível confirmar o salvamento. Confira o registro antes de tentar novamente.",

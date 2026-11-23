@@ -21,6 +21,7 @@ import {
   isStopped,
 } from '../../../shared/billing.ts';
 import { contractEvents } from '../../../shared/contract.ts';
+import { bundleView } from '../../../shared/bundle.ts';
 import { flow, cnDate, cnDateAuto, monthLabel, relDays, weekdayShort } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
@@ -253,9 +254,10 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                     {selList.map((c, i) => {
                       const amt = pair(-c.amount, c.currency, { value: -chargeBaseOrNaN(state, c) });
                       const sub = state.subscriptions.find((s) => s.id === c.sub.id) ?? c.sub;
-                      const cur = currentPhase(sub, today);
-                      const status = effectiveStatus(sub, today);
-                      const next = nextCharge(sub, today);
+                      const view = bundleView(sub, state.subscriptions);
+                      const cur = currentPhase(view, today);
+                      const status = effectiveStatus(view, today);
+                      const next = nextCharge(view, today);
                       // 后付费账单写它所属的已用服务期；先付费写本期付到哪天
                       const postpaid = isPostpaid(c.sub);
                       // 退款、补差不是一期扣款：不写周期、付到哪天、下次扣款这些续费信息，只写类型和金额

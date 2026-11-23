@@ -61,7 +61,12 @@
     "reading": "Invalid meter record: each needs a unique id, a valid date and numeric values",
     "meterLink": "The linked meter does not exist or is itself linked",
     "meterLinkUsed": "“{meter}” is linked by “{name}”; remove that link first",
-    "readingMeter": "A meter record refers to a meter that is not defined"
+    "readingMeter": "A meter record refers to a meter that is not defined",
+    "bundle": "Invalid linked subscription reference",
+    "bundleLink": "The linked parent subscription does not exist, is a proxy payment, or is itself linked",
+    "bundleProxy": "Proxy payments cannot be linked to a parent subscription",
+    "bundleUsed": "Linked by {names}; unlink them first",
+    "bundleHistory": "Linking would erase past charges. Link from the link date under History → Switch plan instead."
   },
   "phase": {
     "switchTooEarly": "The effective date must be after the current phase starts",

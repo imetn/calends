@@ -3,12 +3,20 @@ import { preserveRenewalHistory } from '../../../../shared/billing.ts';
 import { changePrice, syncPhase } from '../../../../shared/phases.ts';
 import { applyStopForm, type StopForm } from '../../../../shared/stop-form.ts';
 import { mergeEdits } from '../../../../shared/ledger-edit.ts';
-export function prepareEditorSave(sub: Subscription, f: Subscription, today: string, isNew: boolean, basePrice: number, stop?: StopForm): Subscription {
+export function prepareEditorSave(
+  sub: Subscription,
+  f: Subscription,
+  today: string,
+  isNew: boolean,
+  basePrice: number,
+  stop?: StopForm,
+  subs?: readonly Subscription[],
+): Subscription {
   let out: Subscription = { ...f, name: f.name.trim(), account: f.account?.trim() || undefined };
   if (!isNew) out = preserveRenewalHistory(sub, out, today);
   if (!isNew && basePrice !== out.price) out = changePrice(syncPhase({ ...out, price: basePrice }, today), today, out.price);
   else out = syncPhase(out, today);
-  if (stop && out.cycle.unit !== 'lifetime') out = applyStopForm(out, stop, today);
+  if (stop && out.cycle.unit !== 'lifetime') out = applyStopForm(out, stop, today, subs);
   return out;
 }
 

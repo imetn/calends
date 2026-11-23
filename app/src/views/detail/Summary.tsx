@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { IconButton } from '../../components/ui.tsx';
-import { effectiveStatus, memberAboard, phaseSubs } from '../../../../shared/billing.ts';
+import { currentPhase, effectiveStatus, memberAboard, phaseSubs } from '../../../../shared/billing.ts';
+import { bundleSource, followsParent, isFreeBundlePhase } from '../../../../shared/bundle.ts';
 import { cnDateFull } from '../../../../shared/format.ts';
 import type { AppState, ShareMember, Subscription } from '../../../../shared/types.ts';
 import { CarMembers } from '../carpool/Members.tsx';
@@ -12,16 +13,26 @@ import { collectNow, contractNow, PeriodBar, PeriodPair, periodLive } from './Pe
 import { Note, Panel, Prop } from '../../components/DetailKit.tsx';
 
 /** 详情：本期进度（我发起的合租另并排收费周期）、订阅期间、试用截止与付给谁；账号只在编辑里，备注放在详情最下面 */
-export function Summary({ sub, state, today }: { sub: Subscription; state: AppState; today: string }) {
+export function Summary({ sub, state, today, onOpen }: { sub: Subscription; state: AppState; today: string; onOpen?: (s: Subscription) => void }) {
   const st = effectiveStatus(sub, today);
+  const cur = currentPhase(sub, today);
   const lifetime = sub.cycle.unit === 'lifetime' && phaseSubs(sub).length === 1;
   const live = periodLive(sub, today);
   const end = detailHistoryEnd(sub, today);
   const collect = collectNow(sub, state, today);
   const contract = contractNow(sub, today);
+  const parentInfo = bundleSource(sub, state.subscriptions, today);
+  const freeFollow = isFreeBundlePhase(cur) && followsParent(cur);
+  // 免费跟随主订阅的权益本身没有扣款期，本期进度直接展示主订阅当前周期
+  const barSub = freeFollow && parentInfo && periodLive(parentInfo.parent, today) ? parentInfo.parent : sub;
+  const barTitle = barSub !== sub ? t('detail.bundle.parentPeriod') : undefined;
   return (
     <Panel className="dt-about">
-      {collect || contract ? <PeriodPair sub={sub} today={today} collect={collect} contract={contract} /> : live && <PeriodBar sub={sub} today={today} />}
+      {collect || contract ? (
+        <PeriodPair sub={sub} today={today} collect={collect} contract={contract} />
+      ) : (
+        live && <PeriodBar sub={barSub} today={today} titleOverride={barTitle} />
+      )}
       <dl className="dt-about-grid">
         {/* 计费中只画当前这一期；买断、未开始、已结束、暂停写订阅期间（买断的开始日就是那一笔扣款，不再重复） */}
         {!lifetime && !live && (
@@ -32,6 +43,21 @@ export function Summary({ sub, state, today }: { sub: Subscription; state: AppSt
                 ? `${cnDateFull(sub.start)} – ${cnDateFull(sub.end)}`
                 : cnDateFull(sub.start)
               : `${cnDateFull(sub.start)} – ${end.unknown ? t('detail.field.endedUnknown') : end.date ? cnDateFull(end.date) : t('detail.field.present')}`}
+          </Prop>
+        )}
+        {/* 关联主订阅：点击可跳去主订阅详情，并标明是否跟随周期 */}
+        {cur.bundle?.parentId && (
+          <Prop k={t('detail.bundle.linkedTo')}>
+            <span className="dt-inline">
+              {parentInfo ? (
+                <button type="button" className="dt-link" onClick={() => onOpen?.(parentInfo.parent)}>
+                  {parentInfo.parent.name} ›
+                </button>
+              ) : (
+                <span className="muted">{t('detail.bundle.parentMissing')}</span>
+              )}
+              <span className="muted">{t(followsParent(cur) ? 'detail.bundle.modeFollow' : 'detail.bundle.modeIndependent')}</span>
+            </span>
           </Prop>
         )}
         {/* 试用中顶部已写试用结束后的首次扣款，这里不再单列试用截止 */}

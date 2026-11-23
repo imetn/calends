@@ -8,6 +8,7 @@ import { transformSync } from 'oxc-transform-react';
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as billing from '../shared/billing.ts';
+import * as bundle from '../shared/bundle.ts';
 import * as carpool from '../shared/carpool.ts';
 import * as fx from '../shared/fx.ts';
 import * as format from '../shared/format.ts';
@@ -55,6 +56,7 @@ function compile(names, extra = {}) {
     useState: React.useState,
     useRef: React.useRef,
     ...billing,
+    ...bundle,
     ...carpool,
     ...format,
     ...fx,

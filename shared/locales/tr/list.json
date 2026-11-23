@@ -56,7 +56,9 @@
     "proxy": "Başkası için",
     "proxyFor": "{name} için ödendi",
     "someone": "birisi",
-    "parallel": "Paralel"
+    "parallel": "Paralel",
+    "included": "Dahil",
+    "addon": "Eklenti"
   },
   "col": {
     "name": "Abonelik",
@@ -138,5 +140,8 @@
   "network": {
     "unionpay": "UnionPay"
   },
-  "monthlySame": "Fiyatla aynı"
+  "monthlySame": "Fiyatla aynı",
+  "bundle": {
+    "followsParent": "Ana aboneliği izler"
+  }
 }

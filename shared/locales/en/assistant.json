@@ -249,7 +249,8 @@
     "payments": "Recorded charges",
     "spent": "Spent to date",
     "changes": "Changed fields",
-    "funding": "Paid with"
+    "funding": "Paid with",
+    "bundle": "Linked to"
   },
   "v": {
     "exempt": "Doesn’t pay",
@@ -262,7 +263,8 @@
     "charge": "Charge",
     "deleteAll": "Deletes the subscription and all its charges. This can’t be undone.",
     "dateUnknown": "Date unknown",
-    "terminate": "Terminated"
+    "terminate": "Terminated",
+    "unlinked": "Standalone (unlinked)"
   },
   "interrupted": "The reply was cut off before it finished.",
   "saveUnknown": "Could not confirm whether this change was saved. Check the ledger before trying again.",

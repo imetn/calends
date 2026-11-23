@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { todayIn, uid, addDays, memberBillMonths, memberCollection, memberRate, collectionAnchor, collectCurrencyOf } from '../../../../shared/billing.ts';
+import { bundleView } from '../../../../shared/bundle.ts';
 import type { AppState, Receipt, ShareMember, Subscription } from '../../../../shared/types.ts';
 import { editRecordPeriod, isSettled, putRecord, removeRecordPeriod, resolveKey, type LedgerPeriod } from '../../../../shared/receivables.ts';
 
@@ -122,7 +123,8 @@ export function useMemberForm({
     return feeEdited ? changeMemberFee(state, s, custom, { from: start, fee: fee.amount, currency: fee.currency, billEvery: fee.billEvery }, today) : custom;
   };
   // 加入日正好在车的收款日上时两种收款日一样，不用选
-  const carFirst = memberCollection(s, isNew ? withFee(f) : f, joinedDay, collectCcy);
+  const vs = bundleView(s, state.subscriptions);
+  const carFirst = memberCollection(vs, isNew ? withFee(f) : f, joinedDay, collectCcy);
   const canOwnDay = isNew && !once && mode !== 'exempt' && carFirst.partial;
   // 从加入日起收：首期是整期，之前填的首期方式、金额不再适用
   const fx: ShareMember = canOwnDay && ownDay ? { ...f, anchor: joinedDay, firstPeriod: undefined, firstAmount: undefined } : f;
@@ -170,7 +172,7 @@ export function useMemberForm({
   const [collectAfter, setCollectAfter] = useState(false);
 
   // 新成员的首期按改过的收费周期算，已有成员按账本里的
-  const first = memberCollection(s, isNew ? next : f, joinedDay, collectCcy);
+  const first = memberCollection(vs, isNew ? next : f, joinedDay, collectCcy);
   // 同一个人还出现在别的合租、代付里：已关联名册里的人，称呼、联系方式只读，改人员资料去人员详情
   const linked = !!f.personId && !!state.people?.some((p) => p.id === f.personId);
   const [profile, setProfile] = useState(false);
@@ -187,7 +189,7 @@ export function useMemberForm({
     if (initialReceipt) setReceipt(initialReceipt);
   }, [stacked, initialReceipt]);
   // 已付至按没退出算：退出后还有已付的天数时照样显示到那期期末，算退款要看
-  const paidUntil = memberPaidThrough(s, next, today, collectCcy);
+  const paidUntil = memberPaidThrough(vs, next, today, collectCcy);
 
   // 同一笔收款复制给其他成员：大家每期交的一样，不用一个个重填。对方这几期都还空着才能复制
   const others = (s.share?.members ?? []).filter((x) => x.id !== f.id);

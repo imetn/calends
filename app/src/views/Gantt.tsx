@@ -19,6 +19,7 @@ import {
   priceAt,
   type Charge,
 } from '../../../shared/billing.ts';
+import { bundleView, intersectSpans, isFreeBundlePhase } from '../../../shared/bundle.ts';
 import { flow, cnDate, money, monthLabel } from '../../../shared/format.ts';
 import { intlLocale, t } from '../../../shared/i18n.ts';
 import {
@@ -59,6 +60,7 @@ interface Seg_ {
   open: boolean; // 没有结束日，一直延续
 }
 interface Row {
+  raw: Subscription;
   s: Subscription;
   segs: Seg_[];
   /** 每段所在的轨道：换区后新旧两段并行时，后开始的那段画在下面一条 */
@@ -185,13 +187,25 @@ export function Gantt({
   const [box, w] = useWidth();
 
   const rows: Row[] = useMemo(() => {
-    const out = subs.map((s) => {
+    const out = subs.map((raw) => {
+      const s = bundleView(raw, state.subscriptions);
       const vs = phaseSubs(s);
-      const segs = vs.map((v) => {
+      const segs: Seg_[] = [];
+      for (const v of vs) {
+        if (v.bundleAvail) {
+          const clipped = intersectSpans(v.start, v.end, v.bundleAvail);
+          for (const sp of clipped) {
+            segs.push({ v, from: sp.from, to: sp.to ?? addMonths(today, 6), open: !sp.to });
+          }
+          if (!clipped.length) {
+            segs.push({ v, from: v.start, to: v.end ?? v.start, open: false });
+          }
+          continue;
+        }
         const st = effectiveStatus(v, today);
         const end = v.end ?? (st === 'ended' ? today : undefined);
-        return { v, from: v.start, to: end ?? addMonths(today, 6), open: !end };
-      });
+        segs.push({ v, from: v.start, to: end ?? addMonths(today, 6), open: !end });
+      }
       const spans = segs.map((g) => ({ start: g.from, end: g.open ? undefined : g.to }));
       // 断订：前面所有段都已结束、下一段还没开始的空档（并行的旧段还在跑就不算）
       const gaps = segs.slice(1).flatMap((g, i) => {
@@ -199,6 +213,7 @@ export function Gantt({
         return until && until < g.from ? [{ from: until, to: g.from }] : [];
       });
       return {
+        raw,
         s,
         segs,
         lanes: phaseLanes(
@@ -227,7 +242,7 @@ export function Gantt({
     });
     // 每个订阅各占一行、互相独立；顺序跟随页面顶部的排序与筛选
     return out;
-  }, [subs, today, state.readonly]);
+  }, [subs, state.subscriptions, today, state.readonly]);
 
   // 行的顺序与集合；只在它变化时才读行位置，平移、悬停不触发同步布局
   const order = rows.map((r) => r.s.id).join(',');
@@ -552,13 +567,13 @@ export function Gantt({
                     ? (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          onOpen(r.s);
+                          onOpen(r.raw);
                         }
                       }
                     : undefined
                 }
                 style={{ '--lanes': Math.max(...r.lanes) + 1 } as Record<string, number>}
-                onClick={() => !dragged.current && onOpen(r.s)}
+                onClick={() => !dragged.current && onOpen(r.raw)}
               >
                 <div className="gt-label" title={r.s.name}>
                   <span className="gt-icon" role="img" title={r.s.name} aria-label={r.s.name}>
@@ -614,13 +629,39 @@ export function Gantt({
                       // 买断：一个圆点（14px，top+4）与细线（2px，top+10），中心都压在胶囊中线 top+11 上；有结束日（如含一年更新、之后改订阅）时，再拉一条细线到结束日，和后面的虚线、下一段接上
                       if (lifetime)
                         return (
-                          <Fragment key={g.from}>
+                          <Fragment key={`${g.from}-${gi}`}>
                             {!g.open && x(g.to) - left > 8 && (
                               <span className="gt-life-tail" style={{ left, width: x(g.to) - left, top: top + 10, background: color(g.v) }} />
                             )}
                             <span className="gt-lifetime" style={{ left, top: top + 4, background: color(g.v) }} title={tip} />
                           </Fragment>
                         );
+                      // 免费附赠权益：整段画一条干净的「附赠」胶囊，不按周期切成一串 $0
+                      if (isFreeBundlePhase(g.v)) {
+                        const pl = left;
+                        const pw = Math.max(BAR, x(to) - pl);
+                        const pnow = to <= today ? pw : g.from > today ? 0 : Math.min(pw, Math.max(0, x(today) - pl));
+                        const seen = visible(pl, pw);
+                        const text = t('list.badge.included');
+                        const showLabel = seen.r - seen.l >= amountWidth(text) + LABEL_PAD + (g.v.region ? FLAG_ROOM : 0);
+                        const parentName = g.v.bundle?.parentId ? state.subscriptions.find((p) => p.id === g.v.bundle!.parentId)?.name : undefined;
+                        const freeTip = `${text}${parentName ? `, ${t('detail.bundle.withParent', { name: parentName })}` : ''}\n${cnDate(g.from)} – ${g.open ? t('list.gantt.present') : cnDate(g.to)}${g.v.planned ? t('list.gantt.plannedSuffix') : ''}`;
+                        return (
+                          <span
+                            key={`${g.from}-${gi}`}
+                            className={`gt-seg ${g.v.planned ? 'planned' : ''} ${g.open ? 'open' : ''} ${pnow === 0 ? 'ahead' : ''}`}
+                            style={{ left: pl, width: pw, top, '--c': color(g.v), '--now': `${pnow}px` } as Record<string, string | number>}
+                            title={freeTip}
+                          >
+                            {showLabel && (
+                              <em className="icon-text" style={seen.l > pl ? { marginLeft: seen.l - pl } : undefined}>
+                                {g.v.region ? <FlagImg cc={g.v.region} /> : null}
+                                <span>{text}</span>
+                              </em>
+                            )}
+                          </span>
+                        );
+                      }
                       // 段内按调价、首期优惠切成几截，每截标自己的价格；
                       // 按每次续费切开；有实付记录时 chargesBetween 使用实际日期。
                       // 逐个合并不足一个正圆宽的切点，不用最初的间隔决定整段是否切分。
@@ -694,7 +735,7 @@ export function Gantt({
                       const bills = ganttCutBills(g.v, cuts, today);
                       let labeled = '';
                       return (
-                        <Fragment key={g.from}>
+                        <Fragment key={`${g.from}-${gi}`}>
                           {cuts.slice(0, -1).map((a, n) => {
                             const b = cuts[n + 1];
                             if (b < rStart || a > rEnd) return null;

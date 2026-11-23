@@ -1,4 +1,5 @@
 import { addDays, addMonths, cashChargesBetween, historyStart, todayIn } from '../shared/billing.ts';
+import { resolveState } from '../shared/bundle.ts';
 import { CURRENCIES } from '../shared/format.ts';
 import { FX_SOURCES, parseCurrencyApi, parseFrankfurter } from '../shared/fx.ts';
 import type { AppState, FxHistory, FxTable } from '../shared/types.ts';
@@ -30,6 +31,7 @@ export function storeSet(state: AppState): Set<string> | undefined {
 
 /** 需要历史汇率的日期：所有已发生的扣款日、每个月末（MRR 走势）、余额校准日 */
 function neededDates(state: AppState): string[] {
+  state = resolveState(state);
   const today = todayIn(state.settings.timezone);
   const set = new Set<string>();
   let first = today;

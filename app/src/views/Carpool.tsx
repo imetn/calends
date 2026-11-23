@@ -4,6 +4,7 @@ import { currentPhase } from '../../../shared/billing.ts';
 import { copyParts } from '../components/copy.tsx';
 import { ShareAvatars } from '../components/ShareAvatars.tsx';
 import { cycleLabel, effectiveStatus, memberDues, nextCharge, isStopped, collectCurrencyOf } from '../../../shared/billing.ts';
+import { bundleView } from '../../../shared/bundle.ts';
 import { toBaseAt } from '../../../shared/fx.ts';
 import { useState } from 'react';
 import { flow, cnDate, money } from '../../../shared/format.ts';
@@ -45,7 +46,8 @@ export function Carpool({ state, today, onOpen }: { state: AppState; today: stri
   const [colsRef, colsWidth] = useWidth();
   const colCount = Math.max(1, Math.min(4, Math.floor((colsWidth + 16) / 356)));
   // 没有停止的车都算进行中：包括买断（没有到期）和还没开始的
-  const live = (s: Subscription) => !isStopped(effectiveStatus(s, today));
+  const viewOf = (s: Subscription) => bundleView(s, state.subscriptions);
+  const live = (s: Subscription) => !isStopped(effectiveStatus(viewOf(s), today));
   const owned = state.subscriptions.filter((s) => s.share?.role === 'owner' && live(s));
   const joined = state.subscriptions.filter((s) => s.share?.role === 'member' && live(s));
   // 卡片按状态筛选；顶部的统计始终按进行中的合租算
@@ -55,8 +57,8 @@ export function Carpool({ state, today, onOpen }: { state: AppState; today: stri
   const all = [...owned, ...ended];
   const collect = collectCurrencyOf(state.settings);
   // 每辆车的成员待收、账、下次扣款只算一次：筛选、排序、统计、卡片与表格共用
-  const duesBy = new Map(all.map((s) => [s.id, memberDues(s, today, collect, state)]));
-  const duesOf = (s: Subscription) => duesBy.get(s.id) ?? memberDues(s, today, collect, state);
+  const duesBy = new Map(all.map((s) => [s.id, memberDues(viewOf(s), today, collect, state)]));
+  const duesOf = (s: Subscription) => duesBy.get(s.id) ?? memberDues(viewOf(s), today, collect, state);
   const owes = (s: Subscription) => duesOf(s).some((d) => d.periodsOwed > 0);
   const groups: Record<CarFilter, Subscription[]> = {
     all,
@@ -79,7 +81,7 @@ export function Carpool({ state, today, onOpen }: { state: AppState; today: stri
   const [savedView, setView] = usePref<CarView>('car-view', 'grid', isCarView);
   const phone = usePhone();
   const view = phone ? 'grid' : savedView;
-  const nextBy = new Map(all.map((s) => [s.id, nextCharge(s, today) ?? '9999-12-31']));
+  const nextBy = new Map(all.map((s) => [s.id, nextCharge(viewOf(s), today) ?? '9999-12-31']));
   const nextOf = (s: Subscription) => nextBy.get(s.id)!;
   // 待收合计（本位币）：算不出（缺汇率或缺金额）的一笔让合计为 NaN，只写「待收」，不写成少收的金额。每辆车与顶部合计同一算法
   const owedTotal = (dues: ReturnType<typeof duesOf>) => dues.reduce((a, d) => a + (Number.isFinite(d.owed) ? toBase(state, d.owed, d.currency) : NaN), 0);
@@ -225,7 +227,7 @@ export function Carpool({ state, today, onOpen }: { state: AppState; today: stri
                   const owing = duesOf(s).filter((d) => d.periodsOwed > 0);
                   // 已退出的成员不占座，只在展开的明细里保留
                   const free = carpoolRoster(s, today).vacancies;
-                  const next = nextCharge(s, today);
+                  const next = nextCharge(viewOf(s), today);
                   return (
                     // 整张卡片打开合租弹窗；里面的按钮、链接和订阅名各管各的
                     <div

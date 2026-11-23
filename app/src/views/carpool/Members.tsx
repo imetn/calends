@@ -13,6 +13,7 @@ import {
   memberUnpaidFrom,
   collectCurrencyOf,
 } from '../../../../shared/billing.ts';
+import { bundleView } from '../../../../shared/bundle.ts';
 import { useState } from 'react';
 import { flow, billLabel, cnDate, cnDateAuto, cnDateFull, money, monthLabel } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
@@ -362,10 +363,11 @@ export function DepartedToggle({ count, expanded, onToggle }: { count: number; e
  * 已扣的为实色，下一期预测为斜纹；与成员的收款时间线共用同一条时间轴
  */
 export function OwnerTimeline({ state, s, today, win }: { state: AppState; s: Subscription; today: string; win: { start: string; end: string } }) {
-  const charges = chargesBetween(s, addMonths(win.start, -24), win.end, today).filter((c) => !c.kind);
+  const vs = bundleView(s, state.subscriptions);
+  const charges = chargesBetween(vs, addMonths(win.start, -24), win.end, today).filter((c) => !c.kind);
   const segs = charges
     .map((c, i) => {
-      const until = addDays(charges[i + 1]?.date ?? nextCharge(s, addDays(c.date, 1)) ?? win.end, -1);
+      const until = addDays(charges[i + 1]?.date ?? nextCharge(vs, addDays(c.date, 1)) ?? win.end, -1);
       return { c, from: c.date, until, kind: c.date <= today ? 'owner' : 'future' };
     })
     .filter((g) => g.until >= win.start && g.from <= win.end)

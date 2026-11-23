@@ -1,5 +1,6 @@
 // 方块图：纯算法和公开页方块图的数据，浏览器与测试共用
 import { effectiveStatus } from './billing.ts';
+import { resolveState } from './bundle.ts';
 import { categoryList } from './categories.ts';
 import { contributionOn } from './metrics.ts';
 import type { AppState } from './types.ts';
@@ -96,6 +97,7 @@ export const byAmountDesc = (a: { v: number }, b: { v: number }) => (Number.isFi
 
 /** 当前每月开销按分类分组（基准币种）。在用范围、分类顺序和排序与「构成」卡一致，缺汇率的不当成 0，单独计数 */
 export function spendingMap(state: AppState, today: string): SpendMap {
+  state = resolveState(state);
   const live = state.subscriptions
     .map((s) => ({ s, v: contributionOn(state, s, today) }))
     .filter((x) => ['active', 'ending', 'trial', 'paused'].includes(effectiveStatus(x.s, today)))

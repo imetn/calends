@@ -1,4 +1,5 @@
 import { currentPhase, effectiveStatus } from './billing.ts';
+import { bundleSource, bundleView } from './bundle.ts';
 import type { AppState, Subscription } from './types.ts';
 
 /** Status facet of the subscription list; `live` folds `active` and `ending` like the overview and public counts. */
@@ -33,17 +34,18 @@ export const listStatus = (s: Subscription, today: string): ListStatus => {
 export const listMethod = (s: Subscription, today: string) => currentPhase(s, today).methodId ?? 'none';
 export const listWords = (q: string | undefined) => (q ?? '').trim().toLowerCase().split(/\s+/).filter(Boolean);
 
-/** Searchable text: name, category, tags, notes, region, URL and the current payment method name. */
-export function listHaystack(state: Pick<AppState, 'methods'>, s: Subscription, today: string): string {
+/** Searchable text: name, category, tags, notes, region, URL, current payment method name, and linked parent name. */
+export function listHaystack(state: Pick<AppState, 'methods'> & Partial<Pick<AppState, 'subscriptions'>>, s: Subscription, today: string): string {
   const method = state.methods.find((m) => m.id === listMethod(s, today))?.name;
-  return [s.name, s.category, ...s.tags, s.notes, s.region, s.url, method].filter(Boolean).join(' ').toLowerCase();
+  const parent = state.subscriptions ? bundleSource(s, state.subscriptions, today)?.parent.name : undefined;
+  return [s.name, s.category, ...s.tags, s.notes, s.region, s.url, method, parent].filter(Boolean).join(' ').toLowerCase();
 }
 
 const literal: WordMatch = (word, text) => text.includes(word);
 
 /** The list predicate; proxy payments never belong to the list. `skip` omits one facet for its option counts. */
 export function inListScope(
-  state: Pick<AppState, 'methods'>,
+  state: Pick<AppState, 'methods'> & Partial<Pick<AppState, 'subscriptions'>>,
   s: Subscription,
   today: string,
   scope: ListScope,
@@ -52,15 +54,16 @@ export function inListScope(
 ): boolean {
   if (s.proxy) return false;
   if (scope.ids && !scope.ids.has(s.id)) return false;
+  const view = state.subscriptions ? bundleView(s, state.subscriptions) : s;
   if (scope.words?.length) {
     const text = listHaystack(state, s, today);
     if (!scope.words.every((w) => match(w, text))) return false;
   }
-  if (skip !== 'status' && scope.status && scope.status !== 'all' && listStatus(s, today) !== scope.status) return false;
+  if (skip !== 'status' && scope.status && scope.status !== 'all' && listStatus(view, today) !== scope.status) return false;
   if (skip !== 'cat' && scope.category != null && s.category !== scope.category) return false;
-  if (skip !== 'pay' && scope.method != null && listMethod(s, today) !== scope.method) return false;
+  if (skip !== 'pay' && scope.method != null && listMethod(view, today) !== scope.method) return false;
   if (scope.tag != null && !s.tags.some((x) => x.toLowerCase() === scope.tag!.toLowerCase())) return false;
-  if (scope.region != null && (currentPhase(s, today).region ?? '').toUpperCase() !== scope.region.toUpperCase()) return false;
+  if (scope.region != null && (currentPhase(view, today).region ?? '').toUpperCase() !== scope.region.toUpperCase()) return false;
   return true;
 }
 

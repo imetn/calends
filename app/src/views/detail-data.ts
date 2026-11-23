@@ -10,6 +10,7 @@ import {
   isPostpaid,
   isStopped,
 } from '../../../shared/billing.ts';
+import { intersectSpans } from '../../../shared/bundle.ts';
 import type { Subscription } from '../../../shared/types.ts';
 
 /** Display boundary only: an undated stop never becomes a persisted service end. */
@@ -30,6 +31,24 @@ export function detailHistoryEnd(sub: Subscription, today: string): { date: stri
         .at(-1),
       unknown: ends.some((e) => e.unknown),
     };
+  }
+  if (sub.bundleAvail) {
+    const avail = sub.bundleAvail;
+    if (status === 'paused') {
+      const pause = avail.pauses.find((p) => p.from <= today && (!p.to || today < p.to));
+      if (pause && pause.from > '0000-01-01') return { date: addDays(pause.from, -1), unknown: false };
+      const prevSpan = intersectSpans(sub.start, sub.end, avail)
+        .filter((sp) => sp.to && sp.to < today)
+        .at(-1);
+      if (prevSpan?.to) return { date: prevSpan.to, unknown: false };
+    }
+    if (status === 'ended') {
+      if (avail.undatedStop) return { date: undefined, unknown: true };
+      const eff = intersectSpans(sub.start, sub.end, avail);
+      const last = eff.at(-1)?.to;
+      if (last) return { date: last, unknown: false };
+      if (avail.ended && avail.ended.kind !== 'undated') return { date: avail.ended.date, unknown: false };
+    }
   }
   const last =
     (sub.payments ?? [])

@@ -2,6 +2,7 @@ import { bankOf, domainOf, faviconOf, isDataIcon, METHOD_BRAND_LOGO } from '../.
 import { indigo, red, purple, green, orange, teal, pink, iris, gray, gold, slate, blue } from '@radix-ui/colors';
 import { base } from './base.ts';
 import { addDays, addMonths, chargesBetween, convert, effectiveStatus, parseDay, type Charge } from '../../shared/billing.ts';
+import { resolveState } from '../../shared/bundle.ts';
 import { chargeBaseOrNaN, chargeValue } from '../../shared/fx.ts';
 import type { AppState, CardNetwork, MethodKind, PaymentMethod, Subscription } from '../../shared/types.ts';
 import { locale, t } from '../../shared/i18n.ts';
@@ -251,6 +252,7 @@ export function methodName(m: Pick<PaymentMethod, 'name' | 'region' | 'kind' | '
 }
 
 export function liveSubs(state: AppState, today: string): Subscription[] {
+  state = resolveState(state);
   return state.subscriptions.filter((s) => {
     const st = effectiveStatus(s, today);
     return st === 'active' || st === 'ending' || st === 'trial';
@@ -270,6 +272,7 @@ export const sortValue = (v: number) => (Number.isFinite(v) ? v : -Infinity);
 
 /** 区间内的扣款。默认不含代付（那是替别人付的，不算我的支出）；日历等需要看卡上实际扣款时传 withProxy */
 export function allCharges(state: AppState, from: string, to: string, today: string, withProxy = false): Charge[] {
+  state = resolveState(state);
   return state.subscriptions
     .filter((s) => withProxy || !s.proxy)
     .flatMap((s) => chargesBetween(s, from, to, today))

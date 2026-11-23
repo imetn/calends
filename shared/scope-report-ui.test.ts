@@ -15,6 +15,7 @@ import { t as tr } from './i18n.ts';
 import { waterfallDomain } from './chart-data.ts';
 import { transformSync } from 'oxc-transform-react';
 import * as billing from './billing.ts';
+import * as bundle from './bundle.ts';
 import * as format from './format.ts';
 import * as fx from './fx.ts';
 import * as reports from './scope-report.ts';
@@ -110,6 +111,8 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     shouldGroupYears,
     canUseSingleKey,
     ...billing,
+    ...bundle,
+    detailHistoryEnd,
     ...contract,
     contractNow: () => undefined,
     ...listScope,

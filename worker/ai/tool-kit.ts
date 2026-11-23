@@ -1,7 +1,8 @@
 import { personSummary } from '../../shared/avatar.ts';
 import { addDays, addMonths, chargesBetween, todayIn, type Charge, validDay } from '../../shared/billing.ts';
+import { bundleView, resolveState } from '../../shared/bundle.ts';
 import { normName, peopleLedger } from '../../shared/people.ts';
-import type { AppState, Contract, Cycle, Payment, PaymentMethod, Person, ShareMember, Subscription } from '../../shared/types.ts';
+import type { AppState, BundleLink, Contract, Cycle, Payment, PaymentMethod, Person, ShareMember, Subscription } from '../../shared/types.ts';
 import type { Env } from '../env.ts';
 import { loadState, saveLedgerEdit } from '../store.ts';
 import { resyncShares } from '../../shared/carpool.ts';
@@ -130,6 +131,7 @@ export function rangeOf(period: unknown, today: string, from?: unknown, to?: unk
 export const PERIODS = ['today', 'next_3_days', 'next_7_days', 'next_30_days', 'this_month', 'next_month', 'last_30_days', 'this_year', 'custom'];
 
 export function chargesIn(st: AppState, from: string, to: string, today: string, scope: string) {
+  st = resolveState(st);
   return st.subscriptions
     .filter((s) => (scope === 'proxy' ? !!s.proxy : scope === 'all' || scope === 'gross' ? true : !s.proxy))
     .flatMap((s) => chargesBetween(s, from, to, today))
@@ -213,6 +215,32 @@ export function contractInput(v: unknown): Contract | undefined {
   };
 }
 
+export const BUNDLE = {
+  type: 'object',
+  properties: {
+    parent: { ...SUBREF, description: 'Parent subscription id or name (must not be a proxy or itself linked to another subscription).' },
+    follow: {
+      type: 'boolean',
+      default: true,
+      description: 'true (default): follows the parent subscription lifecycle (pauses, stops, gaps). false: independent billing cycle and lifecycle.',
+    },
+  },
+  required: ['parent'],
+  additionalProperties: false,
+  description:
+    'Link this subscription as a bundled perk (price 0) or discounted add-on of a parent subscription. One level deep; parent and child cannot be proxies.',
+};
+
+/** MCP 入参 → 关联主订阅（把名称或 id 解析成稳定的 parentId） */
+export function bundleInput(st: AppState, v: unknown): BundleLink | undefined {
+  if (v == null) return undefined;
+  if (typeof v !== 'object' || Array.isArray(v)) throw new Error(t('core.subError.bundle'));
+  const b = v as { parent?: unknown; follow?: unknown };
+  const parent = findSub(st, b.parent);
+  if (b.follow !== undefined && typeof b.follow !== 'boolean') throw new Error(t('core.subError.bundle'));
+  return { parentId: parent.id, ...(b.follow === false ? { follow: false } : {}) };
+}
+
 export const ICON_DESCRIPTION =
   'Icon: an http(s) image URL (e.g. artwork from search_app_store), a site path such as /ai/claude.svg (see search_services), or one emoji / short symbol (up to 4 characters). Prefer the icon path from search_services for common services. Invalid values are rejected.';
 
@@ -282,8 +310,11 @@ export async function persist(
   extra: Record<string, unknown> = {},
   personCreation?: Person,
 ) {
+  const afterSubs = [...st.subscriptions.filter((s) => s.id !== after.id), after];
+  const afterSt: AppState = { ...st, subscriptions: afterSubs };
+  const afterView = bundleView(after, afterSubs);
   const preview = {
-    subscription: row(st, after, today),
+    subscription: row(afterSt, after, today),
     before: st.subscriptions.find((s) => s.id === after.id) ?? null,
     after,
     references: { subscription: after.id },
@@ -301,7 +332,7 @@ export async function persist(
         }
       : {}),
     // 下次扣款只列真正要扣的钱：记在今天及以后的退款、补差、失败记录不算
-    next_charges: chargesBetween(after, today, addMonths(today, 13), today)
+    next_charges: chargesBetween(afterView, today, addMonths(today, 13), today)
       .filter((c) => !c.paidOn && !c.kind)
       .slice(0, 3)
       .map((c) => ({ date: c.date, amount: round(c.amount), currency: c.currency })),
@@ -340,8 +371,8 @@ export async function writeLedger(ctx: ToolCtx, st: AppState, w: LedgerWrite, pr
     for (const id of deletedSubscriptions) ctx.overlay?.set(id, null);
     return { dry_run: true, ...preview };
   }
-  // 存储层会给订阅记 updatedAt：写副本，预览里的对象保持原样
-  await saveLedgerEdit(ctx.env, { ...rest, subscriptions: subscriptions?.map((s) => ({ ...s })), methods }, deletedMethods, deletedSubscriptions);
+  // 存储层会给订阅记 updatedAt：写副本，预览里的对象保持原样；带 rev 乐观锁防并发写破坏引用完整性
+  await saveLedgerEdit(ctx.env, { ...rest, subscriptions: subscriptions?.map((s) => ({ ...s })), methods }, deletedMethods, deletedSubscriptions, st.rev);
   return { ok: true, ...preview };
 }
 

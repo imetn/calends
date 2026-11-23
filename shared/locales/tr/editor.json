@@ -284,5 +284,13 @@
   "settlement": {
     "together": "Birlikte",
     "separate": "Ayrı"
+  },
+  "bundle": {
+    "parent": "Bağlı olduğu",
+    "none": "Yok (bağımsız)",
+    "mode": "Dönem",
+    "follow": "Ana aboneliği izle",
+    "independent": "Bağımsız",
+    "followsCycle": "Ana aboneliği izler ({cycle})"
   }
 }

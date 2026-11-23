@@ -4471,6 +4471,10 @@ button.h-price-row:focus-visible {
   margin-top: 12px;
   font-size: var(--fs-3);
 }
+.sc-price .sc-included {
+  font-weight: 600;
+  color: var(--label);
+}
 .sc-price .sc-per {
   font-size: var(--fs-1);
   color: var(--label-2);

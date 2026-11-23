@@ -1,5 +1,6 @@
 import { isImageIcon } from '../shared/icon.ts';
 import { addDays, addMonths, chargesBetween, renewalRuleAt, todayIn, chargeMethodId, isSeparate, type Charge } from '../shared/billing.ts';
+import { resolveState } from '../shared/bundle.ts';
 import { contractEvents } from '../shared/contract.ts';
 import { cnDateFull, money } from '../shared/format.ts';
 import { t } from '../shared/i18n.ts';
@@ -49,6 +50,7 @@ function icsCharges(s: Subscription, from: string, to: string, today: string): C
 }
 
 export function buildIcs(state: AppState, siteUrl: string): string {
+  state = resolveState(state);
   const today = todayIn(state.settings.timezone);
   const from = addMonths(today, -3);
   const to = addMonths(today, 13);

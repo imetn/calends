@@ -1,5 +1,6 @@
 // Transient stop fields owned by the editor or the standalone stop dialog.
 import { nonrenewalDate, pausedFromOf, stopBillingPeriod, currentPhase, effectiveStatus, stopSummary, subError, undatedStop } from './billing.ts';
+import { bundleView } from './bundle.ts';
 import { cancelAtEnd, reopenStopped, statusChangeError, stopSubscription } from './phases.ts';
 import { t } from './i18n.ts';
 import { settlementCurrencyOf } from './fx.ts';
@@ -24,9 +25,10 @@ export interface StopForm {
 export function stopForm(
   sub: Subscription,
   today: string,
-  state: Pick<AppState, 'methods' | 'settings'> = { methods: [], settings: DEFAULT_SETTINGS },
+  state: Pick<AppState, 'methods' | 'settings'> & { subscriptions?: readonly Subscription[] } = { methods: [], settings: DEFAULT_SETTINGS },
 ): StopForm {
-  const cur = currentPhase(sub, sub.stop?.date ?? today);
+  const view = state.subscriptions ? bundleView(sub, state.subscriptions) : sub;
+  const cur = currentPhase(view, sub.stop?.date ?? today);
   const paid = nonrenewalDate(cur, today);
   const payment = cur.stop ? cur.payments?.filter((p) => p.kind === 'refund' && p.date >= cur.stop!.date).at(-1) : undefined;
   return {
@@ -42,8 +44,8 @@ export function stopForm(
   };
 }
 
-export function stopPreview(sub: Subscription, form: StopForm, today: string) {
-  const cur = currentPhase(sub, form.date);
+export function stopPreview(sub: Subscription, form: StopForm, today: string, subs?: readonly Subscription[]) {
+  const cur = currentPhase(subs ? bundleView(sub, subs) : sub, form.date);
   const period = stopBillingPeriod(cur, form.date, today);
   return {
     cur,
@@ -57,9 +59,10 @@ const stopFormKey = (f: StopForm) => JSON.stringify({ ...f, settledCurrency: f.s
 const sameStopForm = (a: StopForm, b: StopForm) => stopFormKey(a) === stopFormKey(b);
 
 /** Validate only on the owner's submit. Never persist partial date or amount inputs. */
-export function applyStopForm(sub: Subscription, form: StopForm, today: string): Subscription {
+export function applyStopForm(sub: Subscription, form: StopForm, today: string, subs?: readonly Subscription[]): Subscription {
   // 表单没动就不写：日期未知的停用尤其不能因为保存别的字段变成今天
-  if (sameStopForm(form, stopForm(sub, today)) && (sub.stop || undatedStop(sub) || (sub.status === 'cancelled' && sub.end))) return sub;
+  const baseForm = stopForm(sub, today, subs ? { methods: [], settings: DEFAULT_SETTINGS, subscriptions: subs } : undefined);
+  if (sameStopForm(form, baseForm) && (sub.stop || undatedStop(sub) || (sub.status === 'cancelled' && sub.end))) return sub;
   const terminated = sub.stop?.kind === 'terminate' || sub.status === 'terminated';
   if (terminated && form.mode !== 'terminate') throw new Error(t('mcp.error.terminatedReactivate'));
   let open = sub;
@@ -70,8 +73,8 @@ export function applyStopForm(sub: Subscription, form: StopForm, today: string):
     const pausedAt = pausedFromOf(sub);
     if (pausedAt) open = { ...open, status: 'paused', pausedAt };
   }
-  if (form.mode === 'nonrenew') return cancelAtEnd(open, form.date, today);
-  const { summary } = stopPreview(sub, form, today);
+  if (form.mode === 'nonrenew') return cancelAtEnd(open, form.date, today, subs);
+  const { summary } = stopPreview(sub, form, today, subs);
   if (
     form.refund &&
     (form.amount === '' || !Number.isFinite(Number(form.amount ?? summary.suggestedRefund)) || Number(form.amount ?? summary.suggestedRefund) < 0)
@@ -102,8 +105,9 @@ export function applyStopForm(sub: Subscription, form: StopForm, today: string):
           settled: form.settled !== '' ? { amount: Number(form.settled), currency: form.settledCurrency } : undefined,
         }
       : undefined,
+    subs,
   );
-  const error = subError(next) ?? statusChangeError(sub, next, today);
+  const error = subError(next, subs) ?? statusChangeError(sub, next, today, subs);
   if (error) throw new Error(error);
   return next;
 }
@@ -120,13 +124,13 @@ export interface StopEdit {
  * Edit an already stopped subscription through the same reopen-then-stop path as the web stop fields.
  * Provider termination stays termination; an undated stop needs an explicit date.
  */
-export function editStop(sub: Subscription, edit: StopEdit, today: string): Subscription {
+export function editStop(sub: Subscription, edit: StopEdit, today: string, subs?: readonly Subscription[]): Subscription {
   const stopped = !!sub.stop || sub.status === 'cancelled' || sub.status === 'terminated' || effectiveStatus(sub, today) === 'ended';
   if (!stopped) throw new Error(t('mcp.error.notStopped'));
   if (edit.date === undefined && !sub.stop && !sub.end) throw new Error(t('mcp.error.editStopDate'));
   if (edit.mode === 'nonrenew' && edit.refund) throw new Error(t('mcp.error.invalidStop'));
   if (edit.mode !== 'terminate' && edit.reason) throw new Error(t('mcp.error.invalidStop'));
-  const form = stopForm(sub, today);
+  const form = stopForm(sub, today, subs ? { methods: [], settings: DEFAULT_SETTINGS, subscriptions: subs } : undefined);
   const next: StopForm = {
     ...form,
     mode: edit.mode,
@@ -148,5 +152,5 @@ export function editStop(sub: Subscription, edit: StopEdit, today: string): Subs
       settledCurrency: r.settled?.currency ?? form.settledCurrency,
     });
   }
-  return applyStopForm(sub, next, today);
+  return applyStopForm(sub, next, today, subs);
 }

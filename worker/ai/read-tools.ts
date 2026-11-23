@@ -28,6 +28,7 @@ import {
   type Charge,
 } from '../../shared/billing.ts';
 import { chargeBaseOrNaN, toBaseOrNaN } from '../../shared/fx.ts';
+import { bundleSource, bundleView, displayCycle, followsParent, resolveSubs } from '../../shared/bundle.ts';
 import { cancelSavings, cashVsAccrual, events, insights, movement, mrrSeries, prepaidValue, stopLosses, topUpPlan, yearReview } from '../../shared/metrics.ts';
 import { proxyLedger } from '../../shared/proxy.ts';
 import { yearOutlook } from '../../shared/scope-report.ts';
@@ -88,7 +89,7 @@ export const list_categories: Tool = {
   async run(_a, ctx) {
     const { st, today } = await state(ctx);
     const all = categoryCounts(st.subscriptions);
-    const live = categoryCounts(st.subscriptions.filter((s) => ['active', 'trial', 'ending', 'paused'].includes(effectiveStatus(s, today))));
+    const live = categoryCounts(resolveSubs(st.subscriptions).filter((s) => ['active', 'trial', 'ending', 'paused'].includes(effectiveStatus(s, today))));
     return {
       items: categoryList(st.settings, st.subscriptions).map((c) => ({
         name: c.name,
@@ -136,7 +137,16 @@ export const list_subscriptions: Tool = {
       .filter(
         (s) =>
           !q ||
-          [s.name, s.account, ...s.tags, s.notes, s.category, s.region, st.methods.find((m) => m.id === s.methodId)?.name]
+          [
+            s.name,
+            s.account,
+            ...s.tags,
+            s.notes,
+            s.category,
+            s.region,
+            st.methods.find((m) => m.id === s.methodId)?.name,
+            bundleSource(s, st.subscriptions, today)?.parent.name,
+          ]
             .filter(Boolean)
             .join(' ')
             .toLowerCase()
@@ -193,8 +203,9 @@ export const get_subscription: Tool = {
     const { st, today } = await state(ctx);
     const out = outCcy(st, a);
     const s = findSub(st, a.subscription);
+    const view = bundleView(s, st.subscriptions);
     // 累计按实际付款，与详情页「累计」同一口径
-    const all = cashChargesBetween(s, historyStart(s), today, today);
+    const all = cashChargesBetween(view, historyStart(view), today, today);
     const gaps = fxGaps();
     const spent = all.reduce((t, c) => t + (gaps.note(chargeBaseOrNaN(st, c, out ?? st.settings.baseCurrency), chargeCcy(c)) as number), 0);
     const from = addMonths(today, -Number(a.months_back ?? 12));
@@ -209,7 +220,7 @@ export const get_subscription: Tool = {
       url: s.url ?? null,
       intro: s.intro ?? null,
       bonus: s.bonus ?? null,
-      expires: renewalDates(s, today).serviceExpires ?? null,
+      expires: renewalDates(view, today).serviceExpires ?? null,
       spent_total: {
         amount: fin(spent),
         ...partialOut(chargesTotal(st, all, out ?? st.settings.baseCurrency)),
@@ -249,7 +260,7 @@ export const get_subscription: Tool = {
           complete: !c.incomplete && !s.estimateFrom,
         };
       })(),
-      phases: phaseSubs(s).map((v) => ({
+      phases: phaseSubs(view).map((v) => ({
         start: v.start,
         end: v.end ?? null,
         stop: stopSummary(v, today) ?? null,
@@ -257,14 +268,23 @@ export const get_subscription: Tool = {
         transferred_on: transferredStop(v)?.date ?? null,
         price: v.price,
         currency: v.currency,
-        cycle: cycleLabel(v.cycle),
+        cycle: cycleLabel(displayCycle(v, today)),
         region: v.region ?? null,
         method: st.methods.find((m) => m.id === v.methodId)?.name ?? null,
         price_history: v.priceHistory ?? null,
         planned: !!v.planned,
+        ...(v.bundle?.parentId
+          ? {
+              bundle: {
+                parent_id: v.bundle.parentId,
+                parent_name: st.subscriptions.find((p) => p.id === v.bundle!.parentId)?.name ?? null,
+                follow: followsParent(v),
+              },
+            }
+          : {}),
       })),
-      charges: chargesBetween(s, from, to, today).map((c) => chargeRow(st, c, out)),
-      ...(phaseSubs(s).some(isSeparate) ? { unpaid_bills: overdueBills(s, today).map((c) => chargeRow(st, c, out)) } : {}),
+      charges: chargesBetween(view, from, to, today).map((c) => chargeRow(st, c, out)),
+      ...(phaseSubs(view).some(isSeparate) ? { unpaid_bills: overdueBills(view, today).map((c) => chargeRow(st, c, out)) } : {}),
       share: s.share
         ? {
             role: s.share.role,
@@ -328,7 +348,7 @@ export const list_charges: Tool = {
     const sub = a.subscription ? findSub(st, a.subscription) : undefined;
     const method = a.method ? methodRef(st, a.method) : undefined;
     const scope = str(a.scope) ?? 'mine';
-    const charges = (sub ? chargesBetween(sub, from, to, today) : chargesIn(st, from, to, today, scope))
+    const charges = (sub ? chargesBetween(bundleView(sub, st.subscriptions), from, to, today) : chargesIn(st, from, to, today, scope))
       .filter((c) => !method || chargeMethodId(c) === method)
       .filter((c) => a.include_projected !== false || !c.projected);
     const items = charges.map((c) => chargeRow(st, c, out));
@@ -514,7 +534,7 @@ export const list_payment_methods: Tool = {
           balance: r ? fin(r.current) : (m.balance ?? null),
           balance_as_of: m.balanceAsOf ?? null,
           balance_expires: m.balanceExpires ?? null,
-          subscriptions: st.subscriptions
+          subscriptions: resolveSubs(st.subscriptions)
             .filter(
               (s) =>
                 [currentPhase(s, today), ...activePhases(s, today)].some((v) => v.methodId === m.id) &&

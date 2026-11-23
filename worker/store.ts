@@ -22,9 +22,34 @@ export interface Revision {
   rev: number;
 }
 
-async function mutate(env: Env, stmts: D1PreparedStatement[]): Promise<Revision> {
-  const results = await env.DB.batch<{ rev: number }>([env.DB.prepare(revSql), ...stmts, env.DB.prepare(revSql)]);
-  return { from: results[0].results[0].rev, rev: results[results.length - 1].results[0].rev };
+/** Raised when a guarded write loses a race against a concurrent ledger commit. */
+export class RevConflictError extends Error {
+  constructor() {
+    super('Concurrent ledger write conflict');
+  }
+}
+
+/**
+ * 乐观锁语句：只在 kv.rev 与 expectedRev 不一致时尝试插入重复主键 'rev'，触发约束错误使整批 D1/SQLite 事务回滚；
+ * 版本一致时 SELECT 为空，不插入任何行、不触发触发器。
+ */
+const revGuardStmt = (env: Env, expectedRev: number): D1PreparedStatement =>
+  env.DB.prepare("INSERT INTO kv (key, value, updated_at) SELECT 'rev', value, updated_at FROM kv WHERE key = 'rev' AND CAST(value AS INTEGER) != ?1").bind(
+    expectedRev,
+  );
+
+async function mutate(env: Env, stmts: D1PreparedStatement[], expectedRev?: number): Promise<Revision> {
+  const guard = expectedRev == null ? [] : [revGuardStmt(env, expectedRev)];
+  try {
+    const results = await env.DB.batch<{ rev: number }>([env.DB.prepare(revSql), ...guard, ...stmts, env.DB.prepare(revSql)]);
+    return { from: results[0].results[0].rev, rev: results[results.length - 1].results[0].rev };
+  } catch (err) {
+    if (expectedRev != null && /UNIQUE|PRIMARY KEY|constraint/i.test(String((err as { message?: unknown })?.message ?? err))) {
+      const current = await getRev(env).catch(() => expectedRev);
+      if (current !== expectedRev) throw new RevConflictError();
+    }
+    throw err;
+  }
 }
 
 export async function getKv<T>(env: Env, key: string): Promise<T | undefined> {
@@ -66,11 +91,11 @@ const putPeopleStmt = (env: Env, people: Person[]): D1PreparedStatement =>
  * 把名册和改动过的订阅一起写入：一个 batch 即一个事务，不会只写进一半。
  * D1 不限制一次 batch 的语句数（整个 batch 只算一次查询），单条语句、单行各有 100 KB / 2 MB 的上限。
  */
-export async function writePeople(env: Env, people: Person[] | undefined, subs: Subscription[]): Promise<Revision | undefined> {
+export async function writePeople(env: Env, people: Person[] | undefined, subs: Subscription[], expectedRev?: number): Promise<Revision | undefined> {
   if (people) validatePeopleAvatars(people);
   const now = new Date().toISOString();
   const stmts = [...(people ? [putPeopleStmt(env, people)] : []), ...subs.map((s) => upsertStmt(env, 'subscriptions', s.id, stamp(s, now)))];
-  return stmts.length ? mutate(env, stmts) : undefined;
+  return stmts.length ? mutate(env, stmts, expectedRev) : undefined;
 }
 
 /**
@@ -80,7 +105,7 @@ export async function writePeople(env: Env, people: Person[] | undefined, subs: 
 async function ensurePeople(env: Env, state: AppState): Promise<boolean> {
   const r = linkPeople(state.people ?? [], state.subscriptions);
   if (!r.created.length && !r.subs.length) return false;
-  await writePeople(env, r.created.length ? r.people : undefined, r.subs);
+  await writePeople(env, r.created.length ? r.people : undefined, r.subs, state.rev);
   state.people = r.people;
   return true;
 }
@@ -97,11 +122,11 @@ async function ensureReceivables(env: Env, state: AppState, write: boolean): Pro
     return next;
   });
   if (!changed.length || !write) return false;
-  await writePeople(env, undefined, changed);
+  await writePeople(env, undefined, changed, state.rev);
   return true;
 }
 
-export async function loadState(env: Env, migratePeople = true): Promise<AppState> {
+export async function loadState(env: Env, migratePeople = true, attempts = 0): Promise<AppState> {
   // D1 batch reads one transactional snapshot: never pair stale data with a newer rev.
   const rows = await env.DB.batch([
     env.DB.prepare('SELECT data FROM subscriptions'),
@@ -129,7 +154,16 @@ export async function loadState(env: Env, migratePeople = true): Promise<AppStat
   };
   // 旧版删除留下的悬空引用（公开页隐藏、默认支付方式）只在内存里剔除，不改库
   state.settings = pruneSettingsRefs(state.settings, state.subscriptions, state.methods);
-  if ((await ensureReceivables(env, state, migratePeople)) || (migratePeople && (await ensurePeople(env, state)))) return loadState(env);
+  if (migratePeople) {
+    try {
+      if ((await ensureReceivables(env, state, true)) || (await ensurePeople(env, state))) return loadState(env, true, attempts);
+    } catch (e) {
+      if (e instanceof RevConflictError && attempts < 5) return loadState(env, true, attempts + 1);
+      throw e;
+    }
+  } else {
+    await ensureReceivables(env, state, false);
+  }
   state.fxHistory = slimFxHistory((rows[3] as D1Result<{ date: string; rates: string }>).results, keepSet(state));
   return state;
 }
@@ -151,23 +185,23 @@ function upsertStmt(env: Env, table: Table, id: string, data: unknown): D1Prepar
   ).bind(id, JSON.stringify(data));
 }
 
-export async function upsert(env: Env, table: Table, id: string, data: unknown): Promise<Revision> {
+export async function upsert(env: Env, table: Table, id: string, data: unknown, expectedRev?: number): Promise<Revision> {
   if (table === 'subscriptions') stamp(data as Subscription, new Date().toISOString());
-  return mutate(env, [upsertStmt(env, table, id, data)]);
+  return mutate(env, [upsertStmt(env, table, id, data)], expectedRev);
 }
 
 export async function remove(env: Env, table: Table, id: string): Promise<Revision> {
   return mutate(env, [env.DB.prepare(`DELETE FROM ${table} WHERE id = ?1`).bind(id)]);
 }
 
-export async function replaceAll(env: Env, subs: Subscription[], methods: PaymentMethod[], mode: 'merge' | 'replace'): Promise<Revision> {
+export async function replaceAll(env: Env, subs: Subscription[], methods: PaymentMethod[], mode: 'merge' | 'replace', expectedRev?: number): Promise<Revision> {
   const stmts: D1PreparedStatement[] = [];
   if (mode === 'replace') {
     stmts.push(env.DB.prepare('DELETE FROM subscriptions'), env.DB.prepare('DELETE FROM methods'));
   }
   for (const m of methods) stmts.push(upsertStmt(env, 'methods', m.id, m));
   for (const s of subs) stmts.push(upsertStmt(env, 'subscriptions', s.id, s));
-  return mutate(env, stmts);
+  return mutate(env, stmts, expectedRev);
 }
 
 /** 支付方式原样读取（不排序）；网页、导入写入前的校验用 */
@@ -178,6 +212,15 @@ export async function loadMethods(env: Env): Promise<PaymentMethod[]> {
 /** 订阅（续费规则按旧数据兼容转换，与 loadState 同一口径） */
 export async function loadSubs(env: Env): Promise<Subscription[]> {
   return (await env.DB.prepare('SELECT data FROM subscriptions').all<{ data: string }>()).results.map((r) => migrateStored(JSON.parse(r.data) as Subscription));
+}
+
+/** 在同一个 D1 batch 快照中读取 rev 与全部订阅，供校验 + 版本守卫写入使用 */
+export async function loadSubsWithRev(env: Env): Promise<{ rev: number; subscriptions: Subscription[] }> {
+  const rows = await env.DB.batch([env.DB.prepare(revSql), env.DB.prepare('SELECT data FROM subscriptions')]);
+  const revRow = (rows[0] as D1Result<{ rev: number }>).results[0];
+  if (!revRow) throw new Error('Missing ledger revision');
+  const subscriptions = (rows[1] as D1Result<{ data: string }>).results.map((r) => migrateStored(JSON.parse(r.data) as Subscription));
+  return { rev: revRow.rev, subscriptions };
 }
 
 /**
@@ -209,9 +252,9 @@ export async function restoreLedger(
 }
 
 /** 设置和改动的订阅在同一个 batch 里写入（D1 batch 是一个事务）：分类改名时不会只改了一半 */
-export async function saveSettingsWithSubs(env: Env, settings: Settings, subs: Subscription[]): Promise<Revision> {
+export async function saveSettingsWithSubs(env: Env, settings: Settings, subs: Subscription[], expectedRev?: number): Promise<Revision> {
   const now = new Date().toISOString();
-  return mutate(env, [putKvStmt(env, 'settings', settings), ...subs.map((s) => upsertStmt(env, 'subscriptions', s.id, stamp(s, now)))]);
+  return mutate(env, [putKvStmt(env, 'settings', settings), ...subs.map((s) => upsertStmt(env, 'subscriptions', s.id, stamp(s, now)))], expectedRev);
 }
 
 /** Atomic multi-entity tool write: never leave a migration or settings/prefs edit half-applied. */
@@ -220,6 +263,7 @@ export async function saveLedgerEdit(
   patch: Partial<AppState>,
   deletedMethods: string[] = [],
   deletedSubscriptions: string[] = [],
+  expectedRev?: number,
 ): Promise<Revision> {
   const now = new Date().toISOString();
   const stmts = [
@@ -229,5 +273,5 @@ export async function saveLedgerEdit(
     ...deletedSubscriptions.map((id) => env.DB.prepare('DELETE FROM subscriptions WHERE id = ?1').bind(id)),
     ...(['settings', 'people', 'prefs'] as const).filter((k) => patch[k] !== undefined).map((k) => putKvStmt(env, k, patch[k])),
   ];
-  return mutate(env, stmts);
+  return mutate(env, stmts, expectedRev);
 }

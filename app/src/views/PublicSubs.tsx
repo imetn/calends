@@ -1,6 +1,7 @@
 import { copyParts } from '../components/copy.tsx';
 import { Plus, X } from 'lucide-react';
 import { effectiveStatus, isStopped } from '../../../shared/billing.ts';
+import { bundleView } from '../../../shared/bundle.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { IconButton } from '../components/ui.tsx';
@@ -12,7 +13,7 @@ import './public-subs.css';
 
 /** 可以公开的订阅：代付涉及他人，从不公开；在订的排前面，其余按名称 */
 export function publicCandidates(state: AppState, today: string): Subscription[] {
-  const live = (s: Subscription) => (isStopped(effectiveStatus(s, today)) ? 1 : 0);
+  const live = (s: Subscription) => (isStopped(effectiveStatus(bundleView(s, state.subscriptions), today)) ? 1 : 0);
   return state.subscriptions.filter((s) => !s.proxy).sort((a, b) => live(a) - live(b) || a.name.localeCompare(b.name));
 }
 

@@ -21,7 +21,7 @@ import { detailForecast } from '../detail-data.ts';
  * 刻度标最晚取消日，提前扣款时另标扣款日；试用期、赠送期换颜色和名称。
  * 刻度的日期写在下面一行图例里，不在条上叠标签。split 时与收费周期并排，标题改为「订阅周期」
  */
-export function PeriodBar({ sub, today, split = false }: { sub: Subscription; today: string; split?: boolean }) {
+export function PeriodBar({ sub, today, split = false, titleOverride }: { sub: Subscription; today: string; split?: boolean; titleOverride?: string }) {
   const st = effectiveStatus(sub, today);
   const next = detailForecast(sub, today).charges[0];
   if (!next) return null;
@@ -44,7 +44,7 @@ export function PeriodBar({ sub, today, split = false }: { sub: Subscription; to
           : next.date;
   const cancelBy = renewal.cancelBy && renewal.cancelBy >= today && renewal.cancelBy < end ? renewal.cancelBy : undefined;
   const charge = next.date > today && next.date < end ? next.date : undefined;
-  const title = t(split && kind === 'paid' ? 'detail.period.sub' : `detail.period.${kind}`);
+  const title = titleOverride ?? t(split && kind === 'paid' ? 'detail.period.sub' : `detail.period.${kind}`);
   const mark = cancelBy ? { date: cancelBy, label: t('core.renewal.cancelBy'), tone: 'cb' as const } : undefined;
   return <Bar kind={kind} title={title} from={from} end={end} today={today} short={split} mark={mark} charge={charge} />;
 }

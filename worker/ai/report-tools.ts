@@ -1,6 +1,7 @@
 import { partialOut } from './tool-views.ts';
 import { type FxTotal, emptyTotal } from '../../shared/fx-total.ts';
 import { addDays, addMonths, chargesBetween, diffDays, phaseSubs } from '../../shared/billing.ts';
+import { resolveState } from '../../shared/bundle.ts';
 import { chargeFxMissing, convertOn } from '../../shared/fx.ts';
 import { t } from '../../shared/i18n.ts';
 import { LIST_STATUSES, listScope, listWords, type ListScope, type ListStatus } from '../../shared/list-scope.ts';
@@ -53,7 +54,10 @@ export function listFilter(st: AppState, f: Record<string, unknown> | undefined)
   };
 }
 
-export const filteredSubs = (st: AppState, today: string, f: Record<string, unknown> | undefined) => listScope(st, today, listFilter(st, f));
+export const filteredSubs = (st: AppState, today: string, f: Record<string, unknown> | undefined) => {
+  const resolved = resolveState(st);
+  return listScope(resolved, today, listFilter(resolved, f));
+};
 
 interface Gaps {
   /** Months with a charge or transfer that cannot be converted. */
@@ -265,6 +269,7 @@ const gapsOut = (g: Gaps, from: string, to: string) => ({
 /** get_insights section=month_report: the calendar month report (monthReport) as JSON. */
 export function monthReportOut(st: AppState, month: string, today: string) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error(t('mcp.error.badMonth', { month }));
+  st = resolveState(st);
   const r = monthReport(st, month, today);
   const scoped = { ...st, subscriptions: st.subscriptions.filter((s) => !s.proxy) };
   const from = `${month}-01`;
@@ -316,6 +321,7 @@ export function monthReportOut(st: AppState, month: string, today: string) {
 
 /** get_insights section=scope_report: the web list's selection report (scopeReport) as JSON. */
 export function scopeReportOut(st: AppState, today: string, f: Record<string, unknown> | undefined) {
+  st = resolveState(st);
   const subs = filteredSubs(st, today, f);
   const g = fxGaps(st, subs, '0001-01-01', monthEnd(addMonths(today, 3).slice(0, 7)), today);
   const report = scopeReport(st, subs, today);

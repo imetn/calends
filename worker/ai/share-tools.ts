@@ -1,5 +1,6 @@
 import { dueTotal } from '../../shared/fx-total.ts';
 import { cycleLabel, memberDues, memberCollection, collectionAnchor, memberBillMonths, memberPeriods, memberAboard, uid } from '../../shared/billing.ts';
+import { bundleView } from '../../shared/bundle.ts';
 import { setOpening } from '../../shared/receivables.ts';
 import {
   deleteRecord,
@@ -47,21 +48,22 @@ export const get_carpool: Tool = {
       plans: subs
         .filter((s) => s.share)
         .map((s) => {
-          const sh = s.share!;
+          const vs = bundleView(s, st.subscriptions);
+          const sh = vs.share!;
           const live = sh.members.filter((m) => memberAboard(m, today));
-          const dues = new Map(memberDues(s, today, collectCcy(st), st).map((d) => [d.member.id, d]));
-          const book = carLedger(st, s, today);
+          const dues = new Map(memberDues(vs, today, collectCcy(st), st).map((d) => [d.member.id, d]));
+          const book = carLedger(st, vs, today);
           return {
-            id: s.id,
-            name: s.name,
+            id: vs.id,
+            name: vs.name,
             role: sh.role,
-            price: money(st, s.price, s.currency),
-            cycle: cycleLabel(s.cycle),
+            price: money(st, vs.price, vs.currency),
+            cycle: cycleLabel(vs.cycle),
             seats: { total: sh.seats, taken: live.length + 1, free: Math.max(0, sh.seats - live.length - 1) },
             owner: sh.role === 'member' ? (sh.ownerName ?? null) : undefined,
             since: book.since ?? null,
-            collect_from: collectionAnchor(s),
-            rule: sh.role === 'owner' ? ruleOut(st, s, today) : null,
+            collect_from: collectionAnchor(vs),
+            rule: sh.role === 'owner' ? ruleOut(st, vs, today) : null,
             // 方向写清楚：i_pay = 我自己净掏的钱，i_earn = 收的比付的多（赚了）；两者至多一个大于 0
             // 缺汇率时对应数字为 null，incomplete 标出这一组不完整
             year: {
@@ -388,7 +390,8 @@ export const save_share_member: Tool = {
     if (link) m = { ...m, personId: link.id };
     const members = old ? s.share.members.map((x) => (x.id === old.id ? m : x)) : [...s.share.members, m];
     const after = { ...s, share: { ...s.share, collectFrom: collectionAnchor(s), members } };
-    const suggestion = suggestedLeaveRefund(st, after, m);
+    const afterView = bundleView(after, st.subscriptions);
+    const suggestion = suggestedLeaveRefund(st, afterView, m);
     return {
       ...(await commit(ctx, st, today, after, a.dry_run, [old ? `member_updated:${m.name}` : `member_added:${m.name}`], undefined, link?.created)),
       suggested_refund: suggestion,
@@ -400,9 +403,9 @@ export const save_share_member: Tool = {
         fee_history: m.feeHistory ?? [],
         ...collectionSummary(
           st,
-          after,
+          afterView,
           m,
-          memberDues(after, today, collectCcy(st), st).find((d) => d.member.id === m.id),
+          memberDues(afterView, today, collectCcy(st), st).find((d) => d.member.id === m.id),
           today,
         ),
       },
@@ -527,6 +530,7 @@ export const record_receivable: Tool = {
       }
     }
     const after = result.after;
+    const afterView = bundleView(after, st.subscriptions);
     const m = target.kind === 'share' ? after.share!.members.find((x) => x.id === (target as { member: ShareMember }).member.id)! : undefined;
     return {
       ...(await commit(ctx, st, today, after, a.dry_run, [`receivable_${action}:${m?.name ?? s.proxy?.forName ?? s.name}`])),
@@ -539,9 +543,9 @@ export const record_receivable: Tool = {
               name: m.name,
               ...collectionSummary(
                 st,
-                after,
+                afterView,
                 m,
-                memberDues(after, today, collectCcy(st), st).find((d) => d.member.id === m.id),
+                memberDues(afterView, today, collectCcy(st), st).find((d) => d.member.id === m.id),
                 today,
               ),
             },

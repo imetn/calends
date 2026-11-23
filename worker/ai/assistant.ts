@@ -107,6 +107,7 @@ async function systemPrompt(env: Env): Promise<string> {
     '- If a required field (price, currency or cycle) truly cannot be inferred, ask one short question instead of guessing.',
     '- Distinguish three ways to stop: non-renewal uses set_status cancel (immediate=false) with at as the last service day; voluntary early stopping uses cancel with immediate=true; provider-disabled access uses terminate with an optional reason. Immediate stops may include refund {amount,date?,settled?}; omit refund when none occurred. When service really stopped and later restarted, resubscribe with change_plan action=resume and a new phase; use set_status reactivate only to undo a stop recorded by mistake (it removes the stop entirely). Refund currency must equal the subscription currency, and total refunds cannot exceed the current period paid amount.',
     '- Stopping dates are never assumed: set_status cancel/terminate needs at = the real date, or at=null when the user only says it already stopped. To correct an existing stop (its date, non-renewal vs immediate, reason or refund), call set_status with edit=true and only the changed fields; never resubscribe or delete to fix it. A whole history in one go (several phases, every past charge, an already-stopped record) can use save_subscription with the complete record; split payments use funding [{method, amount}] in record_payment / create_subscription payments.',
+    '- Bundled perks and add-ons (附赠 / 关联订阅): when a subscription includes another service for free (e.g. Google AI Ultra includes YouTube Premium) or unlocks a discounted add-on, pass bundle: { parent: "<parent id or name>", follow: true } (default follow=true follows the parent lifecycle; follow=false for an independent billing cycle). Use price 0 for free included perks (never invent a hypothetical MSRP; leave method omitted or null so no card is attached) and the actual discounted price for paid add-ons. If the user already has a standalone subscription for that service that becomes bundled from a date, use change_plan action=switch with plan.bundle to preserve its paid history instead of overwriting it. When creating both parent and bundled child in the same turn, create the parent first and link the child to its returned id.',
     '- Other changes use the matching tool: update_subscription (details), change_price (price change from a date), change_plan (switch plan/region), set_status (pause/cancel/terminate/reactivate), delete_subscription (remove completely), record_payment (a charge happened / refund), record_transfer (cash paid to a previous owner when taking over a second-hand service, or received when handing it on), set_meters + add_readings (custom business data such as electricity, mileage or traffic recorded by date, separate from payments; usage, totals and unit price come from get_subscription.meters).',
     '- Correcting when a subscription started (update_subscription set.start, or change_plan action=edit set.start for a phase) keeps the billing day and later charge dates, as in the app; pass shift_billing=true only when the user says the charge dates themselves were wrong.',
     '- Shared plans (合租/拼车): set_share to start or change sharing (seats include me) and to change the plan collection rule (rule: fee, bill_every; applies to members who follow it), save_share_member to add or edit a member (new members follow the rule by default; follow_rule=true/false switches between the rule and a custom fee per billing cycle, bill_every months), remove_share_member, record_receivable when a member paid me. A new member or proxy name without person links a same-name person from list_people or creates one (the card shows it); pass person when the user means a specific existing person. get_carpool answers questions about a carpool: seats free, yearly cost vs. income, profit, who owes what.',
@@ -400,22 +401,80 @@ export async function apply(env: Env, b: { tool?: string; args?: Record<string, 
 }
 
 /** Freeze generated ids/defaults so preview, confirmation and read-back describe the same mutation. */
-function confirmationArgs(name: string, args: Record<string, unknown>, preview: unknown): Record<string, unknown> {
+export function confirmationArgs(name: string, args: Record<string, unknown>, preview: unknown): Record<string, unknown> {
   const { dry_run: _dry, ...clean } = args;
   const p = preview as {
     created?: { id: string };
-    subscription?: { id: string };
+    subscription?: { id: string; bundle?: { parent_id: string; follow: boolean } };
     member?: { id: string; leave_refund?: unknown };
-    after?: { id?: string; periods?: string[]; amount?: number; currency?: string; date?: string };
+    after?: {
+      id?: string;
+      periods?: string[];
+      amount?: number;
+      currency?: string;
+      cycle?: { unit: string; every: number };
+      methodId?: string;
+      date?: string;
+      bundle?: { parentId: string; follow?: boolean };
+      phases?: Array<{
+        start: string;
+        currency?: string;
+        cycle?: { unit: string; every: number };
+        methodId?: string;
+        bundle?: { parentId: string; follow?: boolean };
+      }>;
+    };
     service_match?: { status?: string; applied?: { icon?: string; url?: string; category?: string } };
   };
+  const pinBundle = (b: { parentId: string; follow?: boolean }) => ({
+    parent: b.parentId,
+    ...(b.follow === false ? { follow: false } : {}),
+  });
   if (p.created?.id) clean.id = p.created.id;
   if (name === 'create_subscription' && p.subscription?.id) clean.id = p.subscription.id;
+  if (name === 'create_subscription' && p.after?.bundle?.parentId) {
+    clean.bundle = pinBundle(p.after.bundle);
+    if (clean.currency === undefined && p.after.currency) clean.currency = p.after.currency;
+    if (clean.cycle === undefined && p.after.cycle) clean.cycle = p.after.cycle;
+    if (clean.method === undefined && !p.after.methodId) clean.method = null;
+  }
   if (name === 'create_subscription' && p.service_match?.status === 'matched' && p.service_match.applied) {
     const { icon, url, category } = p.service_match.applied;
     if (icon && clean.icon === undefined) clean.icon = icon;
     if (url && clean.url === undefined) clean.url = url;
     if (category && clean.category === undefined) clean.category = category;
+  }
+  if (name === 'update_subscription' && clean.set && typeof clean.set === 'object') {
+    const set = clean.set as Record<string, unknown>;
+    if (set.bundle != null && p.subscription?.bundle?.parent_id) {
+      clean.set = {
+        ...set,
+        bundle: pinBundle({ parentId: p.subscription.bundle.parent_id, ...(p.subscription.bundle.follow === false ? { follow: false } : {}) }),
+      };
+    }
+  }
+  if (name === 'change_plan') {
+    if (clean.action === 'edit' && clean.set && typeof clean.set === 'object') {
+      const set = clean.set as Record<string, unknown>;
+      const edited = p.after?.phases?.find((x) => x.start === clean.at) ?? p.after;
+      if (set.bundle != null && edited?.bundle?.parentId) {
+        clean.set = { ...set, bundle: pinBundle(edited.bundle) };
+      }
+    } else if (clean.plan && typeof clean.plan === 'object') {
+      const plan = clean.plan as Record<string, unknown>;
+      const created = p.after?.phases?.find((x) => x.start === clean.at) ?? p.after;
+      if (created?.bundle?.parentId) {
+        clean.plan = {
+          ...plan,
+          bundle: pinBundle(created.bundle),
+          ...(plan.currency === undefined && created.currency ? { currency: created.currency } : {}),
+          ...(plan.cycle === undefined && created.cycle ? { cycle: created.cycle } : {}),
+          ...(plan.method === undefined && !created.methodId ? { method: null } : {}),
+        };
+      } else if (clean.action === 'switch' && plan.bundle === undefined) {
+        clean.plan = { ...plan, bundle: null };
+      }
+    }
   }
   if (name === 'save_subscription' && p.subscription?.id && clean.subscription && typeof clean.subscription === 'object') {
     const sub: Record<string, unknown> = { ...(clean.subscription as Record<string, unknown>), id: p.subscription.id };

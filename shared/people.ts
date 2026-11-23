@@ -4,6 +4,7 @@ import { memberCashFlows, memberFlowValue, memberPaidThrough } from './carpool.t
 // 成员、代付上存 personId 指向名册；原来的称呼、联系方式保留为镜像副本，老数据和只认副本的地方（提醒邮件、导出）照常工作。
 // 应收按人汇总时，直接复用合租（memberDues）与代付（proxyRows）各自的算法，只是换个维度加起来。
 import { collectCurrencyOf, effectiveStatus, fnv1a, isStopped, memberDues, memberAboard } from './billing.ts';
+import { bundleView } from './bundle.ts';
 import { toBaseOrNaN } from './fx.ts';
 import { proxyRows, proxyTotals } from './proxy.ts';
 import { PERSON_COLORS, type AppState, type CustomColor, type Person, type PersonColor, type ShareMember, type Subscription } from './types.ts';
@@ -272,6 +273,7 @@ export interface PersonLedger {
 
 /** 一笔合租关系的账：欠款来自 memberDues，收回来自成员的收款记录 */
 function shareItem(state: AppState, s: Subscription, m: ShareMember, today: string, dues: ReturnType<typeof memberDues>): PersonItem {
+  const vs = bundleView(s, state.subscriptions);
   const d = dues.find((x) => x.member.id === m.id);
   const flows = memberCashFlows(m);
   return {
@@ -282,8 +284,8 @@ function shareItem(state: AppState, s: Subscription, m: ShareMember, today: stri
     periodsOwed: d && !m.exempt ? d.periodsOwed : 0,
     received: flows.reduce((a, p) => a + memberFlowValue(state, p), 0),
     lastPaid: flows.filter((p) => p.kind === 'receipt').reduce<string | undefined>((a, p) => (!a || p.date > a ? p.date : a), undefined),
-    paidUntil: memberPaidThrough(s, m, today, collectCurrencyOf(state.settings)),
-    active: !!d && memberAboard(m, today) && ['active', 'ending', 'trial'].includes(effectiveStatus(s, today)),
+    paidUntil: memberPaidThrough(vs, m, today, collectCurrencyOf(state.settings)),
+    active: !!d && memberAboard(m, today) && ['active', 'ending', 'trial'].includes(effectiveStatus(vs, today)),
   };
 }
 
@@ -318,7 +320,8 @@ export function peopleLedger(state: AppState, today: string): PersonLedger[] {
     if (!person.id && !normName(person.name)) continue;
     const key = person.id || `~${personKey(person.name, person.contactVia, person.contact)}`;
     if (!book.has(key)) book.set(key, { person, items: [], owed: 0, periodsOwed: 0, received: 0 });
-    if (r.kind === 'member' && !dues.has(r.sub.id)) dues.set(r.sub.id, memberDues(r.sub, today, collectCurrencyOf(state.settings), state));
+    if (r.kind === 'member' && !dues.has(r.sub.id))
+      dues.set(r.sub.id, memberDues(bundleView(r.sub, state.subscriptions), today, collectCurrencyOf(state.settings), state));
     const item = r.kind === 'member' ? shareItem(state, r.sub, r.member, today, dues.get(r.sub.id)!) : proxyItem(state, r.sub, today);
     const l = book.get(key)!;
     l.items.push(item);
@@ -365,7 +368,7 @@ export function personAmounts(state: AppState, ledger: Pick<PersonLedger, 'items
   const parts = ledger.items.map((i) => {
     if (i.kind === 'proxy') return proxyTotals(proxyRows(target, i.sub, today)).partial;
     const m = i.member!;
-    const due = memberDues(i.sub, today, collectCurrencyOf(state.settings), state).find((d) => d.member.id === m.id);
+    const due = memberDues(bundleView(i.sub, state.subscriptions), today, collectCurrencyOf(state.settings), state).find((d) => d.member.id === m.id);
     return {
       owed: due && !m.exempt ? dueTotal(state, due, undefined, to) : emptyTotal(),
       received: sumTotals(memberCashFlows(m).map((p) => convertedTotal(state, p.amount, p.currency, p.date, to))),

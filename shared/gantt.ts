@@ -16,6 +16,7 @@ import {
   stopSummary,
 } from './billing.ts';
 import type { Charge } from './billing.ts';
+import { displayCycle, intersectSpans, resolveSubs } from './bundle.ts';
 import { transferredStop } from './transfers.ts';
 import type { Subscription } from './types.ts';
 import { dateFormat } from './intl.ts';
@@ -29,7 +30,8 @@ export const GANTT_STEP: Record<Exclude<GanttZoom, 'all'>, number> = { '3m': 3, 
  * 即过去各期 + 当前这一期 + 再往后一期，不一直铺到视窗尽头（末端由视图渐隐表示还会继续）。
  */
 export function ganttOpenEnd(v: Subscription, today: string): string {
-  const days = Math.max(1, Math.ceil(cycleDays(v.cycle)));
+  const cyc = displayCycle(v, today);
+  const days = Math.max(1, Math.ceil(cycleDays(cyc)));
   const from = v.start > today ? v.start : addDays(today, 1);
   const next = chargesBetween(v, from, addDays(from, days * 2 + 31), today).find((c) => !c.kind);
   return next ? chargeServicePeriod(v, next.date).until : addDays(from, days);
@@ -224,16 +226,26 @@ export interface YearsRow {
 
 /** 公开页订阅年表：只画到今天，还没开始的阶段不画；从最早一年的 1 月起，保证至少有一个年份刻度 */
 export function yearsTimeline(subs: Subscription[], today: string): { rows: YearsRow[]; start: string; end: string; ongoing: boolean } {
-  const rows = subs.flatMap((s): YearsRow[] => {
+  const rows = resolveSubs(subs).flatMap((s): YearsRow[] => {
     const parts = phaseSubs(s)
       .filter((v) => v.start <= today)
-      .map((v) => {
+      .flatMap((v) => {
         const paused = v.status === 'paused' ? v.pausedAt : undefined;
         const stops = [v.end, v.stop?.date, paused].filter((d): d is string => !!d && d <= today).sort();
-        const to = stops[0] && stops[0] > v.start ? stops[0] : stops[0] ? v.start : today;
+        const rawTo = stops[0] && stops[0] > v.start ? stops[0] : stops[0] ? v.start : undefined;
+        if (v.bundleAvail) {
+          const spans = intersectSpans(v.start, rawTo, v.bundleAvail).filter((sp) => sp.from <= today);
+          return spans.map((sp) => {
+            const spTo = sp.to && sp.to <= today ? sp.to : today;
+            const point = displayCycle(v, sp.from).unit === 'lifetime' && !sp.to && !stops[0];
+            const ongoing = !point && !sp.to && !stops[0] && !isStopped(effectiveStatus(v, today));
+            return { v, from: sp.from, to: point ? sp.from : spTo, ongoing };
+          });
+        }
+        const to = rawTo ?? today;
         // 买断没有结束日时只是一个购买点
         const point = v.cycle.unit === 'lifetime' && !stops[0];
-        return { v, from: v.start, to: point ? v.start : to, ongoing: !point && !stops[0] && !isStopped(effectiveStatus(v, today)) };
+        return [{ v, from: v.start, to: point ? v.start : to, ongoing: !point && !stops[0] && !isStopped(effectiveStatus(v, today)) }];
       });
     if (!parts.length) return [];
     const spans = parts.map((p) => ({ start: p.from, end: p.ongoing ? undefined : p.to }));

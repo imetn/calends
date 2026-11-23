@@ -23,6 +23,7 @@ import {
   uid,
   priceAt,
 } from './billing.ts';
+import { bundleView, resolveState } from './bundle.ts';
 import { chargeBaseOrNaN, convertOn, toBaseAt, toBaseOrNaN } from './fx.ts';
 import { yearCost } from './metrics.ts';
 import { currencyDecimals } from './format.ts';
@@ -66,6 +67,7 @@ export function updateMemberLeave(m: ShareMember, patch: Partial<ShareMember>): 
  * 期初结清的期金额不详，不计入。默认用最早一笔未用收款的币种，跨币种按退出日汇总，parts 保留原币种明细；缺汇率返回 NaN
  */
 export function suggestedLeaveRefund(state: AppState, s: Subscription, m: ShareMember, currency?: string) {
+  s = bundleView(s, state.subscriptions);
   const cut = firstPeriodCut(s, m, collectCurrencyOf(state.settings));
   // 按没退出算各期，才能对上退出日之后提前收了的期
   const parts = !m.left
@@ -95,6 +97,7 @@ export function suggestedLeaveRefund(state: AppState, s: Subscription, m: ShareM
  * 预计按年算：订阅一年的费用对比成员一年应交；实际从开始合租那天（缺省为最早一笔收款）累计。
  */
 export function carLedger(state: AppState, s: Subscription, today: string) {
+  s = bundleView(s, state.subscriptions);
   const cur = currentPhase(s, today);
   const members = s.share?.members ?? [];
   // 缺汇率的部分为 NaN（与收回、退款的 memberFlowValue 同一口径），不当成 0
@@ -172,6 +175,7 @@ export function carLedger(state: AppState, s: Subscription, today: string) {
  * 加上今年里还该收的各期（含已逾期没收的）。都折成本币，买断与停止的车同样适用
  */
 export function carYear(state: AppState, s: Subscription, today: string, y = today.slice(0, 4)) {
+  s = bundleView(s, state.subscriptions);
   const ccy = collectCurrencyOf(state.settings);
   const cost = yearCost(state, s, today, y);
   const members = s.share?.members ?? [];
@@ -210,6 +214,7 @@ export function carYear(state: AppState, s: Subscription, today: string, y = tod
  * 报告年卡与 MCP 共用这一处口径
  */
 export function carpoolYear(state: AppState, today: string, year = today.slice(0, 4)) {
+  state = resolveState(state);
   const cars = state.subscriptions
     .filter((s) => s.share?.role === 'owner')
     .map((s) => ({ s, y: carYear(state, s, today, year) }))
@@ -537,6 +542,7 @@ import { periodCellKind, visibleStripPeriods } from './period-grid.ts';
 
 /** 成员一行的收款状态：逾期几天 / 待收 / 已结清，合租表格和收费弹窗共用 */
 export function memberStatus(state: AppState, s: Subscription, m: ShareMember, today: string) {
+  s = bundleView(s, state.subscriptions);
   const collect = collectCurrencyOf(state.settings);
   const d = memberDues(s, today, collect, state).find((x) => x.member.id === m.id);
   const next = memberCollection(s, m, memberUnpaidFrom(s, m), collect);

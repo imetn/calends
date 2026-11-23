@@ -56,7 +56,12 @@
     "reading": "Catatan penggunaan tidak valid: perlu id unik, tanggal valid, dan nilai angka",
     "meterLink": "Meteran yang ditautkan tidak ada atau juga merupakan tautan ke meteran lain",
     "meterLinkUsed": "“{meter}” ditautkan oleh “{name}”; hapus tautan di sana terlebih dahulu",
-    "readingMeter": "Catatan penggunaan merujuk ke meteran yang belum ditentukan"
+    "readingMeter": "Catatan penggunaan merujuk ke meteran yang belum ditentukan",
+    "bundle": "Tautan langganan tidak valid",
+    "bundleLink": "Langganan utama tidak ada, merupakan pembayaran talangan, atau sudah tertaut ke langganan lain",
+    "bundleProxy": "Pembayaran talangan tidak dapat ditautkan ke langganan utama",
+    "bundleUsed": "Ditautkan oleh {names}; lepaskan tautannya terlebih dahulu",
+    "bundleHistory": "Menautkan akan menghapus tagihan sebelumnya. Tautkan mulai tanggal tautan lewat Riwayat → Ganti paket."
   },
   "phase": {
     "switchTooEarly": "Tanggal berlaku harus setelah fase saat ini dimulai",

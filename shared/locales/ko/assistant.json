@@ -244,7 +244,8 @@
     "payments": "결제 기록",
     "spent": "누적 지출",
     "changes": "변경 항목",
-    "funding": "결제 출처"
+    "funding": "결제 출처",
+    "bundle": "상위 구독"
   },
   "v": {
     "exempt": "납부 면제",
@@ -257,7 +258,8 @@
     "charge": "결제",
     "deleteAll": "구독과 모든 결제 기록을 삭제합니다. 되돌릴 수 없습니다",
     "dateUnknown": "날짜 모름",
-    "terminate": "제공자 중지"
+    "terminate": "제공자 중지",
+    "unlinked": "독립 구독 (연결 해제)"
   },
   "interrupted": "응답이 도중에 끊겼습니다.",
   "saveUnknown": "저장 여부를 확인하지 못했습니다. 다시 제출하기 전에 장부를 확인하세요.",

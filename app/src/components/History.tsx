@@ -1,5 +1,6 @@
 import { durationLabel } from '../../../shared/billing.ts';
 import { addDays, coveredUntil, cycleLabel, diffDays, isGap, isPostpaid, phaseLanes, phaseSubs } from '../../../shared/billing.ts';
+import { displayCycle, isFreeBundlePhase } from '../../../shared/bundle.ts';
 import { cnDateFull, money } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
@@ -93,7 +94,15 @@ export function History({
         )}
         <div className="h-plan">
           {v.region && <span className="badge">{v.region}</span>}
-          {!showPrices && <b>{money(v.price, v.currency)}</b>} {cycleLabel(v.cycle)}
+          {!showPrices && <b>{isFreeBundlePhase(v) ? t('list.badge.included') : money(v.price, v.currency)}</b>} {cycleLabel(displayCycle(v, today))}
+          {v.bundle?.parentId && (
+            <span className="badge">
+              {(() => {
+                const parent = state.subscriptions.find((x) => x.id === v.bundle!.parentId);
+                return parent ? t('detail.bundle.withParent', { name: parent.name }) : t('detail.bundle.parentMissing');
+              })()}
+            </span>
+          )}
           {isPostpaid(v) && <span className="badge">{t('detail.billing.postpaid')}</span>}
           {method(v.methodId) && <PayBadge m={method(v.methodId)} />}
           {parallel > 0 && <span className="badge blue h-par">{t('editor.overlap.parallel', { count: parallel })}</span>}

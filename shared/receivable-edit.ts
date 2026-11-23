@@ -1,6 +1,7 @@
 // 记收款、免收、改删收款、记代付实扣：合租成员与代付共用。界面与 MCP / AI 助手都走这里，校验只在一处。
 // 纯函数，不碰存储；返回改好的订阅，由调用方写入。
 import { addMonths, collectCurrencyOf, collectionAnchor, memberLedger, validDay } from './billing.ts';
+import { bundleView } from './bundle.ts';
 import { periodsTotal } from './carpool.ts';
 import { convertOn } from './fx.ts';
 import { t } from './i18n.ts';
@@ -26,7 +27,8 @@ export function receivableOf(st: AppState, s: Subscription, target: ReceivableTa
   if (!s.share || s.share.role !== 'owner') throw new Error(t('mcp.error.notShareOwner', { name: s.name }));
   const share = s.share;
   const m = target.member;
-  const { periods, unmatched } = memberLedger(s, m, today, ccy, through);
+  const vs = bundleView(s, st.subscriptions);
+  const { periods, unmatched } = memberLedger(vs, m, today, ccy, through);
   return {
     periods,
     unmatched,

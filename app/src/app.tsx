@@ -4,7 +4,8 @@ import { isPasskeyCancellation } from './passkey-autofill.ts';
 import { base } from './base.ts';
 import { createRoot } from 'react-dom/client';
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
-import { addDays, diffDays, effectiveStatus, nextCharge, isStopped } from '../../shared/billing.ts';
+import { addDays, currentPhase, diffDays, effectiveStatus, nextCharge, isStopped } from '../../shared/billing.ts';
+import { bundleSource, bundleView, isFreeBundlePhase } from '../../shared/bundle.ts';
 import { money, nearDate, setSignedAmounts } from '../../shared/format.ts';
 import { avatarOf, type AppState, type Subscription } from '../../shared/types.ts';
 import { IconButton } from './components/ui.tsx';
@@ -285,7 +286,7 @@ function Sidebar({
   const horizon = days === 0 ? monthEnd(d.slice(0, 7)) : addDays(d, days);
   const upcoming = state.subscriptions
     .filter((s) => !s.proxy) // 代付在「代付」页单独管
-    .map((s) => ({ s, n: nextCharge(s, d) }))
+    .map((s) => ({ s, n: nextCharge(bundleView(s, state.subscriptions), d) }))
     .filter((x) => x.n && x.n <= horizon)
     .sort((a, b) => a.n!.localeCompare(b.n!))
     .slice(0, 12);
@@ -402,7 +403,8 @@ function Palette({
   const lower = q.trim().toLowerCase();
   const haystack = (s: Subscription) => {
     const m = state.methods.find((x) => x.id === s.methodId)?.name ?? '';
-    return `${s.name} ${s.category} ${s.tags.join(' ')} ${m} ${s.region ?? ''} ${s.notes ?? ''} ${s.proxy?.forName ?? ''}`;
+    const parent = bundleSource(s, state.subscriptions, d)?.parent.name ?? '';
+    return `${s.name} ${s.category} ${s.tags.join(' ')} ${m} ${s.region ?? ''} ${s.notes ?? ''} ${s.proxy?.forName ?? ''} ${parent}`;
   };
   const nav = [...navOf(state.settings), { path: 'settings', label: t('app.nav.settings'), icon: 'gear' }];
   const addKeywords = t('app.palette.addKeywords');
@@ -410,21 +412,28 @@ function Palette({
   const subs = state.subscriptions
     // Multiple words must all match, as before.
     .filter((s) => !lower || lower.split(/\s+/).every((w) => matches(w, haystack(s))))
-    .sort((a, b) => (isStopped(effectiveStatus(a, d)) ? 1 : 0) - (isStopped(effectiveStatus(b, d)) ? 1 : 0))
+    .sort(
+      (a, b) =>
+        (isStopped(effectiveStatus(bundleView(a, state.subscriptions), d)) ? 1 : 0) -
+        (isStopped(effectiveStatus(bundleView(b, state.subscriptions), d)) ? 1 : 0),
+    )
     .slice(0, 8);
   const pages = nav.filter((n) => matches(lower, n.label));
   const items: Array<{ key: string; run: () => void; el: React.JSX.Element }> = [
-    ...subs.map((s) => ({
-      key: s.id,
-      run: () => onOpen(s),
-      el: (
-        <>
-          <SubIcon sub={s} size={24} />
-          {s.name}
-          <small>{money(s.price, s.currency)}</small>
-        </>
-      ),
-    })),
+    ...subs.map((s) => {
+      const cur = currentPhase(bundleView(s, state.subscriptions), d);
+      return {
+        key: s.id,
+        run: () => onOpen(s),
+        el: (
+          <>
+            <SubIcon sub={s} size={24} />
+            {s.name}
+            <small>{isFreeBundlePhase(cur) ? t('list.badge.included') : money(cur.price, cur.currency)}</small>
+          </>
+        ),
+      };
+    }),
     ...pages.map((n) => ({
       key: n.path,
       run: () => navigate(n.path),
@@ -630,6 +639,18 @@ function App() {
   const add = () => {
     setEditing(newSub(d, state?.settings.defaultMethodId, state?.settings.baseCurrency));
   };
+  const addLinked = (parent: Subscription) => {
+    if (ro) return;
+    const cur = currentPhase(parent, d);
+    setBackTo(parent.id);
+    setViewId(null);
+    setEditing({
+      ...newSub(d, undefined, cur.currency),
+      price: 0,
+      cycle: { ...cur.cycle },
+      bundle: { parentId: parent.id },
+    });
+  };
   const viewing = state.subscriptions.find((s) => s.id === viewId);
   const mobile = narrow ? mobileOf(state.settings, ro, wideDock) : null;
   // 手机端 AI 入口里的「助手 | 连接」切换
@@ -737,7 +758,18 @@ function App() {
         />
       )}
 
-      {viewing && <Detail sub={viewing} state={state} today={d} onEdit={editFromDetail} onClose={() => setViewId(null)} />}
+      {viewing && (
+        <Detail
+          key={viewing.id}
+          sub={viewing}
+          state={state}
+          today={d}
+          onEdit={editFromDetail}
+          onOpen={open}
+          onAddLinked={ro ? undefined : addLinked}
+          onClose={() => setViewId(null)}
+        />
+      )}
       {editing && (
         <Editor
           key={editing.id}

@@ -11,6 +11,7 @@ import {
   addMonths,
   contractFits,
   currentPhase,
+  cycleLabel,
   isPostpaid,
   isSeparate,
   nextCharge,
@@ -19,6 +20,7 @@ import {
   preserveRenewalHistory,
   setSettlement,
 } from '../../../../shared/billing.ts';
+import { allChildrenOf, bundleView, followsParent, isFreeBundlePhase, linkableParents } from '../../../../shared/bundle.ts';
 import { cnDateFull, flow, money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { REMIND_DAYS, type Contract, type Cycle, type SubStatus, type Subscription } from '../../../../shared/types.ts';
@@ -46,6 +48,23 @@ import { CYCLES, STATUS } from './useEditorFields.ts';
 
 export function BillingFields({ context }: { context: ReturnType<typeof useEditorFields> }) {
   const { isNew, f, up, state, today, phoneCat, setCustom, cycleKey, catOptions, setNewCat, plans, setPlans } = context;
+  const parents = linkableParents(state.subscriptions, isNew ? undefined : f);
+  const currentParentId = f.bundle?.parentId ?? '';
+  const currentParent = currentParentId ? state.subscriptions.find((x) => x.id === currentParentId) : undefined;
+  const showBundle = !f.proxy && (parents.length > 0 || !!currentParentId);
+  const freeFollow = isFreeBundlePhase(f) && followsParent(f);
+  const parentOptions = [
+    { value: '', label: t('editor.bundle.none') },
+    ...parents.map((p) => ({
+      value: p.id,
+      label: p.name,
+      hint: p.account || p.region || undefined,
+      icon: <SubIcon sub={p} size={18} />,
+    })),
+    ...(currentParentId && !parents.some((p) => p.id === currentParentId)
+      ? [{ value: currentParentId, label: currentParent?.name ?? t('detail.bundle.parentMissing') }]
+      : []),
+  ];
   return (
     <Group title={t('editor.group.billing')}>
       {/* 选套餐只是代填金额、币种和认得出的周期，之后照常可改 */}
@@ -66,60 +85,109 @@ export function BillingFields({ context }: { context: ReturnType<typeof useEdito
           />
         </Cell>
       )}
+      {showBundle && (
+        <Cell label={t('editor.bundle.parent')}>
+          <Picker
+            value={currentParentId}
+            search
+            onChange={(id) => {
+              if (!id) return up({ bundle: undefined });
+              const p = state.subscriptions.find((x) => x.id === id);
+              const pc = p ? currentPhase(p, today) : undefined;
+              if (isNew) {
+                if (pc) setCustom(!CYCLES.some(([, c]) => c.unit === pc.cycle.unit && c.every === pc.cycle.every));
+                const free = !(f.price > 0) && !(f.intro && f.intro.price > 0);
+                up({
+                  bundle: { parentId: id, ...(f.bundle?.follow === false ? { follow: false } : {}) },
+                  ...(pc ? { currency: pc.currency, cycle: { ...pc.cycle } } : {}),
+                  ...(free ? { methodId: undefined } : {}),
+                });
+              } else {
+                up({ bundle: { parentId: id, ...(f.bundle?.follow === false ? { follow: false } : {}) } });
+              }
+            }}
+            options={parentOptions}
+            ariaLabel={t('editor.bundle.parent')}
+          />
+        </Cell>
+      )}
+      {currentParentId && (
+        <Cell label={t('editor.bundle.mode')}>
+          <Seg
+            small
+            value={followsParent(f) ? 'follow' : 'independent'}
+            onChange={(v) => up({ bundle: { parentId: currentParentId, ...(v === 'independent' ? { follow: false } : {}) } })}
+            options={[
+              ['follow', t('editor.bundle.follow')],
+              ['independent', t('editor.bundle.independent')],
+            ]}
+          />
+        </Cell>
+      )}
       <Cell label={t('editor.field.amount')}>
         <span className="ed-amount">
           <NumInput ccy={f.currency} className="num" value={f.price || undefined} placeholder="0.00" onValue={(n) => up({ price: n ?? 0 })} />
           <CurrencySelect value={f.currency} onChange={(c) => up({ currency: c })} />
         </span>
       </Cell>
-      <Cell label={t('editor.field.cycle')}>
-        <Picker
-          value={cycleKey}
-          onChange={(k) => {
-            const c = CYCLES.find(([key]) => key === k);
-            setCustom(!c);
-            if (c) up({ cycle: c[1] });
-            else up({ cycle: { unit: 'month', every: 2 } });
-          }}
-          options={[...CYCLES.map(([k]) => ({ value: k, label: cycleName(k) })), { value: 'custom', label: cycleName('custom') }]}
-          ariaLabel={t('editor.field.cycle')}
-        />
-      </Cell>
-      {cycleKey === 'custom' && (
-        <Cell label={t('editor.unit.every')}>
-          <Stepper
-            label={t('editor.unit.every')}
-            value={f.cycle.every}
-            min={1}
-            max={999}
-            unit={() => ''}
-            onChange={(n) => up({ cycle: { unit: f.cycle.unit === 'lifetime' ? 'month' : f.cycle.unit, every: n } })}
-          />
-          <Picker
-            value={f.cycle.unit}
-            onChange={(u) => up({ cycle: { unit: u as Cycle['unit'], every: f.cycle.every } })}
-            options={[
-              { value: 'day', label: t('editor.unit.day', { count: f.cycle.every }) },
-              { value: 'week', label: t('editor.unit.week', { count: f.cycle.every }) },
-              { value: 'month', label: t('editor.unit.month', { count: f.cycle.every }) },
-              { value: 'year', label: t('editor.unit.year', { count: f.cycle.every }) },
-            ]}
-            ariaLabel={t('editor.unit.label')}
-          />
+      {freeFollow ? (
+        <Cell label={t('editor.field.cycle')}>
+          <span className="muted">
+            {currentParent ? t('editor.bundle.followsCycle', { cycle: cycleLabel(currentPhase(currentParent, today).cycle) }) : t('editor.bundle.follow')}
+          </span>
         </Cell>
-      )}
-      {f.cycle.unit !== 'lifetime' && (
-        <Cell label={t('editor.field.billing')}>
-          <Seg
-            small
-            value={f.billing ?? 'prepaid'}
-            onChange={(v) => up({ billing: v === 'postpaid' ? 'postpaid' : undefined })}
-            options={[
-              ['prepaid', t('editor.billing.prepaid')],
-              ['postpaid', t('editor.billing.postpaid')],
-            ]}
-          />
-        </Cell>
+      ) : (
+        <>
+          <Cell label={t('editor.field.cycle')}>
+            <Picker
+              value={cycleKey}
+              onChange={(k) => {
+                const c = CYCLES.find(([key]) => key === k);
+                setCustom(!c);
+                if (c) up({ cycle: c[1] });
+                else up({ cycle: { unit: 'month', every: 2 } });
+              }}
+              options={[...CYCLES.map(([k]) => ({ value: k, label: cycleName(k) })), { value: 'custom', label: cycleName('custom') }]}
+              ariaLabel={t('editor.field.cycle')}
+            />
+          </Cell>
+          {cycleKey === 'custom' && (
+            <Cell label={t('editor.unit.every')}>
+              <Stepper
+                label={t('editor.unit.every')}
+                value={f.cycle.every}
+                min={1}
+                max={999}
+                unit={() => ''}
+                onChange={(n) => up({ cycle: { unit: f.cycle.unit === 'lifetime' ? 'month' : f.cycle.unit, every: n } })}
+              />
+              <Picker
+                value={f.cycle.unit}
+                onChange={(u) => up({ cycle: { unit: u as Cycle['unit'], every: f.cycle.every } })}
+                options={[
+                  { value: 'day', label: t('editor.unit.day', { count: f.cycle.every }) },
+                  { value: 'week', label: t('editor.unit.week', { count: f.cycle.every }) },
+                  { value: 'month', label: t('editor.unit.month', { count: f.cycle.every }) },
+                  { value: 'year', label: t('editor.unit.year', { count: f.cycle.every }) },
+                ]}
+                ariaLabel={t('editor.unit.label')}
+              />
+            </Cell>
+          )}
+          {f.cycle.unit !== 'lifetime' && (
+            <Cell label={t('editor.field.billing')}>
+              <Seg
+                small
+                value={f.billing ?? 'prepaid'}
+                onChange={(v) => up({ billing: v === 'postpaid' ? 'postpaid' : undefined })}
+                options={[
+                  ['prepaid', t('editor.billing.prepaid')],
+                  ['postpaid', t('editor.billing.postpaid')],
+                ]}
+              />
+            </Cell>
+          )}
+        </>
       )}
       <Cell label={t('editor.field.category')}>
         <Picker
@@ -215,13 +283,14 @@ export function StatusFields({ context }: { context: ReturnType<typeof useEditor
           <DatePicker value={f.pausedAt ?? pauseDay(f, today)} onChange={(v) => up({ pausedAt: v ?? pauseDay(f, today) })} />
         </Cell>
       )}
-      {stop && <StopFields sub={syncPhase(f, today)} today={today} value={stop} onChange={setStop} />}
+      {stop && <StopFields sub={bundleView(syncPhase(f, today), state.subscriptions)} today={today} value={stop} onChange={setStop} />}
     </Group>
   );
 }
 
 export function SharingFields({ context }: { context: ReturnType<typeof useEditorFields> }) {
   const { f, up, state, today, proxyLinked, proxyProfile, setProxyProfile, share, setShare, perHead, val } = context;
+  const allowProxy = !f.bundle?.parentId && allChildrenOf(f.id, state.subscriptions).length === 0;
   return (
     <Group
       title={t('editor.group.who')}
@@ -247,7 +316,7 @@ export function SharingFields({ context }: { context: ReturnType<typeof useEdito
             ['none', t('editor.share.none')],
             ['owner', t('editor.share.owner')],
             ['member', t('editor.share.member')],
-            ['proxy', t('editor.share.proxy')],
+            ...(allowProxy ? ([['proxy', t('editor.share.proxy')]] as Array<[string, string]>) : []),
           ]}
         />
       </div>

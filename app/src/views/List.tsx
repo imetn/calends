@@ -7,6 +7,8 @@ import { StopBadge, StopText, stopDescription, stopLabel } from '../components/S
 import { base } from '../base.ts';
 import { useEffect, useState } from 'react';
 import { activePhases, currentPhase, diffDays, effectiveStatus, monthlyMine, nextCharge, priceAt, upcomingPhase, isStopped } from '../../../shared/billing.ts';
+import { bundleSource, bundleView, childrenOf, displayCycle, followsParent, isFreeBundlePhase } from '../../../shared/bundle.ts';
+import { detailHistoryEnd } from './detail-data.ts';
 import { cnDate, cnDateAuto, money, nearDate, relDays } from '../../../shared/format.ts';
 import { toBaseOrNaN } from '../../../shared/fx.ts';
 import { registrarIcon } from '../../../shared/icon.ts';
@@ -127,9 +129,10 @@ export function List({
 
   // 多维筛选：状态、分类、支付方式；每个选项的数字按「其他维度已选条件」计算
   // 代付是替别人付的，不进「全部订阅」，在「代付」页单独管
+  const viewOf = (s: Subscription) => bundleView(s, state.subscriptions);
   const mine = state.subscriptions.filter((s) => !s.proxy);
-  const payOf = (s: Subscription) => listMethod(s, today);
-  // 搜索也是一个筛选条件：名称、分类、标签、备注、地区、支付方式、网址都能搜，各维度的计数随之变化
+  const payOf = (s: Subscription) => listMethod(viewOf(s), today);
+  // 搜索也是一个筛选条件：名称、分类、标签、备注、地区、支付方式、网址、关联主订阅名都能搜，各维度的计数随之变化
   const words = listWords(q);
   const methodName = new Map(state.methods.map((m) => [m.id, m.name]));
   const matches = useTextSearch(mine.map((s) => listHaystack(state, s, today)));
@@ -148,7 +151,7 @@ export function List({
     n.set('all', all);
     return n;
   };
-  const statusN = facet('status', (s) => listStatus(s, today));
+  const statusN = facet('status', (s) => listStatus(viewOf(s), today));
   const catN = facet('cat', (s) => s.category);
   const payN = facet('pay', payOf);
   // 按分类表的顺序（设置里可拖动调整）
@@ -164,8 +167,9 @@ export function List({
   };
   // 金额列显示的是「当前阶段、下次扣款日的价格」折算后的值，排序也用同一个数
   const amountOf = (s: Subscription) => {
-    const cur = currentPhase(s, today);
-    const n = nextCharge(s, today);
+    const vs = viewOf(s);
+    const cur = currentPhase(vs, today);
+    const n = nextCharge(vs, today);
     const price = n && !(cur.end && n >= cur.end) ? priceAt(cur, n) : cur.price;
     return toBase(state, price, cur.currency);
   };
@@ -188,17 +192,17 @@ export function List({
     // 金额按列里显示的那个数（当前阶段、下次扣款日的价格）折算成本位币，跨币种才比得准
     if (sort === 'amount') return n0(amountOf(a)) - n0(amountOf(b));
     if (sort === 'start') return a.start.localeCompare(b.start);
-    return (nextCharge(a, today) ?? '').localeCompare(nextCharge(b, today) ?? '');
+    return (nextCharge(viewOf(a), today) ?? '').localeCompare(nextCharge(viewOf(b), today) ?? '');
   };
   const rows = mine.filter(match).sort((a, b) => {
     if (sort === 'next') {
-      const na = nextCharge(a, today);
-      const nb = nextCharge(b, today);
+      const na = nextCharge(viewOf(a), today);
+      const nb = nextCharge(viewOf(b), today);
       if (!na || !nb) return na ? -1 : nb ? 1 : 0;
     }
     return dir === 'asc' ? asc(a, b) : asc(b, a);
   });
-  const sum = sumTotals(rows.filter((s) => !isStopped(effectiveStatus(s, today))).map((s) => monthlyTotal(state, s, today)));
+  const sum = sumTotals(rows.filter((s) => !isStopped(effectiveStatus(viewOf(s), today))).map((s) => monthlyTotal(state, s, today)));
   // 只按筛选范围识别报告，排序、视图及时间轴窗口不影响报告。
   const reportKey = JSON.stringify([category ?? null, filter, cat, pay, words.join(' ')]);
   const [reportPref] = usePref<string>('list-report', '');
@@ -323,15 +327,21 @@ export function List({
         ) : view === 'grid' ? (
           <div className="sgrid">
             {rows.map((s) => {
-              const st = effectiveStatus(s, today);
-              const n = nextCharge(s, today);
+              const vs = viewOf(s);
+              const st = effectiveStatus(vs, today);
+              const n = nextCharge(vs, today);
               const d = n ? diffDays(today, n) : undefined;
+              const cur = currentPhase(vs, today);
+              const histEnd = isStopped(st)
+                ? detailHistoryEnd(vs, today).date
+                : (vs.end ?? (st === 'ending' && cur.bundleAvail?.ended && cur.bundleAvail.ended.kind !== 'undated' ? cur.bundleAvail.ended.date : undefined));
               // 不续订且已无扣款时按停止日算临近
-              const left = d ?? (st === 'ending' && s.end ? diffDays(today, s.end) : undefined);
-              const v = shown(s, n);
-              const cur = currentPhase(s, today);
-              const up = upcomingPhase(s, today);
+              const left = d ?? (st === 'ending' && histEnd ? diffDays(today, histEnd) : undefined);
+              const v = shown(vs, n);
+              const up = upcomingPhase(vs, today);
               const m = state.methods.find((x) => x.id === cur.methodId);
+              const freeBundle = isFreeBundlePhase(cur);
+              const parentInfo = cur.bundle?.parentId ? bundleSource(s, state.subscriptions, today) : undefined;
               return (
                 <button key={s.id} className={`scard st-${st}`} onClick={() => onOpen(s)}>
                   <CardGlow sub={s} />
@@ -349,13 +359,13 @@ export function List({
                           {changeSummary(cur, up, st, today, state).short}
                         </span>
                       )}
-                      {parallelSummary(s, cur, today) && (
-                        <span className="badge" title={parallelSummary(s, cur, today)}>
+                      {parallelSummary(vs, cur, today) && (
+                        <span className="badge" title={parallelSummary(vs, cur, today)}>
                           {t('list.badge.parallel')}
                         </span>
                       )}
                       <SubBadges state={state} s={s} today={today}>
-                        <StopBadge sub={s} today={today} />
+                        <StopBadge sub={vs} today={today} />
                       </SubBadges>
                     </span>
                   </div>
@@ -368,21 +378,32 @@ export function List({
                     <PayBadge m={m} />
                   </div>
                   <div className="sc-price">
-                    <Amount plain value={v.value} ccy={v.ccy} />
-                    <span className="sc-per">/{perLabel(cur)}</span>
+                    {freeBundle ? (
+                      <>
+                        <span className="sc-included">{t('list.badge.included')}</span>
+                        <span className="sc-per">/{perLabel({ cycle: displayCycle(cur, today) })}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Amount plain value={v.value} ccy={v.ccy} />
+                        <span className="sc-per">/{perLabel(cur)}</span>
+                      </>
+                    )}
                   </div>
                   <div className="sc-foot">
-                    <span>{v.sub ?? '\u00a0'}</span>
+                    <span>{freeBundle ? (parentInfo ? t('detail.bundle.withParent', { name: parentInfo.parent.name }) : '\u00a0') : (v.sub ?? '\u00a0')}</span>
                     <span className={left != null && left <= 3 ? 'soon' : ''}>
                       {st === 'lifetime'
                         ? s.start.slice(0, 7)
                         : n && !isStopped(st)
                           ? nearDate(n, today)
-                          : s.end && isStopped(st)
-                            ? cnDateAuto(s.end, today)
-                            : s.end && st === 'ending'
-                              ? t('list.serviceUntil', { date: cnDateAuto(s.end, today) })
-                              : ''}
+                          : histEnd && isStopped(st)
+                            ? cnDateAuto(histEnd, today)
+                            : histEnd && st === 'ending'
+                              ? t('list.serviceUntil', { date: cnDateAuto(histEnd, today) })
+                              : freeBundle && followsParent(cur) && !isStopped(st)
+                                ? t('list.bundle.followsParent')
+                                : ''}
                     </span>
                   </div>
                 </button>
@@ -418,16 +439,23 @@ export function List({
                 ))}
               </div>
               {rows.map((s) => {
-                const st = effectiveStatus(s, today);
-                const n = nextCharge(s, today);
+                const vs = viewOf(s);
+                const st = effectiveStatus(vs, today);
+                const n = nextCharge(vs, today);
                 const d = n ? diffDays(today, n) : undefined;
+                const cur = currentPhase(vs, today);
+                const histEnd = isStopped(st)
+                  ? detailHistoryEnd(vs, today).date
+                  : (vs.end ??
+                    (st === 'ending' && cur.bundleAvail?.ended && cur.bundleAvail.ended.kind !== 'undated' ? cur.bundleAvail.ended.date : undefined));
                 // 不续订且已无扣款时按停止日算临近
-                const left = d ?? (st === 'ending' && s.end ? diffDays(today, s.end) : undefined);
-                const cur = currentPhase(s, today);
-                const up = upcomingPhase(s, today);
+                const left = d ?? (st === 'ending' && histEnd ? diffDays(today, histEnd) : undefined);
+                const up = upcomingPhase(vs, today);
                 const m = state.methods.find((x) => x.id === cur.methodId);
-                const v = shown(s, n);
+                const v = shown(vs, n);
                 const live = !['lifetime', 'ended', 'terminated'].includes(st);
+                const freeBundle = isFreeBundlePhase(cur);
+                const parentInfo = cur.bundle?.parentId ? bundleSource(s, state.subscriptions, today) : undefined;
                 return (
                   <button key={s.id} className={`lt-row st-${st}`} role="row" onClick={() => onOpen(s)}>
                     <span className="lt-name">
@@ -451,7 +479,7 @@ export function List({
                           </small>
                         )}
                         {up && <ChangeNote cur={cur} up={up} st={st} today={today} state={state} />}
-                        <ParallelNote sub={s} cur={cur} today={today} />
+                        <ParallelNote sub={vs} cur={cur} today={today} />
                       </span>
                     </span>
                     <span className="lt-cat">
@@ -461,15 +489,29 @@ export function List({
                       <PayBadge m={m} />
                     </span>
                     <span className="lt-amt">
-                      <span>
-                        <Amount plain value={v.value} ccy={v.ccy} />
-                        <small>/{perLabel(cur)}</small>
-                      </span>
-                      {money2 !== 'orig' && s.currency !== money2 && <small>{v.sub}</small>}
+                      {freeBundle ? (
+                        <>
+                          <span>
+                            {t('list.badge.included')}
+                            <small>/{perLabel({ cycle: displayCycle(cur, today) })}</small>
+                          </span>
+                          {parentInfo && <small>{t('detail.bundle.withParent', { name: parentInfo.parent.name })}</small>}
+                        </>
+                      ) : (
+                        <>
+                          <span>
+                            <Amount plain value={v.value} ccy={v.ccy} />
+                            <small>/{perLabel(cur)}</small>
+                          </span>
+                          {money2 !== 'orig' && s.currency !== money2 && <small>{v.sub}</small>}
+                        </>
+                      )}
                     </span>
                     <span className="lt-mo">
                       {s.proxy ? (
                         <small>{t('list.notCounted')}</small>
+                      ) : freeBundle ? (
+                        '—'
                       ) : live ? (
                         cur.cycle.unit === 'month' && cur.cycle.every === 1 && v.ccy === base && Math.abs(mo(s) - v.value) < 0.005 ? (
                           <small>{t('list.monthlySame')}</small>
@@ -488,15 +530,17 @@ export function List({
                       {st === 'lifetime' ? (
                         t('list.status.lifetime')
                       ) : isStopped(st) ? (
-                        <>{tx('list.endedOn', { date: <small>{s.end ? cnDateAuto(s.end, today) : '—'}</small> })}</>
+                        <>{tx('list.endedOn', { date: <small>{histEnd ? cnDateAuto(histEnd, today) : '—'}</small> })}</>
                       ) : n ? (
                         <>
                           {cnDate(n)}
                           <small>{relDays(d!)}</small>
                         </>
-                      ) : st === 'ending' && s.end ? (
+                      ) : st === 'ending' && histEnd ? (
                         // 不续订、已无下次扣款时显示停止日（含当天的最后服务日），与网格卡片一致
-                        <>{tx('list.serviceUntil', { date: <small>{cnDateAuto(s.end, today)}</small> })}</>
+                        <>{tx('list.serviceUntil', { date: <small>{cnDateAuto(histEnd, today)}</small> })}</>
+                      ) : freeBundle && followsParent(cur) ? (
+                        <small>{t('list.bundle.followsParent')}</small>
                       ) : (
                         '—'
                       )}
@@ -738,13 +782,25 @@ function StatusBadges({ st }: { st: string }) {
 
 /** Both list layouts use the same relationship and upcoming-state rules. */
 function SubBadges({ state, s, today, children }: { state: AppState; s: Subscription; today: string; children?: React.ReactNode }) {
-  const st = effectiveStatus(s, today);
-  const up = upcomingPhase(s, today);
+  const subs = state.subscriptions ?? [];
+  const vs = bundleView(s, subs);
+  const st = effectiveStatus(vs, today);
+  const cur = currentPhase(vs, today);
+  const up = upcomingPhase(vs, today);
+  const freeBundle = isFreeBundlePhase(cur);
+  const kids = childrenOf(s.id, subs, today);
   return (
     <>
       {st === 'upcoming' && !up && <span className="badge blue">{t('list.status.upcoming')}</span>}
       <StatusBadges st={st} />
       {children}
+      {freeBundle && <span className="badge blue">{t('list.badge.included')}</span>}
+      {!freeBundle && cur.bundle?.parentId && <span className="badge">{t('list.badge.addon')}</span>}
+      {kids.length > 0 && (
+        <span className="badge" title={kids.map((k) => k.sub.name).join(t('core.listSep'))}>
+          +{kids.length}
+        </span>
+      )}
       {s.share?.role === 'owner' && s.share.members.length > 0 && <span className="badge blue">{t('list.badge.share')}</span>}
       {s.share?.role === 'member' && <span className="badge blue">{t('list.badge.joined')}</span>}
       {s.proxy && <ProxyBadge state={state} s={s} today={today} />}

@@ -31,6 +31,7 @@ import { chargeBaseOrNaN, chargeValue } from './fx.ts';
 import { FALLBACK_FX, addMonths, phaseSubs, diffDays } from './billing.ts';
 import { DEFAULT_SETTINGS } from './types.ts';
 import * as billing from './billing.ts';
+import * as bundle from './bundle.ts';
 import { colorFor, isCustomColor } from './people.ts';
 import { detailForecast, detailHistoryEnd } from '../app/src/views/detail-data.ts';
 import type { AppState, Subscription } from './types.ts';
@@ -561,6 +562,7 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     React,
     Fragment: React.Fragment,
     ...billing,
+    ...bundle,
     ...transfers,
     detailForecast,
     meterView: (sub: unknown) => sub,
@@ -604,6 +606,7 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     Charges: empty,
     Transfers: empty,
     Meters: empty,
+    BundleCard: empty,
     Outcome: empty,
     Notices: empty,
     ShareCard: empty,

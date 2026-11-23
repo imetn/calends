@@ -13,6 +13,7 @@ import {
   settleBills,
   uid,
 } from '../../../shared/billing.ts';
+import { bundleView } from '../../../shared/bundle.ts';
 import { cnDateAuto, currencyDecimals, money } from '../../../shared/format.ts';
 import { settlementCurrencyOf, toBaseOrNaN } from '../../../shared/fx.ts';
 import { t } from '../../../shared/i18n.ts';
@@ -71,7 +72,11 @@ export function PaymentSheet({
   const settledCcy = settledCcyOverride ?? settlementCurrencyOf(getState(), method);
   const changed = method !== (existingPay?.methodId ?? phase.methodId);
   const [scope, setScope] = useState<'one' | 'phase'>(phase.methodId ? 'one' : 'phase');
-  const phaseCount = chargesBetween(phase, phase.start, today, today).length;
+  const viewPhase = (() => {
+    const view = bundleView(sub, getState().subscriptions ?? []);
+    return phaseSubs(view).find((v) => v.start === phase.start) ?? currentPhase(view, date);
+  })();
+  const phaseCount = chargesBetween(viewPhase, viewPhase.start, today, today).length;
   // 资金拆分：一笔订单由几个来源合付；金额按订阅币种，合计等于本笔
   const [split, setSplit] = useState<Array<{ methodId?: string; amount: string }> | null>(
     existingPay?.funding?.length ? existingPay.funding.map((f) => ({ methodId: f.methodId, amount: String(Math.abs(f.amount)) })) : null,
@@ -98,9 +103,9 @@ export function PaymentSheet({
   const meters = (sub.meters ?? []).filter((m) => !m.link);
   // 改日期时原记录还在旧日期上，按它算会把旧日期当成「已按时结清」的边界，周期归错；算周期前先拿掉正在改的这笔
   const others = (() => {
-    const list = phase.payments ?? [];
+    const list = viewPhase.payments ?? [];
     const at = existingPay ? list.findIndex((p) => p.date === existingPay.date && p.amount === existingPay.amount && p.kind === existingPay.kind) : -1;
-    return at < 0 ? phase : { ...phase, payments: list.filter((_, i) => i !== at) };
+    return at < 0 ? viewPhase : { ...viewPhase, payments: list.filter((_, i) => i !== at) };
   })();
   const period = kind === 'charge' && meters.length && phase.cycle.unit !== 'lifetime' ? chargeServicePeriod(others, date) : undefined;
   const [usage, setUsage] = useState<Record<string, number | undefined>>({});
@@ -139,7 +144,10 @@ export function PaymentSheet({
   const future = open.filter((b) => b.date > today && !keys.includes(b.date) && pieceOf(b.date) <= 0.004);
   const shown = open.filter((b) => !future.includes(b) || future.indexOf(b) < ahead);
   const togglePeriod = (k: string) => setPicked(keys.includes(k) ? keys.filter((x) => x !== k) : [...keys, k].sort());
-  const early = kind === 'charge' && !separate ? earlyRenewalEffect(sub, today, { date, amount: Number(amount) || 0 }, target, pick) : undefined;
+  const early =
+    kind === 'charge' && !separate
+      ? earlyRenewalEffect(sub, today, { date, amount: Number(amount) || 0 }, target, pick, getState().subscriptions ?? [])
+      : undefined;
 
   const [busy, submit] = useSubmit();
   const save = () => {
@@ -164,7 +172,7 @@ export function PaymentSheet({
     return submit(() =>
       run(
         async () => {
-          let next = savePayment(sub, today, pay, target, pick);
+          let next = savePayment(sub, today, pay, target, pick, getState().subscriptions ?? []);
           if (!split && changed && scope === 'phase') next = setPhaseMethod(next, phase.start, method);
           if (period && Object.keys(usage).length) {
             // 新建的记录记在周期末日，周期还没过完时记今天
@@ -183,7 +191,7 @@ export function PaymentSheet({
     if (!originalDate || originalIndex == null) return;
     return submit(() =>
       run(async () => {
-        await saveSub(deletePayment(sub, today, originalDate, originalIndex, originalPhase));
+        await saveSub(deletePayment(sub, today, originalDate, originalIndex, originalPhase, getState().subscriptions ?? []));
         onClose();
       }, t('editor.payment.toast.deleted')),
     );

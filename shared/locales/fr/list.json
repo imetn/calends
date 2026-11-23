@@ -56,7 +56,9 @@
     "proxy": "Payé pour d’autres",
     "proxyFor": "Payé pour {name}",
     "someone": "quelqu’un",
-    "parallel": "En parallèle"
+    "parallel": "En parallèle",
+    "included": "Inclus",
+    "addon": "Option"
   },
   "col": {
     "name": "Abonnement",
@@ -138,5 +140,8 @@
   "network": {
     "unionpay": "UnionPay"
   },
-  "monthlySame": "Identique au prix"
+  "monthlySame": "Identique au prix",
+  "bundle": {
+    "followsParent": "Suit le principal"
+  }
 }

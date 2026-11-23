@@ -61,7 +61,12 @@
     "reading": "Ungültiger Nutzungseintrag: eindeutige id, gültiges Datum und Zahlenwerte erforderlich",
     "meterLink": "Die verknüpfte Messgröße existiert nicht oder ist selbst eine Verknüpfung",
     "meterLinkUsed": "„{meter}“ ist mit „{name}“ verknüpft; entferne zuerst dort die Verknüpfung",
-    "readingMeter": "Ein Nutzungseintrag verweist auf eine nicht definierte Messgröße"
+    "readingMeter": "Ein Nutzungseintrag verweist auf eine nicht definierte Messgröße",
+    "bundle": "Ungültige Verknüpfung",
+    "bundleLink": "Das Hauptabo existiert nicht, ist eine Fremdzahlung oder selbst verknüpft",
+    "bundleProxy": "Fremdzahlungen können nicht mit einem Hauptabo verknüpft werden",
+    "bundleUsed": "Verknüpft mit {names}; zuerst dort trennen",
+    "bundleHistory": "Die Verknüpfung würde frühere Abbuchungen löschen. Verknüpfe ab dem Verknüpfungstag unter Verlauf → Tarif wechseln."
   },
   "phase": {
     "switchTooEarly": "Das Gültigkeitsdatum muss nach dem Beginn der aktuellen Phase liegen",

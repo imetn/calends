@@ -10,6 +10,7 @@ import {
   cashChargesBetween,
   chargesBetween,
   coveredUntil,
+  currentPhase,
   cycleDays,
   phaseSubs,
   diffDays,
@@ -27,6 +28,7 @@ import {
   pausedFromOf,
   undatedStop,
 } from './billing.ts';
+import { availCoversDay, bundleView, displayCycle, isFreeBundlePhase, resolveState } from './bundle.ts';
 import { chargeBaseOrNaN, chargeValue, convertOn, toBaseAt, toBaseOrNaN } from './fx.ts';
 import { ccyName, cnDateAuto, money } from './format.ts';
 import { t } from './i18n.ts';
@@ -38,21 +40,25 @@ const MONTH = DAYS_PER_MONTH;
 /** day 当天这个订阅贡献的月成本（本位币，我承担的部分；full 为合租全额）；不在计费状态则为 0 */
 export function contributionOn(state: AppState, s: Subscription, day: string, fxDate?: string, full = false): number {
   if (s.proxy) return 0;
+  s = bundleView(s, state.subscriptions);
   // 多阶段：当天在跑的各段相加（换区后新旧两段并行时两边都在付钱）
   if (s.phases?.length) return activePhases(s, day).reduce((a, v) => a + contributionOn(state, v, day, fxDate, full), 0);
   if (s.cycle.unit === 'lifetime') return 0;
+  if (isFreeBundlePhase(s)) return 0;
   if (s.start > day) return 0;
   if (s.stop && s.stop.date <= day) return 0;
   if (s.end && s.end < day) return 0;
   if (undatedStop(s)) return 0;
   if (s.status === 'paused' && (s.pausedAt ?? day) <= day) return 0;
   if (s.stop?.pausedAt && s.stop.pausedAt <= day) return 0;
+  if (s.bundleAvail && !availCoversDay(s.bundleAvail, day)) return 0;
   if (s.status === 'trial' && s.trialEnd && s.trialEnd > day) return 0;
   return toBaseOrNaN(state, monthlyGross(s, day), s.currency, fxDate) * (full ? 1 : myShareFactor(s, day));
 }
 
 /** The same contribution rules, retaining original phase currencies when FX is unavailable. */
 export function contributionTotal(state: AppState, s: Subscription, day: string, fxDate?: string): FxTotal {
+  s = bundleView(s, state.subscriptions);
   if (s.phases?.length) return sumTotals(activePhases(s, day).map((v) => contributionTotal(state, v, day, fxDate)));
   const amount = contributionOn({ ...state, settings: { ...state.settings, baseCurrency: s.currency } }, s, day, fxDate);
   return amountTotal(amount, s.currency, contributionOn(state, s, day, fxDate));
@@ -236,6 +242,7 @@ const label = (v: Subscription) =>
 
 /** 变更日志：像 git log 一样记录每一次花钱决策；多阶段订阅会合并成「换区/换套餐」「断更」「续订」 */
 export function events(state: AppState, today: string): LedgerEvent[] {
+  state = resolveState(state);
   const out: LedgerEvent[] = [];
   // 代付是替别人做的决定，不进我的变更日志
   for (const s of state.subscriptions.filter((x) => !x.proxy)) {
@@ -289,7 +296,7 @@ function coverage(c: Charge): [string, string] {
   }
   const horizon = addDays(c.date, Math.round(cycleDays(s.cycle) * 3) + 31);
   const next = chargesBetween(
-    { ...s, stop: undefined, end: undefined, status: s.status === 'paused' || s.status === 'terminated' ? 'active' : s.status },
+    { ...s, stop: undefined, end: undefined, bundleAvail: undefined, status: s.status === 'paused' || s.status === 'terminated' ? 'active' : s.status },
     addDays(c.date, 1),
     horizon,
     '9999-12-31',
@@ -312,6 +319,7 @@ export interface CashAccrual {
  * 权责把每笔扣款平摊到它覆盖的天数上，反映真实的每月成本。买断不计入权责。
  */
 export function cashVsAccrual(state: AppState, today: string, back: number, fwd: number): CashAccrual[] {
+  state = resolveState(state);
   const first = addMonths(today.slice(0, 8) + '01', -back);
   const last = monthEnd(addMonths(today.slice(0, 8) + '01', fwd).slice(0, 7));
   const rows = new Map<string, CashAccrual>();
@@ -379,6 +387,7 @@ export interface StopLoss {
 
 /** Complete explicit stop history, including fully refunded stops and stops without unused service. */
 export function stopHistory(state: AppState, today: string, range?: { from?: string; to?: string }) {
+  state = resolveState(state);
   const items: StopLoss[] = [];
   for (const sub of state.subscriptions) {
     if (sub.proxy) continue;
@@ -444,6 +453,7 @@ export function prepaidValue(
   unusedItems: Array<{ sub: Subscription; value: number; until: string }>;
   items: Array<{ sub: Subscription; value: number; until: string; partial: FxTotal }>;
 } {
+  state = resolveState(state);
   const items: Array<{ sub: Subscription; value: number; until: string; partial: FxTotal }> = [];
   const losses = stopLosses(state, today);
   const unusedItems = losses.items.map((i) => ({ sub: i.sub, value: i.lossBase, until: i.paidThrough }));
@@ -698,6 +708,7 @@ export function spendingFocus(keys: string[], cur: string): string {
 }
 
 export function insights(state: AppState, today: string): Insight[] {
+  state = resolveState(state);
   const out: Insight[] = [];
   const unused = stopLosses(state, today);
   if (unused.items.length)
@@ -813,8 +824,8 @@ export function insights(state: AppState, today: string): Insight[] {
     });
   }
 
-  // 7. 未指定支付方式
-  const noMethod = live.filter((s) => !s.methodId);
+  // 7. 未指定支付方式（附赠的免费权益不需要绑定支付方式，不报缺失）
+  const noMethod = live.filter((s) => !s.methodId && !isFreeBundlePhase(currentPhase(s, today)));
   if (noMethod.length)
     out.push({
       id: 'nomethod',
@@ -863,6 +874,7 @@ export interface YearReview {
 }
 
 export function yearReview(state: AppState, today: string, year = today.slice(0, 4)): YearReview {
+  state = resolveState(state);
   // 'all'：从最早的订阅开始到今天
   const all = year === 'all';
   const from = all ? state.subscriptions.filter((s) => !s.proxy).reduce((m, s) => (s.start < m ? s.start : m), today) : `${year}-01-01`;
@@ -907,7 +919,9 @@ export function yearReview(state: AppState, today: string, year = today.slice(0,
     bySub.set(r.sub.id, e);
     byMonth.set(r.date.slice(0, 7), (byMonth.get(r.date.slice(0, 7)) ?? 0) + r.amount);
   }
-  const live = state.subscriptions.filter((s) => !s.proxy && s.cycle.unit !== 'lifetime' && ['active', 'ending', 'paused'].includes(effectiveStatus(s, today)));
+  const live = state.subscriptions.filter(
+    (s) => !s.proxy && displayCycle(currentPhase(s, today), today).unit !== 'lifetime' && ['active', 'ending', 'paused'].includes(effectiveStatus(s, today)),
+  );
   const longest = live.map((s) => ({ sub: s, days: diffDays(s.start, today) })).sort((a, b) => b.days - a.days)[0];
   const busiest = [...byMonth.entries()].sort((a, b) => b[1] - a[1])[0];
   partial.perDay = scaleTotal(partial.total, 1 / Math.max(1, diffDays(from, to) + 1));
@@ -933,6 +947,7 @@ export function yearReview(state: AppState, today: string, year = today.slice(0,
  * 合租、代付列表的套餐价格小字与合租的当年盈亏共用这一个数
  */
 export function yearCost(state: AppState, s: Subscription, today: string, y = today.slice(0, 4)): number {
+  s = bundleView(s, state.subscriptions);
   // 缺汇率的扣款让合计为 NaN（显示为不可用），不当成 0
   return chargesBetween(s, `${y}-01-01`, `${y}-12-31`, today)
     .filter((c) => c.kind !== 'failed')

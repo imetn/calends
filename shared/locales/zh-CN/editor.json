@@ -259,5 +259,13 @@
   "settlement": {
     "together": "一起记",
     "separate": "分开记"
+  },
+  "bundle": {
+    "parent": "关联主订阅",
+    "none": "无（独立订阅）",
+    "mode": "周期模式",
+    "follow": "跟随主订阅",
+    "independent": "独立周期",
+    "followsCycle": "跟随主订阅（{cycle}）"
   }
 }

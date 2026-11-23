@@ -1,6 +1,7 @@
 // 公开页脱敏：服务端只下发这里处理过的数据，浏览器拿不到原始信息
 import { DEFAULT_SETTINGS, type AppState, type Payment, type PaymentMethod, type Phase, type Stop, type Subscription } from './types.ts';
-import { effectiveStatus, fnv1a, isStopped, migrateStored, priceAt, todayIn } from './billing.ts';
+import { currentPhase, effectiveStatus, fnv1a, isStopped, migrateStored, priceAt, todayIn } from './billing.ts';
+import { displayCycle, isFreeBundlePhase, publicBundleAvail, resolveState } from './bundle.ts';
 import { isLocale, t } from './i18n.ts';
 import { categoryList, isDomainCategory, presetOf, type Category } from './categories.ts';
 import { publicConfigForVisitors, publicParts, type PublicPart } from './public-layout.ts';
@@ -63,8 +64,34 @@ function publicPayment(pay: Payment): Payment {
 
 const publicStop = (stop: Stop | undefined) => stop && { kind: stop.kind, date: stop.date, paidThrough: stop.paidThrough, pausedAt: stop.pausedAt };
 
+/**
+ * 公开页关联字段脱敏：
+ * - 父订阅仍留在最终公开列表（且保留名称）时，下发映射后的 bundle（隐藏域名映射到 d-<hash>）；
+ * - 父订阅被隐藏、被裁剪或无名称模式时，彻底剥离 bundle（绝不泄露父 ID 或名称），只留非识别的 included / bundleAvail 以维持状态与 0 元不推算口径。
+ */
+function publicBundleFields(
+  p: Pick<Phase, 'bundle' | 'included' | 'bundleAvail' | 'price' | 'intro' | 'priceHistory'>,
+  publicIdMap: ReadonlyMap<string, string>,
+  today: string,
+  keepHistory: boolean,
+): Pick<Phase, 'bundle' | 'included' | 'bundleAvail'> {
+  if (p.bundle?.parentId && publicIdMap.has(p.bundle.parentId)) {
+    return {
+      bundle: {
+        parentId: publicIdMap.get(p.bundle.parentId)!,
+        ...(p.bundle.follow === false ? { follow: false } : {}),
+      },
+    };
+  }
+  if (!p.bundle?.parentId && !p.included && !p.bundleAvail) return {};
+  return {
+    ...(isFreeBundlePhase(p) ? { included: true as const } : {}),
+    ...(p.bundleAvail ? { bundleAvail: publicBundleAvail(p.bundleAvail, today, keepHistory) } : {}),
+  };
+}
+
 /** 公开页的一个阶段（白名单）：计费需要的字段，不带备注与停用原因；以后新增的阶段字段不会被顺带公开 */
-function publicPhase(p: Phase): Phase {
+function publicPhase(p: Phase, publicIdMap: ReadonlyMap<string, string>, today: string, keepHistory: boolean): Phase {
   return {
     start: p.start,
     billingStart: p.billingStart,
@@ -86,11 +113,11 @@ function publicPhase(p: Phase): Phase {
     cancelLeadDays: p.cancelLeadDays,
     renewalHistory: p.renewalHistory,
     renewalOffsetDays: p.renewalOffsetDays,
+    ...publicBundleFields(p, publicIdMap, today, keepHistory),
   };
 }
 
-function publicSub(s: Subscription, cats: Category[]): Subscription {
-  s = migrateStored(s);
+function publicSub(s: Subscription, cats: Category[], publicIdMap: ReadonlyMap<string, string>, today: string, keepHistory: boolean): Subscription {
   const domain = isDomainSub(s, cats);
   // 未上线项目的域名打码；已上线的（showOnPublic）原样展示
   const hide = domain && !s.showOnPublic;
@@ -127,8 +154,9 @@ function publicSub(s: Subscription, cats: Category[]): Subscription {
     intro: s.intro,
     bonus: s.bonus,
     priceHistory: s.priceHistory,
+    ...publicBundleFields(s, publicIdMap, today, keepHistory),
     // 计费需要的结构原样保留：阶段、实际扣款、下次扣款日（不含敏感信息）
-    phases: s.phases?.map(publicPhase),
+    phases: s.phases?.map((p) => publicPhase(p, publicIdMap, today, keepHistory)),
     payments: s.payments?.filter((pay) => pay.kind !== 'refund').map(publicPayment),
     nextDue: s.nextDue,
     // 不带合租：公开页展示订阅本身的价格，成员付满整价时也不显示 0；成员的分摊与收款记录不公开
@@ -180,15 +208,28 @@ export function maskForPublic(state: AppState, opts: { untrimmed?: boolean } = {
   const keepEnded = needs(NEEDS_ENDED);
   const keepLifetime = needs(['lifetime']);
   const keepAmounts = needs(NEEDS_AMOUNTS);
-  const subs = state.subscriptions.filter(
+  // 先在完整私有账本上解析关联可用期，再按公开展示范围筛选与脱敏
+  const full = resolveState({ ...state, subscriptions: state.subscriptions.map(migrateStored) });
+  const subs = full.subscriptions.filter(
     (s) =>
-      keepAmounts && !s.proxy && !hidden.has(s.id) && (keepEnded || !isStopped(effectiveStatus(s, today)) || (keepLifetime && s.cycle.unit === 'lifetime')),
+      keepAmounts &&
+      !s.proxy &&
+      !hidden.has(s.id) &&
+      (keepEnded || !isStopped(effectiveStatus(s, today)) || (keepLifetime && displayCycle(currentPhase(s, today), today).unit === 'lifetime')),
   );
   const keepCategories = needs(NEEDS_CATEGORIES);
   const used = new Set(keepCategories ? subs.map((s) => s.category) : []);
   const keepNames = needs(NEEDS_NAMES);
   const keepHistory = needs(NEEDS_HISTORY);
   const keepRegions = needs(NEEDS_REGIONS);
+  // 只给留在最终公开列表里且保留名称的订阅建公开 ID 映射（隐藏域名映射到 d-<hash>）
+  const publicIdMap = new Map<string, string>();
+  if (keepNames) {
+    for (const s of subs) {
+      const hide = isDomainSub(s, cats) && !s.showOnPublic;
+      publicIdMap.set(s.id, hide ? `d-${shortHash(s.id)}` : s.id);
+    }
+  }
   const trimSub = (s: Subscription, i: number): Subscription => {
     // 已结束的订阅按结束那天的价格算「原来每月多少」，结束日在未来也一样（已付至未来）
     const day = isStopped(effectiveStatus(s, today)) ? (s.end ?? today) : today;
@@ -236,6 +277,6 @@ export function maskForPublic(state: AppState, opts: { untrimmed?: boolean } = {
           .map((m) => (keepNames ? m : { ...m, name: '' }))
           .map((m) => (keepRegions ? m : { ...m, region: undefined }))
       : [],
-    subscriptions: subs.map((s, i) => trimSub(publicSub(s, cats), i)),
+    subscriptions: subs.map((s, i) => trimSub(publicSub(s, cats, publicIdMap, today, keepHistory), i)),
   };
 }

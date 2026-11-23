@@ -275,5 +275,13 @@
   "settlement": {
     "together": "まとめて",
     "separate": "分けて"
+  },
+  "bundle": {
+    "parent": "親サブスクリプション",
+    "none": "なし（単独）",
+    "mode": "スケジュール",
+    "follow": "親に連動",
+    "independent": "独立サイクル",
+    "followsCycle": "親に連動（{cycle}）"
   }
 }

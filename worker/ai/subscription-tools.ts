@@ -43,8 +43,9 @@ import { BONUS_DESCRIPTION, SETTLED_BEFORE, SETTLEMENT, SUBSCRIPTION_SCHEMA } fr
 import { prepareSubWrite } from '../../shared/sub-write.ts';
 import { validateCurrency, deleteSubscriptionSettings } from '../../shared/ledger-edit.ts';
 import { cleanTransfers } from '../../shared/transfers.ts';
+import { allChildrenOf, bundleLinkError, isFreeBundlePhase } from '../../shared/bundle.ts';
 import { meterLinkError, meterView, removeMeter, stableId } from '../../shared/meters.ts';
-import type { Meter, Reading } from '../../shared/types.ts';
+import type { AppState, Meter, Reading } from '../../shared/types.ts';
 import type { CategoryCreation, Tool } from './tool-kit.ts';
 import {
   state,
@@ -55,6 +56,8 @@ import {
   CYCLE,
   CONTRACT,
   contractInput,
+  BUNDLE,
+  bundleInput,
   ICON_DESCRIPTION,
   SHIFT_BILLING,
   CATEGORY,
@@ -86,14 +89,15 @@ const LEAD_CANCEL = 'Days before renewal by which the user must cancel to avoid 
 export const create_subscription: Tool = {
   name: 'create_subscription',
   description:
-    'Create a subscription. price is per cycle in the given currency. Same name and start date with explicitly different login accounts are independent subscriptions. Otherwise a possible duplicate requires force=true. Use dry_run=true to preview first. When icon is omitted, a name or alias exactly matching a common service (see search_services) fills icon, url if omitted and category if omitted; service_match reports the result, and icon="" skips it. Call list_categories first and reuse an existing code/name. Unknown categories fail; use save_category action=create or create_category=true with optional category_icon/category_color to explicitly create one. Past records can be created already stopped: status=cancelled with end = last service day, or status=cancelled / terminated without end when the stop date is unknown. method=null creates it without a payment method (no default). For a complete record with phases or stop details use save_subscription.',
+    'Create a subscription. price is per cycle in the given currency (0 for a free perk bundled with a parent subscription). currency and cycle are required unless bundle is provided (they default from the parent subscription’s current phase). For a free bundled perk (bundle + price 0, no positive intro), omitting method leaves it without a payment method instead of applying the default card. Same name and start date with explicitly different login accounts are independent subscriptions. Otherwise a possible duplicate requires force=true. Use dry_run=true to preview first. When icon is omitted, a name or alias exactly matching a common service (see search_services) fills icon, url if omitted and category if omitted; service_match reports the result, and icon="" skips it. Call list_categories first and reuse an existing code/name. Unknown categories fail; use save_category action=create or create_category=true with optional category_icon/category_color to explicitly create one. Past records can be created already stopped: status=cancelled with end = last service day, or status=cancelled / terminated without end when the stop date is unknown. method=null creates it without a payment method (no default). For a complete record with phases or stop details use save_subscription.',
   write: true,
   inputSchema: obj(
     {
       name: { type: 'string' },
       price: { type: 'number', minimum: 0 },
-      currency: { type: 'string', description: 'ISO code, e.g. USD, CNY, TRY.' },
-      cycle: CYCLE,
+      currency: { type: 'string', description: 'ISO code, e.g. USD, CNY, TRY. Optional when bundle is given (defaults to parent currency).' },
+      cycle: { ...CYCLE, description: `${CYCLE.description} Optional when bundle is given (defaults to parent cycle).` },
+      bundle: BUNDLE,
       billing: billingSchema,
       start: {
         ...DATE,
@@ -154,13 +158,19 @@ export const create_subscription: Tool = {
       id: { type: 'string', description: 'Internal: keep this id (used when confirming an earlier draft).' },
       dry_run: drySchema,
     },
-    ['name', 'price', 'currency', 'cycle'],
+    ['name', 'price'],
   ),
   async run(a, ctx) {
     const { st, today } = await state(ctx);
     const name = decodeEntities(String(a.name ?? '').trim());
     const start = date(a.start, 'start', today);
-    const currency = String(a.currency ?? '').toUpperCase();
+    const bundle = bundleInput(st, a.bundle);
+    const parent = bundle ? st.subscriptions.find((x) => x.id === bundle.parentId) : undefined;
+    const parentCur = parent ? currentPhase(parent, today) : undefined;
+    const currency = (str(a.currency) ?? parentCur?.currency ?? '').toUpperCase();
+    if (!currency) throw new Error(t('mcp.error.invalidInput', { field: 'currency' }));
+    const cyc = (a.cycle ?? parentCur?.cycle) as { unit?: Subscription['cycle']['unit']; every?: number } | undefined;
+    if (!cyc?.unit) throw new Error(t('mcp.error.invalidInput', { field: 'cycle' }));
     // 历史扣款：按日期排序，必须落在开始日到今天之间
     const payments = (Array.isArray(a.payments) ? (a.payments as Array<Record<string, unknown>>) : [])
       .map((p): Payment => {
@@ -187,24 +197,29 @@ export const create_subscription: Tool = {
     if (!a.force) assertNotDuplicate(st, name, start, account);
     const service = a.icon === undefined ? serviceFill(st, name, { url: a.url !== undefined, category: a.category !== undefined }) : undefined;
     const category = a.category === undefined ? { name: service?.category ?? defaultCategory(st) } : subscriptionCategory(st, a.category, a);
-    const cyc = a.cycle as { unit: Subscription['cycle']['unit']; every?: number };
+    const price = num(a.price, 'price');
+    const intro = a.intro
+      ? { price: num((a.intro as { price: unknown }).price, 'intro.price'), until: date((a.intro as { until: unknown }).until, 'intro.until') }
+      : undefined;
+    const freeBundle = isFreeBundlePhase({ bundle, price, intro });
     let sub: Subscription = {
       // 确认草稿时沿用草稿里生成的 id，后续基于它的草稿（合租、成员）才能对上
       id: str(a.id) && !st.subscriptions.some((s) => s.id === str(a.id)) ? str(a.id)! : uid(),
       name,
       category: category.name,
       tags: Array.isArray(a.tags) ? a.tags.map(String) : [],
-      price: num(a.price, 'price'),
+      price,
       currency,
-      cycle: { unit: cyc?.unit, every: Math.max(1, Number(cyc?.every ?? 1)) },
+      cycle: { unit: cyc.unit, every: Math.max(1, Number(cyc.every ?? 1)) },
+      ...(bundle ? { bundle } : {}),
       ...(a.billing === 'postpaid' ? { billing: 'postpaid' as const } : {}),
       start,
       chargeLeadDays: a.chargeLeadDays == null ? undefined : Number(a.chargeLeadDays),
       cancelLeadDays: a.cancelLeadDays == null ? undefined : Number(a.cancelLeadDays),
       contract: contractInput(a.contract),
       status: (['trial', 'cancelled', 'terminated'].includes(String(a.status)) ? a.status : 'active') as Subscription['status'],
-      // null 明确不绑定支付方式；省略时才用默认的
-      methodId: a.method === null ? undefined : (methodRef(st, a.method) ?? st.settings.defaultMethodId),
+      // null 明确不绑定支付方式；免费附赠省略时不套默认卡；普通订阅省略时才用默认的
+      methodId: a.method === null ? undefined : a.method !== undefined ? methodRef(st, a.method) : freeBundle ? undefined : st.settings.defaultMethodId,
       region: str(a.region)?.toUpperCase(),
       url: str(a.url) ?? service?.url,
       icon: service?.icon ?? iconInput(a.icon),
@@ -212,9 +227,7 @@ export const create_subscription: Tool = {
       account,
       trialEnd: a.trial_end ? date(a.trial_end, 'trial_end') : undefined,
       end: a.end ? date(a.end, 'end') : undefined,
-      intro: a.intro
-        ? { price: num((a.intro as { price: unknown }).price, 'intro.price'), until: date((a.intro as { until: unknown }).until, 'intro.until') }
-        : undefined,
+      intro,
       ...(payments.length ? { payments } : {}),
       createdAt: today,
     };
@@ -222,7 +235,7 @@ export const create_subscription: Tool = {
     // 被停用且知道日期：按提供方停用记一个 stop（原已付服务期由计费规则推出）
     if (sub.status === 'terminated' && sub.end) {
       if (sub.end > today) throw new Error(t('mcp.error.invalidStop'));
-      sub = stopSubscription({ ...sub, status: 'active', end: undefined }, today, 'terminate', sub.end);
+      sub = stopSubscription({ ...sub, status: 'active', end: undefined }, today, 'terminate', sub.end, undefined, undefined, st.subscriptions);
     }
     const result = await commit(ctx, st, today, sub, a.dry_run, ['created'], category.creation);
     return service ? { ...result, service_match: service.match } : result;
@@ -280,12 +293,13 @@ export const save_subscription: Tool = {
     const prepared = prepareSubWrite(previous, next, today, st);
     if (prepared.error !== undefined) throw new Error(prepared.error);
     const after = prepared.sub;
+    const afterSt: AppState = { ...st, subscriptions: [...st.subscriptions.filter((x) => x.id !== after.id), after] };
     const { updatedAt: _b, ...stored } = previous ?? ({} as Subscription);
     const changes = fieldChanges(previous ? stored : {}, after);
     return persist(ctx, st, today, after, a.dry_run, [previous ? 'replaced' : 'created'], category.creation, {
       changes: changes.slice(0, 300),
       ...(changes.length > 300 ? { changes_truncated: changes.length - 300 } : {}),
-      computed: { before: previous ? computedOf(st, previous, today) : null, after: computedOf(st, after, today) },
+      computed: { before: previous ? computedOf(st, previous, today) : null, after: computedOf(afterSt, after, today) },
       ...(service ? { service_match: service.match } : {}),
     });
   },
@@ -340,6 +354,7 @@ export const update_subscription: Tool = {
         chargeLeadDays: { type: 'integer', minimum: 0, maximum: 3660, description: LEAD_CHARGE },
         cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660, description: LEAD_CANCEL },
         contract: { ...nullable(CONTRACT), description: `${CONTRACT.description} Applies to the current phase; null removes it.` },
+        bundle: { ...nullable(BUNDLE), description: `${BUNDLE.description} Applies to the current phase; null unlinks it.` },
         settlement: {
           type: ['string', 'null'],
           enum: ['separate', null],
@@ -373,6 +388,7 @@ export const update_subscription: Tool = {
     if ('chargeLeadDays' in set) put('chargeLeadDays', Number(set.chargeLeadDays));
     if ('cancelLeadDays' in set) put('cancelLeadDays', Number(set.cancelLeadDays));
     if ('contract' in set) put('contract', contractInput(set.contract));
+    if ('bundle' in set) put('bundle', bundleInput(st, set.bundle));
     if ('settlement' in set || 'settledBefore' in set) {
       const separate = 'settlement' in set ? set.settlement === 'separate' : next.settlement === 'separate';
       if (separate && next.cycle.unit === 'lifetime') throw new Error(t('mcp.error.invalidInput', { field: 'settlement: not for lifetime purchases' }));
@@ -493,19 +509,24 @@ export const change_plan: Tool = {
           description: `${BONUS_DESCRIPTION} null clears it.`,
         },
         contract: nullable(CONTRACT),
+        bundle: nullable(BUNDLE),
       }),
       plan: obj(
         {
-          price: { type: 'number' },
-          currency: { type: 'string' },
-          cycle: CYCLE,
+          price: { type: 'number', minimum: 0 },
+          currency: { type: 'string', description: 'ISO code; optional when plan.bundle is given (defaults to parent currency).' },
+          cycle: { ...CYCLE, description: `${CYCLE.description} Optional when plan.bundle is given (defaults to parent cycle).` },
+          bundle: {
+            ...nullable(BUNDLE),
+            description: `${BUNDLE.description} On action=switch, omitted keeps the current phase’s link and null unlinks it; on resume/earlier, omitted creates a standalone phase.`,
+          },
           billing: billingSchema,
           method: { type: ['string', 'null'] },
           region: { type: 'string' },
           note: { type: 'string' },
           planned: { type: 'boolean' },
         },
-        ['price', 'currency', 'cycle'],
+        ['price'],
       ),
       keep_previous_until: {
         ...DATE,
@@ -543,6 +564,7 @@ export const change_plan: Tool = {
       }
       if (patch.currency) validateCurrency(st, String(patch.currency));
       if (patch.contract != null) patch.contract = contractInput(patch.contract);
+      if ('bundle' in patch) patch.bundle = patch.bundle == null ? null : bundleInput(st, patch.bundle);
       if (a.shift_billing != null && (act !== 'edit' || patch.start == null))
         throw new Error(t('mcp.error.invalidInput', { field: 'shift_billing requires set.start' }));
       // 改开始日走网页同一个 movePhaseStart（保留扣款锚点）；其余字段再按新开始日修改
@@ -561,16 +583,26 @@ export const change_plan: Tool = {
       };
     }
     if (act === 'confirm') return commit(ctx, st, today, confirmPlan(s, at), a.dry_run, ['confirm_plan']);
-    if (act === 'drop') return commit(ctx, st, today, dropPlan(s, at), a.dry_run, ['drop_plan']);
+    if (act === 'drop') return commit(ctx, st, today, dropPlan(s, at, st.subscriptions), a.dry_run, ['drop_plan']);
     const p = a.plan as Record<string, unknown> | undefined;
     if (!p) throw new Error(t('mcp.error.needPlan'));
-    const cyc = p.cycle as { unit: Subscription['cycle']['unit']; every?: number };
+    const cur = currentPhase(s, today);
+    const bundle = 'bundle' in p ? bundleInput(st, p.bundle) : act === 'switch' ? cur.bundle : undefined;
+    const parent = bundle ? st.subscriptions.find((x) => x.id === bundle.parentId) : undefined;
+    const parentCur = parent ? currentPhase(parent, today) : undefined;
+    const price = num(p.price, 'plan.price');
+    const currency = (str(p.currency) ?? parentCur?.currency ?? '').toUpperCase();
+    if (!currency) throw new Error(t('mcp.error.invalidInput', { field: 'plan.currency' }));
+    const cyc = (p.cycle ?? parentCur?.cycle) as { unit?: Subscription['cycle']['unit']; every?: number } | undefined;
+    if (!cyc?.unit) throw new Error(t('mcp.error.invalidInput', { field: 'plan.cycle' }));
+    const freeBundle = isFreeBundlePhase({ bundle, price });
     const plan = {
-      price: num(p.price, 'plan.price'),
-      currency: String(p.currency).toUpperCase(),
+      price,
+      currency,
       cycle: { unit: cyc.unit, every: Math.max(1, Number(cyc.every ?? 1)) },
+      ...(bundle ? { bundle } : {}),
       ...(p.billing === 'postpaid' ? { billing: 'postpaid' as const } : {}),
-      methodId: 'method' in p ? methodRef(st, p.method) : currentPhase(s, today).methodId,
+      methodId: 'method' in p ? methodRef(st, p.method) : freeBundle ? undefined : cur.methodId,
       region: str(p.region)?.toUpperCase(),
       note: str(p.note),
       planned: p.planned ? true : undefined,
@@ -666,6 +698,7 @@ export const set_status: Tool = {
           refund: a.refund === null ? null : a.refund ? refundInput(a.refund) : undefined,
         },
         today,
+        st.subscriptions,
       );
       return commit(ctx, st, today, next, a.dry_run, [act, 'edit_stop']);
     }
@@ -676,13 +709,21 @@ export const set_status: Tool = {
     }
     if (stopping && a.at === null) {
       if (a.refund || a.reason) throw new Error(t('mcp.error.unknownStopDetails'));
-      return commit(ctx, st, today, stopUndated(s, act === 'terminate' ? 'terminate' : 'cancel', today), a.dry_run, [act, 'date_unknown']);
+      return commit(ctx, st, today, stopUndated(s, act === 'terminate' ? 'terminate' : 'cancel', today, st.subscriptions), a.dry_run, [act, 'date_unknown']);
     }
     const at = date(a.at ?? undefined, 'at', today);
     let next: Subscription;
     if (act === 'reactivate') next = reactivate(s);
     else if (act === 'terminate' || (act === 'cancel' && a.immediate === true)) {
-      next = stopSubscription(s, today, act === 'terminate' ? 'terminate' : 'cancel', at, str(a.reason), a.refund ? refundInput(a.refund, at) : undefined);
+      next = stopSubscription(
+        s,
+        today,
+        act === 'terminate' ? 'terminate' : 'cancel',
+        at,
+        str(a.reason),
+        a.refund ? refundInput(a.refund, at) : undefined,
+        st.subscriptions,
+      );
     } else {
       if (['ended', 'terminated'].includes(effectiveStatus(s, today)) || s.stop) throw new Error(t('mcp.error.subscriptionEnded'));
       if (act === 'trial')
@@ -695,7 +736,7 @@ export const set_status: Tool = {
       else if (act === 'pause') next = { ...s, status: 'paused', pausedAt: a.at == null ? pauseDay(s, today) : at };
       else if (act === 'cancel') {
         if (a.refund) throw new Error(t('mcp.error.invalidStop'));
-        next = cancelAtEnd(s, at, today);
+        next = cancelAtEnd(s, at, today, st.subscriptions);
       } else throw new Error(t('mcp.error.invalidStop'));
     }
     return commit(ctx, st, today, next, a.dry_run, [act]);
@@ -768,7 +809,14 @@ export const record_payment: Tool = {
       ctx,
       st,
       today,
-      savePayment(s, today, pay, a.replace as { date: string; index: number } | undefined, a.phase != null ? date(a.phase, 'phase') : undefined),
+      savePayment(
+        s,
+        today,
+        pay,
+        a.replace as { date: string; index: number } | undefined,
+        a.phase != null ? date(a.phase, 'phase') : undefined,
+        st.subscriptions,
+      ),
       a.dry_run,
       ['payment'],
     );
@@ -797,7 +845,7 @@ export const delete_payment: Tool = {
       ctx,
       st,
       today,
-      deletePayment(s, today, date(a.date, 'date'), Number(a.index ?? 0), a.phase != null ? date(a.phase, 'phase') : undefined),
+      deletePayment(s, today, date(a.date, 'date'), Number(a.index ?? 0), a.phase != null ? date(a.phase, 'phase') : undefined, st.subscriptions),
       a.dry_run,
       ['delete_payment'],
     );
@@ -1035,17 +1083,15 @@ export const add_readings: Tool = {
 export const delete_subscription: Tool = {
   name: 'delete_subscription',
   description:
-    'Delete a subscription and its whole history. Refused while another subscription links one of its meters. Irreversible: always preview with dry_run first; the user confirms.',
+    'Delete a subscription and its whole history. Refused while another subscription links one of its meters or links to it as a bundled parent. Irreversible: always preview with dry_run first; the user confirms.',
   write: true,
   destructive: true,
   inputSchema: obj({ subscription: SUBREF_EXACT, dry_run: drySchema }, ['subscription']),
   async run(a, ctx) {
     const { st, today } = await state(ctx);
     const s = findSub(st, a.subscription, { exact: true });
-    const linkError = meterLinkError(
-      st.subscriptions,
-      st.subscriptions.filter((x) => x.id !== s.id),
-    );
+    const remaining = st.subscriptions.filter((x) => x.id !== s.id);
+    const linkError = meterLinkError(st.subscriptions, remaining) ?? bundleLinkError(st.subscriptions, remaining);
     if (linkError) throw new Error(linkError);
     const preview = {
       before: s,
@@ -1058,6 +1104,7 @@ export const delete_subscription: Tool = {
         share: s.share ?? null,
         proxy: s.proxy ?? null,
         default_public_hidden: st.settings.publicHidden?.includes(s.id) ?? false,
+        linked_children: allChildrenOf(s.id, st.subscriptions).map((c) => ({ id: c.id, name: c.name })),
       },
     };
     return writeLedger(ctx, st, { settings: deleteSubscriptionSettings(st.settings, s.id), deletedSubscriptions: [s.id] }, preview, a.dry_run);

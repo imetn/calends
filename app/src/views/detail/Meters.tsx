@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Settings2 } from 'lucide-react';
 import { addDays, chargeServicePeriod, diffDays, isPostpaid, midDay, uid, type Charge } from '../../../../shared/billing.ts';
+import { bundleView } from '../../../../shared/bundle.ts';
 import { chargesTotal, formatTotal } from '../../../../shared/fx-total.ts';
 import { cnDateFull, weekdayOf, wholeCurrencies } from '../../../../shared/format.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
@@ -131,8 +132,8 @@ export function Meters({
   axis?: { from: string; to: string; since: string };
 }) {
   const ro = !!state.readonly;
-  // sub 只用来看和算（含关联来的记录），保存一律用原始的 raw
-  const sub = meterView(raw, state.subscriptions);
+  // sub 只用来看和算（含关联来的记录与父订阅可用期），保存一律用原始的 raw
+  const sub = meterView(bundleView(raw, state.subscriptions), state.subscriptions);
   const meters = sub.meters ?? [];
   const [manage, setManage] = useState(false);
   const [reading, setReading] = useState<{ id?: string } | null>(null);

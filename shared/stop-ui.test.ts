@@ -8,6 +8,7 @@ import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { transformSync } from 'oxc-transform-react';
 import * as billing from './billing.ts';
+import * as bundle from './bundle.ts';
 import * as phases from './phases.ts';
 import * as stopForm from './stop-form.ts';
 import * as format from './format.ts';
@@ -81,6 +82,7 @@ function runtime(file: string, extra: Record<string, unknown>, names = file.incl
     useMedia: () => false,
     useEffectEvent: (fn: unknown) => fn,
     ...billing,
+    ...bundle,
     ...transfers,
     ...phases,
     ...stopForm,

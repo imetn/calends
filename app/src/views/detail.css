@@ -1561,3 +1561,70 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* 关联订阅：头部主订阅跳转胶囊与父订阅里的子订阅列表 */
+.dt-parent-chip {
+  border: 0;
+  font: inherit;
+  font-size: var(--fs-1);
+  color: var(--label);
+  cursor: pointer;
+  transition: background var(--duration) var(--ease);
+}
+.dt-parent-chip:hover {
+  background: var(--fill);
+}
+.dt-parent-chip .ico {
+  border-radius: var(--radius-pill);
+}
+.dt-bundle-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0 -8px -4px;
+}
+.dt-bundle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--label);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration) var(--ease);
+}
+.dt-bundle-row:hover {
+  background: var(--fill-2);
+}
+.dt-bundle-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.dt-bundle-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.dt-bundle-name b {
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dt-bundle-price {
+  flex: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.dt-bundle-price small {
+  color: var(--label-2);
+  font-size: var(--fs-1);
+}

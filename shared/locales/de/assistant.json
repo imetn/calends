@@ -249,7 +249,8 @@
     "payments": "Erfasste Zahlungen",
     "spent": "Bisher ausgegeben",
     "changes": "Geänderte Felder",
-    "funding": "Bezahlt mit"
+    "funding": "Bezahlt mit",
+    "bundle": "Verknüpft mit"
   },
   "v": {
     "exempt": "Zahlt nicht",
@@ -262,7 +263,8 @@
     "charge": "Abbuchung",
     "deleteAll": "Löscht das Abo und alle Abbuchungen. Dies kann nicht rückgängig gemacht werden.",
     "dateUnknown": "Datum unbekannt",
-    "terminate": "Gesperrt"
+    "terminate": "Gesperrt",
+    "unlinked": "Eigenständig (getrennt)"
   },
   "interrupted": "Die Antwort wurde unterbrochen, bevor sie fertig war.",
   "saveUnknown": "Das Speichern konnte nicht bestätigt werden. Prüfe das Buch, bevor du es erneut versuchst.",

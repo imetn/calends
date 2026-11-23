@@ -275,5 +275,13 @@
   "settlement": {
     "together": "Bersama",
     "separate": "Terpisah"
+  },
+  "bundle": {
+    "parent": "Tertaut ke",
+    "none": "Tidak ada (mandiri)",
+    "mode": "Jadwal",
+    "follow": "Ikuti utama",
+    "independent": "Mandiri",
+    "followsCycle": "Ikuti utama ({cycle})"
   }
 }

@@ -2,6 +2,7 @@ import { ConfirmButton } from './ConfirmButton.tsx';
 import { popupOpen, sheetSubmitKey } from '../keyboard.ts';
 import { useId, useState } from 'react';
 import { addDays, addMonths, cycleLabel, nextCharge, nthCharge, phaseSubs } from '../../../shared/billing.ts';
+import { linkableParents } from '../../../shared/bundle.ts';
 import {
   changePrice,
   editPricePoint,
@@ -27,6 +28,7 @@ import { Group } from './ui.tsx';
 import { Icon } from './icons.tsx';
 import { Toggle } from './inputs.tsx';
 import { MethodPicker } from './MethodPicker.tsx';
+import { SubIcon } from './marks.tsx';
 import { toast } from '../toast.ts';
 import { CurrencySelect, Picker, RegionSelect } from './Picker.tsx';
 import { t } from '../../../shared/i18n.ts';
@@ -105,6 +107,8 @@ export function ChangePanel({
   const [methodId, setMethodId] = useState(f.methodId ?? '');
   const [region, setRegion] = useState(f.region ?? '');
   const [billing, setBilling] = useState<'prepaid' | 'postpaid'>(f.billing ?? 'prepaid');
+  const [bundleParentId, setBundleParentId] = useState(f.bundle?.parentId ?? '');
+  const [bundleFollow, setBundleFollow] = useState(f.bundle?.follow !== false);
   const [planned, setPlanned] = useState(false);
   // 换区时旧的继续用到某天（已预付、还没到期），两段并行
   const [keep, setKeep] = useState(false);
@@ -127,6 +131,8 @@ export function ChangePanel({
     setCurrency(f.currency);
     setMethodId(f.methodId ?? '');
     setRegion(f.region ?? '');
+    setBundleParentId(m === 'switch' ? (f.bundle?.parentId ?? '') : '');
+    setBundleFollow(m === 'switch' ? f.bundle?.follow !== false : true);
     setPlanned(false);
     setKeep(false);
     setCredit(false);
@@ -188,6 +194,7 @@ export function ChangePanel({
         methodId: methodId || undefined,
         region: region.trim().toUpperCase() || undefined,
         planned: mode === 'switch' && planned ? true : undefined,
+        bundle: bundleParentId ? { parentId: bundleParentId, ...(bundleFollow ? {} : { follow: false }) } : undefined,
       };
       if (useCredit && !(pay.trim() !== '' && Number(pay) >= 0)) return toast(t('editor.change.needPrice'), 'error');
       const next =
@@ -321,6 +328,54 @@ export function ChangePanel({
           </label>
           {mode !== 'price' && (
             <>
+              {!f.proxy &&
+                (() => {
+                  const parents = linkableParents(state.subscriptions, f);
+                  if (!parents.length && !bundleParentId) return null;
+                  const curParent = bundleParentId ? state.subscriptions.find((x) => x.id === bundleParentId) : undefined;
+                  return (
+                    <>
+                      <label>
+                        {t('editor.bundle.parent')}
+                        <Picker
+                          value={bundleParentId}
+                          search
+                          onChange={(id) => {
+                            setBundleParentId(id);
+                            if (id && !bundleParentId) setBundleFollow(true);
+                          }}
+                          options={[
+                            { value: '', label: t('editor.bundle.none') },
+                            ...parents.map((p) => ({
+                              value: p.id,
+                              label: p.name,
+                              hint: p.account || p.region || undefined,
+                              icon: <SubIcon sub={p} size={18} />,
+                            })),
+                            ...(bundleParentId && !parents.some((p) => p.id === bundleParentId)
+                              ? [{ value: bundleParentId, label: curParent?.name ?? t('detail.bundle.parentMissing') }]
+                              : []),
+                          ]}
+                          ariaLabel={t('editor.bundle.parent')}
+                        />
+                      </label>
+                      {bundleParentId && (
+                        <label>
+                          {t('editor.bundle.mode')}
+                          <Picker
+                            value={bundleFollow ? 'follow' : 'independent'}
+                            onChange={(v) => setBundleFollow(v === 'follow')}
+                            options={[
+                              { value: 'follow', label: t('editor.bundle.follow') },
+                              { value: 'independent', label: t('editor.bundle.independent') },
+                            ]}
+                            ariaLabel={t('editor.bundle.mode')}
+                          />
+                        </label>
+                      )}
+                    </>
+                  );
+                })()}
               <label>
                 {t('editor.field.currency')}
                 <CurrencySelect value={currency} onChange={setCurrency} />

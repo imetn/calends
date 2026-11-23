@@ -33,6 +33,7 @@ import {
   type Movement,
   type StopLoss,
 } from './metrics.ts';
+import { bundleView, resolveState } from './bundle.ts';
 import type { AppState, Subscription } from './types.ts';
 import { transferRows } from './transfers.ts';
 
@@ -347,7 +348,11 @@ function selectionCash(state: AppState, today: string): CashAccrual[] {
 
 /** Selection lifecycle, while retaining legacy block fields for external clients. */
 export function scopeReport(state: AppState, subs: readonly Subscription[], today: string): ScopeReport {
-  const scoped = { ...state, subscriptions: subs.filter((s) => !s.proxy) };
+  // 关联订阅必须在完整账本上先解析，再按筛选子集聚合，避免父订阅不在子集里导致状态回退
+  const full = resolveState(state);
+  const byId = new Map(full.subscriptions.map((s) => [s.id, s]));
+  const resolvedSubs = subs.filter((s) => !s.proxy).map((s) => byId.get(s.id) ?? bundleView(s, full.subscriptions));
+  const scoped = { ...full, subscriptions: resolvedSubs };
   const first = scoped.subscriptions.reduce((m, s) => (s.start < m ? s.start : m), today);
   const rows = charges(scoped, first, today, today);
   const stops = stopHistory(scoped, today);
@@ -360,7 +365,9 @@ export function scopeReport(state: AppState, subs: readonly Subscription[], toda
       const last = phaseSubs(s)
         .filter((p) => p.start <= today)
         .at(-1);
-      const until = last?.stop ? addDays(last.stop.date, -1) : (last?.end ?? today);
+      const availEnd = last?.bundleAvail && !last.bundleAvail.spans.some((sp) => !sp.to) ? last.bundleAvail.spans.at(-1)?.to : undefined;
+      const ownEnd = last?.stop ? addDays(last.stop.date, -1) : last?.end;
+      const until = [ownEnd, availEnd].filter((d): d is string => !!d).sort()[0] ?? today;
       return contributionTotal(scoped, s, until < today ? until : today);
     }),
   );
@@ -371,6 +378,7 @@ export function scopeReport(state: AppState, subs: readonly Subscription[], toda
           const last = phaseSubs(s)
             .filter((p) => p.start <= today)
             .at(-1);
+          if (last?.bundleAvail) return n + servedTime(s, today).days;
           const end = last?.stop?.date ?? last?.end ?? today;
           return n + Math.max(0, diffDays(s.start, end < today ? end : today));
         }, 0) / scoped.subscriptions.length
@@ -397,7 +405,7 @@ export function scopeReport(state: AppState, subs: readonly Subscription[], toda
       })),
     ),
   };
-  return { ...legacyScopeReport(state, subs, today), lifecycle };
+  return { ...legacyScopeReport(full, resolvedSubs, today), lifecycle };
 }
 
 function legacyScopeReport(state: AppState, subs: readonly Subscription[], today: string): ScopeReport {
@@ -518,7 +526,8 @@ function totalReport(scoped: AppState, today: string, yearStart: string): ScopeR
 
 /** Monthly cash uses the same net, my-share cash basis as cashVsAccrual, including refunds. */
 export function monthReport(state: AppState, month: string, today: string): ScopeReport & { months: MonthCash[]; next: MonthCash } {
-  const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
+  const full = resolveState(state);
+  const scoped = { ...full, subscriptions: full.subscriptions.filter((s) => !s.proxy) };
   const from = `${month}-01`;
   const to = monthEnd(month);
   const rows = charges(scoped, from, to, today, true);
@@ -644,7 +653,8 @@ export function cumulativeTrend(months: MonthCash[], today: string): { values: n
  * `year` defaults to today's year; for another year the same period is the whole year against the whole year before.
  */
 export function yearOutlook(state: AppState, today: string, year = Number(today.slice(0, 4))): YearOutlook {
-  const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
+  const full = resolveState(state);
+  const scoped = { ...full, subscriptions: full.subscriptions.filter((s) => !s.proxy) };
   const y = year;
   const through = y === Number(today.slice(0, 4)) ? today : `${y}-12-31`;
   const lastFrom = `${y - 1}-01-01`;
@@ -758,7 +768,8 @@ export interface DayCash extends CashSpan {
 
 /** One calendar year day by day on the yearOutlook basis: 365 or 366 entries, January 1 first; the days add up to `yearOutlook().current`. */
 export function yearDays(state: AppState, today: string, year: number): DayCash[] {
-  const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
+  const full = resolveState(state);
+  const scoped = { ...full, subscriptions: full.subscriptions.filter((s) => !s.proxy) };
   const byDay = new Map<string, CashRow[]>();
   for (const r of cashRows(scoped, `${year}-01-01`, `${year}-12-31`, today)) byDay.set(r.date, [...(byDay.get(r.date) ?? []), r]);
   const out: DayCash[] = [];
@@ -773,7 +784,8 @@ export function yearDays(state: AppState, today: string, year: number): DayCash[
 
 /** All-time net cash on the yearOutlook basis (my share, refunds and transfers, proxies excluded), through today. */
 export function allOutlook(state: AppState, today: string): AllOutlook {
-  const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
+  const full = resolveState(state);
+  const scoped = { ...full, subscriptions: full.subscriptions.filter((s) => !s.proxy) };
   const first = scoped.subscriptions.reduce((m, s) => (s.start < m ? s.start : m), today);
   const rows = cashRows(scoped, first, today, today, charges(scoped, first, today, today));
   const since = rows.reduce((m, r) => (r.date < m ? r.date : m), today);
@@ -806,7 +818,8 @@ export function allOutlook(state: AppState, today: string): AllOutlook {
 
 /** Composition pieces for a date range on the yearOutlook basis (proxies excluded; dates after today are forecast; unpaid bills stay in their bill month unless owed is false). */
 export function spendPiecesBetween(state: AppState, from: string, to: string, today: string, owed = true): SpendPiece[] {
-  const scoped = { ...state, subscriptions: state.subscriptions.filter((s) => !s.proxy) };
+  const full = resolveState(state);
+  const scoped = { ...full, subscriptions: full.subscriptions.filter((s) => !s.proxy) };
   return spendPieces(cashRows(scoped, from, to, today, charges(scoped, from, to, today, owed)));
 }
 
@@ -878,6 +891,7 @@ function asDated(s: Subscription, today: string): Subscription {
 
 /** How long subscriptions last: averages, quick stops, longest held and the count of current subscriptions over time. Proxies excluded. */
 export function subscriptionTenure(state: AppState, today: string): Tenure {
+  state = resolveState(state);
   const subs = state.subscriptions.filter((s) => !s.proxy && firstDay(s) <= today);
   const dated = new Map(subs.map((s) => [s.id, asDated(s, today)]));
   const rows = subs.map((sub) => ({
@@ -954,6 +968,7 @@ export interface RegionRow {
  * 按每月金额从高到低，金额相同（或都折算不了）按订阅数
  */
 export function regionSpread(state: AppState, today: string, regionOf: (v: Subscription) => string | undefined): RegionRow[] {
+  state = resolveState(state);
   const map = new Map<string, { subs: Subscription[]; totals: FxTotal[] }>();
   for (const s of state.subscriptions) {
     if (s.proxy || !['active', 'ending'].includes(effectiveStatus(s, today))) continue;

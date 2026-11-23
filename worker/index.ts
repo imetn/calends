@@ -2,6 +2,7 @@ import { prepareSubWrite, validSub } from '../shared/sub-write.ts';
 import { validateAvatar, validatePeopleAvatars } from '../shared/avatar.ts';
 import { normalizeBasePath, stripBase, siteUrl, withBase } from '../shared/base.ts';
 import { addDays, todayIn } from '../shared/billing.ts';
+import { bundleLinkError } from '../shared/bundle.ts';
 import { meterLinkError } from '../shared/meters.ts';
 import {
   DEFAULT_SETTINGS,
@@ -54,8 +55,10 @@ import {
   loadState,
   loadMethods,
   loadSubs,
+  loadSubsWithRev,
   putKv,
   replaceAll,
+  RevConflictError,
   saveLedgerEdit,
   saveSettingsWithSubs,
   upsert,
@@ -98,9 +101,9 @@ const json = (data: unknown, status = 200, rev?: number | Revision) =>
 const bad = (msg: string, status = 400) => json({ error: msg }, status);
 
 /** 批量导入时第一条不合格的订阅 */
-function invalidIn(subs: Subscription[]): string | undefined {
+function invalidIn(subs: Subscription[], all: readonly Subscription[] = subs): string | undefined {
   for (const s of subs) {
-    const err = validSub(s);
+    const err = validSub(s, all);
     if (err) return t('server.invalidItem', { name: s?.name ?? '?', error: err });
   }
   return undefined;
@@ -136,6 +139,18 @@ function methodError(fx: FxTable, previous: PaymentMethod | undefined, pm: Payme
     return e instanceof Error ? e.message : t('server.invalidMethod');
   }
   return undefined;
+}
+
+async function withRevRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (e instanceof RevConflictError && attempt < 4) continue;
+      throw e;
+    }
+  }
+  throw new RevConflictError();
 }
 
 async function api(req: Request, env: Env, path: string): Promise<Response> {
@@ -209,73 +224,89 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   let m = path.match(/^\/api\/subscriptions\/([\w-]+)$/);
   if (m) {
     if (method === 'PUT') {
-      let sub = (await readJson(req)) as Subscription;
-      if (sub.id !== m[1]) return bad(t('server.idMismatch'));
-      const subscriptions = await loadSubs(env);
-      const previous = subscriptions.find((x) => x.id === sub.id);
-      const today = todayIn((await getSettings(env)).timezone);
-      const prepared = prepareSubWrite(previous, sub, today, { subscriptions, methods: await loadMethods(env), fx: await getFx(env) });
-      if (prepared.error !== undefined) return bad(prepared.error);
-      sub = prepared.sub;
-      const rev = await upsert(env, 'subscriptions', sub.id, sub);
-      return json(sub, 200, rev);
+      const raw = (await readJson(req)) as Subscription;
+      if (raw.id !== m[1]) return bad(t('server.idMismatch'));
+      return withRevRetry(async () => {
+        const { rev: expectedRev, subscriptions } = await loadSubsWithRev(env);
+        const previous = subscriptions.find((x) => x.id === raw.id);
+        const today = todayIn((await getSettings(env)).timezone);
+        const prepared = prepareSubWrite(previous, raw, today, { subscriptions, methods: await loadMethods(env), fx: await getFx(env) });
+        if (prepared.error !== undefined) return bad(prepared.error);
+        const sub = prepared.sub;
+        const rev = await upsert(env, 'subscriptions', sub.id, sub, expectedRev);
+        return json(sub, 200, rev);
+      });
     }
     if (method === 'DELETE') {
-      const subscriptions = await loadSubs(env);
-      const linkError = meterLinkError(
-        subscriptions,
-        subscriptions.filter((x) => x.id !== m![1]),
-      );
-      if (linkError) return bad(linkError);
-      // 与 MCP delete_subscription 相同：同一事务里把它从公开页隐藏列表去掉，不留悬空 id
-      const settings = deleteSubscriptionSettings(await getSettings(env), m[1]);
-      const rev = await saveLedgerEdit(env, { settings }, [], [m[1]]);
-      return json({ ok: true, settings }, 200, rev);
+      const targetId = m[1];
+      return withRevRetry(async () => {
+        const { rev: expectedRev, subscriptions } = await loadSubsWithRev(env);
+        const remaining = subscriptions.filter((x) => x.id !== targetId);
+        const linkError = meterLinkError(subscriptions, remaining) ?? bundleLinkError(subscriptions, remaining);
+        if (linkError) return bad(linkError);
+        // 与 MCP delete_subscription 相同：同一事务里把它从公开页隐藏列表去掉，不留悬空 id
+        const settings = deleteSubscriptionSettings(await getSettings(env), targetId);
+        const rev = await saveLedgerEdit(env, { settings }, [], [targetId], expectedRev);
+        return json({ ok: true, settings }, 200, rev);
+      });
     }
   }
   // 人：保存时把称呼、联系方式同步到所有引用他的成员、代付上，返回改动过的订阅
   m = path.match(/^\/api\/people\/([\w-]+)(\/merge)?$/);
   if (m) {
-    const people = await getPeople(env);
     const id = m[1];
     if (m[2] && method === 'POST') {
       const into = String(((await readJson(req)) as { into?: string }).into ?? '');
-      if (!people.some((p) => p.id === id) || !people.some((p) => p.id === into) || into === id) return bad(t('server.personNotFound'), 404);
-      const r = mergePeople(people, await loadSubs(env), id, into);
-      const subscriptions = r.subs;
-      const rev = await writePeople(env, r.people, subscriptions);
-      return json({ people: r.people, subscriptions }, 200, rev);
+      return withRevRetry(async () => {
+        const { rev: expectedRev, subscriptions: currentSubs } = await loadSubsWithRev(env);
+        const people = await getPeople(env);
+        if (!people.some((p) => p.id === id) || !people.some((p) => p.id === into) || into === id) return bad(t('server.personNotFound'), 404);
+        const r = mergePeople(people, currentSubs, id, into);
+        const subscriptions = r.subs;
+        const rev = await writePeople(env, r.people, subscriptions, expectedRev);
+        return json({ people: r.people, subscriptions }, 200, rev);
+      });
     }
     if (!m[2] && method === 'PUT') {
-      let p: Person | undefined;
+      let cleaned: Person | undefined;
       try {
-        p = cleanPerson((await readJson(req)) as Partial<Person>, id);
+        cleaned = cleanPerson((await readJson(req)) as Partial<Person>, id);
       } catch (e) {
         return bad(e instanceof Error ? e.message : t('server.invalidPerson'));
       }
-      if (!p) return bad(t('server.invalidPerson'));
-      const old = people.find((x) => x.id === id);
-      if (old?.createdAt) p.createdAt = old.createdAt;
-      const next = old ? people.map((x) => (x.id === id ? p : x)) : [...people, p];
-      try {
-        validatePeopleAvatars(next);
-      } catch (e) {
-        return bad(e instanceof Error ? e.message : t('server.invalidPerson'));
-      }
-      const subscriptions = syncPerson(await loadSubs(env), p);
-      const rev = await writePeople(env, next, subscriptions);
-      return json({ person: p, subscriptions }, 200, rev);
+      if (!cleaned) return bad(t('server.invalidPerson'));
+      const basePerson = cleaned;
+      return withRevRetry(async () => {
+        const { rev: expectedRev, subscriptions: currentSubs } = await loadSubsWithRev(env);
+        const people = await getPeople(env);
+        const old = people.find((x) => x.id === id);
+        const p: Person = old?.createdAt ? { ...basePerson, createdAt: old.createdAt } : { ...basePerson };
+        const next = old ? people.map((x) => (x.id === id ? p : x)) : [...people, p];
+        try {
+          validatePeopleAvatars(next);
+        } catch (e) {
+          return bad(e instanceof Error ? e.message : t('server.invalidPerson'));
+        }
+        const subscriptions = syncPerson(currentSubs, p);
+        const rev = await writePeople(env, next, subscriptions, expectedRev);
+        return json({ person: p, subscriptions }, 200, rev);
+      });
     }
     if (!m[2] && method === 'DELETE') {
-      // 还有合租、代付指向他时不删：先合并到别人名下或从那些订阅里移除，账不会悬空
-      const n = refsFor(await loadSubs(env), id).length;
-      if (n) return bad(t('server.personInUse', { count: n }), 409);
-      const rev = await putKv(
-        env,
-        'people',
-        people.filter((x) => x.id !== id),
-      );
-      return json({ ok: true }, 200, rev);
+      return withRevRetry(async () => {
+        const { rev: expectedRev, subscriptions: currentSubs } = await loadSubsWithRev(env);
+        const people = await getPeople(env);
+        // 还有合租、代付指向他时不删：先合并到别人名下或从那些订阅里移除，账不会悬空
+        const n = refsFor(currentSubs, id).length;
+        if (n) return bad(t('server.personInUse', { count: n }), 409);
+        const rev = await writePeople(
+          env,
+          people.filter((x) => x.id !== id),
+          [],
+          expectedRev,
+        );
+        return json({ ok: true }, 200, rev);
+      });
     }
   }
   m = path.match(/^\/api\/methods\/([\w-]+)$/);
@@ -295,19 +326,23 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     // 删卡：与 MCP update_payment_method action=delete 同一套引用处理（订阅、阶段、单笔、拆分来源、默认支付方式）。
     // ?into=<id> 迁到另一张卡，?clear=1 清空引用；有引用又没选时 409，返回引用数。
     if (method === 'DELETE') {
+      const targetId = m[1];
       const q = new URL(req.url).searchParams;
       const into = q.get('into') || (q.get('clear') === '1' ? null : undefined);
-      const st = { subscriptions: await loadSubs(env), methods: await loadMethods(env), settings: await getSettings(env) } as AppState;
-      if (into === undefined && methodReferences(st, m[1]).length) return json({ error: t('server.methodInUse'), code: 'in_use' }, 409);
-      let r: ReturnType<typeof deleteMethodData>;
-      try {
-        r = deleteMethodData(st, m[1], into);
-      } catch {
-        return bad(t('server.invalidMethod'));
-      }
-      const subscriptions = r.subscriptions;
-      const rev = await saveLedgerEdit(env, { settings: r.settings, subscriptions }, [m[1]]);
-      return json({ ok: true, settings: r.settings, subscriptions }, 200, rev);
+      return withRevRetry(async () => {
+        const { rev: expectedRev, subscriptions: currentSubs } = await loadSubsWithRev(env);
+        const st = { subscriptions: currentSubs, methods: await loadMethods(env), settings: await getSettings(env) } as AppState;
+        if (into === undefined && methodReferences(st, targetId).length) return json({ error: t('server.methodInUse'), code: 'in_use' }, 409);
+        let r: ReturnType<typeof deleteMethodData>;
+        try {
+          r = deleteMethodData(st, targetId, into);
+        } catch {
+          return bad(t('server.invalidMethod'));
+        }
+        const subscriptions = r.subscriptions;
+        const rev = await saveLedgerEdit(env, { settings: r.settings, subscriptions }, [targetId], [], expectedRev);
+        return json({ ok: true, settings: r.settings, subscriptions }, 200, rev);
+      });
     }
   }
   // 界面配置：按项合并，两台设备改不同的项互不覆盖
@@ -343,10 +378,13 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     if ('error' in r) return bad(r.error);
     const renames: Record<string, string> = {};
     for (const [from, to] of Object.entries(b.renames ?? {})) if (typeof to === 'string' && to.trim()) renames[from] = to.trim();
-    const changed = renameInSubs(await loadSubs(env), renames);
-    const settings = { ...(await getSettings(env)), categories: r.list };
-    const rev = await saveSettingsWithSubs(env, settings, changed);
-    return json({ settings, subscriptions: changed }, 200, rev);
+    return withRevRetry(async () => {
+      const { rev: expectedRev, subscriptions: currentSubs } = await loadSubsWithRev(env);
+      const changed = renameInSubs(currentSubs, renames);
+      const settings = { ...(await getSettings(env)), categories: r.list };
+      const rev = await saveSettingsWithSubs(env, settings, changed, expectedRev);
+      return json({ settings, subscriptions: changed }, 200, rev);
+    });
   }
   if (path === '/api/ics/rotate' && method === 'POST') {
     const cur = await getSettings(env);
@@ -404,10 +442,12 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     // 只导入订阅与支付方式；设置走 PUT /api/settings 的校验，这里不再接受
     const body = (await readJson(req)) as { subscriptions?: Subscription[]; methods?: PaymentMethod[]; mode?: 'merge' | 'replace' };
     const subs = body.subscriptions ?? [];
-    const err = invalidIn(subs);
-    if (err) return bad(err);
     const methods = body.methods ?? [];
     const mode = body.mode === 'replace' ? 'replace' : 'merge';
+    if (mode === 'replace') {
+      const err = invalidIn(subs, subs);
+      if (err) return bad(err);
+    }
     // 与网页钱包、MCP 同一套支付方式校验；合并导入时已存的同 id 记录原币种放行
     const existing = mode === 'merge' ? await loadMethods(env) : [];
     const fx = await getFx(env);
@@ -419,18 +459,23 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
       );
       if (error) return bad(t('server.invalidItem', { name: pm?.name ?? '?', error }));
     }
-    // 合并导入可能覆盖别的订阅正在关联的指标，按导入后的整个账本查
-    const before = await loadSubs(env);
-    const imported = new Set(subs.map((s) => s.id));
-    const linkError = meterLinkError(before, [...(mode === 'merge' ? before.filter((s) => !imported.has(s.id)) : []), ...subs]);
-    if (linkError) return bad(linkError);
     if (mode === 'replace') {
       const failed = await backupBeforeReplace(env);
       if (failed) return bad(failed, 502);
     }
-    await replaceAll(env, subs, methods, mode);
-    const state = await loadState(env);
-    return json(state, 200, state.rev);
+    return withRevRetry(async () => {
+      // 合并导入可能覆盖别的订阅正在关联的指标或主订阅，按导入后的整个账本查并用 rev 守卫提交
+      const { rev: expectedRev, subscriptions: before } = await loadSubsWithRev(env);
+      const imported = new Set(subs.map((s) => s.id));
+      const afterSubs = [...(mode === 'merge' ? before.filter((s) => !imported.has(s.id)) : []), ...subs];
+      const err = mode === 'merge' ? invalidIn(subs, afterSubs) : undefined;
+      if (err) return bad(err);
+      const linkError = meterLinkError(before, afterSubs) ?? bundleLinkError(before, afterSubs);
+      if (linkError) return bad(linkError);
+      await replaceAll(env, subs, methods, mode, expectedRev);
+      const state = await loadState(env);
+      return json(state, 200, state.rev);
+    });
   }
   if (path === '/api/fx/status' && method === 'GET') {
     const st = await fxStatus(env, await loadState(env));
