@@ -43,3 +43,30 @@ export function headAlignDelta({
   const d = headTop - (barBottom + 12);
   return Math.abs(d) > 1 ? d : 0;
 }
+
+/**
+ * 滚动后是否继续贴底跟随新内容。auto 是我们自己最近一次滚动到的位置：落在那里的滚动事件不算用户操作，返回 null 不改变状态。
+ * 生成中用户往上滚（哪怕只滚一点，仍在底部 120px 内）就停止跟随，生成中也能停在回复开头往下读（Issue #28）；
+ * 往下滚回底部附近才恢复跟随。
+ */
+export function followAfterScroll({
+  y,
+  last,
+  auto,
+  gap,
+  streaming,
+}: {
+  y: number;
+  last: number;
+  auto: number | null;
+  gap: number;
+  streaming: boolean;
+}): boolean | null {
+  if (auto !== null && Math.abs(y - auto) < 1) return null;
+  // 没在生成：仍按离底 120px 判断，回复结束后轻轻一滚不冒出「回到底部」
+  if (!streaming) return gap < 120;
+  // 越过底部的回弹（iOS 橡皮筋）也是往上，但不是用户想往回看
+  const bounce = last > y + gap + 1;
+  if (y < last - 1 && !bounce) return false;
+  return gap < 120;
+}

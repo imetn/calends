@@ -1,5 +1,6 @@
 import { toast as sonner } from 'sonner';
 import { t } from '../../shared/i18n.ts';
+import { writeClipboard } from './clipboard.ts';
 // ---------- toast ----------
 // 统一走 Sonner：成功、失败、提示、警告、进行中五种状态，可叠放、滑动关闭，可带「撤销」等操作按钮
 
@@ -21,11 +22,10 @@ export function toast(text: string, how: ToastKind | ToastOptions = {}): string 
   return sonner[kind](text, { id: opts.id, description: opts.description, action: opts.action, duration: kind === 'error' ? 5000 : 2800 });
 }
 
-/** 复制文字：浏览器不支持剪贴板（非 HTTPS、旧浏览器）或被拒绝时提示失败，不静默 */
+/** 复制文字：非 HTTPS 时退回旧式复制；仍失败（被拒绝、旧浏览器）才提示失败，不静默 */
 export async function copyText(text: string, ok: string): Promise<boolean> {
   try {
-    if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
-    await navigator.clipboard.writeText(text);
+    await writeClipboard(text);
     toast(ok);
     return true;
   } catch {

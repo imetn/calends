@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { cnDateFull } from './format.ts';
-import { headAlignDelta, isDateField, proposalDay } from '../app/src/views/assistant-fields.ts';
+import { followAfterScroll, headAlignDelta, isDateField, proposalDay } from '../app/src/views/assistant-fields.ts';
 
 test('助手草稿：只有日期字段按日期显示，category/status 等原样显示', () => {
   for (const k of ['date', 'end', 'at', 'until', 'from', 'expires', 'next_due', 'trial_end', 'paused_at', 'nextDue', 'trialEnd', 'collectFrom'])
@@ -313,4 +313,30 @@ test('侧边栏再点一次「助手」停在最新对话，不回到顶部的�
   assert.match(assistant, /onRoute\(\(\) => \{\s*if \(currentRoute\(\) !== 'assistant'\) return;\s*setAtBottom\(true\);\s*setJump\(\(n\) => n \+ 1\);/);
   assert.match(assistant, /\}, \[chat, atBottom, fill, past, jump\]\);/);
   assert.match(assistant, /\}, \[fill, past, chat\.id, atBottom, jump, !!returnTo\]\);/);
+});
+
+test('Issue #28：生成中往上滚一点就停止贴底跟随，滚回底部才恢复；程序滚动不算用户操作', () => {
+  // 往上滚 40px，仍在底部 120px 内：旧逻辑仍判为到底，下一段内容又把视图拉回去
+  assert.equal(followAfterScroll({ y: 960, last: 1000, auto: null, gap: 40, streaming: true }), false);
+  // 我们自己滚到底产生的滚动事件：不改变状态
+  assert.equal(followAfterScroll({ y: 1500, last: 1000, auto: 1500, gap: 0, streaming: true }), null);
+  // 往下滚回底部附近：恢复跟随；还远离底部：不跟随
+  assert.equal(followAfterScroll({ y: 1400, last: 1300, auto: null, gap: 80, streaming: true }), true);
+  assert.equal(followAfterScroll({ y: 900, last: 800, auto: null, gap: 600, streaming: true }), false);
+  // iOS 越过底部后的回弹（从 1030 回到底部 1000）不算往上看
+  assert.equal(followAfterScroll({ y: 1000, last: 1030, auto: null, gap: 0, streaming: true }), true);
+  // 不在生成：仍按离底 120px，回复结束后轻轻一滚不冒出「回到底部」
+  assert.equal(followAfterScroll({ y: 960, last: 1000, auto: null, gap: 40, streaming: false }), true);
+  assert.equal(followAfterScroll({ y: 700, last: 1000, auto: null, gap: 300, streaming: false }), false);
+  const src = readFileSync(new URL('../app/src/views/Assistant.tsx', import.meta.url), 'utf8');
+  // 程序滚动也更新方向基准：快速生成时同一帧里的上滚不会被当成往下
+  assert.match(src, /const autoScroll = [\s\S]*?lastY\.current = window\.scrollY;/);
+  assert.match(src, /if \(streaming\.current && e\.deltaY < 0\) setAtBottom\(false\);/);
+  assert.doesNotMatch(src.replace(/const autoScroll = [\s\S]*?\};/, ''), /window\.scrollTo\(/);
+  assert.match(src, /followAfterScroll\(\{ y, last: lastY\.current, auto: autoY\.current, gap, streaming: streaming\.current \}\)/);
+});
+
+test('Issue #28：手机底栏显示时「回到底部」抬到输入框上方，能点到', () => {
+  const css = readFileSync(new URL('../app/src/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /:root:has\(\.dock:not\(\.hide\)\) \.as-bottom \{\s*bottom: calc\(150px \+ var\(--tab-h\)\);/);
 });

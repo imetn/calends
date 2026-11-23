@@ -11374,6 +11374,10 @@ button.name-edit:focus-visible {
     bottom: var(--tab-h);
     padding-bottom: 10px;
   }
+  /* 「回到底部」跟着输入框一起抬到底栏上方，不被输入框盖住 */
+  :root:has(.dock:not(.hide)) .as-bottom {
+    bottom: calc(150px + var(--tab-h));
+  }
   /* AI 页「助手 | 连接」：标题下单独一行，排在页面操作之前 */
   .tb-switch {
     order: 3;

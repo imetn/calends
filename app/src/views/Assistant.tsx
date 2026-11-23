@@ -36,7 +36,7 @@ import { api, getState, refresh } from '../store.ts';
 import { copyText, toast } from '../toast.ts';
 import { newSub } from './editor/new-sub.ts';
 import { draftKey, writeDraft } from './editor/draft.ts';
-import { headAlignDelta, interrupted } from './assistant-fields.ts';
+import { followAfterScroll, headAlignDelta, interrupted } from './assistant-fields.ts';
 import { compressImage as compress, setAssistantConfigured, takeHandoff, type HandoffReturn } from '../handoff.ts';
 import './assistant.css';
 import { Streamdown, type Components } from 'streamdown';
@@ -140,9 +140,24 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
     return () => window.removeEventListener('resize', measure);
   }, [chat.id, !chat.turns.length, !!returnTo]);
 
+  // 程序滚动落到的位置：滚动事件落在这里的不是用户操作，不会关掉跟随
+  const autoY = useRef<number | null>(null);
+  // 上一次滚动后的位置（含程序滚动），用来判断用户这次是往上还是往下
+  const lastY = useRef(0);
+  const streaming = useRef(false);
+  useEffect(() => {
+    streaming.current = busy;
+  }, [busy]);
+  const autoScroll = (top: number) => {
+    const before = window.scrollY;
+    window.scrollTo({ top, behavior: 'instant' });
+    lastY.current = window.scrollY;
+    // 没动就不会有滚动事件，不留下标记
+    autoY.current = window.scrollY !== before ? window.scrollY : null;
+  };
   // 新内容到来时贴着底部滚；用户往上翻了就不打扰，显示「回到底部」
   useLayoutEffect(() => {
-    if (atBottom) window.scrollTo(0, document.documentElement.scrollHeight);
+    if (atBottom) autoScroll(document.documentElement.scrollHeight);
   }, [chat, atBottom, fill, past, jump]);
   // 布局完成后直接校正滚动位置，不把受滚动影响的坐标反写为高度。
   // 浏览器缩放或滚动尚未完成时，反复 setFill 会形成同步更新循环。
@@ -156,17 +171,31 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
       const tb = document.querySelector<HTMLElement>('.toolbar');
       const top = tb && getComputedStyle(tb).position === 'sticky' ? tb.getBoundingClientRect().bottom : 0;
       const d = headAlignDelta({ headTop: head.getBoundingClientRect().top, barBottom: top, sessionHeight: el.offsetHeight, fill });
-      if (d) window.scrollTo({ top: window.scrollY + d, behavior: 'instant' });
+      if (d) autoScroll(window.scrollY + d);
     });
     return () => cancelAnimationFrame(frame);
   }, [fill, past, chat.id, atBottom, jump, !!returnTo]);
   useEffect(() => {
+    lastY.current = window.scrollY;
     const onScroll = () => {
       const el = document.documentElement;
-      setAtBottom(el.scrollHeight - window.scrollY - window.innerHeight < 120);
+      const y = window.scrollY;
+      const gap = el.scrollHeight - y - window.innerHeight;
+      const follow = followAfterScroll({ y, last: lastY.current, auto: autoY.current, gap, streaming: streaming.current });
+      lastY.current = y;
+      autoY.current = null;
+      if (follow !== null) setAtBottom(follow);
+    };
+    // 生成中滚轮往上：直接停止跟随，不依赖滚动事件能否分清是谁滚的
+    const onWheel = (e: WheelEvent) => {
+      if (streaming.current && e.deltaY < 0) setAtBottom(false);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    window.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('wheel', onWheel);
+    };
   }, []);
 
   const send = async (text: string, images: string[], history = chat.history, base = chat.turns) => {
