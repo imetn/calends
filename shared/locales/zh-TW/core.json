@@ -235,5 +235,10 @@
   },
   "fxIncomplete": "部分金額缺少匯率無法換算，這裡的結果不完整。",
   "fxUnconverted": "未換算：{amount}",
-  "fxOther": "等 {count} 種幣別"
+  "fxOther": "等 {count} 種幣別",
+  "paymentKind": {
+    "refund": "退款",
+    "adjust": "補差",
+    "failed": "失敗"
+  }
 }

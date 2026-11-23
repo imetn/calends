@@ -33,11 +33,51 @@ export function configView(c: AssistantConfig | undefined): AssistantConfigView 
   };
 }
 
-/** Base URL 规范化：去掉末尾的斜杠和误填的 /v1、/chat/completions */
+/**
+ * Base URL 规范化：去掉末尾的斜杠和误填的 /chat/completions。
+ * /v1 这类版本路径原样保留：DeepSeek 带不带都行，OpenAI 等服务必须带，去掉就 404。
+ * 旧版本保存时去掉过 /v1，存下的 https://api.openai.com 读出时补回。
+ */
 export function normBaseUrl(raw: string | undefined): string {
   const u = (raw ?? '').trim().replace(/\/+$/, '');
-  if (!u) return DEEPSEEK_BASE_URL;
-  return u.replace(/\/chat\/completions$/, '').replace(/\/v1$/, '');
+  const base = u.replace(/\/chat\/completions$/, '').replace(/\/+$/, '');
+  if (!base) return DEEPSEEK_BASE_URL;
+  return /^https?:\/\/api\.openai\.com$/i.test(base) ? `${base}/v1` : base;
+}
+
+const hostOf = (baseUrl: string | undefined) => {
+  try {
+    return new URL(normBaseUrl(baseUrl)).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+};
+
+/** OpenAI、Azure OpenAI 与 Gemini 的兼容接口严格校验参数，遇到 thinking 这类未知字段直接 400 */
+const isOpenAI = (host: string) => host === 'api.openai.com' || /\.(openai|cognitiveservices|services\.ai)\.azure\.com$/.test(host);
+const isStrict = (host: string) => isOpenAI(host) || host === 'generativelanguage.googleapis.com';
+
+/**
+ * 思考相关的请求参数。thinking 开关 DeepSeek、智谱 GLM、火山方舟等都认，默认照发；
+ * 严格校验的服务不发 thinking，关闭思考时什么都不带。OpenAI 的非推理模型（gpt-4.1、gpt-4o 等）
+ * 不认 reasoning_effort，只给 o 系列与 gpt-5 系列。
+ */
+export function reasoningParams(effort: Effort, baseUrl: string | undefined, model: string | undefined): Record<string, unknown> {
+  const on = effort !== 'none';
+  const host = hostOf(baseUrl);
+  if (!isStrict(host)) return { thinking: { type: on ? 'enabled' : 'disabled' }, ...(on ? { reasoning_effort: effort } : {}) };
+  const reasons = !isOpenAI(host) || /^(o\d|gpt-5(?!.*-chat))/i.test(model ?? '');
+  return on && reasons ? { reasoning_effort: effort } : {};
+}
+
+/** 严格校验的服务不认 assistant 消息里的 reasoning_content（换服务商后历史里可能还带着），发送前去掉 */
+export function messagesFor(baseUrl: string | undefined, messages: ApiMessage[]): ApiMessage[] {
+  if (!isStrict(hostOf(baseUrl))) return messages;
+  return messages.map((m) => {
+    if (m.role !== 'assistant' || m.reasoning_content === undefined) return m;
+    const { reasoning_content: _, ...rest } = m;
+    return rest;
+  });
 }
 
 export type ContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };

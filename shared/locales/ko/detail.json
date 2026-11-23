@@ -72,11 +72,6 @@
     "addShort": "기록",
     "title": "결제",
     "paidOn": "{date} 결제",
-    "kind": {
-      "refund": "환불",
-      "adjust": "조정",
-      "failed": "실패"
-    },
     "add": "기록 추가(환불, 조정, 결제 실패, 카드 금액 등)",
     "head": {
       "service": "서비스 기간",
@@ -130,6 +125,7 @@
     "m6": "6개월",
     "period": "기간",
     "converted": "환산",
+    "net": "환불 후",
     "average": "평균",
     "method": "결제",
     "paidOn": "결제일",

@@ -239,8 +239,9 @@ export function Charges({
             extra: readings && usageCell(usageOf(c)),
             orig: (
               <>
+                {/* 类型标签放在金额左边，金额始终贴右对齐，上下行的数字对得齐 */}
+                {c.kind && <em className={`dt-kind ${c.kind}`}>{t(`core.paymentKind.${c.kind}`)}</em>}
                 {orig(-card(c).amount, card(c).currency)}
-                {c.kind && <em className={`dt-kind ${c.kind}`}>{t(`detail.charges.kind.${c.kind}`)}</em>}
                 {/* 账单与缴费分开记：这笔缴的是哪几期账单（首期 – 末期），固定在金额下一行；逐期写在悬停提示里 */}
                 {!!c.settles?.length && <small className="dt-settles">{settlesLabel(c.settles, c.date)}</small>}
               </>

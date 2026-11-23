@@ -10,12 +10,16 @@ import './copy.css';
 import { TailName } from './TailName.tsx';
 import { tooltipPosition } from './tooltip-position.ts';
 
+const kindLabel = (it: Pick<TimelineItem, 'kind'>) => (it.kind ? t(`core.paymentKind.${it.kind}`) : '');
+
 export interface TimelineItem {
   key: string;
   icon: ComponentChildren;
   /** 悬停提示：名称与金额 */
   name: string;
   amount: string;
+  /** 退款、补差这类非周期记录：提示里金额左边写明类型，不只靠正负号区分 */
+  kind?: 'refund' | 'adjust' | 'failed';
   /** 折成同一币种的金额，只用来比较大小（按日聚合时决定圆点大小）；缺汇率时为 0 或 NaN */
   value?: number;
   onClick?: () => void;
@@ -295,7 +299,9 @@ export function Timeline({
                     data-snapshot-keep
                     className={`tl-icon tl-day ${date < today ? 'past' : ''} ${tip?.g === g ? 'on' : ''}`}
                     style={style}
-                    aria-label={[numericDate(date), g.total, ...g.items.map((i) => `${i.name} ${i.amount}`)].filter(Boolean).join('\n')}
+                    aria-label={[numericDate(date), g.total, ...g.items.map((i) => [i.name, kindLabel(i), i.amount].filter(Boolean).join(' '))]
+                      .filter(Boolean)
+                      .join('\n')}
                     aria-describedby={tip?.g === g ? tipId : undefined}
                     aria-expanded={tip?.g === g && tip.pinned}
                     onMouseEnter={(e) => tip?.pinned || showTip(g, e.currentTarget, false)}
@@ -317,7 +323,7 @@ export function Timeline({
                   data-snapshot-keep
                   className={`tl-icon ${date < today ? 'past' : ''}`}
                   style={style}
-                  aria-label={`${numericDate(date)}\n${it.name}\n${it.amount}`}
+                  aria-label={[numericDate(date), it.name, kindLabel(it), it.amount].filter(Boolean).join('\n')}
                   onMouseEnter={(e) => tip?.pinned || showTip(one, e.currentTarget, false)}
                   onMouseLeave={() => tip?.pinned || setTip(null)}
                   onFocus={(e) => tip?.pinned || showTip(one, e.currentTarget, false)}
@@ -376,12 +382,18 @@ export function Timeline({
                   }}
                 >
                   <TailName name={it.name} />
-                  <span className="num">{it.amount}</span>
+                  <span className="num">
+                    {it.kind && <em className={`tl-kind ${it.kind}`}>{kindLabel(it)}</em>}
+                    {it.amount}
+                  </span>
                 </button>
               ) : (
                 <div key={it.key} className="tl-tip-row">
                   <TailName name={it.name} />
-                  <span className="num">{it.amount}</span>
+                  <span className="num">
+                    {it.kind && <em className={`tl-kind ${it.kind}`}>{kindLabel(it)}</em>}
+                    {it.amount}
+                  </span>
                 </div>
               ),
             )}

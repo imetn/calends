@@ -253,6 +253,18 @@
 .tl-tip-row > :first-child {
   color: var(--label-2);
 }
+/* 金额左边的类型：退款是收回的钱，用收入色；补差用提醒色 */
+.tl-kind {
+  margin-right: 6px;
+  font-style: normal;
+  font-weight: 600;
+}
+.tl-kind.refund {
+  color: var(--gain);
+}
+.tl-kind.adjust {
+  color: var(--orange);
+}
 .tl-tip .num {
   text-align: right;
   font-variant-numeric: tabular-nums;

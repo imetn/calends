@@ -266,5 +266,10 @@
   },
   "fxIncomplete": "Some amounts can’t be converted because exchange rates are missing, so this is incomplete.",
   "fxUnconverted": "Unconverted: {amount}",
-  "fxOther": "and {count} other currencies"
+  "fxOther": "and {count} other currencies",
+  "paymentKind": {
+    "refund": "Refund",
+    "adjust": "Adjustment",
+    "failed": "Failed"
+  }
 }

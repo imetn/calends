@@ -42,7 +42,7 @@ export function GlobeCard({ state, today, k, fmt }: WidgetProps) {
                 {...row(r.cc)}
               >
                 <span className="flex size-6 shrink-0 items-center justify-center">
-                  {FLAGS.has(r.cc.toLowerCase()) && <img className="h-3.5 w-5 rounded-[2px] shadow-[0_0_0_1px_var(--border)]" src={appPath(`/flags/${r.cc.toLowerCase()}.png`)} alt="" loading="lazy" />}
+                  {FLAGS.has(r.cc.toLowerCase()) && <img className="h-3.5 w-5" src={appPath(`/flags/${r.cc.toLowerCase()}.png`)} alt="" loading="lazy" />}
                 </span>
                 <span className={cn('min-w-0 flex-1 truncate', focus === r.cc && 'underline underline-offset-4')}>{regionLabel(r.cc)}</span>
                 <span className="text-[length:var(--fs-2)] text-muted-foreground tnum">{t('public.count', { count: r.subs.length })}</span>

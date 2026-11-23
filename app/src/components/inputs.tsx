@@ -6,6 +6,7 @@ import { SelectionIndicator, Switch as AriaSwitch, ToggleButton, ToggleButtonGro
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { currencyDecimals, moneyDecimals, flowSign, symbol } from '../../../shared/format.ts';
 import { intlLocale, t } from '../../../shared/i18n.ts';
+import { shortLink } from '../../../shared/icon.ts';
 import { toast as notify } from 'sonner';
 import { Icon } from './icons.tsx';
 
@@ -272,6 +273,40 @@ export function Stepper({
       {unit(value) && <span className="days-unit">{unit(value)}</span>}
       <button type="button" aria-label="+1" disabled={value >= max} onClick={() => onChange(clamp(value + 1))}>
         <Icon name="plus" size={14} />
+      </button>
+    </span>
+  );
+}
+
+/** 图片链接输入框：失焦时长链接只显示域名和文件名，聚焦后恢复完整链接可改 */
+export function LinkInput({ value, onFocus, onBlur, ...rest }: Omit<JSX.IntrinsicElements['input'], 'value'> & { value: string }) {
+  const [editing, setEditing] = useState(false);
+  const short = shortLink(value);
+  const ref = useRef<HTMLInputElement>(null);
+  // 窄屏放不下简写时滚到末尾，露出文件名而不是被截掉
+  useLayoutEffect(() => {
+    if (!editing && ref.current) ref.current.scrollLeft = ref.current.scrollWidth;
+  }, [editing, short]);
+  return (
+    <input
+      {...rest}
+      ref={ref}
+      value={editing ? value : short}
+      title={!editing && short !== value ? value : undefined}
+      onFocus={(e) => (setEditing(true), onFocus?.(e))}
+      onBlur={(e) => (setEditing(false), onBlur?.(e))}
+    />
+  );
+}
+
+/** 图标预览：有可清除的内容（上传的图片）时，悬停在右上角出现 ×；触屏没有悬停，常显 */
+export function ClearablePreview({ children, label, onClear, disabled }: { children: ReactNode; label: string; onClear?: () => void; disabled?: boolean }) {
+  if (!onClear) return children;
+  return (
+    <span className="clearable-preview">
+      {children}
+      <button type="button" className="preview-clear" aria-label={label} title={label} disabled={disabled} onClick={onClear}>
+        <Icon name="x" size={12} />
       </button>
     </span>
   );

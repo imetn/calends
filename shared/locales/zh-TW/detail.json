@@ -72,11 +72,6 @@
     "addShort": "記一筆",
     "title": "扣款記錄",
     "paidOn": "{date} 付款",
-    "kind": {
-      "refund": "退款",
-      "adjust": "補差",
-      "failed": "失敗"
-    },
     "add": "記一筆（退款、補差、扣款失敗、卡上實扣…）",
     "head": {
       "service": "服務期",
@@ -120,6 +115,7 @@
     "m6": "6 個月",
     "period": "週期",
     "converted": "約合",
+    "net": "實際花費",
     "average": "平均",
     "method": "付款",
     "paidOn": "付於",

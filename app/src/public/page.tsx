@@ -262,6 +262,7 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
     (from: string, to: string) => {
       const map = new Map<string, TimelineGroup>();
       for (const c of allCharges(state, from, to, today)) {
+        if (c.kind === 'failed') continue;
         const g = map.get(c.date) ?? { date: c.date, items: [] };
         const v = chargeValue(state, c) * rate;
         g.items.push({
@@ -269,6 +270,7 @@ function Ledger({ state, view }: { state: AppState; view: View }) {
           icon: <AppIcon sub={c.sub} className="rounded-md bg-card" size={30} />,
           name: clean(c.sub.name),
           amount: `${flow(-c.amount, c.currency)}${c.currency !== ccy && Number.isFinite(v) ? ` ≈ ${flow(-v, ccy, { decimals: Math.abs(v) < 10 ? 2 : 0 })}` : ''}`,
+          kind: c.kind,
           value: chargeBaseOrNaN(state, c) * rate,
         });
         map.set(c.date, g);

@@ -11,6 +11,8 @@ import { prepareSubWrite } from '../../shared/sub-write.ts';
 import { categoryEdit } from '../../shared/ledger-edit.ts';
 import { categoryList, presetCategory, PRESETS, type Category } from '../../shared/categories.ts';
 import { CATEGORY_ALIASES } from '../../shared/locales/categories.gen.ts';
+import { exactServices, serviceDisplayName, type ServiceEntry } from '../../shared/service-catalog.ts';
+import { SERVICE_PACKS } from './service-packs.gen.ts';
 import { round, row } from './tool-views.ts';
 
 export interface ToolCtx {
@@ -212,7 +214,7 @@ export function contractInput(v: unknown): Contract | undefined {
 }
 
 export const ICON_DESCRIPTION =
-  'Icon: an http(s) image URL (e.g. artwork from search_app_store), a site path such as /ai/claude.svg, or one emoji / short symbol (up to 4 characters). Invalid values are rejected.';
+  'Icon: an http(s) image URL (e.g. artwork from search_app_store), a site path such as /ai/claude.svg (see search_services), or one emoji / short symbol (up to 4 characters). Prefer the icon path from search_services for common services. Invalid values are rejected.';
 
 export const SHIFT_BILLING = {
   type: 'boolean',
@@ -298,8 +300,9 @@ export async function persist(
           person_notice: t(dry ? 'mcp.label.createPerson' : 'mcp.label.createdPerson', { name: personCreation.name }),
         }
       : {}),
+    // 下次扣款只列真正要扣的钱：记在今天及以后的退款、补差、失败记录不算
     next_charges: chargesBetween(after, today, addMonths(today, 13), today)
-      .filter((c) => !c.paidOn)
+      .filter((c) => !c.paidOn && !c.kind)
       .slice(0, 3)
       .map((c) => ({ date: c.date, amount: round(c.amount), currency: c.currency })),
     ...extra,
@@ -379,6 +382,27 @@ export function assertNotDuplicate(st: AppState, name: string, start: string, ac
 }
 
 export const defaultCategory = (st: AppState) => categoryRef(st, presetCategory(categoryList(st.settings, st.subscriptions), 'tools'))!;
+
+export const SERVICES: ServiceEntry[] = SERVICE_PACKS.flat();
+
+/** 分类代码换成账本里的分类名；用户删掉了这个预设分类时返回 undefined，不新建 */
+export const serviceCategory = (st: AppState, code: string) => categoryList(st.settings, st.subscriptions).find((c) => c.preset === code)?.name;
+
+/** 新建订阅没传 icon 时按名称匹配常用服务：只补调用方没传的元数据字段（不自动改计费提前天数）；重名时不猜，把候选交给调用方 */
+export function serviceFill(
+  st: AppState,
+  name: string,
+  given: { url: boolean; category: boolean },
+): { icon?: string; url?: string; category?: string; match: Record<string, unknown> } {
+  const hits = exactServices(SERVICES, name);
+  if (hits.length !== 1) {
+    return { match: hits.length ? { status: 'ambiguous', candidates: hits.map((x) => serviceDisplayName(x, t)) } : { status: 'none' } };
+  }
+  const [hit] = hits;
+  const category = given.category ? undefined : serviceCategory(st, hit.cat);
+  const fill = { icon: hit.icon, ...(given.url ? {} : { url: hit.url }), ...(category ? { category } : {}) };
+  return { ...fill, match: { status: 'matched', service: serviceDisplayName(hit, t), applied: fill } };
+}
 
 export const methodRef = (st: AppState, v: unknown) => {
   const q = str(v);

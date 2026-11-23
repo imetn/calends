@@ -1,5 +1,5 @@
 // 常见消费类服务
-import type { CatalogEntry } from '../catalog.ts';
+import type { CatalogEntry } from '../../../shared/service-catalog.ts';
 
 const entries: CatalogEntry[] = [
   {

@@ -17,6 +17,7 @@ import {
   get_insights,
   list_events,
   search_app_store,
+  search_services,
 } from './read-tools.ts';
 import {
   create_subscription,
@@ -73,6 +74,7 @@ export const CATALOGUE: Tool[] = [
   get_insights,
   list_events,
   search_app_store,
+  search_services,
   create_subscription,
   save_subscription,
   update_subscription,

@@ -608,6 +608,13 @@
 .cc-tip-r > b.m {
   font-weight: 500;
 }
+/* 金额后的折合：同一行，弱一档 */
+.cc-tip-x {
+  margin-left: 6px;
+  color: var(--label-3);
+  font-style: normal;
+  font-weight: 500;
+}
 .cc-tip-f {
   margin-top: 6px;
   padding-top: 8px;
@@ -1372,20 +1379,30 @@
     0 0 0 1.5px var(--dt-panel),
     inset 0 0 0 var(--hairline) var(--line);
 }
-/* 前面的胶囊只露出左端的图标（固定宽度，不随卡名长短变），右半段压在后一颗下面 */
-.dt-pay-list > .pay:not(:last-of-type) {
+/* 前面的胶囊只露出左端的图标（固定宽度，不随卡名长短变），右半段压在后一颗下面。
+   按「后面紧跟胶囊」判断，不用 :last-of-type——后面的 +N 也是 span，会把最后一颗也压成图标 */
+.dt-pay-list > .pay:has(+ .pay) {
   width: 34px;
   margin-right: -10px;
 }
-.dt-pay-list > .pay:last-of-type {
+.dt-pay-list > .pay:not(:has(+ .pay)) {
   z-index: 1;
 }
+/* 收起的个数：和胶囊同高的小胶囊，跟在最后一颗后面 */
 .dt-pay-more {
-  position: relative;
-  z-index: 2;
-  margin-left: 6px;
-  color: var(--label-3);
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 22px;
+  margin-left: 4px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--fill-2);
+  box-shadow: inset 0 0 0 var(--hairline) var(--line);
+  color: var(--label-2);
   font-size: var(--fs-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 /* 停止卡片只有停止日、原本付到、退款三项：宽时一行放下，窄了再折行 */

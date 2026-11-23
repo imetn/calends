@@ -583,3 +583,39 @@ test('W-17 写入管线重构前的行为基线：清退出日连带清退款，
   assert.deepEqual(list.items.map((x) => x.id).sort(), [created.subscription.id].sort());
   assert.equal((await loadState(f.env, false)).rev, rev);
 });
+
+test('W-退款 日历订阅与月报：退款写明类型、不提醒，失败记录不出现，月报只列账单', async () => {
+  const { buildIcs } = await import('../worker/ics.ts');
+  const { buildMonthly } = await import('../worker/notify.ts');
+  const { FALLBACK_FX, addDays } = await import('./billing.ts');
+  const { applyLocale } = await import('../worker/i18n.ts');
+  applyLocale('en');
+  const start = addDays(today, -60);
+  const s = sub('r', 'Fictional Stream', {
+    start,
+    payments: [
+      { date: start, amount: 10 },
+      { date: addDays(start, 30), amount: 10 },
+      { date: addDays(today, -20), amount: -4, kind: 'refund' },
+      { date: addDays(today, -10), amount: 0, kind: 'failed' },
+      { date: addDays(today, 3), amount: -2, kind: 'refund' },
+    ],
+  });
+  const state = { subscriptions: [s], methods: [], settings: { ...DEFAULT_SETTINGS, timezone: 'UTC', remindDays: 1 }, fx: FALLBACK_FX };
+  const events = buildIcs(state, 'https://example.test').split('BEGIN:VEVENT').slice(1);
+  const summaries = events.map((e) => e.match(/SUMMARY:(.*)/)![1]);
+  assert.ok(summaries.includes('Fictional Stream Refund $4.00'), summaries.join(' | '));
+  assert.ok(!summaries.some((x) => x.includes('$0.00')), '扣款失败不进日历');
+  assert.ok(!summaries.some((x) => x.includes('−')), '退款不写成负数扣款');
+  const future = events.find((e) => e.includes('Refund $2.00'))!;
+  assert.ok(future && !future.includes('VALARM'), '记在未来的退款不提醒扣款');
+
+  const dec = sub('d', 'Fictional Box', {
+    start: '2026-10-10',
+    payments: [{ date: '2026-12-05', amount: -3, kind: 'refund' }],
+  });
+  const digest = buildMonthly({ ...state, subscriptions: [dec], settings: { ...state.settings, monthlyDigest: true } }, '2026-12-01')!;
+  const rows = digest.sections[0].rows;
+  assert.equal(rows.length, 1, rows.map((r) => r.amount).join(','));
+  assert.equal(rows[0].amount, '$10.00');
+});

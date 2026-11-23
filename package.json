@@ -6,7 +6,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:web": "vite app",
     "dev:worker": "node scripts/wrangler.mjs dev --port 8787 --local",
-    "build": "node scripts/migrations.mjs && node scripts/i18n.mjs && tsc --noEmit && vite build app",
+    "build": "node scripts/migrations.mjs && node scripts/service-packs.mjs && node scripts/i18n.mjs && tsc --noEmit && vite build app",
     "build:docker": "esbuild docker/entrypoint.mjs --bundle --platform=node --format=esm --target=node24 --outfile=build/docker/entrypoint.mjs --log-level=warning \"--banner:js=import{createRequire}from'node:module';const require=createRequire(import.meta.url);\"",
     "package:tarball": "npm run build && npm run build:docker && node scripts/package-tarball.mjs",
     "test": "node --experimental-strip-types --test shared/*.test.ts scripts/*.test.mjs",
@@ -78,7 +78,7 @@
     "vite": "^8.3.4",
     "wrangler": "^4.156.0"
   },
-  "version": "1.48.0",
+  "version": "1.56.0",
   "description": "Self-hosted, AI-native subscription ledger: multi-currency, shared plans, balances, reminders and an MCP server. Runs on Cloudflare Workers or Docker.",
   "license": "MIT"
 }

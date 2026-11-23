@@ -72,11 +72,6 @@
     "addShort": "记一笔",
     "title": "扣款记录",
     "paidOn": "{date} 付款",
-    "kind": {
-      "refund": "退款",
-      "adjust": "补差",
-      "failed": "失败"
-    },
     "add": "记一笔（退款、补差、扣款失败、卡上实扣…）",
     "head": {
       "service": "服务期",
@@ -120,6 +115,7 @@
     "m6": "6 个月",
     "period": "周期",
     "converted": "折合",
+    "net": "实际花费",
     "average": "平均",
     "method": "支付",
     "paidOn": "付于",

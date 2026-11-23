@@ -72,11 +72,6 @@
     "addShort": "Ekle",
     "title": "Ödemeler",
     "paidOn": "{date} ödendi",
-    "kind": {
-      "refund": "İade",
-      "adjust": "Düzeltme",
-      "failed": "Başarısız"
-    },
     "add": "Kayıt ekle (iade, düzeltme, başarısız ödeme, kart tutarı…)",
     "head": {
       "service": "Hizmet dönemi",
@@ -135,6 +130,7 @@
     "m6": "6 ay",
     "period": "Dönem",
     "converted": "Karşılığı",
+    "net": "İade sonrası",
     "average": "Ortalama",
     "method": "Ödeme",
     "paidOn": "Ödendi",

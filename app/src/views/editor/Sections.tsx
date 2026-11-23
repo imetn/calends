@@ -26,7 +26,7 @@ import { DatePicker } from '../../components/DatePicker.tsx';
 import { CatIcon, SubIcon } from '../../components/marks.tsx';
 import { Cell, Group } from '../../components/ui.tsx';
 import { Icon } from '../../components/icons.tsx';
-import { NumInput, Seg, Stepper, Toggle } from '../../components/inputs.tsx';
+import { ClearablePreview, LinkInput, NumInput, Seg, Stepper, Toggle } from '../../components/inputs.tsx';
 import { isDomainCat } from '../../derive.ts';
 
 import { stopForm } from '../../../../shared/stop-form.ts';
@@ -340,26 +340,23 @@ function IconField({ f, up }: { f: Subscription; up: (p: Partial<Subscription>) 
         {t('editor.field.icon')}
         {embedded && <small>{t('editor.field.iconImage')}</small>}
       </span>
-      {/* 和网站、管理页一样一行写完：网址 / emoji 直接在行内输入，右边是预览与上传，高度不变 */}
+      {/* 和网站、管理页一样一行写完：网址 / emoji 输入与上传在左，实际图标固定在最右，高度不变 */}
       <span className="cell-r icon-actions">
         {/* 内嵌图片不把整串 base64 塞进来：留空并提示，输入网址或 emoji 即替换 */}
-        <input
+        <LinkInput
           value={embedded ? '' : (f.icon ?? '')}
           placeholder={embedded ? t('editor.field.iconImported') : t('editor.field.auto')}
           aria-label={t('editor.field.icon')}
           onChange={(e) => up({ icon: (e.target as HTMLInputElement).value || undefined })}
           onPaste={pick.onPaste}
         />
-        <SubIcon sub={f} size={28} />
         <button type="button" className="chip-btn" disabled={pick.busy} title={t('editor.field.iconUploadHelp')} onClick={pick.open}>
           {t('editor.field.iconUpload')}
         </button>
-        {/* 网址和 emoji 删掉输入就清空；上传的图片输入框里没有内容，单独给清除 */}
-        {embedded && (
-          <button type="button" className="chip-btn" disabled={pick.busy} onClick={() => up({ icon: undefined })}>
-            {t('editor.field.iconClear')}
-          </button>
-        )}
+        {/* 网址和 emoji 删掉输入就清空；上传的图片输入框里没有内容，悬停图标出现 × 清除 */}
+        <ClearablePreview label={t('editor.field.iconClear')} disabled={pick.busy} onClear={embedded ? () => up({ icon: undefined }) : undefined}>
+          <SubIcon sub={f} size={28} />
+        </ClearablePreview>
         {pick.input}
       </span>
     </div>

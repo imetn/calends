@@ -331,7 +331,8 @@ export function buildMonthly(state: AppState, today: string): Digest | undefined
   const charges = state.subscriptions
     .filter((s) => !s.proxy)
     // 分开记时已预缴的账单不再列入本月要付
-    .flatMap((s) => chargesBetween(s, today, end, today).filter((c) => c.date < end && !c.paidOn))
+    // 退款、补差、失败记录不是要付的账单，不进本月清单、笔数与合计
+    .flatMap((s) => chargesBetween(s, today, end, today).filter((c) => c.date < end && !c.paidOn && !c.kind))
     .sort((a, b) => a.date.localeCompare(b.date));
   // 有一笔折算不了，本月合计就显示「—」，不把它当 0 少算
   const sum = charges.reduce((acc, c) => acc + convert(c.amount, c.currency, base, state.fx), 0);

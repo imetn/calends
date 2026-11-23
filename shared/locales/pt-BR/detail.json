@@ -75,11 +75,6 @@
     "addShort": "Registrar",
     "title": "Cobranças",
     "paidOn": "Pago em {date}",
-    "kind": {
-      "refund": "Reembolso",
-      "adjust": "Ajuste",
-      "failed": "Falhou"
-    },
     "add": "Adicionar registro (reembolso, ajuste, cobrança com falha, valor no cartão…)",
     "head": {
       "service": "Período de serviço",
@@ -138,6 +133,7 @@
     "m6": "6 meses",
     "period": "Período",
     "converted": "Convertido",
+    "net": "Após reembolso",
     "average": "Média",
     "method": "Pagamento",
     "paidOn": "Pago",

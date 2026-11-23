@@ -443,9 +443,8 @@ function legacyScopeReport(state: AppState, subs: readonly Subscription[], today
     true,
   );
   if (live.length) blocks.push({ type: 'top', mode: 'scope', rows: live.sort(byAmount).slice(0, 5) });
-  const upcoming = charges(scoped, addDays(today, 1), addDays(today, 30), today).filter(
-    (r) => r.original.kind !== 'refund' && (r.amount > 0 || !!r.partial?.incomplete),
-  );
+  // 即将扣款只列账单：记在未来的退款、补差都不是要扣的钱
+  const upcoming = charges(scoped, addDays(today, 1), addDays(today, 30), today).filter((r) => !r.original.kind && (r.amount > 0 || !!r.partial?.incomplete));
   if (upcoming.length) blocks.push({ type: 'upcoming', rows: upcoming, total: sum(upcoming), partial: { total: rowTotal(upcoming) } });
   blocks.push(
     ...details(

@@ -1,5 +1,5 @@
 // AI 产品与 AI 开发工具：图标来源见 public/ai/SOURCE.txt 与 public/brands/SOURCE.txt
-import type { CatalogEntry, CatalogCat } from '../catalog.ts';
+import type { CatalogEntry, CatalogCat } from '../../../shared/service-catalog.ts';
 
 /** 有译名的条目：名称在 catalog.name.<file> 里按当前语言显示 */
 const LOCALIZED = new Set(['qwen', 'doubao', 'yuanbao', 'zhipu', 'coze', 'kling', 'hailuo', 'hunyuan']);

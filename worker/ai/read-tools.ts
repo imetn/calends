@@ -1,5 +1,7 @@
 import { amountTotal, chargesTotal, dueTotal, emptyTotal, sumTotals, type FxTotal } from '../../shared/fx-total.ts';
 import { partialOut } from './tool-views.ts';
+import { searchServices, serviceDisplayName } from '../../shared/service-catalog.ts';
+import { SERVICES, serviceCategory } from './tool-kit.ts';
 import {
   renewalDates,
   chargeMethodId,
@@ -819,5 +821,25 @@ export const search_app_store: Tool = {
   ]),
   async run(a) {
     return { results: await searchAppStore(String(a.query ?? ''), str(a.country) ?? 'us') };
+  },
+};
+
+export const search_services: Tool = {
+  name: 'search_services',
+  description:
+    'Fuzzy-search the built-in common services list (the same list as the web editor’s name suggestions) by name or alias: returns name, icon (a site path usable as a subscription icon), category, url, and optional preset renewal lead days (chargeLeadDays / cancelLeadDays). Prefer it over search_app_store for web subscriptions, AI products, domains and developer accounts.',
+  inputSchema: obj({ query: { type: 'string' }, limit: { type: 'integer', minimum: 1, maximum: 20, default: 8 } }, ['query']),
+  async run(a, ctx) {
+    const { st } = await state(ctx);
+    return {
+      results: searchServices(SERVICES, String(a.query ?? ''), Number(a.limit ?? 8)).map((x) => ({
+        name: serviceDisplayName(x, t),
+        icon: x.icon,
+        category: serviceCategory(st, x.cat) ?? null,
+        url: x.url,
+        ...(x.chargeLeadDays != null ? { chargeLeadDays: x.chargeLeadDays } : {}),
+        ...(x.cancelLeadDays != null ? { cancelLeadDays: x.cancelLeadDays } : {}),
+      })),
+    };
   },
 };

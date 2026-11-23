@@ -72,11 +72,6 @@
     "addShort": "Catat",
     "title": "Tagihan",
     "paidOn": "Dibayar {date}",
-    "kind": {
-      "refund": "Refund",
-      "adjust": "Penyesuaian",
-      "failed": "Gagal"
-    },
     "add": "Tambah catatan (refund, penyesuaian, tagihan gagal, jumlah di kartu…)",
     "head": {
       "service": "Periode layanan",
@@ -130,6 +125,7 @@
     "m6": "6 bln",
     "period": "Periode",
     "converted": "Setara",
+    "net": "Setelah refund",
     "average": "Rata-rata",
     "method": "Bayar",
     "paidOn": "Dibayar",

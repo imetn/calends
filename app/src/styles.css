@@ -536,7 +536,6 @@ a {
   width: 14px;
   height: 10px;
   border-radius: 0;
-  box-shadow: 0 0 0 var(--hairline) var(--line);
 }
 .pay {
   display: inline-flex;
@@ -2235,7 +2234,7 @@ a {
 .globe-tag .flag-img {
   width: 14px;
   height: 10px;
-  border-radius: 1px;
+  border-radius: 0;
 }
 .globe-tag b {
   font-weight: 600;
@@ -2262,8 +2261,7 @@ a {
 .region-key .flag-img {
   width: 14px;
   height: 10px;
-  border-radius: 1px;
-  box-shadow: 0 0 0 var(--hairline) var(--line);
+  border-radius: 0;
 }
 .region-key.on .region-name {
   color: var(--label);
@@ -4452,10 +4450,6 @@ button.h-price-row:focus-visible {
   height: 13px;
   border-radius: 0;
 }
-/* 卡片里的国旗不描边 */
-.scard .flag-img {
-  box-shadow: none;
-}
 .sc-meta {
   display: flex;
   /* 名字下只放分类与支付方式两枚胶囊，固定一行；放不下时支付方式截断 */
@@ -6552,7 +6546,6 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   height: 15px;
   border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 0 0 var(--hairline) var(--line);
 }
 .cp-flag img {
   width: 100%;
@@ -6571,7 +6564,6 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 }
 .cp-flag:has(.i),
 .cp-flag:has(b) {
-  box-shadow: none;
   background: var(--fill-2);
 }
 /* 登录设备位置：小号国旗跟在文字前 */
@@ -7264,7 +7256,7 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 /* 买断：一个圆点 */
 .gt-lifetime {
   position: absolute;
-  top: 10px;
+  top: 12px;
   width: 14px;
   height: 14px;
   margin-left: -7px;
@@ -7272,9 +7264,10 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   z-index: 1;
   box-shadow: 0 0 0 var(--hairline) var(--card);
 }
+/* 和胶囊同一条中线：胶囊 top 8px、高 22px，中线 19px；线宽一半往上让，线的中心正好压在中线上 */
 .gt-gap {
   position: absolute;
-  top: 16px;
+  top: calc(19px - var(--hairline) / 2);
   height: 0;
   border-top: var(--hairline) dashed var(--label-3);
 }
@@ -7462,7 +7455,6 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   height: 15px;
   border-radius: 0;
   object-fit: cover;
-  box-shadow: 0 0 0 var(--hairline) var(--line);
 }
 /* 调价切开的地方留一道细缝，后一截略浅一点，看得出价格变了 */
 .gt-seg.cut {
@@ -8178,6 +8170,42 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 }
 .icon-field .icon-actions > :not(input) {
   flex: none;
+}
+/* 图标预览上的清除：悬停（或键盘聚焦）时右上角出现 ×，触屏常显 */
+.clearable-preview {
+  position: relative;
+  display: inline-flex;
+}
+.preview-clear {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
+  cursor: pointer;
+  opacity: 0;
+}
+/* 视觉 18px，点击区外扩到 40px（触控规范） */
+.preview-clear::before {
+  content: '';
+  position: absolute;
+  inset: -11px;
+}
+.clearable-preview:hover > .preview-clear,
+.preview-clear:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .preview-clear {
+    opacity: 1;
+  }
 }
 
 /* 年度海报：所有订阅图标按花费分三档铺满，6 列整齐对齐 */
@@ -9735,15 +9763,13 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   color: var(--label-3);
 }
 
-/* 国旗图片（不用 emoji）：和文字基线对齐 */
+/* 国旗图片（不用 emoji）：自带外形的 PNG，任何地方都不加边框、描边或阴影 */
 .flag-img {
   display: inline-block;
   width: 16px;
   height: 12px;
   border-radius: 0;
   object-fit: cover;
-
-  box-shadow: 0 0 0 var(--hairline) var(--line);
 }
 .ac-flag .flag-img {
   width: 26px;
@@ -9755,8 +9781,7 @@ img.mm-flag {
   height: auto;
   border-radius: 0;
   filter: none;
-  /* 白色描边把角标和图标分开；国旗一律直角，不被裁掉 */
-  box-shadow: 0 0 0 1.5px var(--white-a12);
+  /* 国旗是自带外形的 PNG：直角、不裁切、不加描边 */
 }
 .pay img.mm-flag {
   width: 11px;
@@ -9992,8 +10017,9 @@ img.mm-flag {
   gap: 4px;
   line-height: 1.4;
 }
-.gt-seg em {
-  display: block;
+/* 甘特条金额前的国旗：沿用 icon-text 的弹性布局留出间距，不能被上面的 display: block 盖掉 */
+.gt-seg em.icon-text {
+  display: flex;
   gap: 4px;
 }
 /* 占比图分组标题：沿用 icon-text 的弹性布局，图标与文字垂直居中并留同样间距；名称过长时省略 */

@@ -126,6 +126,8 @@ export function Events({ sub, state, today }: { sub: Subscription; state: AppSta
           date: p.date,
           icon: Undo2,
           title: t('editor.payment.kind.refund'),
+          // 退了多少是关键信息，和调价一样写原币金额
+          sub: money(Math.abs(p.amount), p.currency ?? v.currency),
           tone: 'ok',
           future: p.date > today,
         });

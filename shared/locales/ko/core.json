@@ -255,5 +255,10 @@
   },
   "fxIncomplete": "환율이 없어 일부 금액을 환산할 수 없으므로 결과가 불완전합니다.",
   "fxUnconverted": "미환산: {amount}",
-  "fxOther": "외 {count}개 통화"
+  "fxOther": "외 {count}개 통화",
+  "paymentKind": {
+    "refund": "환불",
+    "adjust": "조정",
+    "failed": "실패"
+  }
 }

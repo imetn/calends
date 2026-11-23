@@ -1,6 +1,6 @@
 // 公开页脱敏：服务端只下发这里处理过的数据，浏览器拿不到原始信息
 import { DEFAULT_SETTINGS, type AppState, type Payment, type PaymentMethod, type Phase, type Stop, type Subscription } from './types.ts';
-import { effectiveStatus, fnv1a, isStopped, migrateRenewalRules, priceAt, todayIn } from './billing.ts';
+import { effectiveStatus, fnv1a, isStopped, migrateStored, priceAt, todayIn } from './billing.ts';
 import { isLocale, t } from './i18n.ts';
 import { categoryList, isDomainCategory, presetOf, type Category } from './categories.ts';
 import { publicConfigForVisitors, publicParts, type PublicPart } from './public-layout.ts';
@@ -90,7 +90,7 @@ function publicPhase(p: Phase): Phase {
 }
 
 function publicSub(s: Subscription, cats: Category[]): Subscription {
-  s = migrateRenewalRules(s);
+  s = migrateStored(s);
   const domain = isDomainSub(s, cats);
   // 未上线项目的域名打码；已上线的（showOnPublic）原样展示
   const hide = domain && !s.showOnPublic;

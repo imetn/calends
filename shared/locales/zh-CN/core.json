@@ -235,5 +235,10 @@
   },
   "fxIncomplete": "部分金额缺少汇率无法折算，这里的结果不完整。",
   "fxUnconverted": "未折算：{amount}",
-  "fxOther": "等 {count} 种币种"
+  "fxOther": "等 {count} 种币种",
+  "paymentKind": {
+    "refund": "退款",
+    "adjust": "补差",
+    "failed": "失败"
+  }
 }

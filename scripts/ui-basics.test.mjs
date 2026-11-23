@@ -248,6 +248,23 @@ test('stylesheets keep no selector list left dangling by a deleted rule', () => 
   }
 });
 
+test('flag images are plain PNGs: no outline, ring or shadow anywhere', () => {
+  // 国旗 PNG 自带外形，外面不能再加描边；甘特条里国旗和金额靠 icon-text 的 flex 间距分开
+  for (const file of ['styles.css', 'components/ui.css', 'public/index.css']) {
+    const css = readFileSync(new URL(file, root), 'utf8');
+    for (const [, selector, body] of css.matchAll(/([^{}]*flag[^{}]*)\{([^}]*)\}/g)) {
+      if (!/flag/.test(selector.replace(/:not\([^)]*\)/g, ''))) continue;
+      assert.doesNotMatch(body, /box-shadow:\s*(?!none)|(^|;|\s)border:\s*(?!0|none)|outline:\s*(?!0|none)/, `${file}: ${selector.trim()}`);
+    }
+  }
+  for (const [file, , source] of sources.filter(([, , src]) => src.includes('/flags/'))) {
+    assert.doesNotMatch(source, /<img[^>]*(shadow-|ring-|border)[^>]*flags\//, file);
+  }
+  assert.doesNotMatch(readUiSource(new URL('public/widgets/globe.tsx', root)), /(shadow-|ring-)[^"]*"[^>]*flags\//);
+  const css = readFileSync(new URL('styles.css', root), 'utf8');
+  assert.match(css, /\.gt-seg em\.icon-text\s*\{[^}]*display:\s*flex/);
+});
+
 test('import preview never hands an unrecognized source date to the calendar', () => {
   // 月历拿到 Jan 5 2026 这类值会抛 RangeError，整页崩溃
   const [, ast, source] = sources.find(([file]) => file === 'views/ImportSheet.tsx');
@@ -1784,4 +1801,69 @@ test('金额小数不被容器的 small { display: block } 挤到下一行；报
   assert.match(lifecycle, /renderBlock\(upcoming, true\)/);
   const ui = readFileSync(new URL('../app/src/components/ui.css', import.meta.url), 'utf8');
   assert.match(ui, /\.metric-note \.hero-delta \{\n\s*font-size: var\(--fs-1\);/);
+});
+
+test('ledger kind badges sit left of the amount so amounts stay right-aligned', () => {
+  // 退款、补差、失败标签若放在金额右边，这一行的金额会被挤离右边线，和上下行对不齐
+  for (const file of ['views/detail/Ledgers.tsx', 'views/carpool/CarSheet.tsx']) {
+    const lines = readFileSync(new URL(file, root), 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      if (!/<em className=\{?[`"]dt-kind/.test(line)) return;
+      assert.doesNotMatch(lines[i - 1], /\{(orig|flow|money|cost)\(/, `${file}:${i + 1} badge after amount`);
+    });
+  }
+  // 历程里的退款事件必须带上退了多少
+  const events = readFileSync(new URL('views/detail/Events.tsx', root), 'utf8');
+  assert.match(events, /title: t\('editor\.payment\.kind\.refund'\),\s*(\/\/[^\n]*\s*)?sub: money\(/);
+});
+
+test('year-row method stack: +N chip does not collapse the last pill, and is a pill itself', () => {
+  // :last-of-type 会把后面的 +N span 当成最后一个，最后一颗胶囊也被压成图标，+N 成了一串散字
+  const css = readFileSync(new URL('views/detail.css', root), 'utf8');
+  const stack = css.slice(css.indexOf('.dt-pay-list {'), css.indexOf('/* 停止卡片只有停止日'));
+  assert.doesNotMatch(stack.replace(/\/\*[\s\S]*?\*\//g, ''), /last-of-type/);
+  assert.match(stack, /\.dt-pay-list > \.pay:has\(\+ \.pay\)/);
+  const more = stack.slice(stack.indexOf('.dt-pay-more {'));
+  assert.match(more, /height: 22px/);
+  assert.match(more, /border-radius: var\(--radius-pill\)/);
+});
+
+test('gantt gap dashes and lifetime marks share the pill centre line', () => {
+  // 胶囊 top 8px、高 22px，中线 19px；虚线曾在 16px，买断圆点与细线曾在 17px，看起来都偏上
+  const css = readFileSync(new URL('styles.css', root), 'utf8');
+  const px = (sel, prop) => {
+    const block = css.slice(css.indexOf(`${sel} {`), css.indexOf('}', css.indexOf(`${sel} {`)));
+    return block.match(new RegExp(`\\n\\s*${prop}: ([^;]+);`))?.[1];
+  };
+  const seg = parseFloat(px('.gt-seg', 'top')) + parseFloat(px('.gt-seg', 'height')) / 2;
+  assert.equal(seg, 19);
+  assert.equal(px('.gt-gap', 'top'), 'calc(19px - var(--hairline) / 2)');
+  const gantt = readFileSync(new URL('views/Gantt.tsx', root), 'utf8');
+  const dot = Number(gantt.match(/className="gt-lifetime" style=\{\{ left, top: top \+ (\d+)/)[1]) + 14 / 2;
+  const tail = Number(gantt.match(/className="gt-life-tail" style=\{\{[^}]*top: top \+ (\d+)/)[1]) + 2 / 2;
+  assert.equal(dot, 11);
+  assert.equal(tail, 11);
+});
+
+test('refund / adjust rows say what they are everywhere a single charge is shown', () => {
+  const read = (f) => readFileSync(new URL(f, root), 'utf8');
+  // 首页、公开页时间轴：传类型，跳过失败记录
+  for (const f of ['views/Overview.tsx', 'public/page.tsx']) {
+    const s = read(f);
+    assert.match(s, /kind: c\.kind,/, f);
+    assert.match(s, /if \(c\.kind === 'failed'\) continue;/, f);
+  }
+  assert.match(read('components/Timeline.tsx'), /tl-kind/);
+  // 日历当天卡片：退款、补差不写周期与续费信息
+  const cal = read('views/Calendar.tsx');
+  assert.match(cal, /const extra = !!c\.kind;/);
+  assert.match(cal, /\{!extra && <span>\{cycleLabel\(c\.sub\.cycle\)\}<\/span>\}/);
+  // 详情提示框：这一笔后来退的钱
+  const tip = read('views/detail/ChargeTip.tsx');
+  assert.match(tip, /refundsOf\(c\)\.map/);
+  // 折合跟在金额后面同一行，不另起「折合」行
+  assert.doesNotMatch(tip, /detail\.chart\.converted/);
+  assert.match(tip, /withFx\(flow\(-net/);
+  // 甘特图圆点按类型取名，不把补差、失败叫「扣款」
+  assert.match(read('views/Gantt.tsx'), /editor\.payment\.kind\.\$\{c\.kind \?\? 'charge'\}/);
 });

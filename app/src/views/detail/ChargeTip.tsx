@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { addDays, addMonths, chargeMethodId, chargeServicePeriod, diffDays, isPostpaid, type Charge } from '../../../../shared/billing.ts';
+import { Fragment, type ReactNode } from 'react';
+import { addDays, addMonths, chargeMethodId, chargeServicePeriod, diffDays, isPostpaid, refundsOf, type Charge } from '../../../../shared/billing.ts';
 import { cnDateAuto, cnDateFull, flow, money, monthLabel, weekdayOf, wholeOpts } from '../../../../shared/format.ts';
 import { intlLocale, t } from '../../../../shared/i18n.ts';
 import { numberFormat } from '../../../../shared/intl.ts';
@@ -73,7 +73,7 @@ export function ChargeTip({
   today,
   whole,
   future,
-  converted,
+  convert,
   full,
   usage,
   open,
@@ -89,8 +89,8 @@ export function ChargeTip({
   /** 金额全是整数的币种（wholeCurrencies），与扣款记录同一写法 */
   whole?: Set<string>;
   future?: boolean;
-  /** 原币与图表货币不同时的折合金额（已格式化） */
-  converted?: ReactNode;
+  /** 原币与图表货币不同时，把几笔折成图表货币并格式化（按各自日期的汇率）；同币种不传 */
+  convert?: (list: Charge[]) => ReactNode;
   /** 首期优惠期间的原价（已格式化） */
   full?: ReactNode;
   usage?: number;
@@ -105,6 +105,20 @@ export function ChargeTip({
   /** 分开记时这一期还没缴的部分：本笔写成已缴部分，下面再写待缴或逾期 */
   owed?: Charge;
 }) {
+  // 后来退回的钱，按退款日期折算；refundsOf 已保证同币种
+  const refunds: Charge[] = refundsOf(c).map((r) => ({
+    ...c,
+    date: r.date,
+    amount: r.amount,
+    kind: 'refund',
+    settled: r.settled,
+    projected: false,
+    paidOn: undefined,
+    serviceDate: undefined,
+    funding: undefined,
+    valuationParts: undefined,
+  }));
+  const net = Math.round((c.amount + refunds.reduce((a, r) => a + r.amount, 0)) * 100) / 100;
   // 终身买断没有计费周期
   const p = c.kind || c.sub.cycle.unit === 'lifetime' ? undefined : chargeServicePeriod(c.sub, c.date, c.serviceDate);
   const post = p && isPostpaid(c.sub);
@@ -113,6 +127,13 @@ export function ChargeTip({
       <span>{label}</span>
       <b>{value}</b>
     </div>
+  );
+  // 外币金额后面跟折合，同一行写完
+  const withFx = (value: ReactNode, list: Charge[]) => (
+    <>
+      {value}
+      {convert && <em className="cc-tip-x">≈ {convert(list)}</em>}
+    </>
   );
   return (
     <>
@@ -134,13 +155,24 @@ export function ChargeTip({
           ? t(`detail.settlement.${c.unpaid}`)
           : owed
             ? t('detail.settlement.partial')
-            : future
-              ? t('detail.timeline.planned')
-              : t('detail.field.amount'),
-        flow(-c.amount, c.currency, wholeOpts(c.amount, c.currency, whole)),
+            : c.kind
+              ? t(`core.paymentKind.${c.kind}`)
+              : future
+                ? t('detail.timeline.planned')
+                : t('detail.field.amount'),
+        withFx(flow(-c.amount, c.currency, wholeOpts(c.amount, c.currency, whole)), [c]),
       )}
       {owed?.unpaid && row(t(`detail.settlement.${owed.unpaid}`), flow(-owed.amount, owed.currency, wholeOpts(owed.amount, owed.currency, whole)))}
-      {converted != null && row(t('detail.chart.converted'), converted)}
+      {/* 这一笔后来退了钱：逐笔写哪天退、退多少，最后是扣除退款后的实际花费；外币都在同一行带折合 */}
+      {refunds.map((r, i) => (
+        <Fragment key={`refund-${i}`}>
+          {row(
+            t('core.paymentKind.refund'),
+            withFx(`${cnDateAuto(r.date, today)} ${flow(-r.amount, c.currency, wholeOpts(r.amount, c.currency, whole))}`, [r]),
+          )}
+        </Fragment>
+      ))}
+      {refunds.length > 0 && row(t('detail.chart.net'), withFx(flow(-net, c.currency, wholeOpts(net, c.currency, whole)), [c, ...refunds]))}
       {full != null && row(t('detail.chart.regular'), full)}
       {usage != null && meter && row(t('detail.meters.head.usage'), withUnit(usage, meter.unit, decimals != null ? fixedQty(decimals) : qty))}
       {extra}

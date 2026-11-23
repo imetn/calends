@@ -271,8 +271,8 @@ export function CarSheet({
                       second: <ChargeMethods c={c} state={state} />,
                       orig: (
                         <>
-                          {flow(-c.amount, c.currency)}
                           {c.kind === 'refund' && <em className="dt-kind refund">{t('family.sheet.refund')}</em>}
+                          {flow(-c.amount, c.currency)}
                         </>
                       ),
                       base: Number.isFinite(v) ? flow(-v, base) : '—',
@@ -329,8 +329,8 @@ export function CarSheet({
                     ),
                     orig: (
                       <>
-                        {flow(p.amount, p.currency)}
                         {p.kind === 'refund' && <em className="dt-kind">{t('family.sheet.refund')}</em>}
+                        {flow(p.amount, p.currency)}
                       </>
                     ),
                     base: flow(v, base),
