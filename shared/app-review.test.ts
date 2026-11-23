@@ -312,5 +312,5 @@ test('侧边栏再点一次「助手」停在最新对话，不回到顶部的�
   const assistant = readFileSync(new URL('../app/src/views/Assistant.tsx', import.meta.url), 'utf8');
   assert.match(assistant, /onRoute\(\(\) => \{\s*if \(currentRoute\(\) !== 'assistant'\) return;\s*setAtBottom\(true\);\s*setJump\(\(n\) => n \+ 1\);/);
   assert.match(assistant, /\}, \[chat, atBottom, fill, past, jump\]\);/);
-  assert.match(assistant, /\}, \[fill, past, chat\.id, atBottom, jump\]\);/);
+  assert.match(assistant, /\}, \[fill, past, chat\.id, atBottom, jump, !!returnTo\]\);/);
 });

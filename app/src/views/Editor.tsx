@@ -42,9 +42,9 @@ export function Editor({ sub, state, today, onClose }: { sub: Subscription; stat
     };
   }, [isNew]);
 
-  /** 交给 AI 助手：带上已填名称，并记录当前页面与表单快照以便一键返回 */
+  /** 交给 AI 助手：带上已填名称，并记录当前页面以便一键返回；返回时以原始表单（含合租/代付模板）打开，已填内容由本地草稿恢复 */
   const toAssistant = (images: string[] = []) => {
-    const returnTo = { route: currentRoute() || 'overview', draft: f };
+    const returnTo = { route: currentRoute() || 'overview', draft: sub };
     close();
     handoff(f.name.trim() ? `${f.name.trim()}\n` : '', images, returnTo);
   };
@@ -139,6 +139,7 @@ export function Editor({ sub, state, today, onClose }: { sub: Subscription; stat
     >
       {restored && dirty && <div className="ed-draft">{t('editor.draftRestored')}</div>}
       {isNew &&
+        aiReady !== null &&
         (aiReady ? (
           <button type="button" className="ed-ai" onClick={() => toAssistant()}>
             <span className="ed-ai-ico">

@@ -101,3 +101,17 @@ test('editor and assistant UI contracts: back button lives in Toolbar.title (vis
   // Configured button no longer uses primary --ink fill (secondary navigation cue)
   assert.doesNotMatch(css.match(/\.ed-ai-go\s*\{[^}]*\}/)?.[0] ?? '', /var\(--ink\)/);
 });
+
+test('back from assistant keeps the local draft: returnTo carries the original form, not the edited one', () => {
+  const editor = readFileSync(new URL('../app/src/views/Editor.tsx', import.meta.url), 'utf8');
+  const assistant = readFileSync(new URL('../app/src/views/Assistant.tsx', import.meta.url), 'utf8');
+  // 编辑后的 f 作为初始表单会让 dirty 为 false，关闭时删掉本地草稿；原始 sub 让草稿照常恢复
+  assert.match(editor, /returnTo = \{ route: currentRoute\(\) \|\| 'overview', draft: sub \}/);
+  // 是否已配置未知时不先显示「去配置」，避免已配置用户看到错误提示
+  assert.match(editor, /isNew &&\s*aiReady !== null &&/);
+  // 助手已新建或转去编辑后，不再提供回到旧草稿的返回
+  assert.match(assistant, /if \(p\.tool === 'create_subscription'\) setReturnTo\(null\);/);
+  assert.match(assistant, /setReturnTo\(null\);\s*window\.dispatchEvent\(new CustomEvent\('ledger:add', \{ detail: draft \}\)\);/);
+  // 返回按钮改变顶栏高度：对齐历史分割线的测量随之重跑
+  assert.match(assistant, /\[fill, past, chat\.id, atBottom, jump, !!returnTo\]/);
+});

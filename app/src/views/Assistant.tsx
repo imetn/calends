@@ -137,7 +137,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [chat.id, !chat.turns.length]);
+  }, [chat.id, !chat.turns.length, !!returnTo]);
 
   // 新内容到来时贴着底部滚；用户往上翻了就不打扰，显示「回到底部」
   useLayoutEffect(() => {
@@ -158,7 +158,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
       if (d) window.scrollTo({ top: window.scrollY + d, behavior: 'instant' });
     });
     return () => cancelAnimationFrame(frame);
-  }, [fill, past, chat.id, atBottom, jump]);
+  }, [fill, past, chat.id, atBottom, jump, !!returnTo]);
   useEffect(() => {
     const onScroll = () => {
       const el = document.documentElement;
@@ -247,6 +247,8 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
         body: JSON.stringify({ tool: p.tool, args: p.args }),
       });
       const verified = r.verification?.status === 'verified';
+      // 已由助手新建：不再提供回到旧草稿的返回，避免重复添加
+      if (p.tool === 'create_subscription') setReturnTo(null);
       setPart(turnId, p.id, {
         state: verified ? 'applied' : 'unverified',
         subId: r.subscription?.id,
@@ -318,6 +320,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
         ? { payments: (a.payments as Array<{ date: string; amount: number; note?: string }>).map((x) => ({ date: x.date, amount: x.amount, note: x.note })) }
         : {}),
     };
+    setReturnTo(null);
     window.dispatchEvent(new CustomEvent('ledger:add', { detail: draft }));
   };
 
