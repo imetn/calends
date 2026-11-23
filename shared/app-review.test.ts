@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { cnDateFull } from './format.ts';
-import { isDateField, proposalDay } from '../app/src/views/assistant-fields.ts';
+import { headAlignDelta, isDateField, proposalDay } from '../app/src/views/assistant-fields.ts';
 
 test('助手草稿：只有日期字段按日期显示，category/status 等原样显示', () => {
   for (const k of ['date', 'end', 'at', 'until', 'from', 'expires', 'next_due', 'trial_end', 'paused_at', 'nextDue', 'trialEnd', 'collectFrom'])
@@ -288,6 +288,20 @@ test('复制卡片里按卡片宽度算几何的图表都按导出宽度重画�
     }
   }
   assert.ok(checked.includes('FlowCard') && checked.includes('ProfileCard'), checked.join());
+});
+
+test('Issue #27：当前对话超过一屏时贴底不再被拉回历史分割线，能滚到最新消息', () => {
+  // 内容不足一屏（会话高度就是最小高度）：分割线对齐到顶栏下 12px
+  assert.equal(headAlignDelta({ headTop: 300, barBottom: 0, sessionHeight: 700, fill: 700 }), 288);
+  assert.equal(headAlignDelta({ headTop: -88, barBottom: 0, sessionHeight: 701, fill: 700 }), -100);
+  assert.equal(headAlignDelta({ headTop: 12.5, barBottom: 0, sessionHeight: 700, fill: 700 }), 0);
+  // 当前对话比一屏长：滚到底时分割线早已在可视区上方，不能把页面拉回去
+  assert.equal(headAlignDelta({ headTop: -2400, barBottom: 0, sessionHeight: 3100, fill: 700 }), 0);
+  assert.equal(headAlignDelta({ headTop: -2400, barBottom: 56, sessionHeight: 3100, fill: 640 }), 0);
+  assert.equal(headAlignDelta({ headTop: -100, barBottom: 0, sessionHeight: 702, fill: 700 }), 0);
+  // 页面里确实用当前会话的实际高度与最小高度判断
+  const page = readFileSync(new URL('../app/src/views/Assistant.tsx', import.meta.url), 'utf8');
+  assert.match(page, /headAlignDelta\(\{[^}]*sessionHeight: el\.offsetHeight, fill \}\)/);
 });
 
 test('侧边栏再点一次「助手」停在最新对话，不回到顶部的旧历史', () => {

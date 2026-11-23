@@ -34,7 +34,7 @@ import { IconButton, Toolbar } from '../components/ui.tsx';
 import { api, getState, refresh } from '../store.ts';
 import { copyText, toast } from '../toast.ts';
 import { newSub } from './editor/new-sub.ts';
-import { interrupted } from './assistant-fields.ts';
+import { headAlignDelta, interrupted } from './assistant-fields.ts';
 import { compressImage as compress, takeHandoff } from '../handoff.ts';
 import './assistant.css';
 import { Streamdown, type Components } from 'streamdown';
@@ -134,12 +134,13 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
   useLayoutEffect(() => {
     if (!atBottom) return;
     const frame = requestAnimationFrame(() => {
-      const head = session.current?.querySelector('.as-past-head');
-      if (!head) return;
+      const el = session.current;
+      const head = el?.querySelector('.as-past-head');
+      if (!el || !head) return;
       const tb = document.querySelector<HTMLElement>('.toolbar');
       const top = tb && getComputedStyle(tb).position === 'sticky' ? tb.getBoundingClientRect().bottom : 0;
-      const d = head.getBoundingClientRect().top - (top + 12);
-      if (Math.abs(d) > 1) window.scrollTo({ top: window.scrollY + d, behavior: 'instant' });
+      const d = headAlignDelta({ headTop: head.getBoundingClientRect().top, barBottom: top, sessionHeight: el.offsetHeight, fill });
+      if (d) window.scrollTo({ top: window.scrollY + d, behavior: 'instant' });
     });
     return () => cancelAnimationFrame(frame);
   }, [fill, past, chat.id, atBottom, jump]);
