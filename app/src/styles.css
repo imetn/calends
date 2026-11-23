@@ -8158,6 +8158,12 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   cursor: pointer;
   opacity: 0;
 }
+/* 视觉 18px，点击区外扩到 40px（触控规范） */
+.preview-clear::before {
+  content: '';
+  position: absolute;
+  inset: -11px;
+}
 .clearable-preview:hover > .preview-clear,
 .preview-clear:focus-visible {
   opacity: 1;
