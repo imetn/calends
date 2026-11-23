@@ -59,6 +59,8 @@ function story(state: AppState, sub: Subscription, today: string) {
   return {
     base,
     charges,
+    /** 扣了几次：退款、补差不算一次扣款 */
+    times: charges.filter((c) => !c.kind).length,
     values,
     total,
     vs,
@@ -147,12 +149,12 @@ function SCard({ sub, st, hide, m, today }: Ctx) {
       <small className="sc-k">{hide ? t('share.together') : t('share.totalSpent')}</small>
       <div className="sc-big">{hide ? st.duration : m(-st.total)}</div>
       <MetricCards>
-        <Metric label={hide ? t('share.charges') : t('share.subscribed')} value={hide ? t('share.times', { count: st.charges.length }) : st.duration} />
+        <Metric label={hide ? t('share.charges') : t('share.subscribed')} value={hide ? t('share.times', { count: st.times }) : st.duration} />
         <Metric label={hide ? t('share.gaps') : t('share.realMonthly')} value={hide ? t('share.times', { count: st.gaps.length }) : m(-st.perMonth)} />
         <Metric label={t('share.price')} value={changeText(st)} />
         <Metric
           label={hide ? t('share.phases') : t('share.charges')}
-          value={hide ? t('share.phaseCount', { count: st.vs.length }) : t('share.times', { count: st.charges.length })}
+          value={hide ? t('share.phaseCount', { count: st.vs.length }) : t('share.times', { count: st.times })}
         />
       </MetricCards>
       <div className="sc-bar">
@@ -191,7 +193,9 @@ function SReceipt({ sub, st, hide, m, today }: Ctx) {
       : st.status === 'paused'
         ? statusText(st)
         : t('share.thanks');
-  const rows = st.charges.map((c, i) => ({ c, v: st.values[i] })).reverse();
+  // 第几次扣款只数真正的扣款，退款、补差插在中间不占序号
+  let nth = 0;
+  const rows = st.charges.map((c, i) => ({ c, v: st.values[i], n: c.kind ? 0 : ++nth })).reverse();
   const shown = rows.slice(0, 14);
   const rest = rows.slice(14);
   const bars = Array.from({ length: 46 }, (_, i) => 1 + (((Math.round(st.total) || 0) * 7 + st.charges.length * 13 + i * 31) % 4));
@@ -204,12 +208,14 @@ function SReceipt({ sub, st, hide, m, today }: Ctx) {
         <span>{statusText(st)}</span>
       </div>
       <div className="rc-cut" />
-      {shown.map(({ c, v }, i) => (
+      {shown.map(({ c, v, n }, i) => (
         <div key={i} className="rc-row">
           <span className="rc-d">{numericDate(c.date, { year: true })}</span>
           <span className="rc-n">
             {c.kind === 'refund' ? (
               t('share.refund')
+            ) : c.kind ? (
+              t(`core.paymentKind.${c.kind}`)
             ) : c.sub.region ? (
               <>
                 <FlagImg cc={c.sub.region} /> {c.sub.region}
@@ -219,7 +225,13 @@ function SReceipt({ sub, st, hide, m, today }: Ctx) {
             )}
           </span>
           <span className={`rc-v ${c.amount < 0 ? 'green' : ''}`}>
-            {hide ? (c.kind === 'refund' ? t('share.refundShort') : t('share.nth', { n: rows.length - i })) : m(-c.amount, c.currency)}
+            {hide
+              ? c.kind === 'refund'
+                ? t('share.refundShort')
+                : c.kind
+                  ? t(`core.paymentKind.${c.kind}`)
+                  : t('share.nth', { n })
+              : m(-c.amount, c.currency)}
           </span>
           {!hide && c.currency !== st.base && <span className={`rc-x ${v < 0 ? 'green' : ''}`}>≈{m(-v)}</span>}
         </div>
@@ -238,7 +250,7 @@ function SReceipt({ sub, st, hide, m, today }: Ctx) {
       </div>
       <div className="rc-kv">
         <span>{t('share.chargeCount')}</span>
-        <span>{t('share.count', { count: st.charges.length })}</span>
+        <span>{t('share.count', { count: st.times })}</span>
       </div>
       <div className="rc-kv">
         <span>{hide ? t('share.switches') : t('share.realMonthly')}</span>
@@ -276,7 +288,7 @@ function STimeline({ sub, st, hide, m, today }: Ctx) {
           <b>{sub.name}</b>
           <span>
             {st.duration} <span className="copy-gap" aria-hidden="true" />{' '}
-            {hide ? t('share.n.charges', { count: st.charges.length }) : t('share.sum', { amount: m(-st.total) })}
+            {hide ? t('share.n.charges', { count: st.times }) : t('share.sum', { amount: m(-st.total) })}
           </span>
         </div>
       </div>
@@ -330,9 +342,7 @@ function SPoster({ sub, st, hide, m }: Ctx) {
       <div className="sp-big">{st.duration}</div>
       <div className="sp-line">
         {copyParts(
-          hide
-            ? `${t('share.n.charges', { count: st.charges.length })}\n${changeText(st)}`
-            : t('share.totalPerDay', { total: m(-st.total), perDay: m(-st.perDay) }),
+          hide ? `${t('share.n.charges', { count: st.times })}\n${changeText(st)}` : t('share.totalPerDay', { total: m(-st.total), perDay: m(-st.perDay) }),
         )}
       </div>
       <div className="sp-chips">
@@ -370,7 +380,7 @@ function SYears({ sub, st, hide, m }: Ctx) {
       </div>
       <div className="sy-foot">
         <span>
-          {t('share.n.charges', { count: st.charges.length })} <span className="copy-gap" aria-hidden="true" /> {changeText(st)}
+          {t('share.n.charges', { count: st.times })} <span className="copy-gap" aria-hidden="true" /> {changeText(st)}
         </span>
         <span>{location.host}</span>
       </div>

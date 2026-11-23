@@ -266,5 +266,10 @@
   },
   "fxIncomplete": "Döviz kuru eksik olduğu için bazı tutarlar çevrilemiyor; sonuç eksik.",
   "fxUnconverted": "Dönüştürülmeyen: {amount}",
-  "fxOther": "ve {count} diğer para birimi"
+  "fxOther": "ve {count} diğer para birimi",
+  "paymentKind": {
+    "refund": "İade",
+    "adjust": "Düzeltme",
+    "failed": "Başarısız"
+  }
 }

@@ -64,7 +64,9 @@ function ChargeTimeline({ state, today, onOpen }: { state: AppState; today: stri
     (from: string, to: string) => {
       const map = new Map<string, TimelineGroup>();
       const byDay = new Map<string, Charge[]>();
+      // 扣款失败没有动钱，不画成一笔 ¥0
       for (const c of allCharges(state, from, to, today)) {
+        if (c.kind === 'failed') continue;
         const g = map.get(c.date) ?? { date: c.date, items: [] };
         const real = state.subscriptions.find((x) => x.id === c.sub.id) ?? c.sub;
         g.items.push({
@@ -72,6 +74,7 @@ function ChargeTimeline({ state, today, onOpen }: { state: AppState; today: stri
           icon: <SubIcon sub={c.sub} size={30} />,
           name: c.sub.name,
           amount: flow(-c.amount, c.currency),
+          kind: c.kind,
           value: chargeTotal(state, c).value,
           onClick: () => onOpen(real),
         });

@@ -266,5 +266,10 @@
   },
   "fxIncomplete": "Einige Beträge lassen sich mangels Wechselkurs nicht umrechnen; das Ergebnis ist unvollständig.",
   "fxUnconverted": "Nicht umgerechnet: {amount}",
-  "fxOther": "und {count} weitere Währungen"
+  "fxOther": "und {count} weitere Währungen",
+  "paymentKind": {
+    "refund": "Erstattung",
+    "adjust": "Korrektur",
+    "failed": "Fehlgeschlagen"
+  }
 }

@@ -236,7 +236,7 @@ export function Meters({
           state={state}
           today={today}
           whole={whole}
-          converted={c.currency !== base ? formatTotal(chargesTotal(state, [c], base), base, { direction: -1 }) : undefined}
+          convert={c.currency !== base ? (l) => formatTotal(chargesTotal(state, l, base), base, { direction: -1 }) : undefined}
           usage={chargeUsage(summary.rows, c)}
           open={chargeOpen(summary.rows, c)}
           meter={cur}

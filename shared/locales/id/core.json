@@ -255,5 +255,10 @@
   },
   "fxIncomplete": "Beberapa jumlah tidak dapat dikonversi karena kurs tidak tersedia, jadi hasil ini tidak lengkap.",
   "fxUnconverted": "Belum dikonversi: {amount}",
-  "fxOther": "dan {count} mata uang lainnya"
+  "fxOther": "dan {count} mata uang lainnya",
+  "paymentKind": {
+    "refund": "Refund",
+    "adjust": "Penyesuaian",
+    "failed": "Gagal"
+  }
 }

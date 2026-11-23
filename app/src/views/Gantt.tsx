@@ -538,7 +538,7 @@ export function Gantt({
             </div>
           </div>
           {rows.map((r) => {
-            const charges = w ? chargesBetween(r.s, rStart, rEnd, today) : [];
+            const charges = w ? chargesBetween(r.s, rStart, rEnd, today).filter((c) => c.kind !== 'failed') : []; // 扣款失败没有动钱，和时间线、日历一样不画
             return (
               <div
                 key={r.s.id}
@@ -611,14 +611,14 @@ export function Gantt({
                       if ((unused ? wastedUntil : to) < rStart || g.from > rEnd) return null;
                       const lifetime = g.v.cycle.unit === 'lifetime';
                       const tip = `${g.v.region ? `${g.v.region}\n` : ''}${money(g.v.price, g.v.currency)}${lifetime ? t('list.gantt.lifetimeSuffix') : `/${perLabel(g.v)}`}\n${cnDate(g.from)} – ${g.open ? t('list.gantt.present') : cnDate(g.to)}${g.v.planned ? t('list.gantt.plannedSuffix') : ''}`;
-                      // 买断：一个圆点；有结束日（如含一年更新、之后改订阅）时，再拉一条细线到结束日，和后面的虚线、下一段接上
+                      // 买断：一个圆点（14px，top+4）与细线（2px，top+10），中心都压在胶囊中线 top+11 上；有结束日（如含一年更新、之后改订阅）时，再拉一条细线到结束日，和后面的虚线、下一段接上
                       if (lifetime)
                         return (
                           <Fragment key={g.from}>
                             {!g.open && x(g.to) - left > 8 && (
-                              <span className="gt-life-tail" style={{ left, width: x(g.to) - left, top: top + 8, background: color(g.v) }} />
+                              <span className="gt-life-tail" style={{ left, width: x(g.to) - left, top: top + 10, background: color(g.v) }} />
                             )}
-                            <span className="gt-lifetime" style={{ left, top: top + 2, background: color(g.v) }} title={tip} />
+                            <span className="gt-lifetime" style={{ left, top: top + 4, background: color(g.v) }} title={tip} />
                           </Fragment>
                         );
                       // 段内按调价、首期优惠切成几截，每截标自己的价格；
@@ -789,7 +789,7 @@ export function Gantt({
                         key={k2}
                         className={`gt-charge ${c.amount < 0 ? 'refund' : ''} ${c.date > today ? 'future' : ''}`}
                         style={{ left: x(c.date) }}
-                        title={`${cnDate(c.date)}\n${c.kind === 'refund' ? t('editor.payment.kind.refund') : t('editor.payment.kind.charge')}\n${flow(-c.amount, c.currency)}`}
+                        title={`${cnDate(c.date)}\n${t(`editor.payment.kind.${c.kind ?? 'charge'}`)}\n${flow(-c.amount, c.currency)}`}
                       />
                     ))}
                   </div>

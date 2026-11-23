@@ -75,11 +75,6 @@
     "addShort": "Ajouter",
     "title": "Prélèvements",
     "paidOn": "Payé le {date}",
-    "kind": {
-      "refund": "Remboursement",
-      "adjust": "Ajustement",
-      "failed": "Échec"
-    },
     "add": "Ajouter une opération (remboursement, ajustement, échec, montant carte…)",
     "head": {
       "service": "Période de service",
@@ -138,6 +133,7 @@
     "m6": "6 mois",
     "period": "Période",
     "converted": "Converti",
+    "net": "Après remboursement",
     "average": "Moyenne",
     "method": "Paiement",
     "paidOn": "Payé",

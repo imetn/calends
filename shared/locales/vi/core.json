@@ -255,5 +255,10 @@
   },
   "fxIncomplete": "Thiếu tỷ giá nên không quy đổi được một số khoản; kết quả này chưa đầy đủ.",
   "fxUnconverted": "Chưa quy đổi: {amount}",
-  "fxOther": "và {count} loại tiền khác"
+  "fxOther": "và {count} loại tiền khác",
+  "paymentKind": {
+    "refund": "Hoàn tiền",
+    "adjust": "Điều chỉnh",
+    "failed": "Thất bại"
+  }
 }

@@ -266,5 +266,10 @@
   },
   "fxIncomplete": "Algunos importes no se pueden convertir porque faltan tipos de cambio, así que el resultado está incompleto.",
   "fxUnconverted": "Sin convertir: {amount}",
-  "fxOther": "y otras {count} monedas"
+  "fxOther": "y otras {count} monedas",
+  "paymentKind": {
+    "refund": "Reembolso",
+    "adjust": "Ajuste",
+    "failed": "Fallido"
+  }
 }

@@ -7256,7 +7256,7 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 /* 买断：一个圆点 */
 .gt-lifetime {
   position: absolute;
-  top: 10px;
+  top: 12px;
   width: 14px;
   height: 14px;
   margin-left: -7px;
@@ -7264,9 +7264,10 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   z-index: 1;
   box-shadow: 0 0 0 var(--hairline) var(--card);
 }
+/* 和胶囊同一条中线：胶囊 top 8px、高 22px，中线 19px；线宽一半往上让，线的中心正好压在中线上 */
 .gt-gap {
   position: absolute;
-  top: 16px;
+  top: calc(19px - var(--hairline) / 2);
   height: 0;
   border-top: var(--hairline) dashed var(--label-3);
 }

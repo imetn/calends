@@ -75,11 +75,6 @@
     "addShort": "Erfassen",
     "title": "Abbuchungen",
     "paidOn": "Bezahlt am {date}",
-    "kind": {
-      "refund": "Erstattung",
-      "adjust": "Korrektur",
-      "failed": "Fehlgeschlagen"
-    },
     "add": "Eintrag hinzufügen (Erstattung, Korrektur, fehlgeschlagene Abbuchung, Kartenbetrag …)",
     "head": {
       "service": "Leistungszeitraum",
@@ -138,6 +133,7 @@
     "m6": "6 M.",
     "period": "Zeitraum",
     "converted": "Umgerechnet",
+    "net": "Nach Erstattung",
     "average": "Durchschnitt",
     "method": "Zahlung",
     "paidOn": "Bezahlt",

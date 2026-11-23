@@ -1816,3 +1816,50 @@ test('ledger kind badges sit left of the amount so amounts stay right-aligned', 
   const events = readFileSync(new URL('views/detail/Events.tsx', root), 'utf8');
   assert.match(events, /title: t\('editor\.payment\.kind\.refund'\),\s*(\/\/[^\n]*\s*)?sub: money\(/);
 });
+
+test('year-row method stack: +N chip does not collapse the last pill, and is a pill itself', () => {
+  // :last-of-type 会把后面的 +N span 当成最后一个，最后一颗胶囊也被压成图标，+N 成了一串散字
+  const css = readFileSync(new URL('views/detail.css', root), 'utf8');
+  const stack = css.slice(css.indexOf('.dt-pay-list {'), css.indexOf('/* 停止卡片只有停止日'));
+  assert.doesNotMatch(stack.replace(/\/\*[\s\S]*?\*\//g, ''), /last-of-type/);
+  assert.match(stack, /\.dt-pay-list > \.pay:has\(\+ \.pay\)/);
+  const more = stack.slice(stack.indexOf('.dt-pay-more {'));
+  assert.match(more, /height: 22px/);
+  assert.match(more, /border-radius: var\(--radius-pill\)/);
+});
+
+test('gantt gap dashes and lifetime marks share the pill centre line', () => {
+  // 胶囊 top 8px、高 22px，中线 19px；虚线曾在 16px，买断圆点与细线曾在 17px，看起来都偏上
+  const css = readFileSync(new URL('styles.css', root), 'utf8');
+  const px = (sel, prop) => {
+    const block = css.slice(css.indexOf(`${sel} {`), css.indexOf('}', css.indexOf(`${sel} {`)));
+    return block.match(new RegExp(`\\n\\s*${prop}: ([^;]+);`))?.[1];
+  };
+  const seg = parseFloat(px('.gt-seg', 'top')) + parseFloat(px('.gt-seg', 'height')) / 2;
+  assert.equal(seg, 19);
+  assert.equal(px('.gt-gap', 'top'), 'calc(19px - var(--hairline) / 2)');
+  const gantt = readFileSync(new URL('views/Gantt.tsx', root), 'utf8');
+  const dot = Number(gantt.match(/className="gt-lifetime" style=\{\{ left, top: top \+ (\d+)/)[1]) + 14 / 2;
+  const tail = Number(gantt.match(/className="gt-life-tail" style=\{\{[^}]*top: top \+ (\d+)/)[1]) + 2 / 2;
+  assert.equal(dot, 11);
+  assert.equal(tail, 11);
+});
+
+test('refund / adjust rows say what they are everywhere a single charge is shown', () => {
+  const read = (f) => readFileSync(new URL(f, root), 'utf8');
+  // 首页、公开页时间轴：传类型，跳过失败记录
+  for (const f of ['views/Overview.tsx', 'public/page.tsx']) {
+    const s = read(f);
+    assert.match(s, /kind: c\.kind,/, f);
+    assert.match(s, /if \(c\.kind === 'failed'\) continue;/, f);
+  }
+  assert.match(read('components/Timeline.tsx'), /tl-kind/);
+  // 日历当天卡片：退款、补差不写周期与续费信息
+  const cal = read('views/Calendar.tsx');
+  assert.match(cal, /const extra = !!c\.kind;/);
+  assert.match(cal, /\{!extra && <span>\{cycleLabel\(c\.sub\.cycle\)\}<\/span>\}/);
+  // 详情提示框：这一笔后来退的钱
+  assert.match(read('views/detail/ChargeTip.tsx'), /refundsOf\(c\)\.map/);
+  // 甘特图圆点按类型取名，不把补差、失败叫「扣款」
+  assert.match(read('views/Gantt.tsx'), /editor\.payment\.kind\.\$\{c\.kind \?\? 'charge'\}/);
+});

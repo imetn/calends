@@ -354,7 +354,7 @@ export function Timeline({
               today={today}
               whole={whole}
               future={r.future}
-              converted={r.c.currency !== ccy ? spent(chartTotal([r.c])) : undefined}
+              convert={r.c.currency !== ccy ? (l) => spent(chartTotal(l)) : undefined}
               full={r.intro && r.full != null ? money(r.full, ccy) : undefined}
               owed={r.owedPart}
               usage={chargeUsage(readings, r.c)}

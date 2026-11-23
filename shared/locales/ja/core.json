@@ -255,5 +255,10 @@
   },
   "fxIncomplete": "為替レートがないため一部の金額を換算できず、この結果は不完全です。",
   "fxUnconverted": "未換算：{amount}",
-  "fxOther": "ほか {count} 通貨"
+  "fxOther": "ほか {count} 通貨",
+  "paymentKind": {
+    "refund": "返金",
+    "adjust": "調整",
+    "failed": "失敗"
+  }
 }

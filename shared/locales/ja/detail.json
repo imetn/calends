@@ -72,11 +72,6 @@
     "addShort": "記録",
     "title": "請求",
     "paidOn": "{date} 支払い",
-    "kind": {
-      "refund": "返金",
-      "adjust": "調整",
-      "failed": "失敗"
-    },
     "add": "記録を追加（返金、調整、請求失敗、カード上の金額など）",
     "head": {
       "service": "サービス期間",
@@ -130,6 +125,7 @@
     "m6": "6 か月",
     "period": "期間",
     "converted": "換算",
+    "net": "返金後",
     "average": "平均",
     "method": "支払い",
     "paidOn": "支払日",

@@ -116,7 +116,7 @@ export function summaryRows(
       break;
     }
     case 'record_payment':
-      add(t('assistant.f.kind'), a.kind && a.kind !== 'charge' ? t(`detail.charges.kind.${String(a.kind)}`) : t('assistant.v.charge'));
+      add(t('assistant.f.kind'), a.kind && a.kind !== 'charge' ? t(`core.paymentKind.${String(a.kind)}`) : t('assistant.v.charge'));
       add(
         t('assistant.f.amount'),
         a.amount != null ? (

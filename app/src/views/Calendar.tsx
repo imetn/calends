@@ -228,7 +228,9 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                               // 同一订阅同一天可能既扣款又返佣，订阅 ID 会重复
                               key={`${c.sub.id}-${i}`}
                               style={{ '--i': i } as Record<string, number>}
-                              {...tipProps(() => `${c.sub.name}\n${flow(-c.amount, c.currency)}`)}
+                              {...tipProps(() =>
+                                [c.sub.name, c.kind && t(`core.paymentKind.${c.kind}`), flow(-c.amount, c.currency)].filter(Boolean).join('\n'),
+                              )}
                             >
                               <SubIcon sub={c.sub} size={24} />
                             </span>
@@ -256,8 +258,10 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                       const next = nextCharge(sub, today);
                       // 后付费账单写它所属的已用服务期；先付费写本期付到哪天
                       const postpaid = isPostpaid(c.sub);
+                      // 退款、补差不是一期扣款：不写周期、付到哪天、下次扣款这些续费信息，只写类型和金额
+                      const extra = !!c.kind;
                       const period =
-                        c.kind === 'refund' || c.sub.cycle.unit === 'lifetime'
+                        extra || c.sub.cycle.unit === 'lifetime'
                           ? undefined
                           : postpaid
                             ? (({ from, until }) => ({ from, paidThrough: addDays(until, -1) }))(chargeServicePeriod(c.sub, c.date, c.serviceDate))
@@ -269,7 +273,7 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                           e.kind === 'end' ? e.until >= period.from && e.until <= period.paidThrough : e.date <= period.paidThrough,
                         );
                       const endedOn = cur.stop?.date ?? cur.end;
-                      const stopped = !state.readonly && c.kind !== 'refund' && stopLabel(cur, today);
+                      const stopped = !state.readonly && !extra && stopLabel(cur, today);
                       return (
                         <button key={`${c.sub.id}-${i}`} className="card cal-daycard" onClick={() => onOpen(sub)}>
                           <SubIcon sub={sub} size={48} />
@@ -283,15 +287,15 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                                   state.methods.find((m) => m.id === chargeMethodId(c)),
                                 )}
                               />
-                              <span>{cycleLabel(c.sub.cycle)}</span>
-                              {status !== 'active' && !(status === 'lifetime' && c.sub.cycle.unit === 'lifetime') && (
+                              {!extra && <span>{cycleLabel(c.sub.cycle)}</span>}
+                              {!extra && status !== 'active' && !(status === 'lifetime' && c.sub.cycle.unit === 'lifetime') && (
                                 <span className="badge">{t(`list.status.${status}`)}</span>
                               )}
-                              {c.kind === 'refund' && <span className="badge green">{t('detail.charges.kind.refund')}</span>}
+                              {extra && <span className={`badge ${c.kind === 'refund' ? 'green' : 'orange'}`}>{t(`core.paymentKind.${c.kind}`)}</span>}
                             </span>
                           </span>
                           <span className="cal-dc-info">
-                            {c.sub.cycle.unit === 'lifetime' && c.kind !== 'refund' && (
+                            {c.sub.cycle.unit === 'lifetime' && !extra && (
                               <small>
                                 {t('editor.field.purchased')} <span className="copy-gap" aria-hidden="true" /> {cnDateAuto(c.sub.start, today)}
                               </small>
@@ -301,7 +305,7 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                                 {cnDateAuto(period.from, today)} – {cnDateAuto(period.paidThrough, today)}
                               </small>
                             )}
-                            {status === 'paused' ? (
+                            {extra ? null : status === 'paused' ? (
                               cur.pausedAt && (
                                 <small>
                                   {t('detail.ev.paused')} <span className="copy-gap" aria-hidden="true" /> {cnDateAuto(cur.pausedAt, today)}
@@ -335,11 +339,9 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                           <span className="cal-dc-amt">
                             {amt.main}
                             {/* 已扣/预计与原币合成一行：「预计 · −₺499.99」 */}
-                            {(amt.alt || c.kind !== 'refund') && (
+                            {(amt.alt || !extra) && (
                               <small>
-                                {copyParts(
-                                  [c.kind !== 'refund' && (c.projected ? t('calendar.projected') : t('calendar.charged')), amt.alt].filter(Boolean).join('\n'),
-                                )}
+                                {copyParts([!extra && (c.projected ? t('calendar.projected') : t('calendar.charged')), amt.alt].filter(Boolean).join('\n'))}
                               </small>
                             )}
                           </span>
@@ -484,7 +486,11 @@ function YearHeat({
                     {...tipProps(() => (
                       <TipTable
                         head={[cnDate(d, true), list.length > 1 ? formatTotal(sumOf(list), base, { direction: -1, compact: true }) : '']}
-                        rows={list.map((c, i) => ({ key: `${c.sub.id}-${i}`, label: c.sub.name, value: flow(-c.amount, c.currency) }))}
+                        rows={list.map((c, i) => ({
+                          key: `${c.sub.id}-${i}`,
+                          label: c.sub.name,
+                          value: [c.kind && t(`core.paymentKind.${c.kind}`), flow(-c.amount, c.currency)].filter(Boolean).join(' '),
+                        }))}
                       />
                     ))}
                   >

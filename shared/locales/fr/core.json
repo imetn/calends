@@ -266,5 +266,10 @@
   },
   "fxIncomplete": "Certains montants ne peuvent pas être convertis faute de taux de change ; ce résultat est incomplet.",
   "fxUnconverted": "Non converti : {amount}",
-  "fxOther": "et {count} autres devises"
+  "fxOther": "et {count} autres devises",
+  "paymentKind": {
+    "refund": "Remboursement",
+    "adjust": "Ajustement",
+    "failed": "Échec"
+  }
 }

@@ -300,8 +300,9 @@ export async function persist(
           person_notice: t(dry ? 'mcp.label.createPerson' : 'mcp.label.createdPerson', { name: personCreation.name }),
         }
       : {}),
+    // 下次扣款只列真正要扣的钱：记在今天及以后的退款、补差、失败记录不算
     next_charges: chargesBetween(after, today, addMonths(today, 13), today)
-      .filter((c) => !c.paidOn)
+      .filter((c) => !c.paidOn && !c.kind)
       .slice(0, 3)
       .map((c) => ({ date: c.date, amount: round(c.amount), currency: c.currency })),
     ...extra,

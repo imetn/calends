@@ -75,11 +75,6 @@
     "addShort": "Añadir",
     "title": "Cobros",
     "paidOn": "Pagado el {date}",
-    "kind": {
-      "refund": "Reembolso",
-      "adjust": "Ajuste",
-      "failed": "Fallido"
-    },
     "add": "Añadir un registro (reembolso, ajuste, cobro fallido, importe en tarjeta…)",
     "head": {
       "service": "Periodo de servicio",
@@ -138,6 +133,7 @@
     "m6": "6 meses",
     "period": "Periodo",
     "converted": "Equivale a",
+    "net": "Tras reembolso",
     "average": "Promedio",
     "method": "Pago",
     "paidOn": "Pagado",

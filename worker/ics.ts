@@ -67,7 +67,8 @@ export function buildIcs(state: AppState, siteUrl: string): string {
   for (const s of state.subscriptions) {
     const remind = s.remindDays ?? state.settings.remindDays;
     const seen = new Map<string, number>();
-    for (const c of icsCharges(s, from, to, today)) {
+    // 扣款失败没有动钱，不进日历
+    for (const c of icsCharges(s, from, to, today).filter((x) => x.kind !== 'failed')) {
       const d = c.date.replace(/-/g, '');
       // 同一天可能有两笔（如补扣），UID 要各不相同
       const n = (seen.get(d) ?? 0) + 1;
@@ -79,11 +80,15 @@ export function buildIcs(state: AppState, siteUrl: string): string {
         `DTSTAMP:${stamp}`,
         `DTSTART;VALUE=DATE:${d}`,
         `DTEND;VALUE=DATE:${addDays(c.date, 1).replace(/-/g, '')}`,
-        fold(`SUMMARY:${icsText(`${s.icon && !isImageIcon(s.icon) ? s.icon + ' ' : ''}${s.name} ${money(c.amount, c.currency)}`)}`),
+        // 退款、补差写明类型：「X 退款 ₺1,470.07」，不和扣款混成一笔「X −₺1,470.07」
+        fold(
+          `SUMMARY:${icsText(`${s.icon && !isImageIcon(s.icon) ? s.icon + ' ' : ''}${s.name} ${c.kind ? `${t(`core.paymentKind.${c.kind}`)} ` : ''}${money(c.kind === 'refund' ? -c.amount : c.amount, c.currency)}`)}`,
+        ),
         fold(`DESCRIPTION:${icsText([method ? t('server.ics.method', { name: method.name }) : '', s.category, `${siteUrl}/`].filter(Boolean).join('\n'))}`),
         'TRANSP:TRANSPARENT',
       );
-      if (remind >= 0 && c.projected && c.unpaid !== 'overdue') {
+      // 只给真正要扣的钱提醒；记在未来的退款、补差不是账单
+      if (remind >= 0 && c.projected && !c.kind && c.unpaid !== 'overdue') {
         // 相对全天事件起点提前 N 天再加 9 小时；实际提醒时刻由日历客户端解释。
         const trigger = remind === 0 ? 'PT9H' : `-P${remind - 1}DT15H`;
         lines.push(
@@ -95,7 +100,7 @@ export function buildIcs(state: AppState, siteUrl: string): string {
         );
       }
       const cancelLead = renewalRuleAt(c.sub, c.date).cancelLeadDays;
-      if (remind >= 0 && c.projected && c.unpaid !== 'overdue' && cancelLead > 0) {
+      if (remind >= 0 && c.projected && !c.kind && c.unpaid !== 'overdue' && cancelLead > 0) {
         const deadline = addDays(c.date, -cancelLead);
         if (deadline >= today)
           lines.push(

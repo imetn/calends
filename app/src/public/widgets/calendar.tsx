@@ -28,7 +28,7 @@ function dayTip(d: string, list: Charge[], state: AppState, ccy: string) {
     <TipBody
       head={cnDate(d, true)}
       total={list.length > 1 ? outflow(sumBaseOrNaN(state, list, ccy), ccy) : undefined}
-      rows={list.map((c, i) => ({ key: `${c.sub.id}-${i}`, label: clean(c.sub.name), value: outflow(chargeBaseOrNaN(state, c, ccy), ccy) }))}
+      rows={list.map((c, i) => ({ key: `${c.sub.id}-${i}`, label: clean(c.sub.name), value: [c.kind && t(`core.paymentKind.${c.kind}`), outflow(chargeBaseOrNaN(state, c, ccy), ccy)].filter(Boolean).join(' ') }))}
     />
   );
 }
@@ -189,7 +189,7 @@ function MonthView({ state, today, ccy, byDay, dows, weekStart, month, sel, onSe
                   <AppIcon sub={c.sub} className="size-8 rounded-md" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{clean(c.sub.name)}</div>
-                    <div className="truncate text-[length:var(--fs-2)] text-muted-foreground">{copyParts(`${cycleLabel(c.sub.cycle)}\n${t(c.kind === 'refund' ? 'detail.charges.kind.refund' : c.projected ? 'calendar.projected' : 'calendar.charged')}`)}</div>
+                    <div className="truncate text-[length:var(--fs-2)] text-muted-foreground">{copyParts(c.kind ? t(`core.paymentKind.${c.kind}`) : `${cycleLabel(c.sub.cycle)}\n${t(c.projected ? 'calendar.projected' : 'calendar.charged')}`)}</div>
                   </div>
                   <div className="shrink-0 text-right tnum">
                     <div>{outflow(chargeBaseOrNaN(state, c, ccy), ccy)}</div>

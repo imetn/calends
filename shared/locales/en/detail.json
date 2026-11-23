@@ -75,11 +75,6 @@
     "addShort": "Add",
     "title": "Charges",
     "paidOn": "Paid {date}",
-    "kind": {
-      "refund": "Refund",
-      "adjust": "Adjustment",
-      "failed": "Failed"
-    },
     "add": "Add a record (refund, adjustment, failed charge, card amount…)",
     "head": {
       "service": "Service period",
@@ -138,6 +133,7 @@
     "m6": "6M",
     "period": "Period",
     "converted": "Converted",
+    "net": "After refund",
     "average": "Average",
     "method": "Payment",
     "paidOn": "Paid",

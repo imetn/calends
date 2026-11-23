@@ -1352,6 +1352,15 @@ export function nonrenewalDate(s: Subscription, today: string): string {
   if (dates.cancelBy && today > dates.cancelBy) return billingPeriod(s, dates.nextCharge).paidThrough;
   return addDays(dates.nextCharge, -1);
 }
+/**
+ * 这一笔扣款后来退回的钱：同一阶段、同一币种、日期落在这笔的服务期内的退款（原样返回，金额为负）。
+ * 退款、补差这类非周期扣款本身没有对应的退款；终身买断按扣款日之后算
+ */
+export function refundsOf(c: Charge): Payment[] {
+  if (c.kind || c.projected) return [];
+  const p = c.sub.cycle.unit === 'lifetime' ? { from: c.date, until: '9999-12-31' } : chargeServicePeriod(c.sub, c.date, c.serviceDate);
+  return (c.sub.payments ?? []).filter((x) => x.kind === 'refund' && (x.currency ?? c.sub.currency) === c.currency && x.date >= p.from && x.date < p.until);
+}
 
 /** 服务覆盖期不随现金日提前；实付落在预定扣款上时恢复原始月末日号。 */
 export function chargeServicePeriod(s: Subscription, cashDate: string, serviceDate?: string): { from: string; until: string } {
