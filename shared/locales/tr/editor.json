@@ -268,7 +268,9 @@
   "ai": {
     "title": "Yapay zekâ ile doldur",
     "hint": "Fiş, ekran görüntüsü ya da metin yapıştırın; gerisi otomatik",
-    "go": "Yapıştır"
+    "go": "Yapıştır",
+    "open": "Asistanı aç",
+    "setup": "Makbuz yapıştırmak için YZ asistanını kurun"
   },
   "plan": {
     "choose": {

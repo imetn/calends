@@ -268,7 +268,9 @@
   "ai": {
     "title": "Rellenar con IA",
     "hint": "Pega un recibo, una captura o texto y se organiza solo",
-    "go": "Pegar"
+    "go": "Pegar",
+    "open": "Abrir asistente",
+    "setup": "Configura el asistente de IA para pegar recibos"
   },
   "plan": {
     "choose": {

@@ -741,6 +741,11 @@
   display: flex;
   gap: 8px;
 }
+.as-title-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .as-icon.m-only {
   display: none;
 }

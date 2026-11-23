@@ -2,9 +2,10 @@ import { base } from '../base.ts';
 import { dragScroll } from '../drag-scroll.ts';
 import type { ReactNode } from 'react';
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
-import { currentRoute, onRoute } from '../router.ts';
+import { currentRoute, go, onRoute } from '../router.ts';
 import {
   ArrowDown,
+  ArrowLeft,
   ArrowUp,
   Brain,
   CircleCheck,
@@ -34,8 +35,9 @@ import { IconButton, Toolbar } from '../components/ui.tsx';
 import { api, getState, refresh } from '../store.ts';
 import { copyText, toast } from '../toast.ts';
 import { newSub } from './editor/new-sub.ts';
+import { draftKey, writeDraft } from './editor/draft.ts';
 import { headAlignDelta, interrupted } from './assistant-fields.ts';
-import { compressImage as compress, takeHandoff } from '../handoff.ts';
+import { compressImage as compress, setAssistantConfigured, takeHandoff, type HandoffReturn } from '../handoff.ts';
 import './assistant.css';
 import { Streamdown, type Components } from 'streamdown';
 import type { Part } from './assistant-chat.ts';
@@ -69,6 +71,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
   const confirmingRef = useRef(false);
   const abort = useRef<AbortController | null>(null);
   const [atBottom, setAtBottom] = useState(true);
+  const [returnTo, setReturnTo] = useState<HandoffReturn | null>(null);
   // 侧栏或底栏再点一次「助手」：回到最新对话，并重新对齐历史分割线
   const [jump, setJump] = useState(0);
   useEffect(
@@ -83,7 +86,13 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
   const composer = useRef<ComposerHandle>(null);
 
   useEffect(() => {
-    void api<AssistantConfigView>('/api/assistant/config').then(setCfg, () => setCfg(null));
+    void api<AssistantConfigView>('/api/assistant/config').then(
+      (c) => {
+        setCfg(c);
+        setAssistantConfigured(!!c.configured);
+      },
+      () => setCfg(null),
+    );
   }, []);
   useEffect(() => persist(chat), [chat]);
   // 离开助手页时中止进行中的回复，不在后台继续消耗
@@ -103,10 +112,17 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
     return () => clearTimeout(h);
   }, [chat, busy]);
   const shownPast = past.filter((c) => c.id !== chat.id);
-  // 别处（新建订阅表单）带着文字或图片跳过来：放进输入框
+  // 别处（新建订阅表单）带着文字、图片或返回信息跳过来：放进输入框；已在助手页时也响应交接路由事件
   useEffect(() => {
-    const h = takeHandoff();
-    if (h) composer.current?.prefill(h.text, h.images);
+    const consume = () => {
+      if (currentRoute() !== 'assistant') return;
+      const h = takeHandoff();
+      if (!h) return;
+      composer.current?.prefill(h.text, h.images);
+      setReturnTo(h.returnTo ?? null);
+    };
+    consume();
+    return onRoute(consume);
   }, []);
 
   // 有历史时，当前对话至少占满一屏（顶栏与输入框之间）：滚到底就是一段全新的对话，往上翻才看到历史
@@ -122,7 +138,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [chat.id, !chat.turns.length]);
+  }, [chat.id, !chat.turns.length, !!returnTo]);
 
   // 新内容到来时贴着底部滚；用户往上翻了就不打扰，显示「回到底部」
   useLayoutEffect(() => {
@@ -143,7 +159,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
       if (d) window.scrollTo({ top: window.scrollY + d, behavior: 'instant' });
     });
     return () => cancelAnimationFrame(frame);
-  }, [fill, past, chat.id, atBottom, jump]);
+  }, [fill, past, chat.id, atBottom, jump, !!returnTo]);
   useEffect(() => {
     const onScroll = () => {
       const el = document.documentElement;
@@ -232,6 +248,8 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
         body: JSON.stringify({ tool: p.tool, args: p.args }),
       });
       const verified = r.verification?.status === 'verified';
+      // 已由助手新建：不再提供回到旧草稿的返回，避免重复添加
+      if (p.tool === 'create_subscription') endHandoff();
       setPart(turnId, p.id, {
         state: verified ? 'applied' : 'unverified',
         subId: r.subscription?.id,
@@ -303,6 +321,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
         ? { payments: (a.payments as Array<{ date: string; amount: number; note?: string }>).map((x) => ({ date: x.date, amount: x.amount, note: x.note })) }
         : {}),
     };
+    endHandoff();
     window.dispatchEvent(new CustomEvent('ledger:add', { detail: draft }));
   };
 
@@ -314,12 +333,41 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
     setAtBottom(true);
   };
 
+  /** 返回进入 AI 助手前的新建订阅弹窗，并恢复离开前的页面与表单草稿 */
+  /** 从表单交接过来的：助手的结果取代离开时留下的本地草稿，并不再提供返回 */
+  const endHandoff = () => {
+    if (returnTo) writeDraft(draftKey(true, ''), undefined);
+    setReturnTo(null);
+  };
+
+  const backToEditor = () => {
+    if (!returnTo) return;
+    const { route, draft } = returnTo;
+    setReturnTo(null);
+    if (route && route !== 'assistant') go(route);
+    window.dispatchEvent(new CustomEvent('ledger:add', { detail: draft }));
+  };
+
   const empty = !chat.turns.length;
   const noop = () => {};
   const ready = !!cfg?.configured;
   return (
     <>
-      <Toolbar title={t('assistant.title')} switcher={switcher}>
+      <Toolbar
+        title={
+          returnTo ? (
+            <span className="as-title-back">
+              <IconButton onClick={backToEditor} title={t('assistant.backToAdd')} aria-label={t('assistant.backToAdd')}>
+                <ArrowLeft size={16} />
+              </IconButton>
+              {t('assistant.title')}
+            </span>
+          ) : (
+            t('assistant.title')
+          )
+        }
+        switcher={switcher}
+      >
         <span className="as-tb">
           {!empty && (
             <IconButton onClick={reset} title={t('assistant.new')} aria-label={t('assistant.new')}>
@@ -412,7 +460,10 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
         <SetupSheet
           cfg={cfg}
           onClose={() => setSetup(false)}
-          onSaved={setCfg}
+          onSaved={(c) => {
+            setCfg(c);
+            setAssistantConfigured(!!c.configured);
+          }}
           onClearChats={() => {
             abort.current?.abort();
             setPast([]);

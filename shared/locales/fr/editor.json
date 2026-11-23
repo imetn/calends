@@ -268,7 +268,9 @@
   "ai": {
     "title": "Remplir avec l’IA",
     "hint": "Collez un reçu, une capture ou du texte, le reste se fait tout seul",
-    "go": "Coller"
+    "go": "Coller",
+    "open": "Ouvrir l’assistant",
+    "setup": "Configurez l’assistant IA pour coller des reçus"
   },
   "plan": {
     "choose": {

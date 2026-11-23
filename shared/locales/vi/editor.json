@@ -259,7 +259,9 @@
   "ai": {
     "title": "Điền bằng AI",
     "hint": "Dán hóa đơn, ảnh chụp màn hình hoặc văn bản, phần còn lại tự động",
-    "go": "Dán"
+    "go": "Dán",
+    "open": "Mở trợ lý",
+    "setup": "Thiết lập Trợ lý AI để dán hóa đơn"
   },
   "plan": {
     "choose": {
