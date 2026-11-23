@@ -188,7 +188,8 @@ export function Detail({
   const [meterPick, setMeterPick] = useState<{ id: string; meter: string }>();
   const usageSub = meterView(view, state.subscriptions);
   const meter = usageSub.meters?.find((m) => meterPick?.id === sub.id && m.id === meterPick.meter) ?? usageSub.meters?.[0];
-  const charges = (
+  // 纯免费附赠（价格 0、没有过任何扣款）不会产生扣款，不放扣款记录和记一笔
+  const charges = pureFreePerk ? null : (
     <Charges
       sub={view}
       state={state}
@@ -202,7 +203,8 @@ export function Detail({
   const events = !compact ? <Events sub={view} state={state} today={today} /> : null;
   const actions = (
     <>
-      {sub.cycle.unit !== 'lifetime' && !isStopped(st) && !parentPaused && (
+      {/* 跟随主订阅的免费附赠：暂停停订都随主订阅，不单独暂停（已暂停的旧数据仍可恢复） */}
+      {sub.cycle.unit !== 'lifetime' && !isStopped(st) && !parentPaused && (paused || !(freeBundle && followsParent(cur))) && (
         <Act
           icon={paused ? <Play size={15} /> : <Pause size={15} />}
           label={paused ? t('detail.action.resume') : t('detail.action.pause')}

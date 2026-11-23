@@ -790,3 +790,9 @@ test('订阅详情表头不放官网和停用：停用只走编辑表单，停�
   // 退款结算币种默认值取自账本设置，编辑器和停用弹窗要一致
   assert.ok(editor.includes('stopForm(syncPhase(f, today), today, state)'));
 });
+
+test('纯免费附赠详情不放扣款记录和记一笔；跟随主订阅的免费附赠不单独暂停，已暂停的仍可恢复', () => {
+  const detail = readFileSync(new URL('../app/src/views/Detail.tsx', import.meta.url), 'utf8');
+  assert.ok(detail.includes('const charges = pureFreePerk ? null : ('));
+  assert.ok(detail.includes('(paused || !(freeBundle && followsParent(cur)))'));
+});
