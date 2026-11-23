@@ -9,6 +9,8 @@ import {
   currentPhase,
   effectiveStatus,
   FALLBACK_FX,
+  migrateLegacyRefunds,
+  migrateStored,
   monthlyGross,
   monthlyMine,
   newShapeError,
@@ -817,4 +819,36 @@ test('恢复暂停：恢复后停用只退一部分不算全额退款', () => {
   assert.equal(stopped(10).refundStatus, 'partial');
   assert.equal(stopped(10).paid, 30);
   assert.equal(stopped(30).refundStatus, 'full');
+});
+
+// 线上反馈：土区年付按比例退款被记成不带类型的负数扣款，历程里看不到退款
+test('旧退款写法：不带类型的负数付款读取与整条保存时都归为退款，金额不变', () => {
+  const legacy = switchPlan({ ...base({ start: '2026-04-13', price: 4 }), payments: [] }, '2026-07-13', {
+    price: 1979.99,
+    currency: 'TRY',
+    cycle: { unit: 'year', every: 1 },
+    region: 'TR',
+    methodId: 'tr',
+  });
+  const tr = legacy.phases!.at(-1)!;
+  tr.payments = [
+    { date: '2026-07-13', amount: 1979.99 },
+    { date: '2026-10-16', amount: -1470.07, note: '按比例退款' },
+  ];
+  const read = migrateStored(legacy);
+  assert.deepEqual(
+    read.phases!.at(-1)!.payments!.map((p) => [p.amount, p.kind]),
+    [
+      [1979.99, undefined],
+      [-1470.07, 'refund'],
+    ],
+  );
+  assert.equal(read.phases![0], legacy.phases![0], '没有旧退款的阶段原样返回');
+  assert.equal(migrateStored(read), read, '已转过的原样返回');
+  const refs = { fx: FALLBACK_FX, methods: [], subscriptions: [] } as unknown as Pick<AppState, 'fx' | 'methods' | 'subscriptions'>;
+  const saved = prepareSubWrite(legacy, legacy, '2026-11-23', refs);
+  assert.equal(saved.error, undefined);
+  assert.equal(saved.sub!.phases!.at(-1)!.payments![1].kind, 'refund');
+  const flat = migrateLegacyRefunds(base({ payments: [{ date: '2026-02-15', amount: -10 }] }));
+  assert.equal(flat.payments![0].kind, 'refund');
 });

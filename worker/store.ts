@@ -1,5 +1,5 @@
 import { validatePeopleAvatars } from '../shared/avatar.ts';
-import { FALLBACK_FX, migrateRenewalRules } from '../shared/billing.ts';
+import { FALLBACK_FX, migrateStored } from '../shared/billing.ts';
 import { DEFAULT_SETTINGS, type AppState, type FxTable, type PaymentMethod, type Person, type Settings, type Subscription } from '../shared/types.ts';
 import { pruneSettingsRefs } from '../shared/ledger-edit.ts';
 import { linkPeople } from '../shared/people.ts';
@@ -115,7 +115,7 @@ export async function loadState(env: Env, migratePeople = true): Promise<AppStat
   if (typeof kv.rev !== 'number') throw new Error('Missing ledger revision');
   const state: AppState = {
     rev: kv.rev,
-    subscriptions: subs.results.map((r) => migrateRenewalRules(JSON.parse(r.data) as Subscription)),
+    subscriptions: subs.results.map((r) => migrateStored(JSON.parse(r.data) as Subscription)),
     // 按用户在钱包里拖出来的顺序；没排过的保持原有先后
     methods: methods.results
       .map((r) => JSON.parse(r.data) as PaymentMethod)
@@ -177,9 +177,7 @@ export async function loadMethods(env: Env): Promise<PaymentMethod[]> {
 
 /** 订阅（续费规则按旧数据兼容转换，与 loadState 同一口径） */
 export async function loadSubs(env: Env): Promise<Subscription[]> {
-  return (await env.DB.prepare('SELECT data FROM subscriptions').all<{ data: string }>()).results.map((r) =>
-    migrateRenewalRules(JSON.parse(r.data) as Subscription),
-  );
+  return (await env.DB.prepare('SELECT data FROM subscriptions').all<{ data: string }>()).results.map((r) => migrateStored(JSON.parse(r.data) as Subscription));
 }
 
 /**

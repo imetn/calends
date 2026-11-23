@@ -1234,6 +1234,23 @@ function rawCharges(s: Subscription, from: string, to: string, today: string): C
   return schedule(s, anchor, from, to, today);
 }
 
+const legacyRefund = (p: Payment) => !p.kind && p.amount < 0;
+const withRefundKind = (ps: Payment[] | undefined) => (ps?.some(legacyRefund) ? ps.map((p) => (legacyRefund(p) ? { ...p, kind: 'refund' as const } : p)) : ps);
+
+/** 旧数据把退款记成不带类型的负数扣款：归为退款，金额不变，历程、日历、报告和续费推算才认得出。 */
+export function migrateLegacyRefunds(s: Subscription): Subscription {
+  const payments = withRefundKind(s.payments);
+  const phases = s.phases?.some((p) => p.payments?.some(legacyRefund))
+    ? s.phases.map((p) => (p.payments?.some(legacyRefund) ? { ...p, payments: withRefundKind(p.payments) } : p))
+    : s.phases;
+  return payments === s.payments && phases === s.phases ? s : { ...s, payments, ...(phases ? { phases } : {}) };
+}
+
+/** 存储层读出的订阅统一经过这里：旧退款写法、旧 expires 续费规则在内存里转成现行口径，不改库。 */
+export function migrateStored(s: Subscription): Subscription {
+  return migrateRenewalRules(migrateLegacyRefunds(s));
+}
+
 /** 兼容旧 expires：围绕旧到期日查找上一扣款，固定推导结果，不随读取日期漂移。 */
 export function migrateRenewalRules(s: Subscription): Subscription {
   if (!s.expires || s.chargeLeadDays != null || !validDay(s.expires)) return s;
