@@ -251,19 +251,14 @@
   "bundle": {
     "title": "关联订阅（{count}）",
     "add": "添加关联订阅",
-    "includedWith": "随主订阅附赠",
-    "cost": "费用",
-    "linkedTo": "关联主订阅",
     "parentMissing": "主订阅不存在",
     "parentPeriod": "主订阅周期",
     "modeFollow": "跟随主订阅",
     "modeIndependent": "独立周期",
     "upcoming": "即将生效",
     "withParent": "随 {name}",
-    "openParent": "查看主订阅",
-    "noticePaused": "随“{name}”暂停",
-    "noticeEnding": "随“{name}”即将到期",
-    "noticeEnded": "随“{name}”已结束",
-    "noticeTrial": "随“{name}”试用中"
+    "fromFree": "由 {name} 附赠",
+    "fromAddon": "{name} 的加购",
+    "parentStatus": "主订阅{status}"
   }
 }

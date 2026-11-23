@@ -61,7 +61,7 @@
     "bundleLink": "Gói chính không tồn tại, là thanh toán hộ, hoặc chính nó đang liên kết với gói khác",
     "bundleProxy": "Gói thanh toán hộ không thể liên kết với gói chính",
     "bundleUsed": "Đang được {names} liên kết; hãy hủy liên kết ở đó trước",
-    "bundleHistory": "Liên kết sẽ xóa các khoản thanh toán trước đó. Hãy liên kết từ ngày liên kết qua Lịch sử → Đổi gói."
+    "bundleHistory": "Liên kết sẽ thay đổi các khoản thanh toán hoặc thời gian sử dụng trước đó. Hãy liên kết từ ngày liên kết qua Lịch sử → Đổi gói."
   },
   "phase": {
     "switchTooEarly": "Ngày hiệu lực phải sau ngày bắt đầu giai đoạn hiện tại",

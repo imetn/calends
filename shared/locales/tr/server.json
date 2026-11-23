@@ -71,5 +71,7 @@
     "notConfigured": "Otomatik yedekleme ayarlanmamış",
     "interrupted": "Son yedekleme tamamlanmadı",
     "beforeRestoreFailed": "Geri yükleme öncesi yedek başarısız oldu; defter değişmedi: {error}"
-  }
+  },
+  "conflict": "Defter az önce başka bir yerde değiştirildi. Yenileyip tekrar deneyin.",
+  "duplicateId": "İçe aktarmada yinelenen abonelik kimliği: {id}"
 }

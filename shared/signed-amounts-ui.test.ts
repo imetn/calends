@@ -607,6 +607,7 @@ test('Detail leads with state-aware cells, puts the next charge first, and lays 
     Transfers: empty,
     Meters: empty,
     BundleCard: empty,
+    ParentCard: empty,
     Outcome: empty,
     Notices: empty,
     ShareCard: empty,

@@ -1,4 +1,4 @@
-import { prepareSubWrite, validSub } from '../shared/sub-write.ts';
+import { bundleChildrenError, prepareSubWrite, validSub } from '../shared/sub-write.ts';
 import { validateAvatar, validatePeopleAvatars } from '../shared/avatar.ts';
 import { normalizeBasePath, stripBase, siteUrl, withBase } from '../shared/base.ts';
 import { addDays, todayIn } from '../shared/billing.ts';
@@ -444,6 +444,12 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     const subs = body.subscriptions ?? [];
     const methods = body.methods ?? [];
     const mode = body.mode === 'replace' ? 'replace' : 'merge';
+    // 同一 id 出现两次时校验看到的是第一条、入库的是最后一条，关联与指标引用会对不上
+    const seen = new Set<string>();
+    for (const s of subs) {
+      if (seen.has(s?.id)) return bad(t('server.duplicateId', { id: String(s.id) }));
+      seen.add(s?.id);
+    }
     if (mode === 'replace') {
       const err = invalidIn(subs, subs);
       if (err) return bad(err);
@@ -463,19 +469,29 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
       const failed = await backupBeforeReplace(env);
       if (failed) return bad(failed, 502);
     }
-    return withRevRetry(async () => {
+    const refused = await withRevRetry(async (): Promise<Response | undefined> => {
       // 合并导入可能覆盖别的订阅正在关联的指标或主订阅，按导入后的整个账本查并用 rev 守卫提交
       const { rev: expectedRev, subscriptions: before } = await loadSubsWithRev(env);
       const imported = new Set(subs.map((s) => s.id));
       const afterSubs = [...(mode === 'merge' ? before.filter((s) => !imported.has(s.id)) : []), ...subs];
       const err = mode === 'merge' ? invalidIn(subs, afterSubs) : undefined;
       if (err) return bad(err);
-      const linkError = meterLinkError(before, afterSubs) ?? bundleLinkError(before, afterSubs);
+      const linkError =
+        meterLinkError(before, afterSubs) ??
+        bundleLinkError(before, afterSubs) ??
+        (mode === 'merge' ? subs.map((s) => bundleChildrenError(s.id, before, afterSubs)).find(Boolean) : undefined);
       if (linkError) return bad(linkError);
       await replaceAll(env, subs, methods, mode, expectedRev);
-      const state = await loadState(env);
-      return json(state, 200, state.rev);
+      return undefined;
     });
+    if (refused) return refused;
+    // 提交后的迁移与回读不在重试块里：迁移冲突不能让已提交的整库替换再执行一遍；
+    // 迁移一直冲突时退回只读回读，照常返回已导入的账本，不让网页提示重试而再提交一次
+    const state = await loadState(env).catch((e: unknown) => {
+      if (e instanceof RevConflictError) return loadState(env, false);
+      throw e;
+    });
+    return json(state, 200, state.rev);
   }
   if (path === '/api/fx/status' && method === 'GET') {
     const st = await fxStatus(env, await loadState(env));
@@ -640,6 +656,7 @@ async function handleFetch(req: Request, env: Env): Promise<Response> {
     return asset;
   } catch (e) {
     if (e instanceof HttpError) return bad(e.message, e.status);
+    if (e instanceof RevConflictError) return bad(e.message, 409);
     console.error(e);
     return bad('server error', 500);
   }

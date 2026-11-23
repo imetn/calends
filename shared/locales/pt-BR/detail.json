@@ -278,19 +278,14 @@
   "bundle": {
     "title": "Assinaturas vinculadas ({count})",
     "add": "Adicionar assinatura vinculada",
-    "includedWith": "Incluída em",
-    "cost": "Custo",
-    "linkedTo": "Vinculada a",
     "parentMissing": "Principal ausente",
     "parentPeriod": "Período da principal",
     "modeFollow": "Segue a principal",
     "modeIndependent": "Ciclo independente",
     "upcoming": "Em breve",
     "withParent": "com {name}",
-    "openParent": "Abrir principal",
-    "noticePaused": "Pausada com “{name}”",
-    "noticeEnding": "Encerra com “{name}”",
-    "noticeEnded": "Encerrada com “{name}”",
-    "noticeTrial": "Segue o teste de “{name}”"
+    "fromFree": "Incluso com {name}",
+    "fromAddon": "Complemento de {name}",
+    "parentStatus": "Principal: {status}"
   }
 }

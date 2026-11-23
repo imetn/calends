@@ -261,19 +261,14 @@
   "bundle": {
     "title": "연결된 구독 ({count})",
     "add": "연결된 구독 추가",
-    "includedWith": "포함된 구독",
-    "cost": "비용",
-    "linkedTo": "상위 구독",
     "parentMissing": "상위 구독 없음",
     "parentPeriod": "상위 구독 결제 기간",
     "modeFollow": "상위 구독 따름",
     "modeIndependent": "독립 주기",
     "upcoming": "예정",
     "withParent": "{name} 포함",
-    "openParent": "상위 구독 열기",
-    "noticePaused": "“{name}”와 함께 일시중지됨",
-    "noticeEnding": "“{name}”와 함께 만료 예정",
-    "noticeEnded": "“{name}”와 함께 종료됨",
-    "noticeTrial": "“{name}” 체험 기간 따름"
+    "fromFree": "{name} 포함 혜택",
+    "fromAddon": "{name} 추가 옵션",
+    "parentStatus": "기본 구독: {status}"
   }
 }

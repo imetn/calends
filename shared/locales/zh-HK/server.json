@@ -62,5 +62,7 @@
     "notConfigured": "仲未設定自動備份",
     "interrupted": "上次備份未完成",
     "beforeRestoreFailed": "還原前嘅自動備份失敗，帳本未有改動：{error}"
-  }
+  },
+  "conflict": "帳本剛被其他地方修改，請重新整理後再試",
+  "duplicateId": "匯入的訂閱 id 重複：{id}"
 }

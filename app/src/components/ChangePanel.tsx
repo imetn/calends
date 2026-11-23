@@ -172,7 +172,13 @@ export function ChangePanel({
   const planCycle = options.find(([k]) => k === cycle)![1];
   const quote =
     mode === 'switch' && !keep && !planned && price !== '' && Number(price) >= 0
-      ? upgradeQuote(f, date, { price: Number(price), currency, cycle: planCycle, billing: billing === 'postpaid' ? 'postpaid' : undefined }, today)
+      ? upgradeQuote(
+          f,
+          date,
+          { price: Number(price), currency, cycle: planCycle, billing: billing === 'postpaid' ? 'postpaid' : undefined },
+          today,
+          state.subscriptions,
+        )
       : undefined;
   const useCredit = credit && !!quote;
   const renewalMode: UpgradeMode = renewal === 'keep' && quote?.keep ? 'keep' : 'reset';
@@ -202,7 +208,7 @@ export function ChangePanel({
           ? changePrice(f, date, n)
           : mode === 'switch'
             ? useCredit
-              ? upgradePlan(f, date, plan, today, renewalMode, Number(pay))
+              ? upgradePlan(f, date, plan, today, renewalMode, Number(pay), state.subscriptions)
               : switchPlan(f, date, plan, keep ? keepUntil : undefined)
             : resume(f, date, plan);
       setF(next);

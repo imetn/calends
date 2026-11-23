@@ -269,19 +269,14 @@
   "bundle": {
     "title": "Bağlı abonelikler ({count})",
     "add": "Bağlı abonelik ekle",
-    "includedWith": "Dahil olduğu",
-    "cost": "Ücret",
-    "linkedTo": "Bağlı olduğu",
     "parentMissing": "Ana abonelik eksik",
     "parentPeriod": "Ana abonelik dönemi",
     "modeFollow": "Ana aboneliği izler",
     "modeIndependent": "Bağımsız dönem",
     "upcoming": "Yaklaşan",
     "withParent": "{name} ile",
-    "openParent": "Ana aboneliği aç",
-    "noticePaused": "“{name}” ile duraklatıldı",
-    "noticeEnding": "“{name}” ile sona eriyor",
-    "noticeEnded": "“{name}” ile sona erdi",
-    "noticeTrial": "“{name}” deneme sürecini izliyor"
+    "fromFree": "{name} ile birlikte",
+    "fromAddon": "{name} eklentisi",
+    "parentStatus": "Ana abonelik: {status}"
   }
 }

@@ -66,5 +66,7 @@
     "notConfigured": "Chưa thiết lập sao lưu tự động",
     "interrupted": "Lần sao lưu trước chưa hoàn tất",
     "beforeRestoreFailed": "Sao lưu trước khi khôi phục thất bại; sổ không thay đổi: {error}"
-  }
+  },
+  "conflict": "Sổ vừa được thay đổi ở nơi khác. Hãy tải lại và thử lại.",
+  "duplicateId": "Mã gói đăng ký bị trùng khi nhập: {id}"
 }

@@ -71,5 +71,7 @@
     "notConfigured": "Automatische Sicherung ist nicht eingerichtet",
     "interrupted": "Die letzte Sicherung wurde nicht abgeschlossen",
     "beforeRestoreFailed": "Die Sicherung vor der Wiederherstellung ist fehlgeschlagen; das Konto ist unverändert: {error}"
-  }
+  },
+  "conflict": "Das Konto wurde gerade an anderer Stelle geändert. Bitte neu laden und erneut versuchen.",
+  "duplicateId": "Doppelte Abo-ID im Import: {id}"
 }

@@ -15,7 +15,23 @@ import { regionLabel } from '../region.ts';
 export const failed = new Set<string>();
 
 /** proxied：经 /api/img 同源中转，导出图片时画布不会被跨域图片污染 */
-export function SubIcon({ sub, size = 40, proxied }: { sub: Pick<Subscription, 'name' | 'icon' | 'url' | 'category'>; size?: number; proxied?: boolean }) {
+type IconSub = Pick<Subscription, 'name' | 'icon' | 'url' | 'category'>;
+
+/** 订阅图标；附赠 / 加购传入 parent 时在右下角叠一个主订阅的小图标 */
+export function SubIcon({ sub, size = 40, proxied, parent }: { sub: IconSub; size?: number; proxied?: boolean; parent?: IconSub }) {
+  if (!parent) return <SubIconBase sub={sub} size={size} proxied={proxied} />;
+  return (
+    <span className="ico-linked" style={{ '--s': `${size}px` } as Record<string, string>}>
+      <SubIconBase sub={sub} size={size} proxied={proxied} />
+      {/* 按 20px 小图标原样渲染再整体缩放，首字母与 emoji 跟着等比缩小，不另设字号 */}
+      <span className="ico-parent" style={{ zoom: Math.max(12, Math.round(size * 0.34)) / 20 }}>
+        <SubIconBase sub={parent} size={20} proxied={proxied} />
+      </span>
+    </span>
+  );
+}
+
+function SubIconBase({ sub, size = 40, proxied }: { sub: IconSub; size?: number; proxied?: boolean }) {
   // failed 是模块级的集合，React Compiler 看不到它的变化：用 tried 计数让「挑哪张图」随失败重新计算
   const [tried, force] = useState(0);
   const tint = catColor(sub.category);

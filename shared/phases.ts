@@ -236,6 +236,7 @@ export function upgradeQuote(
   at: string,
   next: Pick<PlanChange, 'price' | 'currency' | 'cycle' | 'billing'>,
   today: string,
+  subs?: readonly Subscription[],
 ): UpgradeQuote | undefined {
   if (!validDay(at) || at > today || !(next.price >= 0)) return undefined;
   const phases = phaseSubs(s);
@@ -246,7 +247,8 @@ export function upgradeQuote(
   if (old.currency !== next.currency) return undefined;
   // 生效日之后旧套餐已有续费或提前续费（补记过去的切换），剩余价值不止当期，不在这里折算
   if (old.payments?.some((p) => !p.kind && (p.date >= at || (p.serviceDate ?? '') >= at))) return undefined;
-  const period = billingPeriod(s, addDays(at, -1));
+  // 当期实付按解析过关联的视图算：主订阅暂停期间跟随的子订阅跳过的扣款不能当作已付
+  const period = billingPeriod(subs ? bundleView(s, subs) : s, addDays(at, -1));
   // 当期本身就是一次抵扣升级（无缝接在上一段后面，保持了旧扣款日，或首期实付低于全价）：实付不代表整期价值，不再叠加抵扣
   const seamless = period.from <= old.start && phases.some((p) => p !== old && p.end === addDays(old.start, -1));
   if (seamless && ((old.billingStart ?? old.start) < old.start || period.paid < old.price)) return undefined;
@@ -293,9 +295,17 @@ function keptNext(s: Subscription, at: string, next: Pick<PlanChange, 'price' | 
  * 升级并处理旧套餐剩余：reset 在生效日记一笔首期实付（默认新价减抵扣额），新周期从生效日起算；
  * keep 新阶段沿用旧的扣款日，生效日记一笔补差（默认按剩余天数折算，为 0 时不记）。amount 可改成实际付的钱
  */
-export function upgradePlan(s: Subscription, at: string, next: PlanChange, today: string, mode: UpgradeMode, amount?: number): Subscription {
+export function upgradePlan(
+  s: Subscription,
+  at: string,
+  next: PlanChange,
+  today: string,
+  mode: UpgradeMode,
+  amount?: number,
+  subs?: readonly Subscription[],
+): Subscription {
   if (next.planned) throw new Error(t('core.phase.upgradeUnavailable'));
-  const q = upgradeQuote(s, at, next, today);
+  const q = upgradeQuote(s, at, next, today, subs);
   if (!q || (mode === 'keep' && !q.keep)) throw new Error(t('core.phase.upgradeUnavailable'));
   const pay = amount ?? (mode === 'keep' ? q.keep!.amount : q.reset);
   if (!Number.isFinite(pay) || pay < 0) throw new Error(t('core.subError.price'));

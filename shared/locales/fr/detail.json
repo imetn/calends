@@ -278,19 +278,14 @@
   "bundle": {
     "title": "Abonnements liés ({count})",
     "add": "Ajouter un abonnement lié",
-    "includedWith": "Inclus avec",
-    "cost": "Coût",
-    "linkedTo": "Lié à",
     "parentMissing": "Principal introuvable",
     "parentPeriod": "Période de l’abonnement principal",
     "modeFollow": "Suit le principal",
     "modeIndependent": "Cycle indépendant",
     "upcoming": "À venir",
     "withParent": "avec {name}",
-    "openParent": "Ouvrir le principal",
-    "noticePaused": "En pause avec « {name} »",
-    "noticeEnding": "Se termine avec « {name} »",
-    "noticeEnded": "Terminé avec « {name} »",
-    "noticeTrial": "Suit l’essai de « {name} »"
+    "fromFree": "Inclus avec {name}",
+    "fromAddon": "Option de {name}",
+    "parentStatus": "Principal : {status}"
   }
 }

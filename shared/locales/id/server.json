@@ -66,5 +66,7 @@
     "notConfigured": "Cadangan otomatis belum diatur",
     "interrupted": "Pencadangan terakhir tidak selesai",
     "beforeRestoreFailed": "Pencadangan sebelum pemulihan gagal; buku tidak berubah: {error}"
-  }
+  },
+  "conflict": "Catatan baru saja diubah di tempat lain. Muat ulang lalu coba lagi.",
+  "duplicateId": "ID langganan duplikat dalam impor: {id}"
 }

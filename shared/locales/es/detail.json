@@ -278,19 +278,14 @@
   "bundle": {
     "title": "Suscripciones vinculadas ({count})",
     "add": "Añadir suscripción vinculada",
-    "includedWith": "Incluida con",
-    "cost": "Coste",
-    "linkedTo": "Vinculada a",
     "parentMissing": "Falta la principal",
     "parentPeriod": "Periodo de la principal",
     "modeFollow": "Sigue a la principal",
     "modeIndependent": "Ciclo independiente",
     "upcoming": "Próxima",
     "withParent": "con {name}",
-    "openParent": "Abrir principal",
-    "noticePaused": "En pausa con «{name}»",
-    "noticeEnding": "Finaliza con «{name}»",
-    "noticeEnded": "Finalizada con «{name}»",
-    "noticeTrial": "Sigue la prueba de «{name}»"
+    "fromFree": "Incluido con {name}",
+    "fromAddon": "Complemento de {name}",
+    "parentStatus": "Principal: {status}"
   }
 }

@@ -66,5 +66,7 @@
     "notConfigured": "자동 백업이 설정되지 않았습니다",
     "interrupted": "마지막 백업이 완료되지 않았습니다",
     "beforeRestoreFailed": "복원 전 자동 백업에 실패해 장부는 변경되지 않았습니다: {error}"
-  }
+  },
+  "conflict": "다른 곳에서 장부가 방금 변경되었습니다. 새로고침 후 다시 시도하세요",
+  "duplicateId": "가져온 구독 id가 중복됩니다: {id}"
 }

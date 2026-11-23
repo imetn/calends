@@ -3,7 +3,7 @@ import { migrateLegacyRefunds, reconcileRenewalRules, subError, trackOf, trackin
 import { updateMemberLeave } from './carpool.ts';
 import { t } from './i18n.ts';
 import { subRefsError } from './ledger-edit.ts';
-import { bundleHistoryError, bundleLinkError } from './bundle.ts';
+import { bundleHistoryError, bundleLinkError, bundleLinksOf } from './bundle.ts';
 import { meterLinkError } from './meters.ts';
 import { closePause, statusChangeError } from './phases.ts';
 import type { AppState, Subscription } from './types.ts';
@@ -14,8 +14,23 @@ export function validSub(s: Subscription, subs?: readonly Subscription[]): strin
 }
 
 /**
+ * 改主订阅不能让关联它的子订阅变得无效（如补录暂停后子订阅已指定抵扣的账期消失）：子订阅改前有效、改后无效时拒绝，
+ * 免得子订阅之后连改备注都保存不了。
+ */
+export function bundleChildrenError(parentId: string, before: readonly Subscription[], after: readonly Subscription[]): string | undefined {
+  for (const c of after) {
+    // 独立计费的关联不读主订阅可用期，主订阅怎么改都不影响它
+    if (c.id === parentId || !bundleLinksOf(c).some((x) => x.link.parentId === parentId && x.link.follow !== false)) continue;
+    if (validSub(before.find((x) => x.id === c.id) ?? c, before)) continue;
+    const error = validSub(c, after);
+    if (error) return t('server.invalidItem', { name: c.name, error });
+  }
+  return undefined;
+}
+
+/**
  * 以 previous（库里现有记录，新建时为空）为基准准备一条完整替换的订阅：
- * 暂停结束时记下暂停区间；续费规则改动按生效日记入历史；成员的退出日被清掉时一并清掉退款；最后做完整校验、引用校验（支付方式、币种，见 subRefsError）、状态迁移约束、指标关联校验（meterLinkError）、订阅关联校验（bundleLinkError）和关联不抹掉已发生扣款的校验（bundleHistoryError）。
+ * 暂停结束时记下暂停区间；续费规则改动按生效日记入历史；成员的退出日被清掉时一并清掉退款；最后做完整校验、引用校验（支付方式、币种，见 subRefsError）、状态迁移约束、指标关联校验（meterLinkError）、订阅关联校验（bundleLinkError）、关联不抹掉已发生扣款的校验（bundleHistoryError）和不让关联的子订阅失效的校验。
  */
 export function prepareSubWrite(
   previous: Subscription | undefined,
@@ -45,6 +60,7 @@ export function prepareSubWrite(
     statusChangeError(previous, sub, today, after) ??
     meterLinkError(refs.subscriptions, after) ??
     bundleLinkError(refs.subscriptions, after) ??
-    bundleHistoryError(previous, sub, refs.subscriptions, after, today);
+    bundleHistoryError(previous, sub, refs.subscriptions, after, today) ??
+    bundleChildrenError(sub.id, refs.subscriptions, after);
   return error ? { error } : { sub };
 }

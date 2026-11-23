@@ -2,7 +2,6 @@ import type { AppState } from '../../shared/types.ts';
 import { t } from '../../shared/i18n.ts';
 import { ledgerTools, paymentMethodTool } from './ledger-tools.ts';
 import { validateToolInput, type Schema } from '../../shared/tool-schema.ts';
-import { RevConflictError } from '../store.ts';
 import type { ToolCtx, Tool } from './tool-kit.ts';
 import {
   get_overview,
@@ -100,14 +99,7 @@ export const TOOLS: Tool[] = CATALOGUE.map((tool) => ({
   ...tool,
   run: async (args, ctx) => {
     validateToolInput(tool.inputSchema as Schema, args);
-    for (let attempt = 0; attempt < 4; attempt++) {
-      try {
-        return await tool.run(args, ctx);
-      } catch (e) {
-        if (e instanceof RevConflictError && attempt < 3) continue;
-        throw e;
-      }
-    }
-    throw new RevConflictError();
+    // 版本冲突不自动重跑：按位置定位的参数（如付款 index）在新账本上可能指向另一笔，交给调用方刷新后重试
+    return tool.run(args, ctx);
   },
 }));

@@ -346,7 +346,7 @@ export function List({
                 <button key={s.id} className={`scard st-${st}`} onClick={() => onOpen(s)}>
                   <CardGlow sub={s} />
                   <div className="sc-top">
-                    <SubIcon sub={s} size={48} />
+                    <SubIcon sub={s} size={48} parent={parentInfo?.parent} />
                     <span className="sc-flags">
                       {/* 右上角放状态与标识：地区只显示国旗，待生效变更与并行只显示短标签，详情在提示里 */}
                       {subRegion(cur, m) && (
@@ -459,7 +459,7 @@ export function List({
                 return (
                   <button key={s.id} className={`lt-row st-${st}`} role="row" onClick={() => onOpen(s)}>
                     <span className="lt-name">
-                      <SubIcon sub={s} size={28} />
+                      <SubIcon sub={s} size={28} parent={parentInfo?.parent} />
                       <span className="lt-title">
                         <span className="nm">
                           <b>{s.name}</b>

@@ -7,7 +7,6 @@ import {
   chargeDay,
   currentPhase,
   cycleDays,
-  cycleLabel,
   diffDays,
   effectiveStatus,
   chargesBetween,
@@ -21,7 +20,7 @@ import {
   servedTime,
   type Charge,
 } from '../../../../shared/billing.ts';
-import { bundleSource, displayCycle, followsParent, hasFinancialHistory, isFreeBundlePhase } from '../../../../shared/bundle.ts';
+import { hasFinancialHistory, isFreeBundlePhase } from '../../../../shared/bundle.ts';
 import { flow, cnDateAuto, cnDateFull, relDays } from '../../../../shared/format.ts';
 import { netCost, transfersOf } from '../../../../shared/transfers.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
@@ -217,20 +216,12 @@ export function Kpis({
     />
   );
 
-  // 纯免费附赠且无真实财务历史：收成三格（归属主订阅 · 已用多久 · 费用附赠），不堆 $0 指标
+  // 纯免费附赠且无真实财务历史：只留已用多久，不堆 $0 指标
   if (pureFreePerk) {
-    const parentInfo = bundleSource(sub, state.subscriptions, today);
+    // 主订阅与周期模式在顶部「主订阅」卡里，「附赠 / 周期」在标题下，这里只留已用多久
     return (
       <Panel className="dt-metrics metric-stack">
-        <MetricCards inline>
-          <Metric
-            label={t('detail.bundle.includedWith')}
-            value={parentInfo ? parentInfo.parent.name : t('detail.bundle.parentMissing')}
-            note={t(followsParent(cur) ? 'detail.bundle.modeFollow' : 'detail.bundle.modeIndependent')}
-          />
-          {durationCell}
-          <Metric label={t('detail.bundle.cost')} value={t('list.badge.included')} note={cycleLabel(displayCycle(cur, today))} />
-        </MetricCards>
+        <MetricCards inline>{durationCell}</MetricCards>
         {usage && <MetricCards inline>{usage}</MetricCards>}
       </Panel>
     );

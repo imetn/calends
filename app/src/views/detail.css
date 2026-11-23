@@ -170,8 +170,12 @@
   padding: 16px var(--dt-pad);
   background: var(--dt-bg);
 }
-.dt-head > .ico {
+.dt-head > .ico,
+.dt-head > .ico-linked {
   grid-area: ico;
+}
+.dt-head > .ico,
+.dt-head > .ico-linked > .ico {
   border-radius: var(--radius-md);
 }
 .dt-id {
@@ -282,6 +286,7 @@
   }
   /* 名称、标签折成多行时图标与关闭、返回一样贴顶，不在整块中间浮着 */
   .dt-head > .ico,
+  .dt-head > .ico-linked,
   .dt-close,
   .dt-back {
     align-self: start;
@@ -1563,20 +1568,6 @@
 }
 
 /* 关联订阅：头部主订阅跳转胶囊与父订阅里的子订阅列表 */
-.dt-parent-chip {
-  border: 0;
-  font: inherit;
-  font-size: var(--fs-1);
-  color: var(--label);
-  cursor: pointer;
-  transition: background var(--duration) var(--ease);
-}
-.dt-parent-chip:hover {
-  background: var(--fill);
-}
-.dt-parent-chip .ico {
-  border-radius: var(--radius-pill);
-}
 .dt-bundle-list {
   display: flex;
   flex-direction: column;
@@ -1618,6 +1609,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.dt-parent .dt-bundle-name b {
+  font-size: var(--fs-3);
+}
+.dt-parent-go {
+  flex: none;
+  color: var(--label-3);
 }
 .dt-bundle-price {
   flex: none;

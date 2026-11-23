@@ -9,6 +9,7 @@ import {
   isPostpaid,
   lastCharge,
   phaseSubs,
+  servedTime,
   undatedStop,
 } from './billing.ts';
 import { t } from './i18n.ts';
@@ -116,11 +117,15 @@ function subtractClosed(interval: { from: string; to: string }, covers: Array<{ 
 
 const availCache = new WeakMap<Subscription, ParentAvailability>();
 
-/** 未知日期停用的父订阅最后确定在服务的一天：最后一笔已知扣款所覆盖服务期的最后一天（没有扣款时按开始日那一期） */
+/**
+ * 未知日期停用的父订阅最后确定在服务的一天：最后一笔已知扣款所覆盖服务期的最后一天（没有扣款时按开始日那一期）；
+ * 买断推不出服务期，取父订阅记录里最晚的已知日期，不再给跟随的子订阅预测之后的扣款。
+ */
 function undatedKnownThrough(parent: Subscription, vs: Subscription[]): string | undefined {
   const last = vs.at(-1);
-  if (!last || last.cycle.unit === 'lifetime') return undefined;
+  if (!last) return undefined;
   const dates = [parent.start, ...vs.flatMap((v) => [...(v.payments ?? []).map((p) => p.date), ...(v.nextDue ? [v.nextDue] : [])])];
+  if (last.cycle.unit === 'lifetime') return [...dates, ...vs.filter((v) => !v.planned).map((v) => v.start)].reduce((a, d) => (d > a ? d : a));
   const horizon = dates.reduce((a, d) => (d > a ? d : a));
   const charge = lastCharge(parent, horizon) ?? parent.start;
   const phase = vs.filter((v) => v.start <= charge).at(-1) ?? last;
@@ -415,14 +420,23 @@ export function resolveState(state: AppState): AppState {
  * keepHistory 为 false 时只保留查询日判定状态与显示周期所需的最小信息，不暴露完整历史日期。
  */
 export function publicBundleAvail(avail: ParentAvailability, today: string, keepHistory: boolean): ParentAvailability {
+  // 逐字段构造：父订阅记录里的附加字段（如导入带来的周期元数据）不能随公开投影带出
+  const pubCycle = (c: Cycle): Cycle => ({ unit: c.unit, every: c.every });
+  const pubTrial = (x: NonNullable<ParentAvailability['trial']>) => ({ from: x.from, until: x.until });
+  const pubEnded = (e: NonNullable<ParentAvailability['ended']>): NonNullable<ParentAvailability['ended']> =>
+    e.kind === 'stop'
+      ? { kind: 'stop', date: e.date, stopKind: e.stopKind }
+      : e.kind === 'end'
+        ? { kind: 'end', date: e.date }
+        : { kind: 'undated', stopKind: e.stopKind };
   if (keepHistory) {
     return {
       spans: avail.spans.map((s) => ({ from: s.from, ...(s.to ? { to: s.to } : {}) })),
       pauses: avail.pauses.map((p) => ({ from: p.from, ...(p.to ? { to: p.to } : {}) })),
       ...(avail.undatedStop ? { undatedStop: avail.undatedStop } : {}),
-      ...(avail.trial ? { trial: { ...avail.trial } } : {}),
-      ...(avail.ended ? { ended: { ...avail.ended } } : {}),
-      cycles: avail.cycles.map((c) => ({ from: c.from, ...(c.to ? { to: c.to } : {}), cycle: { ...c.cycle } })),
+      ...(avail.trial ? { trial: pubTrial(avail.trial) } : {}),
+      ...(avail.ended ? { ended: pubEnded(avail.ended) } : {}),
+      cycles: avail.cycles.map((c) => ({ from: c.from, ...(c.to ? { to: c.to } : {}), cycle: pubCycle(c.cycle) })),
     };
   }
   const activeSpan = avail.spans.find((s) => s.from <= today && (!s.to || s.to >= today));
@@ -449,9 +463,9 @@ export function publicBundleAvail(avail: ParentAvailability, today: string, keep
     spans,
     pauses: pause ? [{ from: pause.from, ...(pause.to ? { to: pause.to } : {}) }] : [],
     ...(avail.undatedStop ? { undatedStop: avail.undatedStop } : {}),
-    ...(avail.trial && today < avail.trial.until ? { trial: { ...avail.trial } } : {}),
-    ...(!open && avail.ended ? { ended: { ...avail.ended } } : {}),
-    cycles: activeCycle ? [{ from: activeCycle.from, ...(activeCycle.to ? { to: activeCycle.to } : {}), cycle: { ...activeCycle.cycle } }] : [],
+    ...(avail.trial && today < avail.trial.until ? { trial: pubTrial(avail.trial) } : {}),
+    ...(!open && avail.ended ? { ended: pubEnded(avail.ended) } : {}),
+    cycles: activeCycle ? [{ from: activeCycle.from, ...(activeCycle.to ? { to: activeCycle.to } : {}), cycle: pubCycle(activeCycle.cycle) }] : [],
   };
 }
 
@@ -538,8 +552,20 @@ export function bundleHistoryError(
     for (const c of chargesBetween(s, historyStart(s), cutoff, today)) if (c.kind !== 'failed') out.set(c.currency, (out.get(c.currency) ?? 0) + c.amount);
     return out;
   };
-  const was = sums(bundleView(previous, before));
-  const now = sums(bundleView(sub, after));
+  const prevView = bundleView(previous, before);
+  const nextView = bundleView(sub, after);
+  const was = sums(prevView);
+  const now = sums(nextView);
   for (const [ccy, amount] of was) if ((now.get(ccy) ?? 0) < amount - 0.005) return t('core.subError.bundleHistory');
+  // 扣款记录不变也可能回溯截断服务期（如关联到早已停用的主订阅），截止日前的在订天数同样不能变少
+  const served = (v: Subscription) => (cutoff < historyStart(v) ? 0 : servedTime(v, addDays(cutoff, 1)).days);
+  if (served(nextView) < served(prevView)) return t('core.subError.bundleHistory');
+  // servedTime 只与父订阅覆盖区求交、不扣暂停：新加的跟随关联若在截止日前落进父订阅的暂停期，同样会回溯缩短服务期
+  const addedStarts = new Set(added.filter((x) => x.link.follow !== false).map((x) => x.start));
+  for (const v of phaseSubs(nextView)) {
+    if (!addedStarts.has(v.start) || !v.bundleAvail) continue;
+    const to = v.end && v.end < cutoff ? v.end : cutoff;
+    if (v.bundleAvail.pauses.some((p) => p.from <= to && (!p.to || p.to > v.start))) return t('core.subError.bundleHistory');
+  }
   return undefined;
 }

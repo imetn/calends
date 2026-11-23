@@ -1,6 +1,7 @@
 import { validatePeopleAvatars } from '../shared/avatar.ts';
 import { FALLBACK_FX, migrateStored } from '../shared/billing.ts';
 import { DEFAULT_SETTINGS, type AppState, type FxTable, type PaymentMethod, type Person, type Settings, type Subscription } from '../shared/types.ts';
+import { t } from '../shared/i18n.ts';
 import { pruneSettingsRefs } from '../shared/ledger-edit.ts';
 import { linkPeople } from '../shared/people.ts';
 import { migrateReceivables } from '../shared/receivables-legacy.ts';
@@ -25,7 +26,7 @@ export interface Revision {
 /** Raised when a guarded write loses a race against a concurrent ledger commit. */
 export class RevConflictError extends Error {
   constructor() {
-    super('Concurrent ledger write conflict');
+    super(t('server.conflict'));
   }
 }
 

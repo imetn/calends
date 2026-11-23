@@ -517,6 +517,27 @@ a {
   box-shadow: none;
 }
 
+/* 附赠 / 加购：右下角叠主订阅小图标，外圈用底色隔开 */
+.ico-linked {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-grid;
+  width: var(--s);
+  height: var(--s);
+}
+.ico-parent {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  padding: 3px;
+}
+.ico-parent .ico {
+  border-radius: calc(var(--radius-sm) * 0.8);
+}
+
 /* 支付方式徽标 */
 .region-tag {
   display: inline-flex;
@@ -4552,7 +4573,9 @@ button.h-price-row:focus-visible {
     font-size: var(--fs-3);
     margin-top: 8px;
   }
-  .sc-top .ico {
+  .sc-top > .ico,
+  .sc-top > .ico-linked,
+  .sc-top > .ico-linked > .ico {
     --s: 40px !important;
   }
 }

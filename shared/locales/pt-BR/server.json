@@ -71,5 +71,7 @@
     "notConfigured": "O backup automático não está configurado",
     "interrupted": "O último backup não terminou",
     "beforeRestoreFailed": "O backup antes da restauração falhou; o registro não foi alterado: {error}"
-  }
+  },
+  "conflict": "O registro acabou de ser alterado em outro lugar. Atualize e tente novamente.",
+  "duplicateId": "ID de assinatura duplicado na importação: {id}"
 }

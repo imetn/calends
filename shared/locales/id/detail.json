@@ -261,19 +261,14 @@
   "bundle": {
     "title": "Langganan tertaut ({count})",
     "add": "Tambah langganan tertaut",
-    "includedWith": "Termasuk dalam",
-    "cost": "Biaya",
-    "linkedTo": "Tertaut ke",
     "parentMissing": "Induk tidak ditemukan",
     "parentPeriod": "Periode langganan utama",
     "modeFollow": "Ikuti utama",
     "modeIndependent": "Siklus mandiri",
     "upcoming": "Akan datang",
     "withParent": "bersama {name}",
-    "openParent": "Buka utama",
-    "noticePaused": "Dijeda bersama “{name}”",
-    "noticeEnding": "Berakhir bersama “{name}”",
-    "noticeEnded": "Selesai bersama “{name}”",
-    "noticeTrial": "Mengikuti uji coba “{name}”"
+    "fromFree": "Termasuk dengan {name}",
+    "fromAddon": "Tambahan untuk {name}",
+    "parentStatus": "Utama: {status}"
   }
 }

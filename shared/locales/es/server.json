@@ -71,5 +71,7 @@
     "notConfigured": "La copia automática no está configurada",
     "interrupted": "La última copia no terminó",
     "beforeRestoreFailed": "Falló la copia previa a la restauración; el registro no ha cambiado: {error}"
-  }
+  },
+  "conflict": "El registro acaba de cambiar en otro lugar. Actualiza e inténtalo de nuevo.",
+  "duplicateId": "ID de suscripción duplicado en la importación: {id}"
 }

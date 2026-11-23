@@ -71,5 +71,7 @@
     "notConfigured": "La sauvegarde automatique n’est pas configurée",
     "interrupted": "La dernière sauvegarde n’a pas abouti",
     "beforeRestoreFailed": "La sauvegarde avant restauration a échoué ; le registre n’a pas changé : {error}"
-  }
+  },
+  "conflict": "Le registre vient d’être modifié ailleurs. Actualisez et réessayez.",
+  "duplicateId": "Identifiant d’abonnement en double dans l’import : {id}"
 }

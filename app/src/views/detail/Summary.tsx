@@ -13,7 +13,7 @@ import { collectNow, contractNow, PeriodBar, PeriodPair, periodLive } from './Pe
 import { Note, Panel, Prop } from '../../components/DetailKit.tsx';
 
 /** 详情：本期进度（我发起的合租另并排收费周期）、订阅期间、试用截止与付给谁；账号只在编辑里，备注放在详情最下面 */
-export function Summary({ sub, state, today, onOpen }: { sub: Subscription; state: AppState; today: string; onOpen?: (s: Subscription) => void }) {
+export function Summary({ sub, state, today }: { sub: Subscription; state: AppState; today: string }) {
   const st = effectiveStatus(sub, today);
   const cur = currentPhase(sub, today);
   const lifetime = sub.cycle.unit === 'lifetime' && phaseSubs(sub).length === 1;
@@ -43,21 +43,6 @@ export function Summary({ sub, state, today, onOpen }: { sub: Subscription; stat
                 ? `${cnDateFull(sub.start)} – ${cnDateFull(sub.end)}`
                 : cnDateFull(sub.start)
               : `${cnDateFull(sub.start)} – ${end.unknown ? t('detail.field.endedUnknown') : end.date ? cnDateFull(end.date) : t('detail.field.present')}`}
-          </Prop>
-        )}
-        {/* 关联主订阅：点击可跳去主订阅详情，并标明是否跟随周期 */}
-        {cur.bundle?.parentId && (
-          <Prop k={t('detail.bundle.linkedTo')}>
-            <span className="dt-inline">
-              {parentInfo ? (
-                <button type="button" className="dt-link" onClick={() => onOpen?.(parentInfo.parent)}>
-                  {parentInfo.parent.name} ›
-                </button>
-              ) : (
-                <span className="muted">{t('detail.bundle.parentMissing')}</span>
-              )}
-              <span className="muted">{t(followsParent(cur) ? 'detail.bundle.modeFollow' : 'detail.bundle.modeIndependent')}</span>
-            </span>
           </Prop>
         )}
         {/* 试用中顶部已写试用结束后的首次扣款，这里不再单列试用截止 */}

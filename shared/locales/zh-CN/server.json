@@ -62,5 +62,7 @@
     "notConfigured": "还没有设置自动备份",
     "interrupted": "上次备份没有完成",
     "beforeRestoreFailed": "恢复前的自动备份失败，账本未改动：{error}"
-  }
+  },
+  "conflict": "账本刚被别处改过，请刷新后重试",
+  "duplicateId": "导入的订阅 id 重复：{id}"
 }

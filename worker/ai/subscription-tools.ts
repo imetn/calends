@@ -611,12 +611,12 @@ export const change_plan: Tool = {
     if (act === 'earlier')
       return commit(ctx, st, today, prependPlan(s, at, plan, a.earlier_until != null ? date(a.earlier_until, 'earlier_until') : undefined), a.dry_run, [act]);
     const keep = act === 'switch' && a.keep_previous_until != null ? date(a.keep_previous_until, 'keep_previous_until') : undefined;
-    const quote = act === 'switch' && !keep && !plan.planned ? upgradeQuote(s, at, plan, today) : undefined;
+    const quote = act === 'switch' && !keep && !plan.planned ? upgradeQuote(s, at, plan, today, st.subscriptions) : undefined;
     const after =
       act === 'resume'
         ? resume(s, at, plan)
         : up
-          ? upgradePlan(s, at, plan, today, up.renewal as 'reset' | 'keep', up.amount != null ? num(up.amount, 'upgrade.amount') : undefined)
+          ? upgradePlan(s, at, plan, today, up.renewal as 'reset' | 'keep', up.amount != null ? num(up.amount, 'upgrade.amount') : undefined, st.subscriptions)
           : switchPlan(s, at, plan, keep);
     return {
       ...(await commit(ctx, st, today, after, a.dry_run, keep ? [act, 'keep_previous_until'] : up ? [act, 'upgrade'] : [act])),

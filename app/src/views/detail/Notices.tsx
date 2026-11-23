@@ -9,10 +9,9 @@ import {
   phaseSubs,
   priceAt,
   stopSummary,
-  undatedStop,
   upcomingPhase,
 } from '../../../../shared/billing.ts';
-import { bundleSource, bundleView, followsParent } from '../../../../shared/bundle.ts';
+import { bundleView } from '../../../../shared/bundle.ts';
 import { flow, cnDateFull, money, relDays } from '../../../../shared/format.ts';
 import { stopLosses } from '../../../../shared/metrics.ts';
 import { transferredStop } from '../../../../shared/transfers.ts';
@@ -94,7 +93,7 @@ export function Outcome({ sub, state, today }: { sub: Subscription; state: AppSt
   );
 }
 
-/** 提醒：停止结果、跟随主订阅状态、并行方案、即将变更或计划变更、首期优惠；有结论或待操作，放在指标下方通栏 */
+/** 提醒：停止结果、并行方案、即将变更或计划变更、首期优惠；有结论或待操作，放在指标下方通栏 */
 export function Notices({ sub, state, today, onOpen }: { sub: Subscription; state: AppState; today: string; onOpen?: (s: Subscription) => void }) {
   // sub 为原始记录（供 confirmPlan / dropPlan 写回），view 供只读状态展示
   const view = bundleView(sub, state.subscriptions);
@@ -102,36 +101,9 @@ export function Notices({ sub, state, today, onOpen }: { sub: Subscription; stat
   const cur = currentPhase(view, today);
   const up = upcomingPhase(view, today);
   const parallel = view.phases?.length ? activePhases(view, today).filter((v) => v.start !== cur.start) : [];
-  const parentInfo = bundleSource(sub, state.subscriptions, today);
-  const parentStatusKey =
-    parentInfo && followsParent(cur)
-      ? st === 'paused' && sub.status !== 'paused'
-        ? 'detail.bundle.noticePaused'
-        : st === 'ending' && !cur.end
-          ? 'detail.bundle.noticeEnding'
-          : st === 'ended' && !cur.stop && !cur.end && !undatedStop(sub)
-            ? 'detail.bundle.noticeEnded'
-            : st === 'trial' && sub.status !== 'trial'
-              ? 'detail.bundle.noticeTrial'
-              : undefined
-      : undefined;
   return (
     <div className="dt-notices">
       <Outcome sub={view} state={state} today={today} />
-      {parentStatusKey && parentInfo && (
-        <Panel
-          title={t(parentStatusKey, { name: parentInfo.parent.name })}
-          aside={
-            onOpen && (
-              <button type="button" className="dt-link" onClick={() => onOpen(parentInfo.parent)}>
-                {t('detail.bundle.openParent')} ›
-              </button>
-            )
-          }
-        >
-          {null}
-        </Panel>
-      )}
       {parallel.length > 0 && (
         <Panel title={t('detail.overlap.title')}>
           <dl className="dt-props one">

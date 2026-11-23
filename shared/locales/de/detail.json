@@ -278,19 +278,14 @@
   "bundle": {
     "title": "Verknüpfte Abos ({count})",
     "add": "Verknüpftes Abo hinzufügen",
-    "includedWith": "Enthalten in",
-    "cost": "Kosten",
-    "linkedTo": "Verknüpft mit",
     "parentMissing": "Hauptabo fehlt",
     "parentPeriod": "Zeitraum des Hauptabos",
     "modeFollow": "Folgt Hauptabo",
     "modeIndependent": "Eigener Zyklus",
     "upcoming": "Geplant",
     "withParent": "mit {name}",
-    "openParent": "Hauptabo öffnen",
-    "noticePaused": "Pausiert mit „{name}“",
-    "noticeEnding": "Endet mit „{name}“",
-    "noticeEnded": "Beendet mit „{name}“",
-    "noticeTrial": "Folgt Testphase von „{name}“"
+    "fromFree": "Inklusive bei {name}",
+    "fromAddon": "Zusatz zu {name}",
+    "parentStatus": "Hauptabo: {status}"
   }
 }

@@ -261,19 +261,14 @@
   "bundle": {
     "title": "Gói liên kết ({count})",
     "add": "Thêm gói liên kết",
-    "includedWith": "Đi kèm với",
-    "cost": "Chi phí",
-    "linkedTo": "Liên kết với",
     "parentMissing": "Không thấy gói chính",
     "parentPeriod": "Chu kỳ gói chính",
     "modeFollow": "Theo gói chính",
     "modeIndependent": "Chu kỳ độc lập",
     "upcoming": "Sắp áp dụng",
     "withParent": "cùng {name}",
-    "openParent": "Mở gói chính",
-    "noticePaused": "Tạm dừng theo “{name}”",
-    "noticeEnding": "Sắp hết hạn theo “{name}”",
-    "noticeEnded": "Đã kết thúc theo “{name}”",
-    "noticeTrial": "Theo dùng thử của “{name}”"
+    "fromFree": "Đi kèm {name}",
+    "fromAddon": "Gói thêm của {name}",
+    "parentStatus": "Gói chính: {status}"
   }
 }

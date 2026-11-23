@@ -1,6 +1,6 @@
-import { Plus } from 'lucide-react';
-import { effectiveStatus, perLabel } from '../../../../shared/billing.ts';
-import { bundleView, childrenOf, displayCycle, hasAnyBundleLink, isFreeBundlePhase } from '../../../../shared/bundle.ts';
+import { ChevronRight, Plus } from 'lucide-react';
+import { currentPhase, effectiveStatus, perLabel } from '../../../../shared/billing.ts';
+import { bundleSource, bundleView, childrenOf, displayCycle, followsParent, hasAnyBundleLink, isFreeBundlePhase } from '../../../../shared/bundle.ts';
 import { money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
@@ -94,6 +94,38 @@ export function BundleCard({
             </button>
           );
         })}
+      </div>
+    </Panel>
+  );
+}
+
+/** 附属订阅详情顶部的「主订阅」卡：写明由谁附赠 / 是谁的加购、周期模式与主订阅当前状态，整行可跳到主订阅 */
+export function ParentCard({ sub, state, today, onOpen }: { sub: Subscription; state: AppState; today: string; onOpen?: (s: Subscription) => void }) {
+  const info = bundleSource(sub, state.subscriptions, today);
+  if (!info) return null;
+  const { parent } = info;
+  const cur = currentPhase(bundleView(sub, state.subscriptions), today);
+  const st = effectiveStatus(bundleView(parent, state.subscriptions), today);
+  const follow = followsParent(cur);
+  return (
+    <Panel className="dt-bundle dt-parent">
+      <div className="dt-bundle-list">
+        <button type="button" className="dt-bundle-row" onClick={() => onOpen?.(parent)} disabled={!onOpen}>
+          <SubIcon sub={parent} size={32} proxied />
+          <span className="dt-bundle-main">
+            <span className="dt-bundle-name">
+              <b>{t(isFreeBundlePhase(cur) ? 'detail.bundle.fromFree' : 'detail.bundle.fromAddon', { name: parent.name })}</b>
+            </span>
+            <small className="muted">{t(follow ? 'detail.bundle.modeFollow' : 'detail.bundle.modeIndependent')}</small>
+          </span>
+          {st !== 'active' && st !== 'lifetime' && (
+            <span className={`dt-badge dot ${TONE[st]}`}>
+              <i />
+              {t('detail.bundle.parentStatus', { status: t(`list.status.${st}`) })}
+            </span>
+          )}
+          {onOpen && <ChevronRight size={16} className="dt-parent-go" />}
+        </button>
       </div>
     </Panel>
   );

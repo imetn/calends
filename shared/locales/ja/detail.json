@@ -261,19 +261,14 @@
   "bundle": {
     "title": "関連サブスクリプション（{count}）",
     "add": "関連サブスクリプションを追加",
-    "includedWith": "付帯元",
-    "cost": "料金",
-    "linkedTo": "親サブスクリプション",
     "parentMissing": "親が見つかりません",
     "parentPeriod": "親の請求期間",
     "modeFollow": "親に連動",
     "modeIndependent": "独立サイクル",
     "upcoming": "開始予定",
     "withParent": "{name} に付帯",
-    "openParent": "親を開く",
-    "noticePaused": "「{name}」に合わせて一時停止中",
-    "noticeEnding": "「{name}」に合わせて終了予定",
-    "noticeEnded": "「{name}」に合わせて終了",
-    "noticeTrial": "「{name}」の無料体験に連動中"
+    "fromFree": "{name} の特典",
+    "fromAddon": "{name} の追加オプション",
+    "parentStatus": "親：{status}"
   }
 }

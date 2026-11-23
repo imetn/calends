@@ -34,6 +34,7 @@ import {
   isFreeBundlePhase,
   linkableParents,
   parentAvailability,
+  publicBundleAvail,
   resolveState,
 } from './bundle.ts';
 import { carLedger, carYear, carpoolYear, memberStatus } from './carpool.ts';
@@ -45,7 +46,7 @@ import { meterRows, meterView } from './meters.ts';
 import { cancelSavings, cashVsAccrual, contributionOn, events, insights, mrrOn, prepaidValue, stopHistory, stopLosses } from './metrics.ts';
 import { netCost } from './transfers.ts';
 import { peopleLedger } from './people.ts';
-import { editPhase, movePhaseStart, savePayment, stopSubscription, switchPlan, syncPhase, toEditForm } from './phases.ts';
+import { editPhase, movePhaseStart, savePayment, stopSubscription, switchPlan, syncPhase, toEditForm, upgradePlan, upgradeQuote } from './phases.ts';
 import { receivableOf } from './receivable-edit.ts';
 import { scopeReport, subscriptionTenure } from './scope-report.ts';
 import { applyStopForm, editStop, stopForm, stopPreview } from './stop-form.ts';
@@ -107,6 +108,7 @@ function dbFixture() {
       return { results: [], meta: { changes: Number(query.run(...args).changes) } };
     };
     const stmt = {
+      sql,
       bind(...values: typeof args) {
         args = values;
         return stmt;
@@ -1512,7 +1514,7 @@ test('linking an existing subscription in place cannot silently erase its past c
     { ...yt, price: 0, methodId: undefined, bundle: { parentId: 'ultra' } },
   ]) {
     const res = prepareSubWrite(yt, edit, today, refs);
-    assert.equal('error' in res && res.error, 'Linking would erase past charges. Link from the link date under History → Switch plan instead.');
+    assert.equal('error' in res && res.error, 'Linking would change past charges or service. Link from the link date under History → Switch plan instead.');
   }
 
   // Switching plan from the link date keeps history and saves
@@ -1772,4 +1774,204 @@ test('Codex R3 #2: GET /api/state auto-migration (ensurePeople) cannot resurrect
   const storedChild = JSON.parse((db.prepare("SELECT data FROM subscriptions WHERE id = 'c'").get() as { data: string }).data) as Subscription;
   assert.equal(storedChild.bundle, undefined, 'ensurePeople CAS retry must NOT resurrect deleted parent link');
   assert.ok(storedChild.share?.members[0].personId, 'ensurePeople still links member personId on fresh snapshot');
+});
+
+// ---------- Codex R4 ----------
+
+/** 在下一次带版本守卫的写入前，模拟别处先提交一次（kv.rev + 1） */
+function bumpBeforeGuardedWrites(env: Env, db: DatabaseSync, times: number, match: (sqls: string[]) => boolean = () => true) {
+  const orig = env.DB.batch.bind(env.DB);
+  let left = times;
+  (env.DB as { batch: typeof orig }).batch = async (stmts) => {
+    const sqls = (stmts as unknown as Array<{ sql: string }>).map((x) => x.sql);
+    if (left > 0 && sqls.some((q) => q.startsWith("INSERT INTO kv (key, value, updated_at) SELECT 'rev'")) && match(sqls)) {
+      left--;
+      db.exec("UPDATE kv SET value = CAST(value AS INTEGER) + 1 WHERE key = 'rev'");
+    }
+    return orig(stmts);
+  };
+}
+
+test('Codex R4 #2: an MCP write that loses a revision race reports a conflict instead of replaying a positional delete', async () => {
+  const { db, env, request, runTool } = dbFixture();
+  const sub = mkSub({
+    id: 's',
+    name: 'Twice Paid',
+    price: 10,
+    start: '2026-01-01',
+    payments: [
+      { date: '2026-02-01', amount: 10 },
+      { date: '2026-02-01', amount: 12 },
+    ],
+  });
+  assert.equal((await request('subscriptions/s', 'PUT', sub)).status, 200);
+  bumpBeforeGuardedWrites(env, db, 1);
+  await assert.rejects(runTool('delete_payment', { subscription: 's', date: '2026-02-01', index: 0 }), /changed elsewhere/);
+  const stored = JSON.parse((db.prepare("SELECT data FROM subscriptions WHERE id = 's'").get() as { data: string }).data) as Subscription;
+  assert.equal(stored.payments?.length, 2, 'no payment is removed by a replay against the newer ledger');
+});
+
+test('Codex R4 #3: a committed replace import is never replayed when the follow-up migration keeps conflicting', async () => {
+  const { db, env, request } = dbFixture();
+  const legacy = mkSub({
+    id: 'legacy',
+    name: 'Legacy Shared',
+    price: 20,
+    start: '2026-01-01',
+    share: {
+      role: 'owner',
+      seats: 2,
+      collectFrom: '2026-01-01',
+      members: [{ id: 'm1', name: 'Legacy Bob', share: 10, fee: 10, feeCurrency: 'USD', joined: '2026-01-01' }],
+    },
+  } as Partial<Subscription> & { id: string; name: string });
+  let replaces = 0;
+  const orig = env.DB.batch.bind(env.DB);
+  (env.DB as { batch: typeof orig }).batch = async (stmts) => {
+    if ((stmts as unknown as Array<{ sql: string }>).some((x) => x.sql === 'DELETE FROM subscriptions')) replaces++;
+    return orig(stmts);
+  };
+  // 替换提交后，每次迁移写入前都有别处先提交
+  bumpBeforeGuardedWrites(env, db, 20, (sqls) => !sqls.includes('DELETE FROM subscriptions'));
+  const res = await request('import', 'POST', { mode: 'replace', subscriptions: [legacy], methods: [] });
+  assert.equal(replaces, 1, 'the whole-ledger replace runs exactly once');
+  assert.equal(res.status, 200, 'the committed import is reported as done, not as retryable');
+  assert.deepEqual(
+    ((await res.json()) as AppState).subscriptions.map((x) => x.id),
+    ['legacy'],
+  );
+});
+
+test('Codex R4 #7: import rejects duplicate subscription ids', async () => {
+  const { request } = dbFixture();
+  const a = mkSub({ id: 'dup', name: 'First' });
+  const res = await request('import', 'POST', { mode: 'merge', subscriptions: [a, { ...a, name: 'Second', proxy: true }], methods: [] });
+  assert.equal(res.status, 400);
+  assert.match(((await res.json()) as { error: string }).error, /dup/);
+});
+
+test('Codex R4 #4: upgrade credit uses the bundle-resolved period, so a charge skipped during the parent pause is not credited', () => {
+  const parent = mkSub({ id: 'p', name: 'Parent', price: 30, start: '2026-01-01', pauses: [{ from: '2026-02-20', to: '2026-03-15' }] });
+  const child = mkSub({ id: 'c', name: 'Child', price: 10, start: '2026-01-01', bundle: { parentId: 'p' } });
+  const subs = [parent, child];
+  const next = { price: 50, currency: 'USD', cycle: { unit: 'month' as const, every: 1 } };
+  const plain = upgradeQuote(child, '2026-03-21', next, '2026-03-21');
+  assert.ok(plain && plain.credit > 0, 'without the ledger the skipped March charge looks paid');
+  assert.equal(upgradeQuote(child, '2026-03-21', next, '2026-03-21', subs), undefined, 'nothing was paid for the current period');
+  assert.throws(() => upgradePlan(child, '2026-03-21', next, '2026-03-21', 'reset', undefined, subs));
+});
+
+test('Codex R4 #5: a parent pause that would invalidate a child payment allocation is refused on the parent write', () => {
+  const parent = mkSub({ id: 'p', name: 'Parent', price: 30, start: '2026-01-01' });
+  const child = mkSub({
+    id: 'c',
+    name: 'Separate Child',
+    price: 10,
+    start: '2026-01-01',
+    settlement: 'separate',
+    settledBefore: '2026-01-01',
+    bundle: { parentId: 'p' },
+    payments: [{ date: '2026-02-10', amount: 10, periods: ['2026-02-01'] }],
+  } as Partial<Subscription> & { id: string; name: string });
+  const refs = { subscriptions: [parent, child], methods: mkState([]).methods, fx: FX };
+  assert.equal(subError(child, refs.subscriptions), undefined);
+  const paused: Subscription = { ...parent, status: 'paused', pausedAt: '2026-01-25' };
+  const r = prepareSubWrite(parent, paused, '2026-03-21', refs);
+  assert.ok('error' in r && r.error?.includes('Separate Child'), String('error' in r ? r.error : 'saved'));
+  // 与子订阅无关的主订阅编辑照常保存
+  const noted = prepareSubWrite(parent, { ...parent, note: 'hello' }, '2026-03-21', refs);
+  assert.equal(noted.error, undefined);
+});
+
+test('Codex R4 #6: public bundle availability carries only unit/every for cycles', () => {
+  const avail = {
+    spans: [{ from: '2026-01-01' }],
+    pauses: [],
+    trial: { from: '2026-01-01', until: '2026-01-08', extra: 'x' },
+    cycles: [{ from: '2026-01-01', cycle: { unit: 'month', every: 1, name: 'Secret Parent', price: 99 } }],
+  } as unknown as Parameters<typeof publicBundleAvail>[0];
+  for (const keep of [true, false]) {
+    const out = publicBundleAvail(avail, '2026-01-05', keep);
+    assert.deepEqual(out.cycles[0].cycle, { unit: 'month', every: 1 });
+    assert.deepEqual(out.trial, { from: '2026-01-01', until: '2026-01-08' });
+  }
+});
+
+test('Codex R4 #8: a lifetime parent stopped on an unknown date stops forecasting paid follow charges', () => {
+  const parent = mkSub({ id: 'p', name: 'Lifetime', price: 200, cycle: { unit: 'lifetime', every: 1 }, start: '2026-01-01', status: 'cancelled' });
+  const child = mkSub({ id: 'c', name: 'Paid Follow', price: 5, start: '2026-01-01', bundle: { parentId: 'p' } });
+  const view = bundleView(child, [parent, child]);
+  assert.deepEqual(
+    chargesBetween(view, '2026-01-01', '2026-12-31', '2026-06-15').map((c) => c.date),
+    ['2026-01-01'],
+  );
+});
+
+test('Codex R5: merge import is refused when an imported parent change invalidates a following child allocation', async () => {
+  const { request } = dbFixture();
+  const parent = mkSub({ id: 'p', name: 'Parent', price: 30, start: '2026-01-01' });
+  const child = mkSub({
+    id: 'c',
+    name: 'Separate Child',
+    price: 10,
+    start: '2026-01-01',
+    settlement: 'separate',
+    settledBefore: '2026-01-01',
+    bundle: { parentId: 'p' },
+    payments: [{ date: '2026-02-10', amount: 10, periods: ['2026-02-01'] }],
+  } as Partial<Subscription> & { id: string; name: string });
+  assert.equal((await request('subscriptions/p', 'PUT', parent)).status, 200);
+  assert.equal((await request('subscriptions/c', 'PUT', child)).status, 200);
+  const res = await request('import', 'POST', { mode: 'merge', subscriptions: [{ ...parent, status: 'paused', pausedAt: '2026-01-25' }], methods: [] });
+  assert.equal(res.status, 400);
+  assert.match(((await res.json()) as { error: string }).error, /Separate Child/);
+});
+
+test('Codex R5: an undated-stop monthly parent with a later planned phase still forecasts no child charges after its known coverage', () => {
+  const parent = mkSub({
+    id: 'p',
+    name: 'Monthly',
+    price: 20,
+    start: '2026-01-01',
+    status: 'cancelled',
+    phases: [
+      { start: '2026-01-01', end: '2026-01-31', price: 20, currency: 'USD', cycle: { unit: 'month', every: 1 } },
+      { start: '2026-07-01', price: 20, currency: 'USD', cycle: { unit: 'month', every: 1 }, planned: true },
+    ],
+  } as Partial<Subscription> & { id: string; name: string });
+  const child = mkSub({ id: 'c', name: 'Paid Follow', price: 5, start: '2026-01-01', bundle: { parentId: 'p' } });
+  const dates = chargesBetween(bundleView(child, [parent, child]), '2026-01-01', '2026-12-31', '2026-06-15').map((c) => c.date);
+  assert.ok(!dates.includes('2026-07-01'), dates.join(','));
+});
+
+test('linking in place to a parent that stopped earlier cannot shorten past service even when recorded payments stay', () => {
+  const today = '2026-11-23';
+  const parent = mkSub({ id: 'px', name: 'Pixel Studio', price: 20, start: '2026-01-01', end: '2026-10-22', status: 'cancelled' });
+  const notes = mkSub({
+    id: 'pn',
+    name: 'Plain Notes',
+    price: 5,
+    start: '2026-08-01',
+    payments: ['2026-08-01', '2026-09-01', '2026-10-01', '2026-11-01'].map((date, i) => ({ id: `n${i}`, date, amount: 5 })),
+  });
+  const res = prepareSubWrite(notes, { ...notes, bundle: { parentId: 'px' } }, today, mkState([parent, notes]));
+  assert.equal('error' in res && res.error, 'Linking would change past charges or service. Link from the link date under History → Switch plan instead.');
+
+  // The same link to a parent that covers the whole history saves
+  const active = mkSub({ id: 'pa', name: 'Active', price: 20, start: '2026-01-01' });
+  assert.ok(!('error' in prepareSubWrite(notes, { ...notes, bundle: { parentId: 'pa' } }, today, mkState([active, notes]))));
+});
+
+test('linking in place to a parent that was paused in the past is refused; a plan switch after the pause still saves', () => {
+  const today = '2026-04-01';
+  const parent = mkSub({ id: 'pp', name: 'Paused Once', price: 20, start: '2025-12-01', pauses: [{ from: '2026-02-01', to: '2026-03-01' }] });
+  const perk = mkSub({ id: 'pk', name: 'Perk', price: 0, start: '2026-01-01' });
+  const refs = mkState([parent, perk]);
+  const res = prepareSubWrite(perk, { ...perk, bundle: { parentId: 'pp' } }, today, refs);
+  assert.equal('error' in res && res.error, 'Linking would change past charges or service. Link from the link date under History → Switch plan instead.');
+  // Independent mode does not follow the parent's pauses
+  assert.ok(!('error' in prepareSubWrite(perk, { ...perk, bundle: { parentId: 'pp', follow: false } }, today, refs)));
+  // Switching from a day after the pause keeps the earlier history intact
+  const switched = switchPlan(perk, '2026-03-15', { price: 0, currency: 'USD', cycle: { unit: 'month', every: 1 }, bundle: { parentId: 'pp' } });
+  assert.ok(!('error' in prepareSubWrite(perk, switched, today, refs)));
 });

@@ -52,7 +52,7 @@ import { Notices } from './detail/Notices.tsx';
 import { NoteBlock, ShareCard } from './detail/Summary.tsx';
 import { Charges } from './detail/Ledgers.tsx';
 import { Meters, usageMetrics } from './detail/Meters.tsx';
-import { BundleCard } from './detail/BundleCard.tsx';
+import { BundleCard, ParentCard } from './detail/BundleCard.tsx';
 
 /**
  * 详情顶部的操作按钮。宽屏：常用的带文字（胶囊），次要的只有图标（正圆）；
@@ -232,7 +232,7 @@ export function Detail({
   const content = (
     <div className={`dt ${compact ? 'compact' : ''}`} ref={root}>
       <DetailHead
-        icon={<SubIcon sub={sub} size={48} proxied />}
+        icon={<SubIcon sub={sub} size={48} proxied parent={parentInfo?.parent} />}
         title={sub.name}
         badge={
           st !== 'active' &&
@@ -258,14 +258,7 @@ export function Detail({
                 {big.alt && <span>{big.alt}</span>}
               </>
             )}
-            {parentInfo ? (
-              <button type="button" className="who-chip dt-parent-chip" onClick={() => onOpen?.(parentInfo.parent)}>
-                <SubIcon sub={parentInfo.parent} size={16} proxied />
-                <span>{parentInfo.parent.name}</span>
-              </button>
-            ) : (
-              parentMissing && <span className="dt-badge warn">{t('detail.bundle.parentMissing')}</span>
-            )}
+            {parentMissing && <span className="dt-badge warn">{t('detail.bundle.parentMissing')}</span>}
             <RegionTag
               cc={subRegion(
                 cur,
@@ -296,9 +289,11 @@ export function Detail({
           提醒仍是卡片，其余（走势、记录、合租、详情、历程）用分隔线隔开
         */}
       <div className="dt-body dt-flow">
+        {/* 附属订阅：先写明由谁附赠 / 是谁的加购，再看自己的指标 */}
+        <ParentCard sub={sub} state={state} today={today} onOpen={onOpen} />
         <Kpis sub={view} state={state} today={today} history={paid} usage={meter && usageMetrics(usageSub, meter, today)} />
         {/* 指标下面：本期进度与属性（不加标题），然后是扣款走势、提醒和记录 */}
-        <Summary key={sub.id} sub={view} state={state} today={today} onOpen={onOpen} />
+        <Summary key={sub.id} sub={view} state={state} today={today} />
         {!compact && (
           <Timeline sub={view} state={state} today={today} history={history} range={axis.range} onRange={(range) => setRangePick({ id: sub.id, range })} />
         )}
