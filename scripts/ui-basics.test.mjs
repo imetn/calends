@@ -1802,3 +1802,17 @@ test('金额小数不被容器的 small { display: block } 挤到下一行；报
   const ui = readFileSync(new URL('../app/src/components/ui.css', import.meta.url), 'utf8');
   assert.match(ui, /\.metric-note \.hero-delta \{\n\s*font-size: var\(--fs-1\);/);
 });
+
+test('ledger kind badges sit left of the amount so amounts stay right-aligned', () => {
+  // 退款、补差、失败标签若放在金额右边，这一行的金额会被挤离右边线，和上下行对不齐
+  for (const file of ['views/detail/Ledgers.tsx', 'views/carpool/CarSheet.tsx']) {
+    const lines = readFileSync(new URL(file, root), 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      if (!/<em className=\{?[`"]dt-kind/.test(line)) return;
+      assert.doesNotMatch(lines[i - 1], /\{(orig|flow|money|cost)\(/, `${file}:${i + 1} badge after amount`);
+    });
+  }
+  // 历程里的退款事件必须带上退了多少
+  const events = readFileSync(new URL('views/detail/Events.tsx', root), 'utf8');
+  assert.match(events, /title: t\('editor\.payment\.kind\.refund'\),\s*(\/\/[^\n]*\s*)?sub: money\(/);
+});
