@@ -1859,7 +1859,11 @@ test('refund / adjust rows say what they are everywhere a single charge is shown
   assert.match(cal, /const extra = !!c\.kind;/);
   assert.match(cal, /\{!extra && <span>\{cycleLabel\(c\.sub\.cycle\)\}<\/span>\}/);
   // 详情提示框：这一笔后来退的钱
-  assert.match(read('views/detail/ChargeTip.tsx'), /refundsOf\(c\)\.map/);
+  const tip = read('views/detail/ChargeTip.tsx');
+  assert.match(tip, /refundsOf\(c\)\.map/);
+  // 折合跟在金额后面同一行，不另起「折合」行
+  assert.doesNotMatch(tip, /detail\.chart\.converted/);
+  assert.match(tip, /withFx\(flow\(-net/);
   // 甘特图圆点按类型取名，不把补差、失败叫「扣款」
   assert.match(read('views/Gantt.tsx'), /editor\.payment\.kind\.\$\{c\.kind \?\? 'charge'\}/);
 });

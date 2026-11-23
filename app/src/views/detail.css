@@ -608,6 +608,13 @@
 .cc-tip-r > b.m {
   font-weight: 500;
 }
+/* 金额后的折合：同一行，弱一档 */
+.cc-tip-x {
+  margin-left: 6px;
+  color: var(--label-3);
+  font-style: normal;
+  font-weight: 500;
+}
 .cc-tip-f {
   margin-top: 6px;
   padding-top: 8px;

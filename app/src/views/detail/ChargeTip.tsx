@@ -128,6 +128,13 @@ export function ChargeTip({
       <b>{value}</b>
     </div>
   );
+  // 外币金额后面跟折合，同一行写完
+  const withFx = (value: ReactNode, list: Charge[]) => (
+    <>
+      {value}
+      {convert && <em className="cc-tip-x">≈ {convert(list)}</em>}
+    </>
+  );
   return (
     <>
       {post ? (
@@ -153,19 +160,19 @@ export function ChargeTip({
               : future
                 ? t('detail.timeline.planned')
                 : t('detail.field.amount'),
-        flow(-c.amount, c.currency, wholeOpts(c.amount, c.currency, whole)),
+        withFx(flow(-c.amount, c.currency, wholeOpts(c.amount, c.currency, whole)), [c]),
       )}
       {owed?.unpaid && row(t(`detail.settlement.${owed.unpaid}`), flow(-owed.amount, owed.currency, wholeOpts(owed.amount, owed.currency, whole)))}
-      {convert && row(t('detail.chart.converted'), convert([c]))}
-      {/* 这一笔后来退了钱：逐笔写哪天退、退多少及折合，最后是扣除退款后的实际花费及折合 */}
+      {/* 这一笔后来退了钱：逐笔写哪天退、退多少，最后是扣除退款后的实际花费；外币都在同一行带折合 */}
       {refunds.map((r, i) => (
         <Fragment key={`refund-${i}`}>
-          {row(t('core.paymentKind.refund'), `${cnDateAuto(r.date, today)} ${flow(-r.amount, c.currency, wholeOpts(r.amount, c.currency, whole))}`)}
-          {convert && row(t('detail.chart.converted'), convert([r]))}
+          {row(
+            t('core.paymentKind.refund'),
+            withFx(`${cnDateAuto(r.date, today)} ${flow(-r.amount, c.currency, wholeOpts(r.amount, c.currency, whole))}`, [r]),
+          )}
         </Fragment>
       ))}
-      {refunds.length > 0 && row(t('detail.chart.net'), flow(-net, c.currency, wholeOpts(net, c.currency, whole)))}
-      {refunds.length > 0 && convert && row(t('detail.chart.converted'), convert([c, ...refunds]))}
+      {refunds.length > 0 && row(t('detail.chart.net'), withFx(flow(-net, c.currency, wholeOpts(net, c.currency, whole)), [c, ...refunds]))}
       {full != null && row(t('detail.chart.regular'), full)}
       {usage != null && meter && row(t('detail.meters.head.usage'), withUnit(usage, meter.unit, decimals != null ? fixedQty(decimals) : qty))}
       {extra}
