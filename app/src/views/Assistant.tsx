@@ -35,6 +35,7 @@ import { IconButton, Toolbar } from '../components/ui.tsx';
 import { api, getState, refresh } from '../store.ts';
 import { copyText, toast } from '../toast.ts';
 import { newSub } from './editor/new-sub.ts';
+import { draftKey, writeDraft } from './editor/draft.ts';
 import { headAlignDelta, interrupted } from './assistant-fields.ts';
 import { compressImage as compress, setAssistantConfigured, takeHandoff, type HandoffReturn } from '../handoff.ts';
 import './assistant.css';
@@ -248,7 +249,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
       });
       const verified = r.verification?.status === 'verified';
       // 已由助手新建：不再提供回到旧草稿的返回，避免重复添加
-      if (p.tool === 'create_subscription') setReturnTo(null);
+      if (p.tool === 'create_subscription') endHandoff();
       setPart(turnId, p.id, {
         state: verified ? 'applied' : 'unverified',
         subId: r.subscription?.id,
@@ -320,7 +321,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
         ? { payments: (a.payments as Array<{ date: string; amount: number; note?: string }>).map((x) => ({ date: x.date, amount: x.amount, note: x.note })) }
         : {}),
     };
-    setReturnTo(null);
+    endHandoff();
     window.dispatchEvent(new CustomEvent('ledger:add', { detail: draft }));
   };
 
@@ -333,6 +334,12 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
   };
 
   /** 返回进入 AI 助手前的新建订阅弹窗，并恢复离开前的页面与表单草稿 */
+  /** 从表单交接过来的：助手的结果取代离开时留下的本地草稿，并不再提供返回 */
+  const endHandoff = () => {
+    if (returnTo) writeDraft(draftKey(true, ''), undefined);
+    setReturnTo(null);
+  };
+
   const backToEditor = () => {
     if (!returnTo) return;
     const { route, draft } = returnTo;

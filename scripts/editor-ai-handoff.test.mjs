@@ -110,8 +110,10 @@ test('back from assistant keeps the local draft: returnTo carries the original f
   // 是否已配置未知时不先显示「去配置」，避免已配置用户看到错误提示
   assert.match(editor, /isNew &&\s*aiReady !== null &&/);
   // 助手已新建或转去编辑后，不再提供回到旧草稿的返回
-  assert.match(assistant, /if \(p\.tool === 'create_subscription'\) setReturnTo\(null\);/);
-  assert.match(assistant, /setReturnTo\(null\);\s*window\.dispatchEvent\(new CustomEvent\('ledger:add', \{ detail: draft \}\)\);/);
+  assert.match(assistant, /if \(p\.tool === 'create_subscription'\) endHandoff\(\);/);
+  assert.match(assistant, /endHandoff\(\);\s*window\.dispatchEvent\(new CustomEvent\('ledger:add', \{ detail: draft \}\)\);/);
+  // 并清掉离开表单时留下的本地草稿，否则「编辑后添加」会被旧草稿盖掉
+  assert.match(assistant, /if \(returnTo\) writeDraft\(draftKey\(true, ''\), undefined\);/);
   // 返回按钮改变顶栏高度：对齐历史分割线的测量随之重跑
   assert.match(assistant, /\[fill, past, chat\.id, atBottom, jump, !!returnTo\]/);
 });
