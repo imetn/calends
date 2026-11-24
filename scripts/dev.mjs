@@ -1,5 +1,5 @@
 // 本地开发：同时启动 wrangler（Worker + 本地 D1，:8787）与 Vite（热更新，:5173）
-// 用法：npm run dev，然后打开 http://127.0.0.1:5173
+// 用法：npm run dev，然后打开 http://127.0.0.1:5173；Vite 监听所有网卡，Tailscale 等内网设备可用本机 IP 或 *.ts.net 访问
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 
@@ -29,4 +29,4 @@ if (!existsSync('dist/index.html')) {
   await new Promise((r) => b.on('exit', r));
 }
 run('worker', '35', 'node', ['scripts/wrangler.mjs', 'dev', '--port', '8787', '--local']);
-run('vite', '36', 'npx', ['vite', 'app', '--host', '127.0.0.1', '--port', '5173', '--strictPort']);
+run('vite', '36', 'npx', ['vite', 'app', '--host', '0.0.0.0', '--port', '5173', '--strictPort']);
