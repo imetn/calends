@@ -935,14 +935,32 @@ test('分开记的每月涨跌比账单单价：首期与当前一期，缴费�
   assert.equal(bills.at(-1).amount, 150);
 });
 
-test('扣款记录里结清哪几期：与缴费同年省略年份，跨年的写全', () => {
+test('扣款记录：分开记的缴费服务期写在服务期一栏，止日写到末期最后一天，金额一栏只有金额', () => {
   setLocale('zh-CN', []);
   const file = '../app/src/views/detail/Ledgers.tsx';
-  const settlesLabel = load(file, 'settlesLabel', extractUiFunction(new URL(file, import.meta.url), 'settlesLabel'), { cnDate, cnDateFull });
-  assert.equal(settlesLabel(['2025-09-01', '2025-10-01', '2025-12-01'], '2025-12-10'), '9月1日 – 12月1日');
-  assert.equal(settlesLabel(['2026-04-01'], '2026-06-05'), '4月1日');
-  assert.equal(settlesLabel(['2025-12-01', '2026-01-01'], '2026-01-20'), '2025年12月1日 – 2026年1月1日');
-  assert.equal(settlesLabel(['2025-10-01', '2026-03-01'], '2026-03-05'), '2025年10月1日 – 2026年3月1日');
+  const settledLabel = load(file, 'settledLabel', extractUiFunction(new URL(file, import.meta.url), 'settledLabel'), { cnDate, cnDateFull });
+  assert.equal(settledLabel('2026-01-01', '2026-06-30', '2026-06-16'), '1月1日 – 6月30日');
+  assert.equal(settledLabel('2026-10-01', '2026-10-31', '2026-11-24'), '10月1日 – 10月31日');
+  assert.equal(settledLabel('2025-12-01', '2026-01-31', '2026-01-20'), '2025年12月1日 – 2026年1月31日');
+  // 物业费按月预付、分开记：结清 1–6 月账单的服务期是 1 月 1 日到 7 月 1 日（不含）
+  const sub = {
+    id: 'p',
+    name: 'p',
+    category: 'x',
+    tags: [],
+    status: 'active',
+    currency: 'CNY',
+    price: 464.86,
+    cycle: { unit: 'month', every: 1 },
+    start: '2024-07-01',
+    billingStart: '2025-06-01',
+    settlement: 'separate',
+    settledBefore: '2025-06-01',
+  };
+  assert.deepEqual(billing.chargeServicePeriod(sub, '2026-01-01'), { from: '2026-01-01', until: '2026-02-01' });
+  assert.deepEqual(billing.chargeServicePeriod(sub, '2026-06-01'), { from: '2026-06-01', until: '2026-07-01' });
+  const src = readFileSync(new URL(file, import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /dt-settles/);
 });
 
 test('同一条用量落在并行两段的服务期里只算一次，服务期没记完不写平均单价', () => {

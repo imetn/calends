@@ -72,11 +72,12 @@ export function Transfers({ sub, state, onRow, onAdd }: { sub: Subscription; sta
   );
 }
 
-/** 一笔缴费结清的账单：首期 – 末期；都与缴费同年时省略年份，否则首末都写年份 */
-export function settlesLabel(settles: string[], paid: string) {
-  const same = settles.every((d) => d.slice(0, 4) === paid.slice(0, 4));
+/** 分开记的一笔缴费的服务期：首期账单起、末期账单止；都与缴费同年时省略年份，否则首末都写年份 */
+export function settledLabel(from: string, last: string, paid: string) {
+  const year = paid.slice(0, 4);
+  const same = from.slice(0, 4) === year && last.slice(0, 4) === year;
   const day = (d: string) => (same ? cnDate(d) : cnDateFull(d));
-  return settles.length > 1 ? `${day(settles[0])} – ${day(settles[settles.length - 1])}` : day(settles[0]);
+  return `${day(from)} – ${day(last)}`;
 }
 
 /** 扣款记录：按年分组（组头带合计），扣款日 · 支付方式 · 卡上实扣，第四列按币种与计费方式取当时成本、用量、缴费日或服务期；点一行改这笔 */
@@ -120,8 +121,19 @@ export function Charges({
   // 前三列固定（日期 · 支付方式 · 卡上实扣），第四列看情况：
   // 有一笔不是本位币时写当时成本；全是本位币时成本与实扣是同一个数，换成用量、缴费日或服务期，都没有时只留三列
   const postMode = regular.length > 0 && regular.every((r) => post(r.c));
+  // 分开记的缴费：服务期从它结清的最早一期账单起，到最晚一期止
+  const settledPeriod = (c: Charge, settles: string[]) => {
+    const ps = settles.map((d) => chargeServicePeriod(c.sub, d));
+    return { from: ps.reduce((a, p) => (p.from < a ? p.from : a), ps[0].from), until: ps.reduce((a, p) => (p.until > a ? p.until : a), ps[0].until) };
+  };
   const periodOf = (c: Charge) =>
-    c.kind || c.settles || post(c) || c.sub.cycle.unit === 'lifetime' ? undefined : chargeServicePeriod(c.sub, c.date, c.serviceDate);
+    c.kind || c.sub.cycle.unit === 'lifetime'
+      ? undefined
+      : c.settles?.length
+        ? settledPeriod(c, c.settles)
+        : post(c)
+          ? undefined
+          : chargeServicePeriod(c.sub, c.date, c.serviceDate);
   const fourth: 'cost' | 'usage' | 'paid' | 'service' | undefined = rows.some((r) => card(r.c).currency !== base)
     ? 'cost'
     : readings
@@ -132,9 +144,11 @@ export function Charges({
           ? 'service'
           : undefined;
   // 服务期只写月日，跨年也不写年份（年份看左边的扣款日）；从扣款日当天起时只写止日
+  // 分开记的缴费写结清的首期起到末期止，金额一列只写金额，不加第二行
   const serviceCell = (c: Charge) => {
     const p = periodOf(c);
     if (!p) return null;
+    if (c.settles?.length) return settledLabel(p.from, addDays(p.until, -1), c.date);
     const last = cnDate(addDays(p.until, -1));
     return p.from === c.date ? t('detail.charges.to', { date: last }) : `${cnDate(p.from)} – ${last}`;
   };
@@ -242,8 +256,6 @@ export function Charges({
                 {/* 类型标签放在金额左边，金额始终贴右对齐，上下行的数字对得齐 */}
                 {c.kind && <em className={`dt-kind ${c.kind}`}>{t(`core.paymentKind.${c.kind}`)}</em>}
                 {orig(-card(c).amount, card(c).currency)}
-                {/* 账单与缴费分开记：这笔缴的是哪几期账单（首期 – 末期），固定在金额下一行；逐期写在悬停提示里 */}
-                {!!c.settles?.length && <small className="dt-settles">{settlesLabel(c.settles, c.date)}</small>}
               </>
             ),
             base:
