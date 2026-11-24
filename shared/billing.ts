@@ -1573,7 +1573,10 @@ export function nextCharge(s: Subscription, today: string): string | undefined {
   // 后付费停止后还有最后一张账单，交给 chargesBetween 判断
   if (s.stop && s.stop.date <= today && !isPostpaid(s)) return undefined;
   // 提前续费后下一笔可能在将近两个周期之后；分开记时已预缴的账单（带 paidOn）不算下一笔
-  return chargesBetween(s, today, addDays(today, Math.max(396, Math.ceil(cycleDays(s.cycle) * 2) + 32)), today).find((c) => !c.kind && !c.paidOn)?.date;
+  // 当前阶段是买断时周期天数为无穷，只看一年多内的阶段切换，不能算出无效日期
+  const span = cycleDays(s.cycle);
+  const horizon = Number.isFinite(span) ? Math.max(396, Math.ceil(span * 2) + 32) : 396;
+  return chargesBetween(s, today, addDays(today, horizon), today).find((c) => !c.kind && !c.paidOn)?.date;
 }
 
 /** 整段账的起点：开始日前提前付的首期（paysFirstPeriod）也属于扣款记录；挪开始日留下的更早记录不算 */
