@@ -14,7 +14,7 @@ npm run db:migrate:local
 npm run dev   # http://127.0.0.1:5173/
 ```
 
-Vite serves the UI on port 5173 (all interfaces, so Tailscale peers can reach it by IP or `*.ts.net` name) and proxies API requests to the Worker on port 8787. Local database state lives in `.wrangler/state`; personal configuration under `local/` is not needed to contribute. Use a fresh checkout or an explicitly isolated Wrangler persistence directory when testing imports or migrations.
+Vite serves the UI on port 5173 on 127.0.0.1 (to reach it from Tailscale peers, run `tailscale serve --bg --https=5173 http://127.0.0.1:5173` and open the `*.ts.net` name) and proxies API requests to the Worker on port 8787. Local database state lives in `.wrangler/state`; personal configuration under `local/` is not needed to contribute. Use a fresh checkout or an explicitly isolated Wrangler persistence directory when testing imports or migrations.
 
 Set `CALENDS_LOCAL` to an absolute path or a path relative to the repository root to keep personal configuration and asset overrides outside the checkout; the default remains `local/`. See [personal Cloudflare configuration](docs/self-hosting.md#personal-cloudflare-configuration).
 

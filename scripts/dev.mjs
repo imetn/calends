@@ -1,5 +1,5 @@
 // 本地开发：同时启动 wrangler（Worker + 本地 D1，:8787）与 Vite（热更新，:5173）
-// 用法：npm run dev，然后打开 http://127.0.0.1:5173；Vite 监听所有网卡，Tailscale 等内网设备可用本机 IP 或 *.ts.net 访问
+// 用法：npm run dev，然后打开 http://127.0.0.1:5173；Vite 只监听本机；Tailscale 设备经 tailscale serve 转发访问 https://<机器名>.ts.net:5173（serve 自己占用 Tailscale 地址的 5173，监听所有网卡会端口冲突）
 // wrangler 热重载后偶尔进程还在、8787 却不再监听，页面因接口 502 显示离线；或端口在听、请求挂住；这里定时发请求探测，连续失败就重启 Worker
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -101,5 +101,5 @@ if (!existsSync('dist/index.html')) {
   await new Promise((r) => b.on('exit', r));
 }
 startWorker();
-run('vite', '36', 'npx', ['vite', 'app', '--host', '0.0.0.0', '--port', '5173', '--strictPort'], shutdown);
+run('vite', '36', 'npx', ['vite', 'app', '--host', '127.0.0.1', '--port', '5173', '--strictPort'], shutdown);
 setInterval(checkWorker, CHECK_MS);
