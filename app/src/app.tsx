@@ -267,6 +267,7 @@ function Sidebar({
   onSearch,
   onCollapse,
   inert,
+  offline,
 }: {
   state: AppState;
   route: string;
@@ -278,6 +279,7 @@ function Sidebar({
   onSearch: () => void;
   onCollapse: () => void;
   inert?: boolean;
+  offline?: boolean;
 }) {
   const [gear, setGear] = useState(0);
   const update = availableUpdate(useUpdateState());
@@ -297,6 +299,7 @@ function Sidebar({
         <a className="sb-mark" href={href('overview')}>
           <img src={base(avatarOf(state.settings))} alt="" />
           {t('app.name')}
+          {offline && <span className="badge orange">{t('app.offline')}</span>}
         </a>
         <IconButton className="sb-btn sb-toggle" onClick={onCollapse} title={t('app.sidebar.collapse')} aria-label={t('app.sidebar.collapse')}>
           <Icon name="sidebar" />
@@ -710,6 +713,7 @@ function App() {
   const sidebar = (
     <Sidebar
       inert={narrow || collapsed}
+      offline={phase === 'offline'}
       state={state}
       route={route}
       d={d}
@@ -726,7 +730,7 @@ function App() {
     <div className={`app ${collapsed ? 'collapsed' : ''}`}>
       {sidebar}
       <div className="main">
-        {phase === 'offline' && (
+        {phase === 'offline' && (narrow || collapsed) && (
           <div className="badge orange" style={{ position: 'fixed', top: 10, right: 10, zIndex: 50 }}>
             {t('app.offline')}
           </div>
