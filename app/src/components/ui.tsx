@@ -7,6 +7,7 @@ import { Icon } from './icons.tsx';
 import { Hint } from './overlays.tsx';
 import { useMedia } from './inputs.tsx';
 import { useRegisterPageAdd } from '../page-add.ts';
+import { useStore } from '../store.ts';
 
 /**
  * 一组并列指标（金额与颜色由调用处提供）。页面顶部与弹窗顶部用独立灰卡；放在另一张卡片里时传 inline，改为竖线分隔的一行，避免卡片套卡片；
@@ -93,9 +94,12 @@ export function Toolbar({
 }) {
   useRegisterPageAdd(onAdd, addLabel);
   const narrow = useMedia('(max-width: 860px)');
+  const offline = useStore().phase === 'offline';
   const head = (
     <div className="tb-title">
       <h1>{copyParts(title)}</h1>
+      {/* 侧边栏可见时离线标记在 logo 旁，这里由样式隐藏；收起或手机端跟在标题后 */}
+      {offline && <span className="badge orange tb-offline">{t('app.offline')}</span>}
       {sub && <div className="tb-sub">{copyParts(sub)}</div>}
     </div>
   );

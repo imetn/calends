@@ -730,11 +730,6 @@ function App() {
     <div className={`app ${collapsed ? 'collapsed' : ''}`}>
       {sidebar}
       <div className="main">
-        {phase === 'offline' && (narrow || collapsed) && (
-          <div className="badge orange" style={{ position: 'fixed', top: 10, right: 10, zIndex: 50 }}>
-            {t('app.offline')}
-          </div>
-        )}
         {collapsed && (
           <IconButton
             className="sb-btn sb-toggle reopen"
