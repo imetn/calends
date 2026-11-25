@@ -59,6 +59,7 @@ test('Toolbar draws no add button and hands a page-specific add to the phone doc
     Icon: 'icon',
     useRegisterPageAdd: (onAdd, label) => registered.push({ onAdd, label }),
     useMedia: () => narrow,
+    useStore: () => ({ phase: 'ready' }),
   });
   let narrow = false;
   let custom = 0;
@@ -80,6 +81,7 @@ test('on phones only the toolbar title stays pinned; the switch and actions sit 
     Icon: 'icon',
     useRegisterPageAdd: () => {},
     useMedia: () => narrow,
+    useStore: () => ({ phase: 'ready' }),
   });
   const props = { title: 'Fictional', switcher: 'switch', children: 'actions' };
   const desktop = Toolbar(props);
@@ -100,6 +102,34 @@ test('on phones only the toolbar title stays pinned; the switch and actions sit 
     React.Children.toArray(under.props.children).map((n) => n.props.className),
     ['tb-switch', 'tb-actions'],
   );
+});
+
+test('offline Toolbar badge follows the page title on desktop and phones and disappears when connected', () => {
+  let narrow = false;
+  let phase = 'ready';
+  const Toolbar = compile('components/ui.tsx', 'Toolbar', {
+    t: (k) => k,
+    copyParts: (v) => v,
+    IconButton: 'icon-button',
+    Icon: 'icon',
+    useRegisterPageAdd: () => {},
+    useMedia: () => narrow,
+    useStore: () => ({ phase }),
+  });
+  for (narrow of [false, true]) {
+    for (phase of ['ready', 'offline', 'ready']) {
+      const tree = Toolbar({ title: 'Fictional', sub: 'Hint' });
+      const badges = nodes(tree, 'span').filter((n) => n.props.className?.includes('tb-offline'));
+      assert.equal(badges.length, phase === 'offline' ? 1 : 0);
+      if (phase === 'offline') {
+        const title = nodes(tree, 'div').find((n) => n.props.className === 'tb-title');
+        const children = React.Children.toArray(title.props.children);
+        assert.equal(children[0].type, 'h1');
+        assert.equal(children[1].props.className, badges[0].props.className);
+        assert.equal(badges[0].props.children, 'app.offline');
+      }
+    }
+  }
 });
 
 test('a proxy editor draft survives new-subscription save and JSON round trip', () => {
