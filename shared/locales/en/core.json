@@ -276,5 +276,24 @@
     "refund": "Refund",
     "adjust": "Adjustment",
     "failed": "Failed"
+  },
+  "file": {
+    "charge": "Charge",
+    "bill": "Bill",
+    "paid": "Payment",
+    "sub": "Documents",
+    "contractTerm": "Contract {from} to {until}",
+    "contractOn": "Contract {date}",
+    "deleted": "Deleted",
+    "badAnchor": "Invalid file link.",
+    "noSub": "The subscription to link was not found.",
+    "badType": "Only PDF, PNG, JPEG and WebP files are supported.",
+    "tooLarge": "The file is larger than 10 MB.",
+    "empty": "The file is empty.",
+    "full": "File storage is full ({mb} MB limit).",
+    "notFound": "File not found.",
+    "missing": "File missing",
+    "noStorage": "File storage is not enabled.",
+    "linkExpired": "This file link has expired."
   }
 }

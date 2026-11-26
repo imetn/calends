@@ -1,0 +1,79 @@
+{
+  "title": "Dateien",
+  "summary": {
+    "one": "{count} Datei\n{size}",
+    "other": "{count} Dateien\n{size}"
+  },
+  "upload": "Hochladen",
+  "tab": {
+    "pending": "Nicht verknüpft",
+    "all": "Alle Dateien",
+    "missing": "Fehlt"
+  },
+  "view": {
+    "loose": "Collage"
+  },
+  "group": {
+    "label": "Gruppieren",
+    "sub": "Nach Abo",
+    "month": "Nach Monat",
+    "year": "Nach Jahr",
+    "cat": "Nach Kategorie"
+  },
+  "coverage": "{covered}/{total} abgelegt",
+  "uploadTo": "Hochladen zu {item}",
+  "unlinked": "Nicht verknüpft",
+  "year": "Jahr",
+  "search": "Dateien suchen",
+  "empty": "Noch keine Dateien",
+  "noMatch": "Keine passenden Dateien",
+  "drop": "Zum Hochladen loslassen",
+  "uploaded": {
+    "one": "{count} Datei hochgeladen",
+    "other": "{count} Dateien hochgeladen"
+  },
+  "failed": {
+    "one": "{count} Datei nicht hochgeladen",
+    "other": "{count} Dateien nicht hochgeladen"
+  },
+  "selected": "{count} ausgewählt",
+  "select": "Auswählen",
+  "download": "Herunterladen",
+  "downloadN": "{count} herunterladen",
+  "deleteN": {
+    "one": "{count} Datei löschen?",
+    "other": "{count} Dateien löschen?"
+  },
+  "deleteOne": "Diese Datei löschen?",
+  "deleted": "Gelöscht",
+  "open": "Öffnen",
+  "relink": "Verknüpfen",
+  "prev": "Zurück",
+  "next": "Weiter",
+  "props": {
+    "name": "Ursprünglicher Name",
+    "type": "Typ",
+    "size": "Größe",
+    "uploaded": "Hochgeladen"
+  },
+  "link": {
+    "title": "Datei verknüpfen",
+    "sub": "Abo",
+    "none": "Nicht verknüpft",
+    "kind": "Zuordnen zu",
+    "item": "Eintrag",
+    "noItems": "Nichts zur Auswahl"
+  },
+  "kind": {
+    "contract": "Vertrag",
+    "charge": "Abbuchung",
+    "sub": "Unterlagen"
+  },
+  "keep": {
+    "one": "{count} Datei bleibt unter Dateien erhalten",
+    "other": "{count} Dateien bleiben unter Dateien erhalten"
+  },
+  "card": "Dateien",
+  "add": "Dateien hinzufügen",
+  "backup": "Vollständiges Backup mit Dateien exportieren"
+}

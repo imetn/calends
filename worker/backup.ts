@@ -1,19 +1,21 @@
 import { validatePeopleAvatars } from '../shared/avatar.ts';
 // 完整备份与恢复：导出的文件导入到一个全新的部署后，账本与原来完全一致。
 // 包含：订阅、支付方式、人的名册、全部设置（含通知渠道、日历订阅令牌、分类表）、当前汇率、历史汇率。
+// 文件中心：v4 起带文件元数据（含内容哈希）；内容只在「备份（含文件）」的 ZIP 里，恢复时由浏览器逐个补回。
 // 不包含：登录会话、AI 接入令牌（属于凭据，新部署应重新生成）、提醒发送记录。
 import { DEFAULT_SETTINGS, type FxTable, type PaymentMethod, type Person, type Settings, type Subscription } from '../shared/types.ts';
 import type { Env } from './env.ts';
 import { migrateRenewalRules } from '../shared/billing.ts';
 import { t } from '../shared/i18n.ts';
 import { restorablePublicPage } from '../shared/public-layout.ts';
+import { backupFileRows, exportFiles, type BackupFile } from './files.ts';
 import { getFx, getPeople, getSettings, restoreLedger } from './store.ts';
 
 const BACKUP_FORMAT = 'calends-backup';
 /** 改名前的备份格式名，照样能导入 */
 const LEGACY_FORMATS = ['subscription-ledger-backup'];
-// v3 起带上人的名册（people）
-const BACKUP_VERSION = 3;
+// v3 起带上人的名册（people），v4 起带文件元数据（files）
+const BACKUP_VERSION = 4;
 
 export interface Backup {
   format: typeof BACKUP_FORMAT;
@@ -25,6 +27,8 @@ export interface Backup {
   settings: Settings;
   fx: FxTable;
   fxDaily: Array<{ date: string; rates: Record<string, number>; source: string }>;
+  /** v4 起有；没有时恢复不动现有文件 */
+  files?: BackupFile[];
 }
 
 export async function exportAll(env: Env): Promise<Backup> {
@@ -43,6 +47,7 @@ export async function exportAll(env: Env): Promise<Backup> {
     settings: await getSettings(env),
     fx: await getFx(env),
     fxDaily: fxDaily.results.map((r) => ({ date: r.date, rates: JSON.parse(r.rates) as Record<string, number>, source: r.source })),
+    files: await exportFiles(env),
   };
 }
 
@@ -77,11 +82,13 @@ export function parseBackup(raw: unknown): Backup {
     settings: restorableSettings(b.settings),
     fx: b.fx as FxTable,
     fxDaily: b.fxDaily ?? [],
+    ...(Array.isArray(b.files) ? { files: b.files } : {}),
   };
 }
 
 /** 整体替换为备份里的内容；历史汇率按日期合并（同一天以备份为准）。一个事务：失败时原账本不变 */
-export async function restoreAll(env: Env, b: Backup): Promise<{ subscriptions: number; methods: number; people: number; fxDays: number }> {
+export async function restoreAll(env: Env, b: Backup): Promise<{ subscriptions: number; methods: number; people: number; fxDays: number; files?: number }> {
+  const files = backupFileRows(b.files, b.subscriptions);
   await restoreLedger(env, {
     subscriptions: b.subscriptions,
     methods: b.methods,
@@ -91,6 +98,13 @@ export async function restoreAll(env: Env, b: Backup): Promise<{ subscriptions: 
     settings: b.settings && Object.keys(b.settings).length ? { ...DEFAULT_SETTINGS, ...b.settings } : undefined,
     fx: b.fx?.rates ? b.fx : undefined,
     fxDaily: b.fxDaily,
+    files,
   });
-  return { subscriptions: b.subscriptions.length, methods: b.methods.length, people: b.people.length, fxDays: b.fxDaily.length };
+  return {
+    subscriptions: b.subscriptions.length,
+    methods: b.methods.length,
+    people: b.people.length,
+    fxDays: b.fxDaily.length,
+    ...(files ? { files: files.length } : {}),
+  };
 }

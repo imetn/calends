@@ -1,0 +1,64 @@
+{
+  "title": "파일",
+  "summary": "파일 {count}개\n{size}",
+  "upload": "업로드",
+  "tab": {
+    "pending": "연결 안 됨",
+    "all": "모든 파일",
+    "missing": "증빙 없음"
+  },
+  "view": {
+    "loose": "콜라주"
+  },
+  "group": {
+    "label": "그룹",
+    "sub": "구독별",
+    "month": "월별",
+    "year": "연도별",
+    "cat": "카테고리별"
+  },
+  "coverage": "{covered}/{total}건 보관",
+  "uploadTo": "{item}에 업로드",
+  "unlinked": "연결 안 됨",
+  "year": "연도",
+  "search": "파일 검색",
+  "empty": "아직 파일이 없습니다",
+  "noMatch": "일치하는 파일이 없습니다",
+  "drop": "놓아서 업로드",
+  "uploaded": "파일 {count}개를 업로드했습니다",
+  "failed": "파일 {count}개를 업로드하지 못했습니다",
+  "selected": "{count}개 선택됨",
+  "select": "선택",
+  "download": "다운로드",
+  "downloadN": "{count}개 다운로드",
+  "deleteN": "파일 {count}개를 삭제할까요?",
+  "deleteOne": "이 파일을 삭제할까요?",
+  "deleted": "삭제됨",
+  "open": "열기",
+  "relink": "연결 변경",
+  "prev": "이전",
+  "next": "다음",
+  "props": {
+    "name": "원본 파일명",
+    "type": "유형",
+    "size": "크기",
+    "uploaded": "업로드 날짜"
+  },
+  "link": {
+    "title": "연결 변경",
+    "sub": "구독",
+    "none": "연결 안 함",
+    "kind": "연결 위치",
+    "item": "항목",
+    "noItems": "선택할 항목이 없습니다"
+  },
+  "kind": {
+    "contract": "계약 기간",
+    "charge": "결제",
+    "sub": "자료"
+  },
+  "keep": "파일 {count}개는 파일 페이지에 남습니다",
+  "card": "파일",
+  "add": "파일 추가",
+  "backup": "파일 포함 전체 백업 내보내기"
+}

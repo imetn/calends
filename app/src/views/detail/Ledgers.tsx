@@ -11,6 +11,8 @@ import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { Panel } from '../../components/DetailKit.tsx';
+import { Icon } from '../../components/icons.tsx';
+import { filesAt } from '../../../../shared/files.ts';
 
 /**
  * 转让收付：二手买入付给原主的钱、卖出收到的钱，与扣款记录同一张表（日期 · 类型 · 原币 · 折合）；
@@ -98,6 +100,13 @@ export function Charges({
   const base = state.settings.baseCurrency;
   // 缺汇率的一笔本位币金额为 NaN：行内与年小计显示「—」，不按 0 合计
   const rows = history.map((c) => ({ c, b: chargeBaseOrNaN(state, c, base) })).reverse();
+  // 这笔扣款挂了文件：日期后加回形针，文件本身在「文件」卡里
+  const clip = (c: Charge) =>
+    filesAt(state.files ?? [], sub.id, 'charge', c.date).length > 0 && (
+      <span className="dt-clip" aria-label={t('files.card')}>
+        <Icon name="clip" size={13} />
+      </span>
+    );
   // 卡上实扣的原币：这张表里某个币种的金额都是整数（如奈拉、日元整价扣款）就不写 .00，省出宽度；
   // 当时成本按同一规则看本位币金额，同一行两列写法一致
   // 卡上实扣：记了卡上实际扣的币种与金额（Payment.settled、代付的实扣）就写它，否则是订阅原价
@@ -230,10 +239,15 @@ export function Charges({
           }}
           row={({ c, b }) => ({
             // 日期写全，不再加「几天前」；后付费的周期账单写所属周期，扣款日放进悬停提示，不加第二行撑高行
-            date: post(c) ? (
-              <time dateTime={chargeDay(c)}>{periodLabel(chargeServicePeriod(c.sub, c.date, c.serviceDate), today)}</time>
-            ) : (
-              <time dateTime={c.date}>{cnDateFull(c.date)}</time>
+            date: (
+              <>
+                {post(c) ? (
+                  <time dateTime={chargeDay(c)}>{periodLabel(chargeServicePeriod(c.sub, c.date, c.serviceDate), today)}</time>
+                ) : (
+                  <time dateTime={c.date}>{cnDateFull(c.date)}</time>
+                )}
+                {clip(c)}
+              </>
             ),
             second: <ChargeMethods c={c} state={state} />,
             extra: readings && usageCell(usageOf(c)),

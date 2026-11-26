@@ -6,7 +6,7 @@ import { randomToken, sha256 } from '../auth.ts';
 import type { Env } from '../env.ts';
 import { getKv, getSettings, putKv } from '../store.ts';
 import { TOOLS, toolTitle, connectionInfo } from './mcp-tools.ts';
-import type { ToolCtx } from './tool-kit.ts';
+import { MCP_CONTENT, type ToolCtx } from './tool-kit.ts';
 import { todayIn } from '../../shared/billing.ts';
 import { t } from '../../shared/i18n.ts';
 
@@ -122,7 +122,8 @@ async function handle(msg: Rpc, env: Env, token: McpToken): Promise<unknown | un
       const ctx: ToolCtx = { env, access: { client: 'mcp', scope: token.scope } };
       try {
         const out = await tool.run((msg.params?.arguments ?? {}) as Record<string, unknown>, ctx);
-        return ok(msg.id, { content: [{ type: 'text', text: JSON.stringify(out, null, 1) }], structuredContent: out });
+        const blocks = (out as { [MCP_CONTENT]?: unknown[] } | null)?.[MCP_CONTENT] ?? [];
+        return ok(msg.id, { content: [{ type: 'text', text: JSON.stringify(out, null, 1) }, ...blocks], structuredContent: out });
       } catch (e) {
         // 参数错误、找不到订阅这类问题作为工具结果返回，让 AI 能看到原因并改正
         return ok(msg.id, { isError: true, content: [{ type: 'text', text: e instanceof Error ? e.message : String(e) }] });

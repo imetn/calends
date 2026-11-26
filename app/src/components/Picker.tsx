@@ -52,6 +52,8 @@ export function Picker<T extends string | number>({
   const [hi, setHi] = useState(0);
   /** 打开时按全部选项定下的宽度：搜索过滤期间不随最长一项伸缩 */
   const [W, setW] = useState<number>();
+  /** 工具栏按钮的下拉不窄于按钮本身：打开时量一次按钮宽度 */
+  const [minW, setMinW] = useState<number>();
   const btn = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -88,6 +90,10 @@ export function Picker<T extends string | number>({
     list.current?.querySelector<HTMLElement>(`[data-i="${hi}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [hi, open]);
 
+  const toggle = (v: boolean) => {
+    if (v && variant === 'btn') setMinW(btn.current?.offsetWidth);
+    setOpen(v);
+  };
   const close = () => {
     setOpen(false);
     setQ('');
@@ -111,8 +117,8 @@ export function Picker<T extends string | number>({
         type="button"
         ref={btn}
         className={`pk-btn ${variant} ${open ? 'open' : ''}`}
-        onClick={() => setOpen(!open)}
-        onKeyDown={(e) => !open && (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setOpen(true))}
+        onClick={() => toggle(!open)}
+        onKeyDown={(e) => !open && (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle(true))}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
@@ -127,7 +133,13 @@ export function Picker<T extends string | number>({
         <Icon name="updown" />
       </button>
       {open && (
-        <Pop triggerRef={btn} onClose={close} label={ariaLabel ?? t('picker.choose')} className="cp-pop pk-pop" style={{ height: H, width: W }}>
+        <Pop
+          triggerRef={btn}
+          onClose={close}
+          label={ariaLabel ?? t('picker.choose')}
+          className={`cp-pop pk-pop ${variant === 'btn' ? 'pk-pop-fit' : ''}`}
+          style={{ height: H, width: W, minWidth: minW }}
+        >
           <div className="pk-in" onKeyDown={onKey}>
             {searchable && (
               <label className="cp-search">

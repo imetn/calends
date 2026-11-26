@@ -1,6 +1,7 @@
 import * as fxTotals from './fx-total.ts';
 import { shouldGroupYears } from '../app/src/components/year-ledger.ts';
 import { readUiSource } from '../scripts/ui-test-source.ts';
+import { fileStubs } from '../scripts/ui-test-file-stubs.ts';
 import * as phase2Icons from 'lucide-react';
 import { metricComponents, fxAmountComponent } from '../scripts/ui-test-components.ts';
 import * as transfers from './transfers.ts';
@@ -239,6 +240,7 @@ function harness(file: string, names: string, prefs: Record<string, string> = {}
     clean: (name: string) => name,
     byAmountDesc: (a: { v: number }, b: { v: number }) => (Number.isFinite(b.v) ? b.v : -Infinity) - (Number.isFinite(a.v) ? a.v : -Infinity) || 0,
     shade: (i: number) => `shade-${i}`,
+    ...fileStubs,
     ...extra,
   };
   const components = { ...deps, ...metricComponents(deps.React) };

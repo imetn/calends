@@ -71,5 +71,16 @@ export const MIGRATIONS: Array<{ name: string; statements: string[] }> = [
     "statements": [
       "-- Owner-chosen device name; NULL falls back to the browser and OS parsed from user_agent.\nALTER TABLE sessions ADD COLUMN name TEXT"
     ]
+  },
+  {
+    "name": "0009_files.sql",
+    "statements": [
+      "-- File center metadata. Content lives in object storage (R2 on Cloudflare, the data directory in Docker), keyed by sha256.\n-- A file is softly linked to a subscription by (sub_id, kind, date); sub_id NULL means unlinked.\nCREATE TABLE files (\n  id TEXT PRIMARY KEY,\n  sha256 TEXT NOT NULL,\n  name TEXT NOT NULL,\n  mime TEXT NOT NULL,\n  size INTEGER NOT NULL,\n  sub_id TEXT,\n  kind TEXT,\n  date TEXT,\n  -- JSON snapshot {name, kind, date} written when the linked subscription is deleted.\n  orphan TEXT,\n  thumb INTEGER NOT NULL DEFAULT 0,\n  created_at TEXT NOT NULL\n)",
+      "CREATE INDEX files_sub ON files (sub_id)",
+      "CREATE INDEX files_sha ON files (sha256)",
+      "CREATE TRIGGER rev_files_insert AFTER INSERT ON files\nBEGIN\n  UPDATE kv SET value = CAST(value AS INTEGER) + 1 WHERE key = 'rev';\nEND",
+      "CREATE TRIGGER rev_files_update AFTER UPDATE ON files\nBEGIN\n  UPDATE kv SET value = CAST(value AS INTEGER) + 1 WHERE key = 'rev';\nEND",
+      "CREATE TRIGGER rev_files_delete AFTER DELETE ON files\nBEGIN\n  UPDATE kv SET value = CAST(value AS INTEGER) + 1 WHERE key = 'rev';\nEND"
+    ]
   }
 ];

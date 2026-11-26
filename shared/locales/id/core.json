@@ -265,5 +265,24 @@
     "refund": "Refund",
     "adjust": "Penyesuaian",
     "failed": "Gagal"
+  },
+  "file": {
+    "charge": "Pembebanan",
+    "bill": "Tagihan",
+    "paid": "Pembayaran",
+    "sub": "Dokumen",
+    "contractTerm": "Kontrak {from} s.d. {until}",
+    "contractOn": "Kontrak {date}",
+    "deleted": "Dihapus",
+    "badAnchor": "Tautan file tidak valid.",
+    "noSub": "Langganan yang akan ditautkan tidak ditemukan.",
+    "badType": "Hanya mendukung file PDF, PNG, JPEG, dan WebP.",
+    "tooLarge": "File lebih besar dari 10 MB.",
+    "empty": "File kosong.",
+    "full": "Penyimpanan file penuh (batas {mb} MB).",
+    "notFound": "File tidak ditemukan.",
+    "missing": "File hilang",
+    "noStorage": "Penyimpanan file belum diaktifkan.",
+    "linkExpired": "Tautan file ini sudah kedaluwarsa."
   }
 }

@@ -195,6 +195,17 @@ export function summaryRows(
     case 'delete_subscription':
       add(t('assistant.f.effect'), t('assistant.v.deleteAll'));
       break;
+    case 'update_file': {
+      // 预览里带着改前改后两行：标题按网页规则生成（已关联按订阅与那一项，未关联用原始文件名）
+      type Row = { title: string; name: string; subscription: { id: string } | null };
+      const before = preview?.before as Row | undefined;
+      const after = preview?.after as Row | undefined;
+      const set = (a.set ?? {}) as Record<string, unknown>;
+      add(t('files.card'), before?.title);
+      if ('subscription' in set || 'kind' in set || 'date' in set) add(t('files.relink'), after?.subscription ? after.title : t('files.link.none'));
+      if (set.name != null) add(t('files.props.name'), after?.name);
+      break;
+    }
     default: {
       // update_subscription / change_plan 等：逐项列出要改的字段
       const set = (a.set && typeof a.set === 'object' ? a.set : a.plan && typeof a.plan === 'object' ? a.plan : a) as Record<string, unknown>;

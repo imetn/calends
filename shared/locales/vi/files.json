@@ -1,0 +1,64 @@
+{
+  "title": "Tệp",
+  "summary": "{count} tệp\n{size}",
+  "upload": "Tải lên",
+  "tab": {
+    "pending": "Chưa liên kết",
+    "all": "Tất cả tệp",
+    "missing": "Thiếu chứng từ"
+  },
+  "view": {
+    "loose": "Ghép ảnh"
+  },
+  "group": {
+    "label": "Nhóm",
+    "sub": "Theo gói",
+    "month": "Theo tháng",
+    "year": "Theo năm",
+    "cat": "Theo danh mục"
+  },
+  "coverage": "Đã lưu {covered}/{total}",
+  "uploadTo": "Tải lên cho {item}",
+  "unlinked": "Chưa liên kết",
+  "year": "Năm",
+  "search": "Tìm tệp",
+  "empty": "Chưa có tệp nào",
+  "noMatch": "Không có tệp phù hợp",
+  "drop": "Thả để tải lên",
+  "uploaded": "Đã tải lên {count} tệp",
+  "failed": "{count} tệp chưa được tải lên",
+  "selected": "Đã chọn {count}",
+  "select": "Chọn",
+  "download": "Tải xuống",
+  "downloadN": "Tải xuống {count}",
+  "deleteN": "Xóa {count} tệp?",
+  "deleteOne": "Xóa tệp này?",
+  "deleted": "Đã xóa",
+  "open": "Mở",
+  "relink": "Liên kết",
+  "prev": "Trước",
+  "next": "Tiếp",
+  "props": {
+    "name": "Tên gốc",
+    "type": "Loại",
+    "size": "Kích thước",
+    "uploaded": "Ngày tải lên"
+  },
+  "link": {
+    "title": "Liên kết tệp",
+    "sub": "Gói đăng ký",
+    "none": "Không liên kết",
+    "kind": "Gắn vào",
+    "item": "Mục",
+    "noItems": "Không có mục để chọn"
+  },
+  "kind": {
+    "contract": "Hợp đồng",
+    "charge": "Lần trừ tiền",
+    "sub": "Tài liệu"
+  },
+  "keep": "{count} tệp sẽ được giữ lại trong Tệp",
+  "card": "Tệp",
+  "add": "Thêm tệp",
+  "backup": "Xuất bản sao lưu đầy đủ kèm tệp"
+}

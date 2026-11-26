@@ -1,0 +1,79 @@
+{
+  "title": "Arquivos",
+  "summary": {
+    "one": "{count} arquivo\n{size}",
+    "other": "{count} arquivos\n{size}"
+  },
+  "upload": "Enviar",
+  "tab": {
+    "pending": "Sem vínculo",
+    "all": "Todos os arquivos",
+    "missing": "Faltando"
+  },
+  "view": {
+    "loose": "Colagem"
+  },
+  "group": {
+    "label": "Agrupar",
+    "sub": "Por assinatura",
+    "month": "Por mês",
+    "year": "Por ano",
+    "cat": "Por categoria"
+  },
+  "coverage": "{covered}/{total} arquivados",
+  "uploadTo": "Enviar para {item}",
+  "unlinked": "Sem vínculo",
+  "year": "Ano",
+  "search": "Buscar arquivos",
+  "empty": "Ainda não há arquivos",
+  "noMatch": "Nenhum arquivo encontrado",
+  "drop": "Solte para enviar",
+  "uploaded": {
+    "one": "{count} arquivo enviado",
+    "other": "{count} arquivos enviados"
+  },
+  "failed": {
+    "one": "{count} arquivo não foi enviado",
+    "other": "{count} arquivos não foram enviados"
+  },
+  "selected": "{count} selecionados",
+  "select": "Selecionar",
+  "download": "Baixar",
+  "downloadN": "Baixar {count}",
+  "deleteN": {
+    "one": "Excluir {count} arquivo?",
+    "other": "Excluir {count} arquivos?"
+  },
+  "deleteOne": "Excluir este arquivo?",
+  "deleted": "Excluída",
+  "open": "Abrir",
+  "relink": "Vincular",
+  "prev": "Anterior",
+  "next": "Próximo",
+  "props": {
+    "name": "Nome original",
+    "type": "Tipo",
+    "size": "Tamanho",
+    "uploaded": "Enviado em"
+  },
+  "link": {
+    "title": "Vincular arquivo",
+    "sub": "Assinatura",
+    "none": "Sem vínculo",
+    "kind": "Anexar a",
+    "item": "Item",
+    "noItems": "Nada para escolher"
+  },
+  "kind": {
+    "contract": "Contrato",
+    "charge": "Cobrança",
+    "sub": "Documentos"
+  },
+  "keep": {
+    "one": "{count} arquivo continuará em Arquivos",
+    "other": "{count} arquivos continuarão em Arquivos"
+  },
+  "card": "Arquivos",
+  "add": "Adicionar arquivos",
+  "backup": "Exportar backup completo com arquivos"
+}

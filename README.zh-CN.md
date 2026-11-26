@@ -75,7 +75,7 @@ Calends 会在 `127.0.0.1:8787` 启动，反向代理由你自己配置。重复
 
 ## AI 与 MCP
 
-你可以问「下周有什么要续费」「今年一共花了多少」，也可以说「Netflix 从今天起涨到 17.99 美元」。Calends 在 `/mcp` 提供无状态的 [MCP](https://modelcontextprotocol.io) 接口，使用 Streamable HTTP，内置 37 个工具。
+你可以问「下周有什么要续费」「今年一共花了多少」，也可以说「Netflix 从今天起涨到 17.99 美元」。Calends 在 `/mcp` 提供无状态的 [MCP](https://modelcontextprotocol.io) 接口，使用 Streamable HTTP，内置 41 个工具。
 
 在 Calends 的「连接」页（`/connect`）创建只读或读写令牌，再接入客户端。浏览器打开 `/mcp` 会跳转到此页；MCP 客户端使用 `/mcp` 接口：
 

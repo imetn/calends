@@ -33,6 +33,7 @@ const groups: Record<string, string[]> = {
     'app/src/views/MemberReceipt.tsx',
     'app/src/views/member-status.ts',
   ],
+  'app/src/views/List.tsx': ['app/src/components/FacetRow.tsx', 'app/src/views/List.tsx'],
   'app/src/views/People.tsx': ['app/src/views/People.tsx', 'app/src/views/person-fields.tsx', 'app/src/views/PersonProfile.tsx'],
   'app/src/views/Proxy.tsx': ['app/src/views/proxy/common.tsx', 'app/src/views/Proxy.tsx', 'app/src/views/proxy/sheets.tsx'],
   'app/src/views/Editor.tsx': [

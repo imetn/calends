@@ -276,5 +276,24 @@
     "refund": "Erstattung",
     "adjust": "Korrektur",
     "failed": "Fehlgeschlagen"
+  },
+  "file": {
+    "charge": "Abbuchung",
+    "bill": "Rechnung",
+    "paid": "Zahlung",
+    "sub": "Unterlagen",
+    "contractTerm": "Vertrag {from} bis {until}",
+    "contractOn": "Vertrag {date}",
+    "deleted": "Gelöscht",
+    "badAnchor": "Ungültige Dateizuordnung.",
+    "noSub": "Das zuzuordnende Abo wurde nicht gefunden.",
+    "badType": "Nur PDF-, PNG-, JPEG- und WebP-Dateien werden unterstützt.",
+    "tooLarge": "Die Datei ist größer als 10 MB.",
+    "empty": "Die Datei ist leer.",
+    "full": "Dateispeicher voll (Limit {mb} MB).",
+    "notFound": "Datei nicht gefunden.",
+    "missing": "Datei fehlt",
+    "noStorage": "Dateispeicher ist nicht aktiviert.",
+    "linkExpired": "Dieser Dateilink ist abgelaufen."
   }
 }

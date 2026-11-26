@@ -1,0 +1,64 @@
+{
+  "title": "File",
+  "summary": "{count} file\n{size}",
+  "upload": "Unggah",
+  "tab": {
+    "pending": "Belum ditautkan",
+    "all": "Semua file",
+    "missing": "Kurang"
+  },
+  "view": {
+    "loose": "Kolase"
+  },
+  "group": {
+    "label": "Kelompok",
+    "sub": "Per langganan",
+    "month": "Per bulan",
+    "year": "Per tahun",
+    "cat": "Per kategori"
+  },
+  "coverage": "{covered}/{total} tersimpan",
+  "uploadTo": "Unggah ke {item}",
+  "unlinked": "Belum ditautkan",
+  "year": "Tahun",
+  "search": "Cari file",
+  "empty": "Belum ada file",
+  "noMatch": "Tidak ada file yang cocok",
+  "drop": "Lepas untuk mengunggah",
+  "uploaded": "{count} file diunggah",
+  "failed": "{count} file tidak terunggah",
+  "selected": "{count} dipilih",
+  "select": "Pilih",
+  "download": "Unduh",
+  "downloadN": "Unduh {count}",
+  "deleteN": "Hapus {count} file?",
+  "deleteOne": "Hapus file ini?",
+  "deleted": "Dihapus",
+  "open": "Buka",
+  "relink": "Tautkan",
+  "prev": "Sebelumnya",
+  "next": "Berikutnya",
+  "props": {
+    "name": "Nama asli",
+    "type": "Jenis",
+    "size": "Ukuran",
+    "uploaded": "Diunggah"
+  },
+  "link": {
+    "title": "Tautkan file",
+    "sub": "Langganan",
+    "none": "Tidak ditautkan",
+    "kind": "Lampirkan ke",
+    "item": "Item",
+    "noItems": "Tidak ada pilihan"
+  },
+  "kind": {
+    "contract": "Kontrak",
+    "charge": "Tagihan",
+    "sub": "Dokumen"
+  },
+  "keep": "{count} file akan tetap ada di File",
+  "card": "File",
+  "add": "Tambah file",
+  "backup": "Ekspor cadangan lengkap beserta file"
+}

@@ -7,6 +7,7 @@ import * as bundle from '../shared/bundle.ts';
 import * as phases from '../shared/phases.ts';
 import { settlementCurrencyOf, toBaseOrNaN } from '../shared/fx.ts';
 import { DEFAULT_SETTINGS } from '../shared/types.ts';
+import { fileStubs } from './ui-test-file-stubs.ts';
 
 test('compiled new payment initializes settlement without an edit record', () => {
   const source = readFileSync(new URL('../app/src/views/PaymentSheet.tsx', import.meta.url), 'utf8');
@@ -73,7 +74,7 @@ test('compiled payment renders the whole new form including its unused delete ca
     'MethodPicker',
   ])
     deps[name] = name;
-  const PaymentSheet = new Function(...Object.keys(deps), code + ';return PaymentSheet;')(...Object.values(deps));
+  const PaymentSheet = new Function(...Object.keys({ ...fileStubs, ...deps }), code + ';return PaymentSheet;')(...Object.values({ ...fileStubs, ...deps }));
   assert.doesNotThrow(() => PaymentSheet({ sub: { price: 10, currency: 'USD', start: '2026-10-01' }, today: '2026-10-25', onClose() {} }));
 });
 
@@ -135,7 +136,7 @@ test('editing an early payment keeps its owning phase unassigned and saves witho
   const compiled = transformSync('PaymentSheet.tsx', source, { lang: 'tsx', jsx: { runtime: 'classic' }, reactCompiler: true });
   assert.equal(compiled.fatal, false);
   const code = compiled.code.replace(/^import .*;$/gm, '').replace('export function PaymentSheet', 'function PaymentSheet');
-  const PaymentSheet = new Function(...Object.keys(deps), code + ';return PaymentSheet;')(...Object.values(deps));
+  const PaymentSheet = new Function(...Object.keys({ ...fileStubs, ...deps }), code + ';return PaymentSheet;')(...Object.values({ ...fileStubs, ...deps }));
   const tree = PaymentSheet({
     sub,
     today: '2026-10-26',
@@ -214,7 +215,7 @@ test('separate settlement payment preselects the oldest unpaid bills the amount 
   const code = transformSync('PaymentSheet.tsx', source, { lang: 'tsx', jsx: { runtime: 'classic' }, reactCompiler: true })
     .code.replace(/^import .*;$/gm, '')
     .replace('export function PaymentSheet', 'function PaymentSheet');
-  const PaymentSheet = new Function(...Object.keys(deps), code + ';return PaymentSheet;')(...Object.values(deps));
+  const PaymentSheet = new Function(...Object.keys({ ...fileStubs, ...deps }), code + ';return PaymentSheet;')(...Object.values({ ...fileStubs, ...deps }));
   // 8、9、10 月未缴（另列下一期 11 月），金额 100 只够最早的 8 月
   const tree = PaymentSheet({ sub, today: '2026-10-15', onClose() {} });
   const all = (node) =>

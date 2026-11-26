@@ -87,7 +87,9 @@
     "meterNotFound": "Keine Messgröße passt zu „{q}“. Messgrößen: {list}",
     "readingNotFound": "Kein Nutzungseintrag mit der id „{q}“",
     "meterLinked": "„{name}“ ist mit einer Messgröße aus „{owner}“ verknüpft: Erfasse Werte und ändere den Namen dort",
-    "noMeters": "Dieses Abo hat noch keine Messgrößen; zuerst mit set_meters festlegen"
+    "noMeters": "Dieses Abo hat noch keine Messgrößen; zuerst mit set_meters festlegen",
+    "fileSource": "Gib genau eine Dateiquelle an: content_base64, url oder upload_link.",
+    "fileFetch": "{url} konnte nicht heruntergeladen werden"
   },
   "tool": {
     "get_overview": "Kontoübersicht",
@@ -126,6 +128,10 @@
     "save_subscription": "Abo vollständig speichern",
     "record_transfer": "Übertragungen erfassen oder bearbeiten",
     "set_meters": "Messgrößen festlegen",
-    "add_readings": "Nutzungsdaten erfassen"
+    "add_readings": "Nutzungsdaten erfassen",
+    "list_files": "Dateien auflisten",
+    "get_file": "Datei lesen",
+    "upload_file": "Datei hochladen",
+    "update_file": "Datei bearbeiten"
   }
 }

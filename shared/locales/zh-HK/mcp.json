@@ -84,7 +84,9 @@
     "meterNotFound": "沒有符合「{q}」的指標。現有指標：{list}",
     "readingNotFound": "沒有 id 為「{q}」的用量紀錄",
     "meterLinked": "「{name}」關聯自「{owner}」，請到該訂閱記錄數值或修改名稱",
-    "noMeters": "這個訂閱還沒有用量指標，請先用 set_meters 定義"
+    "noMeters": "這個訂閱還沒有用量指標，請先用 set_meters 定義",
+    "fileSource": "請只提供一種檔案來源：content_base64、url 或 upload_link。",
+    "fileFetch": "無法下載 {url}"
   },
   "tool": {
     "get_overview": "帳本概況",
@@ -123,6 +125,10 @@
     "save_subscription": "完整儲存訂閱",
     "record_transfer": "記錄或修改轉讓收付",
     "set_meters": "設定用量指標",
-    "add_readings": "記錄用量"
+    "add_readings": "記錄用量",
+    "list_files": "檔案列表",
+    "get_file": "讀取檔案",
+    "upload_file": "上載檔案",
+    "update_file": "修改檔案"
   }
 }

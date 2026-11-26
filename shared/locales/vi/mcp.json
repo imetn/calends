@@ -84,7 +84,9 @@
     "meterNotFound": "Không có chỉ số khớp với “{q}”. Chỉ số: {list}",
     "readingNotFound": "Không có bản ghi sử dụng với id “{q}”",
     "meterLinked": "“{name}” được liên kết từ “{owner}”: hãy ghi giá trị và đổi tên tại đó",
-    "noMeters": "Gói này chưa có chỉ số; hãy định nghĩa bằng set_meters trước"
+    "noMeters": "Gói này chưa có chỉ số; hãy định nghĩa bằng set_meters trước",
+    "fileSource": "Chỉ cung cấp đúng một nguồn tệp: content_base64, url hoặc upload_link.",
+    "fileFetch": "Không thể tải xuống {url}"
   },
   "tool": {
     "get_overview": "Tổng quan sổ",
@@ -123,6 +125,10 @@
     "save_subscription": "Lưu toàn bộ gói đăng ký",
     "record_transfer": "Ghi hoặc sửa chuyển nhượng",
     "set_meters": "Thiết lập chỉ số sử dụng",
-    "add_readings": "Ghi dữ liệu sử dụng"
+    "add_readings": "Ghi dữ liệu sử dụng",
+    "list_files": "Danh sách tệp",
+    "get_file": "Đọc tệp",
+    "upload_file": "Tải tệp lên",
+    "update_file": "Sửa tệp"
   }
 }

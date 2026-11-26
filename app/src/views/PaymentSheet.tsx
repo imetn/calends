@@ -29,6 +29,7 @@ import { Cell, Group, IconButton } from '../components/ui.tsx';
 import { Icon } from '../components/icons.tsx';
 import { getState, saveSub } from '../store.ts';
 import { run } from '../toast.ts';
+import { useChargeFiles } from './detail/FilesCard.tsx';
 
 type Kind = 'charge' | NonNullable<Payment['kind']>;
 const KINDS: Kind[] = ['charge', 'refund', 'adjust', 'failed'];
@@ -66,6 +67,7 @@ export function PaymentSheet({
   const [settled, setSettled] = useState(existingPay?.settled ? String(Math.abs(existingPay.settled.amount)) : '');
   const [settledCcyOverride, setSettledCcy] = useState(existingPay?.settled?.currency);
   const [note, setNote] = useState(existingPay?.note ?? '');
+  const files = useChargeFiles(sub, today, date, originalDate);
   const sign = kind === 'refund' ? -1 : 1;
   // 支付方式：缺省为这一笔单独记的，否则是所属这一段的；换了卡时选只改这一笔，还是整段一起改
   const [method, setMethod] = useState(existingPay?.methodId ?? phase.methodId);
@@ -181,6 +183,8 @@ export function PaymentSheet({
             next = setPeriodValues(next, period.from, period.until, usage, { id: uid(), date: day });
           }
           await saveSub(next);
+          // 弹窗里传的、原来挂在这笔上的文件跟着新日期走
+          await files.moveTo(date);
           onClose();
         },
         t(edit ? 'editor.payment.toast.edited' : 'editor.payment.toast.added'),
@@ -212,7 +216,7 @@ export function PaymentSheet({
           <button className="btn" onClick={onClose}>
             {t('common.cancel')}
           </button>
-          <button className="btn primary" disabled={busy || !amountValid} onClick={save}>
+          <button className="btn primary" disabled={busy || !amountValid || files.uploading} onClick={save}>
             {t('common.save')}
           </button>
         </>
@@ -444,6 +448,7 @@ export function PaymentSheet({
             ))}
           </Group>
         )}
+        {files.group}
         <Group>
           <Cell label={t('editor.field.notes')}>
             <input value={note} placeholder={t('editor.field.optional')} onChange={(e) => setNote((e.target as HTMLInputElement).value)} />

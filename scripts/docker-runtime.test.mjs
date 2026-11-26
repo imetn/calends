@@ -169,6 +169,11 @@ test('HTTP 层：访客 IP 不能自报，超大请求被拒绝，重复 Set-Coo
   }
   assert.equal(maxBodyFor('/calends/api/backup'), 20 * 1024 * 1024);
   assert.equal(maxBodyFor('/api/assistant/chat'), 20 * 1024 * 1024, '带图的助手对话会超过默认上限');
+  assert.equal(maxBodyFor('/calends/api/files'), 11 * 1024 * 1024, '单个文件 10 MB 要能上传');
+  assert.equal(maxBodyFor(`/api/files/blob/${'a'.repeat(64)}`), 11 * 1024 * 1024);
+  assert.equal(maxBodyFor('/api/files/abc/thumb'), 4 * 1024 * 1024);
+  assert.equal(maxBodyFor(`/api/files/in/${'b'.repeat(64)}`), 11 * 1024 * 1024, 'MCP 上传链接要能传 10 MB');
+  assert.equal(maxBodyFor('/calends/mcp'), 15 * 1024 * 1024, 'MCP 内联 base64 的 10 MB 文件要放得下');
   assert.equal((await send(port, { path: '/healthz' })).status, 503, '数据库不可用时健康检查要失败');
 });
 

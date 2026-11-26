@@ -7,6 +7,7 @@ import { linkPeople } from '../shared/people.ts';
 import { migrateReceivables } from '../shared/receivables-legacy.ts';
 import type { Prefs } from '../shared/prefs.ts';
 import type { Env } from './env.ts';
+import { filesEnabled, listFilesStmt, orphanFilesStmt, restoreFilesStmts, rowsToFiles } from './files.ts';
 import { keepSet, putFxDayStmt, slimFxHistory } from './fx.ts';
 
 const revSql = "SELECT CAST(value AS INTEGER) AS rev FROM kv WHERE key = 'rev'";
@@ -134,6 +135,7 @@ export async function loadState(env: Env, migratePeople = true, attempts = 0): P
     env.DB.prepare('SELECT data FROM methods'),
     env.DB.prepare("SELECT key, value FROM kv WHERE key IN ('settings', 'fx', 'people', 'prefs', 'rev')"),
     env.DB.prepare('SELECT date, rates FROM fx_daily'),
+    listFilesStmt(env),
   ]);
   const subs = rows[0] as D1Result<{ data: string }>;
   const methods = rows[1] as D1Result<{ data: string }>;
@@ -152,6 +154,8 @@ export async function loadState(env: Env, migratePeople = true, attempts = 0): P
     settings: { ...DEFAULT_SETTINGS, ...kv.settings },
     fx: kv.fx ?? FALLBACK_FX,
     prefs: (kv.prefs as Prefs | undefined) ?? {},
+    files: rowsToFiles((rows[4] as D1Result<Parameters<typeof rowsToFiles>[0][number]>).results),
+    filesEnabled: filesEnabled(env),
   };
   // 旧版删除留下的悬空引用（公开页隐藏、默认支付方式）只在内存里剔除，不改库
   state.settings = pruneSettingsRefs(state.settings, state.subscriptions, state.methods);
@@ -198,7 +202,7 @@ export async function remove(env: Env, table: Table, id: string): Promise<Revisi
 export async function replaceAll(env: Env, subs: Subscription[], methods: PaymentMethod[], mode: 'merge' | 'replace', expectedRev?: number): Promise<Revision> {
   const stmts: D1PreparedStatement[] = [];
   if (mode === 'replace') {
-    stmts.push(env.DB.prepare('DELETE FROM subscriptions'), env.DB.prepare('DELETE FROM methods'));
+    stmts.push(orphanFilesStmt(env, { keep: subs.map((s) => s.id) }), env.DB.prepare('DELETE FROM subscriptions'), env.DB.prepare('DELETE FROM methods'));
   }
   for (const m of methods) stmts.push(upsertStmt(env, 'methods', m.id, m));
   for (const s of subs) stmts.push(upsertStmt(env, 'subscriptions', s.id, s));
@@ -237,10 +241,14 @@ export async function restoreLedger(
     settings?: Settings;
     fx?: FxTable;
     fxDaily: Array<{ date: string; rates: Record<string, number>; source: string }>;
+    /** 备份带文件元数据时整表替换；没有时现有文件保留 */
+    files?: Parameters<typeof restoreFilesStmts>[1];
   },
 ): Promise<Revision> {
   validatePeopleAvatars(b.people);
   return mutate(env, [
+    // 备份里没有的订阅：它们的文件转为未关联并留下来源，不随恢复消失
+    orphanFilesStmt(env, { keep: b.subscriptions.map((s) => s.id) }),
     env.DB.prepare('DELETE FROM subscriptions'),
     env.DB.prepare('DELETE FROM methods'),
     ...b.methods.map((m) => upsertStmt(env, 'methods', m.id, m)),
@@ -249,6 +257,7 @@ export async function restoreLedger(
     ...(b.settings ? [putKvStmt(env, 'settings', b.settings)] : []),
     ...(b.fx ? [putKvStmt(env, 'fx', b.fx)] : []),
     ...b.fxDaily.map((d) => putFxDayStmt(env, d.date, d.rates, d.source)),
+    ...(b.files ? restoreFilesStmts(env, b.files) : []),
   ]);
 }
 
@@ -271,6 +280,8 @@ export async function saveLedgerEdit(
     ...(patch.subscriptions ?? []).map((s) => upsertStmt(env, 'subscriptions', s.id, stamp(s, now))),
     ...(patch.methods ?? []).map((m) => upsertStmt(env, 'methods', m.id, m)),
     ...deletedMethods.map((id) => env.DB.prepare('DELETE FROM methods WHERE id = ?1').bind(id)),
+    // 删除订阅：文件保留，转为未关联并记下来源（须在删除之前）
+    ...(deletedSubscriptions.length ? [orphanFilesStmt(env, { ids: deletedSubscriptions })] : []),
     ...deletedSubscriptions.map((id) => env.DB.prepare('DELETE FROM subscriptions WHERE id = ?1').bind(id)),
     ...(['settings', 'people', 'prefs'] as const).filter((k) => patch[k] !== undefined).map((k) => putKvStmt(env, k, patch[k])),
   ];

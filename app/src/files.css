@@ -1,0 +1,840 @@
+/* ---------------- 文件中心：网格卡片、空状态、拖入投放层、文件详情 ---------------- */
+
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(184px, 1fr));
+  gap: 20px 18px;
+}
+@media (max-width: 860px) {
+  .file-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+/* 桌面宽度用瀑布流：位置由 file-masonry.ts 算好，各列底部不对齐，横向文件跨两列 */
+.file-grid.masonry {
+  display: block;
+  position: relative;
+}
+.file-grid.masonry .file-thumb {
+  aspect-ratio: auto;
+  height: 100%;
+}
+/* 卡片：拼贴的一半大小，整齐紧凑，只留名称与那一项 */
+.file-grid.compact {
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 14px 12px;
+}
+.file-grid.compact .file-body {
+  padding: 5px 8px 6px;
+}
+.file-grid.compact .file-meta > span:not(.file-item) {
+  display: none;
+}
+@media (max-width: 860px) {
+  .file-grid.compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+/* 手机等两列网格整齐排，不歪 */
+.file-grid:not(.masonry) .file-card {
+  transform: none;
+}
+
+/* 文件本身就是卡片：预览铺满整张，像纸一样随手摊着、略歪一点；悬停时摆正（不上浮） */
+.file-card {
+  position: relative;
+  min-width: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--white-a12);
+  box-shadow:
+    0 0 0 var(--hairline) var(--black-a4),
+    0 1px 2px var(--black-a3),
+    0 6px 16px var(--black-a3);
+  transform: translate(var(--dx, 0), var(--dy, 0)) rotate(var(--tilt, 0deg));
+  transition: transform var(--duration) var(--ease);
+}
+.file-card:hover {
+  transform: none;
+}
+.file-card.on {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 6px 16px var(--black-a3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .file-card {
+    transition: none;
+  }
+}
+/* 整张卡是一个按钮；勾选框叠在上面单独响应 */
+.file-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  padding: 0;
+  background: none;
+  border-radius: inherit;
+  cursor: pointer;
+}
+.file-hit:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--focus-ring);
+}
+.file-thumb {
+  aspect-ratio: 3 / 4;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.file-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.file-ph {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  color: var(--label-3);
+}
+.file-ph b {
+  font-size: var(--fs-1);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+/* 底部信息条：贴着卡片下沿横跨整张 */
+.file-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  gap: 1px;
+  padding: 7px 10px 8px;
+  min-width: 0;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: 0 calc(-1 * var(--hairline)) 0 var(--line);
+  pointer-events: none;
+}
+.file-body b,
+.file-row-text b {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.file-body b {
+  font-size: var(--fs-2);
+}
+.file-body b > span,
+.file-row-text b > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-body b > :not(span),
+.file-row-text b > :not(span) {
+  flex-shrink: 0;
+}
+.file-body .file-meta {
+  gap: 6px;
+  min-width: 0;
+  line-height: 1.35;
+}
+.file-body .file-meta > span:not(.file-item) {
+  flex-shrink: 0;
+}
+.file-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--label);
+}
+.file-meta .badge {
+  height: 18px;
+  padding: 0 6px;
+  flex-shrink: 0;
+}
+.file-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-1);
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+.file-card.loading .file-thumb {
+  background: var(--fill);
+  animation: file-shimmer 1.2s var(--ease) infinite alternate;
+}
+.file-card.loading .file-body b {
+  color: var(--label-2);
+}
+@keyframes file-shimmer {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.45;
+  }
+}
+
+.file-check {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: transparent;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  box-shadow: 0 0 0 1.5px var(--label-3);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity var(--duration) var(--ease);
+}
+.file-card:hover .file-check,
+.file-check:focus-visible,
+.file-sections.picking .file-check {
+  opacity: 1;
+}
+@media (hover: none) {
+  .file-check {
+    opacity: 1;
+  }
+}
+.file-check[aria-checked='true'] {
+  color: var(--white-a12);
+  background: var(--accent);
+  box-shadow: none;
+}
+
+/* 分组：按订阅时组头是订阅（点名称只看这个订阅，箭头进详情）与凭证覆盖；按月份时是月份 */
+.file-sections {
+  display: grid;
+  gap: 28px;
+}
+.file-sec {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.file-sec-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  min-width: 0;
+}
+.file-sec-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 8px 4px 4px;
+  margin-left: -4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.file-sec-sub:hover,
+.file-sec-sub[aria-pressed='true'] {
+  background: var(--fill-2);
+}
+.file-sec-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-3);
+  font-weight: 600;
+}
+.file-sec-cov {
+  flex-shrink: 0;
+  font-size: var(--fs-1);
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+.file-sec-open {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* 缺凭证的那一期：虚线占位，悬停或拖文件进来时描边变实 */
+.file-card.file-slot {
+  background: none;
+  box-shadow: none;
+  transform: none;
+  border: var(--hairline) dashed var(--label-3);
+}
+.file-slot .file-slot-ico {
+  color: var(--label-3);
+}
+.file-card.file-slot .file-body {
+  background: none;
+  box-shadow: none;
+}
+.file-slot .file-body b,
+.file-slot .file-row-text b {
+  color: var(--label-2);
+}
+.file-card.file-slot:hover,
+.file-slot.over {
+  border-color: var(--accent);
+}
+.file-slot:hover .file-slot-ico,
+.file-slot.over .file-slot-ico {
+  color: var(--accent);
+}
+.file-slot.over {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.file-slot.loading .file-slot-ico {
+  animation: file-shimmer 1.2s var(--ease) infinite alternate;
+}
+.file-row.file-slot .file-row-thumb {
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  border: var(--hairline) dashed var(--label-3);
+}
+
+/* 列表视图：一行一个文件，缩略图、名称与那一项、支付、原始文件名、上传时间、类型、大小；每组顶部一行列名 */
+.file-rows {
+  display: grid;
+  border-radius: var(--r);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.file-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) 84px 40px 64px 20px;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+  padding: 8px 14px;
+}
+.file-row + .file-row {
+  box-shadow: inset 0 var(--hairline) 0 var(--line);
+}
+.file-row:hover {
+  background: var(--fill-2);
+}
+.file-row.on {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.file-row-thumb {
+  width: 40px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--fill);
+  overflow: hidden;
+}
+.file-row-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.file-row-thumb .file-ph {
+  gap: 0;
+}
+.file-row-thumb .file-ph b {
+  display: none;
+}
+.file-row-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.file-row-text b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-2);
+  font-weight: 600;
+}
+.file-row-text .file-meta {
+  min-width: 0;
+}
+.file-row-type,
+.file-row-size,
+.file-row-up,
+.file-row-name,
+.file-row-pay {
+  min-width: 0;
+  font-size: var(--fs-1);
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+.file-row-name,
+.file-row-pay span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-row-pay {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.file-row.file-row-head {
+  min-height: 0;
+  padding-top: 8px;
+  padding-bottom: 6px;
+  font-size: var(--fs-1);
+  color: var(--label-3);
+}
+.file-row.file-row-head:hover {
+  background: none;
+}
+.file-row-head > span {
+  color: var(--label-3);
+}
+.file-row-size {
+  text-align: right;
+}
+.file-row .file-check {
+  position: relative;
+  top: auto;
+  left: auto;
+}
+.file-row:hover .file-check,
+.file-sections.picking .file-rows .file-check {
+  opacity: 1;
+}
+.file-row.loading .file-row-thumb {
+  animation: file-shimmer 1.2s var(--ease) infinite alternate;
+}
+.file-row.loading .file-row-text b {
+  color: var(--label-2);
+}
+@media (max-width: 860px) {
+  .file-row {
+    grid-template-columns: 40px minmax(0, 1fr) auto 20px;
+    gap: 12px;
+  }
+  .file-row-type,
+  .file-row-pay,
+  .file-row-name,
+  .file-row-up,
+  .file-row-head {
+    display: none;
+  }
+}
+
+/* 勾选后的操作条：桌面贴底居中，手机在底栏之上 */
+.file-bar {
+  position: fixed;
+  z-index: 30;
+  left: calc(var(--side-w) + (100vw - var(--side-w)) / 2);
+  bottom: calc(var(--tab-h, 0px) + 20px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 24px);
+  padding: 8px 8px 8px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  box-shadow:
+    0 0 0 var(--hairline) var(--line),
+    var(--shadow-lg);
+}
+.file-bar > span {
+  font-size: var(--fs-2);
+  font-weight: 600;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+.file-bar .btn {
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .file-bar > span {
+    display: none;
+  }
+}
+
+/* 空状态插图 */
+.files-empty {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 72px 20px 48px;
+  color: var(--label-2);
+}
+.files-empty b {
+  font-size: var(--fs-3);
+  font-weight: 600;
+  color: var(--label);
+}
+.files-empty svg {
+  max-width: 100%;
+  height: auto;
+  stroke-width: 2;
+}
+.fe-shadow {
+  fill: var(--fill);
+  stroke: none;
+}
+.fe-doc rect {
+  fill: var(--card);
+  stroke: var(--label-3);
+}
+.fe-doc path {
+  stroke: var(--sep, var(--line));
+  stroke-width: 4;
+}
+.fe-doc.back {
+  transform: rotate(-8deg);
+  transform-origin: 100px 116px;
+}
+.fe-doc.front {
+  transform: rotate(5deg);
+  transform-origin: 124px 106px;
+}
+.fe-doc .fe-dash {
+  stroke: var(--label-3);
+  stroke-width: 2;
+  stroke-dasharray: 4 5;
+}
+.fe-folder {
+  fill: var(--card);
+  stroke: var(--label-2);
+}
+.fe-lip {
+  stroke: var(--label-3);
+}
+
+/* 拖入投放层：整页蒙层 + 中央投放口；外圈向内收拢，像在吸；松手时投放口吞一下再淡出 */
+.file-drop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  animation: file-drop-in 160ms var(--ease) both;
+}
+.file-drop.gulp {
+  animation: file-drop-out 420ms var(--ease) both;
+}
+.file-drop-mouth {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 14px;
+  width: min(360px, calc(100vw - 48px));
+  aspect-ratio: 4 / 3;
+  border-radius: 28px;
+  background: var(--card);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    var(--shadow-lg);
+  animation: file-mouth-open 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.file-drop.gulp .file-drop-mouth {
+  animation: file-mouth-gulp 420ms cubic-bezier(0.5, 0, 0.3, 1) both;
+}
+.file-drop-mouth b {
+  font-size: var(--fs-3);
+  font-weight: 600;
+}
+.file-drop-ico {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--white-a12);
+  background: var(--accent);
+  animation: file-ico-pull 1.1s var(--ease) infinite;
+}
+.file-drop.gulp .file-drop-ico {
+  animation: none;
+}
+.file-drop-ring {
+  position: absolute;
+  inset: -28px;
+  border-radius: 44px;
+  box-shadow: 0 0 0 2px var(--accent);
+  opacity: 0;
+  animation: file-ring-in 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.file-drop-ring.late {
+  animation-delay: 0.7s;
+}
+.file-drop.gulp .file-drop-ring {
+  display: none;
+}
+@keyframes file-drop-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes file-drop-out {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes file-mouth-open {
+  from {
+    transform: scale(1.08);
+    opacity: 0;
+  }
+}
+@keyframes file-mouth-gulp {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.88);
+  }
+  100% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+@keyframes file-ring-in {
+  0% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+}
+@keyframes file-ico-pull {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .file-drop,
+  .file-drop-mouth,
+  .file-drop-ico,
+  .file-drop-ring,
+  .file-card.loading .file-thumb {
+    animation: none !important;
+  }
+  .file-drop-ring {
+    display: none;
+  }
+}
+
+/* 文件详情 */
+.file-steps {
+  display: inline-flex;
+  gap: 2px;
+}
+.file-source-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--label);
+  cursor: pointer;
+}
+.file-source-sub > span:not(.badge) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-source-sub:disabled,
+.file-source-sub.gone {
+  cursor: default;
+}
+.file-source-sub.gone {
+  color: var(--label-2);
+}
+.file-source-sub .i:last-child {
+  color: var(--label-3);
+}
+.file-view {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  max-height: min(62dvh, 560px);
+  border-radius: var(--radius-md);
+  background: var(--fill);
+  overflow: hidden;
+}
+.file-view img {
+  max-width: 100%;
+  max-height: min(62dvh, 560px);
+  object-fit: contain;
+}
+.file-view.pdf {
+  aspect-ratio: 4 / 3;
+}
+.file-view.pdf img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.file-open {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--ctl-h-sm);
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-1);
+  font-weight: 600;
+  color: var(--label);
+  background: var(--card);
+  box-shadow: 0 0 0 var(--hairline) var(--line);
+}
+
+/* 订阅详情：文件卡（缩略图 + 名称 + 类型大小）与扣款行、合同期上的回形针 */
+.dt-file-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.dt-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 0 0 var(--hairline) var(--line);
+}
+button.dt-file:hover {
+  background: var(--fill-2);
+}
+button.dt-file:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+.dt-file-thumb {
+  flex-shrink: 0;
+  width: 56px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  overflow: hidden;
+}
+.dt-file-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.dt-file-thumb .file-ph {
+  gap: 0;
+}
+.dt-file-thumb .file-ph b {
+  display: none;
+}
+.dt-file-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.dt-file-text b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-2);
+  font-weight: 600;
+}
+.dt-file.loading {
+  cursor: default;
+}
+.dt-file.loading .dt-file-thumb {
+  animation: file-shimmer 1.2s var(--ease) infinite alternate;
+}
+.dt-file.loading b {
+  color: var(--label-2);
+}
+.dt-clip {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 6px;
+  color: var(--label-3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dt-file.loading .dt-file-thumb {
+    animation: none;
+  }
+}
+
+/* 文件页顶栏操作多：桌面端尽量保持一行。标题不占固定宽度，副标题放不下时整段隐去（折到被裁掉的第二行），搜索框先收窄 */
+@media (min-width: 861px) {
+  .toolbar:has(+ .files-page) .tb-title {
+    min-width: 0;
+    flex-wrap: wrap;
+    height: 26px;
+    overflow: hidden;
+  }
+  .toolbar:has(+ .files-page) .tb-title h1 {
+    flex-shrink: 0;
+    line-height: 26px;
+  }
+  .toolbar:has(+ .files-page) .tb-sub {
+    flex-shrink: 0;
+    line-height: 26px;
+  }
+  .toolbar:has(+ .files-page) .tb-actions {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+}

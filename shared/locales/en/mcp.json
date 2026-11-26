@@ -87,7 +87,9 @@
     "meterNotFound": "No meter matches “{q}”. Meters: {list}",
     "readingNotFound": "No meter record has the id “{q}”",
     "meterLinked": "“{name}” is linked from “{owner}”: record values and rename it there",
-    "noMeters": "This subscription has no meters yet; define them with set_meters first"
+    "noMeters": "This subscription has no meters yet; define them with set_meters first",
+    "fileSource": "Give exactly one file source: content_base64, url or upload_link.",
+    "fileFetch": "Could not download {url}"
   },
   "tool": {
     "get_overview": "Ledger overview",
@@ -126,6 +128,10 @@
     "save_subscription": "Save full subscription",
     "record_transfer": "Record or edit transfers",
     "set_meters": "Define usage data meters",
-    "add_readings": "Record usage data"
+    "add_readings": "Record usage data",
+    "list_files": "List files",
+    "get_file": "Read file",
+    "upload_file": "Upload file",
+    "update_file": "Update file"
   }
 }

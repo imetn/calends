@@ -84,7 +84,9 @@
     "meterNotFound": "「{q}」に一致する指標がありません。指標：{list}",
     "readingNotFound": "id「{q}」の使用量記録はありません",
     "meterLinked": "「{name}」は「{owner}」からリンクされています。値の記録や名前の変更はリンク元で行ってください",
-    "noMeters": "このサブスクにはまだ指標がありません。先に set_meters で定義してください"
+    "noMeters": "このサブスクにはまだ指標がありません。先に set_meters で定義してください",
+    "fileSource": "ファイルの取得元は content_base64、url、upload_link のいずれか 1 つだけ指定してください。",
+    "fileFetch": "{url} をダウンロードできませんでした"
   },
   "tool": {
     "get_overview": "台帳の概要",
@@ -123,6 +125,10 @@
     "save_subscription": "サブスクを丸ごと保存",
     "record_transfer": "譲渡を記録・編集",
     "set_meters": "使用量の指標を設定",
-    "add_readings": "使用量を記録"
+    "add_readings": "使用量を記録",
+    "list_files": "ファイル一覧",
+    "get_file": "ファイルを読む",
+    "upload_file": "ファイルをアップロード",
+    "update_file": "ファイルを編集"
   }
 }

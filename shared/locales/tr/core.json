@@ -276,5 +276,24 @@
     "refund": "İade",
     "adjust": "Düzeltme",
     "failed": "Başarısız"
+  },
+  "file": {
+    "charge": "Ödeme",
+    "bill": "Fatura",
+    "paid": "Tahsilat",
+    "sub": "Belgeler",
+    "contractTerm": "Sözleşme {from} – {until}",
+    "contractOn": "Sözleşme {date}",
+    "deleted": "Silindi",
+    "badAnchor": "Geçersiz dosya bağlantısı.",
+    "noSub": "Bağlanacak abonelik bulunamadı.",
+    "badType": "Yalnızca PDF, PNG, JPEG ve WebP dosyaları desteklenir.",
+    "tooLarge": "Dosya 10 MB’tan büyük.",
+    "empty": "Dosya boş.",
+    "full": "Dosya depolama alanı dolu ({mb} MB sınır).",
+    "notFound": "Dosya bulunamadı.",
+    "missing": "Dosya eksik",
+    "noStorage": "Dosya depolama etkin değil.",
+    "linkExpired": "Bu dosya bağlantısının süresi doldu."
   }
 }

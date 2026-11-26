@@ -9,6 +9,7 @@ import { CarMembers } from '../carpool/Members.tsx';
 import { carRule } from '../../../../shared/carpool.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { detailHistoryEnd } from '../detail-data.ts';
+import { filesAt } from '../../../../shared/files.ts';
 import { collectNow, contractNow, PeriodBar, PeriodPair, periodLive } from './Periods.tsx';
 import { Note, Panel, Prop } from '../../components/DetailKit.tsx';
 
@@ -29,7 +30,13 @@ export function Summary({ sub, state, today }: { sub: Subscription; state: AppSt
   return (
     <Panel className="dt-about">
       {collect || contract ? (
-        <PeriodPair sub={sub} today={today} collect={collect} contract={contract} />
+        <PeriodPair
+          sub={sub}
+          today={today}
+          collect={collect}
+          contract={contract}
+          contractClip={!!contract && filesAt(state.files ?? [], sub.id, 'contract', contract.from).length > 0}
+        />
       ) : (
         live && <PeriodBar sub={barSub} today={today} titleOverride={barTitle} />
       )}

@@ -265,5 +265,24 @@
     "refund": "返金",
     "adjust": "調整",
     "failed": "失敗"
+  },
+  "file": {
+    "charge": "引き落とし",
+    "bill": "請求",
+    "paid": "支払い",
+    "sub": "資料",
+    "contractTerm": "契約 {from}〜{until}",
+    "contractOn": "契約 {date}",
+    "deleted": "削除済み",
+    "badAnchor": "ファイルの紐付けが無効です。",
+    "noSub": "紐付けるサブスクが見つかりません。",
+    "badType": "PDF、PNG、JPEG、WebP のみ対応しています。",
+    "tooLarge": "ファイルが 10 MB を超えています。",
+    "empty": "ファイルが空です。",
+    "full": "ファイル容量の上限（{mb} MB）に達しました。",
+    "notFound": "ファイルが見つかりません。",
+    "missing": "ファイルがありません",
+    "noStorage": "ファイル保存が有効になっていません。",
+    "linkExpired": "このファイルリンクは期限切れです。"
   }
 }

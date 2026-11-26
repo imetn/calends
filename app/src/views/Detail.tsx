@@ -5,7 +5,7 @@ import { meterView } from '../../../shared/meters.ts';
 import { createPortal } from 'react-dom';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Pause, Pencil, Play, Plus, Settings2, Share } from 'lucide-react';
+import { Paperclip, Pause, Pencil, Play, Plus, Settings2, Share } from 'lucide-react';
 import {
   cashChargesBetween,
   chargesBetween,
@@ -53,6 +53,8 @@ import { NoteBlock, ShareCard } from './detail/Summary.tsx';
 import { Charges } from './detail/Ledgers.tsx';
 import { Meters, usageMetrics } from './detail/Meters.tsx';
 import { BundleCard, ParentCard } from './detail/BundleCard.tsx';
+import { canAttach, FilesCard } from './detail/FilesCard.tsx';
+import { useFilePicker, useUpload } from '../components/FileUpload.tsx';
 
 /**
  * 详情顶部的操作按钮。宽屏：常用的带文字（胶囊），次要的只有图标（正圆）；
@@ -100,7 +102,8 @@ export async function detailImage(el: HTMLElement) {
   const sheet = el.closest<HTMLElement>('.sheet') ?? el;
   return (await snapshot(el, {
     radius: getComputedStyle(sheet).borderRadius,
-    filter: (node) => !node.matches('.dt-actions, .dt-add, .dt-note .dt-link'),
+    // 文件卡与回形针标记不进图片：文件是私人凭证
+    filter: (node) => !node.matches('.dt-actions, .dt-add, .dt-note .dt-link, .dt-files, .dt-clip'),
   }))!;
 }
 
@@ -146,6 +149,9 @@ export function Detail({
   const [member, setMember] = useState<{ m?: ShareMember } | null>(null);
   const [transfer, setTransfer] = useState<{ index?: number } | null>(null);
   const root = useRef<HTMLDivElement>(null);
+  // 回形针与拖入详情：上传为这个订阅的资料
+  const attach = useUpload({ subId: sub.id, kind: 'sub', date: null });
+  const [picker, pickFiles] = useFilePicker(attach.upload);
 
   const nowPrice = next && (!cur.end || next < cur.end) ? priceAt(view, next) : cur.price;
   const forecast = detailForecast(view, today);
@@ -226,6 +232,7 @@ export function Detail({
   );
   const utilityActions = (
     <>
+      {canAttach(state) && <Act icon={<Paperclip size={15} />} label={t('files.add')} onClick={pickFiles} round />}
       <CopyImageButton render={() => detailImage(root.current!)} />
       <Act icon={<Share size={15} />} label={t('detail.action.share')} onClick={() => setShare(true)} round />
     </>
@@ -317,6 +324,7 @@ export function Detail({
         <ShareCard sub={view} state={state} today={today} onCar={() => setCar(true)} onMember={(m) => setMember({ m })} />
         <BundleCard sub={sub} state={state} today={today} onOpen={onOpen} onAddLinked={onAddLinked} />
         {charges}
+        <FilesCard sub={sub} state={state} today={today} pending={attach.pending} onFiles={attach.upload} onOpen={onOpen} />
         <Transfers sub={sub} state={state} onRow={(index) => setTransfer({ index })} onAdd={() => setTransfer({})} />
         {/* 还没有关联订阅 / 指标时只留轻入口，放在记录后面不抢走势的位置 */}
         <BundleCard sub={sub} state={state} today={today} onOpen={onOpen} onAddLinked={onAddLinked} emptyOnly />
@@ -325,6 +333,7 @@ export function Detail({
         <NoteBlock sub={sub} />
       </div>
 
+      {picker}
       {/* 挂到 body：详情本身在弹层里，嵌套的弹层放在里面会被裁切 */}
       {share && createPortal(<SubShare sub={sub} state={state} today={today} onClose={() => setShare(false)} />, document.body)}
       {car &&

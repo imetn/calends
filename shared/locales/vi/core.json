@@ -265,5 +265,24 @@
     "refund": "Hoàn tiền",
     "adjust": "Điều chỉnh",
     "failed": "Thất bại"
+  },
+  "file": {
+    "charge": "Khoản trừ",
+    "bill": "Hóa đơn",
+    "paid": "Thanh toán",
+    "sub": "Tài liệu",
+    "contractTerm": "Hợp đồng {from} đến {until}",
+    "contractOn": "Hợp đồng {date}",
+    "deleted": "Đã xóa",
+    "badAnchor": "Liên kết tệp không hợp lệ.",
+    "noSub": "Không tìm thấy gói đăng ký cần liên kết.",
+    "badType": "Chỉ hỗ trợ tệp PDF, PNG, JPEG và WebP.",
+    "tooLarge": "Tệp lớn hơn 10 MB.",
+    "empty": "Tệp trống.",
+    "full": "Bộ nhớ tệp đã đầy (giới hạn {mb} MB).",
+    "notFound": "Không tìm thấy tệp.",
+    "missing": "Thiếu tệp",
+    "noStorage": "Chưa bật lưu trữ tệp.",
+    "linkExpired": "Liên kết tệp này đã hết hạn."
   }
 }

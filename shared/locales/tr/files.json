@@ -1,0 +1,64 @@
+{
+  "title": "Dosyalar",
+  "summary": "{count} dosya\n{size}",
+  "upload": "Yükle",
+  "tab": {
+    "pending": "Bağlantısız",
+    "all": "Tüm dosyalar",
+    "missing": "Eksik"
+  },
+  "view": {
+    "loose": "Kolaj"
+  },
+  "group": {
+    "label": "Grupla",
+    "sub": "Aboneliğe göre",
+    "month": "Aya göre",
+    "year": "Yıla göre",
+    "cat": "Kategoriye göre"
+  },
+  "coverage": "{covered}/{total} arşivlendi",
+  "uploadTo": "{item} için yükle",
+  "unlinked": "Bağlı değil",
+  "year": "Yıl",
+  "search": "Dosya ara",
+  "empty": "Henüz dosya yok",
+  "noMatch": "Eşleşen dosya yok",
+  "drop": "Yüklemek için bırakın",
+  "uploaded": "{count} dosya yüklendi",
+  "failed": "{count} dosya yüklenemedi",
+  "selected": "{count} seçildi",
+  "select": "Seç",
+  "download": "İndir",
+  "downloadN": "{count} dosyayı indir",
+  "deleteN": "{count} dosya silinsin mi?",
+  "deleteOne": "Bu dosya silinsin mi?",
+  "deleted": "Silindi",
+  "open": "Aç",
+  "relink": "Bağla",
+  "prev": "Önceki",
+  "next": "Sonraki",
+  "props": {
+    "name": "Orijinal ad",
+    "type": "Tür",
+    "size": "Boyut",
+    "uploaded": "Yüklenme"
+  },
+  "link": {
+    "title": "Dosyayı bağla",
+    "sub": "Abonelik",
+    "none": "Bağlantısız",
+    "kind": "Bağlanacak yer",
+    "item": "Öğe",
+    "noItems": "Seçilecek bir şey yok"
+  },
+  "kind": {
+    "contract": "Sözleşme",
+    "charge": "Ödeme",
+    "sub": "Belgeler"
+  },
+  "keep": "{count} dosya Dosyalar sayfasında kalacak",
+  "card": "Dosyalar",
+  "add": "Dosya ekle",
+  "backup": "Dosyalarla tam yedeği dışa aktar"
+}

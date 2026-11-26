@@ -52,12 +52,14 @@ const loadCalendar = () => import('./views/Calendar.tsx');
 const loadWallet = () => import('./views/Wallet.tsx');
 const loadAi = () => import('./views/Ai.tsx');
 const loadReview = () => import('./views/Review.tsx');
+const loadFiles = () => import('./views/Files.tsx');
 const Calendar = lazy(() => loadCalendar().then((m) => ({ default: m.Calendar })));
 const Wallet = lazy(() => loadWallet().then((m) => ({ default: m.Wallet })));
 const Ai = lazy(() => loadAi().then((m) => ({ default: m.Ai })));
 const Review = lazy(() => loadReview().then((m) => ({ default: m.Review })));
+const Files = lazy(() => loadFiles().then((m) => ({ default: m.Files })));
 function prefetchViews() {
-  const run = () => [loadCalendar, loadWallet, loadAi, loadReview, loadAssistant].forEach((load) => void load().catch(() => {}));
+  const run = () => [loadCalendar, loadWallet, loadAi, loadReview, loadAssistant, loadFiles].forEach((load) => void load().catch(() => {}));
   if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 3000 });
   else setTimeout(run, 1500);
 }
@@ -73,6 +75,7 @@ const NAV = [
   { path: 'behalf', label: 'behalf', icon: 'swap' },
   { path: 'assistant', label: 'assistant', icon: 'chat' },
   { path: 'connect', label: 'ai', icon: 'bot' },
+  { path: 'files', label: 'files', icon: 'folder' },
 ];
 
 /**
@@ -668,6 +671,9 @@ function App() {
         break;
       case 'wallet':
         view = <Wallet state={state} today={d} onOpen={open} />;
+        break;
+      case 'files':
+        view = <Files state={state} today={d} onOpen={open} />;
         break;
       case 'family':
         view = <Carpool state={state} today={d} onOpen={open} />;

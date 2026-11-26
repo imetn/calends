@@ -458,10 +458,11 @@ test('every new read tool and connection catalogue: read token visibility, title
   const before = await f.snapshot();
   const listed = await f.rpc('tools/list', {}, f.read);
   assert.equal(listed.tools.length, TOOLS.filter((x) => !x.write).length);
-  assert.equal(TOOLS.length, 37);
+  assert.equal(TOOLS.length, 41);
+  // 助手不带搬运文件内容的两个工具：聊天里既交不出文件，也显示不了内容
   assert.deepEqual(
     ASSISTANT_TOOLS.map((x) => x.name),
-    TOOLS.map((x) => x.name),
+    TOOLS.map((x) => x.name).filter((n) => n !== 'upload_file' && n !== 'get_file'),
   );
   for (const tool of TOOLS.filter((x) => x.write)) {
     assert.equal((await f.call(tool.name, {}, f.read)).isError, true);
@@ -470,7 +471,7 @@ test('every new read tool and connection catalogue: read token visibility, title
   const settings = await f.call('get_settings', {}, f.read);
   assert.equal(settings.isError, undefined);
   assert.doesNotMatch(JSON.stringify(settings), /SECRET|private.example/);
-  for (const name of ['save_category', 'save_person', 'get_settings', 'update_settings', 'set_proxy']) {
+  for (const name of ['save_category', 'save_person', 'get_settings', 'update_settings', 'set_proxy', 'list_files', 'get_file', 'upload_file', 'update_file']) {
     const response = await f.request('mcp/tools');
     const metadata = (await response.json()).find((x: { name: string }) => x.name === name);
     assert.ok(metadata.title && metadata.title !== `mcp.tool.${name}`);

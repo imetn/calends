@@ -1742,7 +1742,7 @@ test('Codex R3 #2: GET /api/state auto-migration (ensurePeople) cannot resurrect
   assert.equal((await request('subscriptions/p', 'PUT', parent)).status, 200);
   assert.equal((await request('subscriptions/c', 'PUT', child)).status, 200);
 
-  // Interleave: GET /api/state reads snapshot (4-stmt batch), pauses before ensurePeople writes, while unlink + parent DELETE commit
+  // Interleave: GET /api/state reads snapshot (5-stmt batch incl. files), pauses before ensurePeople writes, while unlink + parent DELETE commit
   const origBatch = env.DB.batch.bind(env.DB);
   let paused = false;
   let resumeStateRead!: () => void;
@@ -1755,7 +1755,7 @@ test('Codex R3 #2: GET /api/state auto-migration (ensurePeople) cannot resurrect
   });
   (env.DB as { batch: typeof origBatch }).batch = async (stmts) => {
     const out = await origBatch(stmts);
-    if (!paused && stmts.length === 4) {
+    if (!paused && stmts.length === 5) {
       paused = true;
       stateReadHit();
       await waitWrites;

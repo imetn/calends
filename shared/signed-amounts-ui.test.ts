@@ -2,6 +2,7 @@ import * as fxTotals from './fx-total.ts';
 import { withProxyCharged } from './proxy.ts';
 import { shouldGroupYears } from '../app/src/components/year-ledger.ts';
 import { readUiSource, extractUiFunction } from '../scripts/ui-test-source.ts';
+import { fileStubs } from '../scripts/ui-test-file-stubs.ts';
 import { usageWithin } from './meters.ts';
 import assert from 'node:assert/strict';
 import * as transfers from './transfers.ts';
@@ -44,7 +45,7 @@ function load(file: string, name: string, source: string, deps: Record<string, u
     reactCompiler: false,
   });
   assert.equal(result.fatal, false);
-  deps = { ...fxTotals, ...deps };
+  deps = { ...fxTotals, ...fileStubs, ...deps };
   return new Function(...Object.keys(deps), `${result.code}; return ${name};`)(...Object.values(deps));
 }
 const text = (html: string) => html.replace(/<[^>]*>/g, '');

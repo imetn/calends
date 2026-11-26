@@ -1,0 +1,64 @@
+{
+  "title": "ファイル",
+  "summary": "{count} 件\n{size}",
+  "upload": "アップロード",
+  "tab": {
+    "pending": "未リンク",
+    "all": "すべてのファイル",
+    "missing": "証憑なし"
+  },
+  "view": {
+    "loose": "コラージュ"
+  },
+  "group": {
+    "label": "グループ",
+    "sub": "サブスク別",
+    "month": "月別",
+    "year": "年別",
+    "cat": "カテゴリ別"
+  },
+  "coverage": "{covered}/{total} 件保管",
+  "uploadTo": "{item} にアップロード",
+  "unlinked": "未関連付け",
+  "year": "年",
+  "search": "ファイルを検索",
+  "empty": "ファイルはまだありません",
+  "noMatch": "一致するファイルはありません",
+  "drop": "ドロップしてアップロード",
+  "uploaded": "{count} 件アップロードしました",
+  "failed": "{count} 件をアップロードできませんでした",
+  "selected": "{count} 件選択中",
+  "select": "選択",
+  "download": "ダウンロード",
+  "downloadN": "{count} 件をダウンロード",
+  "deleteN": "{count} 件のファイルを削除しますか？",
+  "deleteOne": "このファイルを削除しますか？",
+  "deleted": "削除済み",
+  "open": "開く",
+  "relink": "リンク変更",
+  "prev": "前へ",
+  "next": "次へ",
+  "props": {
+    "name": "元のファイル名",
+    "type": "種類",
+    "size": "サイズ",
+    "uploaded": "アップロード日"
+  },
+  "link": {
+    "title": "リンク変更",
+    "sub": "サブスク",
+    "none": "リンクしない",
+    "kind": "紐付け先",
+    "item": "項目",
+    "noItems": "選べる項目がありません"
+  },
+  "kind": {
+    "contract": "契約期間",
+    "charge": "引き落とし",
+    "sub": "資料"
+  },
+  "keep": "{count} 件のファイルはファイルページに残ります",
+  "card": "ファイル",
+  "add": "ファイルを追加",
+  "backup": "ファイルを含む完全バックアップをエクスポート"
+}

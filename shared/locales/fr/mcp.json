@@ -87,7 +87,9 @@
     "meterNotFound": "Aucun compteur ne correspond à « {q} ». Compteurs : {list}",
     "readingNotFound": "Aucune entrée d’usage avec l’id « {q} »",
     "meterLinked": "« {name} » est lié depuis « {owner} » : saisissez les valeurs et renommez-le là-bas",
-    "noMeters": "Cet abonnement n’a pas encore de compteurs ; définissez-les d’abord avec set_meters"
+    "noMeters": "Cet abonnement n’a pas encore de compteurs ; définissez-les d’abord avec set_meters",
+    "fileSource": "Indiquez une seule source de fichier : content_base64, url ou upload_link.",
+    "fileFetch": "Impossible de télécharger {url}"
   },
   "tool": {
     "get_overview": "Aperçu du registre",
@@ -126,6 +128,10 @@
     "save_subscription": "Enregistrer l’abonnement complet",
     "record_transfer": "Enregistrer ou modifier des cessions",
     "set_meters": "Définir les compteurs d’usage",
-    "add_readings": "Saisir des données d’usage"
+    "add_readings": "Saisir des données d’usage",
+    "list_files": "Lister les fichiers",
+    "get_file": "Lire un fichier",
+    "upload_file": "Téléverser un fichier",
+    "update_file": "Modifier un fichier"
   }
 }

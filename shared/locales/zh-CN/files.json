@@ -1,0 +1,64 @@
+{
+  "title": "文件",
+  "summary": "{count} 个文件\n{size}",
+  "upload": "上传",
+  "tab": {
+    "pending": "待关联",
+    "all": "全部文件",
+    "missing": "缺凭证"
+  },
+  "view": {
+    "loose": "拼贴"
+  },
+  "group": {
+    "label": "分组",
+    "sub": "按订阅",
+    "month": "按月份",
+    "year": "按年份",
+    "cat": "按分类"
+  },
+  "coverage": "已归档 {covered}/{total} 期",
+  "uploadTo": "上传到 {item}",
+  "unlinked": "未关联",
+  "year": "年份",
+  "search": "搜索文件",
+  "empty": "还没有文件",
+  "noMatch": "没有匹配的文件",
+  "drop": "松手上传",
+  "uploaded": "已上传 {count} 个文件",
+  "failed": "{count} 个文件没有上传",
+  "selected": "已选 {count} 个",
+  "select": "选择",
+  "download": "下载",
+  "downloadN": "下载 {count} 个",
+  "deleteN": "删除 {count} 个文件？",
+  "deleteOne": "删除这个文件？",
+  "deleted": "已删除",
+  "open": "打开",
+  "relink": "改关联",
+  "prev": "上一个",
+  "next": "下一个",
+  "props": {
+    "name": "原始文件名",
+    "type": "类型",
+    "size": "大小",
+    "uploaded": "上传时间"
+  },
+  "link": {
+    "title": "改关联",
+    "sub": "订阅",
+    "none": "不关联",
+    "kind": "挂在",
+    "item": "哪一项",
+    "noItems": "没有可选的项"
+  },
+  "kind": {
+    "contract": "合同期",
+    "charge": "扣款",
+    "sub": "资料"
+  },
+  "keep": "{count} 个文件会保留在文件页",
+  "card": "文件",
+  "add": "添加文件",
+  "backup": "导出完整备份（含文件）"
+}

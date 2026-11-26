@@ -88,6 +88,19 @@ import { requestLocale, settingsLocale, applyLocale, withLocaleScope } from './i
 import { t } from '../shared/i18n.ts';
 import { ensureMigrated } from './migrate.ts';
 import { edgeCache, HttpError, readJson } from './http.ts';
+import {
+  backupWithFiles,
+  deleteFile,
+  downloadByTicket,
+  patchFile,
+  putBlob,
+  readFile,
+  sweepFiles,
+  uploadByTicket,
+  uploadFile,
+  uploadThumb,
+  zipFiles,
+} from './files.ts';
 
 const json = (data: unknown, status = 200, rev?: number | Revision) =>
   Response.json(data, {
@@ -167,6 +180,14 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   if (path === '/api/auth/passkey/login/options' && method === 'POST') return passkeyLoginOptions(req, env);
   if (path === '/api/auth/passkey/login' && method === 'POST') return passkeyLoginVerify(req, env);
 
+  // MCP 发出的文件链接：令牌本身就是授权（随机、只存哈希、15 分钟过期，上传链接用一次即作废）
+  const ticket = path.match(/^\/api\/files\/(in|out)\/([\w-]{20,})$/);
+  if (ticket) {
+    if (ticket[1] === 'in' && (method === 'PUT' || method === 'POST')) return json(await uploadByTicket(req, env, ticket[2]), 201);
+    if (ticket[1] === 'out' && method === 'GET') return downloadByTicket(env, ticket[2]);
+    return bad('not found', 404);
+  }
+
   const authed = dev || (await isAuthed(req, env));
   if (path === '/api/public' && method === 'GET') {
     // 先看是否公开；公开时也只读加载（旧数据的转换只在内存里做），未登录访客的请求从不写库
@@ -188,6 +209,22 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
     const body = await res.arrayBuffer();
     if (body.byteLength > 1_000_000) return bad('too large', 413);
     return new Response(body, { headers: { 'content-type': type, 'cache-control': 'private, max-age=86400' } });
+  }
+  // 文件中心：内容经登录会话读写；公开页拿不到，MCP 只能经上方的限时文件链接或文件工具
+  if (path === '/api/files' && method === 'POST') return json(await uploadFile(req, env), 201);
+  if (path === '/api/files/zip' && method === 'GET') {
+    const ids = (new URL(req.url).searchParams.get('ids') ?? '').split(',').filter(Boolean);
+    return zipFiles(env, ids);
+  }
+  const blob = path.match(/^\/api\/files\/blob\/([a-f0-9]{64})$/);
+  if (blob && method === 'PUT') return json(await putBlob(req, env, blob[1]));
+  const fm = path.match(/^\/api\/files\/([\w-]+)(\/thumb)?$/);
+  if (fm) {
+    const [, fileId, thumb] = fm;
+    if (method === 'GET') return readFile(env, fileId, { thumb: !!thumb, download: new URL(req.url).searchParams.get('download') === '1' });
+    if (thumb && method === 'POST') return json(await uploadThumb(req, env, fileId));
+    if (!thumb && method === 'PATCH') return json(await patchFile(req, env, fileId));
+    if (!thumb && method === 'DELETE') return (await deleteFile(env, fileId), json({ ok: true }));
   }
   // 已登录：运行方式，设置页据此给出升级方法
   if (path === '/api/runtime' && method === 'GET') return json({ runtime: env.RUNTIME ?? 'cloudflare' });
@@ -394,6 +431,8 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   }
   // 完整备份：导出文件可在全新部署上原样恢复
   if (path === '/api/backup' && method === 'GET') {
+    // ?files=1：备份（含文件），ZIP 里放备份 JSON 和 files/<sha256> 的原始内容
+    if (new URL(req.url).searchParams.get('files') === '1') return backupWithFiles(env);
     const b = await exportAll(env);
     return new Response(JSON.stringify(b, null, 1), {
       headers: {
@@ -676,5 +715,6 @@ async function handleScheduled(controller: ScheduledController, env: Env, ctx: E
   }
   await scheduledNotifications(env, controller.scheduledTime);
   await scheduledAutoBackup(env, controller.scheduledTime);
+  await sweepFiles(env).catch((e) => console.error('[files]', e));
   await reportTelemetry(env).catch((e) => console.error('[telemetry]', e));
 }

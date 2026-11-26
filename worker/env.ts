@@ -5,6 +5,10 @@ export interface EmailBinding {
 export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
+  /** 文件中心的对象存储：Cloudflare 为 R2 绑定，Docker 为数据目录里的同接口实现；没有时文件功能不可用 */
+  FILES?: R2Bucket;
+  /** 文件总量上限（MB），缺省 300 */
+  FILES_LIMIT_MB?: string;
   /** Cloudflare Email Sending；不配置时邮件渠道不可用，其他渠道照常 */
   EMAIL?: EmailBinding;
   /** 站点地址（提醒里的链接）；不配置时用访问后台时记下的地址 */

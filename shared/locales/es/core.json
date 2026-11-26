@@ -276,5 +276,24 @@
     "refund": "Reembolso",
     "adjust": "Ajuste",
     "failed": "Fallido"
+  },
+  "file": {
+    "charge": "Cargo",
+    "bill": "Factura",
+    "paid": "Pago",
+    "sub": "Documentos",
+    "contractTerm": "Contrato del {from} al {until}",
+    "contractOn": "Contrato {date}",
+    "deleted": "Eliminada",
+    "badAnchor": "Vínculo de archivo no válido.",
+    "noSub": "No se encontró la suscripción que se quiere vincular.",
+    "badType": "Solo se admiten archivos PDF, PNG, JPEG y WebP.",
+    "tooLarge": "El archivo supera los 10 MB.",
+    "empty": "El archivo está vacío.",
+    "full": "El almacenamiento de archivos está lleno (límite de {mb} MB).",
+    "notFound": "Archivo no encontrado.",
+    "missing": "Falta el archivo",
+    "noStorage": "El almacenamiento de archivos no está activado.",
+    "linkExpired": "Este enlace de archivo ha caducado."
   }
 }

@@ -89,7 +89,7 @@ test('ensureMigrated applies fresh/upgrade databases and shares Wrangler migrati
       await ensureMigrated(env);
       assert.equal(batches, MIGRATIONS.length - applied.length, mode);
       assert.equal(db.prepare('SELECT count(*) AS n FROM d1_migrations').get()!.n, MIGRATIONS.length);
-      assert.equal(db.prepare("SELECT count(*) AS n FROM sqlite_master WHERE type = 'trigger'").get()!.n, 12);
+      assert.equal(db.prepare("SELECT count(*) AS n FROM sqlite_master WHERE type = 'trigger'").get()!.n, 15, '0009 起 files 表有 3 个 rev 触发器');
       const rev = () => Number(db.prepare("SELECT value FROM kv WHERE key = 'rev'").get()!.value);
       const before = rev();
       db.exec("INSERT INTO methods (id, data) VALUES ('fictional', '{}')");

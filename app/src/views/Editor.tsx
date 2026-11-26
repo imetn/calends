@@ -7,6 +7,8 @@ import { ArrowUpRight, ReceiptText } from 'lucide-react';
 import type { AssistantConfigView } from '../../../shared/deepseek.ts';
 import { cachedAssistantConfigured, compressImage, handoff, loadAssistantConfigured } from '../handoff.ts';
 import { t } from '../../../shared/i18n.ts';
+import { filesOf } from '../../../shared/files.ts';
+import { relinkFile } from '../files.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { ask, Sheet } from '../components/overlays.tsx';
 import { useSubmit } from '../components/inputs.tsx';
@@ -83,6 +85,7 @@ export function Editor({ sub, state, today, onClose }: { sub: Subscription; stat
       t(isNew ? 'editor.toast.added' : 'editor.toast.saved'),
     );
   };
+  const subFiles = isNew ? [] : filesOf(state.files ?? [], sub.id);
 
   return (
     <Sheet
@@ -93,14 +96,20 @@ export function Editor({ sub, state, today, onClose }: { sub: Subscription; stat
         <>
           {!isNew && (
             <ConfirmButton
-              hint={t('editor.confirmDelete', { name: sub.name })}
+              hint={[t('editor.confirmDelete', { name: sub.name }), subFiles.length ? t('files.keep', { count: subFiles.length }) : '']
+                .filter(Boolean)
+                .join('\n')}
               onConfirm={() => {
-                // 删除会把它移出公开页隐藏列表；撤销时一并放回
+                // 删除会把它移出公开页隐藏列表、它的文件变成「已删除」；撤销时一并放回、文件挂回原处
                 const hidden = getState().settings.publicHidden?.includes(sub.id);
+                const anchored = filesOf(getState().files ?? [], sub.id);
                 const restore = async () => {
                   await saveSub(sub);
                   const list = getState().settings.publicHidden ?? [];
                   if (hidden && !list.includes(sub.id)) await saveSettings({ publicHidden: [...list, sub.id] });
+                  // 期间删掉的文件挂不回去，不影响其余的
+                  for (const f of anchored)
+                    await relinkFile(f, { subId: sub.id, kind: f.kind ?? 'sub', date: f.kind === 'sub' ? null : (f.date ?? null) }).catch(() => {});
                 };
                 run(
                   async () => {

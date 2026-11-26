@@ -1,0 +1,82 @@
+/* 文件详情的预览：图片可缩放平移，PDF 逐页铺开阅读 */
+
+/* 图片：点按放大、拖动平移；未放大时竖向滑动仍交给弹窗滚动 */
+.fp-zoom {
+  cursor: zoom-in;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.fp-zoom.zoomed {
+  cursor: grab;
+  touch-action: none;
+}
+.fp-zoom.dragging {
+  cursor: grabbing;
+}
+.fp-zoom:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.fp-zoom img {
+  transform-origin: center;
+  transition: transform var(--duration) var(--ease);
+  will-change: transform;
+}
+.fp-zoom.dragging img {
+  transition: none;
+}
+
+/* PDF：灰底里一页页白纸，宽度随弹窗；框内滚动，滚动条隐藏 */
+.fp-pdf {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: min(64vh, 640px);
+  max-height: min(64dvh, 640px);
+  padding: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--radius-md);
+  background: var(--fill);
+}
+.fp-pdf .react-pdf__Document {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fp-page {
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--white-a12);
+  box-shadow:
+    0 0 0 var(--hairline) var(--black-a4),
+    0 1px 2px var(--black-a3),
+    0 6px 16px var(--black-a3);
+}
+.fp-page canvas,
+.fp-page > img {
+  display: block;
+  width: 100%;
+}
+.fp-page-loading {
+  aspect-ratio: 1 / 1.414;
+  background: var(--white-a12);
+  animation: fp-shimmer 1.2s var(--ease) infinite alternate;
+}
+@keyframes fp-shimmer {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fp-zoom img {
+    transition: none;
+  }
+  .fp-page-loading {
+    animation: none;
+  }
+}

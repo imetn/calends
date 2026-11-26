@@ -84,7 +84,9 @@
     "meterNotFound": "“{q}”와 일치하는 지표가 없습니다. 지표: {list}",
     "readingNotFound": "id가 “{q}”인 사용량 기록이 없습니다",
     "meterLinked": "“{name}”은(는) “{owner}”에서 연결한 지표입니다. 값 기록과 이름 변경은 원본 구독에서 하세요",
-    "noMeters": "이 구독에는 아직 지표가 없습니다. 먼저 set_meters로 정의하세요"
+    "noMeters": "이 구독에는 아직 지표가 없습니다. 먼저 set_meters로 정의하세요",
+    "fileSource": "파일 출처는 content_base64, url, upload_link 중 하나만 지정하세요.",
+    "fileFetch": "{url}을(를) 다운로드할 수 없습니다"
   },
   "tool": {
     "get_overview": "장부 개요",
@@ -123,6 +125,10 @@
     "save_subscription": "구독 전체 저장",
     "record_transfer": "양도 기록 또는 수정",
     "set_meters": "사용량 지표 설정",
-    "add_readings": "사용량 기록"
+    "add_readings": "사용량 기록",
+    "list_files": "파일 목록",
+    "get_file": "파일 읽기",
+    "upload_file": "파일 업로드",
+    "update_file": "파일 수정"
   }
 }

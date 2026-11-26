@@ -4,6 +4,7 @@ import { resyncShares } from '../../shared/carpool.ts';
 import { deleteMethodData, deleteSubscriptionSettings } from '../../shared/ledger-edit.ts';
 import { renameInSubs, type Category } from '../../shared/categories.ts';
 import { t } from '../../shared/i18n.ts';
+import { orphanFiles } from '../../shared/files.ts';
 import { writePref } from './prefs.ts';
 
 export function createLedgerWrites(
@@ -37,7 +38,16 @@ export function createLedgerWrites(
   function deleteSub(id: string) {
     // 服务端在同一事务里把它从公开页隐藏列表去掉（与 MCP delete_subscription 相同），本地同步
     return write(
-      (s) => ({ ...s, subscriptions: s.subscriptions.filter((x) => x.id !== id), settings: deleteSubscriptionSettings(s.settings, id) }),
+      (s) => {
+        const gone = s.subscriptions.find((x) => x.id === id);
+        return {
+          ...s,
+          subscriptions: s.subscriptions.filter((x) => x.id !== id),
+          settings: deleteSubscriptionSettings(s.settings, id),
+          // 文件不删：留在文件页，标「已删除」与原订阅名
+          ...(gone && s.files ? { files: orphanFiles(s.files, gone) } : {}),
+        };
+      },
       () => api(`/api/subscriptions/${id}`, { method: 'DELETE' }),
     );
   }

@@ -16,6 +16,7 @@ import { Icon } from '../components/icons.tsx';
 import { LoadFailed, Sheet } from '../components/overlays.tsx';
 import { ClearablePreview, LinkInput, Toggle } from '../components/inputs.tsx';
 import { adoptRestored, api, logout, refreshFx, rotateIcs, saveSettings, saveSub, syncFx } from '../store.ts';
+import { backupFilesUrl, putBlobs, readBackupZip } from '../files.ts';
 import { copyText, run, toast } from '../toast.ts';
 import { MethodPicker } from '../components/MethodPicker.tsx';
 import { ChannelsGroup } from './Channels.tsx';
@@ -49,6 +50,7 @@ const NAV_ROWS: Array<[string, string, boolean]> = [
   ['behalf', 'behalf', true],
   ['assistant', 'assistant', true],
   ['connect', 'ai', true],
+  ['files', 'files', true],
 ];
 import { CurrencySelect, Picker } from '../components/Picker.tsx';
 import { cnDateFull, localDay, localTime } from '../../../shared/format.ts';
@@ -197,14 +199,6 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
     loadFx();
   }, []);
 
-  const pickFile = (accept: string, cb: (text: string) => void) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = accept;
-    input.onchange = () => input.files?.[0]?.text().then(cb);
-    input.click();
-  };
-
   const pickImport = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -226,19 +220,56 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
     input.click();
   };
   // 备份恢复：整份交给服务端，订阅、支付方式、设置、汇率一起原样还原
-  const [restoring, setRestoring] = useState<{ raw: unknown; subs: number; methods: number; exportedAt?: string; version: number } | null>(null);
+  const [restoring, setRestoring] = useState<{
+    raw: unknown;
+    subs: number;
+    methods: number;
+    exportedAt?: string;
+    version: number;
+    /** 「备份（含文件）」ZIP 里的文件内容，恢复 JSON 后逐个补回 */
+    blobs?: Map<string, Uint8Array>;
+    /** 备份里的文件条数（v4 起有） */
+    files: number;
+  } | null>(null);
   // 自动备份上传的是加密文件：先要口令在浏览器里解开
   const [locked, setLocked] = useState<EncryptedBackup | null>(null);
-  const onJson = (text: string) => {
+  const onJson = (text: string, blobs?: Map<string, Uint8Array>) => {
     try {
       const raw = JSON.parse(text) as unknown;
       if (isEncryptedBackup(raw)) return setLocked(raw);
-      const j = raw as { subscriptions?: unknown[]; methods?: unknown[]; exportedAt?: string; version?: number };
+      const j = raw as { subscriptions?: unknown[]; methods?: unknown[]; files?: unknown[]; exportedAt?: string; version?: number };
       if (!Array.isArray(j.subscriptions)) throw new Error();
-      setRestoring({ raw: j, subs: j.subscriptions.length, methods: j.methods?.length ?? 0, exportedAt: j.exportedAt, version: j.version ?? 1 });
+      setRestoring({
+        raw: j,
+        subs: j.subscriptions.length,
+        methods: j.methods?.length ?? 0,
+        exportedAt: j.exportedAt,
+        version: j.version ?? 1,
+        blobs,
+        files: j.files?.length ?? 0,
+      });
     } catch {
       toast(t('settings.toast.badBackup'), 'error');
     }
+  };
+
+  // 恢复入口收 JSON 备份，也收「备份（含文件）」的 ZIP
+  const pickRestore = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.zip,application/json,application/zip';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (!/\.zip$/i.test(file.name) && file.type !== 'application/zip') return onJson(await file.text());
+      try {
+        const { json, blobs } = await readBackupZip(file);
+        onJson(json, blobs);
+      } catch {
+        toast(t('settings.toast.badBackup'), 'error');
+      }
+    };
+    input.click();
   };
 
   const exportCsv = () => download(`subscriptions-${today}.csv`, exportSubscriptionsCsv(state), 'text/csv');
@@ -554,9 +585,10 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
             sub={reading ? t('settings.import.reading') : t('settings.import.formats')}
             onClick={reading ? undefined : pickImport}
           />
-          <Cell label={t('settings.data.restore')} onClick={() => pickFile('.json,application/json', onJson)} />
+          <Cell label={t('settings.data.restore')} onClick={pickRestore} />
           <Cell label={t('settings.data.exportCsv')} onClick={exportCsv} />
           <Cell label={t('settings.data.backup')} onClick={() => (location.href = base('/api/backup'))} />
+          {state.filesEnabled !== false && !!state.files?.length && <Cell label={t('files.backup')} onClick={() => (location.href = backupFilesUrl())} />}
           {!state.readonly && <AutoBackupCell timezone={s.timezone} />}
         </Group>
 
@@ -599,7 +631,10 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
                       body: JSON.stringify(restoring.raw),
                     });
                     adoptRestored(r.state);
+                    // 文件内容在账本恢复之后补回：服务端只收新元数据里引用到的
+                    const lost = restoring.blobs?.size ? await putBlobs(restoring.blobs) : 0;
                     setRestoring(null);
+                    if (lost) toast(t('files.failed', { count: lost }), 'error');
                     return r;
                   }, t('settings.restore.done'))
                 }
@@ -612,6 +647,7 @@ export function Settings({ state, today }: { state: AppState; today: string }) {
           <Group foot={t('settings.restore.warning')}>
             <Cell label={t('settings.restore.subs')}>{t('settings.restore.count', { count: restoring.subs })}</Cell>
             <Cell label={t('settings.restore.methods')}>{t('settings.restore.count', { count: restoring.methods })}</Cell>
+            {restoring.files > 0 && <Cell label={t('files.card')}>{t('settings.restore.count', { count: restoring.files })}</Cell>}
             {restoring.exportedAt && <Cell label={t('settings.restore.time')}>{localTime(restoring.exportedAt, state.settings.timezone)}</Cell>}
             {restoring.version < 2 && <Cell label={t('settings.restore.format')}>{t('settings.restore.legacy')}</Cell>}
           </Group>

@@ -41,8 +41,12 @@ const KEY = 'assistant';
 /** 一次提问里最多跟模型来回几轮（每轮可能调用多个工具） */
 const MAX_ROUNDS = 12;
 
-/** Every ledger tool is available; writes are always drafted and only the apply endpoint saves. */
-export const ASSISTANT_TOOLS: Tool[] = TOOLS;
+/**
+ * Every ledger tool is available; writes are always drafted and only the apply endpoint saves.
+ * upload_file / get_file move file bytes, which the chat cannot hand over or show: files are uploaded and opened in the app.
+ */
+const NOT_IN_ASSISTANT = new Set(['upload_file', 'get_file']);
+export const ASSISTANT_TOOLS: Tool[] = TOOLS.filter((x) => !NOT_IN_ASSISTANT.has(x.name));
 
 export const getConfig = (env: Env) => getKv<AssistantConfig>(env, KEY);
 

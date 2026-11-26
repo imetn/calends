@@ -1,0 +1,79 @@
+{
+  "title": "Files",
+  "summary": {
+    "one": "{count} file\n{size}",
+    "other": "{count} files\n{size}"
+  },
+  "upload": "Upload",
+  "tab": {
+    "pending": "Unlinked",
+    "all": "All files",
+    "missing": "Missing"
+  },
+  "view": {
+    "loose": "Collage"
+  },
+  "group": {
+    "label": "Group",
+    "sub": "By subscription",
+    "month": "By month",
+    "year": "By year",
+    "cat": "By category"
+  },
+  "coverage": "{covered}/{total} filed",
+  "uploadTo": "Upload to {item}",
+  "unlinked": "Unlinked",
+  "year": "Year",
+  "search": "Search files",
+  "empty": "No files yet",
+  "noMatch": "No matching files",
+  "drop": "Drop to upload",
+  "uploaded": {
+    "one": "Uploaded {count} file",
+    "other": "Uploaded {count} files"
+  },
+  "failed": {
+    "one": "{count} file was not uploaded",
+    "other": "{count} files were not uploaded"
+  },
+  "selected": "{count} selected",
+  "select": "Select",
+  "download": "Download",
+  "downloadN": "Download {count}",
+  "deleteN": {
+    "one": "Delete {count} file?",
+    "other": "Delete {count} files?"
+  },
+  "deleteOne": "Delete this file?",
+  "deleted": "Deleted",
+  "open": "Open",
+  "relink": "Link",
+  "prev": "Previous",
+  "next": "Next",
+  "props": {
+    "name": "Original name",
+    "type": "Type",
+    "size": "Size",
+    "uploaded": "Uploaded"
+  },
+  "link": {
+    "title": "Link file",
+    "sub": "Subscription",
+    "none": "Not linked",
+    "kind": "Attach to",
+    "item": "Item",
+    "noItems": "Nothing to choose"
+  },
+  "kind": {
+    "contract": "Contract",
+    "charge": "Charge",
+    "sub": "Documents"
+  },
+  "keep": {
+    "one": "{count} file will stay in Files",
+    "other": "{count} files will stay in Files"
+  },
+  "card": "Files",
+  "add": "Add files",
+  "backup": "Export full backup with files"
+}

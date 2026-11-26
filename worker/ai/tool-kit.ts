@@ -16,6 +16,9 @@ import { exactServices, serviceDisplayName, type ServiceEntry } from '../../shar
 import { SERVICE_PACKS } from './service-packs.gen.ts';
 import { round, row } from './tool-views.ts';
 
+/** 工具结果里要原样放进 MCP content 的块（图片、PDF 等）；Symbol 键不进 JSON，助手和 structuredContent 都看不到 */
+export const MCP_CONTENT = Symbol('mcp-content');
+
 export interface ToolCtx {
   env: Env;
   access?: { client: 'mcp' | 'assistant'; scope: 'read' | 'write' };

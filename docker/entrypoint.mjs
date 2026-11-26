@@ -8,6 +8,7 @@ import { normalizeBasePath } from '../shared/base.ts';
 import { ensureMigrated } from '../worker/migrate.ts';
 import { createAssets } from './assets.mjs';
 import { openD1 } from './d1.mjs';
+import { openR2 } from './r2.mjs';
 import { proxyTrust } from './client-ip.mjs';
 import { createFront } from './front.mjs';
 
@@ -50,8 +51,9 @@ if (!setupToken) {
 
 // 3. 传给 Worker 的绑定和变量
 const assetsDir = process.env.ASSETS_DIR || fileURLToPath(new URL('../dist', import.meta.url));
-const env = { DB: db, ASSETS: createAssets(assetsDir), SETUP_TOKEN: setupToken };
-for (const k of ['SITE_URL', 'OWNER_PASSCODE', 'BASE_PATH', 'CALENDS_TELEMETRY', 'DO_NOT_TRACK']) if (process.env[k]) env[k] = process.env[k];
+// 文件中心的内容放在数据卷里，随 /data 一起持久化与备份
+const env = { DB: db, ASSETS: createAssets(assetsDir), FILES: openR2(join(DATA, 'files')), SETUP_TOKEN: setupToken };
+for (const k of ['SITE_URL', 'OWNER_PASSCODE', 'BASE_PATH', 'CALENDS_TELEMETRY', 'DO_NOT_TRACK', 'FILES_LIMIT_MB']) if (process.env[k]) env[k] = process.env[k];
 // 运行方式只用来在设置页给出升级命令；没有标记的 Node 安装（Docker、自己解压的压缩包）只给文档
 env.RUNTIME = process.env.CALENDS_RUNTIME || 'node';
 

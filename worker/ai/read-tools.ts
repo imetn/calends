@@ -1,4 +1,5 @@
 import { amountTotal, chargesTotal, dueTotal, emptyTotal, sumTotals, type FxTotal } from '../../shared/fx-total.ts';
+import { FILE_EXT, fileTitle, filesOf } from '../../shared/files.ts';
 import { partialOut } from './tool-views.ts';
 import { searchServices, serviceDisplayName } from '../../shared/service-catalog.ts';
 import { SERVICES, serviceCategory } from './tool-kit.ts';
@@ -194,7 +195,7 @@ export const list_subscriptions: Tool = {
 export const get_subscription: Tool = {
   name: 'get_subscription',
   description:
-    'Full detail of one subscription: every phase (region or plan switches, gaps = lapses), price history, intro/bonus periods, recent and upcoming charges, shared-plan member dues, proxy repayments, custom business meters (per-period usage, totals, unit price = charges in the period ÷ usage), and totals spent so far. Stop summaries include provider termination reasons, refunds and paid-but-unused days/value for each phase.',
+    'Full detail of one subscription: every phase (region or plan switches, gaps = lapses), price history, intro/bonus periods, recent and upcoming charges, shared-plan member dues, proxy repayments, custom business meters (per-period usage, totals, unit price = charges in the period ÷ usage), and totals spent so far. Stop summaries include provider termination reasons, refunds and paid-but-unused days/value for each phase. files lists receipts and contracts linked in the file center (id for get_file / update_file).',
   inputSchema: obj(
     { subscription: SUBREF, months_back: { type: 'integer', default: 12 }, months_forward: { type: 'integer', default: 6 }, currency_out: CURRENCY_OUT },
     ['subscription'],
@@ -216,6 +217,15 @@ export const get_subscription: Tool = {
       ...row(st, s, today, out),
       record: s, // Complete editable history, stable receipt indices and original currencies.
       notes: s.notes ?? null,
+      // 文件中心里挂在这个订阅上的文件（只读元数据，不含内容）：kind 为 contract 时 date 是合同期开始日，charge 为扣款日，sub 为订阅资料
+      files: filesOf(st.files ?? [], s.id).map((f) => ({
+        id: f.id,
+        title: fileTitle(f, st.files ?? [], st.subscriptions),
+        kind: f.kind ?? null,
+        date: f.date ?? null,
+        type: FILE_EXT[f.mime],
+        size: f.size,
+      })),
       account: s.account ?? null,
       url: s.url ?? null,
       intro: s.intro ?? null,

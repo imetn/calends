@@ -10,6 +10,7 @@ import {
   renewalDates,
 } from '../../../../shared/billing.ts';
 import { carRule, collectionPeriod, memberStatus } from '../../../../shared/carpool.ts';
+import { Icon } from '../../components/icons.tsx';
 import { currentContract, type ContractTerm } from '../../../../shared/contract.ts';
 import { cnDateAuto } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
@@ -59,6 +60,7 @@ function Bar({
   short,
   mark,
   charge,
+  clip,
 }: {
   kind: string;
   title: string;
@@ -69,6 +71,8 @@ function Bar({
   /** 带图例的刻度：最晚取消（cb）或合同续约提醒（ch） */
   mark?: { date: string; label: string; tone: 'cb' | 'ch' };
   charge?: string;
+  /** 这一期挂了文件：标题后加回形针 */
+  clip?: boolean;
 }) {
   const span = Math.max(1, diffDays(from, end));
   const at = (d: string) => `${Math.min(100, Math.max(0, (diffDays(from, d) / span) * 100))}%`;
@@ -76,7 +80,14 @@ function Bar({
   return (
     <div className={`dt-period ${kind}`}>
       <p className="dt-period-h">
-        <b>{title}</b>
+        <b>
+          {title}
+          {clip && (
+            <span className="dt-clip" aria-label={t('files.card')}>
+              <Icon name="clip" size={13} />
+            </span>
+          )}
+        </b>
         {/* 并排时位置窄，只写百分比 */}
         <span>{short ? `${pct}%` : t('detail.renewal.elapsed', { pct })}</span>
       </p>
@@ -132,11 +143,13 @@ export function PeriodPair({
   today,
   collect,
   contract,
+  contractClip,
 }: {
   sub: Subscription;
   today: string;
   collect?: { from: string; next: string };
   contract?: ContractTerm;
+  contractClip?: boolean;
 }) {
   const notice = contract?.noticeBy && contract.noticeBy >= today ? contract.noticeBy : undefined;
   return (
@@ -151,6 +164,7 @@ export function PeriodPair({
           end={contract.next}
           today={today}
           short
+          clip={contractClip}
           mark={notice ? { date: notice, label: t(contract.renews ? 'core.contract.renewNotice' : 'core.contract.endNotice'), tone: 'ch' } : undefined}
         />
       )}

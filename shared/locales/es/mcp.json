@@ -87,7 +87,9 @@
     "meterNotFound": "Ningún medidor coincide con «{q}». Medidores: {list}",
     "readingNotFound": "No hay ningún registro de uso con el id «{q}»",
     "meterLinked": "«{name}» está vinculado desde «{owner}»: registra los valores y cambia su nombre allí",
-    "noMeters": "Esta suscripción aún no tiene medidores; defínelos primero con set_meters"
+    "noMeters": "Esta suscripción aún no tiene medidores; defínelos primero con set_meters",
+    "fileSource": "Indica exactamente una fuente de archivo: content_base64, url o upload_link.",
+    "fileFetch": "No se pudo descargar {url}"
   },
   "tool": {
     "get_overview": "Resumen del registro",
@@ -126,6 +128,10 @@
     "save_subscription": "Guardar suscripción completa",
     "record_transfer": "Registrar o editar traspasos",
     "set_meters": "Definir medidores de uso",
-    "add_readings": "Registrar datos de uso"
+    "add_readings": "Registrar datos de uso",
+    "list_files": "Listar archivos",
+    "get_file": "Leer archivo",
+    "upload_file": "Subir archivo",
+    "update_file": "Editar archivo"
   }
 }

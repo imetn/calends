@@ -245,5 +245,24 @@
     "refund": "退款",
     "adjust": "補差",
     "failed": "失敗"
+  },
+  "file": {
+    "charge": "扣款",
+    "bill": "帳單",
+    "paid": "繳費",
+    "sub": "資料",
+    "contractTerm": "合約 {from} 至 {until}",
+    "contractOn": "合約 {date}",
+    "deleted": "已刪除",
+    "badAnchor": "檔案的關聯方式無效。",
+    "noSub": "找不到要關聯的訂閱。",
+    "badType": "只支援 PDF、PNG、JPEG、WebP 檔案。",
+    "tooLarge": "檔案超過 10 MB。",
+    "empty": "檔案是空的。",
+    "full": "檔案空間已滿（上限 {mb} MB）。",
+    "notFound": "檔案不存在。",
+    "missing": "檔案遺失",
+    "noStorage": "未啟用檔案儲存。",
+    "linkExpired": "上傳連結已失效。"
   }
 }

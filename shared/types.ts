@@ -1,3 +1,4 @@
+import type { FileMeta } from './files.ts';
 import type { Prefs } from './prefs.ts';
 // 前端与 Worker 共用的数据模型。日期一律用 'YYYY-MM-DD' 字符串，按「日」计算，避免时区漂移。
 import { t } from './i18n.ts';
@@ -596,6 +597,10 @@ export interface AppState {
   prefs?: Prefs;
   /** 匿名公开视图时为 true（已脱敏、只读） */
   readonly?: boolean;
+  /** 文件中心的元数据（不含内容）；公开页不下发 */
+  files?: FileMeta[];
+  /** 文件存储可用（Cloudflare 绑定了 FILES，或 Docker 数据目录） */
+  filesEnabled?: boolean;
 }
 
 export const BALANCE_KINDS: MethodKind[] = ['appstore', 'googleplay', 'giftcard', 'prepaid', 'phone', 'paypal', 'alipay', 'wechat', 'crypto'];

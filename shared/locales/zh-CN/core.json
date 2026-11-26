@@ -245,5 +245,24 @@
     "refund": "退款",
     "adjust": "补差",
     "failed": "失败"
+  },
+  "file": {
+    "charge": "扣款",
+    "bill": "账单",
+    "paid": "缴费",
+    "sub": "资料",
+    "contractTerm": "合同 {from} 至 {until}",
+    "contractOn": "合同 {date}",
+    "deleted": "已删除",
+    "badAnchor": "文件的关联方式无效。",
+    "noSub": "找不到要关联的订阅。",
+    "badType": "只支持 PDF、PNG、JPEG、WebP 文件。",
+    "tooLarge": "文件超过 10 MB。",
+    "empty": "文件是空的。",
+    "full": "文件空间已满（上限 {mb} MB）。",
+    "notFound": "文件不存在。",
+    "missing": "文件缺失",
+    "noStorage": "未启用文件存储。",
+    "linkExpired": "上传链接已失效。"
   }
 }

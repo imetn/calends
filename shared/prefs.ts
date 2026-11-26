@@ -36,6 +36,8 @@ export const PREF_KEYS = [
   'report-pick',
   'list-cat',
   'list-pay',
+  'files-view',
+  'files-group',
 ] as const;
 export type PrefKey = (typeof PREF_KEYS)[number];
 

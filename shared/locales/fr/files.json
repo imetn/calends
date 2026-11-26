@@ -1,0 +1,79 @@
+{
+  "title": "Fichiers",
+  "summary": {
+    "one": "{count} fichier\n{size}",
+    "other": "{count} fichiers\n{size}"
+  },
+  "upload": "Importer",
+  "tab": {
+    "pending": "Non liés",
+    "all": "Tous les fichiers",
+    "missing": "Manquants"
+  },
+  "view": {
+    "loose": "Collage"
+  },
+  "group": {
+    "label": "Grouper",
+    "sub": "Par abonnement",
+    "month": "Par mois",
+    "year": "Par année",
+    "cat": "Par catégorie"
+  },
+  "coverage": "{covered}/{total} classés",
+  "uploadTo": "Téléverser vers {item}",
+  "unlinked": "Non lié",
+  "year": "Année",
+  "search": "Rechercher des fichiers",
+  "empty": "Aucun fichier pour l’instant",
+  "noMatch": "Aucun fichier correspondant",
+  "drop": "Déposez pour importer",
+  "uploaded": {
+    "one": "{count} fichier importé",
+    "other": "{count} fichiers importés"
+  },
+  "failed": {
+    "one": "{count} fichier non importé",
+    "other": "{count} fichiers non importés"
+  },
+  "selected": "{count} sélectionnés",
+  "select": "Sélectionner",
+  "download": "Télécharger",
+  "downloadN": "Télécharger {count}",
+  "deleteN": {
+    "one": "Supprimer {count} fichier ?",
+    "other": "Supprimer {count} fichiers ?"
+  },
+  "deleteOne": "Supprimer ce fichier ?",
+  "deleted": "Supprimé",
+  "open": "Ouvrir",
+  "relink": "Lier",
+  "prev": "Précédent",
+  "next": "Suivant",
+  "props": {
+    "name": "Nom d’origine",
+    "type": "Type",
+    "size": "Taille",
+    "uploaded": "Importé le"
+  },
+  "link": {
+    "title": "Lier le fichier",
+    "sub": "Abonnement",
+    "none": "Non lié",
+    "kind": "Rattacher à",
+    "item": "Élément",
+    "noItems": "Rien à choisir"
+  },
+  "kind": {
+    "contract": "Contrat",
+    "charge": "Prélèvement",
+    "sub": "Documents"
+  },
+  "keep": {
+    "one": "{count} fichier restera dans Fichiers",
+    "other": "{count} fichiers resteront dans Fichiers"
+  },
+  "card": "Fichiers",
+  "add": "Ajouter des fichiers",
+  "backup": "Exporter une sauvegarde complète avec fichiers"
+}

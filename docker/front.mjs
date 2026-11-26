@@ -14,6 +14,10 @@ export const maxBodyFor = (pathname) => {
   if (/\/api\/(backup|import|assistant\/chat)$/.test(pathname)) return 20 * 1024 * 1024;
   // 登录类接口未鉴权就读请求体，放小才挡得住并发大包
   if (/\/api\/(login$|auth\/)/.test(pathname)) return 64 * 1024;
+  // 文件上传、恢复时补回内容、MCP 的一次性上传链接：单个文件上限 10 MB，留一点余量
+  if (/\/api\/files(\/blob\/[a-f0-9]{64}|\/in\/[\w-]+)?$/.test(pathname)) return 11 * 1024 * 1024;
+  // MCP 上传文件时内容按 base64 放进 JSON：10 MB 文件约 13.4 MB
+  if (pathname.endsWith('/mcp')) return 15 * 1024 * 1024;
   return 4 * 1024 * 1024;
 };
 const COMPRESSIBLE = /^(text\/(?!event-stream)|application\/(json|javascript|manifest\+json|xml)|image\/svg\+xml)/i;

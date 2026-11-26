@@ -33,6 +33,7 @@ import {
   add_readings,
   delete_subscription,
 } from './subscription-tools.ts';
+import { fileTools } from './file-tools.ts';
 import { get_carpool, set_share, save_share_member, remove_share_member, record_receivable } from './share-tools.ts';
 
 export const toolTitle = (name: string) => t(`mcp.tool.${name}`);
@@ -93,6 +94,7 @@ export const CATALOGUE: Tool[] = [
   remove_share_member,
   record_receivable,
   paymentMethodTool,
+  ...fileTools,
 ];
 
 export const TOOLS: Tool[] = CATALOGUE.map((tool) => ({

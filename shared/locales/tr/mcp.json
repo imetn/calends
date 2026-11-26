@@ -84,7 +84,9 @@
     "meterNotFound": "“{q}” ile eşleşen ölçüt yok. Ölçütler: {list}",
     "readingNotFound": "“{q}” id’li kullanım kaydı yok",
     "meterLinked": "“{name}”, “{owner}” aboneliğindeki bir ölçüte bağlıdır: değerleri orada kaydedin ve adını orada değiştirin",
-    "noMeters": "Bu abonelikte henüz ölçüt yok; önce set_meters ile tanımlayın"
+    "noMeters": "Bu abonelikte henüz ölçüt yok; önce set_meters ile tanımlayın",
+    "fileSource": "Tam olarak bir dosya kaynağı verin: content_base64, url veya upload_link.",
+    "fileFetch": "{url} indirilemedi"
   },
   "tool": {
     "get_overview": "Defter özeti",
@@ -123,6 +125,10 @@
     "save_subscription": "Aboneliği tamamen kaydet",
     "record_transfer": "Devir kaydet veya düzenle",
     "set_meters": "Kullanım ölçütlerini tanımla",
-    "add_readings": "Kullanım verisi kaydet"
+    "add_readings": "Kullanım verisi kaydet",
+    "list_files": "Dosyaları listele",
+    "get_file": "Dosyayı oku",
+    "upload_file": "Dosya yükle",
+    "update_file": "Dosyayı düzenle"
   }
 }

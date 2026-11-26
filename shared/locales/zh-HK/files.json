@@ -1,0 +1,64 @@
+{
+  "title": "檔案",
+  "summary": "{count} 個檔案\n{size}",
+  "upload": "上載",
+  "tab": {
+    "pending": "待關聯",
+    "all": "全部檔案",
+    "missing": "缺憑證"
+  },
+  "view": {
+    "loose": "拼貼"
+  },
+  "group": {
+    "label": "分組",
+    "sub": "按訂閱",
+    "month": "按月份",
+    "year": "按年份",
+    "cat": "按分類"
+  },
+  "coverage": "已歸檔 {covered}/{total} 期",
+  "uploadTo": "上傳到 {item}",
+  "unlinked": "未關聯",
+  "year": "年份",
+  "search": "搜尋檔案",
+  "empty": "仲未有檔案",
+  "noMatch": "沒有相符的檔案",
+  "drop": "放手即上載",
+  "uploaded": "已上載 {count} 個檔案",
+  "failed": "{count} 個檔案未上載",
+  "selected": "已選 {count} 個",
+  "select": "選擇",
+  "download": "下載",
+  "downloadN": "下載 {count} 個",
+  "deleteN": "刪除 {count} 個檔案？",
+  "deleteOne": "刪除這個檔案？",
+  "deleted": "已刪除",
+  "open": "開啟",
+  "relink": "改關聯",
+  "prev": "上一個",
+  "next": "下一個",
+  "props": {
+    "name": "原始檔名",
+    "type": "類型",
+    "size": "大小",
+    "uploaded": "上載時間"
+  },
+  "link": {
+    "title": "改關聯",
+    "sub": "訂閱",
+    "none": "不關聯",
+    "kind": "掛在",
+    "item": "哪一項",
+    "noItems": "沒有可選的項目"
+  },
+  "kind": {
+    "contract": "合約期",
+    "charge": "扣款",
+    "sub": "資料"
+  },
+  "keep": "{count} 個檔案會保留在檔案頁",
+  "card": "檔案",
+  "add": "新增檔案",
+  "backup": "匯出完整備份（含檔案）"
+}

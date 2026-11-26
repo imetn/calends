@@ -1,6 +1,7 @@
 import * as fxTotals from './fx-total.ts';
 import { editorMoreKeys, editorMoreOpen } from '../app/src/views/editor/more.ts';
 import { readUiSource } from '../scripts/ui-test-source.ts';
+import { fileStubs } from '../scripts/ui-test-file-stubs.ts';
 import { metricComponents, fxAmountComponent } from '../scripts/ui-test-components.ts';
 import * as transfers from './transfers.ts';
 import assert from 'node:assert/strict';
@@ -122,6 +123,7 @@ function runtime(file: string, extra: Record<string, unknown>, names = file.incl
     TailName: 'TailName',
     FlagImg: 'FlagImg',
     ...metricComponents(extra.React ?? React),
+    ...fileStubs,
     ...extra,
   };
   const exports = new Function(...Object.keys(deps), `${result.code.replace(/export /g, '')}; return {${names}};`)(...Object.values(deps));

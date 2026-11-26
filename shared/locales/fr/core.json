@@ -276,5 +276,24 @@
     "refund": "Remboursement",
     "adjust": "Ajustement",
     "failed": "Échec"
+  },
+  "file": {
+    "charge": "Prélèvement",
+    "bill": "Facture",
+    "paid": "Paiement",
+    "sub": "Documents",
+    "contractTerm": "Contrat du {from} au {until}",
+    "contractOn": "Contrat {date}",
+    "deleted": "Supprimé",
+    "badAnchor": "Rattachement de fichier non valide.",
+    "noSub": "L’abonnement à rattacher est introuvable.",
+    "badType": "Seuls les fichiers PDF, PNG, JPEG et WebP sont pris en charge.",
+    "tooLarge": "Le fichier dépasse 10 Mo.",
+    "empty": "Le fichier est vide.",
+    "full": "Stockage de fichiers plein (limite de {mb} Mo).",
+    "notFound": "Fichier introuvable.",
+    "missing": "Fichier manquant",
+    "noStorage": "Le stockage de fichiers n’est pas activé.",
+    "linkExpired": "Ce lien de fichier a expiré."
   }
 }
