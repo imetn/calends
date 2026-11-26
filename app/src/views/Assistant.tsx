@@ -28,7 +28,8 @@ import {
 import { t } from '../../../shared/i18n.ts';
 import { localTime } from '../../../shared/format.ts';
 import { confirmInOrder, type WriteVerification } from '../../../shared/assistant-result.ts';
-import type { ApiMessage, AssistantConfigView, ErrorKind } from '../../../shared/deepseek.ts';
+import { modelDisplayName, type AssistantConfigView, type ErrorKind, type ProviderId } from '../../../shared/ai-providers.ts';
+import type { ApiMessage } from '../../../shared/deepseek.ts';
 import { dropOldImages } from '../../../shared/deepseek.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { IconButton, Toolbar } from '../components/ui.tsx';
@@ -478,6 +479,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
           above={empty && ready ? <Suggestions onPick={(x) => (x.send ? void send(x.text, []) : composer.current?.prefill(x.text))} /> : undefined}
           busy={busy}
           disabled={!ready}
+          provider={cfg?.provider}
           model={cfg?.model}
           onSend={(text, imgs) => void send(text, imgs)}
           onStop={() => abort.current?.abort()}
@@ -786,6 +788,7 @@ export function Composer({
   ref,
   busy,
   disabled,
+  provider,
   model,
   onSend,
   onStop,
@@ -796,6 +799,7 @@ export function Composer({
   ref: React.Ref<ComposerHandle>;
   busy: boolean;
   disabled: boolean;
+  provider?: ProviderId;
   model?: string;
   onSend: (text: string, images: string[]) => void;
   onStop: () => void;
@@ -910,7 +914,7 @@ export function Composer({
           </IconButton>
           <input ref={file} type="file" accept="image/*" multiple hidden onChange={(e) => e.target.files && void addFiles(e.target.files)} />
           <button className="as-model" onClick={onSettings} title={t('assistant.settings')}>
-            {model === 'deepseek-flash' ? 'DeepSeek V4.1 Flash' : (model ?? 'DeepSeek')}
+            {modelDisplayName(provider, model)}
           </button>
           {onReset && (
             <IconButton className="as-icon m-only" onClick={onReset} title={t('assistant.new')} aria-label={t('assistant.new')}>

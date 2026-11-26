@@ -1,27 +1,23 @@
-// AI 助手：用 DeepSeek 识别用户粘贴的文字、截图，整理成订阅草稿；查询与修改直接复用 MCP 工具。
+// AI 助手：经 Vercel AI SDK 对接各主流模型，识别用户粘贴的文字、截图并整理成订阅草稿；查询与修改直接复用 MCP 工具。
 // 写操作一律先 dry_run 出草稿，由用户在页面上确认后再经同一个工具真正执行。
+import type { ModelMessage } from 'ai';
 import { exactServices } from '../../shared/service-catalog.ts';
 import { SERVICES } from './tool-kit.ts';
 import { todayIn } from '../../shared/billing.ts';
 import { categoryList } from '../../shared/categories.ts';
 import {
-  applyLine,
-  assistantMessage,
   configView,
-  dropOldImages,
-  emptyTurn,
-  errorKind,
-  messagesFor,
-  normBaseUrl,
-  reasoningParams,
-  parseArgs,
-  userMessage,
-  type ApiMessage,
+  inferProvider,
+  isConfigured,
+  isProviderId,
+  normProviderBaseUrl,
+  resolveProvider,
   type AssistantConfig,
   type Effort,
   type ErrorKind,
-  type Turn,
-} from '../../shared/deepseek.ts';
+  type ProviderId,
+} from '../../shared/ai-providers.ts';
+import { assistantMessage, dropOldImages, parseArgs, userMessage, type ApiMessage } from '../../shared/deepseek.ts';
 import { locale, t } from '../../shared/i18n.ts';
 import {
   draftSignature,
@@ -33,6 +29,7 @@ import {
 } from '../../shared/assistant-result.ts';
 import type { Env } from '../env.ts';
 import { TOOLS } from './mcp-tools.ts';
+import { classifyError, fetchProviderModels, streamTurn, toModelMessages } from './provider.ts';
 import { decodeEntities, state, type Tool, type ToolCtx } from './tool-kit.ts';
 import { searchAppStore } from '../appstore.ts';
 import { getKv, loadState, putKv } from '../store.ts';
@@ -51,11 +48,24 @@ export async function viewConfig(env: Env) {
 }
 
 /** 保存配置：apiKey 传空串表示保持不变，传 null 表示清除 */
-export async function saveConfig(env: Env, b: { apiKey?: string | null; baseUrl?: string; model?: string; effort?: Effort }) {
+export async function saveConfig(env: Env, b: { provider?: ProviderId; apiKey?: string | null; baseUrl?: string; model?: string; effort?: Effort }) {
   const cur = (await getConfig(env)) ?? {};
+  // 清除 Key 时同时清掉免 Key 供应商（如 Ollama）的激活状态，确保「清除」一定回到未配置
+  if (b.apiKey === null) {
+    const curPreset = resolveProvider(cur);
+    const next: AssistantConfig = {
+      ...cur,
+      apiKey: undefined,
+      ...(curPreset.optionalKey ? { model: undefined } : {}),
+    };
+    await putKv(env, KEY, next);
+    return configView(next);
+  }
+  const provider: ProviderId = isProviderId(b.provider) ? b.provider : (cur.provider ?? inferProvider(b.baseUrl ?? cur.baseUrl));
   const next: AssistantConfig = {
-    apiKey: b.apiKey === null ? undefined : b.apiKey?.trim() || cur.apiKey,
-    baseUrl: b.baseUrl !== undefined ? normBaseUrl(b.baseUrl) : cur.baseUrl,
+    provider,
+    apiKey: b.apiKey?.trim() || (provider === resolveProvider(cur).id ? cur.apiKey : undefined),
+    baseUrl: b.baseUrl !== undefined ? normProviderBaseUrl(provider, b.baseUrl) : normProviderBaseUrl(provider, cur.baseUrl),
     model: b.model !== undefined ? b.model.trim() || undefined : cur.model,
     effort: b.effort ?? cur.effort,
   };
@@ -64,19 +74,15 @@ export async function saveConfig(env: Env, b: { apiKey?: string | null; baseUrl?
 }
 
 /** 测试连接：列出模型。返回可用的模型 id，或错误类别 */
-export async function testConfig(env: Env, draft?: { apiKey?: string; baseUrl?: string }) {
+export async function testConfig(env: Env, draft?: { provider?: ProviderId; apiKey?: string; baseUrl?: string }) {
   const c = (await getConfig(env)) ?? {};
-  const apiKey = draft?.apiKey?.trim() || c.apiKey;
-  if (!apiKey) return { ok: false, kind: 'config' as ErrorKind, message: t('server.assistant.noKey') };
-  const base = normBaseUrl(draft?.baseUrl ?? c.baseUrl);
-  try {
-    const res = await fetch(`${base}/models`, { headers: { authorization: `Bearer ${apiKey}` } });
-    const body = (await res.json().catch(() => ({}))) as { data?: Array<{ id: string }>; error?: { message?: string } };
-    if (!res.ok) return { ok: false, kind: errorKind(res.status), message: body.error?.message ?? `HTTP ${res.status}` };
-    return { ok: true, models: (body.data ?? []).map((m) => m.id) };
-  } catch (e) {
-    return { ok: false, kind: 'network' as ErrorKind, message: e instanceof Error ? e.message : String(e) };
-  }
+  const provider: ProviderId = isProviderId(draft?.provider) ? draft.provider : (c.provider ?? inferProvider(draft?.baseUrl ?? c.baseUrl));
+  const preset = resolveProvider({ provider, baseUrl: draft?.baseUrl ?? c.baseUrl });
+  const sameProvider = provider === resolveProvider(c).id;
+  const apiKey = draft?.apiKey?.trim() || (sameProvider ? c.apiKey : undefined);
+  if (!apiKey && !preset.optionalKey) return { ok: false, kind: 'config' as ErrorKind, message: t('server.assistant.noKey') };
+  const baseUrl = normProviderBaseUrl(provider, draft?.baseUrl ?? (sameProvider ? c.baseUrl : preset.baseUrl));
+  return fetchProviderModels({ provider, apiKey, baseUrl });
 }
 
 /** 系统提示：今天、本位币、分类与支付方式，以及怎么把粘贴的内容整理成订阅 */
@@ -196,48 +202,6 @@ export async function enrichDraft(args: Record<string, unknown>, catalogue = fal
   return { args: out, filled };
 }
 
-/** 调一次 DeepSeek（流式），边收边把思考和正文推给前端 */
-async function complete(cfg: AssistantConfig, messages: ApiMessage[], emit: Emit, signal: AbortSignal, tools = true): Promise<Turn> {
-  const effort = cfg.effort ?? 'low';
-  const res = await fetch(`${normBaseUrl(cfg.baseUrl)}/chat/completions`, {
-    method: 'POST',
-    signal,
-    headers: { authorization: `Bearer ${cfg.apiKey}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model: cfg.model || 'deepseek-flash',
-      messages: messagesFor(cfg.baseUrl, messages),
-      ...(tools
-        ? { tools: ASSISTANT_TOOLS.map((x) => ({ type: 'function', function: { name: x.name, description: x.description, parameters: x.inputSchema } })) }
-        : {}),
-      stream: true,
-      stream_options: { include_usage: true },
-      ...reasoningParams(effort, cfg.baseUrl, cfg.model || 'deepseek-flash'),
-    }),
-  });
-  if (!res.ok || !res.body) {
-    const body = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
-    throw Object.assign(new Error(body.error?.message ?? `HTTP ${res.status}`), { kind: errorKind(res.status), status: res.status });
-  }
-  const turn = emptyTurn();
-  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-  let buf = '';
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buf += value;
-    let i;
-    while ((i = buf.indexOf('\n')) >= 0) {
-      const line = buf.slice(0, i).replace(/\r$/, '');
-      buf = buf.slice(i + 1);
-      const d = applyLine(turn, line);
-      if (d?.reasoning) emit({ type: 'reasoning', delta: d.reasoning });
-      if (d?.text) emit({ type: 'text', delta: d.text });
-    }
-  }
-  if (buf) applyLine(turn, buf);
-  return turn;
-}
-
 /**
  * 一次提问：把用户这轮加进历史，和模型来回直到它不再调用工具。
  * 查询工具直接执行；写入工具强制 dry_run，草稿推给前端（proposal），等用户确认。
@@ -253,20 +217,25 @@ export function chat(env: Env, body: { history?: ApiMessage[]; text?: string; im
     const added: ApiMessage[] = [];
     try {
       const cfg = await getConfig(env);
-      if (!cfg?.apiKey) throw Object.assign(new Error(t('server.assistant.noKey')), { kind: 'config' });
+      if (!cfg || !isConfigured(cfg)) throw Object.assign(new Error(t('server.assistant.noKey')), { kind: 'config' });
+      const preset = resolveProvider(cfg);
       const images = (body.images ?? []).filter((u) => typeof u === 'string' && u.startsWith('data:image/')).slice(0, 8);
       const user = userMessage(String(body.text ?? ''), images);
       added.push(user);
       const history = dropOldImages(Array.isArray(body.history) ? body.history : [], 0);
+      // 同轮内的活跃消息列表保留各家 Provider 元数据（如 Anthropic thinking signature / Gemini thoughtSignature）
+      const liveMessages: ModelMessage[] = toModelMessages([...history, user], preset.protocol);
       // 这一问里的草稿叠在一起，后面的工具能看到前面的草稿
       const ctx = { env, overlay: new Map(), access: { client: 'assistant', scope: 'write' } } satisfies ToolCtx;
       const drafted = new Set<string>();
       let failures: ToolFailure[] = [];
       let exhausted = true;
       for (let round = 0; round < MAX_ROUNDS; round++) {
-        const messages: ApiMessage[] = [{ role: 'system', content: await systemPrompt(env) }, ...history, ...added];
-        const turn = await complete(cfg, messages, emit, signal);
-        added.push(assistantMessage(turn));
+        const { turn, responseMessages } = await streamTurn(cfg, await systemPrompt(env), liveMessages, ASSISTANT_TOOLS, emit, signal);
+        const asstMsg = assistantMessage(turn);
+        added.push(asstMsg);
+        if (responseMessages.length) liveMessages.push(...responseMessages);
+        else liveMessages.push(...toModelMessages([asstMsg], preset.protocol));
         if (turn.usage) emit({ type: 'usage', ...turn.usage });
         const calls = turn.toolCalls.filter(Boolean);
         if (!calls.length) {
@@ -274,17 +243,16 @@ export function chat(env: Env, body: { history?: ApiMessage[]; text?: string; im
           break;
         }
         emit({ type: 'step' });
+        const toolResults: Array<{ type: 'tool-result'; toolCallId: string; toolName: string; output: { type: 'text'; value: string } }> = [];
         for (const call of calls) {
           const tool = ASSISTANT_TOOLS.find((x) => x.name === call.function.name);
           const { args, error: parseError } = parseArgs(call.function.arguments);
           // 同一问里重复出同一个写操作草稿：不再执行、不显示，直接告诉模型已经有了
           const sig = draftSignature(call.function.name, args);
           if (tool?.write && drafted.has(sig)) {
-            added.push({
-              role: 'tool',
-              tool_call_id: call.id,
-              content: JSON.stringify({ duplicate: true, note: 'This exact draft was already shown to the user in this turn. Do not call it again.' }),
-            });
+            const dup = JSON.stringify({ duplicate: true, note: 'This exact draft was already shown to the user in this turn. Do not call it again.' });
+            added.push({ role: 'tool', tool_call_id: call.id, content: dup });
+            toolResults.push({ type: 'tool-result', toolCallId: call.id, toolName: call.function.name, output: { type: 'text', value: dup } });
             continue;
           }
           emit({ type: 'tool', id: call.id, name: call.function.name, args, status: 'running' });
@@ -327,25 +295,22 @@ export function chat(env: Env, body: { history?: ApiMessage[]; text?: string; im
               ...(deletedNow ? { hint: 'Subscriptions you drafted for deletion in this turn are already hidden; that is expected. Do not retry.' } : {}),
             });
           }
-          added.push({ role: 'tool', tool_call_id: call.id, content: toolContent(content) });
+          const finalContent = toolContent(content);
+          added.push({ role: 'tool', tool_call_id: call.id, content: finalContent });
+          toolResults.push({ type: 'tool-result', toolCallId: call.id, toolName: call.function.name, output: { type: 'text', value: finalContent } });
         }
+        if (toolResults.length) liveMessages.push({ role: 'tool', content: toolResults });
       }
       if (exhausted) {
         try {
-          const closing = await complete(
+          const limitNote = `[Execution limit] No tool calls remain. Summarize only successfully prepared drafts and list unfinished steps. Nothing has been saved. Unresolved errors: ${JSON.stringify(failures.map(({ name, error }) => ({ name, error })))}`;
+          const { turn: closing } = await streamTurn(
             cfg,
-            [
-              { role: 'system', content: await systemPrompt(env) },
-              ...history,
-              ...added,
-              {
-                role: 'user',
-                content: `[Execution limit] No tool calls remain. Summarize only successfully prepared drafts and list unfinished steps. Nothing has been saved. Unresolved errors: ${JSON.stringify(failures.map(({ name, error }) => ({ name, error })))}`,
-              },
-            ],
+            await systemPrompt(env),
+            [...liveMessages, { role: 'user', content: limitNote }],
+            undefined,
             emit,
             signal,
-            false,
           );
           added.push(assistantMessage(closing));
           if (closing.usage) emit({ type: 'usage', ...closing.usage });
@@ -366,9 +331,9 @@ export function chat(env: Env, body: { history?: ApiMessage[]; text?: string; im
         });
       emit({ type: 'done', messages: added, outcome });
     } catch (e) {
-      const err = e as Error & { kind?: ErrorKind; status?: number };
+      const err = classifyError(e);
       if (signal.aborted) emit({ type: 'done', messages: added, aborted: true });
-      else emit({ type: 'error', kind: err.kind ?? 'network', status: err.status, message: err.message });
+      else emit({ type: 'error', kind: err.kind, status: err.status, message: err.message });
     } finally {
       await writer.close().catch(() => {});
     }

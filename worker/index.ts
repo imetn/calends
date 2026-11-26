@@ -509,11 +509,11 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
       return bad(e instanceof Error ? e.message : t('server.refreshFailed'), 502);
     }
   }
-  // AI 助手（DeepSeek）
+  // AI 助手
   if (path === '/api/assistant/config' && method === 'GET') return json(await viewConfig(env));
   if (path === '/api/assistant/config' && method === 'PUT') return json(await saveConfig(env, (await readJson(req)) as Parameters<typeof saveConfig>[1]));
   if (path === '/api/assistant/test' && method === 'POST')
-    return json(await testConfig(env, (await req.json().catch(() => ({}))) as { apiKey?: string; baseUrl?: string }));
+    return json(await testConfig(env, (await req.json().catch(() => ({}))) as Parameters<typeof testConfig>[1]));
   // 聊天记录
   if (path === '/api/assistant/chats' && method === 'GET') return json(await listChats(env));
   if (path === '/api/assistant/chats' && method === 'DELETE') return (await clearChats(env), json({ ok: true }));
