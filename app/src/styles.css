@@ -2992,6 +2992,15 @@ button.bl-col {
   gap: 10px;
   min-width: min(220px, 100%);
 }
+.tb-offline {
+  flex: none;
+  align-self: center;
+}
+@media (min-width: 861px) {
+  .app:not(.collapsed) .tb-offline {
+    display: none;
+  }
+}
 .tb-sub {
   flex: 0 1 auto;
   min-width: 0;

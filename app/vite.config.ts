@@ -90,6 +90,8 @@ export default defineConfig({
     include: ['radix-ui', 'class-variance-authority', 'clsx', 'tailwind-merge', 'motion/react', 'number-flow', 'recharts', 'matter-js'],
   },
   server: {
+    // 允许 Tailscale MagicDNS 域名访问开发服务器（IP 访问 Vite 本身就放行）
+    allowedHosts: ['.ts.net'],
     // 本地开发：wrangler dev 跑在 8787；按前缀匹配，/cal/ 要带斜杠，否则 /calendar 页面也会被转发
     proxy: Object.fromEntries(['/api/', '/cal/', '/mcp'].map((path) => [assetPath(path), process.env.VITE_WORKER_ORIGIN || 'http://127.0.0.1:8787'])),
   },

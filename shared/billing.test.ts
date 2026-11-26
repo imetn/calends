@@ -931,3 +931,24 @@ test('余额到期：已过期的余额今天为 0；早于校准日的到期日
   const spent = { ...method, balance: 150, balanceExpires: '2027-03-01' };
   assert.equal(runwayFor(spent, st(spent), '2026-10-19')!.expiring, undefined);
 });
+
+test('买断后又升级成买断（两段 lifetime）：下次扣款不报无效日期，列表不白屏', () => {
+  const s = {
+    id: 'lt',
+    name: 'lt',
+    category: 'x',
+    tags: [],
+    status: 'active',
+    price: 288,
+    currency: 'CNY',
+    cycle: { unit: 'lifetime', every: 1 },
+    start: '2024-11-24',
+    phases: [
+      { start: '2024-11-24', end: '2026-08-23', price: 199, currency: 'CNY', cycle: { unit: 'lifetime', every: 1 } },
+      { start: '2026-08-24', price: 288, currency: 'CNY', cycle: { unit: 'lifetime', every: 1 } },
+    ],
+  } as Subscription;
+  assert.equal(nextCharge(s, '2026-11-24'), undefined);
+  // 下一段买断还没开始时，下次扣款是它的开始日
+  assert.equal(nextCharge(s, '2026-06-01'), '2026-08-24');
+});
