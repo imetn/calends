@@ -841,7 +841,7 @@
 .as-model-pick > * {
   width: 100%;
 }
-.as-model-pick button {
+.as-model-pick .pk-btn.btn {
   justify-content: space-between;
   width: 100%;
   height: var(--ctl-h-lg);

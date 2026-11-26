@@ -27,6 +27,11 @@
     "trailingComma": "all"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.110",
+    "@ai-sdk/deepseek": "^3.0.91",
+    "@ai-sdk/google": "^4.0.128",
+    "@ai-sdk/openai": "^4.0.125",
+    "@ai-sdk/openai-compatible": "^3.0.96",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -40,6 +45,7 @@
     "@simplewebauthn/server": "^14.0.3",
     "@tailwindcss/vite": "^4.3.3",
     "@types/matter-js": "^0.20.2",
+    "ai": "^7.0.183",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "fflate": "^0.8.3",

@@ -1189,12 +1189,14 @@ describe('MCP 合租统一收款与首期', () => {
           },
           { index: 2, id: 'read', type: 'function', function: { name: 'get_carpool', arguments: JSON.stringify({ subscription: f.sub.id }) } },
         ];
-        return new Response(`data: ${JSON.stringify({ choices: [{ delta: { tool_calls } }] })}\n\ndata: [DONE]\n\n`);
+        return new Response(`data: ${JSON.stringify({ choices: [{ index: 0, delta: { tool_calls }, finish_reason: 'tool_calls' }] })}\n\ndata: [DONE]\n\n`);
       }
       const results = request.messages.filter((m: { role: string }) => m.role === 'tool').map((m: { content: string }) => JSON.parse(m.content));
       assert.equal(results[1].preview.after.amount, 29.02);
       assert.equal(results[2].plans[0].members[0].next_collection_date, '2027-01-17');
-      return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: 'Drafts ready.' } }] })}\n\ndata: [DONE]\n\n`);
+      return new Response(
+        `data: ${JSON.stringify({ choices: [{ index: 0, delta: { content: 'Drafts ready.' }, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`,
+      );
     });
     try {
       const response = chat(f.ctx.env, { text: 'Add Fictional JJ and record their first payment.' }, new AbortController().signal);
