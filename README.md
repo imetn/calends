@@ -38,6 +38,7 @@ Track what you pay, when it renews, and who owes you. Calends brings subscriptio
 - **Search** — find Chinese names by full pinyin, initials or mixed syllables in the subscription list, command palette and pickers.
 - **Renewal reminders** — email, Telegram, Lark/Feishu, DingTalk, WeCom, Slack, Discord, Bark, ntfy, ServerChan and custom webhooks.
 - **AI access** — query and update your ledger from an MCP-compatible assistant, with scoped tokens and previews for write operations.
+- **Files** — keep invoices, receipts and contracts with subscriptions, link them to charges or contract terms, preview images and PDFs, and export a full backup with file content.
 - **Import external ledgers** — preview and import CSV files, ZIP backups and databases from Wallos and other services in your browser.
 - **Public page editor** — arrange widgets on a grid canvas and customize the header of your read-only public page.
 - **Automatic encrypted backups** — back up to S3-compatible storage or WebDAV with passphrase-based encryption, rolling retention and a safety backup before restoring or replacing a ledger.
@@ -93,6 +94,8 @@ codex mcp add calends --url https://your-domain/mcp --bearer-token-env-var CALEN
 ```
 
 Keep `CALENDS_TOKEN` available in the environment that launches Codex. Tools cover subscriptions, spending, trends, receivables and insights, plus changes to prices, plans, status and payments. Every write tool supports `dry_run`; AI access can be turned off in Settings.
+
+The built-in assistant supports provider presets including DeepSeek, OpenAI, Anthropic, Gemini and Ollama, plus custom OpenAI- and Anthropic-compatible endpoints.
 
 ## Privacy
 

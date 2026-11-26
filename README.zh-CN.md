@@ -38,6 +38,7 @@
 - **拼音搜索**：订阅列表、全局搜索和选择器支持中文全拼、首字母与混合拼音匹配。
 - **续费提醒**：邮件、Telegram、飞书、钉钉、企业微信、Slack、Discord、Bark、ntfy、Server酱与自定义 Webhook。
 - **AI 接入**：通过支持 MCP 助手查询和修改账本，令牌可限制权限，写入前可预览。
+- **文件中心**：保存发票、收据和合同，关联订阅扣款或合同期，预览图片与 PDF，完整备份可连文件一起导出。
 - **外部账本导入**：可在浏览器内预览并导入 Wallos 等外部账本的 CSV、ZIP 备份与数据库文件。
 - **公开页编辑器**：在网格画布中排列组件，自定义只读公开页的页头。
 - **自动加密备份**：备份到 S3 兼容存储或 WebDAV，支持口令加密、滚动保留，恢复或替换账本前先备份当前数据。
@@ -93,6 +94,8 @@ codex mcp add calends --url https://你的域名/mcp --bearer-token-env-var CALE
 ```
 
 启动 Codex 的环境中需要保留 `CALENDS_TOKEN`。工具涵盖订阅、支出、趋势、应收款和体检，也能修改价格、套餐、状态与付款记录。所有写操作都支持 `dry_run` 预览；可在设置中关闭 AI 连接。
+
+内置助手支持 DeepSeek、OpenAI、Anthropic、Gemini、Ollama 等供应商预设，也可填写自定义 OpenAI 或 Anthropic 兼容地址。
 
 ## 隐私
 
