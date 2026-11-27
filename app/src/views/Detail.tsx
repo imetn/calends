@@ -115,7 +115,6 @@ export function Detail({
   today,
   onEdit,
   onOpen,
-  onAddLinked,
   onClose,
 }: {
   sub: Subscription;
@@ -123,7 +122,6 @@ export function Detail({
   today: string;
   onEdit: () => void;
   onOpen?: (s: Subscription) => void;
-  onAddLinked?: (parent: Subscription) => void;
   onClose: () => void;
 }) {
   const pair = useMoneyPair(state);
@@ -324,7 +322,7 @@ export function Detail({
         <Notices sub={sub} state={state} today={today} onOpen={onOpen} />
         {/* 合租、关联订阅比扣款记录重要，放在前面 */}
         <ShareCard sub={view} state={state} today={today} onCar={() => setCar(true)} onMember={(m) => setMember({ m })} />
-        <BundleCard sub={sub} state={state} today={today} onOpen={onOpen} onAddLinked={onAddLinked} />
+        <BundleCard sub={sub} state={state} today={today} onOpen={onOpen} />
         {charges}
         <FilesCard
           sub={sub}
@@ -339,8 +337,7 @@ export function Detail({
           }}
         />
         <Transfers sub={sub} state={state} onRow={(index) => setTransfer({ index })} onAdd={() => setTransfer({})} />
-        {/* 还没有关联订阅 / 指标时只留轻入口，放在记录后面不抢走势的位置 */}
-        <BundleCard sub={sub} state={state} today={today} onOpen={onOpen} onAddLinked={onAddLinked} emptyOnly />
+        {/* 还没有指标时只留轻入口，放在记录后面不抢走势的位置 */}
         {!sub.meters?.length && <Meters key={`m${sub.id}`} sub={sub} state={state} today={today} />}
         {events}
         <NoteBlock sub={sub} />

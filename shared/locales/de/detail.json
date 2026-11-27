@@ -277,7 +277,6 @@
   },
   "bundle": {
     "title": "Verknüpfte Abos ({count})",
-    "add": "Verknüpftes Abo hinzufügen",
     "parentMissing": "Hauptabo fehlt",
     "parentPeriod": "Zeitraum des Hauptabos",
     "modeFollow": "Folgt Hauptabo",

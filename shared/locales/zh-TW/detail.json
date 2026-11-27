@@ -250,7 +250,6 @@
   },
   "bundle": {
     "title": "關聯訂閱（{count}）",
-    "add": "新增關聯訂閱",
     "parentMissing": "找不到主訂閱",
     "parentPeriod": "主訂閱週期",
     "modeFollow": "跟隨主訂閱",

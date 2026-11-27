@@ -121,14 +121,15 @@
   },
   "more": {
     "title": "更多選項",
+    "bundle": "關聯訂閱",
     "intro": "首期優惠",
     "bonus": "贈送時長",
     "remind": "提醒",
     "links": "連結",
     "tags": "標籤",
     "notes": "備註",
-    "summary": "首期優惠、贈送時長、提醒、連結、標籤、備註",
-    "summaryLt": "連結、標籤、備註"
+    "summary": "關聯訂閱、首期優惠、贈送時長、提醒、連結、標籤、備註",
+    "summaryLt": "關聯訂閱、連結、標籤、備註"
   },
   "intro": {
     "has": "有首期優惠",
@@ -268,6 +269,17 @@
     "mode": "週期模式",
     "follow": "跟隨主訂閱",
     "independent": "獨立週期",
-    "followsCycle": "跟隨主訂閱（{cycle}）"
+    "followsCycle": "跟隨主訂閱（{cycle}）",
+    "children": "關聯訂閱",
+    "childrenHint": "隨本訂閱附贈或加購的其他訂閱，儲存時一併關聯。",
+    "childrenNone": "未有關聯訂閱",
+    "addTitle": "新增關聯訂閱",
+    "editTitle": "編輯關聯訂閱",
+    "sourceNew": "新增",
+    "sourceExisting": "關聯現有",
+    "chooseSub": "訂閱",
+    "priceHint": "金額為 0 表示免費附贈，填寫金額則為付費加購。",
+    "unlink": "解除關聯",
+    "remove": "移除"
   }
 }

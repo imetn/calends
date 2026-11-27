@@ -5,6 +5,7 @@ import { toEditForm } from '../../../../shared/phases.ts';
 import { stopForm, type StopForm } from '../../../../shared/stop-form.ts';
 import { newSub } from './new-sub.ts';
 import { draftKey, sig, readDraft, writeDraft } from './draft.ts';
+import { EMPTY_LINKED, hasLinkedChanges, type LinkedPlan } from './linked.ts';
 
 export function useEditorDraft({ sub, state, today, onClose }: { sub: Subscription; state: AppState; today: string; onClose: () => void }) {
   const [isNew] = useState(() => !state.subscriptions.some((s) => s.id === sub.id));
@@ -25,6 +26,7 @@ export function useEditorDraft({ sub, state, today, onClose }: { sub: Subscripti
   const [stop, setStop] = useState<StopForm | undefined>(
     () => draft?.stop ?? (f.stop || f.end || ['cancelled', 'terminated'].includes(f.status) ? stopForm(f, today, state) : undefined),
   );
+  const [linked, setLinked] = useState<LinkedPlan>(() => draft?.linked ?? EMPTY_LINKED);
   // 历程操作会改写价格；记录操作后的价格，用来判断表单里的价格是否又被手动改过
   const [basePrice, setBasePrice] = useState(draft?.basePrice ?? initialForm.price);
   const setF = (next: Subscription) => {
@@ -45,11 +47,12 @@ export function useEditorDraft({ sub, state, today, onClose }: { sub: Subscripti
   const dirty =
     sig(f) !== initial ||
     !priceValid ||
+    hasLinkedChanges(linked) ||
     !!stop !== !!(initialForm.stop || initialForm.end || ['cancelled', 'terminated'].includes(initialForm.status)) ||
     (!!stop && JSON.stringify(stop) !== JSON.stringify(stopForm(initialForm, today, state)));
   // 关闭即存草稿；没改动就清掉
   const close = () => {
-    writeDraft(key, dirty ? { form: f, basePrice, stop, base: isNew ? 'new' : initial } : undefined);
+    writeDraft(key, dirty ? { form: f, basePrice, stop, ...(hasLinkedChanges(linked) ? { linked } : {}), base: isNew ? 'new' : initial } : undefined);
     onClose();
   };
   /** 新建：清空成一张新表（从主订阅入口新建时保留预填的主订阅关联）；编辑：回到保存过的样子 */
@@ -58,6 +61,7 @@ export function useEditorDraft({ sub, state, today, onClose }: { sub: Subscripti
     setRestored(false);
     setPriceValid(true);
     setHistoryReset((n) => n + 1);
+    setLinked(EMPTY_LINKED);
     const fresh =
       isNew && !initialForm.bundle?.parentId ? toEditForm(newSub(today, state.settings.defaultMethodId, state.settings.baseCurrency), today) : initialForm;
     setFRaw(fresh);
@@ -82,6 +86,8 @@ export function useEditorDraft({ sub, state, today, onClose }: { sub: Subscripti
     up,
     stop,
     setStop,
+    linked,
+    setLinked,
     basePrice,
     dirty,
     close,

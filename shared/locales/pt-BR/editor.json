@@ -134,14 +134,15 @@
   },
   "more": {
     "title": "Mais opções",
+    "bundle": "Assinaturas vinculadas",
     "intro": "Oferta inicial",
     "bonus": "Período grátis",
     "remind": "Lembrete",
     "links": "Links",
     "tags": "Tags",
     "notes": "Notas",
-    "summary": "Oferta inicial, período grátis, lembrete, links, tags, notas",
-    "summaryLt": "Links, tags, notas"
+    "summary": "Assinaturas vinculadas, oferta inicial, período grátis, lembrete, links, tags, notas",
+    "summaryLt": "Assinaturas vinculadas, links, tags, notas"
   },
   "intro": {
     "has": "Oferta inicial",
@@ -294,6 +295,17 @@
     "mode": "Ciclo",
     "follow": "Segue a principal",
     "independent": "Independente",
-    "followsCycle": "Segue a principal ({cycle})"
+    "followsCycle": "Segue a principal ({cycle})",
+    "children": "Assinaturas vinculadas",
+    "childrenHint": "Benefícios incluídos ou adicionais desta assinatura. Vinculados ao salvar.",
+    "childrenNone": "Nenhuma assinatura vinculada",
+    "addTitle": "Adicionar assinatura vinculada",
+    "editTitle": "Editar assinatura vinculada",
+    "sourceNew": "Nova",
+    "sourceExisting": "Vincular existente",
+    "chooseSub": "Assinatura",
+    "priceHint": "Deixe em 0 para um benefício incluído ou informe o valor para um adicional pago.",
+    "unlink": "Desvincular",
+    "remove": "Remover"
   }
 }

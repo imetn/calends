@@ -277,7 +277,6 @@
   },
   "bundle": {
     "title": "Suscripciones vinculadas ({count})",
-    "add": "Añadir suscripción vinculada",
     "parentMissing": "Falta la principal",
     "parentPeriod": "Periodo de la principal",
     "modeFollow": "Sigue a la principal",

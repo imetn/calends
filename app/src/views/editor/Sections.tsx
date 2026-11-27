@@ -17,10 +17,11 @@ import {
   nextCharge,
   nthCharge,
   pauseDay,
+  perLabel,
   preserveRenewalHistory,
   setSettlement,
 } from '../../../../shared/billing.ts';
-import { allChildrenOf, bundleView, followsParent, isFreeBundlePhase, linkableParents } from '../../../../shared/bundle.ts';
+import { bundleView, followsParent, hasAnyBundleLink, isFreeBundlePhase, linkableParents } from '../../../../shared/bundle.ts';
 import { cnDateFull, flow, money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { REMIND_DAYS, type Contract, type Cycle, type SubStatus, type Subscription } from '../../../../shared/types.ts';
@@ -47,11 +48,11 @@ import type { useEditorFields } from './useEditorFields.ts';
 import { CYCLES, STATUS } from './useEditorFields.ts';
 
 export function BillingFields({ context }: { context: ReturnType<typeof useEditorFields> }) {
-  const { isNew, f, up, state, today, phoneCat, setCustom, cycleKey, catOptions, setNewCat, plans, setPlans } = context;
-  const parents = linkableParents(state.subscriptions, isNew ? undefined : f);
+  const { isNew, f, up, state, today, phoneCat, setCustom, cycleKey, catOptions, setNewCat, plans, setPlans, hasChildren } = context;
+  const parents = hasChildren ? [] : linkableParents(state.subscriptions, isNew ? undefined : f);
   const currentParentId = f.bundle?.parentId ?? '';
   const currentParent = currentParentId ? state.subscriptions.find((x) => x.id === currentParentId) : undefined;
-  const showBundle = !f.proxy && (parents.length > 0 || !!currentParentId);
+  const showBundle = !f.proxy && !hasChildren && (parents.length > 0 || !!currentParentId);
   const freeFollow = isFreeBundlePhase(f) && followsParent(f);
   const parentOptions = [
     { value: '', label: t('editor.bundle.none') },
@@ -289,8 +290,8 @@ export function StatusFields({ context }: { context: ReturnType<typeof useEditor
 }
 
 export function SharingFields({ context }: { context: ReturnType<typeof useEditorFields> }) {
-  const { f, up, state, today, proxyLinked, proxyProfile, setProxyProfile, share, setShare, perHead, val } = context;
-  const allowProxy = !f.bundle?.parentId && allChildrenOf(f.id, state.subscriptions).length === 0;
+  const { f, up, state, today, proxyLinked, proxyProfile, setProxyProfile, share, setShare, perHead, val, hasChildren } = context;
+  const allowProxy = !f.bundle?.parentId && !hasChildren;
   return (
     <Group
       title={t('editor.group.who')}
@@ -433,7 +434,7 @@ function IconField({ f, up }: { f: Subscription; up: (p: Partial<Subscription>) 
 }
 
 export function MoreFields({ context }: { context: ReturnType<typeof useEditorFields> }) {
-  const { isNew, f, up, state, today, val, lt, setTransfer, more } = context;
+  const { isNew, f, up, state, today, val, lt, setTransfer, linkedItems, setBundleSheet, more } = context;
   // 下次扣款日按保存后的样子显示：改了周期或提前天数，这里跟着重算；手动改的直接存成下次扣款日
   const saved = state.subscriptions.find((s) => s.id === f.id);
   const manualDue =
@@ -443,6 +444,44 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
   return (
     more && (
       <>
+        {!f.proxy && !hasAnyBundleLink(f) && (
+          <Group
+            title={t('editor.bundle.children')}
+            foot={t('editor.bundle.childrenHint')}
+            action={
+              <button type="button" className="btn plain" onClick={() => setBundleSheet({})}>
+                <Plus size={14} /> {t('common.add')}
+              </button>
+            }
+          >
+            {linkedItems.length ? (
+              linkedItems.map((item) => (
+                <Cell
+                  key={item.key}
+                  label={
+                    <span className="ed-linked-name">
+                      <SubIcon sub={item.sub} size={22} />
+                      <span>{item.name}</span>
+                    </span>
+                  }
+                  sub={t(item.follow ? 'detail.bundle.modeFollow' : 'detail.bundle.modeIndependent')}
+                  onClick={() => setBundleSheet({ edit: item })}
+                >
+                  {item.free ? (
+                    <span className="badge">{t('list.badge.included')}</span>
+                  ) : (
+                    <span className="num">
+                      {money(item.price, item.currency)}
+                      <small>/{perLabel({ cycle: item.cycle })}</small>
+                    </span>
+                  )}
+                </Cell>
+              ))
+            ) : (
+              <Cell label={<span className="muted">{t('editor.bundle.childrenNone')}</span>} />
+            )}
+          </Group>
+        )}
         {!lt && (
           <>
             <Group title={t('editor.more.intro')}>

@@ -1,9 +1,11 @@
 import type { Subscription } from '../../../../shared/types.ts';
+import { hasAnyBundleLink } from '../../../../shared/bundle.ts';
 
 /** Only fields rendered inside MoreFields affect its summary and initial disclosure. */
-export function editorMoreKeys(f: Subscription, domainCategory = false): string[] {
+export function editorMoreKeys(f: Subscription, domainCategory = false, hasChildren = false): string[] {
   const recurring = f.cycle.unit !== 'lifetime';
   return [
+    !f.proxy && !hasAnyBundleLink(f) && hasChildren && 'editor.more.bundle',
     recurring && f.intro && 'editor.more.intro',
     recurring && f.bonus && 'editor.more.bonus',
     recurring && f.remindDays != null && 'editor.more.remind',
@@ -16,6 +18,6 @@ export function editorMoreKeys(f: Subscription, domainCategory = false): string[
   ].filter(Boolean) as string[];
 }
 
-export function editorMoreOpen(f: Subscription, isNew: boolean, domainCategory = false): boolean {
-  return !isNew && editorMoreKeys(f, domainCategory).length > 0;
+export function editorMoreOpen(f: Subscription, isNew: boolean, domainCategory = false, hasChildren = false): boolean {
+  return !isNew && editorMoreKeys(f, domainCategory, hasChildren).length > 0;
 }

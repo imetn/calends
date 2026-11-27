@@ -260,7 +260,6 @@
   },
   "bundle": {
     "title": "Langganan tertaut ({count})",
-    "add": "Tambah langganan tertaut",
     "parentMissing": "Induk tidak ditemukan",
     "parentPeriod": "Periode langganan utama",
     "modeFollow": "Ikuti utama",

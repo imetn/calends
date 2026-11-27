@@ -260,7 +260,6 @@
   },
   "bundle": {
     "title": "연결된 구독 ({count})",
-    "add": "연결된 구독 추가",
     "parentMissing": "상위 구독 없음",
     "parentPeriod": "상위 구독 결제 기간",
     "modeFollow": "상위 구독 따름",

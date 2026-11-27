@@ -134,14 +134,15 @@
   },
   "more": {
     "title": "Weitere Optionen",
+    "bundle": "Verknüpfte Abos",
     "intro": "Einführungsangebot",
     "bonus": "Gratiszeit",
     "remind": "Erinnerung",
     "links": "Links",
     "tags": "Tags",
     "notes": "Notizen",
-    "summary": "Einführungsangebot, Gratiszeit, Erinnerung, Links, Tags, Notizen",
-    "summaryLt": "Links, Tags, Notizen"
+    "summary": "Verknüpfte Abos, Einführungsangebot, Gratiszeit, Erinnerung, Links, Tags, Notizen",
+    "summaryLt": "Verknüpfte Abos, Links, Tags, Notizen"
   },
   "intro": {
     "has": "Einführungsangebot",
@@ -294,6 +295,17 @@
     "mode": "Zeitplan",
     "follow": "Folgt Hauptabo",
     "independent": "Eigener Zyklus",
-    "followsCycle": "Folgt Hauptabo ({cycle})"
+    "followsCycle": "Folgt Hauptabo ({cycle})",
+    "children": "Verknüpfte Abos",
+    "childrenHint": "Enthaltene Vorteile oder Add-ons dieses Abos. Werden beim Speichern verknüpft.",
+    "childrenNone": "Keine verknüpften Abos",
+    "addTitle": "Verknüpftes Abo hinzufügen",
+    "editTitle": "Verknüpftes Abo bearbeiten",
+    "sourceNew": "Neu",
+    "sourceExisting": "Vorhandenes verknüpfen",
+    "chooseSub": "Abo",
+    "priceHint": "0 für einen kostenlosen Vorteil, sonst einen Preis für ein Add-on angeben.",
+    "unlink": "Verknüpfung lösen",
+    "remove": "Entfernen"
   }
 }

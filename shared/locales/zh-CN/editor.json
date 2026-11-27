@@ -121,14 +121,15 @@
   },
   "more": {
     "title": "更多选项",
+    "bundle": "关联订阅",
     "intro": "首期优惠",
     "bonus": "赠送时长",
     "remind": "提醒",
     "links": "链接",
     "tags": "标签",
     "notes": "备注",
-    "summary": "首期优惠、赠送时长、提醒、链接、标签、备注",
-    "summaryLt": "链接、标签、备注"
+    "summary": "关联订阅、首期优惠、赠送时长、提醒、链接、标签、备注",
+    "summaryLt": "关联订阅、链接、标签、备注"
   },
   "intro": {
     "has": "有首期优惠",
@@ -268,6 +269,17 @@
     "mode": "周期模式",
     "follow": "跟随主订阅",
     "independent": "独立周期",
-    "followsCycle": "跟随主订阅（{cycle}）"
+    "followsCycle": "跟随主订阅（{cycle}）",
+    "children": "关联订阅",
+    "childrenHint": "随本订阅附赠或加购的其他订阅，保存时一并关联。",
+    "childrenNone": "还没有关联订阅",
+    "addTitle": "添加关联订阅",
+    "editTitle": "编辑关联订阅",
+    "sourceNew": "新建",
+    "sourceExisting": "关联已有",
+    "chooseSub": "订阅",
+    "priceHint": "金额为 0 表示免费附赠，填写金额则为付费加购。",
+    "unlink": "解除关联",
+    "remove": "移除"
   }
 }

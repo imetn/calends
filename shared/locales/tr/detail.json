@@ -268,7 +268,6 @@
   },
   "bundle": {
     "title": "Bağlı abonelikler ({count})",
-    "add": "Bağlı abonelik ekle",
     "parentMissing": "Ana abonelik eksik",
     "parentPeriod": "Ana abonelik dönemi",
     "modeFollow": "Ana aboneliği izler",

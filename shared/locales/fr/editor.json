@@ -134,14 +134,15 @@
   },
   "more": {
     "title": "Plus d’options",
+    "bundle": "Abonnements liés",
     "intro": "Offre de lancement",
     "bonus": "Période gratuite",
     "remind": "Rappel",
     "links": "Liens",
     "tags": "Tags",
     "notes": "Notes",
-    "summary": "Offre de lancement, période gratuite, rappel, liens, tags, notes",
-    "summaryLt": "Liens, tags, notes"
+    "summary": "Abonnements liés, offre de lancement, période gratuite, rappel, liens, tags, notes",
+    "summaryLt": "Abonnements liés, liens, tags, notes"
   },
   "intro": {
     "has": "Offre de lancement",
@@ -294,6 +295,17 @@
     "mode": "Rythme",
     "follow": "Suit le principal",
     "independent": "Indépendant",
-    "followsCycle": "Suit le principal ({cycle})"
+    "followsCycle": "Suit le principal ({cycle})",
+    "children": "Abonnements liés",
+    "childrenHint": "Avantages inclus ou options liés à cet abonnement. Liés lors de l’enregistrement.",
+    "childrenNone": "Aucun abonnement lié",
+    "addTitle": "Ajouter un abonnement lié",
+    "editTitle": "Modifier l’abonnement lié",
+    "sourceNew": "Nouveau",
+    "sourceExisting": "Lier un existant",
+    "chooseSub": "Abonnement",
+    "priceHint": "Laissez à 0 pour un avantage inclus, ou saisissez un prix pour une option payante.",
+    "unlink": "Dissocier",
+    "remove": "Retirer"
   }
 }

@@ -1,6 +1,7 @@
 import { readStored, storageKey } from '../../base.ts';
 import type { Subscription } from '../../../../shared/types.ts';
 import { type StopForm } from '../../../../shared/stop-form.ts';
+import type { LinkedPlan } from './linked.ts';
 
 /**
  * 表单草稿：关掉时有改动就存一份，下次打开接着填，不再弹「放弃修改？」。
@@ -10,6 +11,8 @@ export interface Draft {
   form: Subscription;
   basePrice: number;
   stop?: StopForm;
+  /** 本次编辑暂存的关联子订阅变更 */
+  linked?: LinkedPlan;
   /** 打开表单时订阅的样子：和现在不一样说明别处改过，草稿不再适用 */
   base: string;
 }

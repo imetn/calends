@@ -277,7 +277,6 @@
   },
   "bundle": {
     "title": "Assinaturas vinculadas ({count})",
-    "add": "Adicionar assinatura vinculada",
     "parentMissing": "Principal ausente",
     "parentPeriod": "Período da principal",
     "modeFollow": "Segue a principal",

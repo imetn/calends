@@ -1,6 +1,6 @@
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { currentPhase, effectiveStatus, perLabel } from '../../../../shared/billing.ts';
-import { bundleSource, bundleView, childrenOf, displayCycle, followsParent, hasAnyBundleLink, isFreeBundlePhase } from '../../../../shared/bundle.ts';
+import { bundleSource, bundleView, childrenOf, displayCycle, followsParent, isFreeBundlePhase } from '../../../../shared/bundle.ts';
 import { money } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
@@ -8,55 +8,13 @@ import { Panel } from '../../components/DetailKit.tsx';
 import { SubIcon } from '../../components/marks.tsx';
 import { TONE } from './shared.tsx';
 
-/** 父订阅详情的「关联订阅」卡：列出当前或即将关联到它的附赠/加购，并可点击跳转或新增 */
-export function BundleCard({
-  sub,
-  state,
-  today,
-  onOpen,
-  onAddLinked,
-  emptyOnly = false,
-}: {
-  sub: Subscription;
-  state: AppState;
-  today: string;
-  onOpen?: (s: Subscription) => void;
-  onAddLinked?: (parent: Subscription) => void;
-  /** true 时只在没有子订阅时显示轻入口；false 时只在已有子订阅时显示完整卡片 */
-  emptyOnly?: boolean;
-}) {
+/** 父订阅详情的「关联订阅」卡：仅在已有附赠/加购时出现，用于查看与跳转；新增与管理在编辑表单里完成 */
+export function BundleCard({ sub, state, today, onOpen }: { sub: Subscription; state: AppState; today: string; onOpen?: (s: Subscription) => void }) {
   const items = childrenOf(sub.id, state.subscriptions, today);
-  const canBeParent = !sub.proxy && !hasAnyBundleLink(sub);
-
-  if (emptyOnly) {
-    if (items.length > 0 || state.readonly || !canBeParent || !onAddLinked) return null;
-    return (
-      <div data-snapshot-hide="">
-        <Panel className="dt-meters-empty">
-          <button type="button" className="btn plain dt-meters-add" onClick={() => onAddLinked(sub)}>
-            <Plus size={14} /> {t('detail.bundle.add')}
-          </button>
-        </Panel>
-      </div>
-    );
-  }
-
   if (!items.length) return null;
 
   return (
-    <Panel
-      title={t('detail.bundle.title', { count: items.length })}
-      className="dt-bundle"
-      aside={
-        !state.readonly &&
-        canBeParent &&
-        onAddLinked && (
-          <button type="button" className="dt-btn sm dt-add" data-snapshot-hide="" onClick={() => onAddLinked(sub)}>
-            <Plus size={14} /> {t('detail.charges.addShort')}
-          </button>
-        )
-      }
-    >
+    <Panel title={t('detail.bundle.title', { count: items.length })} className="dt-bundle">
       <div className="dt-bundle-list">
         {items.map(({ sub: child, link, phase: cur, upcoming }) => {
           const view = bundleView(child, state.subscriptions);

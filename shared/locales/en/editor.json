@@ -134,14 +134,15 @@
   },
   "more": {
     "title": "More options",
+    "bundle": "Linked subscriptions",
     "intro": "Intro offer",
     "bonus": "Free time",
     "remind": "Reminder",
     "links": "Links",
     "tags": "Tags",
     "notes": "Notes",
-    "summary": "Intro offer, free time, reminder, links, tags, notes",
-    "summaryLt": "Links, tags, notes"
+    "summary": "Linked subscriptions, intro offer, free time, reminder, links, tags, notes",
+    "summaryLt": "Linked subscriptions, links, tags, notes"
   },
   "intro": {
     "has": "Intro offer",
@@ -294,6 +295,17 @@
     "mode": "Schedule",
     "follow": "Follows parent",
     "independent": "Independent",
-    "followsCycle": "Follows parent ({cycle})"
+    "followsCycle": "Follows parent ({cycle})",
+    "children": "Linked subscriptions",
+    "childrenHint": "Perks included with or added on to this subscription. Linked when you save.",
+    "childrenNone": "No linked subscriptions",
+    "addTitle": "Add linked subscription",
+    "editTitle": "Edit linked subscription",
+    "sourceNew": "New",
+    "sourceExisting": "Link existing",
+    "chooseSub": "Subscription",
+    "priceHint": "Leave at 0 for an included perk, or enter a price for a paid add-on.",
+    "unlink": "Unlink",
+    "remove": "Remove"
   }
 }

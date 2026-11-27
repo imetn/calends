@@ -24,14 +24,16 @@ import { linkPerson } from './person-fields.tsx';
 
 import { writeDraft } from './editor/draft.ts';
 import { Form } from './editor/Form.tsx';
+import { applyChildLink, buildLinkedChildSub, unlinkChildSub, validateExistingChildLink } from './editor/linked.ts';
 
 export function Editor({ sub, state, today, onClose }: { sub: Subscription; state: AppState; today: string; onClose: () => void }) {
-  const { isNew, key, restored, priceValid, setPriceValid, historyReset, f, setF, up, stop, setStop, basePrice, dirty, close, reset } = useEditorDraft({
-    sub,
-    state,
-    today,
-    onClose,
-  });
+  const { isNew, key, restored, priceValid, setPriceValid, historyReset, f, setF, up, stop, setStop, linked, setLinked, basePrice, dirty, close, reset } =
+    useEditorDraft({
+      sub,
+      state,
+      today,
+      onClose,
+    });
   const [aiReady, setAiReady] = useState<boolean | null>(cachedAssistantConfigured);
   useEffect(() => {
     if (!isNew) return;
@@ -77,8 +79,48 @@ export function Editor({ sub, state, today, onClose }: { sub: Subscription; stat
         if (px) out = { ...out, proxy: { ...px, forName: px.forName.trim(), personId: link.id } };
         const latest = getState().subscriptions.find((x) => x.id === sub.id);
         const final = mergeEditorSave(sub, out, latest, isNew);
-        await saveSub(final);
-        if (link.after) await savePerson(link.after);
+        // 关联已有子订阅先做历史预检，有冲突时在写入前拦住
+        const curSubs = getState().subscriptions;
+        for (const item of linked.upsert) {
+          if (item.kind !== 'existing') continue;
+          const target = curSubs.find((x) => x.id === item.subId);
+          if (!target) continue;
+          const err = validateExistingChildLink(target, final, item.follow, curSubs, today);
+          if (err) throw new Error(err);
+        }
+        // 先解除要解绑的子订阅，再保存主订阅，最后写入新增/新挂上的子订阅
+        const doneUnlink = new Set<string>();
+        const doneUpsert = new Set<string>();
+        try {
+          for (const childId of linked.unlink) {
+            const cur = getState().subscriptions.find((x) => x.id === childId);
+            if (cur) {
+              const next = unlinkChildSub(cur, final.id, today);
+              if (next !== cur) await saveSub(next);
+            }
+            doneUnlink.add(childId);
+          }
+          await saveSub(final);
+          if (link.after) await savePerson(link.after);
+          for (const item of linked.upsert) {
+            if (item.kind === 'new') {
+              await saveSub(buildLinkedChildSub(item, final, today));
+              doneUpsert.add(item.id);
+            } else {
+              const cur = getState().subscriptions.find((x) => x.id === item.subId);
+              if (cur) await saveSub(applyChildLink(cur, final.id, item.follow, today));
+              doneUpsert.add(item.subId);
+            }
+          }
+        } catch (e) {
+          if (doneUnlink.size || doneUpsert.size) {
+            setLinked((prev) => ({
+              unlink: prev.unlink.filter((id) => !doneUnlink.has(id)),
+              upsert: prev.upsert.filter((x) => !doneUpsert.has(x.kind === 'new' ? x.id : x.subId)),
+            }));
+          }
+          throw e;
+        }
         writeDraft(key, undefined);
         onClose();
       },
@@ -188,6 +230,8 @@ export function Editor({ sub, state, today, onClose }: { sub: Subscription; stat
           today={today}
           stop={stop}
           setStop={setStop}
+          linked={linked}
+          setLinked={setLinked}
           history={!isNew && <ChangePanel key={historyReset} f={f} setF={setF} state={state} today={today} onPriceValidity={setPriceValid} />}
         />
       </div>

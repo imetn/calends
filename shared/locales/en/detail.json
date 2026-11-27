@@ -277,7 +277,6 @@
   },
   "bundle": {
     "title": "Linked subscriptions ({count})",
-    "add": "Add linked subscription",
     "parentMissing": "Parent missing",
     "parentPeriod": "Parent billing period",
     "modeFollow": "Follows parent",

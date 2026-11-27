@@ -129,14 +129,15 @@
   },
   "more": {
     "title": "Tùy chọn khác",
+    "bundle": "Gói liên kết",
     "intro": "Ưu đãi mở đầu",
     "bonus": "Thời gian miễn phí",
     "remind": "Nhắc nhở",
     "links": "Liên kết",
     "tags": "Thẻ",
     "notes": "Ghi chú",
-    "summary": "Ưu đãi mở đầu, thời gian miễn phí, nhắc nhở, liên kết, thẻ, ghi chú",
-    "summaryLt": "Liên kết, thẻ, ghi chú"
+    "summary": "Gói liên kết, ưu đãi mở đầu, thời gian miễn phí, nhắc nhở, liên kết, thẻ, ghi chú",
+    "summaryLt": "Gói liên kết, liên kết, thẻ, ghi chú"
   },
   "intro": {
     "has": "Ưu đãi mở đầu",
@@ -284,6 +285,17 @@
     "mode": "Chu kỳ",
     "follow": "Theo gói chính",
     "independent": "Độc lập",
-    "followsCycle": "Theo gói chính ({cycle})"
+    "followsCycle": "Theo gói chính ({cycle})",
+    "children": "Gói liên kết",
+    "childrenHint": "Quyền lợi đi kèm hoặc mua thêm của gói này. Sẽ liên kết khi lưu.",
+    "childrenNone": "Chưa có gói liên kết",
+    "addTitle": "Thêm gói liên kết",
+    "editTitle": "Sửa gói liên kết",
+    "sourceNew": "Tạo mới",
+    "sourceExisting": "Liên kết gói có sẵn",
+    "chooseSub": "Gói đăng ký",
+    "priceHint": "Để 0 nếu là quyền lợi tặng kèm, hoặc nhập giá nếu mua thêm.",
+    "unlink": "Hủy liên kết",
+    "remove": "Gỡ"
   }
 }

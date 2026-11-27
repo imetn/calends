@@ -260,7 +260,6 @@
   },
   "bundle": {
     "title": "関連サブスクリプション（{count}）",
-    "add": "関連サブスクリプションを追加",
     "parentMissing": "親が見つかりません",
     "parentPeriod": "親の請求期間",
     "modeFollow": "親に連動",

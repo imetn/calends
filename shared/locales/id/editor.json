@@ -129,14 +129,15 @@
   },
   "more": {
     "title": "Opsi lainnya",
+    "bundle": "Langganan tertaut",
     "intro": "Promo awal",
     "bonus": "Waktu gratis",
     "remind": "Pengingat",
     "links": "Tautan",
     "tags": "Tag",
     "notes": "Catatan",
-    "summary": "Promo awal, waktu gratis, pengingat, tautan, tag, catatan",
-    "summaryLt": "Tautan, tag, catatan"
+    "summary": "Langganan tertaut, promo awal, waktu gratis, pengingat, tautan, tag, catatan",
+    "summaryLt": "Langganan tertaut, tautan, tag, catatan"
   },
   "intro": {
     "has": "Promo awal",
@@ -284,6 +285,17 @@
     "mode": "Jadwal",
     "follow": "Ikuti utama",
     "independent": "Mandiri",
-    "followsCycle": "Ikuti utama ({cycle})"
+    "followsCycle": "Ikuti utama ({cycle})",
+    "children": "Langganan tertaut",
+    "childrenHint": "Manfaat termasuk atau tambahan dari langganan ini. Ditautkan saat disimpan.",
+    "childrenNone": "Belum ada langganan tertaut",
+    "addTitle": "Tambah langganan tertaut",
+    "editTitle": "Edit langganan tertaut",
+    "sourceNew": "Baru",
+    "sourceExisting": "Tautkan yang ada",
+    "chooseSub": "Langganan",
+    "priceHint": "Biarkan 0 untuk manfaat gratis, atau isi harga untuk tambahan berbayar.",
+    "unlink": "Lepas tautan",
+    "remove": "Hapus"
   }
 }

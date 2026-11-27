@@ -18,6 +18,9 @@ import { CategorySheet } from '../Categories.tsx';
 import { type StopForm } from '../../../../shared/stop-form.ts';
 
 import { TransferSheet } from '../../components/TransferSheet.tsx';
+import { LinkedSubSheet } from './LinkedSubSheet.tsx';
+import { childrenOf } from '../../../../shared/bundle.ts';
+import type { LinkedChildChange, LinkedChildView, LinkedPlan } from './linked.ts';
 
 import { GENRE_CAT } from './NameField.tsx';
 import { NameField } from './NameField.tsx';
@@ -31,6 +34,8 @@ export function Form({
   f,
   setF,
   up,
+  linked,
+  setLinked,
   state,
   today,
   history,
@@ -41,13 +46,37 @@ export function Form({
   f: Subscription;
   setF: (s: Subscription) => void;
   up: (p: Partial<Subscription>) => void;
+  linked: LinkedPlan;
+  setLinked: (value: LinkedPlan | ((prev: LinkedPlan) => LinkedPlan)) => void;
   state: AppState;
   today: string;
   history?: ReactNode;
 }) {
-  const context = useEditorFields({ isNew, stop, setStop, f, setF, up, state, today, history });
+  const context = useEditorFields({ isNew, stop, setStop, f, setF, up, linked, setLinked, state, today, history });
   const pick = useIconUpload(up);
-  const { method, lt, extras, transfer, setTransfer, more, setMore, newCat, setNewCat, plans, loadPlans } = context;
+  const { method, lt, extras, transfer, setTransfer, bundleSheet, setBundleSheet, more, setMore, newCat, setNewCat, plans, loadPlans } = context;
+  const savedChildren = new Map(childrenOf(f.id, state.subscriptions, today).map((c) => [c.sub.id, c.link.follow !== false]));
+  const applyLinkedUpsert = (change: LinkedChildChange) => {
+    setLinked((prev) => {
+      if (change.kind === 'new') {
+        const rest = prev.upsert.filter((x) => !(x.kind === 'new' && x.id === change.id));
+        return { ...prev, upsert: [...rest, change] };
+      }
+      const unlink = prev.unlink.filter((id) => id !== change.subId);
+      const rest = prev.upsert.filter((x) => !(x.kind === 'existing' && x.subId === change.subId));
+      // 恢复成账本里原有的跟随模式时不再记为改动
+      const sameAsSaved = savedChildren.has(change.subId) && savedChildren.get(change.subId) === change.follow;
+      return { unlink, upsert: sameAsSaved ? rest : [...rest, change] };
+    });
+  };
+  const applyLinkedRemove = (item: LinkedChildView) => {
+    setLinked((prev) => {
+      if (item.kind === 'new') return { ...prev, upsert: prev.upsert.filter((x) => !(x.kind === 'new' && x.id === item.id)) };
+      const upsert = prev.upsert.filter((x) => !(x.kind === 'existing' && x.subId === item.id));
+      if (item.kind === 'existing') return { ...prev, upsert };
+      return { upsert, unlink: prev.unlink.includes(item.id) ? prev.unlink : [...prev.unlink, item.id] };
+    });
+  };
   return (
     <div className="ed">
       {/* 一、是什么：图标 + 名称（输入时联想 App Store）+ 分类 */}
@@ -143,6 +172,19 @@ export function Form({
             setTransfer(null);
           }}
           onClose={() => setTransfer(null)}
+        />
+      )}
+      {bundleSheet && (
+        <LinkedSubSheet
+          parent={f}
+          isNewParent={isNew}
+          state={state}
+          today={today}
+          linked={linked}
+          edit={bundleSheet.edit}
+          onSave={applyLinkedUpsert}
+          onRemove={applyLinkedRemove}
+          onClose={() => setBundleSheet(null)}
         />
       )}
       {newCat && <CategorySheet state={state} onClose={() => setNewCat(false)} onSaved={(name) => up({ category: name })} />}

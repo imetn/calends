@@ -129,14 +129,15 @@
   },
   "more": {
     "title": "추가 옵션",
+    "bundle": "연결된 구독",
     "intro": "프로모션",
     "bonus": "무료 기간",
     "remind": "알림",
     "links": "링크",
     "tags": "태그",
     "notes": "메모",
-    "summary": "프로모션, 무료 기간, 알림, 링크, 태그, 메모",
-    "summaryLt": "링크, 태그, 메모"
+    "summary": "연결된 구독, 프로모션, 무료 기간, 알림, 링크, 태그, 메모",
+    "summaryLt": "연결된 구독, 링크, 태그, 메모"
   },
   "intro": {
     "has": "프로모션",
@@ -284,6 +285,17 @@
     "mode": "주기 방식",
     "follow": "상위 구독 따름",
     "independent": "독립 주기",
-    "followsCycle": "상위 구독 따름 ({cycle})"
+    "followsCycle": "상위 구독 따름 ({cycle})",
+    "children": "연결된 구독",
+    "childrenHint": "이 구독에 포함된 혜택이나 추가 옵션입니다. 저장할 때 함께 연결됩니다.",
+    "childrenNone": "연결된 구독이 없습니다",
+    "addTitle": "연결된 구독 추가",
+    "editTitle": "연결된 구독 편집",
+    "sourceNew": "새로 만들기",
+    "sourceExisting": "기존 구독 연결",
+    "chooseSub": "구독",
+    "priceHint": "0이면 무료 포함 혜택, 금액을 입력하면 유료 추가 옵션으로 등록됩니다.",
+    "unlink": "연결 해제",
+    "remove": "제거"
   }
 }

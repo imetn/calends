@@ -7690,6 +7690,23 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 .ed-id-icon:disabled {
   cursor: wait;
 }
+.ed-id-icon.static {
+  cursor: default;
+}
+.ed-id-icon.static::after {
+  display: none;
+}
+.ed-linked-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ed-linked-name > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 /* 图标 36px，四周透明扩出 3px，点击区 42px（粗指针下不小于 40px） */
 .ed-id-icon::after {
   content: '';

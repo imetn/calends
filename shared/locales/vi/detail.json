@@ -260,7 +260,6 @@
   },
   "bundle": {
     "title": "Gói liên kết ({count})",
-    "add": "Thêm gói liên kết",
     "parentMissing": "Không thấy gói chính",
     "parentPeriod": "Chu kỳ gói chính",
     "modeFollow": "Theo gói chính",

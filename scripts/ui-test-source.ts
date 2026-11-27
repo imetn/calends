@@ -37,6 +37,8 @@ const groups: Record<string, string[]> = {
   'app/src/views/People.tsx': ['app/src/views/People.tsx', 'app/src/views/person-fields.tsx', 'app/src/views/PersonProfile.tsx'],
   'app/src/views/Proxy.tsx': ['app/src/views/proxy/common.tsx', 'app/src/views/Proxy.tsx', 'app/src/views/proxy/sheets.tsx'],
   'app/src/views/Editor.tsx': [
+    'app/src/views/editor/linked.ts',
+    'app/src/views/editor/LinkedSubSheet.tsx',
     'app/src/views/editor/useEditorDraft.ts',
     'app/src/views/editor/save.ts',
     'app/src/views/editor/useEditorFields.ts',

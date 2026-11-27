@@ -134,14 +134,15 @@
   },
   "more": {
     "title": "Más opciones",
+    "bundle": "Suscripciones vinculadas",
     "intro": "Oferta inicial",
     "bonus": "Tiempo gratis",
     "remind": "Recordatorio",
     "links": "Enlaces",
     "tags": "Etiquetas",
     "notes": "Notas",
-    "summary": "Oferta inicial, tiempo gratis, recordatorio, enlaces, etiquetas, notas",
-    "summaryLt": "Enlaces, etiquetas, notas"
+    "summary": "Suscripciones vinculadas, oferta inicial, tiempo gratis, recordatorio, enlaces, etiquetas, notas",
+    "summaryLt": "Suscripciones vinculadas, enlaces, etiquetas, notas"
   },
   "intro": {
     "has": "Oferta inicial",
@@ -294,6 +295,17 @@
     "mode": "Ciclo",
     "follow": "Sigue a la principal",
     "independent": "Independiente",
-    "followsCycle": "Sigue a la principal ({cycle})"
+    "followsCycle": "Sigue a la principal ({cycle})",
+    "children": "Suscripciones vinculadas",
+    "childrenHint": "Beneficios incluidos o complementos de esta suscripción. Se vinculan al guardar.",
+    "childrenNone": "Sin suscripciones vinculadas",
+    "addTitle": "Añadir suscripción vinculada",
+    "editTitle": "Editar suscripción vinculada",
+    "sourceNew": "Nueva",
+    "sourceExisting": "Vincular existente",
+    "chooseSub": "Suscripción",
+    "priceHint": "Déjalo en 0 para un beneficio incluido, o indica un precio si es un complemento.",
+    "unlink": "Desvincular",
+    "remove": "Quitar"
   }
 }

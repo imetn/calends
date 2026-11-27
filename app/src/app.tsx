@@ -645,18 +645,6 @@ function App() {
   const add = () => {
     setEditing(newSub(d, state?.settings.defaultMethodId, state?.settings.baseCurrency));
   };
-  const addLinked = (parent: Subscription) => {
-    if (ro) return;
-    const cur = currentPhase(parent, d);
-    setBackTo(parent.id);
-    setViewId(null);
-    setEditing({
-      ...newSub(d, undefined, cur.currency),
-      price: 0,
-      cycle: { ...cur.cycle },
-      bundle: { parentId: parent.id },
-    });
-  };
   const viewing = state.subscriptions.find((s) => s.id === viewId);
   const mobile = narrow ? mobileOf(state.settings, ro, wideDock) : null;
   // 手机端 AI 入口里的「助手 | 连接」切换
@@ -763,18 +751,7 @@ function App() {
         />
       )}
 
-      {viewing && (
-        <Detail
-          key={viewing.id}
-          sub={viewing}
-          state={state}
-          today={d}
-          onEdit={editFromDetail}
-          onOpen={open}
-          onAddLinked={ro ? undefined : addLinked}
-          onClose={() => setViewId(null)}
-        />
-      )}
+      {viewing && <Detail key={viewing.id} sub={viewing} state={state} today={d} onEdit={editFromDetail} onOpen={open} onClose={() => setViewId(null)} />}
       {editing && (
         <Editor
           key={editing.id}

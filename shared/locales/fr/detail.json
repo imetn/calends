@@ -277,7 +277,6 @@
   },
   "bundle": {
     "title": "Abonnements liés ({count})",
-    "add": "Ajouter un abonnement lié",
     "parentMissing": "Principal introuvable",
     "parentPeriod": "Période de l’abonnement principal",
     "modeFollow": "Suit le principal",

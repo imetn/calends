@@ -134,14 +134,15 @@
   },
   "more": {
     "title": "Diğer seçenekler",
+    "bundle": "Bağlı abonelikler",
     "intro": "Tanıtım teklifi",
     "bonus": "Ücretsiz süre",
     "remind": "Hatırlatma",
     "links": "Bağlantılar",
     "tags": "Etiketler",
     "notes": "Notlar",
-    "summary": "Tanıtım teklifi, ücretsiz süre, hatırlatma, bağlantılar, etiketler, notlar",
-    "summaryLt": "Bağlantılar, etiketler, notlar"
+    "summary": "Bağlı abonelikler, tanıtım teklifi, ücretsiz süre, hatırlatma, bağlantılar, etiketler, notlar",
+    "summaryLt": "Bağlı abonelikler, bağlantılar, etiketler, notlar"
   },
   "intro": {
     "has": "Tanıtım teklifi",
@@ -293,6 +294,17 @@
     "mode": "Dönem",
     "follow": "Ana aboneliği izle",
     "independent": "Bağımsız",
-    "followsCycle": "Ana aboneliği izler ({cycle})"
+    "followsCycle": "Ana aboneliği izler ({cycle})",
+    "children": "Bağlı abonelikler",
+    "childrenHint": "Bu aboneliğe dahil avantajlar veya eklentiler. Kaydederken bağlanır.",
+    "childrenNone": "Bağlı abonelik yok",
+    "addTitle": "Bağlı abonelik ekle",
+    "editTitle": "Bağlı aboneliği düzenle",
+    "sourceNew": "Yeni",
+    "sourceExisting": "Mevcut olanı bağla",
+    "chooseSub": "Abonelik",
+    "priceHint": "Dahil avantaj için 0 bırakın, ücretli eklenti için tutar girin.",
+    "unlink": "Bağlantıyı kaldır",
+    "remove": "Kaldır"
   }
 }

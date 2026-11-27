@@ -250,7 +250,6 @@
   },
   "bundle": {
     "title": "关联订阅（{count}）",
-    "add": "添加关联订阅",
     "parentMissing": "主订阅不存在",
     "parentPeriod": "主订阅周期",
     "modeFollow": "跟随主订阅",

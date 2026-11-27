@@ -2015,3 +2015,12 @@ test('detail FilesCard tiles up to one row without stacking small sets and caps 
   assert.match(manyHtml, /title="2025-01 – 2026-07"/);
   assert.ok(manyHtml.indexOf('data-thumb="doc1"') < manyHtml.indexOf('2026-11-01'));
 });
+
+test('detail BundleCard shows only existing linked subscriptions and exposes no empty add entry', () => {
+  const detail = readFileSync(new URL('views/Detail.tsx', root), 'utf8');
+  const bundleCard = readFileSync(new URL('views/detail/BundleCard.tsx', root), 'utf8');
+  assert.doesNotMatch(detail, /emptyOnly|onAddLinked/);
+  assert.doesNotMatch(bundleCard, /emptyOnly|onAddLinked|detail\.bundle\.add/);
+  const sections = readFileSync(new URL('views/editor/Sections.tsx', root), 'utf8');
+  assert.match(sections, /t\('editor\.bundle\.children'\)/);
+});
