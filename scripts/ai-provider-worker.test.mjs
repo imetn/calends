@@ -223,14 +223,11 @@ test('saveConfig 与 testConfig: 切供应商不复用旧 Key，清除后回到�
 test('反代模型自动探测：裸域名回退 /v1 并返回 resolvedBaseUrl，Anthropic 兼容回退 Bearer，OpenAI 反代走 chat/completions', async () => {
   // 1) 未带 /v1 的反代根地址：/models 返回 404，自动命中 /v1/models
   const seenUrls = [];
-  const res = await fetchProviderModels(
-    { provider: 'custom-openai', apiKey: 'sk-proxy', baseUrl: 'https://relay.example.com' },
-    async (url) => {
-      seenUrls.push(String(url));
-      if (String(url).endsWith('/v1/models')) return Response.json({ data: [{ id: 'my-deepseek' }] });
-      return new Response('<html><title>404 Not Found</title></html>', { status: 404, headers: { 'content-type': 'text/html' } });
-    },
-  );
+  const res = await fetchProviderModels({ provider: 'custom-openai', apiKey: 'sk-proxy', baseUrl: 'https://relay.example.com' }, async (url) => {
+    seenUrls.push(String(url));
+    if (String(url).endsWith('/v1/models')) return Response.json({ data: [{ id: 'my-deepseek' }] });
+    return new Response('<html><title>404 Not Found</title></html>', { status: 404, headers: { 'content-type': 'text/html' } });
+  });
   assert.deepEqual(seenUrls, ['https://relay.example.com/models', 'https://relay.example.com/v1/models']);
   assert.deepEqual(res, { ok: true, models: ['my-deepseek'], resolvedBaseUrl: 'https://relay.example.com/v1' });
 

@@ -6,16 +6,7 @@ import { randomToken, sha256 } from '../auth.ts';
 import type { Env } from '../env.ts';
 import { getKv, getSettings, putKv } from '../store.ts';
 import { TOOLS, toolTitle, connectionInfo } from './mcp-tools.ts';
-import {
-  getPrompt,
-  getSkill,
-  listPrompts,
-  listSkillResources,
-  listSkills,
-  PRIMARY_SKILL_URI,
-  readSkillResource,
-  SKILL_EXTENSION_ID,
-} from './mcp-skills.ts';
+import { getPrompt, getSkill, listPrompts, listSkillResources, listSkills, PRIMARY_SKILL_URI, readSkillResource, SKILL_EXTENSION_ID } from './mcp-skills.ts';
 import { MCP_CONTENT, state, type ToolCtx } from './tool-kit.ts';
 import { t } from '../../shared/i18n.ts';
 

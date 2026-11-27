@@ -144,10 +144,7 @@ test('反代探测候选与宽松模型响应解析：自动补 /v1、Anthropic 
   assert.ok(antCands.some((c) => c.url === 'https://relay.example.com/v1/models' && c.headers.authorization === 'Bearer sk-ant'));
 
   // 宽松解析顶层数组、字符串数组与 { models } 变体
-  assert.deepEqual(parseModelsResponse('openai-compatible', [{ id: 'gpt-4o' }, { model: 'deepseek-chat' }, { id: 'gpt-4o' }]), [
-    'gpt-4o',
-    'deepseek-chat',
-  ]);
+  assert.deepEqual(parseModelsResponse('openai-compatible', [{ id: 'gpt-4o' }, { model: 'deepseek-chat' }, { id: 'gpt-4o' }]), ['gpt-4o', 'deepseek-chat']);
   assert.deepEqual(parseModelsResponse('openai-compatible', ['auto/deepseek-v4.1-flash', 'claude-sonnet-4-5']), [
     'auto/deepseek-v4.1-flash',
     'claude-sonnet-4-5',

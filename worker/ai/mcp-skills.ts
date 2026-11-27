@@ -247,18 +247,7 @@ export function readSkillResource(uri: string): { contents: Array<{ uri: string;
 
 /** Standalone copyable SKILL.md for clients that do not yet auto-load SEP-2640 Skills over MCP */
 export function renderStandaloneSkillMd(): string {
-  return [
-    SKILL_MD.trim(),
-    '',
-    '---',
-    '',
-    SUBSCRIPTIONS_REF_MD.trim(),
-    '',
-    '---',
-    '',
-    CARPOOL_FILES_REF_MD.trim(),
-    '',
-  ].join('\n');
+  return [SKILL_MD.trim(), '', '---', '', SUBSCRIPTIONS_REF_MD.trim(), '', '---', '', CARPOOL_FILES_REF_MD.trim(), ''].join('\n');
 }
 
 export const MCP_PROMPTS: readonly McpPromptMeta[] = [
