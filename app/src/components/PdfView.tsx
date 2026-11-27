@@ -7,7 +7,17 @@ import { Document, Page, pdfjs } from 'react-pdf';
 pdfjs.GlobalWorkerOptions.workerSrc = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
 
 /** 打开 PDF 后在应用内阅读；读不出来时显示 fallback（首页缩略图 + 在新标签页打开） */
-export default function PdfView({ url, placeholder, fallback }: { url: string; placeholder: ReactNode; fallback: ReactNode }) {
+export default function PdfView({
+  url,
+  placeholder,
+  fallback,
+  onPages,
+}: {
+  url: string;
+  placeholder: ReactNode;
+  fallback: ReactNode;
+  onPages?: (pages: number) => void;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [pages, setPages] = useState(0);
@@ -26,7 +36,10 @@ export default function PdfView({ url, placeholder, fallback }: { url: string; p
         file={url}
         loading={placeholder}
         error={placeholder}
-        onLoadSuccess={(doc) => setPages(doc.numPages)}
+        onLoadSuccess={(doc) => {
+          setPages(doc.numPages);
+          onPages?.(doc.numPages);
+        }}
         onLoadError={() => setFailed(true)}
         onSourceError={() => setFailed(true)}
       >

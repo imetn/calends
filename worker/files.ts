@@ -8,7 +8,9 @@ import {
   FILE_MIMES,
   FILES_LIMIT_MB,
   sniffMime,
+  sniffPdfPages,
   THUMB_MAX_BYTES,
+  validPages,
   type FileAnchor,
   type FileKind,
   type FileMeta,
@@ -38,6 +40,7 @@ interface FileRow {
   date: string | null;
   orphan: string | null;
   thumb: number;
+  pages: number | null;
   created_at: string;
 }
 
@@ -78,11 +81,12 @@ function toMeta(r: FileRow): FileMeta {
     ...(r.date ? { date: r.date } : {}),
     ...(orphan ? { orphan } : {}),
     ...(r.thumb ? { thumb: true } : {}),
+    ...(r.pages != null ? { pages: r.pages } : {}),
     createdAt: r.created_at,
   };
 }
 
-const SELECT = 'SELECT id, sha256, name, mime, size, sub_id, kind, date, orphan, thumb, created_at FROM files';
+const SELECT = 'SELECT id, sha256, name, mime, size, sub_id, kind, date, orphan, thumb, pages, created_at FROM files';
 /** 与 loadState 同一个 batch 读取，元数据和账本来自同一个快照 */
 export const listFilesStmt = (env: Env) => env.DB.prepare(`${SELECT} ORDER BY created_at, id`);
 export const rowsToFiles = (rows: FileRow[]) => rows.map(toMeta);
@@ -161,7 +165,11 @@ export async function storeFile(env: Env, body: Uint8Array<ArrayBuffer>, rawName
   }
   // 已有元数据引用的对象不必重写；无人引用的旧对象可能正等着被清理，重写一次刷新它的时间
   if (!known || !(await store.head(blobKey(sha)))) await store.put(blobKey(sha), body, { httpMetadata: { contentType: mime } });
-  const thumb = known ? ((await env.DB.prepare('SELECT MAX(thumb) AS t FROM files WHERE sha256 = ?1').bind(sha).first<{ t: number }>())?.t ?? 0) : 0;
+  const knownMeta = known
+    ? await env.DB.prepare('SELECT MAX(thumb) AS t, MAX(pages) AS p FROM files WHERE sha256 = ?1').bind(sha).first<{ t: number; p: number | null }>()
+    : null;
+  const thumb = knownMeta?.t ?? 0;
+  const pages = mime === 'application/pdf' ? (knownMeta?.p ?? sniffPdfPages(body) ?? null) : null;
   const row: FileRow = {
     id: uid(),
     sha256: sha,
@@ -173,29 +181,47 @@ export async function storeFile(env: Env, body: Uint8Array<ArrayBuffer>, rawName
     date: anchor.kind === 'sub' ? null : anchor.date,
     orphan: null,
     thumb,
+    pages,
     created_at: new Date().toISOString(),
   };
   // 上传期间订阅可能被删掉：订阅仍在才写入，否则文件会挂在不存在的订阅上、也没有来源快照
   const r = await env.DB.prepare(
-    `INSERT INTO files (id, sha256, name, mime, size, sub_id, kind, date, orphan, thumb, created_at)
-     SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL, ?9, ?10 WHERE ?6 IS NULL OR EXISTS (SELECT 1 FROM subscriptions WHERE id = ?6)`,
+    `INSERT INTO files (id, sha256, name, mime, size, sub_id, kind, date, orphan, thumb, pages, created_at)
+     SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL, ?9, ?10, ?11 WHERE ?6 IS NULL OR EXISTS (SELECT 1 FROM subscriptions WHERE id = ?6)`,
   )
-    .bind(row.id, row.sha256, row.name, row.mime, row.size, row.sub_id, row.kind, row.date, row.thumb, row.created_at)
+    .bind(row.id, row.sha256, row.name, row.mime, row.size, row.sub_id, row.kind, row.date, row.thumb, row.pages, row.created_at)
     .run();
   if (!r.meta.changes) throw new HttpError(400, t('core.file.noSub'));
   return toMeta(row);
 }
 
-/** POST /api/files/:id/thumb：浏览器生成的小图，按内容哈希共用 */
+/** POST /api/files/:id/thumb[?pages=N]：浏览器生成的小图，按内容哈希共用；PDF 可顺带写入准确页数 */
 export async function uploadThumb(req: Request, env: Env, id: string): Promise<FileMeta> {
   const store = bucket(env);
   const row = await getRow(env, id);
   const body = await readBody(req, THUMB_MAX_BYTES);
   const mime = sniffMime(body);
   if (!mime || mime === 'application/pdf') throw new HttpError(415, t('core.file.badType'));
+  const rawPages = new URL(req.url).searchParams.get('pages');
+  const pages = row.mime === 'application/pdf' && rawPages != null ? (validPages(Number(rawPages)) ?? null) : null;
   await store.put(thumbKey(row.sha256), body, { httpMetadata: { contentType: mime } });
+  if (pages != null) {
+    await env.DB.prepare('UPDATE files SET thumb = 1, pages = ?2 WHERE sha256 = ?1').bind(row.sha256, pages).run();
+    return toMeta({ ...row, thumb: 1, pages });
+  }
   await env.DB.prepare('UPDATE files SET thumb = 1 WHERE sha256 = ?1 AND thumb = 0').bind(row.sha256).run();
   return toMeta({ ...row, thumb: 1 });
+}
+
+/** POST /api/files/:id/pages {pages}：浏览器端 pdf.js 解析已有 PDF 后补写页数，按内容哈希共用 */
+export async function saveFilePages(req: Request, env: Env, id: string): Promise<FileMeta> {
+  const row = await getRow(env, id);
+  if (row.mime !== 'application/pdf') throw new HttpError(400, t('core.file.badType'));
+  const b = (await readJson(req)) as { pages?: unknown };
+  const pages = validPages(b.pages);
+  if (pages == null) throw new HttpError(400, t('core.file.badType'));
+  await env.DB.prepare('UPDATE files SET pages = ?2 WHERE sha256 = ?1').bind(row.sha256, pages).run();
+  return toMeta({ ...row, pages });
 }
 
 /** 文件响应头：服务端判定的类型、禁止嗅探；图片再加 sandbox，PDF 交给浏览器自带阅读器 */
@@ -352,6 +378,7 @@ export function backupFileRows(raw: unknown, subs: readonly Pick<Subscription, '
       date: linked && anchor.kind !== 'sub' ? anchor.date : null,
       orphan: orphan && typeof orphan === 'object' && typeof orphan.name === 'string' ? JSON.stringify(orphan) : null,
       thumb: 0,
+      pages: x.mime === 'application/pdf' ? (validPages(x.pages) ?? null) : null,
       created_at: created && !Number.isNaN(Date.parse(created)) ? created : new Date().toISOString(),
     });
   }
@@ -363,8 +390,8 @@ export const restoreFilesStmts = (env: Env, rows: FileRow[]) => [
   env.DB.prepare('DELETE FROM files'),
   ...rows.map((r) =>
     env.DB.prepare(
-      'INSERT INTO files (id, sha256, name, mime, size, sub_id, kind, date, orphan, thumb, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, ?10)',
-    ).bind(r.id, r.sha256, r.name, r.mime, r.size, r.sub_id, r.kind, r.date, r.orphan, r.created_at),
+      'INSERT INTO files (id, sha256, name, mime, size, sub_id, kind, date, orphan, thumb, pages, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, ?10, ?11)',
+    ).bind(r.id, r.sha256, r.name, r.mime, r.size, r.sub_id, r.kind, r.date, r.orphan, r.pages, r.created_at),
   ),
 ];
 

@@ -58,6 +58,35 @@ function lay(id: string): CSSProperties {
   return { '--tilt': `${(r(0) * 1.6).toFixed(2)}deg`, '--dx': `${(r(8) * 3).toFixed(1)}px`, '--dy': `${(r(16) * 3).toFixed(1)}px` } as CSSProperties;
 }
 
+/** 列表缩略图叠放张数：图片与单页 PDF 仅 1 张，2 页 PDF 叠 2 张，3 页及以上叠 3 张 */
+export const fileStackCount = (f: Pick<FileMeta, 'mime' | 'pages'>): 1 | 2 | 3 =>
+  f.mime === 'application/pdf' && f.pages && f.pages > 1 ? (f.pages >= 3 ? 3 : 2) : 1;
+
+/** 列表缩略图的小拼贴姿态：按 id 稳定散列出轻微的左右倾角、小幅偏移与多页底纸扇形角 */
+export function rowLay(id: string): CSSProperties {
+  let h = 2166136261;
+  for (const c of id) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  const u = (shift: number) => ((h >>> shift) & 255) / 255;
+  const sign = (h & 1) === 0 ? 1 : -1;
+  const tilt = sign * (1.8 + u(1) * 2.4);
+  const dx = (u(9) - 0.5) * 5;
+  const dy = (u(17) - 0.5) * 3;
+  const s1Tilt = -sign * (3.2 + u(24) * 1.8);
+  const s2Tilt = sign * (4.6 + u(13) * 2.0);
+  return {
+    '--row-tilt': `${tilt.toFixed(2)}deg`,
+    '--row-dx': `${dx.toFixed(1)}px`,
+    '--row-dy': `${dy.toFixed(1)}px`,
+    '--row-s1-tilt': `${s1Tilt.toFixed(2)}deg`,
+    '--row-s2-tilt': `${s2Tilt.toFixed(2)}deg`,
+  } as CSSProperties;
+}
+
 /** 容器的内容宽度；元素换了（空状态与网格切换）会重新观察 */
 function useWidth(): [(el: HTMLElement | null) => void, number] {
   const [el, setEl] = useState<HTMLElement | null>(null);
@@ -643,11 +672,16 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
     const f = x.f;
     const on = pickedRows.includes(f.id);
     const label = labelOf(f, sec);
+    const stack = fileStackCount(f);
     return (
       <div key={f.id} className={`file-row ${on ? 'on' : ''}`}>
         <button type="button" className="file-hit" onClick={() => (pickedRows.length ? toggle(f.id) : setOpen(f.id))} aria-label={title(f)} />
-        <span className="file-row-thumb">
-          <FileThumb f={f} />
+        <span className="file-row-thumb" style={rowLay(f.id)}>
+          {stack >= 3 && <span className="file-row-sheet s2" aria-hidden="true" />}
+          {stack >= 2 && <span className="file-row-sheet s1" aria-hidden="true" />}
+          <span className="file-row-paper">
+            <FileThumb f={f} />
+          </span>
         </span>
         <span className="file-row-text">
           <b title={label.head}>

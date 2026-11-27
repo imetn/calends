@@ -2024,3 +2024,38 @@ test('detail BundleCard shows only existing linked subscriptions and exposes no 
   const sections = readFileSync(new URL('views/editor/Sections.tsx', root), 'utf8');
   assert.match(sections, /t\('editor\.bundle\.children'\)/);
 });
+
+test('Files list-view thumbnail uses deterministic mini-collage tilt and stacks multi-page PDFs into 1/2/3 sheets', () => {
+  const [, , source] = sources.find(([file]) => file === 'views/Files.tsx');
+  const body = source
+    .slice(source.indexOf('export const fileStackCount'), source.indexOf('/** 容器的内容宽度'))
+    .replaceAll('export const ', 'const ')
+    .replaceAll('export function ', 'function ');
+  const compiled = transformSync('Files.tsx', body, { lang: 'ts' });
+  assert.equal(compiled.fatal, false);
+  const { fileStackCount, rowLay } = new Function(`${compiled.code}; return { fileStackCount, rowLay };`)();
+  // 叠放张数：图片与单页 PDF 为 1 张，2 页 PDF 为 2 张，3 页及以上为 3 张
+  assert.equal(fileStackCount({ mime: 'image/png', pages: 5 }), 1);
+  assert.equal(fileStackCount({ mime: 'application/pdf' }), 1);
+  assert.equal(fileStackCount({ mime: 'application/pdf', pages: 1 }), 1);
+  assert.equal(fileStackCount({ mime: 'application/pdf', pages: 2 }), 2);
+  assert.equal(fileStackCount({ mime: 'application/pdf', pages: 3 }), 3);
+  assert.equal(fileStackCount({ mime: 'application/pdf', pages: 12 }), 3);
+  const samples = Array.from({ length: 12 }, (_, i) => rowLay(`file-${i}`));
+  // 同一 id 结果稳定
+  assert.deepEqual(rowLay('file-3'), samples[3]);
+  // 轻微左右倾角（±1.8° ~ ±4.2°），不夸张也不落入 0° 死区
+  const tilts = samples.map((s) => Number.parseFloat(s['--row-tilt']));
+  assert.ok(
+    tilts.every((d) => Math.abs(d) >= 1.8 && Math.abs(d) <= 4.2),
+    `unexpected tilts: ${tilts}`,
+  );
+  assert.ok(tilts.some((d) => d > 0) && tilts.some((d) => d < 0), `expected both left and right tilts: ${tilts}`);
+  const css = readFileSync(new URL('files.css', root), 'utf8');
+  assert.match(css, /\.file-row-thumb\s*\{[^}]*background:\s*none/);
+  assert.match(css, /\.file-row-paper\s*\{[^}]*border-radius:\s*0/);
+  assert.match(css, /\.file-row-paper\s*\{[^}]*rotate\(var\(--row-tilt/);
+  assert.match(css, /\.file-row-sheet\.s1\s*\{/);
+  assert.match(css, /\.file-row-sheet\.s2\s*\{/);
+  assert.match(css, /\.file-row:hover \.file-row-paper\s*\{[^}]*transform:\s*none/);
+});

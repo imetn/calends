@@ -82,5 +82,11 @@ export const MIGRATIONS: Array<{ name: string; statements: string[] }> = [
       "CREATE TRIGGER rev_files_update AFTER UPDATE ON files\nBEGIN\n  UPDATE kv SET value = CAST(value AS INTEGER) + 1 WHERE key = 'rev';\nEND",
       "CREATE TRIGGER rev_files_delete AFTER DELETE ON files\nBEGIN\n  UPDATE kv SET value = CAST(value AS INTEGER) + 1 WHERE key = 'rev';\nEND"
     ]
+  },
+  {
+    "name": "0010_file_pages.sql",
+    "statements": [
+      "-- Store PDF page count so multi-page documents can render stacked previews without re-reading the file.\nALTER TABLE files ADD COLUMN pages INTEGER;\n"
+    ]
   }
 ];

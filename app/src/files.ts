@@ -80,8 +80,8 @@ async function toThumb(source: CanvasImageSource & { width: number; height: numb
   return encodeThumb(canvas);
 }
 
-/** PDF 首页：按需加载 pdf.js，只在上传或补缩略图时用到 */
-async function pdfFirstPage(file: Blob): Promise<Blob | undefined> {
+/** PDF 首页与页数：按需加载 pdf.js，只在上传或补缩略图/页数时用到 */
+async function pdfFirstPage(file: Blob): Promise<{ thumb?: Blob; pages: number } | undefined> {
   const [pdfjs, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')]);
   pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
   const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
@@ -92,7 +92,20 @@ async function pdfFirstPage(file: Blob): Promise<Blob | undefined> {
     const viewport = page.getViewport({ scale: (THUMB_EDGE * 1.5) / Math.max(unit.width, unit.height) });
     const canvas = new OffscreenCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
     await page.render({ canvas: canvas as unknown as HTMLCanvasElement, viewport }).promise;
-    return await toThumb(canvas);
+    return { thumb: await toThumb(canvas), pages: doc.numPages };
+  } finally {
+    void task.destroy();
+  }
+}
+
+/** 仅读取 PDF 页数（已有缩略图的旧 PDF 补写页数用，不渲染画布） */
+async function pdfPageCount(file: Blob): Promise<number | undefined> {
+  const [pdfjs, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')]);
+  pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+  const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+  try {
+    const doc = await task.promise;
+    return doc.numPages;
   } finally {
     void task.destroy();
   }
@@ -100,7 +113,7 @@ async function pdfFirstPage(file: Blob): Promise<Blob | undefined> {
 
 export async function makeThumb(file: Blob, mime: FileMime): Promise<Blob | undefined> {
   try {
-    if (mime === 'application/pdf') return await pdfFirstPage(file);
+    if (mime === 'application/pdf') return (await pdfFirstPage(file))?.thumb;
     const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
     try {
       return await toThumb(bmp);
@@ -124,14 +137,37 @@ function query(a: Partial<FileAnchor>): string {
 
 const putLocal = (f: FileMeta) => patchState((s) => ({ ...s, files: upsertById(s.files ?? [], f) }));
 
+export async function savePdfPages(f: FileMeta, pages: number): Promise<void> {
+  if (f.mime !== 'application/pdf' || !Number.isSafeInteger(pages) || pages < 1 || getState().readonly) return;
+  const next = await api<FileMeta>(`/api/files/${f.id}/pages`, { method: 'POST', body: JSON.stringify({ pages }) });
+  putLocal(next);
+}
+
 async function sendThumb(f: FileMeta, body: Blob): Promise<void> {
+  if (f.mime === 'application/pdf') {
+    let info: { thumb?: Blob; pages: number } | undefined;
+    try {
+      info = await pdfFirstPage(body);
+    } catch {
+      return;
+    }
+    if (!info) return;
+    if (info.thumb) {
+      const q = info.pages >= 1 ? `?pages=${info.pages}` : '';
+      const next = await api<FileMeta>(`/api/files/${f.id}/thumb${q}`, { method: 'POST', body: info.thumb, headers: { 'content-type': info.thumb.type } });
+      putLocal(next);
+    } else if (info.pages >= 1 && f.pages == null) {
+      await savePdfPages(f, info.pages);
+    }
+    return;
+  }
   const thumb = await makeThumb(body, f.mime);
   if (!thumb) return;
   const next = await api<FileMeta>(`/api/files/${f.id}/thumb`, { method: 'POST', body: thumb, headers: { 'content-type': thumb.type } });
   putLocal(next);
 }
 
-/** 上传一个文件：返回新文件；缩略图在后台补上，失败不影响上传结果 */
+/** 上传一个文件：返回新文件；缩略图（及 PDF 页数）在后台补上，失败不影响上传结果 */
 export async function uploadFile(file: File, anchor: Partial<FileAnchor> = {}): Promise<FileMeta> {
   const checked = await checkFile(file);
   if ('error' in checked) throw new Error(checked.error);
@@ -143,6 +179,10 @@ export async function uploadFile(file: File, anchor: Partial<FileAnchor> = {}): 
   });
   putLocal(meta);
   if (!meta.thumb) void sendThumb(meta, body).catch(() => {});
+  else if (meta.mime === 'application/pdf' && meta.pages == null)
+    void pdfPageCount(body)
+      .then((n) => (n ? savePdfPages(meta, n) : undefined))
+      .catch(() => {});
   return meta;
 }
 
@@ -173,6 +213,34 @@ export function ensureThumb(f: FileMeta): void {
     if (!res.ok) return;
     await sendThumb(f, await res.blob());
   })().catch(() => {});
+}
+
+/** 已有缩略图但尚未记录页数的旧 PDF：后台限流并发补统计一次，写库后永久生效 */
+const pagesTried = new Set<string>();
+const pagesQueue: FileMeta[] = [];
+let pagesRunning = 0;
+function pumpPages(): void {
+  while (pagesRunning < 2 && pagesQueue.length) {
+    const f = pagesQueue.shift()!;
+    pagesRunning++;
+    void (async () => {
+      const res = await fetch(fileUrl(f), { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const n = await pdfPageCount(await res.blob());
+      if (n) await savePdfPages(f, n);
+    })()
+      .catch(() => {})
+      .finally(() => {
+        pagesRunning--;
+        pumpPages();
+      });
+  }
+}
+export function ensurePdfPages(f: FileMeta): void {
+  if (f.mime !== 'application/pdf' || !f.thumb || f.pages != null || pagesTried.has(f.id) || getState().readonly) return;
+  pagesTried.add(f.id);
+  pagesQueue.push(f);
+  pumpPages();
 }
 
 export async function relinkFile(f: FileMeta, anchor: FileAnchor): Promise<FileMeta> {

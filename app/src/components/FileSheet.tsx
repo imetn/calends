@@ -6,7 +6,7 @@ import type { Subscription } from '../../../shared/types.ts';
 import { cnDateFull } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState } from '../../../shared/types.ts';
-import { deleteFiles, downloadHref, ensureThumb, fileUrl, isImage, relinkFile, sizeLabel, thumbUrl } from '../files.ts';
+import { deleteFiles, downloadHref, ensurePdfPages, ensureThumb, fileUrl, isImage, relinkFile, savePdfPages, sizeLabel, thumbUrl } from '../files.ts';
 import { toast } from '../toast.ts';
 import { ConfirmButton } from './ConfirmButton.tsx';
 import { Icon } from './icons.tsx';
@@ -33,7 +33,10 @@ export function fileLabel(f: FileMeta, files: readonly FileMeta[], subs: readonl
 /** 卡片与预览里的文件图：有缩略图用缩略图，没有时补生成并先显示类型图标 */
 export function FileThumb({ f, onRatio }: { f: FileMeta; onRatio?: (ratio: number) => void }) {
   const [broken, setBroken] = useState(false);
-  useEffect(() => ensureThumb(f), [f.id, f.thumb]);
+  useEffect(() => {
+    ensureThumb(f);
+    ensurePdfPages(f);
+  }, [f.id, f.thumb, f.pages, f.mime]);
   if (!f.thumb || broken)
     return (
       <span className="file-ph">
@@ -180,7 +183,12 @@ export function FileSheet({
             <ImageZoom key={f.id} src={fileUrl(f)} alt={fileTitle(f, files, state.subscriptions)} />
           ) : (
             <Suspense key={f.id} fallback={<div className="fp-pdf">{pdfPlaceholder}</div>}>
-              <PdfView url={fileUrl(f)} placeholder={pdfPlaceholder} fallback={pdfFallback} />
+              <PdfView
+                url={fileUrl(f)}
+                placeholder={pdfPlaceholder}
+                fallback={pdfFallback}
+                onPages={(n) => f.pages == null && !ro && void savePdfPages(f, n).catch(() => {})}
+              />
             </Suspense>
           )}
           <Group>

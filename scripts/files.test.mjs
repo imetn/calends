@@ -8,7 +8,8 @@ import { openD1 } from '../docker/d1.mjs';
 import { openR2 } from '../docker/r2.mjs';
 import { unzipSync } from 'fflate';
 import { exportAll, parseBackup, restoreAll } from '../worker/backup.ts';
-import { backupWithFiles, deleteFile, patchFile, putBlob, readFile, sweepFiles, uploadFile, zipFiles } from '../worker/files.ts';
+import { backupWithFiles, deleteFile, patchFile, putBlob, readFile, saveFilePages, sweepFiles, uploadFile, uploadThumb, zipFiles } from '../worker/files.ts';
+import { sniffPdfPages } from '../shared/files.ts';
 import { flatten, setLocale } from '../shared/i18n.ts';
 import core from '../shared/locales/zh-CN/core.json' with { type: 'json' };
 import { ensureMigrated } from '../worker/migrate.ts';
@@ -196,4 +197,69 @@ test('备份（含文件）：ZIP 里有备份 JSON 与内容；恢复整表替�
     rmSync(fresh, { recursive: true, force: true });
   }
   assert.ok((await exportAll(env)).files.length > 0);
+});
+
+test('PDF 页数：未压缩 PDF 上传时识别、/thumb 与 /pages 按 sha256 共享，并在备份恢复间保留', async () => {
+  await upsert(env, 'subscriptions', 'sp1', sub('sp1', 'Multi Page Cloud'));
+  await upsert(env, 'subscriptions', 'sp2', sub('sp2', 'Multi Page Mirror'));
+  const makePdf = (pages, extra = '') =>
+    new TextEncoder().encode(`%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Count ${pages} >>\nendobj\n${extra}`);
+  assert.equal(sniffPdfPages(makePdf(1)), 1);
+  assert.equal(sniffPdfPages(makePdf(3)), 3);
+  // 带压缩对象流时保守返回 undefined，交由浏览器端 pdf.js 统计
+  assert.equal(sniffPdfPages(makePdf(3, '3 0 obj\n<< /Type /ObjStm >>\nendobj\n')), undefined);
+
+  const threePage = await up(makePdf(3, '% unique-3p'), '?sub=sp1&date=2026-07-01', 'three.pdf');
+  assert.equal(threePage.pages, 3);
+
+  // 压缩 PDF 上传时 pages 为 undefined，随后由 /thumb?pages=2 或 /pages 补写并按 sha256 共享
+  const compressedBytes = makePdf(2, '3 0 obj\n<< /Type /ObjStm >>\nendobj\n% comp-a');
+  const compA = await up(compressedBytes, '?sub=sp1&date=2026-08-01', 'comp-a.pdf');
+  const compB = await up(compressedBytes, '?sub=sp2&date=2026-08-01', 'comp-b.pdf');
+  assert.equal(compA.pages, undefined);
+  assert.equal(compB.pages, undefined);
+
+  // 合法 1x1 PNG 作为缩略图测试 /thumb?pages=2
+  const png1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=', 'base64');
+  const withThumb = await uploadThumb(new Request(`http://x/api/files/${compA.id}/thumb?pages=2`, { method: 'POST', body: png1x1 }), env, compA.id);
+  assert.equal(withThumb.thumb, true);
+  assert.equal(withThumb.pages, 2);
+  // 同内容另一条记录同步获得页数
+  assert.equal((await loadState(env)).files.find((x) => x.id === compB.id)?.pages, 2);
+
+  // /pages 接口可独立补写并拒绝非法值或非 PDF
+  const updated = await saveFilePages(
+    new Request(`http://x/api/files/${compA.id}/pages`, { method: 'POST', body: JSON.stringify({ pages: 4 }) }),
+    env,
+    compA.id,
+  );
+  assert.equal(updated.pages, 4);
+  assert.equal((await loadState(env)).files.find((x) => x.id === compB.id)?.pages, 4);
+  await assert.rejects(
+    saveFilePages(new Request(`http://x/api/files/${compA.id}/pages`, { method: 'POST', body: JSON.stringify({ pages: 0 }) }), env, compA.id),
+    (e) => e.status === 400,
+  );
+  const img = await up(png1x1, '', 'receipt.png');
+  assert.equal(img.pages, undefined);
+  await assert.rejects(
+    saveFilePages(new Request(`http://x/api/files/${img.id}/pages`, { method: 'POST', body: JSON.stringify({ pages: 2 }) }), env, img.id),
+    (e) => e.status === 400,
+  );
+
+  // 备份导出与恢复完整保留 pages
+  const exported = await exportAll(env);
+  assert.equal(exported.files.find((x) => x.id === threePage.id)?.pages, 3);
+  assert.equal(exported.files.find((x) => x.id === compA.id)?.pages, 4);
+  const fresh = mkdtempSync(join(tmpdir(), 'calends-files-pages-restore-'));
+  const freshEnv = { DB: openD1(join(fresh, 'test.sqlite')), FILES: openR2(join(fresh, 'files')) };
+  try {
+    await ensureMigratedFresh(freshEnv);
+    await restoreAll(freshEnv, parseBackup(exported));
+    const st = await loadState(freshEnv);
+    assert.equal(st.files.find((x) => x.id === threePage.id)?.pages, 3);
+    assert.equal(st.files.find((x) => x.id === compA.id)?.pages, 4);
+    assert.equal(st.files.find((x) => x.id === img.id)?.pages, undefined);
+  } finally {
+    rmSync(fresh, { recursive: true, force: true });
+  }
 });

@@ -41,6 +41,8 @@ export interface FileMeta {
   orphan?: FileOrphan;
   /** 有缩略图 */
   thumb?: boolean;
+  /** PDF 页数（图片无此字段，旧 PDF 尚未统计时缺省） */
+  pages?: number;
   /** 上传时间（ISO） */
   createdAt: string;
 }
@@ -63,6 +65,38 @@ export function sniffMime(b: Uint8Array): FileMime | undefined {
 
 export const FILE_EXT: Record<FileMime, string> = { 'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
 export const isImage = (f: Pick<FileMeta, 'mime'>) => f.mime !== 'application/pdf';
+export const FILE_PAGES_MAX = 9999;
+
+/** 合法的 PDF 页数（1..9999 正整数） */
+export const validPages = (v: unknown): number | undefined =>
+  typeof v === 'number' && Number.isSafeInteger(v) && v >= 1 && v <= FILE_PAGES_MAX ? v : undefined;
+
+/**
+ * 轻量读取未压缩、未加密 PDF 的页数；遇到对象流（/ObjStm）或加密字典时返回 undefined，交由浏览器端 pdf.js 准确统计。
+ * 仅当未压缩的 /Pages 树计数明确可信时才返回，避免误报。
+ */
+export function sniffPdfPages(b: Uint8Array): number | undefined {
+  if (sniffMime(b) !== 'application/pdf') return undefined;
+  let text = '';
+  for (let i = 0; i < b.length; i += 32768) text += String.fromCharCode(...b.subarray(i, Math.min(b.length, i + 32768)));
+  if (/\/(?:ObjStm|Encrypt)\b/.test(text)) return undefined;
+  const counts: number[] = [];
+  const dictRe = /<<(?:[^<>]|<(?!<)|>(?!>))*>>/g;
+  for (const m of text.matchAll(dictRe)) {
+    const dict = m[0];
+    if (!/\/Type\s*\/Pages\b/.test(dict)) continue;
+    const cm = /\/Count\s+(\d+)\b/.exec(dict);
+    if (!cm) continue;
+    const n = validPages(Number(cm[1]));
+    if (n != null) counts.push(n);
+  }
+  if (!counts.length) return undefined;
+  const maxCount = Math.max(...counts);
+  const leafPages = (text.match(/\/Type\s*\/Page(?![A-Za-z0-9_])/g) ?? []).length;
+  // 单一 /Pages 节点或与页面字典数量一致时直接采用；增量修订等歧义情况退回浏览器 pdf.js
+  if (counts.length === 1 || leafPages === maxCount) return maxCount;
+  return undefined;
+}
 
 /** 原始文件名：去掉路径与控制字符，最多 120 个字符；为空时用 file */
 export function cleanFileName(raw: unknown): string {

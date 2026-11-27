@@ -95,6 +95,7 @@ import {
   patchFile,
   putBlob,
   readFile,
+  saveFilePages,
   sweepFiles,
   uploadByTicket,
   uploadFile,
@@ -218,13 +219,15 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   }
   const blob = path.match(/^\/api\/files\/blob\/([a-f0-9]{64})$/);
   if (blob && method === 'PUT') return json(await putBlob(req, env, blob[1]));
-  const fm = path.match(/^\/api\/files\/([\w-]+)(\/thumb)?$/);
+  const fm = path.match(/^\/api\/files\/([\w-]+)(?:\/(thumb|pages))?$/);
   if (fm) {
-    const [, fileId, thumb] = fm;
-    if (method === 'GET') return readFile(env, fileId, { thumb: !!thumb, download: new URL(req.url).searchParams.get('download') === '1' });
-    if (thumb && method === 'POST') return json(await uploadThumb(req, env, fileId));
-    if (!thumb && method === 'PATCH') return json(await patchFile(req, env, fileId));
-    if (!thumb && method === 'DELETE') return (await deleteFile(env, fileId), json({ ok: true }));
+    const [, fileId, sub] = fm;
+    if (method === 'GET' && sub !== 'pages')
+      return readFile(env, fileId, { thumb: sub === 'thumb', download: new URL(req.url).searchParams.get('download') === '1' });
+    if (sub === 'thumb' && method === 'POST') return json(await uploadThumb(req, env, fileId));
+    if (sub === 'pages' && method === 'POST') return json(await saveFilePages(req, env, fileId));
+    if (!sub && method === 'PATCH') return json(await patchFile(req, env, fileId));
+    if (!sub && method === 'DELETE') return (await deleteFile(env, fileId), json({ ok: true }));
   }
   // 已登录：运行方式，设置页据此给出升级方法
   if (path === '/api/runtime' && method === 'GET') return json({ runtime: env.RUNTIME ?? 'cloudflare' });
