@@ -620,6 +620,7 @@ test('issue #11：旧版提前记账不改数据也按提前续费算', async ()
       { date: '2026-10-28', amount: 10 },
     ],
   });
+  assert.equal(nextCharge(sub, '2026-10-28'), '2026-12-02');
   assert.equal(nextCharge(sub, '2026-10-30'), '2026-12-02');
   assert.deepEqual(billingPeriod(sub, '2026-11-15').from, '2026-11-02');
   assert.equal(sub.nextDue, '2026-11-02');

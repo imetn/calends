@@ -1430,13 +1430,19 @@ function rebaseNextDue(s: Subscription, old: string): string | undefined {
   return n < 0 ? undefined : cash(n);
 }
 
+/** 一起记的提前续费在付款当天属于现金流水；只有实付记录的 serviceDate 标记已结清的那期。 */
+function isEarlyPaymentToday(c: Charge, today: string): boolean {
+  if (c.date !== today || !c.serviceDate || isSeparate(c.sub)) return false;
+  return !!c.sub.payments?.some((p) => !p.kind && p.date === today && p.serviceDate === c.serviceDate);
+}
+
 export function renewalDates(s: Subscription, from: string): { nextCharge?: string; serviceExpires?: string; cancelBy?: string } {
   s = migrateRenewalRules(s);
   const phases = phaseSubs(s);
   const span = Math.max(...phases.map((p) => (p.cycle.unit === 'lifetime' ? 0 : cycleDays(p.cycle))));
   const lead = Math.max(0, ...phases.map((p) => p.chargeLeadDays ?? 0));
   const horizon = addDays(from, Math.ceil(span * 2) + lead + 32);
-  const charge = chargesBetween(s, from, horizon, from).find((c) => !c.kind);
+  const charge = chargesBetween(s, from, horizon, from).find((c) => !c.kind && !isEarlyPaymentToday(c, from));
   if (!charge || charge.sub.cycle.unit === 'lifetime') return {};
   const rule = renewalRuleAt(charge.sub, charge.date);
   // 后付费的账单为已用完的一期付款，没有「服务到期」
@@ -1576,7 +1582,7 @@ export function nextCharge(s: Subscription, today: string): string | undefined {
   // 当前阶段是买断时周期天数为无穷，只看一年多内的阶段切换，不能算出无效日期
   const span = cycleDays(s.cycle);
   const horizon = Number.isFinite(span) ? Math.max(396, Math.ceil(span * 2) + 32) : 396;
-  return chargesBetween(s, today, addDays(today, horizon), today).find((c) => !c.kind && !c.paidOn)?.date;
+  return chargesBetween(s, today, addDays(today, horizon), today).find((c) => !c.kind && !c.paidOn && !isEarlyPaymentToday(c, today))?.date;
 }
 
 /** 整段账的起点：开始日前提前付的首期（paysFirstPeriod）也属于扣款记录；挪开始日留下的更早记录不算 */
