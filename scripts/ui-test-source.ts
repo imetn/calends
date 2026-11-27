@@ -55,6 +55,7 @@ const groups: Record<string, string[]> = {
     'app/src/views/Assistant.tsx',
     'app/src/views/AssistantProposal.tsx',
     'app/src/views/AssistantSetup.tsx',
+    'app/src/views/AssistantWidgets.tsx',
   ],
   'app/src/components/ui.tsx': [
     'app/src/components/icons.tsx',

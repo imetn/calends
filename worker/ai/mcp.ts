@@ -6,6 +6,7 @@ import { randomToken, sha256 } from '../auth.ts';
 import type { Env } from '../env.ts';
 import { getKv, getSettings, putKv } from '../store.ts';
 import { TOOLS, toolTitle, connectionInfo } from './mcp-tools.ts';
+import { listMcpAppResources, MCP_APP_EXTENSION_ID, MCP_APP_MIME, readMcpAppResource, toolUiMeta } from './mcp-apps.ts';
 import { getPrompt, getSkill, listPrompts, listSkillResources, listSkills, PRIMARY_SKILL_URI, readSkillResource, SKILL_EXTENSION_ID } from './mcp-skills.ts';
 import { MCP_CONTENT, state, type ToolCtx } from './tool-kit.ts';
 import { t } from '../../shared/i18n.ts';
@@ -105,7 +106,10 @@ async function handle(msg: Rpc, env: Env, token: McpToken): Promise<unknown | un
           tools: { listChanged: false },
           prompts: { listChanged: false },
           resources: { subscribe: false, listChanged: false },
-          extensions: { [SKILL_EXTENSION_ID]: {} },
+          extensions: {
+            [SKILL_EXTENSION_ID]: {},
+            [MCP_APP_EXTENSION_ID]: { mimeTypes: [MCP_APP_MIME] },
+          },
         },
         serverInfo: { name: 'calends', title: t('mcp.serverTitle'), version: '1.0.0' },
         instructions: `${t('mcp.instructions')}\n${MCP_PLAYBOOK}\n${JSON.stringify(connectionInfo(ctx, st, today))}`,
@@ -123,11 +127,11 @@ async function handle(msg: Rpc, env: Env, token: McpToken): Promise<unknown | un
       return ok(msg.id, skill);
     }
     case 'resources/list':
-      return ok(msg.id, { resources: listSkillResources() });
+      return ok(msg.id, { resources: [...listSkillResources(), ...listMcpAppResources()] });
     case 'resources/read': {
       const uri = String(msg.params?.uri ?? '').trim();
       if (!uri) return fail(msg.id, -32602, t('mcp.error.invalidInput', { field: 'uri' }));
-      const res = readSkillResource(uri);
+      const res = readSkillResource(uri) ?? readMcpAppResource(uri);
       if (!res) return fail(msg.id, -32602, t('mcp.error.invalidTarget'));
       return ok(msg.id, res);
     }
@@ -143,13 +147,17 @@ async function handle(msg: Rpc, env: Env, token: McpToken): Promise<unknown | un
     }
     case 'tools/list':
       return ok(msg.id, {
-        tools: TOOLS.filter((x) => token.scope === 'write' || !x.write).map((x) => ({
-          name: x.name,
-          title: toolTitle(x.name),
-          description: x.description,
-          inputSchema: x.inputSchema,
-          annotations: { readOnlyHint: !x.write, destructiveHint: !!x.destructive, idempotentHint: !x.write || !!x.idempotent, openWorldHint: false },
-        })),
+        tools: TOOLS.filter((x) => token.scope === 'write' || !x.write).map((x) => {
+          const uiMeta = toolUiMeta(x.name);
+          return {
+            name: x.name,
+            title: toolTitle(x.name),
+            description: x.description,
+            inputSchema: x.inputSchema,
+            annotations: { readOnlyHint: !x.write, destructiveHint: !!x.destructive, idempotentHint: !x.write || !!x.idempotent, openWorldHint: false },
+            ...(uiMeta ? { _meta: uiMeta } : {}),
+          };
+        }),
       });
     case 'tools/call': {
       const name = String(msg.params?.name ?? '');

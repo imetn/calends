@@ -376,6 +376,7 @@ export function Ai({ state, switcher }: { state: AppState; switcher?: ReactNode 
                 <b className="icon-text">
                   <BookOpen size={15} /> {t('ai.skill.title')}
                   <span className="ai-skill-badge">SEP-2640</span>
+                  <span className="ai-skill-badge">MCP Apps</span>
                 </b>
                 <small>{t('ai.skill.hint')}</small>
                 <code className="ai-skill-uri">{skill.uri}</code>

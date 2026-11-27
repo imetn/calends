@@ -1,12 +1,15 @@
 import { copyParts } from '../components/copy.tsx';
 import type { ReactNode } from 'react';
 import { Fragment } from 'react';
-import { CircleX, Check, CircleAlert, Loader2, Pencil, ReceiptText } from '../components/ui-icons.tsx';
+import { CircleX, Check, CircleAlert, Eye, Loader2, Pencil, ReceiptText } from '../components/ui-icons.tsx';
 import { cycleLabel, collectCurrencyOf } from '../../../shared/billing.ts';
+import { FILE_EXT } from '../../../shared/files.ts';
 import { flow, billLabel, cnDate, money, numericDate } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
+import { FileThumb } from '../components/FileSheet.tsx';
 import { PayBadge, SubIcon } from '../components/marks.tsx';
+import { sizeLabel } from '../files.ts';
 import { catColor } from '../derive.ts';
 import { isDateField, proposalDay } from './assistant-fields.ts';
 import './assistant.css';
@@ -241,13 +244,23 @@ export function Proposal(props: {
   onEdit: () => void;
   onDismiss: () => void;
   onOpen: (id: string) => void;
+  onOpenFile?: (id: string) => void;
 }) {
   const { part, state } = props;
   const a = part.args;
   const create = part.tool === 'create_subscription';
+  const fileMeta = part.tool === 'update_file' ? (state.files ?? []).find((f) => f.id === String(a.file ?? '')) : undefined;
   const sub = part.preview.subscription;
+  const filePreviewTitle = part.tool === 'update_file' ? ((part.preview.before as { title?: string } | undefined)?.title ?? fileMeta?.name) : undefined;
   const name = String(
-    a.name ?? sub?.name ?? (a.set as { name?: string } | undefined)?.name ?? a.method ?? a.person ?? a.category ?? t(`mcp.tool.${part.tool}`),
+    filePreviewTitle ??
+      a.name ??
+      sub?.name ??
+      (a.set as { name?: string } | undefined)?.name ??
+      a.method ??
+      a.person ??
+      a.category ??
+      t(`mcp.tool.${part.tool}`),
   );
   const sib = props.siblings.find((x) => x.tool === 'create_subscription' && x.args.id && x.args.id === sub?.id)?.args;
   const sibling = sib ? { icon: sib.icon ? String(sib.icon) : undefined, url: sib.url ? String(sib.url) : undefined } : undefined;
@@ -323,10 +336,24 @@ export function Proposal(props: {
         <ReceiptText size={12} /> {create ? t('assistant.card.draft') : t(`mcp.tool.${part.tool}`)}
       </div>
       <div className="as-card-head row">
-        <SubIcon sub={icon} size={44} />
+        {fileMeta ? (
+          <button
+            type="button"
+            className="as-card-file-thumb"
+            onClick={() => props.onOpenFile?.(fileMeta.id)}
+            title={t('assistant.widget.previewFile')}
+            aria-label={t('assistant.widget.previewFile')}
+          >
+            <FileThumb f={fileMeta} />
+          </button>
+        ) : (
+          <SubIcon sub={icon} size={44} />
+        )}
         <div className="as-card-id">
           <b className="text-ellipsis">{name}</b>
-          {create && cyc ? (
+          {fileMeta ? (
+            <span>{copyParts(`${FILE_EXT[fileMeta.mime].toUpperCase()}\n${sizeLabel(fileMeta.size)}`)}</span>
+          ) : create && cyc ? (
             <span>
               {freeBundle ? t('list.badge.included') : money(Number(a.price), String(a.currency))}{' '}
               {cycleLabel({ unit: cyc.unit, every: Number(cyc.every ?? 1) })}
@@ -394,6 +421,11 @@ export function Proposal(props: {
                 {t('assistant.card.view')}
               </button>
             )}
+            {fileMeta && props.onOpenFile && (
+              <button className="btn" onClick={() => props.onOpenFile?.(fileMeta.id)}>
+                <Eye size={14} /> {t('assistant.widget.previewFile')}
+              </button>
+            )}
           </>
         ) : gone ? (
           <span className="as-muted icon-text">
@@ -404,6 +436,11 @@ export function Proposal(props: {
             <button className="btn plain" onClick={props.onDismiss} disabled={props.disabled || part.state === 'applying'}>
               {t('assistant.card.dismiss')}
             </button>
+            {fileMeta && props.onOpenFile && (
+              <button className="btn" onClick={() => props.onOpenFile?.(fileMeta.id)} disabled={part.state === 'applying'}>
+                <Eye size={14} /> {t('assistant.widget.previewFile')}
+              </button>
+            )}
             {create && (
               <button className="btn" onClick={props.onEdit} disabled={props.disabled || part.state === 'applying'}>
                 <Pencil size={14} /> {t('assistant.card.edit')}

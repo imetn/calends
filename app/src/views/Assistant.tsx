@@ -2,6 +2,7 @@ import { base } from '../base.ts';
 import { dragScroll } from '../drag-scroll.ts';
 import type { ReactNode } from 'react';
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { currentRoute, go, onRoute } from '../router.ts';
 import {
   ArrowDown,
@@ -16,8 +17,9 @@ import {
   CircleAlert,
   Copy,
   Image as ImageIcon,
-  ImagePlus,
   KeyRound,
+  Loader2,
+  Paperclip,
   RotateCcw,
   Settings2,
   Square,
@@ -26,19 +28,21 @@ import {
   X,
 } from '../components/ui-icons.tsx';
 import { t } from '../../../shared/i18n.ts';
+import { FILE_MAX_BYTES, type FileMeta } from '../../../shared/files.ts';
 import { localTime } from '../../../shared/format.ts';
 import { confirmInOrder, type WriteVerification } from '../../../shared/assistant-result.ts';
 import { modelDisplayName, type AssistantConfigView, type ErrorKind, type ProviderId } from '../../../shared/ai-providers.ts';
 import type { ApiMessage } from '../../../shared/deepseek.ts';
 import { dropOldImages } from '../../../shared/deepseek.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
+import { FileSheet } from '../components/FileSheet.tsx';
 import { IconButton, Toolbar } from '../components/ui.tsx';
 import { api, getState, refresh } from '../store.ts';
 import { copyText, toast } from '../toast.ts';
 import { newSub } from './editor/new-sub.ts';
 import { draftKey, writeDraft } from './editor/draft.ts';
 import { followAfterScroll, headAlignDelta, interrupted } from './assistant-fields.ts';
-import { compressImage as compress, setAssistantConfigured, takeHandoff, type HandoffReturn } from '../handoff.ts';
+import { compressImage as compress, renderPdfToImages, setAssistantConfigured, takeHandoff, type HandoffReturn } from '../handoff.ts';
 import './assistant.css';
 import { Streamdown, type Components } from 'streamdown';
 import type { Part } from './assistant-chat.ts';
@@ -54,6 +58,7 @@ import { stream } from './assistant-chat.ts';
 import { reduce } from './assistant-chat.ts';
 import { Proposal } from './AssistantProposal.tsx';
 import { SetupSheet } from './AssistantSetup.tsx';
+import { ImageLightbox, ToolResultWidget } from './AssistantWidgets.tsx';
 
 /** 对话分隔线上的时间：按设置时区，今年的不写年份 */
 export const fmtWhen = (iso: string, timeZone: string, today: string): string => localTime(iso, timeZone, { today });
@@ -73,6 +78,14 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
   const abort = useRef<AbortController | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [returnTo, setReturnTo] = useState<HandoffReturn | null>(null);
+  const [previewFile, setPreviewFile] = useState<{ id: string; list: FileMeta[] } | null>(null);
+  const [previewImg, setPreviewImg] = useState<string | null>(null);
+  const openFile = (id: string, list?: FileMeta[]) => {
+    const all = state.files ?? [];
+    const target = all.find((f) => f.id === id);
+    if (!target) return;
+    setPreviewFile({ id, list: list?.length ? list : [target] });
+  };
   // 侧栏或底栏再点一次「助手」：回到最新对话，并重新对齐历史分割线
   const [jump, setJump] = useState(0);
   useEffect(
@@ -417,7 +430,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
                 <div className="as-past-head">{fmtWhen(c.createdAt, state.settings.timezone, today)}</div>
                 {c.turns.map((turn) =>
                   turn.role === 'user' ? (
-                    <UserBubble key={turn.id} turn={turn} />
+                    <UserBubble key={turn.id} turn={turn} onPreviewImage={setPreviewImg} />
                   ) : (
                     <BotMessage
                       key={turn.id}
@@ -434,6 +447,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
                         const s = state.subscriptions.find((x) => x.id === id);
                         if (s) onOpen(s);
                       }}
+                      onOpenFile={openFile}
                     />
                   ),
                 )}
@@ -445,7 +459,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
                 ? pastLoaded && <Welcome ready={ready} cfg={cfg} onSetup={() => setSetup(true)} />
                 : chat.turns.map((turn, i) =>
                     turn.role === 'user' ? (
-                      <UserBubble key={turn.id} turn={turn} />
+                      <UserBubble key={turn.id} turn={turn} onPreviewImage={setPreviewImg} />
                     ) : (
                       <BotMessage
                         key={turn.id}
@@ -463,6 +477,7 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
                           const s = state.subscriptions.find((x) => x.id === id);
                           if (s) onOpen(s);
                         }}
+                        onOpenFile={openFile}
                       />
                     ),
                   )}
@@ -485,8 +500,26 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
           onStop={() => abort.current?.abort()}
           onSettings={() => setSetup(true)}
           onReset={empty ? undefined : reset}
+          onPreviewImage={setPreviewImg}
         />
       </div>
+      {previewFile &&
+        createPortal(
+          <FileSheet
+            id={previewFile.id}
+            list={previewFile.list}
+            state={state}
+            today={today}
+            onClose={() => setPreviewFile(null)}
+            onOpenSub={(id) => {
+              setPreviewFile(null);
+              const s = state.subscriptions.find((x) => x.id === id);
+              if (s) onOpen(s);
+            }}
+          />,
+          document.body,
+        )}
+      {previewImg && <ImageLightbox src={previewImg} onClose={() => setPreviewImg(null)} />}
       {setup && (
         <SetupSheet
           cfg={cfg}
@@ -550,13 +583,21 @@ export function Suggestions({ onPick }: { onPick: (s: { text: string; send: bool
 }
 
 // ---------- 消息 ----------
-export function UserBubble({ turn }: { turn: Extract<ChatTurn, { role: 'user' }> }) {
+export function UserBubble({ turn, onPreviewImage }: { turn: Extract<ChatTurn, { role: 'user' }>; onPreviewImage?: (src: string) => void }) {
   return (
     <div className="as-user">
       {turn.images.length > 0 && (
         <div className="as-user-imgs">
           {turn.images.map((src, i) => (
-            <img key={i} src={base(src)} alt="" />
+            <button
+              key={i}
+              type="button"
+              className="as-user-img-btn"
+              onClick={() => onPreviewImage?.(base(src))}
+              aria-label={t('assistant.widget.previewImage')}
+            >
+              <img src={base(src)} alt="" />
+            </button>
           ))}
         </div>
       )}
@@ -582,6 +623,7 @@ export function BotMessage(props: {
   onDismiss: (p: Extract<Part, { kind: 'proposal' }>) => void;
   onApplyAll: () => void;
   onOpen: (id: string) => void;
+  onOpenFile?: (id: string, list?: FileMeta[]) => void;
 }) {
   const { turn } = props;
   const pending = turn.parts.filter((p) => p.kind === 'proposal' && (p.state === 'pending' || p.state === 'error')).length;
@@ -597,7 +639,7 @@ export function BotMessage(props: {
         {turn.parts.map((p, i) => {
           if (p.kind === 'reasoning') return <Reasoning key={i} part={p} live={turn.status === 'streaming' && p.ms == null} />;
           if (p.kind === 'text') return incomplete && i === lastText ? null : <Markdown key={i} text={p.text} streaming={turn.status === 'streaming'} />;
-          if (p.kind === 'tool') return <ToolCard key={`tool:${p.id}`} part={p} />;
+          if (p.kind === 'tool') return <ToolCard key={`tool:${p.id}`} part={p} state={props.state} onOpen={props.onOpen} onOpenFile={props.onOpenFile} />;
           return (
             <Proposal
               key={`proposal:${p.id}`}
@@ -609,6 +651,7 @@ export function BotMessage(props: {
               onEdit={() => props.onEdit(p)}
               onDismiss={() => props.onDismiss(p)}
               onOpen={props.onOpen}
+              onOpenFile={props.onOpenFile}
             />
           );
         })}
@@ -681,8 +724,18 @@ export function Reasoning({ part, live }: { part: Extract<Part, { kind: 'reasoni
   );
 }
 
-/** 工具调用：名称、状态，点开看参数与结果 */
-export function ToolCard({ part }: { part: Extract<Part, { kind: 'tool' }> }) {
+/** 工具调用：名称、状态，点开看参数与结果；只读工具完成时内嵌高可读富卡片 */
+export function ToolCard({
+  part,
+  state,
+  onOpen,
+  onOpenFile,
+}: {
+  part: Extract<Part, { kind: 'tool' }>;
+  state?: AppState;
+  onOpen?: (id: string) => void;
+  onOpenFile?: (id: string, list?: FileMeta[]) => void;
+}) {
   const [open, setOpen] = useState(false);
   // 没有本地化名称的工具（t 原样返回键名）显示工具名本身，不显示 mcp.tool.xxx
   const key = `mcp.tool.${part.name}`;
@@ -702,6 +755,7 @@ export function ToolCard({ part }: { part: Extract<Part, { kind: 'tool' }> }) {
         </span>
         <ChevronDown size={15} className="chev" />
       </button>
+      {state && onOpen && onOpenFile && <ToolResultWidget part={part} state={state} onOpenSub={onOpen} onOpenFile={onOpenFile} />}
       {open && (
         <div className="as-tool-b">
           <small>{t('assistant.tool.input')}</small>
@@ -794,6 +848,7 @@ export function Composer({
   onStop,
   onSettings,
   onReset,
+  onPreviewImage,
   above,
 }: {
   ref: React.Ref<ComposerHandle>;
@@ -806,11 +861,13 @@ export function Composer({
   onSettings: () => void;
   /** 有会话时才有：窄屏工具栏放不下，「新对话」放在输入框里 */
   onReset?: () => void;
+  onPreviewImage?: (src: string) => void;
   /** 输入框上方的内容（建议） */
   above?: ReactNode;
 }) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
+  const [attaching, setAttaching] = useState(false);
   const [drag, setDrag] = useState(false);
   const area = useRef<HTMLTextAreaElement>(null);
   const file = useRef<HTMLInputElement>(null);
@@ -834,18 +891,37 @@ export function Composer({
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
   }, [text]);
 
+  const isSupportedAttachment = (f: File) => f.type.startsWith('image/') || f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
   const addFiles = async (files: Iterable<File>) => {
-    const list = [...files].filter((f) => f.type.startsWith('image/')).slice(0, 8 - images.length);
+    const room = 8 - images.length;
+    if (room <= 0) return;
+    const list = [...files].filter(isSupportedAttachment).slice(0, room);
     if (!list.length) return;
+    setAttaching(true);
     try {
-      const urls = await Promise.all(list.map(compress));
-      setImages((x) => [...x, ...urls].slice(0, 8));
+      const next: string[] = [];
+      for (const f of list) {
+        if (next.length >= room) break;
+        if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+          if (f.size > FILE_MAX_BYTES) {
+            toast(t('core.file.tooLarge'), 'error');
+            continue;
+          }
+          const rendered = await renderPdfToImages(f, Math.min(2, room - next.length));
+          next.push(...rendered.images);
+        } else {
+          next.push(await compress(f));
+        }
+      }
+      if (next.length) setImages((x) => [...x, ...next].slice(0, 8));
     } catch {
       toast(t('assistant.imageFailed'), 'error');
+    } finally {
+      setAttaching(false);
     }
   };
   const submit = () => {
-    if (busy || disabled || (!text.trim() && !images.length)) return;
+    if (busy || disabled || attaching || (!text.trim() && !images.length)) return;
     onSend(text, images);
     setText('');
     setImages([]);
@@ -855,7 +931,7 @@ export function Composer({
     <div
       className={`as-composer ${drag ? 'drag' : ''}`}
       onDragOver={(e) => {
-        if ([...e.dataTransfer.items].some((i) => i.type.startsWith('image/'))) {
+        if ([...e.dataTransfer.items].some((i) => i.type.startsWith('image/') || i.type === 'application/pdf')) {
           e.preventDefault();
           setDrag(true);
         }
@@ -873,7 +949,9 @@ export function Composer({
           <div className="as-atts">
             {images.map((src, i) => (
               <span key={i} className="as-att">
-                <img src={base(src)} alt="" />
+                <button type="button" className="as-att-btn" onClick={() => onPreviewImage?.(base(src))} aria-label={t('assistant.widget.previewImage')}>
+                  <img src={base(src)} alt="" />
+                </button>
                 <IconButton onClick={() => setImages((x) => x.filter((_, k) => k !== i))} aria-label={t('assistant.removeImage')}>
                   <X size={12} />
                 </IconButton>
@@ -889,7 +967,7 @@ export function Composer({
           placeholder={disabled ? t('assistant.placeholderSetup') : t('assistant.placeholder')}
           onChange={(e) => setText(e.target.value)}
           onPaste={(e) => {
-            const files = [...e.clipboardData.files].filter((f) => f.type.startsWith('image/'));
+            const files = [...e.clipboardData.files].filter(isSupportedAttachment);
             if (files.length) {
               e.preventDefault();
               void addFiles(files);
@@ -906,13 +984,23 @@ export function Composer({
           <IconButton
             className="as-icon"
             onClick={() => file.current?.click()}
-            disabled={disabled}
-            title={t('assistant.addImage')}
-            aria-label={t('assistant.addImage')}
+            disabled={disabled || attaching}
+            title={t('assistant.addAttachment')}
+            aria-label={t('assistant.addAttachment')}
           >
-            <ImagePlus size={17} />
+            {attaching ? <Loader2 size={17} className="spin" /> : <Paperclip size={17} />}
           </IconButton>
-          <input ref={file} type="file" accept="image/*" multiple hidden onChange={(e) => e.target.files && void addFiles(e.target.files)} />
+          <input
+            ref={file}
+            type="file"
+            accept="image/*,application/pdf,.pdf"
+            multiple
+            hidden
+            onChange={(e) => {
+              if (e.target.files) void addFiles(e.target.files);
+              e.target.value = '';
+            }}
+          />
           <button className="as-model" onClick={onSettings} title={t('assistant.settings')}>
             {modelDisplayName(provider, model)}
           </button>

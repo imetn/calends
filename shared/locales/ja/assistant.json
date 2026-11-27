@@ -282,5 +282,33 @@
     "partial": "未完了の手順があります",
     "limit": "ツール呼び出しの上限に達しました",
     "review": "下書きはまだ保存されていません。準備できた下書きと未完了の手順を確認してから続行してください。"
+  },
+  "addAttachment": "画像またはPDFを添付",
+  "widget": {
+    "previewImage": "画像をプレビュー",
+    "previewFile": "プレビュー",
+    "collapse": "折りたたむ",
+    "showAll": "すべて表示（{count}件）",
+    "spending": "支出",
+    "overview": "台帳の概要",
+    "mrr": "月額（MRR）",
+    "yearly": "年額",
+    "active": "利用中",
+    "monthReport": "月次レポート",
+    "scopeReport": "スコープ集計",
+    "total": "合計",
+    "paid": "支払済",
+    "upcoming": "予定",
+    "knownTotal": "判明分合計",
+    "charges": "請求件数",
+    "other": "その他",
+    "incompleteFx": "為替未取得あり",
+    "subscriptions": "サブスクリプション",
+    "nextCharge": "次回請求",
+    "plan": "現在のプラン",
+    "carpool": "共有プラン",
+    "pendingDues": "未回収額",
+    "nextCollection": "次回回収",
+    "settled": "精算済"
   }
 }

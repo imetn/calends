@@ -287,5 +287,33 @@
     "partial": "Algumas etapas estão incompletas",
     "limit": "O limite de chamadas de ferramentas foi atingido",
     "review": "Os rascunhos ainda não foram salvos. Revise os rascunhos prontos e as etapas pendentes antes de continuar."
+  },
+  "addAttachment": "Anexar imagem ou PDF",
+  "widget": {
+    "previewImage": "Visualizar imagem",
+    "previewFile": "Visualizar",
+    "collapse": "Mostrar menos",
+    "showAll": "Mostrar todos ({count})",
+    "spending": "Gastos",
+    "overview": "Visão geral",
+    "mrr": "Mensal (MRR)",
+    "yearly": "Anual",
+    "active": "Ativas",
+    "monthReport": "Relatório mensal",
+    "scopeReport": "Relatório filtrado",
+    "total": "Total",
+    "paid": "Pago",
+    "upcoming": "Próximo",
+    "knownTotal": "Total conhecido",
+    "charges": "Cobranças",
+    "other": "Outros",
+    "incompleteFx": "Câmbio incompleto",
+    "subscriptions": "Assinaturas",
+    "nextCharge": "Próxima cobrança",
+    "plan": "Plano atual",
+    "carpool": "Plano compartilhado",
+    "pendingDues": "Pendente",
+    "nextCollection": "Próxima cobrança",
+    "settled": "Quitado"
   }
 }

@@ -287,5 +287,33 @@
     "partial": "Einige Schritte sind noch offen",
     "limit": "Das Limit für Werkzeugaufrufe wurde erreicht",
     "review": "Die Entwürfe wurden noch nicht gespeichert. Prüfe die fertigen Entwürfe und die offenen Schritte, bevor du fortfährst."
+  },
+  "addAttachment": "Bild oder PDF anhängen",
+  "widget": {
+    "previewImage": "Bildvorschau",
+    "previewFile": "Vorschau",
+    "collapse": "Weniger anzeigen",
+    "showAll": "Alle {count} anzeigen",
+    "spending": "Ausgaben",
+    "overview": "Übersicht",
+    "mrr": "Monatlich (MRR)",
+    "yearly": "Jährlich",
+    "active": "Aktiv",
+    "monthReport": "Monatsbericht",
+    "scopeReport": "Bereichsbericht",
+    "total": "Gesamt",
+    "paid": "Bezahlt",
+    "upcoming": "Anstehend",
+    "knownTotal": "Bekannter Gesamtbetrag",
+    "charges": "Abbuchungen",
+    "other": "Sonstiges",
+    "incompleteFx": "Unvollständige Kurse",
+    "subscriptions": "Abonnements",
+    "nextCharge": "Nächste Abbuchung",
+    "plan": "Aktueller Tarif",
+    "carpool": "Geteilter Tarif",
+    "pendingDues": "Offene Beträge",
+    "nextCollection": "Nächster Einzug",
+    "settled": "Beglichen"
   }
 }

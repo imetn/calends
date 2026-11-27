@@ -282,5 +282,33 @@
     "partial": "部分步驟尚未完成",
     "limit": "已達工具呼叫上限",
     "review": "草稿尚未儲存。請檢查已準備的草稿和未完成步驟，再決定如何繼續。"
+  },
+  "addAttachment": "加入圖片或 PDF",
+  "widget": {
+    "previewImage": "預覽圖片",
+    "previewFile": "預覽檔案",
+    "collapse": "收合",
+    "showAll": "展開全部 {count} 項",
+    "spending": "支出統計",
+    "overview": "帳本概覽",
+    "mrr": "月均支出",
+    "yearly": "年化支出",
+    "active": "生效中",
+    "monthReport": "月度報告",
+    "scopeReport": "範圍報告",
+    "total": "合計",
+    "paid": "已付",
+    "upcoming": "待扣",
+    "knownTotal": "已知合計",
+    "charges": "扣款筆數",
+    "other": "其他",
+    "incompleteFx": "匯率不全",
+    "subscriptions": "訂閱清單",
+    "nextCharge": "下次扣款",
+    "plan": "目前方案",
+    "carpool": "合租方案",
+    "pendingDues": "待收金額",
+    "nextCollection": "下次收款",
+    "settled": "已結清"
   }
 }

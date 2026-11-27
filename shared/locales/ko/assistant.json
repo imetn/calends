@@ -282,5 +282,33 @@
     "partial": "일부 단계가 완료되지 않았습니다",
     "limit": "도구 호출 한도에 도달했습니다",
     "review": "초안은 아직 저장되지 않았습니다. 준비된 초안과 미완료 단계를 검토한 뒤 계속하세요."
+  },
+  "addAttachment": "이미지 또는 PDF 첨부",
+  "widget": {
+    "previewImage": "이미지 미리보기",
+    "previewFile": "미리보기",
+    "collapse": "접기",
+    "showAll": "전체 {count}개 보기",
+    "spending": "지출",
+    "overview": "원장 개요",
+    "mrr": "월간(MRR)",
+    "yearly": "연간",
+    "active": "활성",
+    "monthReport": "월간 보고서",
+    "scopeReport": "범위 보고서",
+    "total": "합계",
+    "paid": "결제됨",
+    "upcoming": "예정",
+    "knownTotal": "확인된 합계",
+    "charges": "결제 건수",
+    "other": "기타",
+    "incompleteFx": "환율 누락",
+    "subscriptions": "구독 목록",
+    "nextCharge": "다음 결제",
+    "plan": "현재 요금제",
+    "carpool": "공유 요금제",
+    "pendingDues": "미수금",
+    "nextCollection": "다음 수금",
+    "settled": "정산 완료"
   }
 }

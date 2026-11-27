@@ -282,5 +282,33 @@
     "partial": "Beberapa langkah belum selesai",
     "limit": "Batas panggilan alat tercapai",
     "review": "Draf belum disimpan. Tinjau draf yang siap dan langkah yang belum selesai sebelum melanjutkan."
+  },
+  "addAttachment": "Lampirkan gambar atau PDF",
+  "widget": {
+    "previewImage": "Pratinjau gambar",
+    "previewFile": "Pratinjau",
+    "collapse": "Tampilkan lebih sedikit",
+    "showAll": "Tampilkan semua {count}",
+    "spending": "Pengeluaran",
+    "overview": "Ringkasan buku",
+    "mrr": "Bulanan (MRR)",
+    "yearly": "Tahunan",
+    "active": "Aktif",
+    "monthReport": "Laporan bulanan",
+    "scopeReport": "Laporan cakupan",
+    "total": "Total",
+    "paid": "Dibayar",
+    "upcoming": "Mendatang",
+    "knownTotal": "Total diketahui",
+    "charges": "Tagihan",
+    "other": "Lainnya",
+    "incompleteFx": "Kurs belum lengkap",
+    "subscriptions": "Langganan",
+    "nextCharge": "Tagihan berikutnya",
+    "plan": "Paket saat ini",
+    "carpool": "Paket bersama",
+    "pendingDues": "Tagihan tertunda",
+    "nextCollection": "Penagihan berikutnya",
+    "settled": "Lunas"
   }
 }

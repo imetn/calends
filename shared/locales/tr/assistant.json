@@ -284,5 +284,33 @@
     "partial": "Bazı adımlar tamamlanmadı",
     "limit": "Araç çağrısı sınırına ulaşıldı",
     "review": "Taslaklar henüz kaydedilmedi. Devam etmeden önce hazır taslakları ve tamamlanmamış adımları inceleyin."
+  },
+  "addAttachment": "Görsel veya PDF ekle",
+  "widget": {
+    "previewImage": "Görseli önizle",
+    "previewFile": "Önizle",
+    "collapse": "Daha az göster",
+    "showAll": "Tümünü göster ({count})",
+    "spending": "Harcama",
+    "overview": "Genel bakış",
+    "mrr": "Aylık (MRR)",
+    "yearly": "Yıllık",
+    "active": "Aktif",
+    "monthReport": "Aylık rapor",
+    "scopeReport": "Kapsam raporu",
+    "total": "Toplam",
+    "paid": "Ödenen",
+    "upcoming": "Yaklaşan",
+    "knownTotal": "Bilinen toplam",
+    "charges": "Tahsilat",
+    "other": "Diğer",
+    "incompleteFx": "Eksik kur",
+    "subscriptions": "Abonelikler",
+    "nextCharge": "Sonraki ödeme",
+    "plan": "Mevcut plan",
+    "carpool": "Paylaşımlı plan",
+    "pendingDues": "Bekleyen alacak",
+    "nextCollection": "Sonraki tahsilat",
+    "settled": "Ödendi"
   }
 }

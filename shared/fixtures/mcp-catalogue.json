@@ -767,6 +767,11 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://calends/spending-dashboard.html"
+        }
       }
     },
     {
@@ -841,6 +846,11 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://calends/subscription-card.html"
+        }
       }
     },
     {
@@ -875,6 +885,11 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://calends/subscription-card.html"
+        }
       }
     },
     {
@@ -1036,6 +1051,11 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://calends/spending-dashboard.html"
+        }
       }
     },
     {
@@ -1230,6 +1250,11 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://calends/spending-dashboard.html"
+        }
       }
     },
     {
@@ -3949,6 +3974,11 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://calends/carpool-card.html"
+        }
       }
     },
     {
@@ -4537,6 +4567,11 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://calends/file-viewer.html"
+        }
       }
     },
     {
@@ -4564,6 +4599,11 @@
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://calends/file-viewer.html"
+        }
       }
     },
     {

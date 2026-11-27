@@ -63,6 +63,35 @@ export async function compressImage(file: Blob): Promise<string> {
   return c.toDataURL('image/jpeg', 0.86);
 }
 
+/** 将 PDF 账单/收据的前几页按需渲染为清晰 JPEG data URL，供视觉模型直接识别 */
+export async function renderPdfToImages(file: Blob, maxPages = 2): Promise<{ images: string[]; pages: number }> {
+  const [pdfjs, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')]);
+  pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+  const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+  try {
+    const doc = await task.promise;
+    const take = Math.min(doc.numPages, Math.max(1, maxPages));
+    const images: string[] = [];
+    for (let i = 1; i <= take; i++) {
+      const page = await doc.getPage(i);
+      const unit = page.getViewport({ scale: 1 });
+      const scale = Math.min(2, 1600 / Math.max(unit.width, unit.height));
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvas, viewport }).promise;
+      images.push(canvas.toDataURL('image/jpeg', 0.86));
+    }
+    return { images, pages: doc.numPages };
+  } finally {
+    void task.destroy();
+  }
+}
+
 export function handoff(text: string, images: string[] = [], returnTo?: HandoffReturn) {
   const payload: HandoffPayload = { text, images, ...(returnTo ? { returnTo } : {}) };
   try {

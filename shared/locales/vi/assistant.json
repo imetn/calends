@@ -282,5 +282,33 @@
     "partial": "Một số bước chưa hoàn tất",
     "limit": "Đã đạt giới hạn gọi công cụ",
     "review": "Các bản nháp chưa được lưu. Hãy xem lại bản nháp đã chuẩn bị và các bước chưa hoàn tất trước khi tiếp tục."
+  },
+  "addAttachment": "Đính kèm ảnh hoặc PDF",
+  "widget": {
+    "previewImage": "Xem trước ảnh",
+    "previewFile": "Xem trước",
+    "collapse": "Thu gọn",
+    "showAll": "Hiện tất cả {count}",
+    "spending": "Chi tiêu",
+    "overview": "Tổng quan",
+    "mrr": "Hàng tháng (MRR)",
+    "yearly": "Hàng năm",
+    "active": "Đang dùng",
+    "monthReport": "Báo cáo tháng",
+    "scopeReport": "Báo cáo phạm vi",
+    "total": "Tổng cộng",
+    "paid": "Đã trả",
+    "upcoming": "Sắp tới",
+    "knownTotal": "Tổng đã biết",
+    "charges": "Lần thu",
+    "other": "Khác",
+    "incompleteFx": "Thiếu tỷ giá",
+    "subscriptions": "Đăng ký",
+    "nextCharge": "Lần thu tới",
+    "plan": "Gói hiện tại",
+    "carpool": "Gói dùng chung",
+    "pendingDues": "Còn phải thu",
+    "nextCollection": "Kỳ thu tới",
+    "settled": "Đã thanh toán"
   }
 }

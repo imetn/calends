@@ -287,5 +287,33 @@
     "partial": "Some steps are unfinished",
     "limit": "The tool-call limit was reached",
     "review": "Prepared drafts have not been saved. Review the successful drafts and unfinished steps before continuing."
+  },
+  "addAttachment": "Attach image or PDF",
+  "widget": {
+    "previewImage": "Preview image",
+    "previewFile": "Preview",
+    "collapse": "Show less",
+    "showAll": "Show all {count}",
+    "spending": "Spending",
+    "overview": "Ledger overview",
+    "mrr": "Monthly (MRR)",
+    "yearly": "Yearly",
+    "active": "Active",
+    "monthReport": "Month report",
+    "scopeReport": "Scope report",
+    "total": "Total",
+    "paid": "Paid",
+    "upcoming": "Upcoming",
+    "knownTotal": "Known total",
+    "charges": "Charges",
+    "other": "Other",
+    "incompleteFx": "Incomplete FX",
+    "subscriptions": "Subscriptions",
+    "nextCharge": "Next charge",
+    "plan": "Current plan",
+    "carpool": "Shared plan",
+    "pendingDues": "Pending dues",
+    "nextCollection": "Next collection",
+    "settled": "Settled"
   }
 }

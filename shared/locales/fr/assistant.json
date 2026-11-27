@@ -287,5 +287,33 @@
     "partial": "Certaines étapes sont inachevées",
     "limit": "La limite d’appels aux outils est atteinte",
     "review": "Les brouillons ne sont pas encore enregistrés. Vérifiez les brouillons prêts et les étapes inachevées avant de continuer."
+  },
+  "addAttachment": "Joindre une image ou un PDF",
+  "widget": {
+    "previewImage": "Aperçu de l’image",
+    "previewFile": "Aperçu",
+    "collapse": "Réduire",
+    "showAll": "Tout afficher ({count})",
+    "spending": "Dépenses",
+    "overview": "Vue d’ensemble",
+    "mrr": "Mensuel (MRR)",
+    "yearly": "Annuel",
+    "active": "Actifs",
+    "monthReport": "Rapport mensuel",
+    "scopeReport": "Rapport ciblé",
+    "total": "Total",
+    "paid": "Payé",
+    "upcoming": "À venir",
+    "knownTotal": "Total connu",
+    "charges": "Prélèvements",
+    "other": "Autre",
+    "incompleteFx": "Taux incomplets",
+    "subscriptions": "Abonnements",
+    "nextCharge": "Prochain prélèvement",
+    "plan": "Offre actuelle",
+    "carpool": "Offre partagée",
+    "pendingDues": "Montants dus",
+    "nextCollection": "Prochain recouvrement",
+    "settled": "Soldé"
   }
 }

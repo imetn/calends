@@ -278,5 +278,33 @@
     "partial": "部分步骤尚未完成",
     "limit": "已达到工具调用上限",
     "review": "草稿尚未保存。请检查已准备的草稿和未完成步骤，再决定如何继续。"
+  },
+  "addAttachment": "添加图片或 PDF",
+  "widget": {
+    "previewImage": "预览图片",
+    "previewFile": "预览文件",
+    "collapse": "收起",
+    "showAll": "展开全部 {count} 项",
+    "spending": "支出统计",
+    "overview": "账本概览",
+    "mrr": "月均支出",
+    "yearly": "年化支出",
+    "active": "生效中",
+    "monthReport": "月度报告",
+    "scopeReport": "范围报告",
+    "total": "合计",
+    "paid": "已付",
+    "upcoming": "待扣",
+    "knownTotal": "已知合计",
+    "charges": "扣款笔数",
+    "other": "其他",
+    "incompleteFx": "汇率不全",
+    "subscriptions": "订阅列表",
+    "nextCharge": "下次扣款",
+    "plan": "当前方案",
+    "carpool": "合租车队",
+    "pendingDues": "待收金额",
+    "nextCollection": "下次收款",
+    "settled": "已结清"
   }
 }

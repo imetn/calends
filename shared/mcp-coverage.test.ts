@@ -2649,9 +2649,10 @@ test('Skills over MCP (SEP-2640): skills/list, skills/get, resources/read digest
   const fetched = await f.rpc('skills/get', { uri: entry.uri }, f.read);
   assert.deepEqual(fetched, entry);
 
-  // Every declared resource is readable via resources/read and matches exact UTF-8 byte size + sha256 digest
+  // Every declared skill resource is readable via resources/read and matches exact UTF-8 byte size + sha256 digest
   const resList = await f.rpc('resources/list', {}, f.read);
-  assert.equal(resList.resources.length, entry.resources.length);
+  const skillResources = (resList.resources as Array<{ uri: string }>).filter((r) => r.uri.startsWith('skill://'));
+  assert.equal(skillResources.length, entry.resources.length);
   const enc = new TextEncoder();
   for (const ref of entry.resources) {
     const read = await f.rpc('resources/read', { uri: ref.uri }, f.read);
@@ -2674,4 +2675,45 @@ test('Skills over MCP (SEP-2640): skills/list, skills/get, resources/read digest
   // DELETE /mcp returns 204 for stateless session cleanup compatibility
   const delRes = await mcp(new Request('https://fictional.invalid/mcp', { method: 'DELETE' }), f.env);
   assert.equal(delRes.status, 204);
+});
+
+test('MCP Apps (io.modelcontextprotocol/ui) advertise capabilities, tool _meta.ui links and self-contained ui:// HTML views', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const init = await f.rpc('initialize', { protocolVersion: '2025-06-18' }, f.read);
+  assert.deepEqual(init.capabilities.extensions['io.modelcontextprotocol/ui'], {
+    mimeTypes: ['text/html;profile=mcp-app'],
+  });
+
+  const listedTools = (await f.rpc('tools/list', {}, f.read)).tools as Array<Record<string, unknown> & { name: string }>;
+  const byName = new Map(listedTools.map((x) => [x.name, x]));
+  const uiOf = (entry?: Record<string, unknown>) => (entry?.['_meta'] as { ui?: { resourceUri?: string; csp?: unknown } } | undefined)?.ui;
+  assert.equal(uiOf(byName.get('list_files'))?.resourceUri, 'ui://calends/file-viewer.html');
+  assert.equal(uiOf(byName.get('get_file'))?.resourceUri, 'ui://calends/file-viewer.html');
+  assert.equal(uiOf(byName.get('get_overview'))?.resourceUri, 'ui://calends/spending-dashboard.html');
+  assert.equal(uiOf(byName.get('spending_stats'))?.resourceUri, 'ui://calends/spending-dashboard.html');
+  assert.equal(uiOf(byName.get('get_insights'))?.resourceUri, 'ui://calends/spending-dashboard.html');
+  assert.equal(uiOf(byName.get('list_subscriptions'))?.resourceUri, 'ui://calends/subscription-card.html');
+  assert.equal(uiOf(byName.get('get_subscription'))?.resourceUri, 'ui://calends/subscription-card.html');
+  assert.equal(uiOf(byName.get('get_carpool'))?.resourceUri, 'ui://calends/carpool-card.html');
+
+  const resList = (await f.rpc('resources/list', {}, f.read)).resources as Array<Record<string, unknown> & { uri: string; mimeType: string }>;
+  const uiResources = resList.filter((r) => r.uri.startsWith('ui://'));
+  assert.equal(uiResources.length, 4);
+  for (const r of uiResources) {
+    assert.equal(r.mimeType, 'text/html;profile=mcp-app');
+    assert.deepEqual(uiOf(r)?.csp, { connectDomains: [], resourceDomains: [] });
+    const read = await f.rpc('resources/read', { uri: r.uri }, f.read);
+    assert.equal(read.contents.length, 1);
+    assert.equal(read.contents[0].mimeType, 'text/html;profile=mcp-app');
+    const html = String(read.contents[0].text);
+    assert.match(html, /^<!doctype html>/i);
+    assert.match(html, /ui\/initialize/);
+    assert.match(html, /ui\/notifications\/initialized/);
+    assert.match(html, /ui\/notifications\/tool-result/);
+    assert.match(html, /ui\/notifications\/size-changed/);
+    // Self-contained: no external script or stylesheet URLs
+    assert.doesNotMatch(html, /<script[^>]+src=/i);
+    assert.doesNotMatch(html, /<link[^>]+href=/i);
+  }
 });

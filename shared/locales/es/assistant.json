@@ -287,5 +287,33 @@
     "partial": "Quedan pasos sin completar",
     "limit": "Se alcanzó el límite de llamadas a herramientas",
     "review": "Los borradores aún no se han guardado. Revisa los borradores preparados y los pasos pendientes antes de continuar."
+  },
+  "addAttachment": "Adjuntar imagen o PDF",
+  "widget": {
+    "previewImage": "Vista previa de imagen",
+    "previewFile": "Vista previa",
+    "collapse": "Mostrar menos",
+    "showAll": "Mostrar los {count}",
+    "spending": "Gastos",
+    "overview": "Resumen",
+    "mrr": "Mensual (MRR)",
+    "yearly": "Anual",
+    "active": "Activas",
+    "monthReport": "Informe mensual",
+    "scopeReport": "Informe filtrado",
+    "total": "Total",
+    "paid": "Pagado",
+    "upcoming": "Próximo",
+    "knownTotal": "Total conocido",
+    "charges": "Cargos",
+    "other": "Otros",
+    "incompleteFx": "Cambio incompleto",
+    "subscriptions": "Suscripciones",
+    "nextCharge": "Próximo cargo",
+    "plan": "Plan actual",
+    "carpool": "Plan compartido",
+    "pendingDues": "Pendiente",
+    "nextCollection": "Próximo cobro",
+    "settled": "Al día"
   }
 }
