@@ -4,6 +4,10 @@
     "one": "{count} file\n{size}",
     "other": "{count} files\n{size}"
   },
+  "count": {
+    "one": "{count} file",
+    "other": "{count} files"
+  },
   "upload": "Upload",
   "tab": {
     "pending": "Unlinked",

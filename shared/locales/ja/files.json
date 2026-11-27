@@ -1,6 +1,7 @@
 {
   "title": "ファイル",
   "summary": "{count} 件\n{size}",
+  "count": "{count} 件",
   "upload": "アップロード",
   "tab": {
     "pending": "未リンク",

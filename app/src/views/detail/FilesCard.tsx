@@ -1,7 +1,7 @@
-// 订阅详情的「文件」卡：有文件时才出现，列出这个订阅的全部文件；点开看详情，可拖文件进详情上传为资料。
+// 订阅详情的「文件」卡：有文件时才出现。挂在扣款、合同期上的文件同类多于一份时叠成一摞（点开可左右翻看），其余逐个列出；可拖文件进详情上传为资料。
 import { createPortal } from 'react-dom';
 import { useState } from 'react';
-import { FILE_EXT, filesOf } from '../../../../shared/files.ts';
+import { FILE_EXT, filesOf, type FileMeta } from '../../../../shared/files.ts';
 import { t } from '../../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 import { Panel } from '../../components/DetailKit.tsx';
@@ -13,7 +13,19 @@ import { Icon } from '../../components/icons.tsx';
 import { Cell, Group } from '../../components/ui.tsx';
 import { useStore } from '../../store.ts';
 
+/** 一摞文件覆盖的月份：同月只写一个 */
+function span(g: FileMeta[]) {
+  const months = g
+    .map((f) => (f.date ?? '').slice(0, 7))
+    .filter(Boolean)
+    .sort();
+  const [a, b] = [months[0], months.at(-1)];
+  return !a ? '' : a === b ? a : `${a} – ${b}`;
+}
+
 /** 能不能往这个订阅上传：只读、没启用存储时不行 */
+const STACKED = ['charge', 'contract'] as const;
+
 export const canAttach = (state: AppState) => !state.readonly && state.filesEnabled !== false;
 
 export function FilesCard({
@@ -33,8 +45,11 @@ export function FilesCard({
 }) {
   const all = state.files ?? [];
   const list = filesOf(all, sub.id);
-  const [open, setOpen] = useState<string>();
+  const [open, setOpen] = useState<{ id: string; group: FileMeta['kind'] | 'loose' }>();
   const can = canAttach(state);
+  // 扣款凭证、合同常常每期一份，逐个列出会铺满详情：同类多于一份时叠成一摞
+  const stacks = STACKED.map((kind) => list.filter((f) => f.kind === kind)).filter((g) => g.length > 1);
+  const loose = list.filter((f) => !stacks.some((g) => g.includes(f)));
   return (
     <>
       {(list.length > 0 || pending.length > 0) && (
@@ -48,10 +63,30 @@ export function FilesCard({
                 </span>
               </div>
             ))}
-            {list.map((f) => {
+            {stacks.map((g) => (
+              <button key={g[0].kind} type="button" className="dt-file dt-file-stack" onClick={() => setOpen({ id: g[0].id, group: g[0].kind })}>
+                <span className="dt-file-pile">
+                  {g.slice(0, 3).map((f) => (
+                    <span key={f.id} className="dt-file-thumb">
+                      <FileThumb f={f} />
+                    </span>
+                  ))}
+                </span>
+                <span className="dt-file-text">
+                  <b>
+                    {t(`files.kind.${g[0].kind!}`)}
+                    <span className="dt-file-count">{t('files.count', { count: g.length })}</span>
+                  </b>
+                  <span className="file-meta">
+                    <span>{span(g)}</span>
+                  </span>
+                </span>
+              </button>
+            ))}
+            {loose.map((f) => {
               const label = fileLabel(f, all, state.subscriptions);
               return (
-                <button key={f.id} type="button" className="dt-file" onClick={() => setOpen(f.id)}>
+                <button key={f.id} type="button" className="dt-file" onClick={() => setOpen({ id: f.id, group: 'loose' })}>
                   <span className="dt-file-thumb">
                     <FileThumb f={f} />
                   </span>
@@ -72,8 +107,8 @@ export function FilesCard({
       {open &&
         createPortal(
           <FileSheet
-            id={open}
-            list={list}
+            id={open.id}
+            list={open.group === 'loose' ? loose : (stacks.find((g) => g[0].kind === open.group) ?? list)}
             state={state}
             today={today}
             onClose={() => setOpen(undefined)}

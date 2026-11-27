@@ -4,6 +4,10 @@
     "one": "{count} archivo\n{size}",
     "other": "{count} archivos\n{size}"
   },
+  "count": {
+    "one": "{count} archivo",
+    "other": "{count} archivos"
+  },
   "upload": "Subir",
   "tab": {
     "pending": "Sin vincular",

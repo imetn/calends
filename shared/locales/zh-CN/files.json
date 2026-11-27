@@ -1,6 +1,7 @@
 {
   "title": "文件",
   "summary": "{count} 个文件\n{size}",
+  "count": "{count} 个文件",
   "upload": "上传",
   "tab": {
     "pending": "待关联",

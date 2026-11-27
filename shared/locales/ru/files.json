@@ -6,6 +6,12 @@
     "many": "{count} файлов\n{size}",
     "other": "{count} файла\n{size}"
   },
+  "count": {
+    "one": "{count} файл",
+    "few": "{count} файла",
+    "many": "{count} файлов",
+    "other": "{count} файла"
+  },
   "upload": "Загрузить",
   "tab": {
     "pending": "Без привязки",

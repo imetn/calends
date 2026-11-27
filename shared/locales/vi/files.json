@@ -1,6 +1,7 @@
 {
   "title": "Tệp",
   "summary": "{count} tệp\n{size}",
+  "count": "{count} tệp",
   "upload": "Tải lên",
   "tab": {
     "pending": "Chưa liên kết",

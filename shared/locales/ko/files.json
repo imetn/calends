@@ -1,6 +1,7 @@
 {
   "title": "파일",
   "summary": "파일 {count}개\n{size}",
+  "count": "파일 {count}개",
   "upload": "업로드",
   "tab": {
     "pending": "연결 안 됨",

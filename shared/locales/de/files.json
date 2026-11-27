@@ -4,6 +4,10 @@
     "one": "{count} Datei\n{size}",
     "other": "{count} Dateien\n{size}"
   },
+  "count": {
+    "one": "{count} Datei",
+    "other": "{count} Dateien"
+  },
   "upload": "Hochladen",
   "tab": {
     "pending": "Nicht verknüpft",

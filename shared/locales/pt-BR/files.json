@@ -4,6 +4,10 @@
     "one": "{count} arquivo\n{size}",
     "other": "{count} arquivos\n{size}"
   },
+  "count": {
+    "one": "{count} arquivo",
+    "other": "{count} arquivos"
+  },
   "upload": "Enviar",
   "tab": {
     "pending": "Sem vínculo",

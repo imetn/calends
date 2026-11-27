@@ -1,6 +1,7 @@
 {
   "title": "Dosyalar",
   "summary": "{count} dosya\n{size}",
+  "count": "{count} dosya",
   "upload": "Yükle",
   "tab": {
     "pending": "Bağlantısız",

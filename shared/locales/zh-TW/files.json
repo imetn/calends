@@ -1,6 +1,7 @@
 {
   "title": "檔案",
   "summary": "{count} 個檔案\n{size}",
+  "count": "{count} 個檔案",
   "upload": "上傳",
   "tab": {
     "pending": "待關聯",

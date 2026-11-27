@@ -4,6 +4,10 @@
     "one": "{count} fichier\n{size}",
     "other": "{count} fichiers\n{size}"
   },
+  "count": {
+    "one": "{count} fichier",
+    "other": "{count} fichiers"
+  },
   "upload": "Importer",
   "tab": {
     "pending": "Non liés",

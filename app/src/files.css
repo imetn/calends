@@ -838,3 +838,48 @@ button.dt-file:focus-visible {
     min-width: 0;
   }
 }
+
+/* 文件卡里的一摞：最多三张缩略图错开叠放，最新的在最前 */
+.dt-file-pile {
+  position: relative;
+  flex-shrink: 0;
+  width: 68px;
+  height: 42px;
+}
+.dt-file-pile .dt-file-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-shadow: 0 0 0 var(--hairline) var(--line);
+}
+.dt-file-pile .dt-file-thumb:nth-child(1) {
+  z-index: 3;
+}
+.dt-file-pile .dt-file-thumb:nth-child(2) {
+  z-index: 2;
+  transform: translateX(6px) scale(0.92);
+  transform-origin: right center;
+}
+.dt-file-pile .dt-file-thumb:nth-child(3) {
+  z-index: 1;
+  transform: translateX(12px) scale(0.84);
+  transform-origin: right center;
+}
+.dt-file-text .file-meta {
+  min-width: 0;
+}
+.dt-file-text .file-meta > span {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.dt-file-text .file-meta > span:last-child {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dt-file-count {
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--label-2);
+}

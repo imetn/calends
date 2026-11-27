@@ -1,6 +1,7 @@
 {
   "title": "File",
   "summary": "{count} file\n{size}",
+  "count": "{count} file",
   "upload": "Unggah",
   "tab": {
     "pending": "Belum ditautkan",
