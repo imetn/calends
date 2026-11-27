@@ -126,7 +126,7 @@ export function ChangePanel({
     setMode(m);
     // 生效日要晚于当前阶段的开始日：今天就开始的新订阅，默认放到下次续费（或第二天）
     const lastStart = phaseSubs(f).pop()!.start;
-    setDate(today > lastStart ? today : (nextCharge(f, addDays(lastStart, 1)) ?? addDays(lastStart, 1)));
+    setDate(today > lastStart ? today : (nextCharge(f, addDays(lastStart, 1), false) ?? addDays(lastStart, 1)));
     setPrice(m === 'price' ? '' : String(f.price));
     setCurrency(f.currency);
     setMethodId(f.methodId ?? '');
@@ -142,7 +142,7 @@ export function ChangePanel({
   /** 旧的默认用到哪天：切换日之后它下一次扣款的前一天（已付到那天；结束日含当天，填扣款日会再扣一期），没有就用满一个月 */
   const paidThrough = (at: string) => {
     const last = phaseSubs(f).pop()!;
-    return addDays(nextCharge(last, addDays(at, 2)) ?? addMonths(at, 1), -1);
+    return addDays(nextCharge(last, addDays(at, 2), false) ?? addMonths(at, 1), -1);
   };
   const toggleKeep = (on: boolean) => {
     setKeep(on);

@@ -1563,8 +1563,9 @@ export function reconcileRenewalRules(previous: Subscription | undefined, next: 
   };
 }
 
-/** 今天及以后的第一次扣款；今天扣款的仍算下次扣款，界面、MCP 与提醒都传今天 */
-export function nextCharge(s: Subscription, today: string): string | undefined {
+/** 今天及以后的第一次扣款；今天该扣的仍算下次扣款，今天已记的付款不算。界面、MCP 与提醒都传今天；
+ * 按某天起的排期推算（第二个参数不是今天）时传 asOf = false，那天记下的付款照样算一笔 */
+export function nextCharge(s: Subscription, today: string, asOf = true): string | undefined {
   if (!s.phases?.length && s.cycle.unit === 'lifetime') {
     if (isFreeBundlePhase(s)) return undefined;
     if (s.bundleAvail && !availCoversDay(s.bundleAvail, s.start)) return undefined;
@@ -1576,7 +1577,9 @@ export function nextCharge(s: Subscription, today: string): string | undefined {
   // 当前阶段是买断时周期天数为无穷，只看一年多内的阶段切换，不能算出无效日期
   const span = cycleDays(s.cycle);
   const horizon = Number.isFinite(span) ? Math.max(396, Math.ceil(span * 2) + 32) : 396;
-  return chargesBetween(s, today, addDays(today, horizon), today).find((c) => !c.kind && !c.paidOn)?.date;
+  // 今天已经记下的付款是已扣的钱，不是下一笔；今天该扣而没记（推算、待缴）的仍算今天
+  const paidToday = (c: Charge) => asOf && c.date === today && !c.unpaid && !!c.sub.payments?.some((p) => !p.kind && p.date === today);
+  return chargesBetween(s, today, addDays(today, horizon), today).find((c) => !c.kind && !c.paidOn && !paidToday(c))?.date;
 }
 
 /** 整段账的起点：开始日前提前付的首期（paysFirstPeriod）也属于扣款记录；挪开始日留下的更早记录不算 */

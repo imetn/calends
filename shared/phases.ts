@@ -271,7 +271,7 @@ export function upgradeQuote(
   // 旧套餐有提前扣款、偏移等续费规则时新阶段不带，之后的扣款日会漂，不提供保持
   if ((old.chargeLeadDays ?? 0) > 0 || old.renewalOffsetDays || old.renewalHistory?.length) return quote;
   const open = { ...old, end: undefined, stop: undefined, status: 'active' as const, pausedAt: undefined };
-  const oldNext = nextCharge(open, at);
+  const oldNext = nextCharge(open, at, false);
   if (!oldNext) return quote;
   // 沿用旧套餐的计费锚点（保留月底日号）；扣款日漂移过、原锚点推不出下次扣款日时，改用下次扣款日往前一期。
   // 用真正切换后的订阅核对：旧套餐的续费规则（提前扣款、偏移）新阶段不带，推不出同一天就不提供
@@ -288,7 +288,7 @@ function withAnchor(s: Subscription, anchor: string): Subscription {
 
 function keptNext(s: Subscription, at: string, next: Pick<PlanChange, 'price' | 'currency' | 'cycle' | 'billing'>, anchor: string) {
   try {
-    return nextCharge(withAnchor(switchPlan(s, at, next as PlanChange), anchor), at);
+    return nextCharge(withAnchor(switchPlan(s, at, next as PlanChange), anchor), at, false);
   } catch {
     return undefined;
   }

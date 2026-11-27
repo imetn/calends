@@ -367,7 +367,7 @@ export function OwnerTimeline({ state, s, today, win }: { state: AppState; s: Su
   const charges = chargesBetween(vs, addMonths(win.start, -24), win.end, today).filter((c) => !c.kind);
   const segs = charges
     .map((c, i) => {
-      const until = addDays(charges[i + 1]?.date ?? nextCharge(vs, addDays(c.date, 1)) ?? win.end, -1);
+      const until = addDays(charges[i + 1]?.date ?? nextCharge(vs, addDays(c.date, 1), false) ?? win.end, -1);
       return { c, from: c.date, until, kind: c.date <= today ? 'owner' : 'future' };
     })
     .filter((g) => g.until >= win.start && g.from <= win.end)
