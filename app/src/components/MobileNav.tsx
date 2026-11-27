@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { t } from '../../../shared/i18n.ts';
-import { arcAngle } from '../mobile-nav.ts';
+import { arcAngle, arcRadius } from '../mobile-nav.ts';
 import { usePageAdd } from '../page-add.ts';
 import { href } from '../router.ts';
 import { THEME_LABEL, ThemeIcon, type ThemeMode } from '../theme.tsx';
@@ -52,14 +52,15 @@ function useTyping() {
  * 所以圆心间距 PITCH 同时是弦长和两圈半径差。改直径要同步 styles.css 的 .arc-item。
  */
 const PITCH = 60 + 12;
+/** 默认两圈半径；外圈项多时两圈一起往外推，见 arcRadius */
 const RING = { inner: 100, outer: 100 + PITCH };
 
 const at = (deg: number, r: number) => [Math.cos((deg * Math.PI) / 180) * r, Math.sin((deg * Math.PI) / 180) * r];
 
 /** 放进圆弧的一项：独立的圆按钮，图标与名称上下排在圆内 */
-function Slot({ ring, i, n, delay, children }: { ring: 'inner' | 'outer'; i: number; n: number; delay: number; children: ReactNode }) {
-  const deg = arcAngle(i, n, RING[ring], PITCH);
-  const [x, y] = at(deg, RING[ring]);
+function Slot({ r, i, n, delay, children }: { r: number; i: number; n: number; delay: number; children: ReactNode }) {
+  const deg = arcAngle(i, n, r, PITCH);
+  const [x, y] = at(deg, r);
   const style = { '--x': `${x}px`, '--y': `${y}px`, '--d': `${delay}ms` } as CSSProperties;
   return (
     <div className="arc-slot" style={style}>
@@ -70,7 +71,7 @@ function Slot({ ring, i, n, delay, children }: { ring: 'inner' | 'outer'; i: num
 
 /**
  * 手机底栏：左边 4 个入口的胶囊，右边圆形「更多」；只在窄屏渲染，桌面端没有这段 DOM。
- * 点「更多」胶囊向左退出，从按钮处展开两圈 90° 圆弧：内圈货币、主题、设置，外圈其余模块和新建。
+ * 点「更多」胶囊向左退出，从按钮处展开 90° 圆弧：内圈货币、主题、设置，外圈其余模块和新建；外圈项多时整道弧放大半径。
  */
 export function Dock({
   bar,
@@ -164,6 +165,8 @@ export function Dock({
         <span className="arc-label">{t('app.navShort.new')}</span>
       </button>,
     );
+  const outerR = arcRadius(outer.length, RING.outer, PITCH);
+  const innerR = outerR - PITCH;
   const inner: ReactNode[] = [
     <Fragment key="currency">{currency}</Fragment>,
     <button key="theme" type="button" className="arc-item" onClick={toggleTheme} aria-label={`${t('app.sidebar.theme')} ${THEME_LABEL[theme]}`}>
@@ -187,12 +190,12 @@ export function Dock({
           <div className={`arc-scrim ${shown ? 'on' : ''}`} onClick={close} />
           <div ref={arc} className={`arc ${shown ? 'on' : ''}`} role="dialog" aria-modal="true" aria-label={t('app.nav.more')}>
             {inner.map((node, i) => (
-              <Slot key={i} ring="inner" i={i} n={inner.length} delay={i * 35}>
+              <Slot key={i} r={innerR} i={i} n={inner.length} delay={i * 35}>
                 {node}
               </Slot>
             ))}
             {outer.map((node, i) => (
-              <Slot key={i} ring="outer" i={i} n={outer.length} delay={60 + i * 35}>
+              <Slot key={i} r={outerR} i={i} n={outer.length} delay={60 + i * 35}>
                 {node}
               </Slot>
             ))}

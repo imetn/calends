@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { arcAngle, mobileNav, navPath } from '../app/src/mobile-nav.ts';
+import { arcAngle, arcRadius, mobileNav, navPath } from '../app/src/mobile-nav.ts';
 
 const all = ['overview', 'list', 'calendar', 'report', 'wallet', 'family', 'behalf', 'assistant', 'connect'];
 
@@ -50,4 +50,20 @@ test('More arc items keep one gap between neighbours, centred on the diagonal', 
   // The full default outer ring stays within a few degrees of the quarter.
   const outer = ring(5, 172);
   assert.ok(outer[0] > 175 && outer.at(-1) < 275);
+});
+
+test('More outer ring grows its radius instead of running off screen when it holds more items', () => {
+  // 4 项及以下保持默认半径 172；更多项时放大，整道弧落在四分之一圆内
+  assert.equal(arcRadius(4, 172, 72), 172);
+  assert.equal(arcRadius(1, 172, 72), 172);
+  for (const n of [5, 6, 7, 8]) {
+    const r = arcRadius(n, 172, 72);
+    assert.ok(r > 172, `${n}: radius grows`);
+    const first = arcAngle(0, n, r, 72);
+    const last = arcAngle(n - 1, n, r, 72);
+    assert.ok(Math.abs(last - first - 90) < 1e-6, `${n}: spans exactly the cap`);
+    assert.ok(first >= 180 - 1e-9 && last <= 270 + 1e-9);
+    // 屏幕 390 宽、按钮圆心离右边 46：最左一项 圆心-半径-30 仍在屏幕内
+    if (n <= 6) assert.ok(390 - 46 - r - 30 > 0, `${n}: stays on a 390pt screen`);
+  }
 });

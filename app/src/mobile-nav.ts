@@ -28,3 +28,16 @@ export function mobileNav(paths: string[], slots = BAR_SLOTS): { bar: string[]; 
  * 相邻两项圆心的直线距离固定为 pitch，项数和半径变化时间距都不变。
  */
 export const arcAngle = (i: number, n: number, r: number, pitch: number) => 225 + (i - (n - 1) / 2) * ((2 * Math.asin(pitch / 2 / r) * 180) / Math.PI);
+
+/** 外圈首尾最多张开 90°：正好从按钮左侧到正上方，超过就会伸到按钮下方或屏幕右边外 */
+export const ARC_SPAN = 90;
+
+/**
+ * 外圈半径：n 项按 pitch 排开、首尾不超过 ARC_SPAN 所需的半径，至少 min。
+ * 项多时圆弧整体放大，仍是一道弧，不另起一圈。
+ */
+export function arcRadius(n: number, min: number, pitch: number): number {
+  if (n <= 1) return min;
+  const half = ((ARC_SPAN / (n - 1)) * Math.PI) / 360;
+  return Math.max(min, pitch / 2 / Math.sin(half));
+}
