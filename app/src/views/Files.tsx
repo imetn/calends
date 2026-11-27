@@ -137,7 +137,9 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   const subFacet = sel.sub !== 'all' || sel.status !== 'all' || sel.cat !== 'all' || sel.pay !== 'all';
   /** 订阅类筛选：选了任何一项时，未关联与已删除订阅的文件不出现 */
   const subOk = (s: Subscription | undefined, anchor: Pick<FileMeta, 'kind' | 'date'>, skip?: Facet) => {
-    const facets = (['sub', 'status', 'cat', 'pay'] as const).filter((k) => k !== skip && sel[k] !== 'all');
+    // 选定了订阅时只剩订阅与年份两行，藏起来的状态、分类、付款方式不参与筛选（数「全部」时照算，与点回全部后一致）
+    const keys = sel.sub !== 'all' && skip !== 'sub' ? (['sub'] as const) : (['sub', 'status', 'cat', 'pay'] as const);
+    const facets = keys.filter((k) => k !== skip && sel[k] !== 'all');
     if (!facets.length) return true;
     if (!s) return false;
     if (facets.includes('sub') && s.id !== sel.sub) return false;
@@ -191,6 +193,14 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
     .filter((c) => all.some((f) => f.subId && subOf.get(f.subId)?.category === c));
   const filed = subs.filter((s) => coverage.has(s.id));
   const pickedSub = sel.sub === 'all' ? undefined : subOf.get(sel.sub);
+  // 订阅行在点回「全部」后仍保留刚才那个订阅，可以再点回去，不会整行消失
+  const [lastSub, setLastSub] = useState<string>();
+  useEffect(() => {
+    if (sel.sub !== 'all') setLastSub(sel.sub);
+  }, [sel.sub]);
+  const rowSub = pickedSub ?? (lastSub ? subOf.get(lastSub) : undefined);
+  // 只看一个订阅时年份只列它有的；都在同一年就不显示年份这一行
+  const yearOpts = pickedSub ? years.filter((y) => y === sel.year || yearCount(y) > 0) : years;
 
   const rows = all.filter((f, i) => hit(f, i)).sort(newest);
   // 凭证不是必传项：缺的期只在「缺凭证」里出现，默认视图不催
@@ -437,48 +447,54 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
               </button>
             )}
             {/* 订阅可能有几百个，不列成筛选项：点分组头或搜索名称进入，这里只显示当前选中的那个，点「全部」退出 */}
-            {pickedSub && (
+            {rowSub && (
               <FacetRow
                 label={t('files.link.sub')}
                 value={sel.sub}
                 onChange={setFacet('sub')}
                 options={[
                   { key: 'all', label: t('list.all'), n: subN.get('all') ?? 0 },
-                  { key: pickedSub.id, label: pickedSub.name, icon: <SubIcon sub={pickedSub} size={16} />, n: subN.get(pickedSub.id) ?? 0 },
+                  { key: rowSub.id, label: rowSub.name, icon: <SubIcon sub={rowSub} size={16} />, n: subN.get(rowSub.id) ?? 0 },
                 ]}
               />
             )}
-            <FacetRow
-              label={t('list.facet.status')}
-              value={sel.status}
-              onChange={setFacet('status')}
-              options={STATUSES().map(([k, l]) => ({ key: k, label: l, n: statusN.get(k) ?? 0 }))}
-            />
-            <FacetRow
-              label={t('list.facet.category')}
-              value={sel.cat}
-              onChange={setFacet('cat')}
-              options={[
-                { key: 'all', label: t('list.all'), n: catN.get('all') ?? 0 },
-                ...cats.map((c) => ({ key: c, label: c, icon: <CatIcon cat={c} size={13} />, n: catN.get(c) ?? 0 })),
-              ]}
-            />
-            <FacetRow
-              label={t('list.facet.pay')}
-              value={sel.pay}
-              onChange={setFacet('pay')}
-              options={[
-                { key: 'all', label: t('list.all'), n: payN.get('all') ?? 0 },
-                ...state.methods.map((m) => ({ key: m.id, label: m.name, icon: <MethodMark m={m} size={16} />, n: payN.get(m.id) ?? 0 })),
-                { key: 'none', label: t('list.unassigned'), n: payN.get('none') ?? 0 },
-              ]}
-            />
-            <FacetRow
-              label={t('files.year')}
-              value={sel.year}
-              onChange={setFacet('year')}
-              options={[{ key: 'all', label: t('list.all'), n: yearN.get('all') ?? 0 }, ...years.map((y) => ({ key: y, label: y, n: yearCount(y) }))]}
-            />
+            {!pickedSub && (
+              <>
+                <FacetRow
+                  label={t('list.facet.status')}
+                  value={sel.status}
+                  onChange={setFacet('status')}
+                  options={STATUSES().map(([k, l]) => ({ key: k, label: l, n: statusN.get(k) ?? 0 }))}
+                />
+                <FacetRow
+                  label={t('list.facet.category')}
+                  value={sel.cat}
+                  onChange={setFacet('cat')}
+                  options={[
+                    { key: 'all', label: t('list.all'), n: catN.get('all') ?? 0 },
+                    ...cats.map((c) => ({ key: c, label: c, icon: <CatIcon cat={c} size={13} />, n: catN.get(c) ?? 0 })),
+                  ]}
+                />
+                <FacetRow
+                  label={t('list.facet.pay')}
+                  value={sel.pay}
+                  onChange={setFacet('pay')}
+                  options={[
+                    { key: 'all', label: t('list.all'), n: payN.get('all') ?? 0 },
+                    ...state.methods.map((m) => ({ key: m.id, label: m.name, icon: <MethodMark m={m} size={16} />, n: payN.get(m.id) ?? 0 })),
+                    { key: 'none', label: t('list.unassigned'), n: payN.get('none') ?? 0 },
+                  ]}
+                />
+              </>
+            )}
+            {(!pickedSub || yearOpts.length > 1) && (
+              <FacetRow
+                label={t('files.year')}
+                value={sel.year}
+                onChange={setFacet('year')}
+                options={[{ key: 'all', label: t('list.all'), n: yearN.get('all') ?? 0 }, ...yearOpts.map((y) => ({ key: y, label: y, n: yearCount(y) }))]}
+              />
+            )}
           </div>
         )}
         {empty ? (
