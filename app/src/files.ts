@@ -4,10 +4,10 @@ import { base } from './base.ts';
 import { api, getState, patchState, upsertById } from './store.ts';
 import { FILE_MAX_BYTES, isImage, sniffMime, type FileAnchor, type FileMeta, type FileMime } from '../../shared/files.ts';
 import { locale, t } from '../../shared/i18n.ts';
+import { encodeThumb } from './thumb-encode.ts';
 
-/** 缩略图：长边 480px 的 WebP，放不下 64 KB 时降质量再试 */
+/** 缩略图：长边 480px，编码见 encodeThumb */
 const THUMB_EDGE = 480;
-const THUMB_BYTES = 64 * 1024;
 
 export const fileUrl = (f: Pick<FileMeta, 'id'>, opts: { download?: boolean } = {}) => base(`/api/files/${f.id}${opts.download ? '?download=1' : ''}`);
 export const downloadHref = (f: Pick<FileMeta, 'id'>) => fileUrl(f, { download: true });
@@ -66,7 +66,7 @@ async function hasExif(file: Blob): Promise<boolean> {
   return false;
 }
 
-async function toWebp(source: CanvasImageSource & { width: number; height: number }): Promise<Blob | undefined> {
+async function toThumb(source: CanvasImageSource & { width: number; height: number }): Promise<Blob | undefined> {
   const scale = Math.min(1, THUMB_EDGE / Math.max(source.width, source.height));
   const canvas = new OffscreenCanvas(Math.max(1, Math.round(source.width * scale)), Math.max(1, Math.round(source.height * scale)));
   const ctx = canvas.getContext('2d')!;
@@ -74,13 +74,7 @@ async function toWebp(source: CanvasImageSource & { width: number; height: numbe
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
-  for (const quality of [0.8, 0.6, 0.4]) {
-    const out = await canvas.convertToBlob({ type: 'image/webp', quality });
-    // 不支持 WebP 编码的浏览器会退回 PNG，这时不传缩略图
-    if (out.type !== 'image/webp') return undefined;
-    if (out.size <= THUMB_BYTES) return out;
-  }
-  return undefined;
+  return encodeThumb(canvas);
 }
 
 /** PDF 首页：按需加载 pdf.js，只在上传或补缩略图时用到 */
@@ -95,7 +89,7 @@ async function pdfFirstPage(file: Blob): Promise<Blob | undefined> {
     const viewport = page.getViewport({ scale: (THUMB_EDGE * 1.5) / Math.max(unit.width, unit.height) });
     const canvas = new OffscreenCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
     await page.render({ canvas: canvas as unknown as HTMLCanvasElement, viewport }).promise;
-    return await toWebp(canvas);
+    return await toThumb(canvas);
   } finally {
     void task.destroy();
   }
@@ -106,7 +100,7 @@ export async function makeThumb(file: Blob, mime: FileMime): Promise<Blob | unde
     if (mime === 'application/pdf') return await pdfFirstPage(file);
     const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
     try {
-      return await toWebp(bmp);
+      return await toThumb(bmp);
     } finally {
       bmp.close();
     }
@@ -130,7 +124,7 @@ const putLocal = (f: FileMeta) => patchState((s) => ({ ...s, files: upsertById(s
 async function sendThumb(f: FileMeta, body: Blob): Promise<void> {
   const thumb = await makeThumb(body, f.mime);
   if (!thumb) return;
-  const next = await api<FileMeta>(`/api/files/${f.id}/thumb`, { method: 'POST', body: thumb, headers: { 'content-type': 'image/webp' } });
+  const next = await api<FileMeta>(`/api/files/${f.id}/thumb`, { method: 'POST', body: thumb, headers: { 'content-type': thumb.type } });
   putLocal(next);
 }
 
