@@ -19,6 +19,7 @@
   },
   "group": {
     "label": "Agrupar",
+    "none": "Sem agrupamento",
     "sub": "Por assinatura",
     "month": "Por mês",
     "year": "Por ano",

@@ -13,6 +13,7 @@
   },
   "group": {
     "label": "Nhóm",
+    "none": "Không nhóm",
     "sub": "Theo gói",
     "month": "Theo tháng",
     "year": "Theo năm",

@@ -13,6 +13,7 @@
   },
   "group": {
     "label": "Grupla",
+    "none": "Gruplama yok",
     "sub": "Aboneliğe göre",
     "month": "Aya göre",
     "year": "Yıla göre",

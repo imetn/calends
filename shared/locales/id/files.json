@@ -13,6 +13,7 @@
   },
   "group": {
     "label": "Kelompok",
+    "none": "Tanpa grup",
     "sub": "Per langganan",
     "month": "Per bulan",
     "year": "Per tahun",

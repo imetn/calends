@@ -19,6 +19,7 @@
   },
   "group": {
     "label": "Gruppieren",
+    "none": "Keine Gruppierung",
     "sub": "Nach Abo",
     "month": "Nach Monat",
     "year": "Nach Jahr",

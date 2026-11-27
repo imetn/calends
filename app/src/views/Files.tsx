@@ -30,8 +30,8 @@ type Tab = 'all' | 'pending' | 'missing';
 type View = 'loose' | 'grid' | 'list';
 const isView = (v: string): v is View => v === 'loose' || v === 'grid' || v === 'list';
 /** 按订阅：一个订阅一组，按期列出凭证与缺的那几期；按月份：按文件日期分组 */
-type Group = 'sub' | 'month' | 'year' | 'cat';
-const isGroup = (v: string): v is Group => v === 'sub' || v === 'month' || v === 'year' || v === 'cat';
+type Group = 'none' | 'sub' | 'month' | 'year' | 'cat';
+const isGroup = (v: string): v is Group => v === 'none' || v === 'sub' || v === 'month' || v === 'year' || v === 'cat';
 type Facet = 'sub' | 'status' | 'cat' | 'pay' | 'year';
 const ALL: Record<Facet, string> = { sub: 'all', status: 'all', cat: 'all', pay: 'all', year: 'all' };
 
@@ -211,7 +211,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   // 只对当前看得到的生效：筛掉的已选文件不会被一起删掉或打包
   const pickedRows = picked.filter((id) => rows.some((f) => f.id === id));
 
-  // 待关联的文件没有订阅可分：只按月 / 按年，其余分法在这里按月显示，不改动保存的偏好
+  // 待关联的文件没有订阅可分：只给不分组、按月、按年，其余分法在这里按月显示，不改动保存的偏好
   const g: Group = tab === 'pending' && (group === 'sub' || group === 'cat') ? 'month' : group;
   const sections = buildSections();
   const order = sections.flatMap((s) => s.items.flatMap((x) => (x.type === 'file' ? [x.f] : [])));
@@ -224,6 +224,11 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
     for (const h of shownHoles) holeItems.set(h.sub.id, [...(holeItems.get(h.sub.id) ?? []), { type: 'slot', ...h }]);
     const withUps = (out: Section[]) => (ups.length ? [{ key: 'up', head: null, items: ups }, ...out] : out);
     const slotItems: Item[] = shownHoles.map((h) => ({ type: 'slot', ...h }));
+    if (g === 'none') {
+      // 不分组：文件与缺的期按日期排成一片，新的在前
+      const items = [...fileItems(rows), ...slotItems].sort((a, b) => itemDate(b).localeCompare(itemDate(a)));
+      return withUps(items.length ? [{ key: 'all', head: null, items }] : []);
+    }
     if (g === 'month' || g === 'year') {
       // 按月 / 按年：文件与缺的期按日期排，新的在前
       const len = g === 'month' ? 7 : 4;
@@ -405,6 +410,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
             onChange={setGroup}
             ariaLabel={t('files.group.label')}
             options={[
+              { value: 'none' as const, label: t('files.group.none') },
               ...(tab === 'pending' ? [] : [{ value: 'sub' as const, label: t('files.group.sub') }]),
               { value: 'month' as const, label: t('files.group.month') },
               { value: 'year' as const, label: t('files.group.year') },
