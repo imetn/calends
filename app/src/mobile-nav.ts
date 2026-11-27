@@ -41,3 +41,11 @@ export function arcRadius(n: number, min: number, pitch: number): number {
   const half = ((ARC_SPAN / (n - 1)) * Math.PI) / 360;
   return Math.max(min, pitch / 2 / Math.sin(half));
 }
+
+/**
+ * 两圈半径：外圈按项数取 arcRadius，内圈也要放得下自己的项，两者取大，内外圈始终相差 pitch。
+ */
+export function ringRadii(inner: number, outer: number, min: number, pitch: number): { inner: number; outer: number } {
+  const r = Math.max(arcRadius(outer, min + pitch, pitch), arcRadius(inner, min, pitch) + pitch);
+  return { inner: r - pitch, outer: r };
+}

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { arcAngle, arcRadius, mobileNav, navPath } from '../app/src/mobile-nav.ts';
+import { arcAngle, arcRadius, mobileNav, navPath, ringRadii } from '../app/src/mobile-nav.ts';
 
 const all = ['overview', 'list', 'calendar', 'report', 'wallet', 'family', 'behalf', 'assistant', 'connect'];
 
@@ -66,4 +66,32 @@ test('More outer ring grows its radius instead of running off screen when it hol
     // 屏幕 390 宽、按钮圆心离右边 46：最左一项 圆心-半径-30 仍在屏幕内
     if (n <= 6) assert.ok(390 - 46 - r - 30 > 0, `${n}: stays on a 390pt screen`);
   }
+});
+
+test('More puts New on the inner ring and both rings fit the quarter with one gap between them', () => {
+  const at = (deg, r) => [Math.cos((deg * Math.PI) / 180) * r, Math.sin((deg * Math.PI) / 180) * r];
+  // 默认：内圈 3 项、外圈 4 项不放大
+  assert.deepEqual(ringRadii(3, 4, 100, 72), { inner: 100, outer: 172 });
+  for (const [ni, no] of [
+    [4, 5],
+    [4, 4],
+    [3, 5],
+    [4, 6],
+  ]) {
+    const r = ringRadii(ni, no, 100, 72);
+    assert.equal(r.outer - r.inner, 72);
+    for (const [n, rad] of [
+      [ni, r.inner],
+      [no, r.outer],
+    ]) {
+      const first = arcAngle(0, n, rad, 72);
+      const last = arcAngle(n - 1, n, rad, 72);
+      assert.ok(first >= 180 - 1e-9 && last <= 270 + 1e-9, `${ni}/${no}: ring of ${n} stays in the quarter`);
+      // 最左一项和最下一项都在 390×844 屏内（按钮圆心离右边、底边约 46，圆半径 30）
+      const [x0, y0] = at(first, rad);
+      assert.ok(390 - 46 + x0 - 30 > 0 && 844 - 46 + y0 - 30 > 0);
+    }
+  }
+  // 4 + 5 比旧的 3 + 6 半径小
+  assert.ok(ringRadii(4, 5, 100, 72).outer < ringRadii(3, 6, 100, 72).outer);
 });

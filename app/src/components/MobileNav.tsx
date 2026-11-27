@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { t } from '../../../shared/i18n.ts';
-import { arcAngle, arcRadius } from '../mobile-nav.ts';
+import { arcAngle, ringRadii } from '../mobile-nav.ts';
 import { usePageAdd } from '../page-add.ts';
 import { href } from '../router.ts';
 import { THEME_LABEL, ThemeIcon, type ThemeMode } from '../theme.tsx';
@@ -52,8 +52,8 @@ function useTyping() {
  * 所以圆心间距 PITCH 同时是弦长和两圈半径差。改直径要同步 styles.css 的 .arc-item。
  */
 const PITCH = 60 + 12;
-/** 默认两圈半径；外圈项多时两圈一起往外推，见 arcRadius */
-const RING = { inner: 100, outer: 100 + PITCH };
+/** 内圈默认半径；外圈 = 内圈 + PITCH，任一圈项多时两圈一起往外推，见 ringRadii */
+const INNER_R = 100;
 
 const at = (deg: number, r: number) => [Math.cos((deg * Math.PI) / 180) * r, Math.sin((deg * Math.PI) / 180) * r];
 
@@ -71,7 +71,7 @@ function Slot({ r, i, n, delay, children }: { r: number; i: number; n: number; d
 
 /**
  * 手机底栏：左边 4 个入口的胶囊，右边圆形「更多」；只在窄屏渲染，桌面端没有这段 DOM。
- * 点「更多」胶囊向左退出，从按钮处展开 90° 圆弧：内圈货币、主题、设置，外圈其余模块和新建；外圈项多时整道弧放大半径。
+ * 点「更多」胶囊向左退出，从按钮处展开 90° 圆弧：内圈货币、主题、设置和新建，外圈其余模块；项多时两道弧一起放大半径。
  */
 export function Dock({
   bar,
@@ -149,24 +149,6 @@ export function Dock({
       <span className="arc-label">{n.label}</span>
     </a>
   ));
-  if (add)
-    outer.push(
-      <button
-        key="add"
-        type="button"
-        className="arc-item"
-        aria-label={pageAdd?.label}
-        onClick={() => {
-          close();
-          add();
-        }}
-      >
-        <Icon name="plus" />
-        <span className="arc-label">{t('app.navShort.new')}</span>
-      </button>,
-    );
-  const outerR = arcRadius(outer.length, RING.outer, PITCH);
-  const innerR = outerR - PITCH;
   const inner: ReactNode[] = [
     <Fragment key="currency">{currency}</Fragment>,
     <button key="theme" type="button" className="arc-item" onClick={toggleTheme} aria-label={`${t('app.sidebar.theme')} ${THEME_LABEL[theme]}`}>
@@ -182,6 +164,23 @@ export function Dock({
         {update && <span className="side-dot" role="img" aria-label={t('settings.update.available')} />}
       </a>,
     );
+  if (add)
+    inner.push(
+      <button
+        key="add"
+        type="button"
+        className="arc-item"
+        aria-label={pageAdd?.label}
+        onClick={() => {
+          close();
+          add();
+        }}
+      >
+        <Icon name="plus" />
+        <span className="arc-label">{t('app.navShort.new')}</span>
+      </button>,
+    );
+  const { inner: innerR, outer: outerR } = ringRadii(inner.length, outer.length, INNER_R, PITCH);
 
   return (
     <>
