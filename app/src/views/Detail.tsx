@@ -54,6 +54,8 @@ import { Charges } from './detail/Ledgers.tsx';
 import { Meters, usageMetrics } from './detail/Meters.tsx';
 import { BundleCard, ParentCard } from './detail/BundleCard.tsx';
 import { canAttach, FilesCard } from './detail/FilesCard.tsx';
+import { filesRouteFor } from '../files.ts';
+import { go } from '../router.ts';
 import { useFilePicker, useUpload } from '../components/FileUpload.tsx';
 
 /**
@@ -324,7 +326,18 @@ export function Detail({
         <ShareCard sub={view} state={state} today={today} onCar={() => setCar(true)} onMember={(m) => setMember({ m })} />
         <BundleCard sub={sub} state={state} today={today} onOpen={onOpen} onAddLinked={onAddLinked} />
         {charges}
-        <FilesCard sub={sub} state={state} today={today} pending={attach.pending} onFiles={attach.upload} onOpen={onOpen} />
+        <FilesCard
+          sub={sub}
+          state={state}
+          today={today}
+          pending={attach.pending}
+          onFiles={attach.upload}
+          onOpen={onOpen}
+          onFilesPage={() => {
+            onClose();
+            go(filesRouteFor(sub.id));
+          }}
+        />
         <Transfers sub={sub} state={state} onRow={(index) => setTransfer({ index })} onAdd={() => setTransfer({})} />
         {/* 还没有关联订阅 / 指标时只留轻入口，放在记录后面不抢走势的位置 */}
         <BundleCard sub={sub} state={state} today={today} onOpen={onOpen} onAddLinked={onAddLinked} emptyOnly />

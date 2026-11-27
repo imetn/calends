@@ -35,6 +35,7 @@ export function FilesCard({
   pending,
   onFiles,
   onOpen,
+  onFilesPage,
 }: {
   sub: Subscription;
   state: AppState;
@@ -42,6 +43,8 @@ export function FilesCard({
   pending: Array<{ key: string; name: string }>;
   onFiles: (files: File[]) => void;
   onOpen?: (s: Subscription) => void;
+  /** 到文件页只看这个订阅 */
+  onFilesPage?: () => void;
 }) {
   const all = state.files ?? [];
   const list = filesOf(all, sub.id);
@@ -53,7 +56,19 @@ export function FilesCard({
   return (
     <>
       {(list.length > 0 || pending.length > 0) && (
-        <Panel className="dt-files" title={t('files.card')}>
+        <Panel
+          className="dt-files"
+          title={t('files.card')}
+          aside={
+            onFilesPage &&
+            list.length > 0 && (
+              <button type="button" className="dt-btn sm dt-add" onClick={onFilesPage}>
+                {t('files.count', { count: list.length })}
+                <Icon name="right" size={14} />
+              </button>
+            )
+          }
+        >
           <div className="dt-file-list">
             {pending.map((p) => (
               <div key={p.key} className="dt-file loading" aria-busy="true">

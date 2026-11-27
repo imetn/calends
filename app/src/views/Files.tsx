@@ -19,7 +19,8 @@ import { Picker } from '../components/Picker.tsx';
 import { IconButton, Toolbar } from '../components/ui.tsx';
 import { categories } from '../derive.ts';
 import { knownRatio, layoutMasonry, rememberRatio, type Placed } from '../file-masonry.ts';
-import { deleteFiles, sizeLabel, uploadFiles, zipUrl } from '../files.ts';
+import { deleteFiles, sizeLabel, SUB_PARAM, uploadFiles, zipUrl } from '../files.ts';
+import { onRoute } from '../router.ts';
 import { toast } from '../toast.ts';
 import { usePref } from '../prefs.ts';
 import { useTextSearch } from '../use-search.ts';
@@ -105,6 +106,19 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   const [, setRatioRev] = useState(0);
   const onRatio = (id: string) => (r: number) => rememberRatio(id, r) && setRatioRev((n) => n + 1);
   const canUpload = enabled && !ro;
+  // 从订阅详情跳来（files?sub=）：只看这个订阅，查询串用完即去掉，清除筛选后刷新不会再套上
+  useEffect(() => {
+    const apply = () => {
+      const id = new URLSearchParams(location.search).get(SUB_PARAM);
+      if (!id) return;
+      history.replaceState(history.state, '', location.pathname);
+      setTab('all');
+      setQ('');
+      setSel({ ...ALL, sub: id });
+    };
+    apply();
+    return onRoute(apply);
+  }, []);
 
   const title = (f: FileMeta) => fileTitle(f, all, subs);
   const viewOf = (s: Subscription) => bundleView(s, subs);

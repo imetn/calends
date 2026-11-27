@@ -883,3 +883,12 @@ button.dt-file:focus-visible {
   font-weight: 400;
   color: var(--label-2);
 }
+/* 卡里不再给每个文件描边：卡片本身已是一层，文件只在悬停时铺底色 */
+.dt-files .dt-file {
+  box-shadow: none;
+  margin: 0 -8px;
+}
+.dt-files .dt-file-list {
+  column-gap: 24px;
+  row-gap: 2px;
+}

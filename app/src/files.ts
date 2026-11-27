@@ -12,6 +12,9 @@ const THUMB_EDGE = 480;
 export const fileUrl = (f: Pick<FileMeta, 'id'>, opts: { download?: boolean } = {}) => base(`/api/files/${f.id}${opts.download ? '?download=1' : ''}`);
 export const downloadHref = (f: Pick<FileMeta, 'id'>) => fileUrl(f, { download: true });
 export const thumbUrl = (f: Pick<FileMeta, 'id'>) => base(`/api/files/${f.id}/thumb`);
+/** 文件页只看某个订阅的地址：文件页读到 ?sub= 后套用筛选并去掉查询串 */
+export const SUB_PARAM = 'sub';
+export const filesRouteFor = (subId: string) => `files?${SUB_PARAM}=${encodeURIComponent(subId)}`;
 export const zipUrl = (ids: string[]) => base(`/api/files/zip?ids=${ids.map(encodeURIComponent).join(',')}`);
 
 /** 浏览器里先挡掉明显不收的文件，免得白传 */
