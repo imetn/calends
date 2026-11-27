@@ -101,7 +101,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   const [uploadInput, pickUpload] = useFilePicker(upload);
   const [busy, setBusy] = useState<string[]>([]);
   const [view, setView] = usePref<View>('files-view', 'loose', isView);
-  const [group, setGroup] = usePref<Group>('files-group', 'sub', isGroup);
+  const [group, setGroup] = usePref<Group>('files-group', 'none', isGroup);
   const [wrapRef, width] = useWidth();
   const [, setRatioRev] = useState(0);
   const onRatio = (id: string) => (r: number) => rememberRatio(id, r) && setRatioRev((n) => n + 1);
