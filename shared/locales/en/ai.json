@@ -94,6 +94,14 @@
     "people": "Shared plans & paid for others",
     "categories": "Categories",
     "settings": "Settings",
-    "other": "Other"
+    "other": "Other",
+    "files": "Files"
+  },
+  "skill": {
+    "title": "Agent Skill (Skills over MCP)",
+    "hint": "Served natively over /mcp for SEP-2640 clients; copy or download SKILL.md for other agents (Hermes, Codex, Cursor) to improve ledger accuracy.",
+    "copy": "Copy SKILL.md",
+    "download": "Download SKILL.md",
+    "copied": "SKILL.md copied"
   }
 }

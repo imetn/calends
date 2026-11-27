@@ -1,5 +1,7 @@
+import { categoryList } from '../../shared/categories.ts';
 import type { AppState } from '../../shared/types.ts';
 import { t } from '../../shared/i18n.ts';
+import { filesEnabled } from '../files.ts';
 import { ledgerTools, paymentMethodTool } from './ledger-tools.ts';
 import { validateToolInput, type Schema } from '../../shared/tool-schema.ts';
 import type { ToolCtx, Tool } from './tool-kit.ts';
@@ -38,7 +40,8 @@ import { get_carpool, set_share, save_share_member, remove_share_member, record_
 
 export const toolTitle = (name: string) => t(`mcp.tool.${name}`);
 
-export function connectionInfo(ctx: ToolCtx, settings: AppState['settings'], today: string) {
+export function connectionInfo(ctx: ToolCtx, st: AppState, today: string) {
+  const { settings } = st;
   const scope = ctx.access?.scope ?? 'read';
   let site: string | null = null;
   try {
@@ -53,6 +56,16 @@ export function connectionInfo(ctx: ToolCtx, settings: AppState['settings'], tod
     timezone: settings.timezone,
     today,
     base_currency: settings.baseCurrency,
+    default_method_id: settings.defaultMethodId ?? null,
+    files_enabled: filesEnabled(ctx.env),
+    categories: categoryList(settings, st.subscriptions).map((c) => c.name),
+    payment_methods: st.methods.map((m) => ({
+      id: m.id,
+      name: m.name,
+      kind: m.kind,
+      currency: m.currency,
+      ...(m.region ? { region: m.region } : {}),
+    })),
     client: ctx.access?.client ?? 'unknown',
     scope,
     writes_require_confirmation: ctx.access?.client === 'assistant',

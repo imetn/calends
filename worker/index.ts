@@ -84,6 +84,7 @@ import {
 import { countServer, countUsage, reportTelemetry, saveTelemetry, viewTelemetry } from './telemetry.ts';
 import { cleanCounts } from '../shared/telemetry.ts';
 import { apply, chat, clearChats, listChats, saveChat, saveConfig, testConfig, viewConfig } from './ai/assistant.ts';
+import { PRIMARY_SKILL_URI, renderStandaloneSkillMd } from './ai/mcp-skills.ts';
 import { requestLocale, settingsLocale, applyLocale, withLocaleScope } from './i18n.ts';
 import { t } from '../shared/i18n.ts';
 import { ensureMigrated } from './migrate.ts';
@@ -249,6 +250,7 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   // MCP 令牌管理（后台「AI」页）：明文只在新建时返回一次
   if (path === '/api/mcp/tools' && method === 'GET')
     return json(TOOLS.map((x) => ({ name: x.name, title: toolTitle(x.name), description: x.description, write: !!x.write })));
+  if (path === '/api/mcp/skill' && method === 'GET') return json({ uri: PRIMARY_SKILL_URI, content: renderStandaloneSkillMd() });
   if (path === '/api/mcp/tokens' && method === 'GET') return json((await listTokens(env)).map(({ hash: _h, ...rest }) => rest));
   if (path === '/api/mcp/tokens' && method === 'POST') {
     const b = (await readJson(req)) as { name?: string; scope?: string };
@@ -555,7 +557,7 @@ async function api(req: Request, env: Env, path: string): Promise<Response> {
   if (path === '/api/assistant/config' && method === 'GET') return json(await viewConfig(env));
   if (path === '/api/assistant/config' && method === 'PUT') return json(await saveConfig(env, (await readJson(req)) as Parameters<typeof saveConfig>[1]));
   if (path === '/api/assistant/test' && method === 'POST')
-    return json(await testConfig(env, (await req.json().catch(() => ({}))) as Parameters<typeof testConfig>[1]));
+    return json(await testConfig(env, (await req.json().catch(() => ({}))) as Parameters<typeof testConfig>[1], req.signal));
   // 聊天记录
   if (path === '/api/assistant/chats' && method === 'GET') return json(await listChats(env));
   if (path === '/api/assistant/chats' && method === 'DELETE') return (await clearChats(env), json({ ok: true }));

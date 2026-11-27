@@ -94,6 +94,14 @@
     "people": "Planes compartidos y pagos por otros",
     "categories": "Categorías",
     "settings": "Ajustes",
-    "other": "Otros"
+    "other": "Otros",
+    "files": "Archivos"
+  },
+  "skill": {
+    "title": "Agent Skill (Skills over MCP)",
+    "hint": "Incluido de forma nativa en /mcp (SEP-2640); copia o descarga SKILL.md para otros clientes.",
+    "copy": "Copiar SKILL.md",
+    "download": "Descargar SKILL.md",
+    "copied": "SKILL.md copiado"
   }
 }

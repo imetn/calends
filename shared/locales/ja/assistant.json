@@ -212,7 +212,10 @@
     "customOpenai": "カスタム（OpenAI 互換）",
     "customAnthropic": "カスタム（Anthropic 互換）",
     "keyOptional": "ローカルサービスでは省略可",
-    "baseHintCustom": "API のベース URL を入力してください（通常は /v1 で終わります）。"
+    "baseHintCustom": "API のベース URL を入力してください（通常は /v1 で終わります）。",
+    "baseResolved": "パスを自動補完しました：{url}",
+    "probe": "モデルをテスト",
+    "probeOk": "接続成功：モデルが正常に応答しました"
   },
   "f": {
     "member": "メンバー",

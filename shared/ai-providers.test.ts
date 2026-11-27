@@ -6,9 +6,11 @@ import {
   getProvider,
   inferProvider,
   isConfigured,
+  isOfficialProviderHost,
   isProviderId,
   modelDisplayName,
   modelsRequest,
+  modelsRequestCandidates,
   normProviderBaseUrl,
   parseModelsResponse,
   resolveProvider,
@@ -112,4 +114,43 @@ test('模型列表请求与响应解析：覆盖 OpenAI 兼容、Anthropic 与 G
     }),
     ['gemini-2.5-flash'],
   );
+});
+
+test('反代探测候选与宽松模型响应解析：自动补 /v1、Anthropic Bearer 回退及数组/models 变体', () => {
+  assert.equal(isOfficialProviderHost('openai', 'https://api.openai.com/v1'), true);
+  assert.equal(isOfficialProviderHost('openai', 'https://proxy.example.com/v1'), false);
+  assert.equal(isOfficialProviderHost('custom-openai', 'https://proxy.example.com/v1'), false);
+
+  // 未写 /v1 的反代根地址会依次探测 /models 与 /v1/models
+  const cands = modelsRequestCandidates('openai-compatible', 'https://proxy.example.com', 'sk-proxy');
+  assert.deepEqual(
+    cands.map((c) => [c.url, c.resolvedBaseUrl]),
+    [
+      ['https://proxy.example.com/models', 'https://proxy.example.com'],
+      ['https://proxy.example.com/v1/models', 'https://proxy.example.com/v1'],
+    ],
+  );
+
+  // 已带 /v1 时不再重复拼 /v1/v1
+  const v1Cands = modelsRequestCandidates('openai-compatible', 'https://proxy.example.com/v1', 'sk-proxy');
+  assert.deepEqual(
+    v1Cands.map((c) => c.url),
+    ['https://proxy.example.com/v1/models'],
+  );
+
+  // Anthropic 自定义反代同时生成 x-api-key、/v1 和 Bearer 回退
+  const antCands = modelsRequestCandidates('anthropic', 'https://relay.example.com', 'sk-ant');
+  assert.ok(antCands.some((c) => c.url === 'https://relay.example.com/v1/models?limit=100' && c.headers['x-api-key'] === 'sk-ant'));
+  assert.ok(antCands.some((c) => c.url === 'https://relay.example.com/v1/models' && c.headers.authorization === 'Bearer sk-ant'));
+
+  // 宽松解析顶层数组、字符串数组与 { models } 变体
+  assert.deepEqual(parseModelsResponse('openai-compatible', [{ id: 'gpt-4o' }, { model: 'deepseek-chat' }, { id: 'gpt-4o' }]), [
+    'gpt-4o',
+    'deepseek-chat',
+  ]);
+  assert.deepEqual(parseModelsResponse('openai-compatible', ['auto/deepseek-v4.1-flash', 'claude-sonnet-4-5']), [
+    'auto/deepseek-v4.1-flash',
+    'claude-sonnet-4-5',
+  ]);
+  assert.deepEqual(parseModelsResponse('openai-compatible', { models: [{ name: 'models/qwen3:8b' }, { id: 'llama3.3' }] }), ['qwen3:8b', 'llama3.3']);
 });

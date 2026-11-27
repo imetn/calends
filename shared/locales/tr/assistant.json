@@ -214,7 +214,10 @@
     "customOpenai": "Özel (OpenAI uyumlu)",
     "customAnthropic": "Özel (Anthropic uyumlu)",
     "keyOptional": "Yerel hizmetler için isteğe bağlı",
-    "baseHintCustom": "API kök URL’sini girin (genellikle /v1 ile biter)."
+    "baseHintCustom": "API kök URL’sini girin (genellikle /v1 ile biter).",
+    "baseResolved": "Yol otomatik tamamlandı: {url}",
+    "probe": "Modeli test et",
+    "probeOk": "Bağlandı — model normal yanıt verdi"
   },
   "f": {
     "member": "Üye",

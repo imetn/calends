@@ -92,6 +92,14 @@
     "people": "공유 요금제 및 대신 결제",
     "categories": "카테고리",
     "settings": "설정",
-    "other": "기타"
+    "other": "기타",
+    "files": "파일"
+  },
+  "skill": {
+    "title": "Agent Skill (Skills over MCP)",
+    "hint": "/mcp에서 SEP-2640 규격으로 기본 제공됩니다. 다른 클라이언트에서는 SKILL.md를 복사하거나 다운로드해 정확도를 높이세요.",
+    "copy": "SKILL.md 복사",
+    "download": "SKILL.md 다운로드",
+    "copied": "SKILL.md 복사됨"
   }
 }

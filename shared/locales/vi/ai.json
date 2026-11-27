@@ -92,6 +92,14 @@
     "people": "Gói dùng chung và trả hộ",
     "categories": "Danh mục",
     "settings": "Cài đặt",
-    "other": "Khác"
+    "other": "Khác",
+    "files": "Tệp"
+  },
+  "skill": {
+    "title": "Agent Skill (Skills over MCP)",
+    "hint": "Cung cấp sẵn qua /mcp (SEP-2640); sao chép hoặc tải SKILL.md cho các client khác để tăng độ chính xác.",
+    "copy": "Sao chép SKILL.md",
+    "download": "Tải SKILL.md",
+    "copied": "Đã sao chép SKILL.md"
   }
 }

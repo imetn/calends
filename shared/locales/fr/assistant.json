@@ -217,7 +217,10 @@
     "customOpenai": "Personnalisé (compatible OpenAI)",
     "customAnthropic": "Personnalisé (compatible Anthropic)",
     "keyOptional": "Facultatif pour un service local",
-    "baseHintCustom": "Saisissez l’URL racine de l’API (se terminant généralement par /v1)."
+    "baseHintCustom": "Saisissez l’URL racine de l’API (se terminant généralement par /v1).",
+    "baseResolved": "Chemin complété automatiquement : {url}",
+    "probe": "Tester le modèle",
+    "probeOk": "Connecté — le modèle a répondu"
   },
   "f": {
     "member": "Membre",

@@ -92,6 +92,14 @@
     "people": "合租與代付",
     "categories": "分類",
     "settings": "設定",
-    "other": "其他"
+    "other": "其他",
+    "files": "檔案中心"
+  },
+  "skill": {
+    "title": "Agent Skill（Skills over MCP）",
+    "hint": "已隨 /mcp 原生提供，支援 SEP-2640 的用戶端會自動載入；其他用戶端可複製或下載 SKILL.md，讓外部 AI 更準確理解帳本規則。",
+    "copy": "複製 SKILL.md",
+    "download": "下載 SKILL.md",
+    "copied": "SKILL.md 已複製"
   }
 }

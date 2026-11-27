@@ -8,7 +8,7 @@ import { getRev, loadState, putKv, upsert } from '../worker/store.ts';
 import type { Env } from '../worker/env.ts';
 import { TOOLS } from '../worker/ai/mcp-tools.ts';
 import type { ToolCtx } from '../worker/ai/tool-kit.ts';
-import { createToken } from '../worker/ai/mcp.ts';
+import { createToken, mcp } from '../worker/ai/mcp.ts';
 import { ASSISTANT_TOOLS, appMatches, apply, chat, enrichDraft } from '../worker/ai/assistant.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 import { addDays, addMonths, memberRate, runwayFor, todayIn } from './billing.ts';
@@ -2620,4 +2620,58 @@ test('assistant pins service-catalogue auto-fill into proposal args and skips Ap
   assert.equal(saved?.icon, '/ai/gemini.svg');
   assert.equal(saved?.url, 'https://gemini.google.com');
   assert.equal(saved?.category, 'AI tools');
+});
+
+test('Skills over MCP (SEP-2640): skills/list, skills/get, resources/read digest verification, prompts/get and DELETE 204', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+
+  const init = await f.rpc('initialize', { protocolVersion: '2025-06-18' }, f.read);
+  assert.ok(init.capabilities.resources);
+  assert.ok(init.capabilities.prompts);
+  assert.deepEqual(init.capabilities.extensions?.['io.modelcontextprotocol/skills'], {});
+
+  // Enriched connection context exposes categories, payment methods and files_enabled without leaking secrets
+  const ctxJson = JSON.parse(init.instructions.split('\n').at(-1));
+  assert.ok(Array.isArray(ctxJson.categories) && ctxJson.categories.length > 0);
+  assert.ok(Array.isArray(ctxJson.payment_methods) && ctxJson.payment_methods.some((m: { id: string }) => m.id === 'wallet'));
+  assert.equal(typeof ctxJson.files_enabled, 'boolean');
+
+  // SEP-2640 skills/list & skills/get
+  const listed = await f.rpc('skills/list', {}, f.read);
+  assert.equal(listed.skills.length, 1);
+  const entry = listed.skills[0];
+  assert.equal(entry.uri, 'skill://calends-ledger/SKILL.md');
+  assert.equal(entry.frontmatter.name, 'calends-ledger');
+  assert.ok(entry.frontmatter.description.length > 20);
+  assert.ok(entry.resources.length >= 3);
+
+  const fetched = await f.rpc('skills/get', { uri: entry.uri }, f.read);
+  assert.deepEqual(fetched, entry);
+
+  // Every declared resource is readable via resources/read and matches exact UTF-8 byte size + sha256 digest
+  const resList = await f.rpc('resources/list', {}, f.read);
+  assert.equal(resList.resources.length, entry.resources.length);
+  const enc = new TextEncoder();
+  for (const ref of entry.resources) {
+    const read = await f.rpc('resources/read', { uri: ref.uri }, f.read);
+    assert.equal(read.contents.length, 1);
+    const bytes = enc.encode(read.contents[0].text);
+    assert.equal(bytes.byteLength, ref.size, `size mismatch for ${ref.uri}`);
+    const digest = `sha256:${[...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map((x) => x.toString(16).padStart(2, '0')).join('')}`;
+    assert.equal(digest, ref.digest, `digest mismatch for ${ref.uri}`);
+  }
+
+  // prompts/list & prompts/get hydrate live ledger context
+  const prompts = await f.rpc('prompts/list', {}, f.read);
+  assert.ok(prompts.prompts.some((p: { name: string }) => p.name === 'organize_receipts'));
+  assert.ok(prompts.prompts.some((p: { name: string }) => p.name === 'spending_summary'));
+  const gotPrompt = await f.rpc('prompts/get', { name: 'organize_receipts', arguments: { input: 'Spotify $19.99' } }, f.read);
+  assert.equal(gotPrompt.messages.length, 1);
+  assert.match(gotPrompt.messages[0].content.text, /Spotify \$19\.99/);
+  assert.match(gotPrompt.messages[0].content.text, /wallet/);
+
+  // DELETE /mcp returns 204 for stateless session cleanup compatibility
+  const delRes = await mcp(new Request('https://fictional.invalid/mcp', { method: 'DELETE' }), f.env);
+  assert.equal(delRes.status, 204);
 });

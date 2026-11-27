@@ -212,7 +212,10 @@
     "customOpenai": "사용자 지정 (OpenAI 호환)",
     "customAnthropic": "사용자 지정 (Anthropic 호환)",
     "keyOptional": "로컬 서비스는 비워 둘 수 있음",
-    "baseHintCustom": "API 기본 URL을 입력하세요(보통 /v1로 끝남)."
+    "baseHintCustom": "API 기본 URL을 입력하세요(보통 /v1로 끝남).",
+    "baseResolved": "경로가 자동 보완되었습니다: {url}",
+    "probe": "모델 테스트",
+    "probeOk": "연결됨 — 모델이 정상 응답했습니다"
   },
   "f": {
     "member": "멤버",

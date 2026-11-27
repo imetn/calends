@@ -128,7 +128,7 @@ export const paymentMethodTool: Tool = {
   },
 };
 
-export const ledgerTools = (connectionInfo: (ctx: ToolCtx, settings: AppState['settings'], today: string) => object): Tool[] => [
+export const ledgerTools = (connectionInfo: (ctx: ToolCtx, st: AppState, today: string) => object): Tool[] => [
   {
     name: 'save_category',
     write: true,
@@ -229,7 +229,7 @@ export const ledgerTools = (connectionInfo: (ctx: ToolCtx, settings: AppState['s
     inputSchema: obj({}),
     async run(_a, ctx) {
       const { st, today } = await state(ctx);
-      return { ...safeSettings(st), connection: connectionInfo(ctx, st.settings, today) };
+      return { ...safeSettings(st), connection: connectionInfo(ctx, st, today) };
     },
   },
   {

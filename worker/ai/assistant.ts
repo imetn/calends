@@ -29,7 +29,7 @@ import {
 } from '../../shared/assistant-result.ts';
 import type { Env } from '../env.ts';
 import { TOOLS } from './mcp-tools.ts';
-import { classifyError, fetchProviderModels, streamTurn, toModelMessages } from './provider.ts';
+import { classifyError, fetchProviderModels, probeProviderModel, streamTurn, toModelMessages } from './provider.ts';
 import { decodeEntities, state, type Tool, type ToolCtx } from './tool-kit.ts';
 import { searchAppStore } from '../appstore.ts';
 import { getKv, loadState, putKv } from '../store.ts';
@@ -77,8 +77,12 @@ export async function saveConfig(env: Env, b: { provider?: ProviderId; apiKey?: 
   return configView(next);
 }
 
-/** 测试连接：列出模型。返回可用的模型 id，或错误类别 */
-export async function testConfig(env: Env, draft?: { provider?: ProviderId; apiKey?: string; baseUrl?: string }) {
+/** 测试连接：默认列出可用模型；传 probe=true 且带 model 时发一条极简对话验证手动填写的模型 */
+export async function testConfig(
+  env: Env,
+  draft?: { provider?: ProviderId; apiKey?: string; baseUrl?: string; model?: string; probe?: boolean },
+  signal?: AbortSignal,
+) {
   const c = (await getConfig(env)) ?? {};
   const provider: ProviderId = isProviderId(draft?.provider) ? draft.provider : (c.provider ?? inferProvider(draft?.baseUrl ?? c.baseUrl));
   const preset = resolveProvider({ provider, baseUrl: draft?.baseUrl ?? c.baseUrl });
@@ -86,6 +90,9 @@ export async function testConfig(env: Env, draft?: { provider?: ProviderId; apiK
   const apiKey = draft?.apiKey?.trim() || (sameProvider ? c.apiKey : undefined);
   if (!apiKey && !preset.optionalKey) return { ok: false, kind: 'config' as ErrorKind, message: t('server.assistant.noKey') };
   const baseUrl = normProviderBaseUrl(provider, draft?.baseUrl ?? (sameProvider ? c.baseUrl : preset.baseUrl));
+  if (draft?.probe) {
+    return probeProviderModel({ provider, apiKey, baseUrl, model: draft.model ?? (sameProvider ? c.model : preset.defaultModel) }, undefined, signal);
+  }
   return fetchProviderModels({ provider, apiKey, baseUrl });
 }
 
@@ -216,6 +223,10 @@ export function chat(env: Env, body: { history?: ApiMessage[]; text?: string; im
   const writer = stream.writable.getWriter();
   const enc = new TextEncoder();
   const emit: Emit = (ev) => void writer.write(enc.encode(`data: ${JSON.stringify(ev)}\n\n`)).catch(() => {});
+  // 深度思考或 Cloudflare 边缘长等待时定期发 SSE 注释心跳，防止中间代理因流空闲而断开连接
+  const heartbeat = setInterval(() => {
+    if (!signal.aborted) void writer.write(enc.encode(': ping\n\n')).catch(() => {});
+  }, 15_000);
 
   void (async () => {
     const added: ApiMessage[] = [];
@@ -231,11 +242,12 @@ export function chat(env: Env, body: { history?: ApiMessage[]; text?: string; im
       const liveMessages: ModelMessage[] = toModelMessages([...history, user], preset.protocol);
       // 这一问里的草稿叠在一起，后面的工具能看到前面的草稿
       const ctx = { env, overlay: new Map(), access: { client: 'assistant', scope: 'write' } } satisfies ToolCtx;
+      const sysPrompt = await systemPrompt(env);
       const drafted = new Set<string>();
       let failures: ToolFailure[] = [];
       let exhausted = true;
       for (let round = 0; round < MAX_ROUNDS; round++) {
-        const { turn, responseMessages } = await streamTurn(cfg, await systemPrompt(env), liveMessages, ASSISTANT_TOOLS, emit, signal);
+        const { turn, responseMessages } = await streamTurn(cfg, sysPrompt, liveMessages, ASSISTANT_TOOLS, emit, signal);
         const asstMsg = assistantMessage(turn);
         added.push(asstMsg);
         if (responseMessages.length) liveMessages.push(...responseMessages);
@@ -310,11 +322,13 @@ export function chat(env: Env, body: { history?: ApiMessage[]; text?: string; im
           const limitNote = `[Execution limit] No tool calls remain. Summarize only successfully prepared drafts and list unfinished steps. Nothing has been saved. Unresolved errors: ${JSON.stringify(failures.map(({ name, error }) => ({ name, error })))}`;
           const { turn: closing } = await streamTurn(
             cfg,
-            await systemPrompt(env),
+            sysPrompt,
             [...liveMessages, { role: 'user', content: limitNote }],
             undefined,
             emit,
             signal,
+            undefined,
+            0,
           );
           added.push(assistantMessage(closing));
           if (closing.usage) emit({ type: 'usage', ...closing.usage });
@@ -339,6 +353,7 @@ export function chat(env: Env, body: { history?: ApiMessage[]; text?: string; im
       if (signal.aborted) emit({ type: 'done', messages: added, aborted: true });
       else emit({ type: 'error', kind: err.kind, status: err.status, message: err.message });
     } finally {
+      clearInterval(heartbeat);
       await writer.close().catch(() => {});
     }
   })();

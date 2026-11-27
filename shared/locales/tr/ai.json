@@ -94,6 +94,14 @@
     "people": "Ortak planlar ve başkası adına ödemeler",
     "categories": "Kategoriler",
     "settings": "Ayarlar",
-    "other": "Diğer"
+    "other": "Diğer",
+    "files": "Dosyalar"
+  },
+  "skill": {
+    "title": "Agent Skill (Skills over MCP)",
+    "hint": "/mcp üzerinden (SEP-2640) yerleşik sunulur; diğer istemciler için SKILL.md dosyasını kopyalayın veya indirin.",
+    "copy": "SKILL.md kopyala",
+    "download": "SKILL.md indir",
+    "copied": "SKILL.md kopyalandı"
   }
 }

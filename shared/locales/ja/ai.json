@@ -92,6 +92,14 @@
     "people": "共有プランと立て替え",
     "categories": "カテゴリ",
     "settings": "設定",
-    "other": "その他"
+    "other": "その他",
+    "files": "ファイル"
+  },
+  "skill": {
+    "title": "Agent Skill（Skills over MCP）",
+    "hint": "/mcp から SEP-2640 形式で自動配信されます。未対応クライアント向けに SKILL.md をコピーまたはダウンロードできます。",
+    "copy": "SKILL.md をコピー",
+    "download": "SKILL.md をダウンロード",
+    "copied": "SKILL.md をコピーしました"
   }
 }

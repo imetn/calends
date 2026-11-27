@@ -8449,7 +8449,8 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   font-size: var(--fs-2);
 }
 /* 仅提示停用状态。 */
-.ai-badge {
+.ai-badge,
+.ai-skill-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -8521,6 +8522,41 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   border-radius: var(--radius-lg);
   background: var(--card);
   box-shadow: inset 0 0 0 var(--hairline) var(--line);
+}
+.ai-skill-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.ai-skill-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.ai-skill-text b {
+  gap: 7px;
+  font-size: var(--fs-2);
+}
+.ai-skill-text small {
+  color: var(--label-2);
+  font-size: var(--fs-1);
+  line-height: 1.5;
+}
+.ai-skill-uri {
+  width: fit-content;
+  color: var(--label-3);
+  font: 500 var(--fs-1)/1.4 var(--mono);
+  overflow-wrap: anywhere;
+}
+.ai-skill-acts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .ai-card > header {
   display: block;

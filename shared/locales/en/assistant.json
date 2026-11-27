@@ -217,7 +217,10 @@
     "customOpenai": "Custom (OpenAI-compatible)",
     "customAnthropic": "Custom (Anthropic-compatible)",
     "keyOptional": "Optional for local services",
-    "baseHintCustom": "Enter the API root URL (usually ending in /v1)."
+    "baseHintCustom": "Enter the API root URL (usually ending in /v1).",
+    "baseResolved": "Auto-completed path: {url}",
+    "probe": "Test model",
+    "probeOk": "Connected — model responded normally"
   },
   "f": {
     "member": "Member",

@@ -212,7 +212,10 @@
     "customOpenai": "Kustom (kompatibel OpenAI)",
     "customAnthropic": "Kustom (kompatibel Anthropic)",
     "keyOptional": "Opsional untuk layanan lokal",
-    "baseHintCustom": "Masukkan URL dasar API (biasanya diakhiri /v1)."
+    "baseHintCustom": "Masukkan URL dasar API (biasanya diakhiri /v1).",
+    "baseResolved": "Jalur dilengkapi otomatis: {url}",
+    "probe": "Uji model",
+    "probeOk": "Terhubung — model merespons normal"
   },
   "f": {
     "member": "Anggota",

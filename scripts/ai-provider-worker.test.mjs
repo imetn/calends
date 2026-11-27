@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyError, fetchProviderModels, streamTurn, toModelMessages } from '../worker/ai/provider.ts';
+import { classifyError, fetchProviderModels, probeProviderModel, streamTurn, toModelMessages } from '../worker/ai/provider.ts';
 import { saveConfig, testConfig } from '../worker/ai/assistant.ts';
 
 function sseResponse(events) {
@@ -218,4 +218,48 @@ test('saveConfig 与 testConfig: 切供应商不复用旧 Key，清除后回到�
   assert.equal(ollama.provider, 'ollama');
   const cleared = await saveConfig(env, { apiKey: null });
   assert.equal(cleared.configured, false);
+});
+
+test('反代模型自动探测：裸域名回退 /v1 并返回 resolvedBaseUrl，Anthropic 兼容回退 Bearer，OpenAI 反代走 chat/completions', async () => {
+  // 1) 未带 /v1 的反代根地址：/models 返回 404，自动命中 /v1/models
+  const seenUrls = [];
+  const res = await fetchProviderModels(
+    { provider: 'custom-openai', apiKey: 'sk-proxy', baseUrl: 'https://relay.example.com' },
+    async (url) => {
+      seenUrls.push(String(url));
+      if (String(url).endsWith('/v1/models')) return Response.json({ data: [{ id: 'my-deepseek' }] });
+      return new Response('<html><title>404 Not Found</title></html>', { status: 404, headers: { 'content-type': 'text/html' } });
+    },
+  );
+  assert.deepEqual(seenUrls, ['https://relay.example.com/models', 'https://relay.example.com/v1/models']);
+  assert.deepEqual(res, { ok: true, models: ['my-deepseek'], resolvedBaseUrl: 'https://relay.example.com/v1' });
+
+  // 2) Anthropic 反代拒绝 x-api-key 时自动回退 Authorization: Bearer
+  const antRes = await fetchProviderModels(
+    { provider: 'custom-anthropic', apiKey: 'sk-bearer', baseUrl: 'https://relay.example.com/v1' },
+    async (_url, init) => {
+      if (init.headers.authorization === 'Bearer sk-bearer') return Response.json({ data: [{ id: 'claude-sonnet-4-5' }] });
+      return Response.json({ error: { message: 'missing bearer' } }, { status: 401 });
+    },
+  );
+  assert.deepEqual(antRes, { ok: true, models: ['claude-sonnet-4-5'] });
+
+  // 3) 选 OpenAI 预设但填反代域名时走 /chat/completions 而不是 /responses
+  let probeUrl = '';
+  const probe = await probeProviderModel(
+    { provider: 'openai', apiKey: 'sk-proxy', baseUrl: 'https://relay.example.com/v1', model: 'deepseek-chat' },
+    async (url) => {
+      probeUrl = String(url);
+      return Response.json({
+        id: 'chatcmpl-1',
+        object: 'chat.completion',
+        created: 1,
+        model: 'deepseek-chat',
+        choices: [{ index: 0, message: { role: 'assistant', content: 'OK' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 4, completion_tokens: 1, total_tokens: 5 },
+      });
+    },
+  );
+  assert.equal(probeUrl, 'https://relay.example.com/v1/chat/completions');
+  assert.deepEqual(probe, { ok: true, model: 'deepseek-chat' });
 });

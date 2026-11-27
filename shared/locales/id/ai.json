@@ -92,6 +92,14 @@
     "people": "Patungan & bayar untuk orang lain",
     "categories": "Kategori",
     "settings": "Pengaturan",
-    "other": "Lainnya"
+    "other": "Lainnya",
+    "files": "File"
+  },
+  "skill": {
+    "title": "Agent Skill (Skills over MCP)",
+    "hint": "Tersedia bawaan di /mcp (SEP-2640); salin atau unduh SKILL.md untuk klien lain agar lebih akurat.",
+    "copy": "Salin SKILL.md",
+    "download": "Unduh SKILL.md",
+    "copied": "SKILL.md disalin"
   }
 }

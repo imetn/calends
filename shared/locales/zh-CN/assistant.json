@@ -208,7 +208,10 @@
     "customOpenai": "自定义（OpenAI 兼容）",
     "customAnthropic": "自定义（Anthropic 兼容）",
     "keyOptional": "本地服务可留空",
-    "baseHintCustom": "填写接口根地址（通常以 /v1 结尾）。"
+    "baseHintCustom": "填写接口根地址（通常以 /v1 结尾）。",
+    "baseResolved": "已自动补全路径：{url}",
+    "probe": "测试模型",
+    "probeOk": "连接成功，该模型可正常响应"
   },
   "f": {
     "member": "成员",

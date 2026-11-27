@@ -212,7 +212,10 @@
     "customOpenai": "自訂（OpenAI 相容）",
     "customAnthropic": "自訂（Anthropic 相容）",
     "keyOptional": "本機服務可留空",
-    "baseHintCustom": "填寫介面根地址（通常以 /v1 結尾）。"
+    "baseHintCustom": "填寫介面根地址（通常以 /v1 結尾）。",
+    "baseResolved": "已自動補全路徑：{url}",
+    "probe": "測試模型",
+    "probeOk": "連線成功，此模型可正常回應"
   },
   "f": {
     "member": "成員",

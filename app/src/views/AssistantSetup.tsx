@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, RotateCcw } from 'lucide-react';
+import { Check, Loader2, RotateCcw } from 'lucide-react';
 import { AI_PROVIDERS, getProvider, type AiProviderPreset, type AssistantConfigView, type Effort, type ProviderId } from '../../../shared/ai-providers.ts';
 import { t } from '../../../shared/i18n.ts';
 import { ask, Sheet } from '../components/overlays.tsx';
@@ -33,11 +33,14 @@ export function SetupSheet({
   const [model, setModel] = useState(cfg?.model ?? getProvider(initialProvider)?.defaultModel ?? '');
   const [effort, setEffort] = useState<Effort>(cfg?.effort ?? 'low');
   const [saving, setSaving] = useState(false);
-  // 模型列表：填好地址和 Key 后向服务商的 /models 取；取不到（有的服务没有这个接口）时可以手动填
+  // 模型列表：填好地址和 Key 后向服务商的 /models 取；取不到（有的反代没有这个接口）时直接展示输入框并支持单项连通性验证
   const [models, setModels] = useState<string[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [fetchErr, setFetchErr] = useState<string | null>(null);
+  const [resolvedNote, setResolvedNote] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
+  const [probing, setProbing] = useState(false);
+  const [probeState, setProbeState] = useState<{ ok: boolean; text: string } | null>(null);
 
   const preset = getProvider(provider) ?? AI_PROVIDERS[0];
   const sameSaved = !!cfg?.configured && provider === cfg.provider && !!cfg.keyHint;
@@ -52,15 +55,18 @@ export function SetupSheet({
     setModel(nextId === cfg?.provider ? cfg.model : next.defaultModel);
     setModels(null);
     setFetchErr(null);
+    setResolvedNote(null);
     setManual(false);
+    setProbeState(null);
   };
 
   const fetchModels = async () => {
     if (!canFetch) return;
     setFetching(true);
     setFetchErr(null);
+    setResolvedNote(null);
     try {
-      const r = await api<{ ok: boolean; message?: string; models?: string[] }>('/api/assistant/test', {
+      const r = await api<{ ok: boolean; message?: string; models?: string[]; resolvedBaseUrl?: string }>('/api/assistant/test', {
         method: 'POST',
         body: JSON.stringify({ provider, apiKey: key.trim() || undefined, baseUrl }),
       });
@@ -69,9 +75,14 @@ export function SetupSheet({
         setFetchErr(r.ok ? t('assistant.setup.noModels') : (r.message ?? t('assistant.error.network')));
         return;
       }
+      if (r.resolvedBaseUrl && r.resolvedBaseUrl !== baseUrl.trim().replace(/\/+$/, '')) {
+        setBaseUrl(r.resolvedBaseUrl);
+        setResolvedNote(r.resolvedBaseUrl);
+      }
       const list = [...new Set(r.models)].sort((a, b) => a.localeCompare(b));
       setModels(list);
       setManual(false);
+      setProbeState(null);
       // 当前模型不在列表里：优先预设默认模型，其次带 flash/mini 的轻量模型，最后第一个
       setModel((m) => {
         if (m && list.includes(m)) return m;
@@ -85,8 +96,27 @@ export function SetupSheet({
       setFetching(false);
     }
   };
+
+  const probeModel = async () => {
+    if (!canFetch || !model.trim()) return;
+    setProbing(true);
+    setProbeState(null);
+    try {
+      const r = await api<{ ok: boolean; message?: string; model?: string }>('/api/assistant/test', {
+        method: 'POST',
+        body: JSON.stringify({ provider, apiKey: key.trim() || undefined, baseUrl, model: model.trim(), probe: true }),
+      });
+      setProbeState(r.ok ? { ok: true, text: t('assistant.setup.probeOk') } : { ok: false, text: r.message ?? t('assistant.error.network') });
+    } catch (e) {
+      setProbeState({ ok: false, text: (e as Error).message });
+    } finally {
+      setProbing(false);
+    }
+  };
+
   // 打开时（已保存 Key）以及切换服务商、改地址或 Key 后，停顿一下自动获取
   useEffect(() => {
+    setProbeState(null);
     if (!canFetch) return;
     const changed = !!key || provider !== (cfg?.provider ?? 'deepseek') || baseUrl !== (cfg?.baseUrl ?? '');
     const h = setTimeout(() => void fetchModels(), changed ? 700 : 0);
@@ -115,6 +145,9 @@ export function SetupSheet({
     onSaved(v);
     toast(t('assistant.setup.cleared'));
   };
+
+  // 拉取模型失败时直接展开输入框，不把用户拦在死灰提示卡里（仍保留重试与列表切换）
+  const showManualInput = manual || (!!fetchErr && !models);
 
   return (
     <Sheet
@@ -197,8 +230,20 @@ export function SetupSheet({
         </div>
         <label className="as-field">
           <span>Base URL</span>
-          <input spellCheck={false} value={baseUrl} placeholder={preset.baseUrl || 'https://api.example.com/v1'} onChange={(e) => setBaseUrl(e.target.value)} />
-          <small>{t(preset.custom ? 'assistant.setup.baseHintCustom' : 'assistant.setup.baseHint')}</small>
+          <input
+            spellCheck={false}
+            value={baseUrl}
+            placeholder={preset.baseUrl || 'https://api.example.com/v1'}
+            onChange={(e) => {
+              setBaseUrl(e.target.value);
+              setResolvedNote(null);
+            }}
+          />
+          <small>
+            {resolvedNote
+              ? t('assistant.setup.baseResolved', { url: resolvedNote })
+              : t(preset.custom ? 'assistant.setup.baseHintCustom' : 'assistant.setup.baseHint')}
+          </small>
         </label>
         <label className="as-field">
           <span>API Key</span>
@@ -216,7 +261,7 @@ export function SetupSheet({
         <div className="as-field">
           <span className="as-model-head">
             {t('assistant.setup.model')}
-            {models && !manual && (
+            {canFetch && (
               <button type="button" className="as-link" onClick={() => void fetchModels()} disabled={fetching}>
                 {fetching ? <Loader2 size={12} className="spin" /> : <RotateCcw size={12} />} {t('assistant.setup.refresh')}
               </button>
@@ -237,11 +282,30 @@ export function SetupSheet({
                     group: m.includes('/') ? m.slice(0, m.indexOf('/')) : undefined,
                   })),
                 ]}
-                onChange={setModel}
+                onChange={(v) => {
+                  setModel(v);
+                  setProbeState(null);
+                }}
               />
             </div>
-          ) : manual ? (
-            <input spellCheck={false} value={model} placeholder={preset.defaultModel || 'model-id'} onChange={(e) => setModel(e.target.value)} />
+          ) : showManualInput ? (
+            <div className="as-model-manual">
+              <input
+                spellCheck={false}
+                value={model}
+                placeholder={preset.defaultModel || 'model-id'}
+                onChange={(e) => {
+                  setModel(e.target.value);
+                  setProbeState(null);
+                }}
+              />
+              {canFetch && (
+                <button type="button" className="btn" onClick={() => void probeModel()} disabled={probing || !model.trim()}>
+                  {probing ? <Loader2 size={14} className="spin" /> : null}
+                  {t('assistant.setup.probe')}
+                </button>
+              )}
+            </div>
           ) : (
             <div className="as-model-empty">
               {fetching ? (
@@ -249,23 +313,23 @@ export function SetupSheet({
                   <Loader2 size={14} className="spin" /> {t('assistant.setup.fetching')}
                 </>
               ) : (
-                (fetchErr ?? t('assistant.setup.fetchHint'))
+                t('assistant.setup.fetchHint')
               )}
             </div>
           )}
+          {probeState && (
+            <small className={probeState.ok ? 'as-probe-ok' : 'as-probe-err'}>
+              {probeState.ok && <Check size={12} />}
+              {probeState.text}
+            </small>
+          )}
+          {fetchErr && !models && !fetching && <small className="as-model-err">{fetchErr}</small>}
           <small className="as-model-foot">
             {models && !manual ? t('assistant.setup.fetched', { count: models.length }) : t('assistant.setup.modelHint')}
-            {!manual ? (
-              <>
-                {fetchErr && !fetching && (
-                  <button type="button" className="as-link" onClick={() => void fetchModels()}>
-                    {t('assistant.setup.retry')}
-                  </button>
-                )}
-                <button type="button" className="as-link" onClick={() => setManual(true)}>
-                  {t('assistant.setup.manual')}
-                </button>
-              </>
+            {!showManualInput ? (
+              <button type="button" className="as-link" onClick={() => setManual(true)}>
+                {t('assistant.setup.manual')}
+              </button>
             ) : (
               models && (
                 <button type="button" className="as-link" onClick={() => setManual(false)}>

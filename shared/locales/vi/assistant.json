@@ -212,7 +212,10 @@
     "customOpenai": "Tùy chỉnh (tương thích OpenAI)",
     "customAnthropic": "Tùy chỉnh (tương thích Anthropic)",
     "keyOptional": "Không bắt buộc với dịch vụ cục bộ",
-    "baseHintCustom": "Nhập URL gốc của API (thường kết thúc bằng /v1)."
+    "baseHintCustom": "Nhập URL gốc của API (thường kết thúc bằng /v1).",
+    "baseResolved": "Đã tự động bổ sung đường dẫn: {url}",
+    "probe": "Kiểm tra mô hình",
+    "probeOk": "Đã kết nối — mô hình phản hồi bình thường"
   },
   "f": {
     "member": "Thành viên",

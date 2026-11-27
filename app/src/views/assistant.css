@@ -864,6 +864,31 @@
   flex-wrap: wrap;
   gap: 4px 12px;
 }
+.as-model-manual {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.as-model-manual input {
+  flex: 1;
+  min-width: 0;
+}
+.as-model-manual .btn {
+  height: var(--ctl-h-lg);
+  flex-shrink: 0;
+}
+.as-model-err,
+.as-probe-err {
+  color: var(--red);
+  overflow-wrap: anywhere;
+}
+.as-probe-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--green);
+  font-weight: 500;
+}
 .as-effort {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

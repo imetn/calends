@@ -217,7 +217,10 @@
     "customOpenai": "Benutzerdefiniert (OpenAI-kompatibel)",
     "customAnthropic": "Benutzerdefiniert (Anthropic-kompatibel)",
     "keyOptional": "Für lokale Dienste optional",
-    "baseHintCustom": "Gib die API-Basis-URL ein (meist mit /v1 am Ende)."
+    "baseHintCustom": "Gib die API-Basis-URL ein (meist mit /v1 am Ende).",
+    "baseResolved": "Pfad automatisch ergänzt: {url}",
+    "probe": "Modell testen",
+    "probeOk": "Verbunden — Modell hat geantwortet"
   },
   "f": {
     "member": "Mitglied",

@@ -98,6 +98,14 @@
     "people": "Совместные подписки и оплата за других",
     "categories": "Категории",
     "settings": "Настройки",
-    "other": "Другое"
+    "other": "Другое",
+    "files": "Файлы"
+  },
+  "skill": {
+    "title": "Agent Skill (Skills over MCP)",
+    "hint": "Встроен в /mcp (SEP-2640); для других клиентов скопируйте или скачайте SKILL.md.",
+    "copy": "Копировать SKILL.md",
+    "download": "Скачать SKILL.md",
+    "copied": "SKILL.md скопирован"
   }
 }

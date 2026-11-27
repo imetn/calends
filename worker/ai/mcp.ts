@@ -6,8 +6,17 @@ import { randomToken, sha256 } from '../auth.ts';
 import type { Env } from '../env.ts';
 import { getKv, getSettings, putKv } from '../store.ts';
 import { TOOLS, toolTitle, connectionInfo } from './mcp-tools.ts';
-import { MCP_CONTENT, type ToolCtx } from './tool-kit.ts';
-import { todayIn } from '../../shared/billing.ts';
+import {
+  getPrompt,
+  getSkill,
+  listPrompts,
+  listSkillResources,
+  listSkills,
+  PRIMARY_SKILL_URI,
+  readSkillResource,
+  SKILL_EXTENSION_ID,
+} from './mcp-skills.ts';
+import { MCP_CONTENT, state, type ToolCtx } from './tool-kit.ts';
 import { t } from '../../shared/i18n.ts';
 
 export interface McpToken {
@@ -86,6 +95,11 @@ type Rpc = { jsonrpc: '2.0'; id?: string | number | null; method: string; params
 const ok = (id: Rpc['id'], result: unknown) => ({ jsonrpc: '2.0', id: id ?? null, result });
 const fail = (id: Rpc['id'], code: number, message: string) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } });
 
+const MCP_PLAYBOOK = [
+  `Read the bundled Calends skill (${PRIMARY_SKILL_URI} via skills/list + resources/read) before complex writes or audits.`,
+  'Key rules: (1) Reuse exact category names and payment method IDs from the connection JSON below (never invent unknown categories without create_category=true); (2) Search list_subscriptions before creating; preserve independent same-name accounts; (3) Record amounts in the original store currency and region; omit icon on create_subscription to auto-match common services, or call search_services/search_app_store; (4) Never do mental math on spending or carpool dues — use get_insights(section=month_report|scope_report), spending_stats, and get_carpool; (5) Preview writes with dry_run=true first; (6) For receipts/invoices, check files_enabled and use upload_file (kind=charge + date, or upload_link=true for local files).',
+].join('\n');
+
 async function handle(msg: Rpc, env: Env, token: McpToken): Promise<unknown | undefined> {
   // 通知（没有 id）只需确认收到
   if (msg.id === undefined) return undefined;
@@ -93,16 +107,49 @@ async function handle(msg: Rpc, env: Env, token: McpToken): Promise<unknown | un
     case 'initialize': {
       const asked = String(msg.params?.protocolVersion ?? PROTOCOL);
       const ctx: ToolCtx = { env, access: { client: 'mcp', scope: token.scope } };
-      const settings = await getSettings(env);
+      const { st, today } = await state(ctx);
       return ok(msg.id, {
         protocolVersion: SUPPORTED.includes(asked) ? asked : PROTOCOL,
-        capabilities: { tools: { listChanged: false } },
+        capabilities: {
+          tools: { listChanged: false },
+          prompts: { listChanged: false },
+          resources: { subscribe: false, listChanged: false },
+          extensions: { [SKILL_EXTENSION_ID]: {} },
+        },
         serverInfo: { name: 'calends', title: t('mcp.serverTitle'), version: '1.0.0' },
-        instructions: `${t('mcp.instructions')}\n${JSON.stringify(connectionInfo(ctx, settings, todayIn(settings.timezone)))}`,
+        instructions: `${t('mcp.instructions')}\n${MCP_PLAYBOOK}\n${JSON.stringify(connectionInfo(ctx, st, today))}`,
       });
     }
     case 'ping':
       return ok(msg.id, {});
+    case 'skills/list':
+      return ok(msg.id, await listSkills());
+    case 'skills/get': {
+      const uri = String(msg.params?.uri ?? '').trim();
+      if (!uri) return fail(msg.id, -32602, t('mcp.error.invalidInput', { field: 'uri' }));
+      const skill = await getSkill(uri);
+      if (!skill) return fail(msg.id, -32602, t('mcp.error.invalidTarget'));
+      return ok(msg.id, skill);
+    }
+    case 'resources/list':
+      return ok(msg.id, { resources: listSkillResources() });
+    case 'resources/read': {
+      const uri = String(msg.params?.uri ?? '').trim();
+      if (!uri) return fail(msg.id, -32602, t('mcp.error.invalidInput', { field: 'uri' }));
+      const res = readSkillResource(uri);
+      if (!res) return fail(msg.id, -32602, t('mcp.error.invalidTarget'));
+      return ok(msg.id, res);
+    }
+    case 'prompts/list':
+      return ok(msg.id, { prompts: listPrompts() });
+    case 'prompts/get': {
+      const name = String(msg.params?.name ?? '').trim();
+      const ctx: ToolCtx = { env, access: { client: 'mcp', scope: token.scope } };
+      const { st, today } = await state(ctx);
+      const prompt = getPrompt(name, (msg.params?.arguments ?? {}) as Record<string, unknown>, ctx, st, today);
+      if (!prompt) return fail(msg.id, -32602, t('mcp.error.invalidTarget'));
+      return ok(msg.id, prompt);
+    }
     case 'tools/list':
       return ok(msg.id, {
         tools: TOOLS.filter((x) => token.scope === 'write' || !x.write).map((x) => ({
@@ -138,11 +185,13 @@ export async function mcp(req: Request, env: Env): Promise<Response> {
   const cors = {
     'access-control-allow-origin': '*',
     'access-control-allow-headers': 'authorization, content-type, mcp-protocol-version, mcp-session-id',
-    'access-control-allow-methods': 'POST, GET, OPTIONS',
+    'access-control-allow-methods': 'POST, GET, DELETE, OPTIONS',
   };
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  // 无状态服务器不维护会话，客户端清理会话时直接返回 204
+  if (req.method === 'DELETE') return new Response(null, { status: 204, headers: cors });
   // 无状态服务器不提供服务端推送流
-  if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: { ...cors, allow: 'POST' } });
+  if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: { ...cors, allow: 'POST, DELETE' } });
   if ((await getSettings(env)).aiEnabled === false) return Response.json(fail(null, -32002, t('mcp.error.aiDisabled')), { status: 403, headers: cors });
   const token = await authenticate(req, env);
   if (!token) return Response.json(fail(null, -32001, t('mcp.error.badToken')), { status: 401, headers: { ...cors, 'www-authenticate': 'Bearer' } });

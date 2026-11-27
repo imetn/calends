@@ -7,7 +7,7 @@ import { CardTitle, Toolbar } from '../components/ui.tsx';
 import { LoadFailed, Sheet } from '../components/overlays.tsx';
 import { Icon } from '../components/icons.tsx';
 import { Toggle } from '../components/inputs.tsx';
-import { ChartPie, Eye, KeyRound, Layers, PencilLine, ReceiptText, Settings2, Shapes, Tags, Users, Wallet } from 'lucide-react';
+import { BookOpen, ChartPie, Download, Eye, FileText, KeyRound, Layers, PencilLine, ReceiptText, Settings2, Shapes, Tags, Users, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { api, saveSettings } from '../store.ts';
 import { copyText, run } from '../toast.ts';
@@ -34,6 +34,7 @@ const TOOL_DOMAINS: Array<{ key: string; icon: LucideIcon; test: RegExp }> = [
   { key: 'overview', icon: ChartPie, test: /overview|stats|trends|insights/ },
   { key: 'subs', icon: Layers, test: /subscription|price|plan|status|events|meters|readings/ },
   { key: 'charges', icon: ReceiptText, test: /charges|payment$|transfer/ },
+  { key: 'files', icon: FileText, test: /file/ },
   { key: 'wallet', icon: Wallet, test: /payment_method/ },
   { key: 'people', icon: Users, test: /people|person|carpool|share|proxy|receivable/ },
   { key: 'categories', icon: Tags, test: /categor/ },
@@ -275,6 +276,7 @@ export function Ai({ state, switcher }: { state: AppState; switcher?: ReactNode 
   // 原始令牌只存在于首次展示的弹层中，关闭即丢弃。
   const [fresh, setFresh] = useState<{ token: string; item: Token } | null>(null);
   const [showTools, setShowTools] = useState(false);
+  const [skill, setSkill] = useState<{ uri: string; content: string } | null>(null);
   const ro = !!state.readonly;
   const enabled = state.settings.aiEnabled !== false;
   const [failed, setFailed] = useState({ tokens: false, tools: false });
@@ -294,10 +296,27 @@ export function Ai({ state, switcher }: { state: AppState; switcher?: ReactNode 
       },
       () => setFailed((f) => ({ ...f, tools: true })),
     );
+  const loadSkill = () =>
+    api<{ uri: string; content: string }>('/api/mcp/skill').then(
+      (res) => setSkill(res),
+      () => {},
+    );
   useEffect(() => {
     void load();
     void loadTools();
+    void loadSkill();
   }, []);
+
+  const downloadSkill = () => {
+    if (!skill) return;
+    const blob = new Blob([skill.content], { type: 'text/markdown;charset=utf-8' });
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = 'SKILL.md';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(href), 1000);
+  };
   const when = (iso?: string) => (iso ? localTime(iso, state.settings.timezone) : t('ai.neverUsed'));
   // 按领域分组，组内先读后写；读写用图标区分（参考 GitHub 细粒度令牌的权限列表）
   const groups = [...TOOL_DOMAINS, OTHER]
@@ -347,6 +366,29 @@ export function Ai({ state, switcher }: { state: AppState; switcher?: ReactNode 
           </header>
           <Connect url={url} client={client} setClient={setClient} onCreate={ro ? undefined : (name) => setCreating(name)} />
         </section>
+
+        {skill && (
+          <section className="ai-card ai-skill-card">
+            <div className="ai-skill-row">
+              <div className="ai-skill-text">
+                <b className="icon-text">
+                  <BookOpen size={15} /> {t('ai.skill.title')}
+                  <span className="ai-skill-badge">SEP-2640</span>
+                </b>
+                <small>{t('ai.skill.hint')}</small>
+                <code className="ai-skill-uri">{skill.uri}</code>
+              </div>
+              <div className="ai-skill-acts">
+                <button type="button" className="btn" onClick={() => copy(skill.content, t('ai.skill.copied'))}>
+                  <Icon name="copy" size={14} /> {t('ai.skill.copy')}
+                </button>
+                <button type="button" className="btn plain" onClick={downloadSkill}>
+                  <Download size={14} /> {t('ai.skill.download')}
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="ai-card">
           <header>

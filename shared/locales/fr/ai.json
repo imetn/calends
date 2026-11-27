@@ -94,6 +94,14 @@
     "people": "Abonnements partagés et avances",
     "categories": "Catégories",
     "settings": "Réglages",
-    "other": "Autres"
+    "other": "Autres",
+    "files": "Fichiers"
+  },
+  "skill": {
+    "title": "Agent Skill (Skills over MCP)",
+    "hint": "Servi nativement via /mcp (SEP-2640) ; copiez ou téléchargez SKILL.md pour les autres clients.",
+    "copy": "Copier SKILL.md",
+    "download": "Télécharger SKILL.md",
+    "copied": "SKILL.md copié"
   }
 }

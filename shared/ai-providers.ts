@@ -335,6 +335,34 @@ export interface ModelsRequest {
   headers: Record<string, string>;
 }
 
+export interface ModelsCandidate extends ModelsRequest {
+  /** 命中该候选时建议使用的规范化 Base URL（例如自动补上 /v1 后） */
+  resolvedBaseUrl: string;
+}
+
+/** 当前 Base URL 是否指向该预设的官方主机；非官方主机视为代理或中转 */
+export function isOfficialProviderHost(provider: ProviderId, baseUrl: string | undefined): boolean {
+  const preset = getProvider(provider);
+  if (!preset || preset.custom || !preset.baseUrl) return false;
+  const raw = (baseUrl ?? '').trim();
+  if (!raw) return true;
+  try {
+    return new URL(raw).hostname.toLowerCase() === new URL(preset.baseUrl).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+/** 路径里是否已经包含版本段（如 /v1、/v1beta、/api/v3、/paas/v4 或 /openai） */
+function hasVersionSegment(baseUrl: string): boolean {
+  try {
+    const p = new URL(baseUrl).pathname.replace(/\/+$/, '');
+    return /(?:^|\/)(?:v\d+[a-z0-9-]*|openai)$/i.test(p);
+  } catch {
+    return false;
+  }
+}
+
 /** 构造拉取模型列表的 HTTP 请求（不同协议路径与鉴权头不同） */
 export function modelsRequest(protocol: AiProtocol, baseUrl: string, apiKey: string | undefined): ModelsRequest {
   const base = baseUrl.replace(/\/+$/, '');
@@ -359,18 +387,75 @@ export function modelsRequest(protocol: AiProtocol, baseUrl: string, apiKey: str
   };
 }
 
-/** 解析各协议的 /models 响应为模型 id 列表 */
+/**
+ * 构造按优先级排列的模型列表探测候选：
+ * 1) 按当前地址和协议发起标准请求；
+ * 2) 若用户填写了未带版本路径的反代根地址（如 https://proxy.example.com），自动补充 /v1（Google 为 /v1beta）回退；
+ * 3) Anthropic / Google 协议带 Key 时，补充 Bearer 鉴权回退，兼容多数第三方中转站。
+ */
+export function modelsRequestCandidates(protocol: AiProtocol, baseUrl: string, apiKey: string | undefined): ModelsCandidate[] {
+  const base = baseUrl.replace(/\/+$/, '');
+  if (!base) return [];
+  const out: ModelsCandidate[] = [];
+  const seen = new Set<string>();
+  const push = (url: string, headers: Record<string, string>, resolvedBaseUrl: string) => {
+    const sig = `${url}|${Object.entries(headers)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}:${v}`)
+      .join(';')}`;
+    if (seen.has(sig)) return;
+    seen.add(sig);
+    out.push({ url, headers, resolvedBaseUrl });
+  };
+
+  const primary = modelsRequest(protocol, base, apiKey);
+  push(primary.url, primary.headers, base);
+
+  const versionSuffix = protocol === 'google' ? '/v1beta' : '/v1';
+  const withVersion = !hasVersionSegment(base) ? `${base}${versionSuffix}` : undefined;
+  if (withVersion) {
+    const alt = modelsRequest(protocol, withVersion, apiKey);
+    push(alt.url, alt.headers, withVersion);
+  }
+
+  if (apiKey && (protocol === 'anthropic' || protocol === 'google')) {
+    const bearerHeaders = { authorization: `Bearer ${apiKey}` };
+    push(`${base}/models`, bearerHeaders, base);
+    if (withVersion) push(`${withVersion}/models`, bearerHeaders, withVersion);
+  }
+
+  return out;
+}
+
+function extractModelId(item: unknown, stripModelsPrefix: boolean): string {
+  if (typeof item === 'string') return stripModelsPrefix ? item.replace(/^models\//, '').trim() : item.trim();
+  if (!item || typeof item !== 'object') return '';
+  const obj = item as { id?: unknown; name?: unknown; model?: unknown };
+  if (typeof obj.id === 'string' && obj.id.trim()) return obj.id.trim();
+  if (typeof obj.model === 'string' && obj.model.trim()) return obj.model.trim();
+  if (typeof obj.name === 'string' && obj.name.trim()) return stripModelsPrefix ? obj.name.replace(/^models\//, '').trim() : obj.name.trim();
+  return '';
+}
+
+/** 解析各协议与常见反代/网关的 /models 响应为去重后的模型 id 列表 */
 export function parseModelsResponse(protocol: AiProtocol, body: unknown): string[] {
   if (!body || typeof body !== 'object') return [];
+  const unique = (list: string[]) => [...new Set(list.filter(Boolean))];
   if (protocol === 'google') {
-    const models = (body as { models?: Array<{ name?: string; supportedGenerationMethods?: string[] }> }).models ?? [];
-    return models
-      .filter((m) => typeof m?.name === 'string' && (!m.supportedGenerationMethods || m.supportedGenerationMethods.includes('generateContent')))
-      .map((m) => m.name!.replace(/^models\//, ''))
-      .filter(Boolean);
+    const models = (body as { models?: Array<{ id?: string; name?: string; supportedGenerationMethods?: string[] }> }).models;
+    if (Array.isArray(models)) {
+      return unique(
+        models
+          .filter((m) => m && typeof m === 'object' && (!m.supportedGenerationMethods || m.supportedGenerationMethods.includes('generateContent')))
+          .map((m) => (typeof m.name === 'string' && m.name ? m.name.replace(/^models\//, '').trim() : extractModelId(m, true))),
+      );
+    }
   }
-  const data = (body as { data?: Array<{ id?: string }> }).data ?? [];
-  return data.map((m) => (typeof m?.id === 'string' ? m.id : '')).filter(Boolean);
+  if (Array.isArray(body)) return unique(body.map((m) => extractModelId(m, false)));
+  const rec = body as { data?: unknown; models?: unknown };
+  if (Array.isArray(rec.data)) return unique(rec.data.map((m) => extractModelId(m, false)));
+  if (Array.isArray(rec.models)) return unique(rec.models.map((m) => extractModelId(m, true)));
+  return [];
 }
 
 /** HTTP 错误码 → 错误类别（前端按类别给出提示与处理办法） */

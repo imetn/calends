@@ -6,10 +6,11 @@ import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { APICallError, jsonSchema, streamText, tool, type JSONSchema7, type LanguageModel, type ModelMessage, type ToolSet } from 'ai';
+import { APICallError, generateText, jsonSchema, streamText, tool, type JSONSchema7, type LanguageModel, type ModelMessage, type ToolSet } from 'ai';
 import {
   errorKind,
-  modelsRequest,
+  isOfficialProviderHost,
+  modelsRequestCandidates,
   normProviderBaseUrl,
   parseModelsResponse,
   resolveProvider,
@@ -40,6 +41,10 @@ export function createLanguageModel(cfg: AssistantConfig, customFetch?: typeof f
     case 'deepseek':
       return createDeepSeek({ apiKey, baseURL: baseURL || undefined, fetch: customFetch })(modelId);
     case 'openai':
+      // OpenAI 预设下填写自定义反代域名时，多数中转站只实现 Chat Completions 而未实现 Responses API，改走 openai-compatible
+      if (baseURL && !isOfficialProviderHost('openai', baseURL)) {
+        return createOpenAICompatible({ name: 'openai-proxy', baseURL, apiKey, includeUsage: true, fetch: customFetch })(modelId);
+      }
       return createOpenAI({ apiKey, baseURL: baseURL || undefined, fetch: customFetch })(modelId);
     case 'anthropic':
       return createAnthropic({ apiKey, baseURL: baseURL || undefined, fetch: customFetch })(modelId);
@@ -185,6 +190,7 @@ export async function streamTurn(
   emit: StreamEmit,
   signal: AbortSignal,
   customFetch?: typeof fetch,
+  maxRetries = 2,
 ): Promise<StreamTurnResult> {
   const preset = resolveProvider(cfg);
   const effort = cfg.effort ?? 'low';
@@ -199,7 +205,7 @@ export async function streamTurn(
     ...(tools?.length ? { tools: toToolSet(tools) } : {}),
     ...(reasoning ? { reasoning } : {}),
     abortSignal: signal,
-    maxRetries: 0,
+    maxRetries,
     onError: () => {},
   });
 
@@ -256,24 +262,81 @@ export async function streamTurn(
   return { turn, responseMessages };
 }
 
-/** 按供应商协议拉取可用模型列表 */
+/** 从非 2xx 响应体里提取简短可读的错误说明（兼容 JSON 与反代 HTML 错误页） */
+function extractHttpError(status: number, rawText: string): string {
+  const text = rawText.trim();
+  if (text) {
+    try {
+      const parsed = JSON.parse(text) as { error?: { message?: string } | string; message?: string };
+      const msg = typeof parsed.error === 'string' ? parsed.error : (parsed.error?.message ?? parsed.message);
+      if (msg) return msg;
+    } catch {
+      const title = text.match(/<title[^>]*>([^<]{1,120})<\/title>/i)?.[1]?.trim();
+      if (title) return `HTTP ${status}: ${title}`;
+      if (!text.startsWith('<')) return `HTTP ${status}: ${text.slice(0, 140)}`;
+    }
+  }
+  return `HTTP ${status}`;
+}
+
+/** 按供应商协议拉取可用模型列表；反代未带 /v1 或使用不同鉴权头时按候选顺序自动探测 */
 export async function fetchProviderModels(
   cfg: AssistantConfig,
   customFetch: typeof fetch = fetch,
-): Promise<{ ok: true; models: string[] } | { ok: false; kind: ErrorKind; message: string }> {
+): Promise<{ ok: true; models: string[]; resolvedBaseUrl?: string } | { ok: false; kind: ErrorKind; message: string; triedUrl?: string }> {
   const preset = resolveProvider(cfg);
   const apiKey = cfg.apiKey?.trim() || undefined;
   const baseUrl = normProviderBaseUrl(preset.id, cfg.baseUrl);
   if (!baseUrl) return { ok: false, kind: 'config', message: 'Base URL is required' };
-  const req = modelsRequest(preset.protocol, baseUrl, apiKey);
-  try {
-    const res = await customFetch(req.url, { headers: req.headers });
-    const body = (await res.json().catch(() => ({}))) as { error?: { message?: string }; message?: string };
-    if (!res.ok) {
-      return { ok: false, kind: errorKind(res.status), message: body.error?.message ?? body.message ?? `HTTP ${res.status}` };
+  const candidates = modelsRequestCandidates(preset.protocol, baseUrl, apiKey);
+  let lastErr: { kind: ErrorKind; message: string; triedUrl?: string } | undefined;
+  let sawEmptyOk = false;
+
+  for (const cand of candidates) {
+    try {
+      const res = await customFetch(cand.url, { headers: cand.headers });
+      const rawText = await res.text().catch(() => '');
+      if (!res.ok) {
+        lastErr ??= { kind: errorKind(res.status), message: extractHttpError(res.status, rawText), triedUrl: cand.url };
+        continue;
+      }
+      let body: unknown = null;
+      try {
+        body = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        lastErr ??= { kind: 'server', message: extractHttpError(res.status, rawText), triedUrl: cand.url };
+        continue;
+      }
+      const models = parseModelsResponse(preset.protocol, body);
+      if (models.length) {
+        return { ok: true, models, ...(cand.resolvedBaseUrl !== baseUrl ? { resolvedBaseUrl: cand.resolvedBaseUrl } : {}) };
+      }
+      sawEmptyOk = true;
+    } catch (e) {
+      lastErr ??= { kind: 'network', message: e instanceof Error ? e.message : String(e), triedUrl: cand.url };
     }
-    return { ok: true, models: parseModelsResponse(preset.protocol, body) };
+  }
+  if (sawEmptyOk && !lastErr) return { ok: true, models: [] };
+  return { ok: false, ...(lastErr ?? { kind: 'network', message: 'Failed to fetch models' }) };
+}
+
+/** 轻量验证指定模型是否能正常完成一次对话（供未提供 /models 的反代或手动填写模型时使用） */
+export async function probeProviderModel(
+  cfg: AssistantConfig,
+  customFetch?: typeof fetch,
+  signal?: AbortSignal,
+): Promise<{ ok: true; model: string } | { ok: false; kind: ErrorKind; message: string }> {
+  const preset = resolveProvider(cfg);
+  const modelId = cfg.model?.trim() || preset.defaultModel;
+  if (!modelId) return { ok: false, kind: 'config', message: 'Model is required' };
+  const baseUrl = normProviderBaseUrl(preset.id, cfg.baseUrl);
+  if (!baseUrl) return { ok: false, kind: 'config', message: 'Base URL is required' };
+  try {
+    const model = createLanguageModel({ ...cfg, baseUrl, model: modelId }, customFetch);
+    await generateText({ model, prompt: 'Reply with OK.', maxOutputTokens: 16, maxRetries: 0, abortSignal: signal });
+    return { ok: true, model: modelId };
   } catch (e) {
-    return { ok: false, kind: 'network', message: e instanceof Error ? e.message : String(e) };
+    const c = classifyError(e);
+    return { ok: false, kind: c.kind, message: c.message };
   }
 }
