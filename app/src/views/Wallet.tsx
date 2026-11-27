@@ -28,6 +28,7 @@ import { toBaseAt } from '../../../shared/fx.ts';
 import { intlLocale } from '../../../shared/i18n.ts';
 import { BALANCE_KINDS, type AppState, type CardNetwork, type MethodKind, type PaymentMethod, type Subscription, type TopUp } from '../../../shared/types.ts';
 import { DatePicker } from '../components/DatePicker.tsx';
+import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { IconButton, Cell, Group, Toolbar } from '../components/ui.tsx';
 import { ClearablePreview, LinkInput, NumInput, MoneyInput, Seg, Toggle } from '../components/inputs.tsx';
 import { Sheet } from '../components/overlays.tsx';
@@ -211,7 +212,12 @@ export function Wallet({ state, today, onOpen }: { state: AppState; today: strin
 
   return (
     <>
-      <Toolbar title={t('wallet.title')} sub={t('wallet.sub', { count: state.methods.length })} onAdd={ro ? undefined : add} addLabel={t('wallet.add')}>
+      <Toolbar
+        title={t('wallet.title')}
+        sub={state.methods.length > 0 ? t('wallet.sub', { count: state.methods.length }) : undefined}
+        onAdd={ro ? undefined : add}
+        addLabel={t('wallet.add')}
+      >
         {!ro && (
           <button className="btn primary d-only" onClick={add}>
             <Icon name="plus" /> {t('wallet.add')}
@@ -219,60 +225,64 @@ export function Wallet({ state, today, onOpen }: { state: AppState; today: strin
         )}
       </Toolbar>
       <div className="page fade-in stack">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={() => setDragging(true)}
-          onDragCancel={() => setDragging(false)}
-          onDragEnd={(e: DragEndEvent) => {
-            setDragging(false);
-            const ids = state.methods.map((m) => m.id);
-            const from = ids.indexOf(String(e.active.id));
-            const to = e.over ? ids.indexOf(String(e.over.id)) : -1;
-            if (from < 0 || to < 0 || from === to) return;
-            run(() => reorderMethods(arrayMove(ids, from, to)), t('wallet.orderSaved'));
-          }}
-        >
-          <SortableContext items={state.methods.map((m) => m.id)} strategy={rectSortingStrategy} disabled={ro}>
-            <div className={`wallet-grid ${dragging ? 'dragging' : ''}`}>
-              {state.methods.map((m) => {
-                const liveHere = live.filter((s) => paysWith(s, m, today));
-                const r = runwayFor(m, state, today);
-                // 卡面角上写着卡的币种，没设余额的卡每月支出也按卡的币种写，与设了余额的卡一致
-                const monthly = sumTotals(liveHere.map((s) => monthlyTotal(state, s, today, m.id, false, m.currency)));
-                return (
-                  <SortableCard key={m.id} m={m} onOpen={() => setOpen(m.id)}>
-                    <CardFace
-                      m={m}
-                      // 设了余额的账户主数字是余额，右下是每月扣多少、还能扣几期；没有余额的卡主数字是每月支出
-                      label={r ? t('wallet.card.balance') : t('wallet.card.monthlySpend')}
-                      value={r ? <FxAmount plain total={r.partial.current} ccy={m.currency} /> : <FxAmount total={monthly} direction={-1} ccy={m.currency} />}
-                      right={
-                        r && r.monthlyDrain > 0
-                          ? t('wallet.runway.drain', { amount: formatTotal(r.partial.monthlyDrain, m.currency, { direction: -1, compact: true }) })
-                          : t('wallet.card.subs', { count: liveHere.length })
-                      }
-                      rightSub={
-                        !r && monthly.incomplete
-                          ? totalNote(monthly)
-                          : r && r.monthlyDrain > 0
-                            ? t('wallet.card.subs', { count: liveHere.length })
-                            : cardHint(m, r)
-                      }
-                    />
-                  </SortableCard>
-                );
-              })}
-              {/* 手机端工具栏不放新建：最后一张卡的位置留一个虚线占位 */}
-              {!ro && (
-                <button type="button" className="wallet-add" onClick={add}>
-                  <Icon name="plus" />
-                  {t('wallet.add')}
-                </button>
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
+        {state.methods.length === 0 ? (
+          <EmptyState kind="wallet" size="hero" title={t('wallet.sub', { count: 0 })} />
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={() => setDragging(true)}
+            onDragCancel={() => setDragging(false)}
+            onDragEnd={(e: DragEndEvent) => {
+              setDragging(false);
+              const ids = state.methods.map((m) => m.id);
+              const from = ids.indexOf(String(e.active.id));
+              const to = e.over ? ids.indexOf(String(e.over.id)) : -1;
+              if (from < 0 || to < 0 || from === to) return;
+              run(() => reorderMethods(arrayMove(ids, from, to)), t('wallet.orderSaved'));
+            }}
+          >
+            <SortableContext items={state.methods.map((m) => m.id)} strategy={rectSortingStrategy} disabled={ro}>
+              <div className={`wallet-grid ${dragging ? 'dragging' : ''}`}>
+                {state.methods.map((m) => {
+                  const liveHere = live.filter((s) => paysWith(s, m, today));
+                  const r = runwayFor(m, state, today);
+                  // 卡面角上写着卡的币种，没设余额的卡每月支出也按卡的币种写，与设了余额的卡一致
+                  const monthly = sumTotals(liveHere.map((s) => monthlyTotal(state, s, today, m.id, false, m.currency)));
+                  return (
+                    <SortableCard key={m.id} m={m} onOpen={() => setOpen(m.id)}>
+                      <CardFace
+                        m={m}
+                        // 设了余额的账户主数字是余额，右下是每月扣多少、还能扣几期；没有余额的卡主数字是每月支出
+                        label={r ? t('wallet.card.balance') : t('wallet.card.monthlySpend')}
+                        value={r ? <FxAmount plain total={r.partial.current} ccy={m.currency} /> : <FxAmount total={monthly} direction={-1} ccy={m.currency} />}
+                        right={
+                          r && r.monthlyDrain > 0
+                            ? t('wallet.runway.drain', { amount: formatTotal(r.partial.monthlyDrain, m.currency, { direction: -1, compact: true }) })
+                            : t('wallet.card.subs', { count: liveHere.length })
+                        }
+                        rightSub={
+                          !r && monthly.incomplete
+                            ? totalNote(monthly)
+                            : r && r.monthlyDrain > 0
+                              ? t('wallet.card.subs', { count: liveHere.length })
+                              : cardHint(m, r)
+                        }
+                      />
+                    </SortableCard>
+                  );
+                })}
+                {/* 手机端工具栏不放新建：最后一张卡的位置留一个虚线占位 */}
+                {!ro && (
+                  <button type="button" className="wallet-add" onClick={add}>
+                    <Icon name="plus" />
+                    {t('wallet.add')}
+                  </button>
+                )}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
 
         {/* 只列有关联计费订阅的余额；空着的账户（比如还没用上的美国区）不占位置 */}
         {state.methods.some((m) => {

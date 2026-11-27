@@ -4,7 +4,7 @@ import { canUseSingleKey } from '../keyboard.ts';
 import { copyParts } from '../components/copy.tsx';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { Maximize2 } from 'lucide-react';
+import { Maximize2 } from '../components/ui-icons.tsx';
 import {
   addDays,
   addMonths,
@@ -25,6 +25,7 @@ import { bundleView } from '../../../shared/bundle.ts';
 import { flow, cnDate, cnDateAuto, monthLabel, relDays, weekdayShort } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
+import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { IconButton, MetricCards, Metric, CardTitle, Toolbar } from '../components/ui.tsx';
 import { Seg, useMedia, useWidth } from '../components/inputs.tsx';
 import { Icon } from '../components/icons.tsx';
@@ -376,7 +377,7 @@ export function Calendar({ state, today, onOpen, onIcs }: { state: AppState; tod
                 <div className="card-h">
                   <CardTitle>{copyParts(t('calendar.monthAll', { month: monthLabel(month, { year: false }) }))}</CardTitle>
                 </div>
-                {monthCharges.length === 0 && <div className="cell muted">{t('calendar.noneMonth')}</div>}
+                {monthCharges.length === 0 && <EmptyState kind="calendar" size="md" body={t('calendar.noneMonth')} />}
                 <div className="cal-charge-list">
                   {[...byDay]
                     .filter(([date]) => date.startsWith(month))

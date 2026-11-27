@@ -27,6 +27,7 @@ import {
 } from '../../../shared/metrics.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
 import { AreaChart, BarLine } from '../components/charts.tsx';
+import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { MetricCards, Metric, IconButton, CardTitle, Toolbar } from '../components/ui.tsx';
 import { Seg, useMedia } from '../components/inputs.tsx';
 import { FlagImg, MethodMark, SubIcon } from '../components/marks.tsx';
@@ -142,63 +143,72 @@ export function Report({
   const pageRef = useRef<HTMLDivElement>(null);
   // 手机一行放不下长文案，只写「分享」
   const narrow = useMedia('(max-width: 860px)');
+  const empty = state.subscriptions.length === 0;
   return (
     <>
       <Toolbar title={t('report.title')}>
         {/* 鼠标移到分享上才出现：复制整份报告为一张图（卡片上的复制只取那一张）；「分享年度回顾」是另做的个性化回顾 */}
-        <span className="report-share">
-          <CopyImageButton render={() => snapshotCard(pageRef.current!)} />
-          <YearStep value={pick} options={options} onChange={setPick} />
-          {/* 回顾只回看今年及以前；全部是从第一笔到今天的累计回顾 */}
-          <button className="btn" disabled={future} onClick={() => onReview(pick)}>
-            <Icon name="share" /> {narrow ? t('detail.action.share') : all ? t('report.shareAll') : t('report.shareReview', { year })}
-          </button>
-        </span>
+        {!empty && (
+          <span className="report-share">
+            <CopyImageButton render={() => snapshotCard(pageRef.current!)} />
+            <YearStep value={pick} options={options} onChange={setPick} />
+            {/* 回顾只回看今年及以前；全部是从第一笔到今天的累计回顾 */}
+            <button className="btn" disabled={future} onClick={() => onReview(pick)}>
+              <Icon name="share" /> {narrow ? t('detail.action.share') : all ? t('report.shareAll') : t('report.shareReview', { year })}
+            </button>
+          </span>
+        )}
       </Toolbar>
       {/* 整页跟随所选年份；构成按所选年份实付；体检、充值描述的是现在，只在今年出现。
           全部：累计花了多少、累计构成（分类／支付方式／币种／周期）、订阅能留多久、逐年现金、停用损失；按月、按年的变化明细不再出现 */}
-      <div className="page fade-in stack" ref={pageRef}>
-        {all ? (
-          <>
-            <AllHero state={state} today={today} />
-            <AllCard state={state} today={today} first={first} onOpen={onOpen} />
-            <CashCard state={state} today={today} year={null} />
-            {charts}
-            <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} />
-            <TenureCard state={state} today={today} onOpen={onOpen} />
-            <StopsCard state={state} today={today} year={null} onOpen={onOpen} />
-          </>
-        ) : (
-          <>
-            <Hero state={state} today={today} year={year} />
-            <YearCard state={state} today={today} year={year} onOpen={onOpen} />
-            <CashCard state={state} today={today} year={year} />
-            <DailyCard state={state} today={today} year={year} />
-            {charts}
-            <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} />
-            {now ? (
-              <div className="grid g-2">
-                <Waterfall key={year} state={state} today={today} year={year} onOpen={onOpen} />
-                <Checkup state={state} today={today} onOpen={onOpen} />
-              </div>
-            ) : (
-              !future && (
-                <div className="grid g-2 report-bottom">
+      {empty ? (
+        <div className="page fade-in">
+          <EmptyState kind="report" size="hero" title={t('overview.spending.empty')} />
+        </div>
+      ) : (
+        <div className="page fade-in stack" ref={pageRef}>
+          {all ? (
+            <>
+              <AllHero state={state} today={today} />
+              <AllCard state={state} today={today} first={first} onOpen={onOpen} />
+              <CashCard state={state} today={today} year={null} />
+              {charts}
+              <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} />
+              <TenureCard state={state} today={today} onOpen={onOpen} />
+              <StopsCard state={state} today={today} year={null} onOpen={onOpen} />
+            </>
+          ) : (
+            <>
+              <Hero state={state} today={today} year={year} />
+              <YearCard state={state} today={today} year={year} onOpen={onOpen} />
+              <CashCard state={state} today={today} year={year} />
+              <DailyCard state={state} today={today} year={year} />
+              {charts}
+              <Composition state={state} today={today} onOpen={onOpen} pieces={pieces} />
+              {now ? (
+                <div className="grid g-2">
                   <Waterfall key={year} state={state} today={today} year={year} onOpen={onOpen} />
+                  <Checkup state={state} today={today} onOpen={onOpen} />
+                </div>
+              ) : (
+                !future && (
+                  <div className="grid g-2 report-bottom">
+                    <Waterfall key={year} state={state} today={today} year={year} onOpen={onOpen} />
+                    <Changelog state={state} today={today} year={year} onOpen={onOpen} base={base} />
+                  </div>
+                )
+              )}
+              {!future && <StopsCard state={state} today={today} year={year} onOpen={onOpen} />}
+              {now && (
+                <div className="grid g-2 report-bottom">
+                  <TopUps state={state} today={today} />
                   <Changelog state={state} today={today} year={year} onOpen={onOpen} base={base} />
                 </div>
-              )
-            )}
-            {!future && <StopsCard state={state} today={today} year={year} onOpen={onOpen} />}
-            {now && (
-              <div className="grid g-2 report-bottom">
-                <TopUps state={state} today={today} />
-                <Changelog state={state} today={today} year={year} onOpen={onOpen} base={base} />
-              </div>
-            )}
-          </>
-        )}
-      </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </>
   );
 }
@@ -1081,15 +1091,7 @@ function TopUps({ state, today }: { state: AppState; today: string }) {
           />{' '}
         </div>
       </div>
-      {plan.length === 0 && (
-        <div className="empty">
-          {t('report.topup.empty')}
-          <br />
-          <a className="btn plain" href={appPath('/wallet')}>
-            {t('report.topup.emptyCta')}
-          </a>
-        </div>
-      )}
+      {plan.length === 0 && <EmptyState kind="wallet" size="md" body={t('report.topup.empty')} />}
       {plan.map((p) => (
         <div key={p.method.id} className="topup">
           <MethodMark m={p.method} />

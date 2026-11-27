@@ -2,7 +2,7 @@ import { amountTotal, chargesTotal, formatTotal, scaleTotal, totalNote } from '.
 import { DAYS_PER_MONTH } from '../../../../shared/billing.ts';
 import { copyParts } from '../../components/copy.tsx';
 import { isStopped } from '../../../../shared/billing.ts';
-import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowRight, TrendingDown, TrendingUp } from '../../components/ui-icons.tsx';
 import {
   chargeDay,
   currentPhase,

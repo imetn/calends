@@ -1,5 +1,5 @@
 import { use, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { StickyNote, X } from 'lucide-react';
+import { StickyNote, X } from './ui-icons.tsx';
 import { t } from '../../../shared/i18n.ts';
 import { copyParts } from './copy.tsx';
 import { CardTitle, IconButton } from './ui.tsx';

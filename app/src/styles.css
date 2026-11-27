@@ -8768,9 +8768,7 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
   gap: 8px;
 }
 .ai-empty {
-  padding: 18px;
-  border-radius: var(--radius-md);
-  background: var(--fill-2);
+  padding: 12px 16px;
   color: var(--label-2);
   font-size: var(--fs-2);
   text-align: center;

@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Plus } from '../../components/ui-icons.tsx';
 import { useState } from 'react';
 import type { EditorStatus } from './useEditorFields.ts';
 import { MemberSheet } from '../Members.tsx';

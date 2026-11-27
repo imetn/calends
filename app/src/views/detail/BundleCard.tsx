@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight } from '../../components/ui-icons.tsx';
 import { currentPhase, effectiveStatus, perLabel } from '../../../../shared/billing.ts';
 import { bundleSource, bundleView, childrenOf, displayCycle, followsParent, isFreeBundlePhase } from '../../../../shared/bundle.ts';
 import { money } from '../../../../shared/format.ts';

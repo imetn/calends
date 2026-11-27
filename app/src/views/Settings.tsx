@@ -48,9 +48,9 @@ const NAV_ROWS: Array<[string, string, boolean]> = [
   ['wallet', 'wallet', true],
   ['family', 'family', true],
   ['behalf', 'behalf', true],
+  ['files', 'files', true],
   ['assistant', 'assistant', true],
   ['connect', 'ai', true],
-  ['files', 'files', true],
 ];
 import { CurrencySelect, Picker } from '../components/Picker.tsx';
 import { cnDateFull, localDay, localTime } from '../../../shared/format.ts';

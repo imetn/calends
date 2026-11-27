@@ -21,7 +21,7 @@ import {
   Unlink,
   Users,
   type LucideIcon,
-} from 'lucide-react';
+} from '../../components/ui-icons.tsx';
 import { addDays, coveredUntil, cycleLabel, diffDays, isGap, phaseSubs, servedTime, upcomingPhase } from '../../../../shared/billing.ts';
 import { displayCycle, isFreeBundlePhase } from '../../../../shared/bundle.ts';
 import { contractEvents } from '../../../../shared/contract.ts';

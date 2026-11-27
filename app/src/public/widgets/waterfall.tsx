@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from '../../components/ui-icons.tsx';
 import { monthLabel } from '../../../../shared/format.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { signedMoney, stepMonth, waterfallFirstMonth, waterfallMonth, type WaterfallStep } from '../../../../shared/public-changes.ts';

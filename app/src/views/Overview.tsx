@@ -14,6 +14,7 @@ import { BALANCE_KINDS, type AppState, type Subscription } from '../../../shared
 import { Activity, packCircles, type Bucket } from '../components/charts.tsx';
 import { Timeline, type TimelineGroup } from '../components/Timeline.tsx';
 import { TailName } from '../components/TailName.tsx';
+import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { MetricCards, Metric, IconButton, CardTitle, Toolbar } from '../components/ui.tsx';
 import { Seg } from '../components/inputs.tsx';
 import { Picker } from '../components/Picker.tsx';
@@ -22,13 +23,14 @@ import { TipTable } from '../components/overlays.tsx';
 import { Icon } from '../components/icons.tsx';
 import { allCharges, catColor, sortValue, sumBaseOrNaN, firstStart } from '../derive.ts';
 import { useMoneyPair } from '../components/MoneyPair.tsx';
-import { ChartColumnStacked, Layers, Waves } from 'lucide-react';
+import { ChartColumnStacked, Layers, Waves } from '../components/ui-icons.tsx';
 import { usePref } from '../prefs.ts';
 
 type Scale = 'month' | 'year';
 const PROJ = '__proj';
 
 export function Overview({ state, today, onOpen, onAdd }: { state: AppState; today: string; onOpen: (s: Subscription) => void; onAdd: () => void }) {
+  const empty = state.subscriptions.length === 0 && state.methods.length === 0;
   return (
     <>
       <Toolbar title={t('overview.title')}>
@@ -38,16 +40,22 @@ export function Overview({ state, today, onOpen, onAdd }: { state: AppState; tod
           </button>
         )}
       </Toolbar>
-      <div className="page fade-in stack" style={{ gap: 20 }}>
-        <Statement state={state} today={today} onOpen={onOpen} />
-        <ChargeTimeline state={state} today={today} onOpen={onOpen} />
-        <Spending state={state} today={today} onOpen={onOpen} />
-        <div className="grid g-2">
-          <DueSoon state={state} today={today} onOpen={onOpen} />
-          <WalletBrief state={state} today={today} />
+      {empty ? (
+        <div className="page fade-in">
+          <EmptyState kind="overview" size="hero" title={t('overview.spending.empty')} />
         </div>
-        <Tips state={state} today={today} onOpen={onOpen} />
-      </div>
+      ) : (
+        <div className="page fade-in stack" style={{ gap: 20 }}>
+          <Statement state={state} today={today} onOpen={onOpen} />
+          <ChargeTimeline state={state} today={today} onOpen={onOpen} />
+          <Spending state={state} today={today} onOpen={onOpen} />
+          <div className="grid g-2">
+            <DueSoon state={state} today={today} onOpen={onOpen} />
+            <WalletBrief state={state} today={today} />
+          </div>
+          <Tips state={state} today={today} onOpen={onOpen} />
+        </div>
+      )}
     </>
   );
 }
@@ -481,7 +489,7 @@ function DueSoon({ state, today, onOpen }: { state: AppState; today: string; onO
           {formatTotal(total, base, { direction: -1, compact: true })}
         </span>
       </div>
-      {cs.length === 0 && <div className="empty">{t('overview.due.empty')}</div>}
+      {cs.length === 0 && <EmptyState kind="due" size="md" body={t('overview.due.empty')} />}
       <div className="due-list" ref={box}>
         {shown
           .filter(([, l]) => l.length)
@@ -530,6 +538,7 @@ function WalletBrief({ state, today }: { state: AppState; today: string }) {
           {t('overview.wallet.manage')}
         </a>
       </div>
+      {rows.length === 0 && cards.length === 0 && <EmptyState kind="wallet" size="md" body={t('wallet.sub', { count: 0 })} />}
       {rows.map(({ m, r }) => {
         const days = r?.runsOutOn ? diffDays(today, r.runsOutOn) : undefined;
         const pct = r ? (r.monthlyDrain <= 0 && !r.shortfall ? 100 : Math.min(100, ((days ?? 365) / 365) * 100)) : 0;

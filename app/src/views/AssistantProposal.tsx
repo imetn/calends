@@ -1,7 +1,7 @@
 import { copyParts } from '../components/copy.tsx';
 import type { ReactNode } from 'react';
 import { Fragment } from 'react';
-import { CircleX, Check, CircleAlert, Loader2, Pencil, ReceiptText } from 'lucide-react';
+import { CircleX, Check, CircleAlert, Loader2, Pencil, ReceiptText } from '../components/ui-icons.tsx';
 import { cycleLabel, collectCurrencyOf } from '../../../shared/billing.ts';
 import { flow, billLabel, cnDate, money, numericDate } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';

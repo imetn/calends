@@ -8,6 +8,7 @@ import { SortControl } from '../components/SortControl.tsx';
 import { isMarked, nextSort, usePhone } from '../components/LtHead.tsx';
 import { personLink, peopleLedger, peopleListRows, type PeopleSort, type PersonLedger } from '../../../shared/people.ts';
 import { PERSON_COLORS, type AppState, type Person, type Subscription } from '../../../shared/types.ts';
+import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { Group, IconButton, MetricCards, Metric, Toolbar } from '../components/ui.tsx';
 import { Amount, Seg, useSubmit } from '../components/inputs.tsx';
 import { Sheet } from '../components/overlays.tsx';
@@ -94,7 +95,7 @@ export function PeopleView({ state, today, onOpen }: { state: AppState; today: s
         )}
         <FamilyTabs tab="people" />
         {/* 与合租页一样右上角最后是卡片 / 列表切换；人员只有列表，卡片不可选 */}
-        {!phone && (
+        {book.length > 0 && !phone && (
           <Seg
             small
             value="list"
@@ -108,25 +109,24 @@ export function PeopleView({ state, today, onOpen }: { state: AppState; today: s
         )}
       </Toolbar>
       <div className="page fade-in stack people-page">
-        <MetricCards>
-          <Metric
-            label={t('people.stat.owed')}
-            value={<Amount plain value={owed} ccy={base} />}
-            valueStyle={{ color: owed > 0 ? 'var(--orange)' : undefined }}
-            note={owing.length ? t('people.stat.owedSub', { count: owing.length }) : Number.isFinite(owed) ? t('people.stat.allSettled') : '—'}
-          />
-          <Metric label={t('people.stat.received')} value={<Amount value={received} ccy={base} />} note={t('people.stat.receivedSub')} />
-          <Metric
-            label={t('people.stat.count')}
-            value={<span className="amt">{book.length}</span>}
-            note={copyParts(t('people.stat.countSub', { share: inShare, proxy: inProxy }))}
-          />
-        </MetricCards>
+        {book.length > 0 && (
+          <MetricCards>
+            <Metric
+              label={t('people.stat.owed')}
+              value={<Amount plain value={owed} ccy={base} />}
+              valueStyle={{ color: owed > 0 ? 'var(--orange)' : undefined }}
+              note={owing.length ? t('people.stat.owedSub', { count: owing.length }) : Number.isFinite(owed) ? t('people.stat.allSettled') : '—'}
+            />
+            <Metric label={t('people.stat.received')} value={<Amount value={received} ccy={base} />} note={t('people.stat.receivedSub')} />
+            <Metric
+              label={t('people.stat.count')}
+              value={<span className="amt">{book.length}</span>}
+              note={copyParts(t('people.stat.countSub', { share: inShare, proxy: inProxy }))}
+            />
+          </MetricCards>
+        )}
         {book.length === 0 ? (
-          <div className="card empty">
-            <b>{t('people.empty.title')}</b>
-            {t('people.empty.body')}
-          </div>
+          <EmptyState kind="people" size="hero" title={t('people.empty.title')} body={t('people.empty.body')} />
         ) : (
           <>
             <div className="card people-list" role="table" aria-label={t('people.tab.people')}>
@@ -150,7 +150,7 @@ export function PeopleView({ state, today, onOpen }: { state: AppState; today: s
               {rows.map((l) => (
                 <PersonRow key={l.person.id || l.person.name} l={l} base={base} today={today} onClick={() => setOpen(l.person.id || l.person.name)} />
               ))}
-              {rows.length === 0 && <div className="empty">{t('people.list.none')}</div>}
+              {rows.length === 0 && <EmptyState kind="search" size="md" body={t('people.list.none')} />}
             </div>
           </>
         )}

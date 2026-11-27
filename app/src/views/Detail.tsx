@@ -5,7 +5,7 @@ import { meterView } from '../../../shared/meters.ts';
 import { createPortal } from 'react-dom';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Paperclip, Pause, Pencil, Play, Plus, Settings2, Share } from 'lucide-react';
+import { Paperclip, Pause, Pencil, Play, Plus, Settings2, Share } from '../components/ui-icons.tsx';
 import {
   cashChargesBetween,
   chargesBetween,

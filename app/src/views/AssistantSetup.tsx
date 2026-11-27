@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Loader2, RotateCcw } from 'lucide-react';
+import { Check, Loader2, RotateCcw } from '../components/ui-icons.tsx';
 import { AI_PROVIDERS, getProvider, type AiProviderPreset, type AssistantConfigView, type Effort, type ProviderId } from '../../../shared/ai-providers.ts';
 import { t } from '../../../shared/i18n.ts';
 import { ask, Sheet } from '../components/overlays.tsx';

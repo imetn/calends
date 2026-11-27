@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Settings2 } from 'lucide-react';
+import { Plus, Settings2 } from '../../components/ui-icons.tsx';
 import { addDays, chargeServicePeriod, diffDays, isPostpaid, midDay, uid, type Charge } from '../../../../shared/billing.ts';
 import { bundleView } from '../../../../shared/bundle.ts';
 import { chargesTotal, formatTotal } from '../../../../shared/fx-total.ts';

@@ -85,6 +85,7 @@ function aiHarness() {
     Wallet: 'Wallet',
     CardTitle: 'h3',
     CopyImageButton: 'CopyImageButton',
+    EmptyState: 'EmptyState',
     Sheet: 'Sheet',
     Toggle: 'Toggle',
     Toolbar: 'Toolbar',

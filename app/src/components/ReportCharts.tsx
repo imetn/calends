@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from './ui-icons.tsx';
 import { OTHER, flowLevels, netByItem, flowShares, shareProfile } from '../../../shared/chart-data.ts';
 import { paymentMethodGroups } from '../../../shared/payment-groups.ts';
 import { flow } from '../../../shared/format.ts';

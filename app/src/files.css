@@ -550,55 +550,9 @@
   }
 }
 
-/* 空状态插图 */
+/* 空状态容器 */
 .files-empty {
-  display: grid;
-  justify-items: center;
-  gap: 14px;
-  padding: 72px 20px 48px;
-  color: var(--label-2);
-}
-.files-empty b {
-  font-size: var(--fs-3);
-  font-weight: 600;
-  color: var(--label);
-}
-.files-empty svg {
-  max-width: 100%;
-  height: auto;
-  stroke-width: 2;
-}
-.fe-shadow {
-  fill: var(--fill);
-  stroke: none;
-}
-.fe-doc rect {
-  fill: var(--card);
-  stroke: var(--label-3);
-}
-.fe-doc path {
-  stroke: var(--sep, var(--line));
-  stroke-width: 4;
-}
-.fe-doc.back {
-  transform: rotate(-8deg);
-  transform-origin: 100px 116px;
-}
-.fe-doc.front {
-  transform: rotate(5deg);
-  transform-origin: 124px 106px;
-}
-.fe-doc .fe-dash {
-  stroke: var(--label-3);
-  stroke-width: 2;
-  stroke-dasharray: 4 5;
-}
-.fe-folder {
-  fill: var(--card);
-  stroke: var(--label-2);
-}
-.fe-lip {
-  stroke: var(--label-3);
+  padding: 72px 20px 56px;
 }
 
 /* 拖入投放层：整页蒙层 + 中央投放口；外圈向内收拢，像在吸；松手时投放口吞一下再淡出 */

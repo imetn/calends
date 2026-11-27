@@ -8,6 +8,7 @@ import { cycleLabel, diffDays, effectiveStatus, nextCharge, todayIn, isStopped }
 import { flow, cnDate, cnDateFull, money, moneyDecimals, relDays } from '../../../shared/format.ts';
 import { toBaseAt } from '../../../shared/fx.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
+import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { MetricCards, Metric, Group, Toolbar } from '../components/ui.tsx';
 import { Seg, useWidth } from '../components/inputs.tsx';
 import { NameLink, PayBadge, StatusPill, SubIcon } from '../components/marks.tsx';
@@ -387,13 +388,10 @@ export function ProxyPage({ state, today, onOpen }: { state: AppState; today: st
           </MetricCards>
         )}
         {sum.subs.length === 0 ? (
-          <div className="card empty">
-            <b>{t('proxy.page.emptyTitle')}</b>
-            {t('proxy.page.emptyBody')}
-          </div>
+          <EmptyState kind="proxy" size="hero" title={t('proxy.page.emptyTitle')} body={t('proxy.page.emptyBody')} />
         ) : (
           <>
-            {shown.length === 0 && <div className="card empty">{t('proxy.filter.none')}</div>}
+            {shown.length === 0 && <EmptyState kind="search" size="md" body={t('proxy.filter.none')} />}
             {view === 'list' ? (
               shown.length > 0 && <ProxyTable state={state} {...order} onOpen={onOpen} />
             ) : (

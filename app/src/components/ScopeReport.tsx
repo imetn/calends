@@ -5,7 +5,7 @@ import { copyParts } from './copy.tsx';
 import { numberFormat } from '../../../shared/intl.ts';
 import { useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
-import { ChevronUp, Layers, Minimize2 } from 'lucide-react';
+import { ChevronUp, Layers, Minimize2 } from './ui-icons.tsx';
 import { cnDateAuto, cnDateFull, flow, money, monthLabel } from '../../../shared/format.ts';
 import { intlLocale, t } from '../../../shared/i18n.ts';
 import type { Block, ChargeRow, Comparison, MovementRow, ReportEvent, ScopeReport as ReportData } from '../../../shared/scope-report.ts';

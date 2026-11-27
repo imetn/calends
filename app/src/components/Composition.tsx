@@ -8,6 +8,7 @@ import { flow } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { SpendPiece } from '../../../shared/scope-report.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
+import { EmptyState } from './EmptyGraphic.tsx';
 import { CardTitle } from './ui.tsx';
 import { CopyImageButton } from './CopyImageButton.tsx';
 import { copyParts } from './copy.tsx';
@@ -159,48 +160,52 @@ export function Composition({
           )}
         </div>
       </div>
-      <div className="treemap" ref={box} style={{ height: H }}>
-        {W > 0 &&
-          (sel
-            ? tiles(sel.xs, { x: 0, y: 0, w: W, h: H }, catColor)
-            : rects.map((r) => {
-                const e = entries[r.i];
-                const g = { x: (r.x / 100) * W, y: (r.y / 100) * H, w: (r.w / 100) * W, h: (r.h / 100) * H };
-                // 分组：顶上一条标题，下面按订阅再分小块
-                const head = g.w > 70 && g.h > 64 ? 22 : 0;
-                const bg = color(e.k, r.i);
-                return (
-                  <div key={e.k} className="tm-group" style={{ left: g.x, top: g.y, width: g.w, height: g.h, background: soft(bg) }}>
-                    {head > 0 && (
-                      <button
-                        className="tm-head"
-                        data-snapshot-keep
-                        onClick={() => setFocus(e.k)}
-                        {...tipProps(() =>
-                          t(pieces ? 'report.comp.groupTipAll' : 'report.comp.groupTip', { name: e.name, count: e.xs.length, amount: flow(-e.v, base) }),
-                        )}
-                      >
-                        <b className="icon-text">
-                          {dim === 'cat' && <CatIcon cat={e.k} size={11} />}
-                          <span>{e.name}</span>
-                        </b>
-                        {g.w > 150 && (
-                          <span>
-                            {!partial.incomplete && (
-                              <>
-                                {Math.round((e.v / total) * 100)}% <span className="copy-gap" aria-hidden="true" />
-                              </>
-                            )}{' '}
-                            {flow(-e.v, base, { compact: true })}
-                          </span>
-                        )}
-                      </button>
-                    )}
-                    {tiles(e.xs, { x: 0, y: head, w: g.w, h: g.h - head }, () => bg, head ? undefined : () => setFocus(e.k))}
-                  </div>
-                );
-              }))}
-      </div>
+      {entries.length === 0 ? (
+        <EmptyState kind="report" size="lg" body={t('overview.spending.empty')} />
+      ) : (
+        <div className="treemap" ref={box} style={{ height: H }}>
+          {W > 0 &&
+            (sel
+              ? tiles(sel.xs, { x: 0, y: 0, w: W, h: H }, catColor)
+              : rects.map((r) => {
+                  const e = entries[r.i];
+                  const g = { x: (r.x / 100) * W, y: (r.y / 100) * H, w: (r.w / 100) * W, h: (r.h / 100) * H };
+                  // 分组：顶上一条标题，下面按订阅再分小块
+                  const head = g.w > 70 && g.h > 64 ? 22 : 0;
+                  const bg = color(e.k, r.i);
+                  return (
+                    <div key={e.k} className="tm-group" style={{ left: g.x, top: g.y, width: g.w, height: g.h, background: soft(bg) }}>
+                      {head > 0 && (
+                        <button
+                          className="tm-head"
+                          data-snapshot-keep
+                          onClick={() => setFocus(e.k)}
+                          {...tipProps(() =>
+                            t(pieces ? 'report.comp.groupTipAll' : 'report.comp.groupTip', { name: e.name, count: e.xs.length, amount: flow(-e.v, base) }),
+                          )}
+                        >
+                          <b className="icon-text">
+                            {dim === 'cat' && <CatIcon cat={e.k} size={11} />}
+                            <span>{e.name}</span>
+                          </b>
+                          {g.w > 150 && (
+                            <span>
+                              {!partial.incomplete && (
+                                <>
+                                  {Math.round((e.v / total) * 100)}% <span className="copy-gap" aria-hidden="true" />
+                                </>
+                              )}{' '}
+                              {flow(-e.v, base, { compact: true })}
+                            </span>
+                          )}
+                        </button>
+                      )}
+                      {tiles(e.xs, { x: 0, y: head, w: g.w, h: g.h - head }, () => bg, head ? undefined : () => setFocus(e.k))}
+                    </div>
+                  );
+                }))}
+        </div>
+      )}
     </div>
   );
 }

@@ -24,7 +24,7 @@ import {
   SquarePen,
   Wrench,
   X,
-} from 'lucide-react';
+} from '../components/ui-icons.tsx';
 import { t } from '../../../shared/i18n.ts';
 import { localTime } from '../../../shared/format.ts';
 import { confirmInOrder, type WriteVerification } from '../../../shared/assistant-result.ts';

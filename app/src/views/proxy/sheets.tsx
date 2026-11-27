@@ -16,7 +16,7 @@ import { MoneyInput, useSubmit } from '../../components/inputs.tsx';
 import { NameLink, PayBadge, StatusPill, SubIcon } from '../../components/marks.tsx';
 import { Sheet } from '../../components/overlays.tsx';
 import { ConfirmButton } from '../../components/ConfirmButton.tsx';
-import { CircleStop, Eye, EyeOff, Plus } from 'lucide-react';
+import { CircleStop, Eye, EyeOff, Plus } from '../../components/ui-icons.tsx';
 import { createPortal } from 'react-dom';
 import { StopPanel } from '../../components/StopPanel.tsx';
 import { Act } from '../Detail.tsx';

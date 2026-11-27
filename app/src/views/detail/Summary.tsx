@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from '../../components/ui-icons.tsx';
 import { IconButton } from '../../components/ui.tsx';
 import { currentPhase, effectiveStatus, memberAboard, phaseSubs } from '../../../../shared/billing.ts';
 import { bundleSource, followsParent, isFreeBundlePhase } from '../../../../shared/bundle.ts';

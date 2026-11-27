@@ -1,5 +1,5 @@
 import { copyParts } from '../components/copy.tsx';
-import { Plus, X } from 'lucide-react';
+import { Plus, X } from '../components/ui-icons.tsx';
 import { effectiveStatus, isStopped } from '../../../shared/billing.ts';
 import { bundleView } from '../../../shared/bundle.ts';
 import { t } from '../../../shared/i18n.ts';

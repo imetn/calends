@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { X } from '../components/ui-icons.tsx';
 import { compactGrid, fitHeights, newMetricItem, placeItem, placeSnapped, publicGridBottom, publicGrid, PUBLIC_COLUMNS, PUBLIC_MAX_HEIGHT, PUBLIC_METRIC_TEMPLATES, PUBLIC_PREVIEW_DROP, samePlacement, type PublicGridItem, type PublicMetricTemplate, type PublicRect } from '../../../shared/public-layout.ts';
 
 /** 网格一行的高度和间距，和 index.css 的 .public-grid 一致 */

@@ -120,8 +120,8 @@ export function RegionTag({ cc }: { cc?: string }) {
 }
 
 /** 分类图标（按分类表里设的图标或 emoji） */
-export function CatIcon({ cat, size = 14 }: { cat: string; size?: number }) {
-  return <CatGlyph icon={catIcon(cat)} size={size} />;
+export function CatIcon({ cat, size = 14, active }: { cat: string; size?: number; active?: boolean }) {
+  return <CatGlyph icon={catIcon(cat)} size={size} active={active} />;
 }
 
 /** 分类胶囊：中性底 + 分类色图标 + 名称 */

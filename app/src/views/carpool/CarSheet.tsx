@@ -7,7 +7,7 @@ import { copyParts } from '../../components/copy.tsx';
 import { chargesBetween, cycleLabel, effectiveStatus, memberDues, nextCharge, isStopped, collectCurrencyOf } from '../../../../shared/billing.ts';
 import { bundleView } from '../../../../shared/bundle.ts';
 import { useRef, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from '../../components/ui-icons.tsx';
 import { carpoolSnapshot } from '../carpool-snapshot.ts';
 import { createPortal } from 'react-dom';
 import { flow, cnDate, cnDateFull, money } from '../../../../shared/format.ts';

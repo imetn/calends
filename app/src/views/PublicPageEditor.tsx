@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, X } from 'lucide-react';
+import { ArrowLeft, Plus, X } from '../components/ui-icons.tsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '../../../shared/i18n.ts';
 import { maskForPublic } from '../../../shared/mask.ts';

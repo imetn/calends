@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from '../../components/ui-icons.tsx';
 import { addDays, addMonths, cycleLabel, diffDays, type Charge } from '../../../../shared/billing.ts';
 import { heatLevel, monthGrid } from '../../../../shared/calendar.ts';
 import { cnDate, flow, monthLabel, relDays, weekdayShort } from '../../../../shared/format.ts';

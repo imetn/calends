@@ -14,6 +14,7 @@ import type { AppState, ShareMember, Subscription } from '../../../shared/types.
 import { nextSort, usePhone } from '../components/LtHead.tsx';
 import { MemberSheet } from './Members.tsx';
 import { carLedger, carYear } from '../../../shared/carpool.ts';
+import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { MetricCards, Metric, Cell, Group, Toolbar } from '../components/ui.tsx';
 import { Seg, useWidth } from '../components/inputs.tsx';
 import { Icon } from '../components/icons.tsx';
@@ -132,18 +133,22 @@ export function Carpool({ state, today, onOpen }: { state: AppState; today: stri
   };
   const candidates = state.subscriptions.filter((s) => !s.share && !s.proxy && live(s) && s.tags.some((tag) => /合租|拼车|家庭|family|shared/i.test(tag)));
 
+  const empty = owned.length + ended.length === 0;
+
   return (
     <>
       <Toolbar title={t('family.pool.title')} onAdd={add}>
-        <Seg
-          small
-          value={filter}
-          onChange={setFilter}
-          options={CAR_FILTERS.map((f) => [f, `${t(`family.pool.filter.${f}`)} ${groups[f].length}`] as [CarFilter, string])}
-        />
+        {!empty && (
+          <Seg
+            small
+            value={filter}
+            onChange={setFilter}
+            options={CAR_FILTERS.map((f) => [f, `${t(`family.pool.filter.${f}`)} ${groups[f].length}`] as [CarFilter, string])}
+          />
+        )}
         <FamilyTabs tab="plans" />
         {/* 卡片 / 列表切换固定在右上角最后一个；排序只在列表表头切换，对卡片同样生效 */}
-        {!phone && (
+        {!empty && !phone && (
           <Seg
             small
             value={view}
@@ -156,49 +161,48 @@ export function Carpool({ state, today, onOpen }: { state: AppState; today: stri
         )}
       </Toolbar>
       <div className="page fade-in stack">
-        <MetricCards>
-          <Metric
-            label={yearNet < 0 ? t('family.pool.netGain') : t('family.pool.netCost')}
-            value={<FxAmount total={yearNetPartial} direction={-1} ccy={base} />}
-            valueStyle={{ color: yearNet < 0 ? 'var(--gain)' : undefined }}
-            note={
-              yearNetPartial.incomplete
-                ? totalNote(yearNetPartial)
-                : t('family.pool.yearIncome', { amount: formatTotal(yearIncomePartial, base, { direction: 1, compact: true }) })
-            }
-            noteStyle={{ color: 'var(--gain)' }}
-          />
-          <Metric
-            label={t('family.pool.owed')}
-            value={<FxAmount plain total={owedPartial} ccy={base} />}
-            valueStyle={{ color: owedPartial.value > 0 ? 'var(--orange)' : undefined }}
-            note={totalNote(owedPartial) || t('family.pool.owedSub', { count: owedAll.length })}
-          />
-          <Metric
-            label={t('family.pool.count')}
-            note={t('family.pool.countNote', { members: seated, free: openSeats })}
-            value={
-              <span className="amt car-plan-count">
-                <span>
-                  {owned.length}
-                  <small>{copyParts(t('family.pool.countStarted'))}</small>
+        {!empty && (
+          <MetricCards>
+            <Metric
+              label={yearNet < 0 ? t('family.pool.netGain') : t('family.pool.netCost')}
+              value={<FxAmount total={yearNetPartial} direction={-1} ccy={base} />}
+              valueStyle={{ color: yearNet < 0 ? 'var(--gain)' : undefined }}
+              note={
+                yearNetPartial.incomplete
+                  ? totalNote(yearNetPartial)
+                  : t('family.pool.yearIncome', { amount: formatTotal(yearIncomePartial, base, { direction: 1, compact: true }) })
+              }
+              noteStyle={{ color: 'var(--gain)' }}
+            />
+            <Metric
+              label={t('family.pool.owed')}
+              value={<FxAmount plain total={owedPartial} ccy={base} />}
+              valueStyle={{ color: owedPartial.value > 0 ? 'var(--orange)' : undefined }}
+              note={totalNote(owedPartial) || t('family.pool.owedSub', { count: owedAll.length })}
+            />
+            <Metric
+              label={t('family.pool.count')}
+              note={t('family.pool.countNote', { members: seated, free: openSeats })}
+              value={
+                <span className="amt car-plan-count">
+                  <span>
+                    {owned.length}
+                    <small>{copyParts(t('family.pool.countStarted'))}</small>
+                  </span>
+                  <span>
+                    {joined.length}
+                    <small>{t('family.pool.countJoined')}</small>
+                  </span>
                 </span>
-                <span>
-                  {joined.length}
-                  <small>{t('family.pool.countJoined')}</small>
-                </span>
-              </span>
-            }
-          />
-        </MetricCards>
+              }
+            />
+          </MetricCards>
+        )}
 
-        {owned.length + ended.length === 0 ? (
-          <div className="card empty">
-            <b>{t('family.pool.emptyTitle')}</b>
-            {t('family.pool.emptyBody')}
-          </div>
+        {empty ? (
+          <EmptyState kind="carpool" size="hero" title={t('family.pool.emptyTitle')} body={t('family.pool.emptyBody')} />
         ) : (
-          shown.length === 0 && <div className="card empty">{t('family.pool.filter.none')}</div>
+          shown.length === 0 && <EmptyState kind="search" size="md" body={t('family.pool.filter.none')} />
         )}
         {view === 'list' && shown.length > 0 && (
           <CarTable

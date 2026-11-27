@@ -1,14 +1,16 @@
 import { ConfirmButton } from '../components/ConfirmButton.tsx';
 import { copyParts } from '../components/copy.tsx';
 import { base } from '../base.ts';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
 import type { AppState } from '../../../shared/types.ts';
+import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { CardTitle, Toolbar } from '../components/ui.tsx';
 import { LoadFailed, Sheet } from '../components/overlays.tsx';
 import { Icon } from '../components/icons.tsx';
 import { Toggle } from '../components/inputs.tsx';
-import { BookOpen, ChartPie, Download, Eye, FileText, KeyRound, Layers, PencilLine, ReceiptText, Settings2, Shapes, Tags, Users, Wallet } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { BookOpen, Download, FileText } from 'lucide-react';
+import { ChartPie, Eye, KeyRound, Layers, PencilLine, ReceiptText, Settings2, Shapes, Tags, Users, Wallet } from '../components/ui-icons.tsx';
+import type { UiIconProps } from '../components/ui-icons.tsx';
 import { api, saveSettings } from '../store.ts';
 import { copyText, run } from '../toast.ts';
 import { localTime } from '../../../shared/format.ts';
@@ -30,7 +32,7 @@ interface ToolMeta {
 }
 
 // 只调整展示顺序和分组，工具仍全部来自接口；未匹配的新工具归到「其他」
-const TOOL_DOMAINS: Array<{ key: string; icon: LucideIcon; test: RegExp }> = [
+const TOOL_DOMAINS: Array<{ key: string; icon: ComponentType<UiIconProps>; test: RegExp }> = [
   { key: 'overview', icon: ChartPie, test: /overview|stats|trends|insights/ },
   { key: 'subs', icon: Layers, test: /subscription|price|plan|status|events|meters|readings/ },
   { key: 'charges', icon: ReceiptText, test: /charges|payment$|transfer/ },
@@ -395,7 +397,11 @@ export function Ai({ state, switcher }: { state: AppState; switcher?: ReactNode 
             <CardTitle as="h2">{copyParts(t('ai.tokens', { count: tokens?.length ?? 0 }))}</CardTitle>
           </header>
           {failed.tokens && !tokens && <LoadFailed onRetry={() => void load()} />}
-          {tokens?.length === 0 && <div className="ai-empty">{t('ai.noTokens')}</div>}
+          {tokens?.length === 0 && (
+            <div className="ai-empty">
+              <EmptyState kind="tokens" size="md" body={t('ai.noTokens')} />
+            </div>
+          )}
           {!!tokens?.length && (
             // 密钥列表参考 Stripe、OpenAI、Vercel 的 API Keys：名称与权限、遮蔽后的密钥、创建和最近使用分列对齐，操作收进行尾图标
             <div className="ai-tokens" role="table">

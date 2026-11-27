@@ -7,6 +7,7 @@ import { t } from '../../../shared/i18n.ts';
 import { listHaystack, listStatus, listWords } from '../../../shared/list-scope.ts';
 import { bundleView } from '../../../shared/bundle.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
+import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { FacetRow } from '../components/FacetRow.tsx';
 import { FileDrop } from '../components/FileDrop.tsx';
 import { useFilePicker, useUpload } from '../components/FileUpload.tsx';
@@ -507,7 +508,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
                   onChange={setFacet('cat')}
                   options={[
                     { key: 'all', label: t('list.all'), n: catN.get('all') ?? 0 },
-                    ...cats.map((c) => ({ key: c, label: c, icon: <CatIcon cat={c} size={13} />, n: catN.get(c) ?? 0 })),
+                    ...cats.map((c) => ({ key: c, label: c, icon: <CatIcon cat={c} size={13} active={sel.cat === c} />, n: catN.get(c) ?? 0 })),
                   ]}
                 />
                 <FacetRow
@@ -533,9 +534,9 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
           </div>
         )}
         {empty ? (
-          <FilesEmpty text={enabled ? t('files.empty') : t('core.file.noStorage')} />
+          <EmptyState kind="files" size="hero" title={enabled ? t('files.empty') : t('core.file.noStorage')} className="files-empty" />
         ) : nothing ? (
-          <div className="empty">{t('files.noMatch')}</div>
+          <EmptyState kind="search" size="md" body={t('files.noMatch')} />
         ) : (
           <div ref={wrapRef} className={`file-sections ${pickedRows.length ? 'picking' : ''}`}>
             {sections.map((sec) =>
@@ -836,29 +837,6 @@ function SlotCard({
         </>
       )}
       {input}
-    </div>
-  );
-}
-
-/** 空状态插图：一叠单据落进文件夹，线条用正文与分隔线的颜色，深浅色主题都成立 */
-function FilesEmpty({ text }: { text: string }) {
-  return (
-    <div className="files-empty">
-      <svg viewBox="0 0 220 160" width="220" height="160" aria-hidden="true" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <ellipse cx="110" cy="146" rx="78" ry="7" className="fe-shadow" />
-        <g className="fe-doc back">
-          <rect x="62" y="20" width="76" height="96" rx="8" />
-          <path d="M76 42h40M76 54h48M76 66h30" />
-        </g>
-        <g className="fe-doc front">
-          <rect x="86" y="10" width="76" height="96" rx="8" />
-          <path d="M100 32h30M100 44h48M100 56h40M100 82h20M134 82h14" />
-          <path d="M100 70h48" className="fe-dash" />
-        </g>
-        <path className="fe-folder" d="M40 70a8 8 0 0 1 8-8h34l10 10h80a8 8 0 0 1 8 8v54a8 8 0 0 1-8 8H48a8 8 0 0 1-8-8z" />
-        <path className="fe-lip" d="M40 88h140" />
-      </svg>
-      <b>{text}</b>
     </div>
   );
 }

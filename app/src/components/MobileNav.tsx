@@ -145,7 +145,7 @@ export function Dock({
   const add = onAdd && (pageAdd?.run ?? onAdd);
   const outer: ReactNode[] = more.map((n) => (
     <a key={n.key} className={`arc-item ${n.key === key ? 'on' : ''}`} href={href(n.path)} aria-current={n.key === key ? 'page' : undefined} onClick={close}>
-      <Icon name={n.icon} />
+      <Icon name={n.icon} active={n.key === key} />
       <span className="arc-label">{n.label}</span>
     </a>
   ));
@@ -159,7 +159,7 @@ export function Dock({
   if (settings)
     inner.push(
       <a key="settings" className={`arc-item ${route === 'settings' || route === 'settings/public' ? 'on' : ''}`} href={href('settings')} onClick={close}>
-        <Icon name="gear" />
+        <Icon name="gear" active={route === 'settings' || route === 'settings/public'} />
         <span className="arc-label">{t('app.navShort.settings')}</span>
         {update && <span className="side-dot" role="img" aria-label={t('settings.update.available')} />}
       </a>,
@@ -205,7 +205,7 @@ export function Dock({
         <div className="dock-bar" inert={open}>
           {bar.map((n) => (
             <a key={n.key} className={`tab ${n.key === key ? 'on' : ''}`} href={href(n.path)} aria-current={n.key === key ? 'page' : undefined}>
-              <Icon name={n.icon} />
+              <Icon name={n.icon} active={n.key === key} />
               <span>{n.label}</span>
             </a>
           ))}

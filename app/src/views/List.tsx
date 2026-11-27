@@ -12,6 +12,7 @@ import { cnDate, cnDateAuto, money, nearDate, relDays } from '../../../shared/fo
 import { toBaseOrNaN } from '../../../shared/fx.ts';
 import { registrarIcon } from '../../../shared/icon.ts';
 import type { AppState, Subscription } from '../../../shared/types.ts';
+import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { IconButton, Toolbar } from '../components/ui.tsx';
 import { Amount, Seg } from '../components/inputs.tsx';
 import { CatChip, CatIcon, MethodMark, PayBadge, RegionTag, FlagImg, SubIcon } from '../components/marks.tsx';
@@ -216,12 +217,14 @@ export function List({
     .filter(Boolean)
     .join('\n');
 
+  const empty = mine.length === 0;
+
   return (
     <>
       <Toolbar
         title={category ?? t('list.title')}
         sub={
-          reportVisible
+          empty || reportVisible
             ? undefined
             : t('list.summary', {
                 count: rows.length,
@@ -230,98 +233,110 @@ export function List({
               })
         }
       >
-        <label className="tb-search">
-          <Icon name="search" />
-          <input
-            type="search"
-            value={q}
-            placeholder={t('list.search')}
-            aria-label={t('list.search')}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === 'Escape' && q && (e.stopPropagation(), setQ(''))}
-          />
-          {q && (
-            <IconButton type="button" className="tb-search-x" onClick={() => setQ('')} aria-label={t('common.clear')}>
-              <Icon name="x" size={15} />
-            </IconButton>
-          )}
-        </label>
+        {!empty && (
+          <label className="tb-search">
+            <Icon name="search" />
+            <input
+              type="search"
+              value={q}
+              placeholder={t('list.search')}
+              aria-label={t('list.search')}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === 'Escape' && q && (e.stopPropagation(), setQ(''))}
+            />
+            {q && (
+              <IconButton type="button" className="tb-search-x" onClick={() => setQ('')} aria-label={t('common.clear')}>
+                <Icon name="x" size={15} />
+              </IconButton>
+            )}
+          </label>
+        )}
         {/* 三种视图顶部一致；列表视图另可点表头排序，两处共用同一排序状态 */}
-        <SortControl
-          value={sort}
-          dir={dir}
-          onSort={chooseSort}
-          onDir={setDir}
-          options={[
-            { value: 'next', label: t('list.sort.next') },
-            { value: 'cost', label: t('list.sort.cost') },
-            { value: 'amount', label: t('list.sort.amount') },
-            { value: 'name', label: t('list.sort.name') },
-            { value: 'category', label: t('list.sort.category') },
-            { value: 'method', label: t('list.sort.method') },
-            { value: 'start', label: t('list.sort.start') },
-          ]}
-        />
+        {!empty && (
+          <SortControl
+            value={sort}
+            dir={dir}
+            onSort={chooseSort}
+            onDir={setDir}
+            options={[
+              { value: 'next', label: t('list.sort.next') },
+              { value: 'cost', label: t('list.sort.cost') },
+              { value: 'amount', label: t('list.sort.amount') },
+              { value: 'name', label: t('list.sort.name') },
+              { value: 'category', label: t('list.sort.category') },
+              { value: 'method', label: t('list.sort.method') },
+              { value: 'start', label: t('list.sort.start') },
+            ]}
+          />
+        )}
         {!state.readonly && (
           <IconButton className="accent d-only page-add" onClick={onAdd} aria-label={t('list.add')}>
             <Icon name="plus" />
           </IconButton>
         )}
         {/* 视图切换固定在右上角最后一个，各页一致 */}
-        <Seg
-          small
-          value={view}
-          onChange={setView}
-          options={[
-            ['grid', t('list.view.grid')],
-            ['list', t('list.view.list')],
-            ['gantt', t('list.view.gantt')],
-          ]}
-        />
+        {!empty && (
+          <Seg
+            small
+            value={view}
+            onChange={setView}
+            options={[
+              ['grid', t('list.view.grid')],
+              ['list', t('list.view.list')],
+              ['gantt', t('list.view.gantt')],
+            ]}
+          />
+        )}
       </Toolbar>
       <div className="page fade-in">
-        <div className="facets">
-          {dirty && (
-            <button
-              className="facet-clear"
-              onClick={() => {
-                setFilter('all');
-                setCat(category ?? 'all');
-                setPay('all');
-                setQ('');
-              }}
-            >
-              <Icon name="x" size={12} />
-              {t('list.clear')}
-            </button>
-          )}
-          <FacetRow
-            label={t('list.facet.status')}
-            value={filter}
-            onChange={(v) => setFilter(v as Filter)}
-            options={FILTERS().map(([k, l]) => ({ key: k, label: l, n: statusN.get(k) ?? 0 }))}
-          />
-          <FacetRow
-            label={t('list.facet.category')}
-            value={cat}
-            onChange={setCat}
-            options={[
-              { key: 'all', label: t('list.all'), n: catN.get('all') ?? 0 },
-              ...cats.map((c) => ({ key: c, label: c, icon: <CatIcon cat={c} size={13} />, n: catN.get(c) ?? 0 })),
-            ]}
-          />
-          <FacetRow
-            label={t('list.facet.pay')}
-            value={pay}
-            onChange={setPay}
-            options={[
-              { key: 'all', label: t('list.all'), n: payN.get('all') ?? 0 },
-              ...state.methods.map((m) => ({ key: m.id, label: m.name, icon: <MethodMark m={m} size={16} />, n: payN.get(m.id) ?? 0 })),
-              { key: 'none', label: t('list.unassigned'), n: payN.get('none') ?? 0 },
-            ]}
-          />
-        </div>
-        {rows.length === 0 && <div className="empty">{t('list.empty')}</div>}
+        {!empty && (
+          <div className="facets">
+            {dirty && (
+              <button
+                className="facet-clear"
+                onClick={() => {
+                  setFilter('all');
+                  setCat(category ?? 'all');
+                  setPay('all');
+                  setQ('');
+                }}
+              >
+                <Icon name="x" size={12} />
+                {t('list.clear')}
+              </button>
+            )}
+            <FacetRow
+              label={t('list.facet.status')}
+              value={filter}
+              onChange={(v) => setFilter(v as Filter)}
+              options={FILTERS().map(([k, l]) => ({ key: k, label: l, n: statusN.get(k) ?? 0 }))}
+            />
+            <FacetRow
+              label={t('list.facet.category')}
+              value={cat}
+              onChange={setCat}
+              options={[
+                { key: 'all', label: t('list.all'), n: catN.get('all') ?? 0 },
+                ...cats.map((c) => ({ key: c, label: c, icon: <CatIcon cat={c} size={13} active={cat === c} />, n: catN.get(c) ?? 0 })),
+              ]}
+            />
+            <FacetRow
+              label={t('list.facet.pay')}
+              value={pay}
+              onChange={setPay}
+              options={[
+                { key: 'all', label: t('list.all'), n: payN.get('all') ?? 0 },
+                ...state.methods.map((m) => ({ key: m.id, label: m.name, icon: <MethodMark m={m} size={16} />, n: payN.get(m.id) ?? 0 })),
+                { key: 'none', label: t('list.unassigned'), n: payN.get('none') ?? 0 },
+              ]}
+            />
+          </div>
+        )}
+        {empty ? (
+          <EmptyState kind="subscriptions" size="hero" title={t('list.empty')} />
+        ) : (
+          rows.length === 0 && <EmptyState kind="search" size="md" body={t('list.empty')} />
+        )}
         {view === 'gantt' ? (
           rows.length > 0 && <Gantt rows={rows} state={state} today={today} onOpen={onOpen} />
         ) : view === 'grid' ? (

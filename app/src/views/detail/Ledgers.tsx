@@ -1,7 +1,7 @@
 import { amountTotal, chargesTotal, formatTotal, sumTotals } from '../../../../shared/fx-total.ts';
 import { copyParts } from '../../components/copy.tsx';
 import { ChargeMethods, chargeMethodIds, currencyTotals, YearLedger, YearMethods } from '../../components/YearLedger.tsx';
-import { Plus } from 'lucide-react';
+import { Plus } from '../../components/ui-icons.tsx';
 import { addDays, chargeDay, chargeServicePeriod, isPostpaid, isSeparate, type Charge } from '../../../../shared/billing.ts';
 import { meterDecimals, meterRows, meterView } from '../../../../shared/meters.ts';
 import { chargesUsage, chargeUsage, fixedQty, periodLabel, withUnit } from './ChargeTip.tsx';

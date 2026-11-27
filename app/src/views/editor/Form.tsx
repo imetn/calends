@@ -8,7 +8,7 @@ import { t } from '../../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 
 import { SubIcon } from '../../components/marks.tsx';
-import { Pencil } from 'lucide-react';
+import { Pencil } from '../../components/ui-icons.tsx';
 import { useIconUpload } from './icon-upload.tsx';
 
 import { Icon } from '../../components/icons.tsx';

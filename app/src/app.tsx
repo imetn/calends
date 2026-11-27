@@ -73,9 +73,9 @@ const NAV = [
   { path: 'wallet', label: 'wallet', icon: 'wallet' },
   { path: 'family', label: 'family', icon: 'users' },
   { path: 'behalf', label: 'behalf', icon: 'swap' },
+  { path: 'files', label: 'files', icon: 'folder' },
   { path: 'assistant', label: 'assistant', icon: 'chat' },
   { path: 'connect', label: 'ai', icon: 'bot' },
-  { path: 'files', label: 'files', icon: 'folder' },
 ];
 
 /**
@@ -284,7 +284,6 @@ function Sidebar({
   inert?: boolean;
   offline?: boolean;
 }) {
-  const [gear, setGear] = useState(0);
   const update = availableUpdate(useUpdateState());
   // 即将扣款：像聊天记录一样列在导航下方；往后看 0 天表示看到本月月底
   const days = state.settings.upcomingDays ?? 45;
@@ -321,16 +320,15 @@ function Sidebar({
         <kbd>{commandLabel()}K</kbd>
       </button>
       <div className="side-gap" />
-      {navOf(state.settings).map((n) => (
-        <a
-          key={n.path}
-          className={`side-item ${route === n.path || (n.path === 'list' && route.startsWith('cat/')) || (n.path === 'family' && route === 'family/people') ? 'active' : ''}`}
-          href={href(n.path)}
-        >
-          <Icon name={n.icon} />
-          <span>{n.label}</span>
-        </a>
-      ))}
+      {navOf(state.settings).map((n) => {
+        const active = route === n.path || (n.path === 'list' && route.startsWith('cat/')) || (n.path === 'family' && route === 'family/people');
+        return (
+          <a key={n.path} className={`side-item ${active ? 'active' : ''}`} href={href(n.path)}>
+            <Icon name={n.icon} active={active} />
+            <span>{n.label}</span>
+          </a>
+        );
+      })}
       <div className="side-scroll side-recent">
         {showUpcoming && upcoming.length > 0 && <div className="side-label">{t('app.sidebar.upcoming')}</div>}
         {showUpcoming &&
@@ -347,21 +345,14 @@ function Sidebar({
       </div>
       <div className="side-foot">
         <CurrencyItem state={state} />
-        <button className="side-item theme-item" onClick={toggleTheme} title={t('app.sidebar.themeHint')}>
+        <button className="side-item theme-item" onClick={toggleTheme}>
           <ThemeIcon mode={theme} size={17} />
           <span>{t('app.sidebar.theme')}</span>
           <small>{THEME_LABEL[theme]}</small>
         </button>
         {!state.readonly && (
-          <a
-            className={`side-item ${route === 'settings' || route === 'settings/public' ? 'active' : ''}`}
-            href={href('settings')}
-            onClick={() => setGear(gear + 1)}
-          >
-            {/* 每点一下齿轮转一圈：先慢、再快、再慢 */}
-            <span className="ico-turn gear" style={{ transform: `rotate(${gear * 360}deg)` }}>
-              <Icon name="gear" />
-            </span>
+          <a className={`side-item ${route === 'settings' || route === 'settings/public' ? 'active' : ''}`} href={href('settings')}>
+            <Icon name="gear" active={route === 'settings' || route === 'settings/public'} />
             <span>{t('app.nav.settings')}</span>
             {update && <span className="side-dot" role="img" aria-label={t('settings.update.available')} />}
           </a>

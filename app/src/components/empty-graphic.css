@@ -1,0 +1,201 @@
+/* Empty-state hero illustrations: Radix monochrome tokens, light/dark adaptive, GPU-light idle float. */
+
+.empty-state {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: var(--label-2);
+  font-size: var(--fs-2);
+}
+
+.empty-state.hero {
+  gap: 14px;
+  padding: 72px 20px 56px;
+}
+
+.empty-state.compact {
+  gap: 8px;
+  padding: 24px 16px;
+}
+
+.empty-state b {
+  display: block;
+  font-size: var(--fs-3);
+  font-weight: 600;
+  color: var(--label);
+  margin: 0;
+}
+
+.empty-state p {
+  margin: 0;
+  max-width: 340px;
+  line-height: 1.55;
+  color: var(--label-2);
+}
+
+.eg-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.eg-svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.eg-svg.eg-hero * {
+  vector-effect: non-scaling-stroke;
+}
+
+/* Monochrome architectural surface & stroke tokens */
+.eg-shadow {
+  fill: var(--fill-2);
+  stroke: none;
+}
+
+.eg-surface {
+  fill: var(--card);
+  stroke: var(--label);
+  stroke-width: 1.9;
+}
+
+.eg-surface-soft {
+  fill: var(--card);
+  stroke: var(--label-3);
+  stroke-width: 1.65;
+}
+
+.eg-surface-muted {
+  fill: var(--fill-2);
+  stroke: var(--label-3);
+  stroke-width: 1.6;
+}
+
+.eg-fill-muted {
+  fill: var(--fill-2);
+  stroke: none;
+}
+
+.eg-fill-ink {
+  fill: var(--label);
+  stroke: none;
+}
+
+.eg-fill-mid {
+  fill: var(--label-2);
+  stroke: none;
+}
+
+.eg-fill-soft {
+  fill: var(--label-3);
+  stroke: none;
+}
+
+.eg-fill-card {
+  fill: var(--card);
+  stroke: none;
+}
+
+.eg-stroke-ink {
+  fill: none;
+  stroke: var(--label);
+  stroke-width: 1.9;
+}
+
+.eg-stroke-mid {
+  fill: none;
+  stroke: var(--label-2);
+  stroke-width: 1.75;
+}
+
+.eg-stroke-soft {
+  fill: none;
+  stroke: var(--label-3);
+  stroke-width: 1.6;
+}
+
+.eg-stroke-rule {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 2.2;
+}
+
+.eg-stroke-bar {
+  fill: none;
+  stroke: var(--label-3);
+  stroke-width: 2.8;
+}
+
+.eg-stroke-card {
+  fill: none;
+  stroke: var(--card);
+  stroke-width: 1.9;
+}
+
+.eg-dash {
+  fill: none;
+  stroke: var(--label-3);
+  stroke-width: 1.4;
+  stroke-dasharray: 3.5 4;
+}
+
+/* Calm ambient float on secondary wrapper groups (separate from JS spring layers) */
+@media (prefers-reduced-motion: no-preference) {
+  .eg-float {
+    animation: eg-float 4.2s ease-in-out infinite;
+  }
+  .eg-float-slow {
+    animation: eg-float-slow 5s ease-in-out infinite;
+  }
+  .eg-twinkle {
+    animation: eg-twinkle 3.4s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .eg-twinkle-delay {
+    animation: eg-twinkle 3.4s ease-in-out 1.4s infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+}
+
+@keyframes eg-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2.4px);
+  }
+}
+
+@keyframes eg-float-slow {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-1.8px);
+  }
+}
+
+@keyframes eg-twinkle {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.1);
+  }
+}

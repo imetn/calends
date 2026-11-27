@@ -3,7 +3,7 @@ import { ConfirmButton } from '../components/ConfirmButton.tsx';
 import { useEditorDraft } from './editor/useEditorDraft.ts';
 import { prepareEditorSave, mergeEditorSave } from './editor/save.ts';
 
-import { ArrowUpRight, ReceiptText } from 'lucide-react';
+import { ArrowUpRight, ReceiptText } from '../components/ui-icons.tsx';
 import type { AssistantConfigView } from '../../../shared/deepseek.ts';
 import { cachedAssistantConfigured, compressImage, handoff, loadAssistantConfigured } from '../handoff.ts';
 import { t } from '../../../shared/i18n.ts';
