@@ -1867,3 +1867,151 @@ test('refund / adjust rows say what they are everywhere a single charge is shown
   // 甘特图圆点按类型取名，不把补差、失败叫「扣款」
   assert.match(read('views/Gantt.tsx'), /editor\.payment\.kind\.\$\{c\.kind \?\? 'charge'\}/);
 });
+
+test('detail FilesCard tiles up to one row without stacking small sets and caps overflow with +N', async () => {
+  const sharedFiles = await import('../shared/files.ts');
+  const [, , source] = sources.find(([file]) => file === 'views/detail/FilesCard.tsx');
+  const body = source
+    .slice(source.indexOf('const TILE_MIN'), source.indexOf('/**\n * 记一笔'))
+    .replaceAll('export function ', 'function ')
+    .replaceAll('export const ', 'const ');
+  const compiled = transformSync('FilesCard.tsx', body, {
+    lang: 'tsx',
+    jsx: { runtime: 'classic' },
+    reactCompiler: false,
+  });
+  assert.equal(compiled.fatal, false);
+  const mod = new Function(
+    'React',
+    'createPortal',
+    'useEffect',
+    'useLayoutEffect',
+    'useRef',
+    'useState',
+    'FILE_EXT',
+    'filesOf',
+    't',
+    'Panel',
+    'FileDrop',
+    'fileLabel',
+    'FileSheet',
+    'FileThumb',
+    'sizeLabel',
+    'Icon',
+    `${compiled.code}; return { fileStripCols, orderDetailFiles, fileDateSpan, sliceFileStrip, FilesCard };`,
+  )(
+    React,
+    (el) => el,
+    () => {},
+    () => {},
+    () => ({ current: null }),
+    React.useState,
+    sharedFiles.FILE_EXT,
+    sharedFiles.filesOf,
+    (key, vars) => (vars?.count != null ? `${key}:${vars.count}` : key),
+    ({ className, aside, children }) => React.createElement('section', { className }, aside, children),
+    () => null,
+    (f, files, subs) => {
+      const parts = sharedFiles.fileTitleParts(f, files, subs);
+      return { head: parts[0], item: parts[1], gone: false };
+    },
+    () => null,
+    ({ f }) => React.createElement('span', { 'data-thumb': f.id }),
+    (n) => `${n}B`,
+    () => null,
+  );
+
+  // 宽度 -> 单排列数：桌面 6 列、中等 4 列、手机 3 列
+  assert.equal(mod.fileStripCols(680), 6);
+  assert.equal(mod.fileStripCols(560), 5);
+  assert.equal(mod.fileStripCols(480), 4);
+  assert.equal(mod.fileStripCols(338), 3);
+  assert.equal(mod.fileStripCols(268), 3);
+
+  // 切分不产生 +1：刚好一排全平铺，多 1 份时末尾收成 +2
+  const six = Array.from({ length: 6 }, (_, i) => ({ type: 'pending', key: `p${i}`, name: `f${i}` }));
+  assert.equal(mod.sliceFileStrip(six, 6).shown.length, 6);
+  assert.equal(mod.sliceFileStrip(six, 6).rest.length, 0);
+  const seven = [...six, { type: 'pending', key: 'p6', name: 'f6' }];
+  assert.equal(mod.sliceFileStrip(seven, 6).shown.length, 5);
+  assert.equal(mod.sliceFileStrip(seven, 6).rest.length, 2);
+  assert.equal(mod.sliceFileStrip(six, 3).shown.length, 2);
+  assert.equal(mod.sliceFileStrip(six, 3).rest.length, 4);
+
+  // 覆盖月份：同月、同年省略后一年、跨年、无日期
+  const f = (id, kind, date, createdAt) => ({ id, name: `${id}.pdf`, mime: 'application/pdf', size: 1024, subId: 's1', kind, date, createdAt });
+  assert.equal(mod.fileDateSpan([f('1', 'charge', '2026-08-01', '2026-08-01T00:00:00Z')]), '2026-08');
+  assert.equal(
+    mod.fileDateSpan([f('1', 'charge', '2025-01-01', '2025-01-01T00:00:00Z'), f('2', 'charge', '2025-07-01', '2025-07-01T00:00:00Z')]),
+    '2025-01 – 07',
+  );
+  assert.equal(
+    mod.fileDateSpan([f('1', 'charge', '2025-01-01', '2025-01-01T00:00:00Z'), f('2', 'charge', '2026-07-01', '2026-07-01T00:00:00Z')]),
+    '2025 – 2026',
+  );
+  assert.equal(
+    mod.fileDateSpan([f('1', 'charge', '2025-01-01', '2025-01-01T00:00:00Z'), f('2', 'charge', '2026-07-01', '2026-07-01T00:00:00Z')], true),
+    '2025-01 – 2026-07',
+  );
+  assert.equal(mod.fileDateSpan([f('1', 'sub', undefined, '2026-11-27T00:00:00Z')]), '');
+
+  const sub = {
+    id: 's1',
+    name: 'GitHub',
+    category: 'tools',
+    tags: [],
+    currency: 'USD',
+    cycle: { unit: 'month', every: 1 },
+    start: '2025-01-01',
+    status: 'active',
+    price: 10,
+  };
+  const renderCard = (files) =>
+    renderToStaticMarkup(
+      React.createElement(mod.FilesCard, {
+        sub,
+        state: { subscriptions: [sub], methods: [], settings: {}, files },
+        today: '2026-11-27',
+        pending: [],
+        onFiles() {},
+        onFilesPage() {},
+      }),
+    );
+
+  // 1 份文件：横条单列，保留类型与大小
+  const oneHtml = renderCard([f('c1', 'charge', '2026-10-18', '2026-10-18T00:00:00Z')]);
+  assert.match(oneHtml, /class="dt-file-list"/);
+  assert.doesNotMatch(oneHtml, /dt-file-strip/);
+  assert.match(oneHtml, /1024B/);
+
+  // 6 份扣款：直接单排平铺 6 张，不再叠成左边一小摞
+  const sixFiles = ['2025-12-18', '2026-02-18', '2026-04-18', '2026-06-18', '2026-08-18', '2026-10-18'].map((d, i) =>
+    f(`c${i}`, 'charge', d, `${d}T00:00:00Z`),
+  );
+  const sixHtml = renderCard(sixFiles);
+  assert.match(sixHtml, /class="dt-file-strip"/);
+  assert.equal((sixHtml.match(/class="dt-file-tile"/g) ?? []).length, 6);
+  assert.doesNotMatch(sixHtml, /dt-file-more/);
+  assert.ok(sixHtml.indexOf('2026-10-18') < sixHtml.indexOf('2025-12-18'));
+
+  // 23 份扣款 + 1 份刚上传的资料：5 张平铺（新资料排第一）+ 末尾 +19
+  const manyFiles = [
+    ...Array.from({ length: 12 }, (_, i) =>
+      f(`a${i}`, 'charge', `2025-${String(i + 1).padStart(2, '0')}-01`, `2025-${String(i + 1).padStart(2, '0')}-01T00:00:00Z`),
+    ),
+    ...Array.from({ length: 11 }, (_, i) =>
+      f(`b${i}`, 'charge', `2026-${String(i + 1).padStart(2, '0')}-01`, `2026-${String(i + 1).padStart(2, '0')}-01T00:00:00Z`),
+    ),
+    f('doc1', 'sub', undefined, '2026-11-27T08:00:00Z'),
+  ];
+  const manyHtml = renderCard(manyFiles);
+  assert.equal((manyHtml.match(/class="dt-file-tile"/g) ?? []).length, 5);
+  assert.equal((manyHtml.match(/dt-file-more/g) ?? []).length, 1);
+  assert.match(manyHtml, /class="dt-more-num">\+19</);
+  // 末尾 +N 叠卡直接展示余下最新文件的真实缩略图 + 自适应数字，不再铺整张暗色蒙层
+  assert.match(manyHtml, /class="dt-more-layer l1 tone-(?:auto|dark|light)"><span data-thumb="b6"><\/span><span class="dt-more-num">\+19<\/span>/);
+  assert.doesNotMatch(manyHtml, /dt-more-scrim/);
+  assert.match(manyHtml, />2025 – 2026</);
+  assert.match(manyHtml, /title="2025-01 – 2026-07"/);
+  assert.ok(manyHtml.indexOf('data-thumb="doc1"') < manyHtml.indexOf('2026-11-01'));
+});

@@ -733,11 +733,11 @@
   box-shadow: 0 0 0 var(--hairline) var(--line);
 }
 
-/* 订阅详情：文件卡（缩略图 + 名称 + 类型大小）与扣款行、合同期上的回形针 */
+/* 订阅详情：文件卡（单份横条、多份单排缩略图卡片平铺）与扣款行、合同期上的回形针 */
 .dt-file-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
   margin-top: 10px;
 }
 .dt-file {
@@ -753,12 +753,13 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 0 0 var(--hairline) var(--line);
 }
-button.dt-file:hover {
+button.dt-file:hover,
+button.dt-file-tile:hover {
   background: var(--fill-2);
 }
-button.dt-file:focus-visible {
+button.dt-file:focus-visible,
+button.dt-file-tile:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--focus-ring);
 }
@@ -770,18 +771,23 @@ button.dt-file:focus-visible {
   place-items: center;
   border-radius: var(--radius-sm);
   background: var(--fill);
+  box-shadow: 0 0 0 var(--hairline) var(--line);
   overflow: hidden;
 }
-.dt-file-thumb img {
+.dt-file-thumb img,
+.dt-tile-thumb img,
+.dt-more-layer img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: top center;
 }
-.dt-file-thumb .file-ph {
+.dt-file-thumb .file-ph,
+.dt-more-layer .file-ph {
   gap: 0;
 }
-.dt-file-thumb .file-ph b {
+.dt-file-thumb .file-ph b,
+.dt-more-layer .file-ph b {
   display: none;
 }
 .dt-file-text {
@@ -796,13 +802,16 @@ button.dt-file:focus-visible {
   font-size: var(--fs-2);
   font-weight: 600;
 }
-.dt-file.loading {
+.dt-file.loading,
+.dt-file-tile.loading {
   cursor: default;
 }
-.dt-file.loading .dt-file-thumb {
+.dt-file.loading .dt-file-thumb,
+.dt-file-tile.loading .dt-tile-thumb {
   animation: file-shimmer 1.2s var(--ease) infinite alternate;
 }
-.dt-file.loading b {
+.dt-file.loading b,
+.dt-file-tile.loading b {
   color: var(--label-2);
 }
 .dt-clip {
@@ -812,7 +821,8 @@ button.dt-file:focus-visible {
   color: var(--label-3);
 }
 @media (prefers-reduced-motion: reduce) {
-  .dt-file.loading .dt-file-thumb {
+  .dt-file.loading .dt-file-thumb,
+  .dt-file-tile.loading .dt-tile-thumb {
     animation: none;
   }
 }
@@ -839,56 +849,136 @@ button.dt-file:focus-visible {
   }
 }
 
-/* 文件卡里的一摞：最多三张缩略图错开叠放，最新的在最前 */
-.dt-file-pile {
-  position: relative;
-  flex-shrink: 0;
-  width: 68px;
-  height: 42px;
+/* 详情文件卡：多份时固定单排平铺，列数与 JSX 切分同步，超出一排末尾收成 +N 叠卡 */
+.dt-files .dt-file {
+  margin: 0 -8px;
 }
-.dt-file-pile .dt-file-thumb {
-  position: absolute;
-  top: 0;
-  left: 0;
-  box-shadow: 0 0 0 var(--hairline) var(--line);
+.dt-file-strip {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 6), minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+  margin-top: 10px;
 }
-.dt-file-pile .dt-file-thumb:nth-child(1) {
-  z-index: 3;
+@container detail-body (max-width: 520px) {
+  .dt-file-strip {
+    gap: 10px;
+  }
 }
-.dt-file-pile .dt-file-thumb:nth-child(2) {
-  z-index: 2;
-  transform: translateX(6px) scale(0.92);
-  transform-origin: right center;
-}
-.dt-file-pile .dt-file-thumb:nth-child(3) {
-  z-index: 1;
-  transform: translateX(12px) scale(0.84);
-  transform-origin: right center;
-}
-.dt-file-text .file-meta {
+.dt-file-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   min-width: 0;
+  padding: 4px;
+  margin: -4px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.dt-file-text .file-meta > span {
+.dt-tile-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  box-shadow: 0 0 0 var(--hairline) var(--line);
+  overflow: hidden;
+}
+.dt-tile-thumb .file-ph {
+  gap: 2px;
+}
+.dt-tile-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  padding: 0 1px;
+}
+.dt-tile-text b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-1);
+  font-weight: 600;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  color: var(--label);
+}
+.dt-file-text .file-meta,
+.dt-tile-text .file-meta {
+  min-width: 0;
+  gap: 6px;
+  line-height: 1.35;
+}
+.dt-file-text .file-meta > span,
+.dt-tile-text .file-meta > span {
   flex-shrink: 0;
   white-space: nowrap;
 }
-.dt-file-text .file-meta > span:last-child {
+.dt-file-text .file-meta > span:last-child,
+.dt-tile-text .file-meta > span:last-child {
   flex-shrink: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.dt-file-count {
-  margin-left: 6px;
-  font-weight: 400;
-  color: var(--label-2);
+.dt-more-pile {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
 }
-/* 卡里不再给每个文件描边：卡片本身已是一层，文件只在悬停时铺底色 */
-.dt-files .dt-file {
-  box-shadow: none;
-  margin: 0 -8px;
+.dt-more-layer {
+  position: absolute;
+  inset: 0 10px 0 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  box-shadow: 0 0 0 var(--hairline) var(--line);
+  overflow: hidden;
 }
-.dt-files .dt-file-list {
-  column-gap: 24px;
-  row-gap: 2px;
+.dt-more-layer.l3 {
+  z-index: 1;
+  transform: translateX(10px) scale(0.88);
+  transform-origin: right center;
+  opacity: 0.72;
+}
+.dt-more-layer.l2 {
+  z-index: 2;
+  transform: translateX(5px) scale(0.94);
+  transform-origin: right center;
+  opacity: 0.88;
+}
+.dt-more-layer.l1 {
+  z-index: 3;
+}
+.dt-more-num {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-3);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.dt-more-layer.tone-dark .dt-more-num {
+  color: var(--black-a12);
+  text-shadow:
+    0 0 10px var(--white-a12),
+    0 0 4px var(--white-a12);
+}
+.dt-more-layer.tone-light .dt-more-num {
+  color: var(--white-a12);
+  text-shadow:
+    0 1px 4px var(--black-a10),
+    0 0 10px var(--black-a8);
+}
+.dt-more-layer.tone-auto .dt-more-num {
+  color: var(--label);
 }
