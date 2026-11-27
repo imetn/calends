@@ -2,6 +2,7 @@
 import {
   undatedStop,
   addDays,
+  addMonths,
   billingPeriod,
   chargesBetween,
   collectionAnchor,
@@ -21,6 +22,8 @@ import {
   pausedFromOf,
   phaseSubs,
   settleLegacyEarly,
+  setSettlement,
+  settleBills,
   priceAt,
   stopBillingPeriod,
   subError,
@@ -800,6 +803,28 @@ export function earlyRenewalEffect(
     if (next) return { settles, next };
   }
   return undefined;
+}
+
+/**
+ * 一起记的订阅一笔付了至少两期时，可在记账时改成分开记：返回追踪起点（这笔按一起记会结清的那期，之前的照旧算已缴）。
+ * 这一段从那期起的未缴账单要接得住整笔钱才提供（结清的那期落在下一段、或段内剩的期数不够时都不提供）：
+ * 缴费日早于追踪起点，分不完的钱会落到已缴的推算期。
+ */
+export function multiPrepayStart(
+  s: Subscription,
+  today: string,
+  early: { settles: string } | undefined,
+  amount: number,
+  phase: Subscription,
+): string | undefined {
+  if (!early || !(phase.price > 0) || amount < phase.price * 2 - 0.005) return undefined;
+  const view = phaseSubs({ ...s, ...setSettlement(s, true, today, early.settles) }).find((v) => v.start === phase.start);
+  if (!view) return undefined;
+  const horizon = addMonths(early.settles > today ? early.settles : today, 36);
+  const room = settleBills(view, today, horizon)
+    .bills.filter((b) => b.date >= early.settles && b.status !== 'paid')
+    .reduce((a, b) => a + b.due - b.paid, 0);
+  return room >= amount - 0.005 ? early.settles : undefined;
 }
 
 /** 新增或修改一笔扣款记录；old 为原记录的日期与序号（修改时）；subs 为完整账本以正确跳过父订阅暂停期间的推算扣款 */

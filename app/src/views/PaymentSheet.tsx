@@ -10,6 +10,7 @@ import {
   cycleLabel,
   isSeparate,
   phaseSubs,
+  setSettlement,
   settleBills,
   uid,
 } from '../../../shared/billing.ts';
@@ -18,7 +19,7 @@ import { cnDateAuto, currencyDecimals, money } from '../../../shared/format.ts';
 import { settlementCurrencyOf, toBaseOrNaN } from '../../../shared/fx.ts';
 import { t } from '../../../shared/i18n.ts';
 import { meterRows, periodReading, periodReadingCount, setPeriodValues, usageWithin } from '../../../shared/meters.ts';
-import { deletePayment, earlyRenewalEffect, savePayment, setPhaseMethod } from '../../../shared/phases.ts';
+import { deletePayment, earlyRenewalEffect, multiPrepayStart, savePayment, setPhaseMethod } from '../../../shared/phases.ts';
 import type { Meter, Payment, Subscription } from '../../../shared/types.ts';
 import { DatePicker } from '../components/DatePicker.tsx';
 import { CurrencySelect, CurrencyTag, Picker } from '../components/Picker.tsx';
@@ -39,7 +40,7 @@ const KINDS: Kind[] = ['charge', 'refund', 'adjust', 'failed'];
  * 另填「卡上实扣」，统计就按实扣算，汇差和手续费都算进真实成本。
  */
 export function PaymentSheet({
-  sub,
+  sub: given,
   today,
   edit,
   onClose,
@@ -49,6 +50,9 @@ export function PaymentSheet({
   edit?: { pay: Payment; index: number; phase?: string };
   onClose: () => void;
 }) {
+  // 一起记的订阅一次续了多期：在这里改成分开记，追踪起点取这笔原本结清的那期（之前的照旧算已缴），保存时连同设置一起写入
+  const [track, setTrack] = useState<string>();
+  const sub = track ? { ...given, ...setSettlement(given, true, today, track) } : given;
   const existingPay = edit?.pay;
   const originalDate = existingPay?.date;
   const originalIndex = edit?.index;
@@ -139,17 +143,28 @@ export function PaymentSheet({
     return keys;
   })();
   const keys = picked ?? auto;
-  const draft: Payment = { date, amount: Number(amount) || 0, currency: ccy, ...(picked?.length ? { periods: picked } : {}) };
+  const draft: Payment = {
+    date,
+    amount: Number(amount) || 0,
+    currency: ccy,
+    ...(picked?.length ? { periods: picked } : track && keys.length ? { periods: keys } : {}),
+  };
   const after = separate ? settleBills({ ...others, payments: [...(others.payments ?? []), draft] }, today, horizon).bills : [];
   const pieceOf = (date: string) => after.find((b) => b.date === date)?.pieces.find((x) => x.payment === draft)?.amount ?? 0;
   const [ahead, setAhead] = useState(1);
   const future = open.filter((b) => b.date > today && !keys.includes(b.date) && pieceOf(b.date) <= 0.004);
   const shown = open.filter((b) => !future.includes(b) || future.indexOf(b) < ahead);
+  // 改成分开记只对这一笔扣款成立：改类型、日期或所在段就退回一起记，重新判断
+  const untrack = () => {
+    setTrack(undefined);
+    setPicked(null);
+  };
   const togglePeriod = (k: string) => setPicked(keys.includes(k) ? keys.filter((x) => x !== k) : [...keys, k].sort());
   const early =
     kind === 'charge' && !separate
       ? earlyRenewalEffect(sub, today, { date, amount: Number(amount) || 0 }, target, pick, getState().subscriptions ?? [])
       : undefined;
+  const multi = edit ? undefined : multiPrepayStart(bundleView(sub, getState().subscriptions ?? []), today, early, Number(amount) || 0, phase);
 
   const [busy, submit] = useSubmit();
   const save = () => {
@@ -166,7 +181,7 @@ export function PaymentSheet({
       methodId: split ? undefined : changed ? (scope === 'one' && method !== phase.methodId ? method : undefined) : existingPay?.methodId,
       // 只剩一个来源没填金额时，它补上差额；其余校验（来源不同、合计相等）由 savePayment 统一做
       // 没选来源也没填金额的空行直接忽略
-      ...(separate ? { periods: picked ?? undefined } : {}),
+      ...(separate ? { periods: picked ?? (track ? keys : undefined) } : {}),
       funding: split
         ?.filter((x) => x.methodId || x.amount !== '')
         .map((x) => ({ methodId: x.methodId ?? '', amount: sign * (x.amount === '' && blanks === 1 ? left : Number(x.amount)) })),
@@ -216,7 +231,11 @@ export function PaymentSheet({
           <button className="btn" onClick={onClose}>
             {t('common.cancel')}
           </button>
-          <button className="btn primary" disabled={busy || !amountValid || files.uploading} onClick={save}>
+          <button
+            className="btn primary"
+            disabled={busy || !amountValid || files.uploading || (!!track && keys.reduce((a, k) => a + pieceOf(k), 0) < (Number(amount) || 0) - 0.005)}
+            onClick={save}
+          >
             {t('common.save')}
           </button>
         </>
@@ -228,15 +247,36 @@ export function PaymentSheet({
             early && (
               <>
                 {t('editor.payment.earlyHint', { settles: cnDateAuto(early.settles, today), next: cnDateAuto(early.next, today) })}{' '}
-                <button type="button" className="as-link" onClick={() => setKind('adjust')}>
+                <button
+                  type="button"
+                  className="as-link"
+                  onClick={() => {
+                    setKind('adjust');
+                    untrack();
+                  }}
+                >
                   {t('editor.payment.earlyExtra')}
                 </button>
+                {multi && (
+                  <>
+                    {' '}
+                    <button type="button" className="as-link" onClick={() => setTrack(multi)}>
+                      {t('editor.payment.earlyMulti')}
+                    </button>
+                  </>
+                )}
               </>
             )
           }
         >
           <Cell label={t('editor.payment.date')}>
-            <DatePicker value={date} onChange={(v) => setDate(v ?? today)} />
+            <DatePicker
+              value={date}
+              onChange={(v) => {
+                setDate(v ?? today);
+                untrack();
+              }}
+            />
           </Cell>
           {lanes.length > 1 && (
             <Cell label={t('editor.overlap.payPhase')}>
@@ -244,6 +284,7 @@ export function PaymentSheet({
                 value={phase.start}
                 onChange={(v) => {
                   setLane(v);
+                  untrack();
                   const p = lanes.find((x) => x.start === v);
                   if (!edit && p) setAmount(String(p.price));
                 }}
@@ -258,7 +299,10 @@ export function PaymentSheet({
           <Cell label={t('editor.payment.kind.label')}>
             <Picker
               value={kind}
-              onChange={setKind}
+              onChange={(k) => {
+                setKind(k);
+                untrack();
+              }}
               options={KINDS.map((k) => ({ value: k, label: t(`editor.payment.kind.${k}`) }))}
               ariaLabel={t('editor.payment.kind.label')}
             />
@@ -396,7 +440,16 @@ export function PaymentSheet({
           );
         })()}
         {separate && open.length > 0 && (
-          <Group title={t('receivable.periods')}>
+          <Group
+            title={t('receivable.periods')}
+            action={
+              track ? (
+                <button type="button" className="btn plain" onClick={untrack}>
+                  {t('editor.payment.earlyTogether')}
+                </button>
+              ) : undefined
+            }
+          >
             {shown.map((b) => {
               const piece = pieceOf(b.date);
               const owed = b.due - b.paid;

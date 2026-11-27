@@ -670,3 +670,87 @@ test('分开记忽略导入边界 estimateFrom：边界前的账单照常生成�
   );
   assert.equal(r.bills.find((b) => b.date === '2025-09-01')!.status, 'overdue');
 });
+
+test('#30 一起记的月付一次续三期：记一笔时改为分开记，追踪起点取原本结清的那期，三期都结清，下次扣款顺延三期', async () => {
+  const { earlyRenewalEffect, multiPrepayStart } = await import('./phases.ts');
+  const { nextCharge, setSettlement } = await import('./billing.ts');
+  const today = '2026-11-26';
+  const monthly: Subscription = {
+    id: 'm',
+    name: 'Fictional monthly',
+    category: 'Other',
+    tags: [],
+    price: 30,
+    currency: 'CNY',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-08-01',
+    status: 'active',
+    payments: [{ date: '2026-11-01', amount: 30 }],
+  };
+  const pay = { date: '2026-11-25', amount: 90 };
+  // 一起记：一笔只结清一期（既有口径）
+  const early = earlyRenewalEffect(monthly, today, pay)!;
+  assert.deepEqual(early, { settles: '2026-12-01', next: '2027-01-01' });
+  assert.equal(nextCharge(savePayment(monthly, today, pay), today), '2027-01-01');
+  // 记一笔里切到分开记（与 PaymentSheet 相同）：按金额从最早未缴的账单往后勾，写进 periods
+  assert.equal(multiPrepayStart(monthly, today, early, 30, monthly), undefined);
+  assert.equal(multiPrepayStart(monthly, today, early, pay.amount, monthly), '2026-12-01');
+  const sep = { ...monthly, ...setSettlement(monthly, true, today, early.settles) };
+  const open = settleBills(sep, today, addMonths(today, 36)).bills.filter((b) => b.status === 'due' || b.status === 'overdue' || b.status === 'partial');
+  let rest = pay.amount;
+  const periods: string[] = [];
+  for (const b of open) {
+    if (rest <= 0.004) break;
+    periods.push(b.date);
+    rest -= b.due - b.paid;
+  }
+  assert.deepEqual(periods, ['2026-12-01', '2027-01-01', '2027-02-01']);
+  const saved = savePayment(sep, today, { ...pay, periods });
+  assert.equal(saved.settlement, 'separate');
+  assert.equal(nextCharge(saved, today), '2027-03-01');
+  // 切换前的期照旧算已缴，不冒出逾期；实付仍是一笔 90
+  assert.deepEqual(overdueBills(saved, today), []);
+  assert.deepEqual(
+    cashChargesBetween(saved, '2026-11-01', '2027-03-31', today)
+      .filter((c) => !c.projected)
+      .map((c) => [c.date, c.amount]),
+    [
+      ['2026-11-01', 30],
+      ['2026-11-25', 90],
+    ],
+  );
+});
+
+test('#30 结清的那期落在下一段（排好的调价）时不提供改为分开记，避免预付落到已缴的推算期', async () => {
+  const { earlyRenewalEffect, multiPrepayStart } = await import('./phases.ts');
+  const { currentPhase } = await import('./billing.ts');
+  const today = '2026-11-26';
+  const s: Subscription = {
+    id: 'p',
+    name: 'Fictional phased',
+    category: 'Other',
+    tags: [],
+    price: 40,
+    currency: 'CNY',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-08-01',
+    status: 'active',
+    phases: [
+      { start: '2026-08-01', price: 30, currency: 'CNY', cycle: { unit: 'month', every: 1 }, payments: [{ date: '2026-11-01', amount: 30 }] },
+      { start: '2026-12-01', price: 40, currency: 'CNY', cycle: { unit: 'month', every: 1 } },
+    ],
+  };
+  const pay = { date: '2026-11-25', amount: 120 };
+  const early = earlyRenewalEffect(s, today, pay);
+  assert.equal(early?.settles, '2026-12-01');
+  assert.equal(multiPrepayStart(s, today, early, pay.amount, currentPhase(s, pay.date)), undefined);
+  // 结清的那期在本段，但本段只剩两期、付了三期：同样不提供
+  const short: Subscription = {
+    ...s,
+    phases: [{ ...s.phases![0] }, { start: '2027-02-01', price: 40, currency: 'CNY', cycle: { unit: 'month', every: 1 } }],
+  };
+  const shortEarly = earlyRenewalEffect(short, today, { date: '2026-11-25', amount: 90 });
+  assert.equal(shortEarly?.settles, '2026-12-01');
+  assert.equal(multiPrepayStart(short, today, shortEarly, 90, currentPhase(short, '2026-11-25')), undefined);
+  assert.equal(multiPrepayStart(short, today, shortEarly, 60, currentPhase(short, '2026-11-25')), '2026-12-01');
+});

@@ -19,7 +19,7 @@ test('compiled new payment initializes settlement without an edit record', () =>
   const PaymentSheet = new Function('_c', 'useState', 'currentPhase', code + '; return PaymentSheet;')(
     (n) => Array(n).fill(Symbol.for('react.memo_cache_sentinel')),
     (initial) => {
-      if (++states === 5) {
+      if (++states === 6) {
         assert.equal(initial, '');
         throw initialized;
       }
@@ -48,6 +48,7 @@ test('compiled payment renders the whole new form including its unused delete ca
     addMonths: (d) => d,
     settleBills: () => ({ bills: [], allocated: new Map(), credit: [] }),
     earlyRenewalEffect: () => undefined,
+    multiPrepayStart: () => undefined,
     currencyDecimals: () => 2,
     useSubmit: () => [false, () => {}],
     phaseSubs: (s) => [s],

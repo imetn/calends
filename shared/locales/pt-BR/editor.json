@@ -250,6 +250,8 @@
     "usageFoot": "Registrado no período de cobrança {period}",
     "earlyHint": "Conta como renovação antecipada: quita o período de {settles}, o próximo é em {next}.",
     "earlyExtra": "É uma cobrança extra",
+    "earlyMulti": "Pagou vários períodos? Mudar para “Separados”",
+    "earlyTogether": "Voltar para “Juntos”",
     "freezeHint": "As cobranças desta fase hoje são estimadas pelo ciclo de cobrança. Ao salvar, as {amount} cobranças estimadas até hoje viram registros; a partir daí, os registros valem. As cobranças futuras não mudam.",
     "method": "Forma de pagamento",
     "scopeOne": "Só esta cobrança",
