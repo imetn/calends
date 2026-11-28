@@ -738,11 +738,11 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
           <b title={label.head}>
             {label.icon}
             <span>{label.head}</span>
-            <FileBadges f={f} subs={subs} compact />
           </b>
-          {label.item && (
+          {(label.item || fileBadgeKind(f, subs) || f.dupReceipt) && (
             <span className="file-meta">
-              <span className="file-item">{label.item}</span>
+              <FileBadges f={f} subs={subs} compact />
+              {label.item && <span className="file-item">{label.item}</span>}
             </span>
           )}
         </span>

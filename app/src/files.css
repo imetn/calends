@@ -445,6 +445,11 @@
 }
 .file-row-text .file-meta {
   min-width: 0;
+  gap: 6px;
+}
+.file-row-text .file-tags {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 .file-row-type,
 .file-row-size,
