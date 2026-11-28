@@ -2991,3 +2991,141 @@ test('save_subscription validates icon, clears erroneous renewalHistory/offset, 
     JSON.stringify(saved.structuredContent.next_charges),
   );
 });
+
+test('non-renewing and upcoming-phase previews surface service_expires and upcoming_phase summary', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const ov = await f.call('get_overview', {});
+  const today = String(ov.structuredContent.today);
+  const addDaysStr = (d: string, n: number) => {
+    const dt = new Date(`${d}T00:00:00Z`);
+    dt.setUTCDate(dt.getUTCDate() + n);
+    return dt.toISOString().slice(0, 10);
+  };
+  const tomorrow = addDaysStr(today, 1);
+  const prevYearStart = `${Number(tomorrow.slice(0, 4)) - 1}${tomorrow.slice(4)}`;
+  const bonusFrom = `${Number(tomorrow.slice(0, 4)) + 1}${tomorrow.slice(4)}`;
+  const bonusUntil = addDaysStr(bonusFrom, 60);
+  const finalEnd = addDaysStr(bonusUntil, -1);
+
+  const twoPhaseNonRenewing = {
+    id: 'upcoming-nonrenew-bonus',
+    name: 'Cloud Drive Annual',
+    category: 'Test',
+    tags: [],
+    price: 30,
+    currency: 'USD',
+    cycle: { unit: 'year', every: 1 },
+    start: prevYearStart,
+    status: 'active',
+    phases: [
+      {
+        start: prevYearStart,
+        end: today,
+        price: 20,
+        currency: 'USD',
+        cycle: { unit: 'year', every: 1 },
+        payments: [{ date: prevYearStart, amount: 20 }],
+      },
+      {
+        start: tomorrow,
+        end: finalEnd,
+        price: 30,
+        currency: 'USD',
+        cycle: { unit: 'year', every: 1 },
+        chargeLeadDays: 1,
+        bonus: { from: bonusFrom, until: bonusUntil },
+        payments: [{ date: today, amount: 30 }],
+      },
+    ],
+  };
+
+  // Dry-run preview on today (before tomorrow's phase transition)
+  const pv = await f.call('save_subscription', { subscription: twoPhaseNonRenewing, dry_run: true });
+  assert.equal(pv.isError, undefined, JSON.stringify(pv));
+  const afterComp = pv.structuredContent.computed.after;
+  assert.equal(afterComp.status, 'active');
+  assert.equal(afterComp.next_charge, null);
+  assert.equal(afterComp.service_expires, finalEnd);
+  assert.equal(afterComp.upcoming_phase.start, tomorrow);
+  assert.equal(afterComp.upcoming_phase.status, 'ending');
+  assert.equal(afterComp.upcoming_phase.end, finalEnd);
+  assert.deepEqual(afterComp.upcoming_phase.bonus, { from: bonusFrom, until: bonusUntil });
+  assert.equal(afterComp.upcoming_phase.stop, null);
+  assert.equal(pv.structuredContent.subscription.service_expires, finalEnd);
+  assert.equal(pv.structuredContent.subscription.upcoming_phase.status, 'ending');
+
+  // Persist and verify get_subscription agrees on expires, service_expires and upcoming_phase
+  const saved = await f.call('save_subscription', { subscription: twoPhaseNonRenewing, dry_run: false });
+  assert.equal(saved.isError, undefined, JSON.stringify(saved));
+  const detail = await f.call('get_subscription', { subscription: 'upcoming-nonrenew-bonus' });
+  assert.equal(detail.structuredContent.service_expires, finalEnd);
+  assert.equal(detail.structuredContent.expires, finalEnd);
+  assert.equal(detail.structuredContent.upcoming_phase.start, tomorrow);
+  assert.equal(detail.structuredContent.upcoming_phase.status, 'ending');
+  assert.equal(detail.structuredContent.upcoming_phase.end, finalEnd);
+
+  // Single-phase paid non-renewing subscription returns end as service_expires without upcoming_phase
+  const singleEnd = addDaysStr(today, 90);
+  const singleSaved = await f.call('save_subscription', {
+    subscription: {
+      id: 'single-nonrenew',
+      name: 'Single NonRenew',
+      category: 'Test',
+      tags: [],
+      price: 15,
+      currency: 'USD',
+      cycle: { unit: 'year', every: 1 },
+      start: prevYearStart,
+      end: singleEnd,
+      status: 'active',
+      payments: [{ date: today, amount: 15 }],
+    },
+    dry_run: false,
+  });
+  assert.equal(singleSaved.isError, undefined, JSON.stringify(singleSaved));
+  assert.equal(singleSaved.structuredContent.computed.after.status, 'ending');
+  assert.equal(singleSaved.structuredContent.computed.after.service_expires, singleEnd);
+  assert.equal(singleSaved.structuredContent.computed.after.upcoming_phase, undefined);
+  const singleDetail = await f.call('get_subscription', { subscription: 'single-nonrenew' });
+  assert.equal(singleDetail.structuredContent.service_expires, singleEnd);
+  assert.equal(singleDetail.structuredContent.expires, singleEnd);
+  assert.equal(singleDetail.structuredContent.upcoming_phase, undefined);
+
+  // Already-ended and lifetime subscriptions keep service_expires = null
+  const pastEnd = addDaysStr(today, -10);
+  const endedSaved = await f.call('save_subscription', {
+    subscription: {
+      id: 'already-ended-sub',
+      name: 'Ended Sub',
+      category: 'Test',
+      tags: [],
+      price: 10,
+      currency: 'USD',
+      cycle: { unit: 'month', every: 1 },
+      start: prevYearStart,
+      end: pastEnd,
+      status: 'active',
+    },
+    dry_run: false,
+  });
+  assert.equal(endedSaved.structuredContent.computed.after.status, 'ended');
+  assert.equal(endedSaved.structuredContent.computed.after.service_expires, null);
+
+  const lifetimeSaved = await f.call('save_subscription', {
+    subscription: {
+      id: 'lifetime-sub',
+      name: 'Lifetime Tool',
+      category: 'Test',
+      tags: [],
+      price: 99,
+      currency: 'USD',
+      cycle: { unit: 'lifetime', every: 1 },
+      start: today,
+      status: 'active',
+    },
+    dry_run: false,
+  });
+  assert.equal(lifetimeSaved.structuredContent.computed.after.status, 'lifetime');
+  assert.equal(lifetimeSaved.structuredContent.computed.after.service_expires, null);
+});

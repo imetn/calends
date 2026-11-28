@@ -4,7 +4,6 @@ import { partialOut } from './tool-views.ts';
 import { searchServices, serviceDisplayName } from '../../shared/service-catalog.ts';
 import { SERVICES, serviceCategory } from './tool-kit.ts';
 import {
-  renewalDates,
   chargeMethodId,
   chargeSources,
   activePhases,
@@ -43,7 +42,21 @@ import { categoryCounts, categoryList } from '../../shared/categories.ts';
 import { netCost, transferRows, transferredStop, transferSign, transfersOf, transferValue } from '../../shared/transfers.ts';
 import type { Tool } from './tool-kit.ts';
 import { state, findSub, rangeOf, chargesIn, groupOf, missingRates, outCcy, DATE, SUBREF, CURRENCY_OUT, PERIOD, str, date, methodRef } from './tool-kit.ts';
-import { money, round, fin, fxGaps, personRow, periodsOut, row, chargeRow, collectCcy, chargeCcy, roundAll, metersOut } from './tool-views.ts';
+import {
+  money,
+  round,
+  fin,
+  fxGaps,
+  personRow,
+  periodsOut,
+  row,
+  chargeRow,
+  collectCcy,
+  chargeCcy,
+  roundAll,
+  metersOut,
+  serviceExpiresOf,
+} from './tool-views.ts';
 
 export const get_overview: Tool = {
   name: 'get_overview',
@@ -237,7 +250,7 @@ export const get_subscription: Tool = {
       url: s.url ?? null,
       intro: s.intro ?? null,
       bonus: s.bonus ?? null,
-      expires: renewalDates(view, today).serviceExpires ?? null,
+      expires: serviceExpiresOf(view, today),
       spent_total: {
         amount: fin(spent),
         ...partialOut(chargesTotal(st, all, out ?? st.settings.baseCurrency)),

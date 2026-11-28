@@ -23,6 +23,7 @@ import {
   phaseSubs,
   priceAt,
   stopSummary,
+  upcomingPhase,
   type Charge,
 } from '../../shared/billing.ts';
 import { currentContract } from '../../shared/contract.ts';
@@ -159,10 +160,36 @@ export type Scope = 'mine' | 'share_owner' | 'share_member' | 'proxy';
 export const kindOf = (s: Subscription): Scope =>
   s.proxy ? 'proxy' : s.share?.role === 'owner' ? 'share_owner' : s.share?.role === 'member' ? 'share_member' : 'mine';
 
+/** 服务到期日：有下次未付扣款时沿用 renewalDates；无后续扣款但最终阶段有未过期的结束日（如已付清的不续订或即将生效的不续订阶段）时回退到该结束日 */
+export function serviceExpiresOf(view: Subscription, today: string): string | null {
+  const fromRenewal = renewalDates(view, today).serviceExpires;
+  if (fromRenewal) return fromRenewal;
+  const st = effectiveStatus(view, today);
+  if (st === 'ended' || st === 'terminated' || st === 'lifetime') return null;
+  const latest = phaseSubs(view).at(-1);
+  if (!latest || latest.cycle.unit === 'lifetime' || latest.status === 'terminated' || !latest.end || latest.end < today) return null;
+  return latest.end;
+}
+
+/** 多阶段订阅存在尚未生效的新阶段时，在预览/读取输出里带出下一阶段摘要（避免当前阶段仍为 active / stop:null 时引起歧义） */
+export function upcomingPhaseOut(view: Subscription, today: string) {
+  if (!view.phases?.length) return undefined;
+  const up = upcomingPhase(view, today);
+  if (!up) return undefined;
+  return {
+    start: up.start,
+    status: effectiveStatus(up, up.start),
+    end: up.end ?? null,
+    bonus: up.bonus ?? null,
+    stop: stopSummary(up, up.start) ?? null,
+  };
+}
+
 export function row(st: AppState, s: Subscription, today: string, out?: string) {
   const view = bundleView(s, st.subscriptions);
   const cur = currentPhase(view, today);
   const next = nextCharge(view, today);
+  const up = upcomingPhaseOut(view, today);
   // 换区后旧阶段还在跑：每月成本按并行各段之和，另列出同时进行的旧阶段
   const monthly = monthlyGross(view, today, st.fx);
   const parallel = view.phases?.length ? activePhases(view, today).filter((v) => v.start !== cur.start) : [];
@@ -181,7 +208,7 @@ export function row(st: AppState, s: Subscription, today: string, out?: string) 
     monthly: { ...money(st, monthly, cur.currency, undefined, out), ...partialOut(monthlyPriceTotal(st, view, today, out ?? st.settings.baseCurrency)) },
     my_share_factor: round(myShareFactor(cur, today)),
     next_charge: next ?? null,
-    service_expires: renewalDates(view, today).serviceExpires ?? null,
+    service_expires: serviceExpiresOf(view, today),
     cancel_by: renewalDates(view, today).cancelBy ?? null,
     ...contractView(view, today),
     last_charge: lastCharge(view, today) ?? null,
@@ -193,6 +220,7 @@ export function row(st: AppState, s: Subscription, today: string, out?: string) 
     end: s.end ?? null,
     stop: stopSummary(cur, today) ?? null,
     has_planned_change: !!s.phases?.some((p) => p.planned),
+    ...(up ? { upcoming_phase: up } : {}),
     ...(cur.bundle?.parentId
       ? {
           bundle: {
@@ -287,12 +315,15 @@ export function computedOf(st: AppState, s: Subscription, today: string) {
   const all = cashChargesBetween(s, '1970-01-01', today, today).filter((c) => !c.projected);
   const gaps = fxGaps();
   const spent = all.reduce((sum, c) => sum + (gaps.note(chargeBaseOrNaN(st, c), chargeCcy(c)) as number), 0);
+  const up = upcomingPhaseOut(s, today);
   return {
     status: effectiveStatus(s, today),
     next_charge: nextCharge(s, today) ?? null,
+    service_expires: serviceExpiresOf(s, today),
     last_charge: lastCharge(s, today) ?? null,
     spent_total: { amount: fin(spent), currency: st.settings.baseCurrency, charges: all.length, ...gaps.out(), ...partialOut(chargesTotal(st, all)) },
     stop: stopSummary(currentPhase(s, today), today) ?? null,
+    ...(up ? { upcoming_phase: up } : {}),
     // 账单与缴费分开记：账单日已过还没缴清的各期
     ...(phaseSubs(s).some(isSeparate) ? { unpaid_bills: unpaidOf(st, s, today) } : {}),
   };
