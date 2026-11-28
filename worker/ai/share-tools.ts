@@ -28,6 +28,7 @@ import {
   shareFromFee,
 } from '../../shared/carpool.ts';
 import { t } from '../../shared/i18n.ts';
+import { filesForReceipt } from '../../shared/files.ts';
 import { drySchema, objectSchema as obj } from '../../shared/tool-schema.ts';
 import { validateCurrency } from '../../shared/ledger-edit.ts';
 import type { Tool } from './tool-kit.ts';
@@ -37,7 +38,7 @@ import { money, fin, collectionSummary, ruleOut, collectCcy, partialOut } from '
 export const get_carpool: Tool = {
   name: 'get_carpool',
   description:
-    'Shared plans (carpools): for each plan I organize (role owner) or joined (role member): seats taken / total and free seats, the shared collection anchor (collect_from), the plan collection rule (rule: fee, currency, every_months; stored=false means inferred from the most common member rate); members with their actual leave_refund (null when not refunded), fee and billing months, follows_rule (true = fee follows the plan rule, false = custom fee or exempt), overdue_days (days the next unpaid collection is past due, 0 if not), alignment anchor, paid_until, first_collection (join date through aligned end, inclusive, and first fee), next_collection and next_collection_date (earliest unpaid coverage start, possibly overdue; free partial first periods are skipped), is_first_period (whether that next unpaid period is the first), and pending_amount (total currently owed, zero when nothing is due); per year: cost, expected income from members, and i_pay (what I still pay myself) or i_earn (profit when members pay more than the cost); since the carpool started: paid, received, and i_pay / i_earn to date. Amounts in the base currency unless noted.',
+    'Shared plans (carpools): for each plan I organize (role owner) or joined (role member): seats taken / total and free seats, the shared collection anchor (collect_from), the plan collection rule (rule: fee, currency, every_months; stored=false means inferred from the most common member rate); members with their actual leave_refund (null when not refunded), fee and billing months, follows_rule (true = fee follows the plan rule, false = custom fee or exempt), overdue_days (days the next unpaid collection is past due, 0 if not), alignment anchor, paid_until, first_collection (join date through aligned end, inclusive, and first fee), next_collection and next_collection_date (earliest unpaid coverage start, possibly overdue; free partial first periods are skipped), is_first_period (whether that next unpaid period is the first), pending_amount (total currently owed, zero when nothing is due), receipts count, receipt_files count (attached collection screenshots in the file center) and duplicate_receipt_files (when > 0); per year: cost, expected income from members, and i_pay (what I still pay myself) or i_earn (profit when members pay more than the cost); since the carpool started: paid, received, and i_pay / i_earn to date. Amounts in the base currency unless noted.',
   inputSchema: obj({ subscription: { ...SUBREF, description: 'Optional: only this plan.' } }),
   async run(a, ctx) {
     const { st, today } = await state(ctx);
@@ -87,6 +88,8 @@ export const get_carpool: Tool = {
             members: sh.members.map((m) => {
               const fee = memberFee(st, s, m, today);
               const d = dues.get(m.id);
+              const receiptFiles = (m.receipts ?? []).flatMap((r) => filesForReceipt(st.files ?? [], s.id, r.id));
+              const dupFiles = receiptFiles.filter((f) => f.dupReceipt).length;
               return {
                 id: m.id,
                 name: m.name,
@@ -100,6 +103,8 @@ export const get_carpool: Tool = {
                 first_amount: m.firstAmount ?? null,
                 owed: d && d.periodsOwed > 0 ? { ...money(st, d.owed, d.currency), ...partialOut(dueTotal(st, d)) } : null,
                 receipts: (m.receipts ?? []).length,
+                receipt_files: receiptFiles.length,
+                ...(dupFiles ? { duplicate_receipt_files: dupFiles } : {}),
               };
             }),
           };

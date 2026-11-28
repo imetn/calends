@@ -62,7 +62,12 @@ const BASE_CSS = `
   --accent: var(--color-text-info, #2563eb);
   --ok: var(--color-text-success, #16a34a);
   --warn: var(--color-text-warning, #d97706);
+  --warn-bg: rgba(217, 119, 6, 0.12);
   --bad: var(--color-text-danger, #dc2626);
+  --carpool: #0d7468;
+  --carpool-bg: rgba(13, 148, 136, 0.12);
+  --proxy: #6e3fb5;
+  --proxy-bg: rgba(124, 58, 237, 0.12);
   --radius: var(--border-radius-md, 12px);
   --radius-sm: var(--border-radius-sm, 8px);
   --font: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif);
@@ -80,7 +85,12 @@ const BASE_CSS = `
     --accent: var(--color-text-info, #60a5fa);
     --ok: var(--color-text-success, #4ade80);
     --warn: var(--color-text-warning, #fbbf24);
+    --warn-bg: rgba(251, 191, 36, 0.16);
     --bad: var(--color-text-danger, #f87171);
+    --carpool: #5eead4;
+    --carpool-bg: rgba(45, 212, 191, 0.16);
+    --proxy: #c4b5fd;
+    --proxy-bg: rgba(167, 139, 250, 0.18);
   }
 }
 :root[data-theme="dark"] {
@@ -94,7 +104,12 @@ const BASE_CSS = `
   --accent: var(--color-text-info, #60a5fa);
   --ok: var(--color-text-success, #4ade80);
   --warn: var(--color-text-warning, #fbbf24);
+  --warn-bg: rgba(251, 191, 36, 0.16);
   --bad: var(--color-text-danger, #f87171);
+  --carpool: #5eead4;
+  --carpool-bg: rgba(45, 212, 191, 0.16);
+  --proxy: #c4b5fd;
+  --proxy-bg: rgba(167, 139, 250, 0.18);
 }
 * { box-sizing: border-box; }
 html, body {
@@ -114,9 +129,12 @@ html, body {
   background: var(--surface); border: 1px solid var(--line); font-size: 11px; font-weight: 600; color: var(--muted);
 }
 .pill.ok { color: var(--ok); }
-.pill.warn { color: var(--warn); }
+.pill.warn { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
 .pill.bad { color: var(--bad); }
 .pill.accent { color: var(--accent); }
+.pill.carpool { color: var(--carpool); background: var(--carpool-bg); border-color: transparent; }
+.pill.proxy { color: var(--proxy); background: var(--proxy-bg); border-color: transparent; }
+.pill.sm { padding: 1px 6px; border-radius: 6px; font-size: 10.5px; font-weight: 500; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(136px, 1fr)); gap: 8px; }
 .kpi {
   padding: 10px 12px; border-radius: var(--radius-sm); background: var(--surface); border: 1px solid var(--line);
@@ -175,6 +193,9 @@ button.row:hover { background: var(--surface); }
 .notice {
   padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surface); border: 1px solid var(--line);
   font-size: 12px; color: var(--muted);
+}
+.notice.warn {
+  background: var(--warn-bg); border-color: transparent; color: var(--warn);
 }
 .empty { padding: 28px 16px; text-align: center; color: var(--muted); font-size: 12.5px; }
 .section-title { font-size: 11.5px; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 2px 0 0; }
@@ -363,6 +384,19 @@ const FILE_VIEWER_SCRIPT = `
     }
   }
 
+  function receiptPills(f, full) {
+    let out = '';
+    if (f.receipt_scope === 'carpool') {
+      out += '<span class="pill carpool' + (full ? '' : ' sm') + '">' + (full ? 'Shared collection' : 'Shared') + '</span>';
+    } else if (f.receipt_scope === 'proxy') {
+      out += '<span class="pill proxy' + (full ? '' : ' sm') + '">' + (full ? 'Proxy collection' : 'Proxy') + '</span>';
+    }
+    if (f.duplicate_receipt) {
+      out += '<span class="pill warn' + (full ? '' : ' sm') + '" title="Same file attached to multiple collection receipts">' + (full ? 'Duplicate receipt' : 'Dup') + '</span>';
+    }
+    return out;
+  }
+
   function renderDetail() {
     clearBlob();
     const { data, blocks } = st.detail;
@@ -389,7 +423,8 @@ const FILE_VIEWER_SCRIPT = `
 
     const metaBits = [
       f.subscription && f.subscription.name,
-      f.kind,
+      f.person,
+      f.receipt_scope ? '' : f.kind,
       f.date,
       f.type ? String(f.type).toUpperCase() : '',
       f.size ? app.fmtBytes(f.size) : '',
@@ -401,6 +436,7 @@ const FILE_VIEWER_SCRIPT = `
           '<h1 class="title">' +
             (st.list ? '<button class="btn" id="backBtn">← Files</button>' : '') +
             '<span>' + app.esc(f.title || f.name || 'File Preview') + '</span>' +
+            receiptPills(f, true) +
           '</h1>' +
           '<div class="sub">' + app.esc(metaBits.join(' · ')) + '</div>' +
         '</div>' +
@@ -409,6 +445,7 @@ const FILE_VIEWER_SCRIPT = `
           (dlUrl ? '<button class="btn primary" id="openDlTop">Open Link</button>' : '') +
         '</div>' +
       '</div>' +
+      (f.duplicate_receipt ? '<div class="notice warn">This exact file is attached to more than one collection receipt. Check whether the same screenshot was reused by mistake.</div>' : '') +
       (st.err ? '<div class="notice">' + app.esc(st.err) + '</div>' : '') +
       '<div class="preview-box">' + previewHtml + '</div>';
 
@@ -432,13 +469,18 @@ const FILE_VIEWER_SCRIPT = `
       return;
     }
     const all = Array.isArray(d.files) ? d.files : [];
+    const hasCarpool = all.some((f) => f.receipt_scope === 'carpool');
+    const hasProxy = all.some((f) => f.receipt_scope === 'proxy');
     const q = st.q.trim().toLowerCase();
     const rows = all.filter((f) => {
       if (st.filter === 'linked' && !f.subscription) return false;
       if (st.filter === 'unlinked' && f.subscription) return false;
+      if (st.filter === 'carpool' && f.receipt_scope !== 'carpool') return false;
+      if (st.filter === 'proxy' && f.receipt_scope !== 'proxy') return false;
       if (!q) return true;
       return String(f.title || '').toLowerCase().includes(q)
         || String(f.name || '').toLowerCase().includes(q)
+        || String(f.person || '').toLowerCase().includes(q)
         || String((f.subscription && f.subscription.name) || '').toLowerCase().includes(q);
     });
 
@@ -448,9 +490,11 @@ const FILE_VIEWER_SCRIPT = `
         (st.loading ? '<span class="pill accent">Loading preview…</span>' : '') +
       '</div>' +
       '<div class="toolbar">' +
-        '<input class="search" id="q" type="search" placeholder="Search receipts, contracts, subscriptions…" value="' + app.esc(st.q) + '" />' +
+        '<input class="search" id="q" type="search" placeholder="Search receipts, contracts, members, subscriptions…" value="' + app.esc(st.q) + '" />' +
         '<button class="btn ' + (st.filter === 'all' ? 'active' : '') + '" data-f="all">All</button>' +
         '<button class="btn ' + (st.filter === 'linked' ? 'active' : '') + '" data-f="linked">Linked</button>' +
+        (hasCarpool || st.filter === 'carpool' ? '<button class="btn ' + (st.filter === 'carpool' ? 'active' : '') + '" data-f="carpool">Shared</button>' : '') +
+        (hasProxy || st.filter === 'proxy' ? '<button class="btn ' + (st.filter === 'proxy' ? 'active' : '') + '" data-f="proxy">Proxy</button>' : '') +
         '<button class="btn ' + (st.filter === 'unlinked' ? 'active' : '') + '" data-f="unlinked">Unlinked</button>' +
       '</div>' +
       (st.err ? '<div class="notice">' + app.esc(st.err) + '</div>' : '') +
@@ -460,7 +504,8 @@ const FILE_VIEWER_SCRIPT = `
             const cls = ext === 'PDF' ? 'pdf' : 'img';
             const meta = [
               f.subscription ? f.subscription.name : (f.deleted_source ? 'Deleted: ' + f.deleted_source : 'Unlinked'),
-              f.kind,
+              f.person,
+              f.receipt_scope ? '' : f.kind,
               f.date,
               app.fmtBytes(f.size),
             ].filter(Boolean).join(' · ');
@@ -469,7 +514,7 @@ const FILE_VIEWER_SCRIPT = `
                 '<span class="badge-ext ' + cls + '">' + app.esc(ext) + '</span>' +
                 '<span class="row-main">' +
                   '<span class="row-title">' + app.esc(f.title || f.name) + '</span>' +
-                  '<span class="row-meta">' + app.esc(meta) + '</span>' +
+                  '<span class="row-meta"><span>' + app.esc(meta) + '</span>' + receiptPills(f, false) + '</span>' +
                 '</span>' +
                 '<span class="pill">Preview</span>' +
               '</button>'
@@ -687,10 +732,13 @@ const SUBSCRIPTION_CARD_SCRIPT = `
           ).join('') + '</div>'
         : '') +
       (files.length
-        ? '<div class="section-title">Attached Files (' + files.length + ')</div><div class="list">' + files.map((f) =>
-            '<div class="row"><span class="badge-ext ' + (String(f.type || '').toLowerCase() === 'pdf' ? 'pdf' : 'img') + '">' + app.esc(String(f.type || 'FILE').toUpperCase()) + '</span>' +
-            '<div class="row-main"><div class="row-title">' + app.esc(f.title || f.name) + '</div><div class="row-meta">' + app.esc([f.kind, f.date].filter(Boolean).join(' · ')) + '</div></div></div>'
-          ).join('') + '</div>'
+        ? '<div class="section-title">Attached Files (' + files.length + ')</div><div class="list">' + files.map((f) => {
+            const tags = (f.receipt_scope === 'carpool' ? '<span class="pill carpool sm">Shared</span>' : f.receipt_scope === 'proxy' ? '<span class="pill proxy sm">Proxy</span>' : '')
+              + (f.duplicate_receipt ? '<span class="pill warn sm">Dup</span>' : '');
+            const meta = [f.person, f.receipt_scope ? '' : f.kind, f.date].filter(Boolean).join(' · ');
+            return '<div class="row"><span class="badge-ext ' + (String(f.type || '').toLowerCase() === 'pdf' ? 'pdf' : 'img') + '">' + app.esc(String(f.type || 'FILE').toUpperCase()) + '</span>' +
+              '<div class="row-main"><div class="row-title">' + app.esc(f.title || f.name) + '</div><div class="row-meta"><span>' + app.esc(meta) + '</span>' + tags + '</div></div></div>';
+          }).join('') + '</div>'
         : '');
 
     const back = document.getElementById('backBtn');
@@ -810,10 +858,12 @@ const CARPOOL_CARD_SCRIPT = `
               m.exempt ? 'Exempt' : (feeAmt != null ? app.fmtMoney(feeAmt, feeCcy) : ''),
               paidUntil ? 'Paid until ' + paidUntil : '',
               m.next_collection_date ? 'Next ' + m.next_collection_date : '',
+              m.receipt_files > 0 ? m.receipt_files + ' receipt file' + (m.receipt_files === 1 ? '' : 's') : '',
             ].filter(Boolean).join(' · ');
+            const dupTag = m.duplicate_receipt_files > 0 ? '<span class="pill warn sm">Dup receipt</span>' : '';
             return (
               '<div class="row">' +
-                '<div class="row-main"><div class="row-title">' + app.esc(m.name) + '</div><div class="row-meta">' + app.esc(meta) + '</div></div>' +
+                '<div class="row-main"><div class="row-title">' + app.esc(m.name) + '</div><div class="row-meta"><span>' + app.esc(meta) + '</span>' + dupTag + '</div></div>' +
                 '<div class="row-right"><span class="pill ' + tone + '">' + app.esc(badge) + '</span></div>' +
               '</div>'
             );

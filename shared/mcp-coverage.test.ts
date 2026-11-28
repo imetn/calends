@@ -2671,6 +2671,13 @@ test('Skills over MCP (SEP-2640): skills/list, skills/get, resources/read digest
   assert.equal(gotPrompt.messages.length, 1);
   assert.match(gotPrompt.messages[0].content.text, /Spotify \$19\.99/);
   assert.match(gotPrompt.messages[0].content.text, /wallet/);
+  assert.match(gotPrompt.messages[0].content.text, /kind="receipt"/);
+  assert.match(gotPrompt.messages[0].content.text, /duplicate_receipt/);
+
+  const auditPrompt = await f.rpc('prompts/get', { name: 'audit_carpool', arguments: {} }, f.read);
+  assert.equal(auditPrompt.messages.length, 1);
+  assert.match(auditPrompt.messages[0].content.text, /receipt_scope/);
+  assert.match(auditPrompt.messages[0].content.text, /duplicate_only=true/);
 
   // DELETE /mcp returns 204 for stateless session cleanup compatibility
   const delRes = await mcp(new Request('https://fictional.invalid/mcp', { method: 'DELETE' }), f.env);
@@ -2700,6 +2707,7 @@ test('MCP Apps (io.modelcontextprotocol/ui) advertise capabilities, tool _meta.u
   const resList = (await f.rpc('resources/list', {}, f.read)).resources as Array<Record<string, unknown> & { uri: string; mimeType: string }>;
   const uiResources = resList.filter((r) => r.uri.startsWith('ui://'));
   assert.equal(uiResources.length, 4);
+  const htmlByUri = new Map<string, string>();
   for (const r of uiResources) {
     assert.equal(r.mimeType, 'text/html;profile=mcp-app');
     assert.deepEqual(uiOf(r)?.csp, { connectDomains: [], resourceDomains: [] });
@@ -2707,6 +2715,7 @@ test('MCP Apps (io.modelcontextprotocol/ui) advertise capabilities, tool _meta.u
     assert.equal(read.contents.length, 1);
     assert.equal(read.contents[0].mimeType, 'text/html;profile=mcp-app');
     const html = String(read.contents[0].text);
+    htmlByUri.set(r.uri, html);
     assert.match(html, /^<!doctype html>/i);
     assert.match(html, /ui\/initialize/);
     assert.match(html, /ui\/notifications\/initialized/);
@@ -2716,4 +2725,145 @@ test('MCP Apps (io.modelcontextprotocol/ui) advertise capabilities, tool _meta.u
     assert.doesNotMatch(html, /<script[^>]+src=/i);
     assert.doesNotMatch(html, /<link[^>]+href=/i);
   }
+
+  // Receipt scope pills, duplicate warning and filters in file-viewer, subscription-card and carpool-card
+  const fileViewer = htmlByUri.get('ui://calends/file-viewer.html')!;
+  assert.match(fileViewer, /data-f="carpool"/);
+  assert.match(fileViewer, /data-f="proxy"/);
+  assert.match(fileViewer, /Shared collection/);
+  assert.match(fileViewer, /Proxy collection/);
+  assert.match(fileViewer, /duplicate_receipt/);
+
+  const subCard = htmlByUri.get('ui://calends/subscription-card.html')!;
+  assert.match(subCard, /receipt_scope/);
+  assert.match(subCard, /duplicate_receipt/);
+
+  const carpoolCard = htmlByUri.get('ui://calends/carpool-card.html')!;
+  assert.match(carpoolCard, /receipt_files/);
+  assert.match(carpoolCard, /duplicate_receipt_files/);
+});
+
+test('MCP list_files filters by receipt/duplicate_only and get_carpool reports receipt_files counts', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const bucket = new Map<string, { body: Uint8Array; contentType: string }>();
+  const envWithFiles = {
+    ...f.env,
+    FILES: {
+      async head(key: string) {
+        return bucket.has(key) ? { key, size: bucket.get(key)!.body.byteLength } : null;
+      },
+      async get(key: string) {
+        const hit = bucket.get(key);
+        if (!hit) return null;
+        return {
+          body: hit.body,
+          httpMetadata: { contentType: hit.contentType },
+          async arrayBuffer() {
+            return hit.body.slice().buffer;
+          },
+        };
+      },
+      async put(key: string, value: ArrayBuffer | Uint8Array, opts?: { httpMetadata?: { contentType?: string } }) {
+        const body = value instanceof Uint8Array ? value.slice() : new Uint8Array(value);
+        bucket.set(key, { body, contentType: opts?.httpMetadata?.contentType ?? 'application/octet-stream' });
+      },
+      async delete(key: string) {
+        bucket.delete(key);
+      },
+      async list() {
+        return { objects: [] };
+      },
+    },
+  } as unknown as typeof f.env;
+
+  const callWithFiles = async (name: string, args: Record<string, unknown>) => {
+    const res = await mcp(
+      new Request('https://fictional.invalid/mcp', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${f.write}` },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
+      }),
+      envWithFiles,
+    );
+    const body = (await res.json()) as { result: { structuredContent?: Record<string, unknown>; isError?: boolean; content?: Array<{ text?: string }> } };
+    assert.equal(body.result.isError, undefined, body.result.content?.[0]?.text);
+    return body.result.structuredContent!;
+  };
+
+  // Create shared subscription with two members and two receipts
+  const created = (await callWithFiles('create_subscription', {
+    name: 'Family Music',
+    price: 30,
+    currency: 'CNY',
+    cycle: { unit: 'month', every: 1 },
+    start: '2026-01-01',
+    category: 'Test',
+    url: 'https://example.invalid',
+    icon: '',
+    dry_run: false,
+  })) as { subscription: { id: string } };
+  const subId = created.subscription.id;
+  await callWithFiles('set_share', { subscription: subId, role: 'owner', seats: 3, since: '2026-01-01', rule: { fee: 10, bill_every: 1 }, dry_run: false });
+  await callWithFiles('save_share_member', { subscription: subId, name: 'Alice', joined: '2026-01-01', dry_run: false });
+  await callWithFiles('save_share_member', { subscription: subId, name: 'Bob', joined: '2026-01-01', dry_run: false });
+  const rAlice = (await callWithFiles('record_receivable', {
+    subscription: subId,
+    kind: 'share',
+    member: 'Alice',
+    periods: ['2026-01-01'],
+    amount: 10,
+    date: '2026-01-02',
+    dry_run: false,
+  })) as { after: { id: string } };
+  const rBob = (await callWithFiles('record_receivable', {
+    subscription: subId,
+    kind: 'share',
+    member: 'Bob',
+    periods: ['2026-01-01'],
+    amount: 10,
+    date: '2026-01-03',
+    dry_run: false,
+  })) as { after: { id: string } };
+
+  // Minimal valid 1x1 PNG (same bytes uploaded to both receipts triggers duplicate_receipt)
+  const pngB64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  await callWithFiles('upload_file', {
+    subscription: subId,
+    kind: 'receipt',
+    receipt: rAlice.after.id,
+    name: 'alice.png',
+    content_base64: pngB64,
+    dry_run: false,
+  });
+  await callWithFiles('upload_file', {
+    subscription: subId,
+    kind: 'receipt',
+    receipt: rBob.after.id,
+    name: 'bob-dup.png',
+    content_base64: pngB64,
+    dry_run: false,
+  });
+
+  const byReceipt = (await callWithFiles('list_files', { receipt: rAlice.after.id })) as {
+    total: number;
+    files: Array<{ receipt_id: string; person: string }>;
+  };
+  assert.equal(byReceipt.total, 1);
+  assert.equal(byReceipt.files[0].receipt_id, rAlice.after.id);
+  assert.equal(byReceipt.files[0].person, 'Alice');
+
+  const dups = (await callWithFiles('list_files', { duplicate_only: true })) as { total: number; files: Array<{ duplicate_receipt: boolean }> };
+  assert.equal(dups.total, 2);
+  assert.ok(dups.files.every((x) => x.duplicate_receipt));
+
+  const carpool = (await callWithFiles('get_carpool', { subscription: subId })) as {
+    plans: Array<{ members: Array<{ name: string; receipt_files: number; duplicate_receipt_files?: number }> }>;
+  };
+  const alice = carpool.plans[0].members.find((m) => m.name === 'Alice')!;
+  const bob = carpool.plans[0].members.find((m) => m.name === 'Bob')!;
+  assert.equal(alice.receipt_files, 1);
+  assert.equal(alice.duplicate_receipt_files, 1);
+  assert.equal(bob.receipt_files, 1);
+  assert.equal(bob.duplicate_receipt_files, 1);
 });

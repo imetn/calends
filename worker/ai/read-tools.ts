@@ -195,7 +195,7 @@ export const list_subscriptions: Tool = {
 export const get_subscription: Tool = {
   name: 'get_subscription',
   description:
-    'Full detail of one subscription: every phase (region or plan switches, gaps = lapses), price history, intro/bonus periods, recent and upcoming charges, shared-plan member dues, proxy repayments, custom business meters (per-period usage, totals, unit price = charges in the period ÷ usage), and totals spent so far. Stop summaries include provider termination reasons, refunds and paid-but-unused days/value for each phase. files lists receipts and contracts linked in the file center (id for get_file / update_file).',
+    'Full detail of one subscription: every phase (region or plan switches, gaps = lapses), price history, intro/bonus periods, recent and upcoming charges, shared-plan member dues (with per-period receipt_id and attached file_ids), proxy repayments (with per-period receipt_id and attached file_ids), custom business meters (per-period usage, totals, unit price = charges in the period ÷ usage), and totals spent so far. Stop summaries include provider termination reasons, refunds and paid-but-unused days/value for each phase. files lists charge receipts, contracts, shared-plan/proxy collection receipts (kind=receipt with receipt_id, receipt_scope, person, duplicate_receipt) and documents linked in the file center (id for get_file / update_file).',
   inputSchema: obj(
     { subscription: SUBREF, months_back: { type: 'integer', default: 12 }, months_forward: { type: 'integer', default: 6 }, currency_out: CURRENCY_OUT },
     ['subscription'],

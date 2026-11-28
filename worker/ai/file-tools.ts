@@ -136,6 +136,8 @@ export const list_files: Tool = {
     status: { type: 'string', enum: ['all', 'linked', 'unlinked'], description: 'Default all.' },
     kind: { type: 'string', enum: FILE_KINDS, description: 'Optional: filter by file kind (charge, contract, receipt, sub).' },
     receipt_scope: { type: 'string', enum: ['carpool', 'proxy'], description: 'Optional: only shared-plan (carpool) or proxy collection receipts.' },
+    receipt: { type: 'string', description: 'Optional: only files attached to this receipt_id (from get_subscription or record_receivable).' },
+    duplicate_only: { type: 'boolean', description: 'Optional: true = only collection receipt files flagged with duplicate_receipt.' },
     query: { type: 'string', description: 'Optional: case-insensitive match on title, original name, or person.' },
     limit: { type: 'integer', minimum: 1, maximum: 200, description: 'Default 50, newest first.' },
   }),
@@ -143,6 +145,7 @@ export const list_files: Tool = {
     if (!filesEnabled(ctx.env)) return { storage: false, total: 0, files: [] };
     const { st } = await state(ctx);
     const subId = a.subscription ? findSub(st, a.subscription).id : undefined;
+    const receiptId = a.receipt ? String(a.receipt).trim() : undefined;
     const q = String(a.query ?? '')
       .trim()
       .toLowerCase();
@@ -150,9 +153,11 @@ export const list_files: Tool = {
       .filter((f) => (subId ? f.subId === subId : true))
       .filter((f) => (a.status === 'linked' ? !!f.subId : a.status === 'unlinked' ? !f.subId : true))
       .filter((f) => (a.kind ? f.kind === a.kind : true))
+      .filter((f) => (receiptId ? f.receiptId === receiptId : true))
       .sort((x, y) => y.createdAt.localeCompare(x.createdAt))
       .map((f) => fileRow(st, f))
       .filter((r) => (a.receipt_scope ? r.receipt_scope === a.receipt_scope : true))
+      .filter((r) => (a.duplicate_only === true ? r.duplicate_receipt : true))
       .filter((r) => !q || r.title.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || (r.person?.toLowerCase().includes(q) ?? false));
     return { storage: true, total: rows.length, files: rows.slice(0, Number(a.limit ?? 50)) };
   },

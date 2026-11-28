@@ -148,13 +148,14 @@ Load this reference when managing family/group sharing, recording member payment
 - **Linking rules (\`upload_file\` / \`update_file\`)**:
   - \`kind: "charge"\` + \`date: "YYYY-MM-DD"\` — invoice/receipt for a specific charge date.
   - \`kind: "contract"\` + \`date: "YYYY-MM-DD"\` — contract document anchored to a contract term's start date.
-  - \`kind: "receipt"\` + \`receipt: "<receipt_id>"\` (from \`get_subscription\`; \`date\` defaults to that receipt's date) — transfer screenshot/proof for a specific shared-plan member collection or proxy collection receipt. Files reused across multiple collection receipts are flagged with \`duplicate_receipt: true\`.
+  - \`kind: "receipt"\` + \`receipt: "<receipt_id>"\` (from \`get_subscription\` or \`record_receivable.after.id\`; \`date\` defaults to that receipt's date) — transfer screenshot/proof for a specific shared-plan member collection or proxy collection receipt. Files reused across multiple collection receipts are flagged with \`duplicate_receipt: true\`.
   - \`kind: "sub"\` (no \`date\`) — general plan documents, welcome guides, or policies.
   - Omit \`subscription\` to store an unlinked file in the Pending tab.
+- **Collection receipt workflow**: when archiving a shared-plan member or proxy payment screenshot, record the payment with \`record_receivable\` first (or read an existing \`receipt_id\` from \`get_subscription\`), then call \`upload_file\` / \`update_file\` with \`kind: "receipt"\` and \`receipt: "<receipt_id>"\`.
 - **Uploading local or large files**:
   - Prefer \`upload_link: true\` (requires \`site_url\` configured) for local PDFs/screenshots so you receive a one-time 15-minute upload URL and can \`curl -X PUT --data-binary @file "<url>"\` without bloating context with base64.
   - Use \`url\` for public HTTPS file links, or \`content_base64\` only for small payloads.
-- **Inspecting existing files**: use \`list_files\` to find file IDs and \`get_file\` to read image/PDF bytes (inline up to 5 MB, otherwise download link).
+- **Inspecting & auditing files**: use \`list_files\` (supports \`receipt_scope: "carpool" | "proxy"\`, \`receipt: "<receipt_id>"\`, \`duplicate_only: true\`, and \`query\` matching titles, names, or payers) to find file IDs, check \`get_carpool\` (\`receipt_files\` / \`duplicate_receipt_files\`) and \`get_subscription\` (\`periods[].file_ids\`), and call \`get_file\` to read image/PDF bytes (inline up to 5 MB, otherwise download link).
 `;
 
 interface StaticResource {
@@ -255,8 +256,9 @@ export const MCP_PROMPTS: readonly McpPromptMeta[] = [
   {
     name: 'organize_receipts',
     title: 'Organize receipts & archive files',
-    description: 'Parse pasted receipts, invoices, or emails, create/update subscriptions accurately, and attach receipt files to matching charge dates.',
-    arguments: [{ name: 'input', description: 'Receipt text, email content, or file summary to organize.', required: false }],
+    description:
+      'Parse pasted receipts, invoices, or transfer screenshots, create/update subscriptions or receivables accurately, and attach files to charge dates or shared-plan/proxy collection receipts.',
+    arguments: [{ name: 'input', description: 'Receipt text, email content, transfer screenshot summary, or file list to organize.', required: false }],
   },
   {
     name: 'spending_summary',
@@ -311,7 +313,7 @@ export function getPrompt(
   let body = '';
   switch (name) {
     case 'organize_receipts':
-      body = `${SKILL_MD}\n\n${CARPOOL_FILES_REF_MD}\n\n${ctxBlock}\n\n## Task\nParse the provided receipts/invoices, check \`list_subscriptions\` to avoid duplicates, preview changes with \`dry_run: true\`, confirm or execute writes, and if file storage is enabled, link each receipt file to its exact \`charge\` date via \`upload_file\`.${userArg('input')}`;
+      body = `${SKILL_MD}\n\n${CARPOOL_FILES_REF_MD}\n\n${ctxBlock}\n\n## Task\nParse the provided receipts/invoices/transfer proofs, check \`list_subscriptions\` to avoid duplicates, preview changes with \`dry_run: true\`, confirm or execute writes, and if file storage is enabled, link provider invoices to their \`charge\` date or shared-plan/proxy collection screenshots to \`kind="receipt"\` with \`receipt="<receipt_id>"\` via \`upload_file\` / \`update_file\` (flagging any \`duplicate_receipt\`).${userArg('input')}`;
       break;
     case 'spending_summary':
       body = `${SKILL_MD}\n\n${ctxBlock}\n\n## Task\nAnswer the user's spending question using \`get_insights\` (\`month_report\` or \`scope_report\`) or \`spending_stats\`. Present both original and base currency numbers accurately, never do mental arithmetic, and disclose any missing FX rates (\`incomplete: true\`).${userArg('question')}`;
@@ -320,7 +322,7 @@ export function getPrompt(
       body = `${SKILL_MD}\n\n${SUBSCRIPTIONS_REF_MD}\n\n${ctxBlock}\n\n## Task\nExtract every subscription cleanly (one subscription per service/column for bill tables), match exact categories and payment methods, let exact \`search_services\` matches auto-fill icons or call \`search_app_store\`, preview with \`dry_run: true\`, then apply.${userArg('data')}`;
       break;
     case 'audit_carpool':
-      body = `${SKILL_MD}\n\n${CARPOOL_FILES_REF_MD}\n\n${ctxBlock}\n\n## Task\nUse \`get_carpool\` and \`get_receivables\` to audit shared plans and proxy subscriptions. Report overdue members, exact pending amounts, next collection dates, and owner net cost from tool outputs.${userArg('subscription')}`;
+      body = `${SKILL_MD}\n\n${CARPOOL_FILES_REF_MD}\n\n${ctxBlock}\n\n## Task\nUse \`get_carpool\`, \`get_receivables\`, and (when file storage is enabled) \`list_files\` with \`receipt_scope="carpool"\` / \`"proxy"\` and \`duplicate_only=true\` to audit shared plans and proxy subscriptions. Report overdue members, exact pending amounts, next collection dates, owner net cost, and any duplicate or missing collection receipt proofs from tool outputs.${userArg('subscription')}`;
       break;
     default:
       return undefined;
