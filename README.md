@@ -13,7 +13,8 @@
   <a href="https://demo.calends.date">Live demo</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#ai--mcp">AI &amp; MCP</a> ·
-  <a href="README.zh-CN.md">简体中文</a>
+  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="README.tr.md">Türkçe</a>
 </p>
 
 <p align="center">
