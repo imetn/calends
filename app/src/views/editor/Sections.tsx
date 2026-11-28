@@ -525,19 +525,23 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
                 <Toggle
                   checked={!!f.bonus}
                   onChange={(v) => {
-                    // 默认从下一次扣款日开始送一个周期
-                    const from = f.cycle.unit === 'lifetime' ? today : (nextCharge(f, today) ?? nthCharge(f.start, f.cycle, 1));
-                    up({ bonus: v ? { from, until: f.cycle.unit === 'lifetime' ? addMonths(from, 12) : nthCharge(from, f.cycle, 1) } : undefined });
+                    up((prev) => {
+                      if (!v) return { bonus: undefined };
+                      // 默认从下一次扣款日开始送一个周期；若尚未扣款/即将开始导致下次扣款就是开始日，则顺延到首个完整周期结束日
+                      const next = prev.cycle.unit === 'lifetime' ? today : nextCharge(prev, today);
+                      const from = prev.cycle.unit === 'lifetime' ? today : next && next > prev.start ? next : nthCharge(prev.start, prev.cycle, 1);
+                      return { bonus: { from, until: prev.cycle.unit === 'lifetime' ? addMonths(from, 12) : nthCharge(from, prev.cycle, 1) } };
+                    });
                   }}
                 />
               </Cell>
               {f.bonus && (
                 <>
                   <Cell label={t('editor.bonus.from')}>
-                    <DatePicker value={f.bonus.from} onChange={(v) => up({ bonus: { ...f.bonus!, from: v ?? today } })} />
+                    <DatePicker value={f.bonus.from} onChange={(v) => up((prev) => (prev.bonus ? { bonus: { ...prev.bonus, from: v ?? today } } : {}))} />
                   </Cell>
                   <Cell label={t('editor.bonus.until')}>
-                    <DatePicker value={f.bonus.until} onChange={(v) => up({ bonus: { ...f.bonus!, until: v ?? today } })} />
+                    <DatePicker value={f.bonus.until} onChange={(v) => up((prev) => (prev.bonus ? { bonus: { ...prev.bonus, until: v ?? today } } : {}))} />
                   </Cell>
                   <div className="cell bonus-quick">
                     {(
@@ -553,7 +557,7 @@ export function MoreFields({ context }: { context: ReturnType<typeof useEditorFi
                         key={l}
                         type="button"
                         className={`chip-btn ${f.bonus!.until === fn(f.bonus!.from) ? 'on' : ''}`}
-                        onClick={() => up({ bonus: { ...f.bonus!, until: fn(f.bonus!.from) } })}
+                        onClick={() => up((prev) => (prev.bonus ? { bonus: { ...prev.bonus, until: fn(prev.bonus.from) } } : {}))}
                       >
                         {t(`editor.bonus.quick.${l}`)}
                       </button>

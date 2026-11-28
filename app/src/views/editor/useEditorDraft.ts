@@ -39,8 +39,9 @@ export function useEditorDraft({ sub, state, today, onClose }: { sub: Subscripti
     }
   };
   // 改周期（如改成买断）后合同期不再成立时一并清掉，否则字段被隐藏却拦住保存
-  const up = (p: Partial<Subscription>) =>
+  const up = (patch: Partial<Subscription> | ((prev: Subscription) => Partial<Subscription>)) =>
     setFRaw((x) => {
+      const p = typeof patch === 'function' ? patch(x) : patch;
       const next = { ...x, ...p };
       return p.cycle && !('contract' in p) && next.contract && !contractFits(next.contract.term, p.cycle) ? { ...next, contract: undefined } : next;
     });

@@ -45,7 +45,7 @@ export function Form({
   setStop: (value: StopForm | undefined) => void;
   f: Subscription;
   setF: (s: Subscription) => void;
-  up: (p: Partial<Subscription>) => void;
+  up: (p: Partial<Subscription> | ((prev: Subscription) => Partial<Subscription>)) => void;
   linked: LinkedPlan;
   setLinked: (value: LinkedPlan | ((prev: LinkedPlan) => LinkedPlan)) => void;
   state: AppState;

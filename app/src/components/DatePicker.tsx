@@ -98,6 +98,8 @@ export function DatePicker({
     const onKey = (e: KeyboardEvent) => {
       const target = e.target;
       if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) return;
+      // 年/月下拉列表展开时，方向键、回车、Esc 都留给下拉列表自己处理
+      if (document.querySelector('.pk-pop')) return;
       if (e.key === 'Escape') {
         e.stopPropagation();
         setOpen(false);
@@ -111,6 +113,8 @@ export function DatePicker({
         setMonth(n.slice(0, 7));
       }
       if (e.key === 'Enter') {
+        // 焦点落在头部年/月/翻月按钮、日期格或底部按钮上时，让按钮自身处理回车
+        if (target instanceof HTMLElement && target.closest('.dp-head, .dp-foot, .dp-day')) return;
         e.preventDefault();
         pick(cursor);
       }
@@ -118,6 +122,14 @@ export function DatePicker({
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
   }, [open, cursor]);
+
+  /** 切换显示的年/月时同步移动键盘光标到新月份，避免回车误选旧月份的日期 */
+  const jumpMonth = (nextMonth: string) => {
+    setMonth(nextMonth);
+    const day = Number(cursor.slice(8)) || 1;
+    const last = Number(addDays(addMonths(nextMonth + '-01', 1), -1).slice(8));
+    setCursor(`${nextMonth}-${String(Math.min(day, last)).padStart(2, '0')}`);
+  };
 
   const toggle = () => {
     if (!open) {
@@ -248,7 +260,7 @@ export function DatePicker({
         <Pop triggerRef={trigger} onClose={() => setOpen(false)} label={t('picker.date.placeholder')}>
           {/* 两端箭头只切月份（跨年自动进位）；年、月下拉居中，顺序跟随语言习惯（中文年在前，英文月在前） */}
           <div className="dp-head">
-            <IconButton className="dp-nav" aria-label={t('picker.date.prev')} onClick={() => setMonth(addMonths(month + '-01', -1).slice(0, 7))}>
+            <IconButton className="dp-nav" aria-label={t('picker.date.prev')} onClick={() => jumpMonth(addMonths(month + '-01', -1).slice(0, 7))}>
               <Icon name="left" />
             </IconButton>
             <span className="dp-ym">
@@ -258,7 +270,7 @@ export function DatePicker({
                     key="year"
                     value={y}
                     ariaLabel={t('picker.date.year')}
-                    onChange={(v) => setMonth(`${v}-${month.slice(5)}`)}
+                    onChange={(v) => jumpMonth(`${v}-${month.slice(5)}`)}
                     options={years.map((year) => ({ value: year, label: yearLabel(year) }))}
                   />
                 ) : (
@@ -266,7 +278,7 @@ export function DatePicker({
                     key="month"
                     value={m}
                     ariaLabel={t('picker.date.month')}
-                    onChange={(v) => setMonth(`${month.slice(0, 4)}-${String(v).padStart(2, '0')}`)}
+                    onChange={(v) => jumpMonth(`${month.slice(0, 4)}-${String(v).padStart(2, '0')}`)}
                     options={Array.from({ length: 12 }, (_, i) => {
                       const ym = `${month.slice(0, 4)}-${String(i + 1).padStart(2, '0')}`;
                       return { value: i + 1, label: monthLabel(ym, { year: false }) };
@@ -275,7 +287,7 @@ export function DatePicker({
                 ),
               )}
             </span>
-            <IconButton className="dp-nav" aria-label={t('picker.date.next')} onClick={() => setMonth(addMonths(month + '-01', 1).slice(0, 7))}>
+            <IconButton className="dp-nav" aria-label={t('picker.date.next')} onClick={() => jumpMonth(addMonths(month + '-01', 1).slice(0, 7))}>
               <Icon name="right" />
             </IconButton>
           </div>
