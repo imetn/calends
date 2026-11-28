@@ -24,7 +24,7 @@ import { FileDrop } from '../components/FileDrop.tsx';
 import { useFilePicker, useUpload } from '../components/FileUpload.tsx';
 import { compactReceiptItem, FileBadges, fileLabel, FileSheet, FileThumb, ReceiptScopeTag } from '../components/FileSheet.tsx';
 import { Icon } from '../components/icons.tsx';
-import { Seg } from '../components/inputs.tsx';
+import { Seg, useMedia } from '../components/inputs.tsx';
 import { CatIcon, MethodMark, SubIcon } from '../components/marks.tsx';
 import { ask } from '../components/overlays.tsx';
 import { Picker } from '../components/Picker.tsx';
@@ -156,6 +156,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   const [wrapRef, width] = useWidth();
   const [, setRatioRev] = useState(0);
   const onRatio = (id: string) => (r: number) => rememberRatio(id, r) && setRatioRev((n) => n + 1);
+  const mobile = useMedia('(max-width: 860px), (hover: none)');
   const canUpload = enabled && !ro;
   // 从订阅详情跳来（files?sub=）：只看这个订阅，查询串用完即去掉，清除筛选后刷新不会再套上
   useEffect(() => {
@@ -274,8 +275,8 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   const pendingN = all.filter((f) => !f.subId).length;
   const dirty = subFacet || sel.type !== 'all' || sel.year !== 'all' || !!q;
   const totalSize = all.reduce((a, f) => a + f.size, 0);
-  // 只对当前看得到的生效：筛掉的已选文件不会被一起删掉或打包
-  const pickedRows = picked.filter((id) => rows.some((f) => f.id === id));
+  // 只对当前看得到的生效：筛掉的已选文件不会被一起删掉或打包；移动端不提供多选
+  const pickedRows = mobile ? [] : picked.filter((id) => rows.some((f) => f.id === id));
 
   // 待关联的文件没有订阅可分：只给不分组、按月、按年，其余分法在这里按月显示，不改动保存的偏好
   const g: Group = tab === 'pending' && (group === 'sub' || group === 'cat') ? 'month' : group;
@@ -592,7 +593,14 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
               sec.items.length ? (
                 <section key={sec.key} className="file-sec">
                   {sec.head && <header className="file-sec-head">{sec.head}</header>}
-                  <SectionBody sec={sec} view={view} width={width} render={(x, style) => renderItem(x, sec, style)} renderRow={(x) => renderRow(x, sec)} />
+                  <SectionBody
+                    sec={sec}
+                    view={view}
+                    width={width}
+                    selectable={!mobile}
+                    render={(x, style) => renderItem(x, sec, style)}
+                    renderRow={(x) => renderRow(x, sec)}
+                  />
                 </section>
               ) : null,
             )}
@@ -681,20 +689,24 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
           <FileThumb f={f} onRatio={onRatio(f.id)} />
         </div>
         <div className="file-body">
-          <b title={label.head}>
-            {label.icon}
-            <span>{label.head}</span>
-          </b>
+          <div className="file-head">
+            <b title={label.head}>
+              {label.icon}
+              <span>{label.head}</span>
+            </b>
+            <FileBadges f={f} subs={subs} compact />
+          </div>
           <span className="file-meta">
             {label.item && <span className="file-item">{label.item}</span>}
             <span>{FILE_EXT[f.mime].toUpperCase()}</span>
             <span>{sizeLabel(f.size)}</span>
           </span>
-          <FileBadges f={f} subs={subs} compact className="file-body-tags" />
         </div>
-        <button type="button" role="checkbox" aria-checked={on} className="file-check" onClick={() => toggle(f.id)} aria-label={t('files.select')}>
-          <Icon name="check" size={12} />
-        </button>
+        {!mobile && (
+          <button type="button" role="checkbox" aria-checked={on} className="file-check" onClick={() => toggle(f.id)} aria-label={t('files.select')}>
+            <Icon name="check" size={12} />
+          </button>
+        )}
       </div>
     );
   }
@@ -743,8 +755,8 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
           </b>
           {(label.item || fileBadgeKind(f, subs) || f.dupReceipt) && (
             <span className="file-meta">
-              <FileBadges f={f} subs={subs} compact />
               {label.item && <span className="file-item">{label.item}</span>}
+              <FileBadges f={f} subs={subs} compact />
             </span>
           )}
         </span>
@@ -755,9 +767,11 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
         <span className="file-row-up">{f.createdAt.slice(0, 10)}</span>
         <span className="file-row-type">{FILE_EXT[f.mime].toUpperCase()}</span>
         <span className="file-row-size">{sizeLabel(f.size)}</span>
-        <button type="button" role="checkbox" aria-checked={on} className="file-check" onClick={() => toggle(f.id)} aria-label={t('files.select')}>
-          <Icon name="check" size={12} />
-        </button>
+        {!mobile && (
+          <button type="button" role="checkbox" aria-checked={on} className="file-check" onClick={() => toggle(f.id)} aria-label={t('files.select')}>
+            <Icon name="check" size={12} />
+          </button>
+        )}
       </div>
     );
   }
@@ -768,12 +782,14 @@ function SectionBody({
   sec,
   view,
   width,
+  selectable,
   render,
   renderRow,
 }: {
   sec: Section;
   view: View;
   width: number;
+  selectable: boolean;
   render: (x: Item, style: CSSProperties | undefined) => ReactNode;
   renderRow: (x: Item) => ReactNode;
 }) {
@@ -788,7 +804,7 @@ function SectionBody({
           <span className="file-row-up">{t('files.props.uploaded')}</span>
           <span className="file-row-type">{t('files.props.type')}</span>
           <span className="file-row-size">{t('files.props.size')}</span>
-          <span />
+          {selectable && <span />}
         </div>
         {sec.items.map(renderRow)}
       </div>
@@ -872,8 +888,8 @@ function SlotCard({
             <b>{text}</b>
             {(!sec.sub || scopeTag) && (
               <span className="file-meta">
-                {scopeTag}
                 {!sec.sub && <span className="file-item">{shortName}</span>}
+                {scopeTag}
               </span>
             )}
           </span>
@@ -884,13 +900,15 @@ function SlotCard({
             <Icon name="upload" size={28} />
           </div>
           <div className="file-body">
-            <b>{text}</b>
+            <div className="file-head">
+              <b>{text}</b>
+              {scopeTag}
+            </div>
             {!sec.sub && (
               <span className="file-meta">
                 <span className="file-item">{shortName}</span>
               </span>
             )}
-            {scopeTag && <span className="file-tags file-body-tags">{scopeTag}</span>}
           </div>
         </>
       )}

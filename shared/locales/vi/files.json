@@ -70,8 +70,12 @@
   "backup": "Xuất bản sao lưu đầy đủ kèm tệp",
   "badge": {
     "carpool": "Thu tiền dùng chung",
+    "carpoolShort": "Chung",
     "proxy": "Thu tiền trả hộ",
-    "dup": "Trùng lặp"
+    "proxyShort": "Trả hộ",
+    "dup": "Trùng lặp",
+    "dupShort": "Trùng",
+    "receiptShort": "Thu"
   },
   "addReceipt": "Thêm chứng từ thu",
   "dupHint": "Tệp giống hệt này đang gắn với nhiều khoản thu khác nhau. Hãy kiểm tra xem có dùng nhầm cùng một ảnh chụp màn hình không."

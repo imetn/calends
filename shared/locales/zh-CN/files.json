@@ -70,8 +70,12 @@
   "backup": "导出完整备份（含文件）",
   "badge": {
     "carpool": "合租收款",
+    "carpoolShort": "合租",
     "proxy": "代付收款",
-    "dup": "重复凭证"
+    "proxyShort": "代付",
+    "dup": "重复凭证",
+    "dupShort": "重复",
+    "receiptShort": "收款"
   },
   "addReceipt": "添加收款凭证",
   "dupHint": "该文件内容已关联到其他收款记录，请核对是否误用了同一张截图。"

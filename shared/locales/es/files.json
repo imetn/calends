@@ -88,8 +88,12 @@
   "backup": "Exportar copia completa con archivos",
   "badge": {
     "carpool": "Cobro compartido",
+    "carpoolShort": "Comp.",
     "proxy": "Reembolso delegado",
-    "dup": "Duplicado"
+    "proxyShort": "Deleg.",
+    "dup": "Duplicado",
+    "dupShort": "Dupl.",
+    "receiptShort": "Cobro"
   },
   "addReceipt": "Añadir comprobante",
   "dupHint": "Este mismo archivo está vinculado a más de un cobro. Comprueba que no se haya reutilizado la misma captura por error."

@@ -41,13 +41,20 @@ export function fileLabel(f: FileMeta, files: readonly FileMeta[], subs: readonl
   return { head: parts[0], gone: false };
 }
 
-/** 醒目的收款类型标签（合租收款 / 代付收款）与重复凭证提示标签；文件中心卡片底部内容区、列表、详情与助手共用 */
+/** 醒目的收款类型标签（合租收款 / 代付收款）与重复凭证提示标签；compact 用于卡片与列表标题行末尾，只保留极简短词 */
 export function ReceiptScopeTag({ scope, compact }: { scope: FileReceiptScope | 'receipt'; compact?: boolean }) {
   const icon = scope === 'carpool' ? 'users' : scope === 'proxy' ? 'coins' : 'receipt';
-  const label = scope === 'carpool' ? t('files.badge.carpool') : scope === 'proxy' ? t('files.badge.proxy') : t('files.kind.receipt');
+  const fullLabel = scope === 'carpool' ? t('files.badge.carpool') : scope === 'proxy' ? t('files.badge.proxy') : t('files.kind.receipt');
+  const label = compact
+    ? scope === 'carpool'
+      ? t('files.badge.carpoolShort')
+      : scope === 'proxy'
+        ? t('files.badge.proxyShort')
+        : t('files.badge.receiptShort')
+    : fullLabel;
   return (
-    <span className={`file-tag ${scope}${compact ? ' compact' : ''}`}>
-      <Icon name={icon} size={11} />
+    <span className={`file-tag ${scope}${compact ? ' compact' : ''}`} title={compact ? fullLabel : undefined}>
+      {!compact && <Icon name={icon} size={11} />}
       <span>{label}</span>
     </span>
   );
@@ -78,8 +85,8 @@ export function FileBadges({
       {scope && <ReceiptScopeTag scope={scope} compact={compact} />}
       {f.dupReceipt && (
         <span className={`file-tag dup${compact ? ' compact' : ''}`} title={t('files.dupHint')}>
-          <Icon name="info" size={11} />
-          <span>{t('files.badge.dup')}</span>
+          {!compact && <Icon name="info" size={11} />}
+          <span>{compact ? t('files.badge.dupShort') : t('files.badge.dup')}</span>
         </span>
       )}
     </span>

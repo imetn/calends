@@ -88,8 +88,12 @@
   "backup": "Export full backup with files",
   "badge": {
     "carpool": "Shared collection",
+    "carpoolShort": "Shared",
     "proxy": "Proxy collection",
-    "dup": "Duplicate"
+    "proxyShort": "Proxy",
+    "dup": "Duplicate",
+    "dupShort": "Dup",
+    "receiptShort": "Receipt"
   },
   "addReceipt": "Add receipt proof",
   "dupHint": "This exact file is attached to more than one collection receipt. Check that the same screenshot was not reused by mistake."

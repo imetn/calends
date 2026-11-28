@@ -2065,3 +2065,14 @@ test('Files list-view thumbnail uses deterministic mini-collage tilt and stacks 
   assert.match(css, /\.file-row-sheet\.s2\s*\{/);
   assert.match(css, /\.file-row:hover \.file-row-paper\s*\{[^}]*transform:\s*none/);
 });
+
+test('Files hides multi-select circles and selection mode on mobile and touch viewports', () => {
+  const [, , source] = sources.find(([file]) => file === 'views/Files.tsx');
+  assert.match(source, /const mobile = useMedia\('\(max-width: 860px\), \(hover: none\)'\)/);
+  assert.match(source, /const pickedRows = mobile \? \[\] :/);
+  assert.match(source, /\{!mobile && \(\s*<button[^>]*className="file-check"/);
+  const css = readFileSync(new URL('files.css', root), 'utf8');
+  assert.doesNotMatch(css, /@media \(hover: none\)\s*\{\s*\.file-check\s*\{\s*opacity:\s*1/);
+  assert.match(css, /@media \(max-width: 860px\), \(hover: none\)\s*\{[^}]*\.file-check,\s*\.file-bar\s*\{\s*display:\s*none/);
+  assert.match(css, /@media \(max-width: 860px\)\s*\{[^}]*\.file-row\s*\{[^}]*grid-template-columns:\s*44px minmax\(0, 1fr\) auto;/);
+});

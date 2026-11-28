@@ -70,8 +70,12 @@
   "backup": "Ekspor cadangan lengkap beserta file",
   "badge": {
     "carpool": "Penagihan patungan",
+    "carpoolShort": "Patungan",
     "proxy": "Penggantian talangan",
-    "dup": "Duplikat"
+    "proxyShort": "Talangan",
+    "dup": "Duplikat",
+    "dupShort": "Duplikat",
+    "receiptShort": "Bukti"
   },
   "addReceipt": "Tambah bukti bayar",
   "dupHint": "File yang sama persis terlampir pada lebih dari satu catatan penerimaan. Periksa apakah tangkapan layar yang sama tidak dipakai ulang secara keliru."

@@ -70,8 +70,12 @@
   "backup": "匯出完整備份（含檔案）",
   "badge": {
     "carpool": "夾單收款",
+    "carpoolShort": "夾單",
     "proxy": "代付收款",
-    "dup": "重複憑證"
+    "proxyShort": "代付",
+    "dup": "重複憑證",
+    "dupShort": "重複",
+    "receiptShort": "收款"
   },
   "addReceipt": "加入收款憑證",
   "dupHint": "呢個檔案內容已經關聯到其他收款紀錄，請核對有冇用錯同一張截圖。"

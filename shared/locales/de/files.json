@@ -88,8 +88,12 @@
   "backup": "Vollständiges Backup mit Dateien exportieren",
   "badge": {
     "carpool": "Geteilter Einzug",
+    "carpoolShort": "Geteilt",
     "proxy": "Erstattung",
-    "dup": "Duplikat"
+    "proxyShort": "Erstatt.",
+    "dup": "Duplikat",
+    "dupShort": "Duplikat",
+    "receiptShort": "Beleg"
   },
   "addReceipt": "Beleg hinzufügen",
   "dupHint": "Diese identische Datei ist mit mehreren Einzahlungen verknüpft. Prüfe, ob derselbe Screenshot versehentlich mehrfach verwendet wurde."

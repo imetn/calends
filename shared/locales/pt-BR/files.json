@@ -88,8 +88,12 @@
   "backup": "Exportar backup completo com arquivos",
   "badge": {
     "carpool": "Cobrança compartilhada",
+    "carpoolShort": "Comp.",
     "proxy": "Reembolso",
-    "dup": "Duplicado"
+    "proxyShort": "Reemb.",
+    "dup": "Duplicado",
+    "dupShort": "Dupl.",
+    "receiptShort": "Recibo"
   },
   "addReceipt": "Adicionar comprovante",
   "dupHint": "Este mesmo arquivo está anexado a mais de um recebimento. Verifique se o mesmo comprovante não foi reutilizado por engano."

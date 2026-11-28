@@ -151,8 +151,10 @@ function FilesResultWidget({
                 {meta ? <FileThumb f={meta} /> : <span className="as-file-ext">{ext}</span>}
               </span>
               <span className="as-file-info">
-                <b className="text-ellipsis">{lbl.head}</b>
-                {meta && <FileBadges f={meta} subs={state.subscriptions} compact />}
+                <span className="file-head">
+                  <b className="text-ellipsis">{lbl.head}</b>
+                  {meta && <FileBadges f={meta} subs={state.subscriptions} compact />}
+                </span>
                 <small className="text-ellipsis">{copyParts(subParts || r.name || '')}</small>
               </span>
               {meta && <Eye size={14} className="as-file-open" />}

@@ -70,8 +70,12 @@
   "backup": "Dosyalarla tam yedeği dışa aktar",
   "badge": {
     "carpool": "Paylaşım tahsilatı",
+    "carpoolShort": "Ortak",
     "proxy": "Vekâlet tahsilatı",
-    "dup": "Yinelenen"
+    "proxyShort": "Vekâlet",
+    "dup": "Yinelenen",
+    "dupShort": "Yine",
+    "receiptShort": "Makbuz"
   },
   "addReceipt": "Tahsilat belgesi ekle",
   "dupHint": "Aynı dosya birden fazla tahsilat kaydına bağlı. Aynı ekran görüntüsünün yanlışlıkla tekrar kullanılmadığını kontrol edin."

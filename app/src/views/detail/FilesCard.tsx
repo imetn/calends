@@ -203,9 +203,11 @@ export function FilesCard({
                         <FileThumb f={f} />
                       </span>
                       <span className="dt-file-text">
-                        <b>{label.item ?? label.head}</b>
-                        <span className="file-meta">
+                        <span className="file-head">
+                          <b>{label.item ?? label.head}</b>
                           <FileBadges f={f} subs={state.subscriptions} compact />
+                        </span>
+                        <span className="file-meta">
                           <span>{FILE_EXT[f.mime].toUpperCase()}</span>
                           <span>{sizeLabel(f.size)}</span>
                         </span>

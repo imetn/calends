@@ -88,8 +88,12 @@
   "backup": "Exporter une sauvegarde complète avec fichiers",
   "badge": {
     "carpool": "Encaissement partagé",
+    "carpoolShort": "Partagé",
     "proxy": "Remboursement proxy",
-    "dup": "Doublon"
+    "proxyShort": "Proxy",
+    "dup": "Doublon",
+    "dupShort": "Doublon",
+    "receiptShort": "Reçu"
   },
   "addReceipt": "Ajouter un justificatif",
   "dupHint": "Ce même fichier est associé à plusieurs encaissements. Vérifiez que la même capture n’a pas été réutilisée par erreur."

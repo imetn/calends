@@ -70,8 +70,12 @@
   "backup": "파일 포함 전체 백업 내보내기",
   "badge": {
     "carpool": "공유 수금",
+    "carpoolShort": "공유",
     "proxy": "대리결제 회수",
-    "dup": "중복 증빙"
+    "proxyShort": "대납",
+    "dup": "중복 증빙",
+    "dupShort": "중복",
+    "receiptShort": "수금"
   },
   "addReceipt": "수금 증빙 추가",
   "dupHint": "같은 파일이 여러 수금 내역에 연결되어 있습니다. 동일한 캡처를 잘못 올리지 않았는지 확인해 주세요."

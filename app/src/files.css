@@ -122,6 +122,28 @@
   box-shadow: 0 calc(-1 * var(--hairline)) 0 var(--line);
   pointer-events: none;
 }
+.file-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.file-body .file-head {
+  justify-content: space-between;
+}
+.file-head > b {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.file-head > .file-tags,
+.file-head > .file-tag {
+  margin-left: auto;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+.dt-file-text .file-head > .file-tags {
+  margin-left: 0;
+}
 .file-body b,
 .file-row-text b {
   display: flex;
@@ -213,9 +235,11 @@
 .file-sections.picking .file-check {
   opacity: 1;
 }
-@media (hover: none) {
-  .file-check {
-    opacity: 1;
+/* 移动端不提供多选，不显示卡片与列表上的圆形勾选框 */
+@media (max-width: 860px), (hover: none) {
+  .file-check,
+  .file-bar {
+    display: none;
   }
 }
 .file-check[aria-checked='true'] {
@@ -508,9 +532,14 @@
 .file-row.loading .file-row-text b {
   color: var(--label-2);
 }
+@media (hover: none) {
+  .file-row {
+    grid-template-columns: 44px minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) 84px 40px 64px;
+  }
+}
 @media (max-width: 860px) {
   .file-row {
-    grid-template-columns: 44px minmax(0, 1fr) auto 20px;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
     gap: 12px;
   }
   .file-row-type,
@@ -709,7 +738,7 @@
   gap: 4px;
   min-width: 0;
 }
-/* 底部内容区收款类型标签（合租收款 / 代付收款）与重复凭证提示，沿用全站 .badge 扁平无描边风格 */
+/* 收款类型标签（合租 / 代付）与重复凭证提示；compact 用于标题行末尾，极简短词不单独换行 */
 .file-tag {
   display: inline-flex;
   align-items: center;
@@ -724,8 +753,10 @@
   flex-shrink: 0;
 }
 .file-tag.compact {
-  height: 18px;
-  padding: 0 6px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
 }
 .file-tag.carpool {
   color: var(--teal-11);
@@ -743,15 +774,15 @@
   color: var(--amber-11);
   background: var(--amber-3);
 }
-.file-body-tags {
-  margin-top: 3px;
+.file-grid.compact .file-head {
+  gap: 4px;
 }
-.file-grid.compact .file-body-tags {
-  margin-top: 2px;
+.file-grid.compact .file-tags {
+  gap: 3px;
 }
-.file-grid.compact .file-body-tags .file-tag {
-  height: 17px;
-  padding: 0 5px;
+.file-grid.compact .file-tag.compact {
+  height: 16px;
+  padding: 0 4px;
 }
 .file-dup-warn {
   display: flex;
