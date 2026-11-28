@@ -747,11 +747,17 @@ function CardGlow({ sub }: { sub: Subscription }) {
   return <div className="sc-glow mesh" style={style as Record<string, string>} />;
 }
 
-/** 卡片与列表视图共用的状态徽章（试用、即将到期、暂停、已结束、被停用）；未开始、合租、代付由 SubBadges 统一判定 */
+/** 卡片与列表视图共用的状态徽章（试用、买断、即将到期、暂停、已结束、被停用）；未开始、合租、代付由 SubBadges 统一判定 */
 function StatusBadges({ st }: { st: string }) {
   return (
     <>
       {st === 'trial' && <span className="badge green">{t('list.status.trialShort')}</span>}
+      {st === 'lifetime' && (
+        <span className="badge green icon-text">
+          <Icon name="infinity" size={12} />
+          {t('list.status.lifetime')}
+        </span>
+      )}
       {st === 'ending' && <span className="badge orange">{t('list.status.ending')}</span>}
       {st === 'paused' && <span className="badge">{t('list.status.pausedShort')}</span>}
       {st === 'ended' && <span className="badge">{t('list.status.ended')}</span>}

@@ -52,6 +52,7 @@ export const P: Record<string, string> = {
   clip: 'paperclip',
   trash: 'trash',
   file: 'file',
+  infinity: 'infinity',
 };
 
 export function Icon({
