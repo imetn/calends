@@ -61,8 +61,16 @@ const payment = record(
 const renewal = {
   chargeLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
   cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660 },
-  renewalOffsetDays: { type: 'integer', minimum: 0, maximum: 3660 },
-  renewalHistory: list(record({ from: day, chargeLeadDays: positive, cancelLeadDays: positive }, ['from', 'chargeLeadDays', 'cancelLeadDays'])),
+  renewalOffsetDays: {
+    type: 'integer',
+    minimum: 0,
+    maximum: 3660,
+    description: 'Legacy advance-charge offset in days; omit or pass null/0 to clear.',
+  },
+  renewalHistory: {
+    ...list(record({ from: day, chargeLeadDays: positive, cancelLeadDays: positive }, ['from', 'chargeLeadDays', 'cancelLeadDays'])),
+    description: 'Dated renewal-rule history; pass null or [] to clear erroneous entries.',
+  },
   contract: {
     ...record(
       {
@@ -208,7 +216,10 @@ const full = {
     ['forName'],
   ),
   remindDays: { type: 'integer', minimum: -1 },
-  expires: day,
+  expires: {
+    ...day,
+    description: 'Deprecated legacy field; do not set for service expiry or end dates (use end, bonus, or chargeLeadDays instead). Omit or pass null.',
+  },
   phases: {
     ...list(record(phaseFields, ['start', 'price', 'currency', 'cycle'])),
     description: 'Plan/service history. Keep top-level price/currency/cycle/methodId mirrored from the last phase. Put payments inside their owning phases.',

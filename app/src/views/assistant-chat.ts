@@ -1,4 +1,4 @@
-import type { AssistantOutcome } from '../../../shared/assistant-result.ts';
+import { shouldSupersede, type AssistantOutcome } from '../../../shared/assistant-result.ts';
 import { base } from '../base.ts';
 import { locale } from '../../../shared/i18n.ts';
 import type { ApiMessage, ErrorKind } from '../../../shared/deepseek.ts';
@@ -9,7 +9,7 @@ import { settleTurns } from './assistant-fields.ts';
 // ---------- 会话数据 ----------
 export type ToolStatus = 'running' | 'done' | 'error';
 
-export type ProposalState = 'pending' | 'applying' | 'applied' | 'dismissed' | 'error' | 'unverified';
+export type ProposalState = 'pending' | 'applying' | 'applied' | 'dismissed' | 'superseded' | 'error' | 'unverified';
 
 export type Part =
   | { kind: 'reasoning'; text: string; start: number; ms?: number }
@@ -179,9 +179,23 @@ export function reduce(turn: Extract<ChatTurn, { role: 'assistant' }>, e: Server
       else parts.push(next);
       break;
     }
-    case 'proposal':
-      parts.push({ kind: 'proposal', id: e.id, tool: e.tool, args: e.args, preview: e.preview, filled: e.filled, state: 'pending' });
+    case 'proposal': {
+      const next: Extract<Part, { kind: 'proposal' }> = {
+        kind: 'proposal',
+        id: e.id,
+        tool: e.tool,
+        args: e.args,
+        preview: e.preview,
+        filled: e.filled,
+        state: 'pending',
+      };
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        if (p.kind === 'proposal' && shouldSupersede(p, next, true)) parts[i] = { ...p, state: 'superseded' };
+      }
+      parts.push(next);
       break;
+    }
     case 'error':
       closeReasoning();
       return { ...turn, parts, status: 'error', error: { kind: e.kind, message: e.message } };
@@ -190,4 +204,21 @@ export function reduce(turn: Extract<ChatTurn, { role: 'assistant' }>, e: Server
       return { ...turn, parts, outcome: e.outcome, status: e.aborted ? 'stopped' : 'done' };
   }
   return { ...turn, parts };
+}
+
+/** 新草稿到达后，将此前对话轮次或同轮中被替代的未确认草稿标为已替代，防止误点旧草稿。 */
+export function supersedeTurns(turns: ChatTurn[], currentTurnId: string, newer: Extract<Part, { kind: 'proposal' }>): ChatTurn[] {
+  return turns.map((turn) => {
+    if (turn.role !== 'assistant') return turn;
+    const sameTurn = turn.id === currentTurnId;
+    let changed = false;
+    const parts = turn.parts.map((p) => {
+      if (p.kind === 'proposal' && shouldSupersede(p, newer, sameTurn)) {
+        changed = true;
+        return { ...p, state: 'superseded' as const };
+      }
+      return p;
+    });
+    return changed ? { ...turn, parts } : turn;
+  });
 }

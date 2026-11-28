@@ -66,7 +66,8 @@
     "bundleLink": "Das Hauptabo existiert nicht, ist eine Fremdzahlung oder selbst verknüpft",
     "bundleProxy": "Fremdzahlungen können nicht mit einem Hauptabo verknüpft werden",
     "bundleUsed": "Verknüpft mit {names}; zuerst dort trennen",
-    "bundleHistory": "Die Verknüpfung würde frühere Abbuchungen oder Laufzeiten ändern. Verknüpfe ab dem Verknüpfungstag unter Verlauf → Tarif wechseln."
+    "bundleHistory": "Die Verknüpfung würde frühere Abbuchungen oder Laufzeiten ändern. Verknüpfe ab dem Verknüpfungstag unter Verlauf → Tarif wechseln.",
+    "bonus": "Das Enddatum der Gratiszeit muss nach dem Startdatum liegen"
   },
   "phase": {
     "switchTooEarly": "Das Gültigkeitsdatum muss nach dem Beginn der aktuellen Phase liegen",

@@ -66,7 +66,8 @@
     "bundleLink": "Bağlı ana abonelik bulunamadı, başkası adına ödeniyor veya kendisi başka bir aboneliğe bağlı",
     "bundleProxy": "Başkası adına ödenen abonelikler ana aboneliğe bağlanamaz",
     "bundleUsed": "{names} tarafından bağlı; önce oradan bağlantıyı kaldırın",
-    "bundleHistory": "Bağlamak önceki ödemeleri veya hizmet süresini değiştirir. Geçmiş → Plan değiştir bölümünden bağlantı tarihinden itibaren bağlayın."
+    "bundleHistory": "Bağlamak önceki ödemeleri veya hizmet süresini değiştirir. Geçmiş → Plan değiştir bölümünden bağlantı tarihinden itibaren bağlayın.",
+    "bonus": "Ücretsiz süre bitiş tarihi başlangıç tarihinden sonra olmalıdır"
   },
   "phase": {
     "switchTooEarly": "Geçerlilik tarihi mevcut dönemin başlangıcından sonra olmalı",

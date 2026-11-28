@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { billingPeriod, chargesBetween, migrateRenewalRules, nextCharge, nonrenewalDate, preserveRenewalHistory, renewalDates, subError } from './billing.ts';
+import {
+  billingPeriod,
+  chargesBetween,
+  migrateRenewalRules,
+  newShapeError,
+  nextCharge,
+  nonrenewalDate,
+  preserveRenewalHistory,
+  reconcileRenewalRules,
+  renewalDates,
+  subError,
+} from './billing.ts';
 import { cancelAtEnd, removePhase, stopSubscription, switchPlan, syncPhase, toEditForm } from './phases.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 import { maskForPublic } from './mask.ts';
@@ -231,4 +242,193 @@ test('legacy inference keeps historical prices and stopped paid-through dates un
   const legacyStop = migrateRenewalRules({ ...stopped, expires: old.expires });
   assert.deepEqual(legacyStop.stop, stopped.stop);
   assert.equal(subError(legacyStop), undefined);
+});
+
+test('migrateRenewalRules never turns multi-year, bonus or ended expires into chargeLeadDays', () => {
+  // 5-year switch with deprecated expires set to the next 5-year expiry (1826d away)
+  const fiveYear = sub({
+    start: '2026-11-28',
+    cycle: { unit: 'year', every: 5 },
+    expires: '2031-11-28',
+    payments: [{ date: '2026-11-28', amount: 100 }],
+  });
+  const migrated5y = migrateRenewalRules(fiveYear);
+  assert.equal(migrated5y.chargeLeadDays, 0);
+  assert.equal(migrated5y.renewalOffsetDays, undefined);
+
+  // Bonus period extending expiry 426 days beyond payment
+  const withBonus = sub({
+    start: '2026-11-29',
+    cycle: { unit: 'year', every: 1 },
+    bonus: { from: '2027-11-29', until: '2028-01-28' },
+    expires: '2028-01-28',
+    payments: [{ date: '2026-11-29', amount: 50 }],
+  });
+  const migratedBonus = migrateRenewalRules(withBonus);
+  assert.equal(migratedBonus.chargeLeadDays, 0);
+  assert.equal(migratedBonus.renewalOffsetDays, undefined);
+
+  // Ended / non-renewing subscription with expires
+  const ending = sub({
+    start: '2026-11-28',
+    cycle: { unit: 'year', every: 1 },
+    end: '2027-11-20',
+    expires: '2027-11-20',
+  });
+  assert.equal(migrateRenewalRules(ending).chargeLeadDays, 0);
+});
+
+test('renewalDates skips same-day recorded payments and covers multi-year and bonus horizons', () => {
+  const fiveYear = sub({
+    start: '2025-11-28',
+    cycle: { unit: 'year', every: 5 },
+    phases: [
+      {
+        start: '2025-11-28',
+        end: '2026-11-27',
+        price: 20,
+        currency: 'USD',
+        cycle: { unit: 'year', every: 1 },
+        payments: [{ date: '2025-11-28', amount: 20 }],
+      },
+      {
+        start: '2026-11-28',
+        price: 100,
+        currency: 'USD',
+        cycle: { unit: 'year', every: 5 },
+        payments: [{ date: '2026-11-28', amount: 100 }],
+      },
+    ],
+  });
+  assert.deepEqual(renewalDates(fiveYear, '2026-11-28'), {
+    nextCharge: '2031-11-28',
+    serviceExpires: '2031-11-28',
+    cancelBy: undefined,
+  });
+
+  // Unpaid first day of a new 5-year phase reports the end of the first period, not today
+  const unpaidFirstDay = sub({
+    start: '2026-11-28',
+    cycle: { unit: 'year', every: 5 },
+  });
+  assert.deepEqual(renewalDates(unpaidFirstDay, '2026-11-28'), {
+    nextCharge: '2026-11-28',
+    serviceExpires: '2031-11-28',
+    cancelBy: undefined,
+  });
+
+  // Non-renewing subscription already paid today has no next renewal
+  const nonRenewing = sub({
+    start: '2026-11-28',
+    cycle: { unit: 'year', every: 1 },
+    end: '2027-11-20',
+    payments: [{ date: '2026-11-28', amount: 50 }],
+  });
+  assert.deepEqual(renewalDates(nonRenewing, '2026-11-28'), {});
+});
+
+test('reconcileRenewalRules isolates historical phases from top-level fields and honors explicit clears', () => {
+  const previous = sub({
+    start: '2025-11-28',
+    cycle: { unit: 'year', every: 1 },
+    chargeLeadDays: 0,
+    renewalOffsetDays: 426,
+    renewalHistory: [{ from: '2025-11-28', chargeLeadDays: 426, cancelLeadDays: 0 }],
+    phases: [
+      {
+        start: '2025-11-28',
+        end: '2026-11-27',
+        price: 20,
+        currency: 'USD',
+        cycle: { unit: 'year', every: 1 },
+        chargeLeadDays: 0,
+        renewalOffsetDays: 426,
+        renewalHistory: [{ from: '2025-11-28', chargeLeadDays: 426, cancelLeadDays: 0 }],
+      },
+    ],
+  });
+  const next = sub({
+    start: '2025-11-28',
+    cycle: { unit: 'year', every: 5 },
+    nextDue: '2031-11-28',
+    chargeLeadDays: 0,
+    phases: [
+      {
+        start: '2025-11-28',
+        end: '2026-11-27',
+        price: 20,
+        currency: 'USD',
+        cycle: { unit: 'year', every: 1 },
+        chargeLeadDays: 0,
+        renewalHistory: [],
+        renewalOffsetDays: 0,
+      },
+      {
+        start: '2026-11-28',
+        price: 100,
+        currency: 'USD',
+        cycle: { unit: 'year', every: 5 },
+        nextDue: '2031-11-28',
+        renewalHistory: [],
+        renewalOffsetDays: 0,
+      },
+    ],
+  });
+  const reconciled = reconcileRenewalRules(previous, next, '2026-11-28');
+  assert.equal(reconciled.phases?.[0].nextDue, undefined);
+  assert.equal(reconciled.phases?.[0].renewalHistory, undefined);
+  assert.equal(reconciled.phases?.[0].renewalOffsetDays, undefined);
+  assert.equal(reconciled.phases?.[1].nextDue, '2031-11-28');
+  assert.equal(reconciled.phases?.[1].renewalHistory, undefined);
+  assert.equal(reconciled.renewalHistory, undefined);
+  assert.equal(reconciled.renewalOffsetDays, undefined);
+});
+
+test('newShapeError rejects a bonus period whose end is on or before its start', () => {
+  const baseSub = sub({ start: '2026-11-29', cycle: { unit: 'year', every: 1 } });
+  assert.ok(newShapeError(baseSub, { ...baseSub, bonus: { from: '2027-11-29', until: '2027-11-29' } }));
+  assert.ok(newShapeError(baseSub, { ...baseSub, bonus: { from: '2027-11-29', until: '2027-01-01' } }));
+  assert.equal(newShapeError(baseSub, { ...baseSub, bonus: { from: '2027-11-29', until: '2028-01-28' } }), undefined);
+});
+
+test('review regressions: historical bonus keeps valid advance lead, key-order-independent history, and malformed bonus.until safety', () => {
+  // Historical bonus ended before the charge: genuine 30-day advance-charge expires still migrates
+  const pastBonus = sub({
+    start: '2024-01-01',
+    cycle: { unit: 'year', every: 1 },
+    bonus: { from: '2024-02-01', until: '2024-03-01' },
+    expires: '2026-03-31',
+    payments: [
+      { date: '2024-01-01', amount: 12 },
+      { date: '2025-03-01', amount: 12 },
+      { date: '2026-03-01', amount: 12 },
+    ],
+  });
+  assert.equal(migrateRenewalRules(pastBonus).chargeLeadDays, 30);
+
+  // Reordered keys in unchanged renewalHistory still append a new effective-day point on lead edit
+  const prev = sub({
+    start: '2026-01-01',
+    chargeLeadDays: 5,
+    renewalHistory: [{ from: '2026-01-01', chargeLeadDays: 5, cancelLeadDays: 0 }],
+  });
+  const reordered = {
+    ...prev,
+    chargeLeadDays: 10,
+    renewalHistory: [{ cancelLeadDays: 0, chargeLeadDays: 5, from: '2026-01-01' }],
+  };
+  const preserved = preserveRenewalHistory(prev, reordered, '2026-06-01');
+  assert.equal(preserved.renewalHistory?.length, 2);
+  assert.equal(preserved.renewalHistory?.[1].chargeLeadDays, 10);
+
+  // Malformed legacy bonus.until must never throw RangeError in nextCharge/renewalDates
+  const legacyBadBonus = sub({ start: '2026-01-01', bonus: { from: '2026-02-01', until: '9999-99-99' } });
+  assert.doesNotThrow(() => nextCharge(legacyBadBonus, '2026-06-01'));
+  assert.doesNotThrow(() => renewalDates(legacyBadBonus, '2026-06-01'));
+
+  // Explicit empty renewalHistory clears even when previous had only an implicit lead without history
+  const implicitLead = sub({ start: '2025-01-01', chargeLeadDays: 30, renewalOffsetDays: 30 });
+  const cleared = preserveRenewalHistory(implicitLead, { ...implicitLead, chargeLeadDays: 0, renewalOffsetDays: 0, renewalHistory: [] }, '2026-06-01');
+  assert.equal(cleared.renewalHistory, undefined);
+  assert.equal(cleared.renewalOffsetDays, undefined);
 });

@@ -1,5 +1,5 @@
 import { personSummary } from '../../shared/avatar.ts';
-import { addDays, addMonths, chargesBetween, todayIn, type Charge, validDay } from '../../shared/billing.ts';
+import { addDays, addMonths, chargesBetween, isPaidOnDay, nextChargeHorizon, todayIn, type Charge, validDay } from '../../shared/billing.ts';
 import { bundleView, resolveState } from '../../shared/bundle.ts';
 import { normName, peopleLedger } from '../../shared/people.ts';
 import type { AppState, BundleLink, Contract, Cycle, Payment, PaymentMethod, Person, ShareMember, Subscription } from '../../shared/types.ts';
@@ -334,9 +334,9 @@ export async function persist(
           person_notice: t(dry ? 'mcp.label.createPerson' : 'mcp.label.createdPerson', { name: personCreation.name }),
         }
       : {}),
-    // 下次扣款只列真正要扣的钱：记在今天及以后的退款、补差、失败记录不算
-    next_charges: chargesBetween(afterView, today, addMonths(today, 13), today)
-      .filter((c) => !c.paidOn && !c.kind)
+    // 下次扣款只列真正要扣的钱：跳过今天已记下的付款以及退款、补差、失败记录，窗口覆盖多年周期与赠送期
+    next_charges: chargesBetween(afterView, today, nextChargeHorizon(afterView, today, 396), today)
+      .filter((c) => !c.paidOn && !c.kind && !isPaidOnDay(c, today))
       .slice(0, 3)
       .map((c) => ({ date: c.date, amount: round(c.amount), currency: c.currency })),
     ...extra,

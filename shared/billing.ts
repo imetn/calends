@@ -314,6 +314,7 @@ function shapeIssues(s: Subscription): Array<[key: string, error: string]> {
     if (p.bonus != null) {
       day('bonus.from', p.bonus.from ?? null);
       day('bonus.until', p.bonus.until ?? null);
+      if (isDay(p.bonus.from) && isDay(p.bonus.until) && p.bonus.from >= p.bonus.until) add('bonus', [p.bonus.from, p.bonus.until], t('core.subError.bonus'));
     }
     // 扣款金额始终按所属方案的币种计；另写的币种会被忽略，卡上实扣的币种用 settled
     for (const pay of Array.isArray(p.payments) ? p.payments : [])
@@ -1277,7 +1278,7 @@ function chargesAsRecorded(s: Subscription, from: string, to: string, today: str
   const known = (c: Charge) => !s.estimateFrom || c.date >= s.estimateFrom || recorded.has(c.date);
   const raw = rawCharges(s, from, to, today).filter(known);
   const b = s.bonus;
-  if (!b || s.cycle.unit === 'lifetime') return raw;
+  if (!b || !validDay(b.from) || !validDay(b.until) || s.cycle.unit === 'lifetime') return raw;
   // 赠送期：期间的预测扣款去掉，之后从赠送结束日重新按周期起算；实际扣款记录照旧保留
   const paid = new Set((s.payments ?? []).map((p) => p.date));
   const settled = new Set((s.payments ?? []).map((p) => p.serviceDate));
@@ -1359,14 +1360,28 @@ export function migrateStored(s: Subscription): Subscription {
 /** 兼容旧 expires：围绕旧到期日查找上一扣款，固定推导结果，不随读取日期漂移。 */
 export function migrateRenewalRules(s: Subscription): Subscription {
   if (!s.expires || s.chargeLeadDays != null || !validDay(s.expires)) return s;
-  if (s.stop || s.cycle.unit === 'lifetime') return { ...s, chargeLeadDays: 0 };
+  if (s.stop || s.end || s.cycle.unit === 'lifetime') return { ...s, chargeLeadDays: 0 };
   const clean = { ...s, expires: undefined };
   const candidates = chargesBetween(clean, addDays(s.expires, -3660), s.expires, s.expires).filter((c) => !c.kind);
   const charge = candidates.at(-1);
-  const n = charge ? diffDays(charge.date, s.expires) : 0;
-  if (n <= 0 || n > 3660) return { ...s, chargeLeadDays: 0 };
+  if (!charge || charge.sub.cycle.unit === 'lifetime') return { ...s, chargeLeadDays: 0 };
+  const n = diffDays(charge.date, s.expires);
+  // 合法的提前扣款天数一定短于一个完整计费周期，也不能把与 (charge.date, expires] 重叠的赠送期到期日算作提前扣款
+  const nextCycle = nthCharge(charge.date, charge.sub.cycle, 1);
+  const inBonusSpan = !!(charge.sub.bonus && charge.sub.bonus.until > charge.date && s.expires >= charge.sub.bonus.from);
+  if (n <= 0 || n > 3660 || s.expires >= nextCycle || inBonusSpan) return { ...s, chargeLeadDays: 0 };
   const patch = { chargeLeadDays: n, cancelLeadDays: s.cancelLeadDays ?? 0, renewalOffsetDays: n };
-  return { ...s, ...patch, ...(s.phases ? { phases: s.phases.map((p) => (p.start === charge!.sub.start ? { ...p, ...patch } : p)) } : {}) };
+  return { ...s, ...patch, ...(s.phases ? { phases: s.phases.map((p) => (p.start === charge.sub.start ? { ...p, ...patch } : p)) } : {}) };
+}
+
+function sameRenewalHistory(a: Subscription['renewalHistory'], b: Subscription['renewalHistory']): boolean {
+  const aa = a ?? [];
+  const bb = b ?? [];
+  if (aa.length !== bb.length) return false;
+  return aa.every((x, i) => {
+    const y = bb[i];
+    return x.from === y.from && x.chargeLeadDays === y.chargeLeadDays && x.cancelLeadDays === y.cancelLeadDays;
+  });
 }
 
 /** 更新当前阶段规则，旧规则留在历史中；存储的下次扣款日随规则、周期、计费锚点一起重算（手动改了的除外）。调用方在 syncPhase 前使用。 */
@@ -1374,16 +1389,22 @@ export function preserveRenewalHistory(previous: Subscription, next: Subscriptio
   const old = currentPhase(migrateRenewalRules(previous), today);
   const sameRules = (old.chargeLeadDays ?? 0) === (next.chargeLeadDays ?? 0) && (old.cancelLeadDays ?? 0) === (next.cancelLeadDays ?? 0);
   const initial = { from: old.start, chargeLeadDays: old.chargeLeadDays ?? 0, cancelLeadDays: old.cancelLeadDays ?? 0 };
-  const out: Subscription = sameRules
-    ? { ...next, renewalHistory: old.renewalHistory, renewalOffsetDays: old.renewalOffsetDays }
-    : {
-        ...next,
-        renewalOffsetDays: old.renewalOffsetDays,
-        renewalHistory: [
+  // 显式提交了修改后（或清空）的 renewalHistory / renewalOffsetDays 时尊重调用方意图；省略或与旧值语义相同时保留并按生效日追加历史
+  const explicitHistory =
+    Array.isArray(next.renewalHistory) && (next.renewalHistory.length === 0 || !sameRenewalHistory(next.renewalHistory, old.renewalHistory));
+  const explicitOffset = next.renewalOffsetDays !== undefined && next.renewalOffsetDays !== old.renewalOffsetDays;
+  const renewalOffsetDays = explicitOffset ? next.renewalOffsetDays || undefined : old.renewalOffsetDays;
+  const renewalHistory = explicitHistory
+    ? next.renewalHistory!.length
+      ? next.renewalHistory
+      : undefined
+    : sameRules
+      ? old.renewalHistory
+      : [
           ...(old.renewalHistory ?? [initial]).filter((r) => r.from < today),
           { from: today, chargeLeadDays: next.chargeLeadDays ?? 0, cancelLeadDays: next.cancelLeadDays ?? 0 },
-        ],
-      };
+        ];
+  const out: Subscription = { ...next, renewalHistory, renewalOffsetDays };
   // 表单没碰下次扣款日时才重算；手动填的、或这次保存前已重算过的（与库里不同）保持原样
   if (!old.nextDue || next.nextDue !== old.nextDue) return out;
   // 多段订阅的表单顶层没有这一段的记录和锚点，从这一段取
@@ -1430,20 +1451,39 @@ function rebaseNextDue(s: Subscription, old: string): string | undefined {
   return n < 0 ? undefined : cash(n);
 }
 
+/** 某天已经记下的普通付款不算「下一次扣款」：今天该扣而没记（推算、待缴）的仍算今天 */
+export function isPaidOnDay(c: Pick<Charge, 'date' | 'unpaid' | 'sub'>, day: string): boolean {
+  return c.date === day && !c.unpaid && !!c.sub.payments?.some((p) => !p.kind && p.date === day);
+}
+
+/** 查找下一次扣款的日期上限：覆盖最长周期、提前扣款天数与未来的赠送期结束日 */
+export function nextChargeHorizon(s: Subscription, from: string, minDays = 396): string {
+  const phases = phaseSubs(s);
+  const span = Math.max(0, ...phases.map((p) => (p.cycle.unit === 'lifetime' ? 0 : cycleDays(p.cycle))));
+  const lead = Math.max(0, ...phases.map((p) => maxChargeLead(p)));
+  const bonusExtra = Math.max(0, ...phases.map((p) => (p.bonus && validDay(p.bonus.until) && p.bonus.until > from ? diffDays(from, p.bonus.until) : 0)));
+  const days = Math.max(minDays, Math.ceil(span * 2) + lead + bonusExtra + 32);
+  return addDays(from, days);
+}
+
 export function renewalDates(s: Subscription, from: string): { nextCharge?: string; serviceExpires?: string; cancelBy?: string } {
   s = migrateRenewalRules(s);
-  const phases = phaseSubs(s);
-  const span = Math.max(...phases.map((p) => (p.cycle.unit === 'lifetime' ? 0 : cycleDays(p.cycle))));
-  const lead = Math.max(0, ...phases.map((p) => p.chargeLeadDays ?? 0));
-  const horizon = addDays(from, Math.ceil(span * 2) + lead + 32);
-  const charge = chargesBetween(s, from, horizon, from).find((c) => !c.kind);
+  const horizon = nextChargeHorizon(s, from, 32);
+  // 与 nextCharge 同一口径：跳过分开记已缴的账单与今天已记下的付款
+  const charge = chargesBetween(s, from, horizon, from).find((c) => !c.kind && !c.paidOn && !isPaidOnDay(c, from));
   if (!charge || charge.sub.cycle.unit === 'lifetime') return {};
   const rule = renewalRuleAt(charge.sub, charge.date);
   // 后付费的账单为已用完的一期付款，没有「服务到期」
   if (isPostpaid(charge.sub)) return { nextCharge: charge.date };
+  const rawExpiry = charge.serviceDate ?? chargeServicePeriod(charge.sub, charge.date).from;
+  // 今天刚好是新阶段/新订阅的首日（无实付记录、无提前扣款）：今天不是到期日，到期日是这一期结束
+  const serviceExpires =
+    charge.date === from && rawExpiry === from && charge.date === billingAnchor(charge.sub)
+      ? chargeServicePeriod(charge.sub, charge.date, charge.serviceDate).until
+      : rawExpiry;
   return {
     nextCharge: charge.date,
-    serviceExpires: charge.serviceDate ?? chargeServicePeriod(charge.sub, charge.date).from,
+    serviceExpires,
     cancelBy: rule.cancelLeadDays > 0 ? addDays(charge.date, -rule.cancelLeadDays) : undefined,
   };
 }
@@ -1545,22 +1585,73 @@ export function midDay(first: string, last: string): string {
   return addDays(first, Math.floor(diffDays(first, last) / 2));
 }
 
-/** 服务端全记录写入也保留规则历史；不依赖客户端是否携带历史项。 */
+/** 服务端全记录写入也保留规则历史；不依赖客户端是否携带历史项。多阶段时各段只读自身字段，绝不把顶层 nextDue 或续费规则泄漏到历史阶段。 */
 export function reconcileRenewalRules(previous: Subscription | undefined, next: Subscription, today: string): Subscription {
   next = migrateRenewalRules(next);
-  if (!previous) return next;
+  if (!previous) {
+    const clean = <T extends { renewalHistory?: unknown[]; renewalOffsetDays?: number }>(x: T): T => {
+      const hasEmptyHistory = Array.isArray(x.renewalHistory) && !x.renewalHistory.length;
+      const hasZeroOffset = x.renewalOffsetDays === 0;
+      if (!hasEmptyHistory && !hasZeroOffset) return x;
+      const out = { ...x };
+      if (hasEmptyHistory) delete out.renewalHistory;
+      if (hasZeroOffset) delete out.renewalOffsetDays;
+      return out;
+    };
+    const cleaned = clean(next);
+    return cleaned.phases?.length ? { ...cleaned, phases: cleaned.phases.map(clean) } : cleaned;
+  }
   previous = migrateRenewalRules(previous);
   if (!next.phases?.length) return preserveRenewalHistory(previous, next, today);
   const old = phaseSubs(previous);
-  return {
+  const cleanBase: Subscription = {
     ...next,
-    phases: next.phases.map((p) => {
-      const before = old.find((v) => v.start === p.start);
-      if (!before) return p;
-      const revised = preserveRenewalHistory(before, { ...next, ...p, phases: undefined }, today);
-      return { ...p, renewalHistory: revised.renewalHistory, renewalOffsetDays: revised.renewalOffsetDays, nextDue: revised.nextDue };
-    }),
+    phases: undefined,
+    expires: undefined,
+    billingStart: undefined,
+    chargeLeadDays: undefined,
+    cancelLeadDays: undefined,
+    renewalHistory: undefined,
+    renewalOffsetDays: undefined,
+    contract: undefined,
+    stop: undefined,
+    billing: undefined,
+    methodId: undefined,
+    region: undefined,
+    priceHistory: undefined,
+    intro: undefined,
+    bonus: undefined,
+    payments: undefined,
+    nextDue: undefined,
+    bundle: undefined,
+    end: undefined,
   };
+  const phases = next.phases.map((p) => {
+    const before = old.find((v) => v.start === p.start);
+    if (!before) {
+      // 新阶段如果显式传了空的 renewalHistory / 0 偏移，清掉占位值
+      const out = { ...p };
+      if (Array.isArray(out.renewalHistory) && !out.renewalHistory.length) delete out.renewalHistory;
+      if (out.renewalOffsetDays === 0) delete out.renewalOffsetDays;
+      return out;
+    }
+    const revised = preserveRenewalHistory(before, { ...cleanBase, ...p }, today);
+    const out = { ...p };
+    if (revised.renewalHistory !== undefined) out.renewalHistory = revised.renewalHistory;
+    else delete out.renewalHistory;
+    if (revised.renewalOffsetDays !== undefined) out.renewalOffsetDays = revised.renewalOffsetDays;
+    else delete out.renewalOffsetDays;
+    if (revised.nextDue !== undefined) out.nextDue = revised.nextDue;
+    else delete out.nextDue;
+    return out;
+  });
+  const last = phases.reduce((a, b) => (b.start >= a.start ? b : a));
+  const out: Subscription = { ...next, phases };
+  if (last.renewalHistory !== undefined) out.renewalHistory = last.renewalHistory;
+  else delete out.renewalHistory;
+  if (last.renewalOffsetDays !== undefined) out.renewalOffsetDays = last.renewalOffsetDays;
+  else delete out.renewalOffsetDays;
+  return out;
 }
 
 /** 今天及以后的第一次扣款；今天该扣的仍算下次扣款，今天已记的付款不算。界面、MCP 与提醒都传今天；
@@ -1574,12 +1665,9 @@ export function nextCharge(s: Subscription, today: string, asOf = true): string 
   // 后付费停止后还有最后一张账单，交给 chargesBetween 判断
   if (s.stop && s.stop.date <= today && !isPostpaid(s)) return undefined;
   // 提前续费后下一笔可能在将近两个周期之后；分开记时已预缴的账单（带 paidOn）不算下一笔
-  // 当前阶段是买断时周期天数为无穷，只看一年多内的阶段切换，不能算出无效日期
-  const span = cycleDays(s.cycle);
-  const horizon = Number.isFinite(span) ? Math.max(396, Math.ceil(span * 2) + 32) : 396;
+  const horizon = nextChargeHorizon(s, today);
   // 今天已经记下的付款是已扣的钱，不是下一笔；今天该扣而没记（推算、待缴）的仍算今天
-  const paidToday = (c: Charge) => asOf && c.date === today && !c.unpaid && !!c.sub.payments?.some((p) => !p.kind && p.date === today);
-  return chargesBetween(s, today, addDays(today, horizon), today).find((c) => !c.kind && !c.paidOn && !paidToday(c))?.date;
+  return chargesBetween(s, today, horizon, today).find((c) => !c.kind && !c.paidOn && !(asOf && isPaidOnDay(c, today)))?.date;
 }
 
 /** 整段账的起点：开始日前提前付的首期（paysFirstPeriod）也属于扣款记录；挪开始日留下的更早记录不算 */

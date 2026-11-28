@@ -66,7 +66,8 @@
     "bundleLink": "A assinatura principal não existe, é um pagamento para terceiros ou já está vinculada",
     "bundleProxy": "Pagamentos para terceiros não podem ser vinculados a uma assinatura principal",
     "bundleUsed": "Vinculada por {names}; desvincule primeiro",
-    "bundleHistory": "Vincular alteraria cobranças ou períodos de serviço anteriores. Vincule a partir da data do vínculo em Histórico → Mudar plano."
+    "bundleHistory": "Vincular alteraria cobranças ou períodos de serviço anteriores. Vincule a partir da data do vínculo em Histórico → Mudar plano.",
+    "bonus": "A data de término do período grátis deve ser posterior à data de início"
   },
   "phase": {
     "switchTooEarly": "A data de vigência deve ser posterior ao início da fase atual",

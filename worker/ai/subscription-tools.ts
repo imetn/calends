@@ -261,15 +261,33 @@ export const save_subscription: Tool = {
     const { st, today } = await state(ctx);
     const raw = dropNulls(a.subscription) as Partial<Subscription>;
     const previous = raw.id ? st.subscriptions.find((s) => s.id === raw.id) : undefined;
+    // dropNulls 会把显式传的 null 去掉，导致 reconcileRenewalRules 分不清「省略」还是「明确清除」；保留对旧记录的显式清除意图
+    const source = a.subscription as Record<string, unknown>;
+    if (previous) {
+      if (source.renewalHistory === null) raw.renewalHistory = [];
+      if (source.renewalOffsetDays === null) raw.renewalOffsetDays = 0;
+      if (Array.isArray(source.phases) && Array.isArray(raw.phases)) {
+        raw.phases = raw.phases.map((p, i) => {
+          const sp = source.phases && Array.isArray(source.phases) ? (source.phases[i] as Record<string, unknown> | undefined) : undefined;
+          if (!sp) return p;
+          return {
+            ...p,
+            ...(sp.renewalHistory === null ? { renewalHistory: [] } : {}),
+            ...(sp.renewalOffsetDays === null ? { renewalOffsetDays: 0 } : {}),
+          };
+        });
+      }
+    }
     const name = decodeEntities(String(raw.name ?? '').trim());
     const start = String(raw.start ?? '');
     if (!['active', 'trial', 'paused', 'cancelled', 'terminated'].includes(String(raw.status)))
       throw new Error(t('mcp.error.invalidInput', { field: 'subscription.status' }));
     if (!previous && !a.force) assertNotDuplicate(st, name, start, str(raw.account)?.trim());
     // 整条替换时省略即删除，所以只在新建时补常用服务；显式传 null 也算已给出，不自动补全
-    const source = a.subscription as Record<string, unknown>;
     const service =
       !previous && source.icon === undefined ? serviceFill(st, name, { url: source.url !== undefined, category: source.category !== undefined }) : undefined;
+    // 校验新写入或改动过的图标格式（保留原记录已有的值不误拦）
+    const validatedIcon = raw.icon !== undefined && raw.icon !== previous?.icon ? iconInput(raw.icon) : raw.icon;
     // 原分类不变时照旧（包括历史名称）；改了或新建时按分类规则解析
     const category: { name: string; creation?: CategoryCreation } =
       raw.category == null
@@ -279,9 +297,10 @@ export const save_subscription: Tool = {
         : previous && raw.category === previous.category
           ? { name: previous.category }
           : subscriptionCategory(st, raw.category, a);
-    const { updatedAt: _u, ...rest } = raw;
+    const { updatedAt: _u, icon: _icon, ...rest } = raw;
     const next = {
       ...rest,
+      ...(validatedIcon !== undefined ? { icon: validatedIcon } : {}),
       ...(service?.icon ? { icon: service.icon } : {}),
       ...(service?.url ? { url: service.url } : {}),
       id: previous?.id ?? str(raw.id) ?? uid(),
@@ -350,7 +369,10 @@ export const update_subscription: Tool = {
         end: { type: ['string', 'null'], description: 'YYYY-MM-DD, or null to clear (will renew again).' },
         next_due: { type: ['string', 'null'] },
         trial_end: { type: ['string', 'null'] },
-        expires: { type: ['string', 'null'] },
+        expires: {
+          type: ['string', 'null'],
+          description: 'Deprecated legacy field; do not set for service expiry or end dates (use end, bonus, or chargeLeadDays instead). Omit or pass null.',
+        },
         chargeLeadDays: { type: 'integer', minimum: 0, maximum: 3660, description: LEAD_CHARGE },
         cancelLeadDays: { type: 'integer', minimum: 0, maximum: 3660, description: LEAD_CANCEL },
         contract: { ...nullable(CONTRACT), description: `${CONTRACT.description} Applies to the current phase; null removes it.` },
@@ -673,6 +695,10 @@ export const set_status: Tool = {
         description:
           'Correct an already stopped subscription with action=cancel|terminate: change the stop date (at; omitted keeps it), non-renewal vs immediate cancel, reason or refund. Provider termination cannot become cancel.',
       },
+      notes: {
+        type: ['string', 'null'],
+        description: 'Optional subscription notes to update alongside the status change; null clears.',
+      },
       dry_run: drySchema,
     },
     ['subscription', 'action'],
@@ -682,6 +708,8 @@ export const set_status: Tool = {
     const s = findSub(st, a.subscription);
     const act = String(a.action);
     const stopping = act === 'cancel' || act === 'terminate';
+    const withNotes = (sub: Subscription): Subscription => ('notes' in a ? { ...sub, notes: a.notes == null ? undefined : str(a.notes) } : sub);
+    const noteTag = 'notes' in a ? ['notes'] : [];
     // 买断没有续费：不存在暂停或到期不续；要记录停用须走带日期的 terminate / 立即 cancel
     if (s.cycle.unit === 'lifetime' && (act === 'pause' || (stopping && a.at === null) || (act === 'cancel' && a.immediate !== true)))
       throw new Error(t('mcp.error.lifetimeNoRenewal'));
@@ -700,7 +728,7 @@ export const set_status: Tool = {
         today,
         st.subscriptions,
       );
-      return commit(ctx, st, today, next, a.dry_run, [act, 'edit_stop']);
+      return commit(ctx, st, today, withNotes(next), a.dry_run, [act, 'edit_stop', ...noteTag]);
     }
     // 停用不默认今天：已经开始或付过钱的订阅，今天未必是真实的停用日，需显式给出（或 null 表示日期未知）
     if (stopping && a.at === undefined) {
@@ -709,7 +737,11 @@ export const set_status: Tool = {
     }
     if (stopping && a.at === null) {
       if (a.refund || a.reason) throw new Error(t('mcp.error.unknownStopDetails'));
-      return commit(ctx, st, today, stopUndated(s, act === 'terminate' ? 'terminate' : 'cancel', today, st.subscriptions), a.dry_run, [act, 'date_unknown']);
+      return commit(ctx, st, today, withNotes(stopUndated(s, act === 'terminate' ? 'terminate' : 'cancel', today, st.subscriptions)), a.dry_run, [
+        act,
+        'date_unknown',
+        ...noteTag,
+      ]);
     }
     const at = date(a.at ?? undefined, 'at', today);
     let next: Subscription;
@@ -739,7 +771,7 @@ export const set_status: Tool = {
         next = cancelAtEnd(s, at, today, st.subscriptions);
       } else throw new Error(t('mcp.error.invalidStop'));
     }
-    return commit(ctx, st, today, next, a.dry_run, [act]);
+    return commit(ctx, st, today, withNotes(next), a.dry_run, [act, ...noteTag]);
   },
 };
 

@@ -6,8 +6,8 @@
 @import './design-tokens.css';
 
 :root {
-  --font: 'MiSans Latin', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  --font-num: 'MiSans Latin', -apple-system, 'PingFang SC', sans-serif;
+  --font: 'MiSans Latin', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-num: 'MiSans Latin', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', sans-serif;
   --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --side-w: 260px;
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -4104,8 +4104,8 @@ button.h-price-row:focus-visible {
 .change-form > label > :last-child {
   margin-top: auto;
 }
-/* 与同一网格里的选择器同款：胶囊、浅灰底 */
-.change-form input {
+/* 与同一网格里的选择器同款：胶囊、浅灰底（不覆盖步进器内部的数字输入） */
+.change-form > label > input {
   height: var(--ctl-h-md);
   border-radius: var(--radius-pill);
   border: 0;
@@ -4116,10 +4116,10 @@ button.h-price-row:focus-visible {
   outline: 0;
   transition: background var(--duration) var(--ease);
 }
-.change-form input:hover {
+.change-form > label > input:hover {
   background: var(--fill);
 }
-.change-form input:focus {
+.change-form > label > input:focus {
   background: var(--card);
   box-shadow: inset 0 0 0 var(--hairline) var(--ink);
 }
@@ -7064,6 +7064,20 @@ button.ld-row:hover:not(:disabled):not(.ld-th) {
 }
 .change-keep-date {
   max-width: 240px;
+}
+.change-custom-cycle {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-1);
+  color: var(--label-2);
+}
+.change-custom-cycle-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .list-report {
@@ -10291,6 +10305,7 @@ img.mm-flag {
   opacity: 0.35;
   cursor: default;
 }
+.days-stepper input,
 .cell-r .days-stepper input {
   flex: none;
   width: 4ch;
@@ -10302,6 +10317,9 @@ img.mm-flag {
   font: inherit;
   font-weight: 600;
   text-align: right;
+}
+.days-stepper:not(:has(.days-unit)) input {
+  text-align: center;
 }
 .days-stepper .days-unit {
   margin: 0 4px 0 3px;

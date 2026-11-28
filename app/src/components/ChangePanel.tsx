@@ -1,7 +1,7 @@
 import { ConfirmButton } from './ConfirmButton.tsx';
 import { popupOpen, sheetSubmitKey } from '../keyboard.ts';
 import { useId, useState } from 'react';
-import { addDays, addMonths, cycleLabel, nextCharge, nthCharge, phaseSubs } from '../../../shared/billing.ts';
+import { addDays, addMonths, nextCharge, nthCharge, phaseSubs } from '../../../shared/billing.ts';
 import { linkableParents } from '../../../shared/bundle.ts';
 import {
   changePrice,
@@ -26,7 +26,7 @@ import { History } from './History.tsx';
 import { ask } from './overlays.tsx';
 import { Group } from './ui.tsx';
 import { Icon } from './icons.tsx';
-import { Toggle } from './inputs.tsx';
+import { Stepper, Toggle } from './inputs.tsx';
 import { MethodPicker } from './MethodPicker.tsx';
 import { SubIcon } from './marks.tsx';
 import { toast } from '../toast.ts';
@@ -42,7 +42,7 @@ export const CYCLES: Array<[string, Cycle]> = [
   ['y1', { unit: 'year', every: 1 }],
   ['y2', { unit: 'year', every: 2 }],
 ];
-/** 周期选项的文字（w1、m1……lt） */
+/** 周期选项的文字（w1、m1……lt、custom） */
 export const cycleName = (k: string) => t(`editor.cycle.${k}`);
 
 type Mode = 'price' | 'switch' | 'resume';
@@ -100,10 +100,12 @@ export function ChangePanel({
   const [date, setDate] = useState(today);
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState(f.currency);
-  // 现有周期不在常用列表里（如每 30 天、每 2 个月）：作为额外一项保留，不悄悄改成每月
-  const same = (c: Cycle) => c.unit === f.cycle.unit && c.every === f.cycle.every;
-  const [options] = useState<Array<[string, Cycle]>>(() => (CYCLES.some(([, c]) => same(c)) ? CYCLES : [['current', f.cycle], ...CYCLES]));
-  const [cycle, setCycle] = useState(() => options.find(([, c]) => same(c))![0]);
+  // 与主表单一致：支持全部预设（含买断）与自定义周期；进入自定义后手动改成与预设相同也不跳回
+  const planCycles: Array<[string, Cycle]> = [...CYCLES, ['lt', { unit: 'lifetime', every: 1 }]];
+  const presetCycleKey = (c: Cycle) => planCycles.find(([, x]) => x.unit === c.unit && x.every === c.every)?.[0];
+  const [planCycle, setPlanCycle] = useState<Cycle>(f.cycle);
+  const [customCycle, setCustomCycle] = useState(() => !presetCycleKey(f.cycle));
+  const cycleKey = customCycle || !presetCycleKey(planCycle) ? 'custom' : presetCycleKey(planCycle)!;
   const [methodId, setMethodId] = useState(f.methodId ?? '');
   const [region, setRegion] = useState(f.region ?? '');
   const [billing, setBilling] = useState<'prepaid' | 'postpaid'>(f.billing ?? 'prepaid');
@@ -129,6 +131,9 @@ export function ChangePanel({
     setDate(today > lastStart ? today : (nextCharge(f, addDays(lastStart, 1), false) ?? addDays(lastStart, 1)));
     setPrice(m === 'price' ? '' : String(f.price));
     setCurrency(f.currency);
+    setPlanCycle(f.cycle);
+    setCustomCycle(!presetCycleKey(f.cycle));
+    setBilling(f.billing ?? 'prepaid');
     setMethodId(f.methodId ?? '');
     setRegion(f.region ?? '');
     setBundleParentId(m === 'switch' ? (f.bundle?.parentId ?? '') : '');
@@ -169,13 +174,12 @@ export function ChangePanel({
       toast(e instanceof Error ? e.message : String(e), 'error');
     }
   };
-  const planCycle = options.find(([k]) => k === cycle)![1];
   const quote =
     mode === 'switch' && !keep && !planned && price !== '' && Number(price) >= 0
       ? upgradeQuote(
           f,
           date,
-          { price: Number(price), currency, cycle: planCycle, billing: billing === 'postpaid' ? 'postpaid' : undefined },
+          { price: Number(price), currency, cycle: planCycle, billing: planCycle.unit !== 'lifetime' && billing === 'postpaid' ? 'postpaid' : undefined },
           today,
           state.subscriptions,
         )
@@ -185,7 +189,7 @@ export function ChangePanel({
   const renewalLabel = quote
     ? t('editor.change.renewal', { date: cnDateAuto(renewalMode === 'keep' && quote.keep ? quote.keep.nextCharge : nthCharge(date, planCycle, 1), today) })
     : '';
-  const payKey = [date, price, currency, cycle, billing, renewalMode].join('|');
+  const payKey = [date, price, currency, `${planCycle.unit}:${planCycle.every}`, billing, renewalMode].join('|');
   const pay = payEdit[payKey] ?? String(quote ? (renewalMode === 'keep' ? quote.keep!.amount : quote.reset) : '');
 
   const apply = () => {
@@ -196,7 +200,7 @@ export function ChangePanel({
         price: n,
         currency,
         cycle: planCycle,
-        billing: billing === 'postpaid' ? ('postpaid' as const) : undefined,
+        billing: planCycle.unit !== 'lifetime' && billing === 'postpaid' ? ('postpaid' as const) : undefined,
         methodId: methodId || undefined,
         region: region.trim().toUpperCase() || undefined,
         planned: mode === 'switch' && planned ? true : undefined,
@@ -389,12 +393,43 @@ export function ChangePanel({
               <label>
                 {t('editor.field.cycle')}
                 <Picker
-                  value={cycle}
-                  onChange={setCycle}
-                  options={options.map(([k, c]) => ({ value: k, label: k === 'current' ? cycleLabel(c) : cycleName(k) }))}
+                  value={cycleKey}
+                  onChange={(k) => {
+                    const hit = planCycles.find(([key]) => key === k);
+                    setCustomCycle(!hit);
+                    if (hit) setPlanCycle(hit[1]);
+                    else setPlanCycle(planCycle.unit === 'lifetime' ? { unit: 'month', every: 2 } : { ...planCycle });
+                  }}
+                  options={[...planCycles.map(([k]) => ({ value: k, label: cycleName(k) })), { value: 'custom', label: cycleName('custom') }]}
                   ariaLabel={t('editor.field.cycle')}
                 />
               </label>
+              {cycleKey === 'custom' && (
+                <div className="change-custom-cycle">
+                  <span>{t('editor.unit.every')}</span>
+                  <div className="change-custom-cycle-row">
+                    <Stepper
+                      label={t('editor.unit.every')}
+                      value={planCycle.every}
+                      min={1}
+                      max={999}
+                      unit={() => ''}
+                      onChange={(n) => setPlanCycle({ unit: planCycle.unit === 'lifetime' ? 'month' : planCycle.unit, every: n })}
+                    />
+                    <Picker
+                      value={planCycle.unit === 'lifetime' ? 'month' : planCycle.unit}
+                      onChange={(u) => setPlanCycle({ unit: u as Cycle['unit'], every: planCycle.every })}
+                      options={[
+                        { value: 'day', label: t('editor.unit.day', { count: planCycle.every }) },
+                        { value: 'week', label: t('editor.unit.week', { count: planCycle.every }) },
+                        { value: 'month', label: t('editor.unit.month', { count: planCycle.every }) },
+                        { value: 'year', label: t('editor.unit.year', { count: planCycle.every }) },
+                      ]}
+                      ariaLabel={t('editor.unit.label')}
+                    />
+                  </div>
+                </div>
+              )}
               {planCycle.unit !== 'lifetime' && (
                 <label>
                   {t('editor.field.billing')}

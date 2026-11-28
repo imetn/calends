@@ -438,7 +438,8 @@
 .as-card > * {
   position: relative;
 }
-.as-card.dismissed {
+.as-card.dismissed,
+.as-card.superseded {
   opacity: 0.55;
 }
 .as-card-tag {

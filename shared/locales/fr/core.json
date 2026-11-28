@@ -66,7 +66,8 @@
     "bundleLink": "L’abonnement principal n’existe pas, est payé pour un tiers ou est déjà lié",
     "bundleProxy": "Un paiement pour un tiers ne peut pas être lié à un abonnement principal",
     "bundleUsed": "Lié par {names} ; dissociez-les d’abord",
-    "bundleHistory": "La liaison modifierait d’anciens paiements ou périodes de service. Liez à partir de la date voulue via Historique → Changer d’offre."
+    "bundleHistory": "La liaison modifierait d’anciens paiements ou périodes de service. Liez à partir de la date voulue via Historique → Changer d’offre.",
+    "bonus": "La date de fin de la période offerte doit être postérieure à la date de début"
   },
   "phase": {
     "switchTooEarly": "La date d’effet doit être postérieure au début de la phase actuelle",

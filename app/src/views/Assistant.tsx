@@ -55,7 +55,7 @@ import { load } from './assistant-chat.ts';
 import { persist } from './assistant-chat.ts';
 import type { ServerEvent } from './assistant-chat.ts';
 import { stream } from './assistant-chat.ts';
-import { reduce } from './assistant-chat.ts';
+import { reduce, supersedeTurns } from './assistant-chat.ts';
 import { Proposal } from './AssistantProposal.tsx';
 import { SetupSheet } from './AssistantSetup.tsx';
 import { ImageLightbox, ToolResultWidget } from './AssistantWidgets.tsx';
@@ -226,7 +226,14 @@ export function Assistant({ state, today, onOpen, switcher }: { state: AppState;
       const on = (e: ServerEvent) => {
         bot = reduce(bot, e);
         if (e.type === 'done') added = e.messages;
-        setChat((c) => ({ ...c, turns: c.turns.map((x) => (x.id === bot.id ? bot : x)) }));
+        const addedProposal = e.type === 'proposal' ? bot.parts.at(-1) : undefined;
+        setChat((c) => {
+          const nextTurns = c.turns.map((x) => (x.id === bot.id ? bot : x));
+          return {
+            ...c,
+            turns: addedProposal?.kind === 'proposal' ? supersedeTurns(nextTurns, bot.id, addedProposal) : nextTurns,
+          };
+        });
       };
       // 服务端只看最新一条的图片；旧图不再上传，否则连纯文字提问也可能超出请求体上限
       await stream({ history: dropOldImages(history, 0), text, images }, ctrl.signal, on);

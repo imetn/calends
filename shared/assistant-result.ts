@@ -94,3 +94,62 @@ export function remainingFailures(failures: ToolFailure[], name: string, args: R
 export async function confirmInOrder<T>(items: T[], confirm: (item: T) => Promise<boolean>): Promise<void> {
   for (const item of items) if (!(await confirm(item))) break;
 }
+
+export interface ProposalLike {
+  kind: 'proposal';
+  id: string;
+  tool: string;
+  args: Record<string, unknown>;
+  preview?: { subscription?: { id?: string } };
+  state: string;
+}
+
+function proposalSubId(p: ProposalLike): string | undefined {
+  const fromPreview = p.preview?.subscription?.id;
+  if (fromPreview) return fromPreview;
+  const sub = p.args.subscription;
+  if (typeof sub === 'string' && sub) return sub;
+  if (sub && typeof sub === 'object' && typeof (sub as { id?: unknown }).id === 'string') return (sub as { id: string }).id;
+  if (typeof p.args.id === 'string' && p.args.id) return p.args.id;
+  return undefined;
+}
+
+function proposalEntityKey(p: ProposalLike): string | undefined {
+  const subId = proposalSubId(p);
+  if (subId) return `sub:${subId}`;
+  if (typeof p.args.method === 'string' && p.args.method) return `method:${p.args.method}`;
+  if (typeof p.args.person === 'string' && p.args.person) return `person:${p.args.person}`;
+  if (typeof p.args.category === 'string' && p.args.category) return `cat:${p.args.category}`;
+  if (typeof p.args.file === 'string' && p.args.file) return `file:${p.args.file}`;
+  return undefined;
+}
+
+function proposalOpKey(p: ProposalLike): string {
+  if (p.tool === 'set_status') return '';
+  const keys = ['action', 'member', 'at', 'from', 'original_from', 'date', 'replace', 'delete', 'charge', 'periods', 'top_up_index', 'top_up_action'];
+  return canonical(Object.fromEntries(keys.filter((k) => p.args[k] !== undefined).map((k) => [k, p.args[k]])));
+}
+
+/**
+ * Mark earlier unapplied proposals as superseded when a newer draft replaces them:
+ * - A newer `save_subscription` targeting subscription S supersedes any earlier pending/error draft on S
+ *   (across earlier turns or earlier in the same turn, except a `create_subscription` that created S).
+ * - Across different turns, a newer draft using the same tool on the same target (and same dated operation
+ *   when applicable) supersedes the earlier unapplied draft so stale cards cannot be confirmed by mistake.
+ */
+export function shouldSupersede(earlier: ProposalLike, newer: ProposalLike, sameTurn: boolean): boolean {
+  if (earlier.state !== 'pending' && earlier.state !== 'error') return false;
+  if (earlier.id === newer.id) return false;
+  const earlierSub = proposalSubId(earlier);
+  const newerSub = proposalSubId(newer);
+  if (newer.tool === 'save_subscription' && newerSub && earlierSub === newerSub) {
+    if (sameTurn && earlier.tool === 'create_subscription') return false;
+    return true;
+  }
+  if (sameTurn) return false;
+  if (earlier.tool !== newer.tool) return false;
+  const eKey = proposalEntityKey(earlier);
+  const nKey = proposalEntityKey(newer);
+  if (!eKey || eKey !== nKey) return false;
+  return proposalOpKey(earlier) === proposalOpKey(newer);
+}

@@ -66,7 +66,8 @@
     "bundleLink": "La suscripción principal no existe, es un pago por terceros o ya está vinculada",
     "bundleProxy": "Los pagos por terceros no pueden vincularse a una suscripción principal",
     "bundleUsed": "Vinculada por {names}; desvincúlalas primero",
-    "bundleHistory": "Vincular cambiaría cargos o periodos de servicio anteriores. Vincula desde la fecha de vínculo en Historial → Cambiar plan."
+    "bundleHistory": "Vincular cambiaría cargos o periodos de servicio anteriores. Vincula desde la fecha de vínculo en Historial → Cambiar plan.",
+    "bonus": "La fecha de fin del tiempo gratis debe ser posterior a la de inicio"
   },
   "phase": {
     "switchTooEarly": "La fecha de entrada en vigor debe ser posterior al inicio de la fase actual",

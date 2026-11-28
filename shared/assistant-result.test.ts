@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { confirmInOrder, draftSignature, remainingFailures, writeMismatches, type ToolFailure } from './assistant-result.ts';
+import {
+  confirmInOrder,
+  draftSignature,
+  remainingFailures,
+  shouldSupersede,
+  writeMismatches,
+  type ProposalLike,
+  type ToolFailure,
+} from './assistant-result.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 import { FALLBACK_FX } from './billing.ts';
 
@@ -65,4 +73,49 @@ test('a recovered tool clears its failure without clearing another target or dat
     remainingFailures(failures, 'record_payment', { subscription: 's', date: '2026-01-01', currency: 'USD' }, { subscription: { id: 's' } }).map((f) => f.id),
     ['b', 'c'],
   );
+});
+
+test('shouldSupersede replaces stale drafts while preserving additive steps and settled cards', () => {
+  const card = (id: string, tool: string, args: Record<string, unknown>, state = 'pending', subId?: string): ProposalLike => ({
+    kind: 'proposal',
+    id,
+    tool,
+    args,
+    preview: subId ? { subscription: { id: subId } } : undefined,
+    state,
+  });
+  const save1 = card('p1', 'save_subscription', { subscription: { id: 'sub-1', name: 'A' } }, 'pending', 'sub-1');
+  const save2 = card('p2', 'save_subscription', { subscription: { id: 'sub-1', name: 'A' } }, 'pending', 'sub-1');
+  const create1 = card('c1', 'create_subscription', { id: 'sub-1', name: 'A' }, 'pending', 'sub-1');
+  const update1 = card('u1', 'update_subscription', { subscription: 'sub-1', set: { notes: 'old' } }, 'pending', 'sub-1');
+  const update2 = card('u2', 'update_subscription', { subscription: 'sub-1', set: { notes: 'new' } }, 'pending', 'sub-1');
+  const pay1 = card('pay1', 'record_payment', { subscription: 'sub-1', date: '2026-11-28', amount: 10 }, 'pending', 'sub-1');
+  const payOtherDate = card('pay2', 'record_payment', { subscription: 'sub-1', date: '2026-12-28', amount: 10 }, 'pending', 'sub-1');
+  const otherSub = card('o1', 'save_subscription', { subscription: { id: 'sub-2', name: 'B' } }, 'pending', 'sub-2');
+
+  // save_subscription supersedes earlier unapplied drafts on the same subscription (both cross-turn and same-turn)
+  assert.equal(shouldSupersede(save1, save2, false), true);
+  assert.equal(shouldSupersede(save1, save2, true), true);
+  assert.equal(shouldSupersede(update1, save2, false), true);
+  assert.equal(shouldSupersede(update1, save2, true), true);
+  // Same-turn create_subscription followed by save_subscription is not superseded
+  assert.equal(shouldSupersede(create1, save2, true), false);
+  assert.equal(shouldSupersede(create1, save2, false), true);
+  // Different subscription is untouched
+  assert.equal(shouldSupersede(otherSub, save2, false), false);
+  // Cross-turn same-tool replacement supersedes; same-turn distinct steps stay active
+  assert.equal(shouldSupersede(update1, update2, false), true);
+  assert.equal(shouldSupersede(update1, update2, true), false);
+  assert.equal(shouldSupersede(pay1, payOtherDate, false), false);
+  // Applied / dismissed / unverified cards are never superseded
+  for (const state of ['applied', 'dismissed', 'unverified', 'superseded']) {
+    assert.equal(shouldSupersede({ ...save1, state }, save2, false), false);
+  }
+  // Error cards can be superseded so a clean replacement draft is unblocked
+  assert.equal(shouldSupersede({ ...save1, state: 'error' }, save2, false), true);
+  // Cross-turn set_status correction supersedes earlier unapplied set_status draft even when date changes
+  const stop1 = card('st1', 'set_status', { subscription: 'sub-1', action: 'cancel', at: '2026-12-31' }, 'pending', 'sub-1');
+  const stop2 = card('st2', 'set_status', { subscription: 'sub-1', action: 'cancel', at: '2027-01-01' }, 'pending', 'sub-1');
+  assert.equal(shouldSupersede(stop1, stop2, false), true);
+  assert.equal(shouldSupersede(stop1, stop2, true), false);
 });

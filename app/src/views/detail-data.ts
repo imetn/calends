@@ -6,6 +6,7 @@ import {
   currentPhase,
   cycleDays,
   effectiveStatus,
+  nextChargeHorizon,
   phaseSubs,
   isPostpaid,
   isStopped,
@@ -86,12 +87,6 @@ function computeForecast(sub: Subscription, today: string) {
   const charges = ended ? [] : chargesBetween(sub, from, addMonths(today, 12), today).filter((c) => !c.kind && !c.paidOn);
   const sparse = cycleDays(cur.cycle) >= 365 || charges.length <= 2;
   if (!sparse) return { sparse, charges };
-  const span = Math.max(
-    366,
-    ...phaseSubs(sub)
-      .filter((p) => p.cycle.unit !== 'lifetime')
-      .map((p) => Math.ceil(cycleDays(p.cycle)) + 31),
-  );
-  const next = ended ? undefined : (charges[0] ?? chargesBetween(sub, from, addDays(today, span), today).find((c) => !c.kind && !c.paidOn));
+  const next = ended ? undefined : (charges[0] ?? chargesBetween(sub, from, nextChargeHorizon(sub, today, 366), today).find((c) => !c.kind && !c.paidOn));
   return { sparse, charges: next ? [next] : [] };
 }

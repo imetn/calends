@@ -1,6 +1,7 @@
 import {
   addDays,
   billingPeriod,
+  chargeServicePeriod,
   currentPhase,
   diffDays,
   effectiveStatus,
@@ -33,6 +34,9 @@ export function PeriodBar({ sub, today, split = false, titleOverride }: { sub: S
   const renewed = bonus ? undefined : periodBeforeRenewal(sub, today);
   const kind: 'trial' | 'bonus' | 'paid' = st === 'trial' ? 'trial' : bonus ? 'bonus' : 'paid';
   const from = bonus ? bonus.from : renewed ? renewed.from : bp.from > today ? today : bp.from;
+  // 仅当下一笔是当前阶段的提前扣款时，服务期右端才延到服务边界；试用转正或明天才开始的新阶段不拉长本期进度条
+  const serviceEnd =
+    next.sub.cycle.unit !== 'lifetime' && next.sub.start === cur.start ? (next.serviceDate ?? chargeServicePeriod(next.sub, next.date).from) : undefined;
   // 分开记：本期就是今天所在的账单期，预缴了后面几期也不拉长
   const end = bonus
     ? addDays(bonus.until, 1)
@@ -40,8 +44,8 @@ export function PeriodBar({ sub, today, split = false, titleOverride }: { sub: S
       ? renewed.until
       : isSeparate(cur)
         ? addDays(bp.paidThrough, 1)
-        : renewal.serviceExpires && renewal.serviceExpires > next.date
-          ? renewal.serviceExpires
+        : serviceEnd && serviceEnd > next.date
+          ? serviceEnd
           : next.date;
   const cancelBy = renewal.cancelBy && renewal.cancelBy >= today && renewal.cancelBy < end ? renewal.cancelBy : undefined;
   const charge = next.date > today && next.date < end ? next.date : undefined;

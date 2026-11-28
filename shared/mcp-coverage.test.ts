@@ -2867,3 +2867,127 @@ test('MCP list_files filters by receipt/duplicate_only and get_carpool reports r
   assert.equal(bob.receipt_files, 1);
   assert.equal(bob.duplicate_receipt_files, 1);
 });
+
+test('set_status can update notes in one draft/write and clear notes with null', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const preview = await f.call('set_status', {
+    subscription: 's',
+    action: 'cancel',
+    at: '2026-12-31',
+    notes: 'Expires 2027-01-01 06:56 UTC+11',
+    dry_run: true,
+  });
+  assert.equal(preview.isError, undefined, JSON.stringify(preview));
+  assert.equal(preview.structuredContent.after.notes, 'Expires 2027-01-01 06:56 UTC+11');
+  assert.equal(preview.structuredContent.after.end, '2026-12-31');
+
+  const applied = await f.call('set_status', {
+    subscription: 's',
+    action: 'cancel',
+    at: '2026-12-31',
+    notes: 'Expires 2027-01-01 06:56 UTC+11',
+  });
+  assert.equal(applied.isError, undefined, JSON.stringify(applied));
+  assert.equal((await f.snapshot()).subscriptions.find((x) => x.id === 's')?.notes, 'Expires 2027-01-01 06:56 UTC+11');
+
+  const cleared = await f.call('set_status', {
+    subscription: 's',
+    action: 'cancel',
+    edit: true,
+    notes: null,
+  });
+  assert.equal(cleared.isError, undefined, JSON.stringify(cleared));
+  assert.equal((await f.snapshot()).subscriptions.find((x) => x.id === 's')?.notes, undefined);
+});
+
+test('save_subscription validates icon, clears erroneous renewalHistory/offset, preserves phase isolation and reports 5-year next_charges', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const today = todayIn('UTC');
+  const startOld = '2025-11-28';
+  const oldSub: Subscription = {
+    ...sub(),
+    start: startOld,
+    price: 20,
+    currency: 'USD',
+    cycle: { unit: 'year', every: 1 },
+    icon: 'https://example.test/valid.png',
+    chargeLeadDays: 0,
+    renewalOffsetDays: 426,
+    renewalHistory: [{ from: startOld, chargeLeadDays: 426, cancelLeadDays: 0 }],
+    phases: [
+      {
+        start: startOld,
+        end: '2026-11-27',
+        price: 20,
+        currency: 'USD',
+        cycle: { unit: 'year', every: 1 },
+        chargeLeadDays: 0,
+        renewalOffsetDays: 426,
+        renewalHistory: [{ from: startOld, chargeLeadDays: 426, cancelLeadDays: 0 }],
+      },
+    ],
+  };
+  await upsert(f.env, 'subscriptions', 's', oldSub);
+
+  // Invalid icon change is rejected
+  const badIcon = await f.call('save_subscription', {
+    subscription: { ...oldSub, icon: 'javascript:alert(1)' },
+    dry_run: true,
+  });
+  assert.equal(badIcon.isError, true);
+
+  // Empty-string icon clears icon to undefined rather than saving ""
+  const clearIcon = await f.call('save_subscription', {
+    subscription: { ...oldSub, icon: '' },
+    dry_run: true,
+  });
+  assert.equal(clearIcon.isError, undefined, JSON.stringify(clearIcon));
+  assert.equal(clearIcon.structuredContent.after.icon, undefined);
+
+  // Explicit null/[] clears erroneous renewalHistory and renewalOffsetDays; 5-year phase paid today shows next_charges in 5 years
+  const fiveYearSub = {
+    ...oldSub,
+    price: 100,
+    cycle: { unit: 'year', every: 5 },
+    renewalHistory: null,
+    renewalOffsetDays: null,
+    phases: [
+      {
+        start: startOld,
+        end: '2026-11-27',
+        price: 20,
+        currency: 'USD',
+        cycle: { unit: 'year', every: 1 },
+        chargeLeadDays: 0,
+        renewalHistory: [],
+        renewalOffsetDays: null,
+      },
+      {
+        start: today,
+        price: 100,
+        currency: 'USD',
+        cycle: { unit: 'year', every: 5 },
+        payments: [{ date: today, amount: 100 }],
+      },
+    ],
+  };
+  const saved = await f.call('save_subscription', { subscription: fiveYearSub });
+  assert.equal(saved.isError, undefined, JSON.stringify(saved));
+  const after = saved.structuredContent.after as Subscription;
+  assert.equal(after.renewalHistory, undefined);
+  assert.equal(after.renewalOffsetDays, undefined);
+  assert.equal(after.phases?.[0].renewalHistory, undefined);
+  assert.equal(after.phases?.[0].renewalOffsetDays, undefined);
+  assert.equal(after.phases?.[0].nextDue, undefined);
+  const nextYear = Number(today.slice(0, 4)) + 5;
+  assert.ok(
+    (saved.structuredContent.next_charges as Array<{ date: string }>).some((c) => c.date.startsWith(String(nextYear))),
+    JSON.stringify(saved.structuredContent.next_charges),
+  );
+  assert.ok(
+    !(saved.structuredContent.next_charges as Array<{ date: string }>).some((c) => c.date === today),
+    JSON.stringify(saved.structuredContent.next_charges),
+  );
+});

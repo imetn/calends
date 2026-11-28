@@ -113,6 +113,7 @@ export function summaryRows(
     case 'set_status':
       add(t('assistant.f.action'), t(`assistant.v.${String(a.action)}`));
       add(t('assistant.f.date'), a.at === null ? t('assistant.v.dateUnknown') : day(a.at));
+      if (a.notes !== undefined) add(t('assistant.f.notes'), a.notes === null || a.notes === '' ? t('common.clear') : String(a.notes));
       break;
     case 'save_subscription': {
       const rec = (a.subscription ?? {}) as Partial<Subscription>;
@@ -306,7 +307,7 @@ export function Proposal(props: {
         !a.category && t('detail.field.category'),
       ].filter((x): x is string => !!x)
     : [];
-  const gone = part.state === 'dismissed';
+  const gone = part.state === 'dismissed' || part.state === 'superseded';
   const rows: Array<[string, ReactNode]> = create
     ? [
         ...(bundle && bundleParentName
@@ -430,7 +431,7 @@ export function Proposal(props: {
           </>
         ) : gone ? (
           <span className="as-muted icon-text">
-            <CircleX size={15} /> {t('assistant.card.dismissed')}
+            <CircleX size={15} /> {t(part.state === 'superseded' ? 'assistant.card.superseded' : 'assistant.card.dismissed')}
           </span>
         ) : (
           <>

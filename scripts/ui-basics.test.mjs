@@ -2066,13 +2066,83 @@ test('Files list-view thumbnail uses deterministic mini-collage tilt and stacks 
   assert.match(css, /\.file-row:hover \.file-row-paper\s*\{[^}]*transform:\s*none/);
 });
 
-test('Files hides multi-select circles and selection mode on mobile and touch viewports', () => {
+test('Files only reveals multi-select circles on desktop while holding Command/Ctrl or actively picking, never on hover or mobile', () => {
   const [, , source] = sources.find(([file]) => file === 'views/Files.tsx');
   assert.match(source, /const mobile = useMedia\('\(max-width: 860px\), \(hover: none\)'\)/);
   assert.match(source, /const pickedRows = mobile \? \[\] :/);
-  assert.match(source, /\{!mobile && \(\s*<button[^>]*className="file-check"/);
+  assert.match(source, /const picking = !mobile && \(modSelect \|\| pickedRows\.length > 0\)/);
+  assert.match(source, /hasOverlay\(document\)/);
+  assert.match(source, /e\.key === 'Meta' \|\| e\.key === 'Control'/);
+  assert.match(source, /e\.metaKey \|\| e\.ctrlKey \|\| pickedRows\.length > 0/);
+  assert.match(source, /\{picking && \(\s*<button[^>]*className="file-check"/);
   const css = readFileSync(new URL('files.css', root), 'utf8');
+  assert.doesNotMatch(css, /\.file-card:hover \.file-check/);
+  assert.doesNotMatch(css, /\.file-row:hover \.file-check/);
   assert.doesNotMatch(css, /@media \(hover: none\)\s*\{\s*\.file-check\s*\{\s*opacity:\s*1/);
   assert.match(css, /@media \(max-width: 860px\), \(hover: none\)\s*\{[^}]*\.file-check,\s*\.file-bar\s*\{\s*display:\s*none/);
-  assert.match(css, /@media \(max-width: 860px\)\s*\{[^}]*\.file-row\s*\{[^}]*grid-template-columns:\s*44px minmax\(0, 1fr\) auto;/);
+  assert.match(css, /\.file-row\s*\{[^}]*grid-template-columns:\s*44px minmax\(0, 1\.6fr\) minmax\(0, 1fr\) minmax\(0, 1fr\) 84px 40px 64px;/);
+  assert.match(
+    css,
+    /\.file-sections\.picking \.file-row\s*\{[^}]*grid-template-columns:\s*44px minmax\(0, 1\.6fr\) minmax\(0, 1fr\) minmax\(0, 1fr\) 84px 40px 64px 20px;/,
+  );
+  assert.match(
+    css,
+    /@media \(max-width: 860px\)\s*\{[^}]*\.file-row,\s*\.file-sections\.picking \.file-row\s*\{[^}]*grid-template-columns:\s*44px minmax\(0, 1fr\) auto;/,
+  );
+});
+
+test('Latin system UI fonts precede CJK fallbacks so curly apostrophes never render fullwidth on Windows', () => {
+  const appCss = readFileSync(new URL('styles.css', root), 'utf8');
+  const pubCss = readFileSync(new URL('public/index.css', root), 'utf8');
+  const check = (css, prop) => {
+    const m = css.match(new RegExp(`${prop}:\\s*([^;]+);`));
+    assert.ok(m, `missing ${prop}`);
+    const val = m[1];
+    const segoe = val.indexOf('Segoe UI');
+    const roboto = val.indexOf('Roboto');
+    const pingfang = val.indexOf('PingFang SC');
+    const yahei = val.indexOf('Microsoft YaHei');
+    assert.ok(segoe >= 0 && roboto >= 0, `${prop} must include Segoe UI and Roboto: ${val}`);
+    assert.ok(segoe < pingfang && roboto < pingfang, `${prop} must put Latin fonts before PingFang SC: ${val}`);
+    if (yahei >= 0) assert.ok(segoe < yahei && roboto < yahei, `${prop} must put Latin fonts before Microsoft YaHei: ${val}`);
+  };
+  check(appCss, '--font');
+  check(appCss, '--font-num');
+  check(pubCss, '--font-sans');
+});
+
+test('StatusBadges renders a green Lifetime badge with the infinity icon', () => {
+  const iconsSrc = readFileSync(new URL('components/icons.tsx', root), 'utf8');
+  assert.match(iconsSrc, /infinity:\s*'infinity'/);
+  const [, , listSrc] = sources.find(([file]) => file === 'views/List.tsx');
+  assert.match(
+    listSrc,
+    /st === 'lifetime' && \(\s*<span className="badge green icon-text">\s*<Icon name="infinity"[^/]*\/>\s*\{t\('list\.status\.lifetime'\)\}\s*<\/span>\s*\)/,
+  );
+});
+
+test('ChangePanel supports Lifetime and Custom billing cycles', () => {
+  const [, , changeSrc] = sources.find(([file]) => file === 'components/ChangePanel.tsx');
+  assert.match(changeSrc, /\['lt',\s*\{\s*unit:\s*'lifetime',\s*every:\s*1\s*\}\]/);
+  assert.match(changeSrc, /\{\s*value:\s*'custom',\s*label:\s*cycleName\('custom'\)\s*\}/);
+  assert.match(changeSrc, /cycleKey === 'custom' &&/);
+  assert.match(changeSrc, /<Stepper/);
+});
+
+test('DatePicker guards nested Picker popups and free-time toggle advances past upcoming start date', () => {
+  const [, , dpSrc] = sources.find(([file]) => file === 'components/DatePicker.tsx');
+  assert.match(dpSrc, /if \(document\.querySelector\('\.pk-pop'\)\) return;/);
+  assert.match(dpSrc, /const jumpMonth =/);
+  const [, , secSrc] = sources.find(([file]) => file === 'views/editor/Sections.tsx');
+  assert.match(secSrc, /next && next > prev\.start \? next : nthCharge\(prev\.start, prev\.cycle, 1\)/);
+  assert.match(secSrc, /up\(\(prev\) => \(prev\.bonus \? \{ bonus: \{ \.\.\.prev\.bonus, from: v \?\? today \} \} : \{\}\)\)/);
+  assert.match(secSrc, /up\(\(prev\) => \(prev\.bonus \? \{ bonus: \{ \.\.\.prev\.bonus, until: v \?\? today \} \} : \{\}\)\)/);
+});
+
+test('PeriodBar derives advance-charge service boundary from the current phase charge rather than first-day renewalDates', () => {
+  const [, , periodsSrc] = sources.find(([file]) => file === 'views/detail/Periods.tsx');
+  assert.match(periodsSrc, /next\.sub\.start === cur\.start \? \(next\.serviceDate \?\? chargeServicePeriod\(next\.sub, next\.date\)\.from\) : undefined/);
+  assert.doesNotMatch(periodsSrc, /renewal\.serviceExpires && renewal\.serviceExpires > next\.date/);
+  const detailDataSrc = readFileSync(new URL('views/detail-data.ts', root), 'utf8');
+  assert.match(detailDataSrc, /nextChargeHorizon\(sub, today, 366\)/);
 });
