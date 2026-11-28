@@ -22,7 +22,7 @@ import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { FacetRow } from '../components/FacetRow.tsx';
 import { FileDrop } from '../components/FileDrop.tsx';
 import { useFilePicker, useUpload } from '../components/FileUpload.tsx';
-import { FileBadges, fileLabel, FileSheet, FileThumb, ReceiptScopeTag } from '../components/FileSheet.tsx';
+import { compactReceiptItem, FileBadges, fileLabel, FileSheet, FileThumb, ReceiptScopeTag } from '../components/FileSheet.tsx';
 import { Icon } from '../components/icons.tsx';
 import { Seg } from '../components/inputs.tsx';
 import { CatIcon, MethodMark, SubIcon } from '../components/marks.tsx';
@@ -642,16 +642,18 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   /** 卡片底部信息条：订阅组里只写挂的那一项；其余写订阅名（带图标）与那一项 */
   function labelOf(f: FileMeta, sec: Section): { icon?: ReactNode; head: string; item?: ReactNode } {
     const label = fileLabel(f, all, subs);
+    const scope = fileBadgeKind(f, subs);
+    const item = compactReceiptItem(label.item, scope);
     const s = f.subId ? subOf.get(f.subId) : undefined;
-    if (sec.sub) return { head: label.item ?? label.head };
-    if (s) return { icon: <SubIcon sub={s} size={14} />, head: label.head, item: label.item };
+    if (sec.sub) return { head: item ?? label.head };
+    if (s) return { icon: <SubIcon sub={s} size={14} />, head: label.head, item };
     if (label.gone)
       return {
         head: label.head,
         item: (
           <>
             <span className="badge">{t('files.deleted')}</span>
-            {label.item}
+            {item}
           </>
         ),
       };
@@ -677,7 +679,6 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
         <button type="button" className="file-hit" onClick={() => (pickedRows.length ? toggle(f.id) : setOpen(f.id))} aria-label={title(f)} />
         <div className="file-thumb">
           <FileThumb f={f} onRatio={onRatio(f.id)} />
-          <FileBadges f={f} subs={subs} className="file-card-tags" />
         </div>
         <div className="file-body">
           <b title={label.head}>
@@ -689,6 +690,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
             <span>{FILE_EXT[f.mime].toUpperCase()}</span>
             <span>{sizeLabel(f.size)}</span>
           </span>
+          <FileBadges f={f} subs={subs} compact className="file-body-tags" />
         </div>
         <button type="button" role="checkbox" aria-checked={on} className="file-check" onClick={() => toggle(f.id)} aria-label={t('files.select')}>
           <Icon name="check" size={12} />
@@ -848,12 +850,13 @@ function SlotCard({
         },
       }
     : {};
-  const scopeTag = x.slot.kind === 'receipt' && x.slot.scope ? <ReceiptScopeTag scope={x.slot.scope} compact /> : null;
+  const scope = x.slot.kind === 'receipt' ? x.slot.scope : undefined;
+  const scopeTag = scope ? <ReceiptScopeTag scope={scope} compact /> : null;
+  const shortName = compactReceiptItem(name, scope) ?? name;
   const text = (
     <>
       {!sec.sub && <SubIcon sub={x.sub} size={14} />}
-      <span>{sec.sub ? name : x.sub.name}</span>
-      {row && scopeTag}
+      <span>{sec.sub ? shortName : x.sub.name}</span>
     </>
   );
   const cls = `file-slot ${row ? 'file-row' : 'file-card'} ${over ? 'over' : ''} ${loading ? 'loading' : ''}`;
@@ -867,9 +870,10 @@ function SlotCard({
           </span>
           <span className="file-row-text">
             <b>{text}</b>
-            {!sec.sub && (
+            {(!sec.sub || scopeTag) && (
               <span className="file-meta">
-                <span className="file-item">{name}</span>
+                {scopeTag}
+                {!sec.sub && <span className="file-item">{shortName}</span>}
               </span>
             )}
           </span>
@@ -878,15 +882,15 @@ function SlotCard({
         <>
           <div className="file-thumb file-slot-ico">
             <Icon name="upload" size={28} />
-            {scopeTag && <span className="file-tags file-card-tags">{scopeTag}</span>}
           </div>
           <div className="file-body">
             <b>{text}</b>
             {!sec.sub && (
               <span className="file-meta">
-                <span className="file-item">{name}</span>
+                <span className="file-item">{shortName}</span>
               </span>
             )}
+            {scopeTag && <span className="file-tags file-body-tags">{scopeTag}</span>}
           </div>
         </>
       )}

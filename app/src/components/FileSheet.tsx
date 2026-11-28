@@ -41,7 +41,7 @@ export function fileLabel(f: FileMeta, files: readonly FileMeta[], subs: readonl
   return { head: parts[0], gone: false };
 }
 
-/** 醒目的收款类型标签（合租收款 / 代付收款）与重复凭证提示标签；文件中心卡片、列表、详情与助手共用 */
+/** 醒目的收款类型标签（合租收款 / 代付收款）与重复凭证提示标签；文件中心卡片底部内容区、列表、详情与助手共用 */
 export function ReceiptScopeTag({ scope, compact }: { scope: FileReceiptScope | 'receipt'; compact?: boolean }) {
   const icon = scope === 'carpool' ? 'users' : scope === 'proxy' ? 'coins' : 'receipt';
   const label = scope === 'carpool' ? t('files.badge.carpool') : scope === 'proxy' ? t('files.badge.proxy') : t('files.kind.receipt');
@@ -51,6 +51,13 @@ export function ReceiptScopeTag({ scope, compact }: { scope: FileReceiptScope | 
       <span>{label}</span>
     </span>
   );
+}
+
+/** 界面里已经用胶囊标出「合租收款 / 代付收款」时，去掉紧跟文字里的重复类型词，只留日期、付款人与序号 */
+export function compactReceiptItem(item: string | undefined, scope: FileReceiptScope | 'receipt' | undefined): string | undefined {
+  if (!item || !scope) return item;
+  const tag = scope === 'carpool' ? t('core.file.carpoolReceipt') : scope === 'proxy' ? t('core.file.proxyReceipt') : t('core.file.receipt');
+  return item.replace(` ${tag}`, '').trim() || item;
 }
 
 export function FileBadges({

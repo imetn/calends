@@ -233,12 +233,13 @@ export function FilesCard({
                   <button key={f.id} type="button" className="dt-file-tile" title={cap.tip} onClick={() => setOpen(f.id)}>
                     <span className="dt-tile-thumb">
                       <FileThumb f={f} />
-                      <FileBadges f={f} subs={state.subscriptions} compact className="dt-tile-tags" />
                     </span>
                     <span className="dt-tile-text">
                       <b>{cap.title}</b>
                       <span className="file-meta">
-                        {'sub' in cap ? (
+                        {f.kind === 'receipt' ? (
+                          <FileBadges f={f} subs={state.subscriptions} compact />
+                        ) : 'sub' in cap ? (
                           <span>{cap.sub}</span>
                         ) : (
                           <>
