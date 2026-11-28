@@ -6,7 +6,10 @@ import {
   FILE_MAX_BYTES,
   anchorError,
   cleanFileName,
+  fileBadgeKind,
+  fileReceiptPerson,
   fileTitle,
+  findReceiptOwner,
   isImage,
   type FileAnchor,
   type FileKind,
@@ -35,6 +38,7 @@ function findFile(st: AppState, id: unknown): FileMeta {
 /** 给 AI 看的一行：标题按网页的规则生成（已关联的文件按订阅与那一项命名，未关联的用原始文件名） */
 function fileRow(st: AppState, f: FileMeta) {
   const sub = f.subId ? st.subscriptions.find((s) => s.id === f.subId) : undefined;
+  const badge = fileBadgeKind(f, st.subscriptions);
   return {
     id: f.id,
     title: fileTitle(f, st.files ?? [], st.subscriptions),
@@ -42,6 +46,10 @@ function fileRow(st: AppState, f: FileMeta) {
     subscription: sub ? { id: sub.id, name: sub.name } : null,
     kind: f.kind ?? null,
     date: f.date ?? null,
+    receipt_id: f.receiptId ?? null,
+    receipt_scope: badge === 'carpool' || badge === 'proxy' ? badge : null,
+    person: fileReceiptPerson(f, st.subscriptions) ?? null,
+    duplicate_receipt: !!f.dupReceipt,
     deleted_source: f.orphan ? f.orphan.name : null,
     type: FILE_EXT[f.mime],
     mime: f.mime,
@@ -50,13 +58,14 @@ function fileRow(st: AppState, f: FileMeta) {
   };
 }
 
-/** 关联参数 → 挂法：kind 缺省时有日期按扣款、没日期按资料；不关联时三项都为空 */
-function anchorFrom(st: AppState, subRef: unknown, kind: unknown, date: unknown): FileAnchor {
-  if (subRef == null || subRef === '') return { subId: null, kind: null, date: null };
+/** 关联参数 → 挂法：kind 缺省时带 receipt 按收款、有日期按扣款、没日期按资料；不关联时全为空 */
+function anchorFrom(st: AppState, subRef: unknown, kind: unknown, date: unknown, receipt: unknown): FileAnchor {
+  if (subRef == null || subRef === '') return { subId: null, kind: null, date: null, receiptId: null };
   const sub = findSub(st, subRef);
-  const d = date == null || date === '' ? null : String(date);
-  const k = (kind == null ? (d ? 'charge' : 'sub') : String(kind)) as FileKind;
-  return { subId: sub.id, kind: k, date: k === 'sub' ? null : d };
+  const r = receipt == null || receipt === '' ? null : String(receipt).trim();
+  const k = (kind == null ? (r ? 'receipt' : date != null && date !== '' ? 'charge' : 'sub') : String(kind)) as FileKind;
+  const d = date == null || date === '' ? (k === 'receipt' && r ? (findReceiptOwner(sub, r)?.receipt.date ?? null) : null) : String(date);
+  return { subId: sub.id, kind: k, date: k === 'sub' ? null : d, receiptId: k === 'receipt' ? r : null };
 }
 
 function checkAnchor(st: AppState, a: FileAnchor) {
@@ -106,19 +115,28 @@ const LINK = {
     type: 'string',
     enum: FILE_KINDS,
     description:
-      'What the file documents: charge = a receipt or invoice for the charge on `date`; contract = a contract whose term starts on `date`; sub = general documents of the subscription, not tied to one charge or contract (no date; the app labels it Documents / 资料), use it when the user asks for that even for an invoice. Default: charge when date is given, otherwise sub.',
+      'What the file documents: charge = a receipt or invoice for the charge on `date`; contract = a contract whose term starts on `date`; receipt = a collection screenshot/receipt for a shared-plan member receipt or proxy receipt (set `receipt` to its receipt_id from get_subscription; `date` defaults to that receipt date); sub = general documents of the subscription, not tied to one charge, contract or receipt (no date; the app labels it Documents / 资料), use it when the user asks for that even for an invoice. Default: receipt when receipt is given, charge when date is given, otherwise sub.',
   },
-  date: { ...DATE, description: 'Charge date (kind=charge) or contract start date (kind=contract), YYYY-MM-DD.' },
+  date: {
+    ...DATE,
+    description: 'Charge date (kind=charge), contract start date (kind=contract), or receipt date (kind=receipt, optional when receipt is given), YYYY-MM-DD.',
+  },
+  receipt: {
+    type: 'string',
+    description: 'Receipt id from get_subscription (when kind=receipt, linking to a specific shared-plan member receipt or proxy receipt).',
+  },
 };
 
 export const list_files: Tool = {
   name: 'list_files',
   description:
-    'Files in the file center (receipts, invoices, contracts; PDF/PNG/JPEG/WebP). Each row: id, title (display name: linked files are named after the subscription and the charge/contract they document; unlinked files use their original name), name (original file name), subscription, kind, date, deleted_source (name of a deleted subscription the file came from), type, size in bytes, uploaded_at. storage=false means file storage is not configured on this server.',
+    'Files in the file center (receipts, invoices, contracts, shared-plan and proxy collection receipts; PDF/PNG/JPEG/WebP). Each row: id, title (display name: linked files are named after the subscription and the charge/contract/collection receipt they document; unlinked files use their original name), name (original file name), subscription, kind, date, receipt_id, receipt_scope (carpool or proxy when kind=receipt), person (member or proxy recipient name when kind=receipt), duplicate_receipt (true when the exact same file is attached to more than one collection receipt), deleted_source (name of a deleted subscription the file came from), type, size in bytes, uploaded_at. storage=false means file storage is not configured on this server.',
   inputSchema: obj({
     subscription: { ...SUBREF, description: 'Optional: only files linked to this subscription.' },
     status: { type: 'string', enum: ['all', 'linked', 'unlinked'], description: 'Default all.' },
-    query: { type: 'string', description: 'Optional: case-insensitive match on title or original name.' },
+    kind: { type: 'string', enum: FILE_KINDS, description: 'Optional: filter by file kind (charge, contract, receipt, sub).' },
+    receipt_scope: { type: 'string', enum: ['carpool', 'proxy'], description: 'Optional: only shared-plan (carpool) or proxy collection receipts.' },
+    query: { type: 'string', description: 'Optional: case-insensitive match on title, original name, or person.' },
     limit: { type: 'integer', minimum: 1, maximum: 200, description: 'Default 50, newest first.' },
   }),
   async run(a, ctx) {
@@ -131,9 +149,11 @@ export const list_files: Tool = {
     const rows = [...(st.files ?? [])]
       .filter((f) => (subId ? f.subId === subId : true))
       .filter((f) => (a.status === 'linked' ? !!f.subId : a.status === 'unlinked' ? !f.subId : true))
+      .filter((f) => (a.kind ? f.kind === a.kind : true))
       .sort((x, y) => y.createdAt.localeCompare(x.createdAt))
       .map((f) => fileRow(st, f))
-      .filter((r) => !q || r.title.toLowerCase().includes(q) || r.name.toLowerCase().includes(q));
+      .filter((r) => (a.receipt_scope ? r.receipt_scope === a.receipt_scope : true))
+      .filter((r) => !q || r.title.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || (r.person?.toLowerCase().includes(q) ?? false));
     return { storage: true, total: rows.length, files: rows.slice(0, Number(a.limit ?? 50)) };
   },
 };
@@ -185,10 +205,15 @@ export const upload_file: Tool = {
     const sources = [a.content_base64 != null, a.url != null, a.upload_link === true].filter(Boolean).length;
     if (sources !== 1) throw new Error(t('mcp.error.fileSource'));
     const { st } = await state(ctx);
-    const anchor = anchorFrom(st, a.subscription, a.kind, a.date);
+    const anchor = anchorFrom(st, a.subscription, a.kind, a.date, a.receipt);
     checkAnchor(st, anchor);
     const sub = anchor.subId ? st.subscriptions.find((s) => s.id === anchor.subId) : undefined;
-    const link = { subscription: sub ? { id: sub.id, name: sub.name } : null, kind: anchor.kind, date: anchor.date };
+    const link = {
+      subscription: sub ? { id: sub.id, name: sub.name } : null,
+      kind: anchor.kind,
+      date: anchor.date,
+      receipt_id: anchor.receiptId ?? null,
+    };
     const name = a.name == null ? null : cleanFileName(a.name);
     if (a.upload_link === true) {
       if (a.dry_run) return { dry_run: true, upload_link: true, name, ...link };
@@ -217,7 +242,7 @@ export const upload_file: Tool = {
 export const update_file: Tool = {
   name: 'update_file',
   description:
-    'Rename a file, link it to a subscription, change what it documents, or unlink it. set.subscription: id/name to link (or relink), null to unlink; omit to keep. When the subscription stays the same, omitted kind/date keep their current values; when it changes, kind defaults to charge if date is given, otherwise sub. set.name changes the original file name (linked files keep their generated display title). Use dry_run to preview.',
+    'Rename a file, link it to a subscription, change what it documents, or unlink it. set.subscription: id/name to link (or relink), null to unlink; omit to keep. When the subscription stays the same, omitted kind/date/receipt keep their current values; when it changes, kind defaults to receipt if receipt is given, charge if date is given, otherwise sub. For kind=receipt, pass set.receipt (receipt_id from get_subscription); date defaults to that receipt date. set.name changes the original file name (linked files keep their generated display title). Use dry_run to preview.',
   write: true,
   idempotent: true,
   inputSchema: obj(
@@ -227,6 +252,7 @@ export const update_file: Tool = {
         subscription: nullable({ ...SUBREF, description: 'Subscription to link to; null = unlink.' }),
         kind: LINK.kind,
         date: nullable(LINK.date),
+        receipt: nullable(LINK.receipt),
         name: { type: 'string', description: 'New original file name.' },
       }),
       dry_run: drySchema,
@@ -237,18 +263,24 @@ export const update_file: Tool = {
     needStorage(ctx);
     const { st } = await state(ctx);
     const f = findFile(st, a.file);
-    const set = (a.set ?? {}) as { subscription?: string | null; kind?: string; date?: string | null; name?: string };
-    const relink = 'subscription' in set || 'kind' in set || 'date' in set;
-    let anchor: FileAnchor = { subId: f.subId ?? null, kind: f.kind ?? null, date: f.date ?? null };
+    const set = (a.set ?? {}) as { subscription?: string | null; kind?: string; date?: string | null; receipt?: string | null; name?: string };
+    const relink = 'subscription' in set || 'kind' in set || 'date' in set || 'receipt' in set;
+    let anchor: FileAnchor = { subId: f.subId ?? null, kind: f.kind ?? null, date: f.date ?? null, receiptId: f.receiptId ?? null };
     if (relink) {
       const target = 'subscription' in set ? set.subscription : f.subId;
       const subId = target == null || target === '' ? null : findSub(st, target).id;
-      if (!subId) anchor = { subId: null, kind: null, date: null };
+      if (!subId) anchor = { subId: null, kind: null, date: null, receiptId: null };
       else {
         const same = subId === f.subId;
-        const date = 'date' in set ? (set.date ?? null) : same ? (f.date ?? null) : null;
-        const kind = (set.kind ?? (same && !('date' in set) ? f.kind : undefined) ?? (date ? 'charge' : 'sub')) as FileKind;
-        anchor = { subId, kind, date: kind === 'sub' ? null : date };
+        const subObj = st.subscriptions.find((x) => x.id === subId);
+        const receiptId = 'receipt' in set ? set.receipt?.trim() || null : same ? (f.receiptId ?? null) : null;
+        const rawDate = 'date' in set ? (set.date ?? null) : same ? (f.date ?? null) : null;
+        const kind = (set.kind ??
+          (same && !('date' in set) && !('receipt' in set) ? f.kind : undefined) ??
+          (receiptId ? 'receipt' : rawDate ? 'charge' : 'sub')) as FileKind;
+        const date =
+          kind === 'sub' ? null : kind === 'receipt' ? (rawDate ?? (receiptId ? (findReceiptOwner(subObj, receiptId)?.receipt.date ?? null) : null)) : rawDate;
+        anchor = { subId, kind, date, receiptId: kind === 'receipt' ? receiptId : null };
       }
       checkAnchor(st, anchor);
     }
@@ -256,7 +288,15 @@ export const update_file: Tool = {
     const next: FileMeta = {
       ...f,
       name,
-      ...(relink ? { subId: anchor.subId ?? undefined, kind: anchor.kind ?? undefined, date: anchor.date ?? undefined, orphan: undefined } : {}),
+      ...(relink
+        ? {
+            subId: anchor.subId ?? undefined,
+            kind: anchor.kind ?? undefined,
+            date: anchor.date ?? undefined,
+            receiptId: anchor.receiptId ?? undefined,
+            orphan: undefined,
+          }
+        : {}),
     };
     const sub = next.subId ? st.subscriptions.find((s) => s.id === next.subId) : undefined;
     const preview = (files: FileMeta[]) => ({ ...st, files });

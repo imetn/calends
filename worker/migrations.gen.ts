@@ -88,5 +88,12 @@ export const MIGRATIONS: Array<{ name: string; statements: string[] }> = [
     "statements": [
       "-- Store PDF page count so multi-page documents can render stacked previews without re-reading the file.\nALTER TABLE files ADD COLUMN pages INTEGER;\n"
     ]
+  },
+  {
+    "name": "0011_file_receipts.sql",
+    "statements": [
+      "-- Link collection receipt attachments directly to a shared-plan member receipt or proxy receipt id.\nALTER TABLE files ADD COLUMN receipt_id TEXT",
+      "CREATE INDEX files_receipt ON files (sub_id, receipt_id)"
+    ]
   }
 ];

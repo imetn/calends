@@ -44,7 +44,11 @@
     "name": "Nama asli",
     "type": "Jenis",
     "size": "Ukuran",
-    "uploaded": "Diunggah"
+    "uploaded": "Diunggah",
+    "member": "Anggota",
+    "payer": "Dibayar oleh",
+    "amount": "Jumlah",
+    "receiptDate": "Tanggal terima"
   },
   "link": {
     "title": "Tautkan file",
@@ -57,10 +61,18 @@
   "kind": {
     "contract": "Kontrak",
     "charge": "Tagihan",
-    "sub": "Dokumen"
+    "sub": "Dokumen",
+    "receipt": "Bukti penerimaan"
   },
   "keep": "{count} file akan tetap ada di File",
   "card": "File",
   "add": "Tambah file",
-  "backup": "Ekspor cadangan lengkap beserta file"
+  "backup": "Ekspor cadangan lengkap beserta file",
+  "badge": {
+    "carpool": "Penagihan patungan",
+    "proxy": "Penggantian talangan",
+    "dup": "Duplikat"
+  },
+  "addReceipt": "Tambah bukti bayar",
+  "dupHint": "File yang sama persis terlampir pada lebih dari satu catatan penerimaan. Periksa apakah tangkapan layar yang sama tidak dipakai ulang secara keliru."
 }

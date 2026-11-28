@@ -32,6 +32,7 @@ import { type LedgerPeriod } from '../../shared/receivables.ts';
 import { personAmounts, type PersonLedger } from '../../shared/people.ts';
 import type { AppState, Person, ShareMember, Subscription } from '../../shared/types.ts';
 import { carRule, followsCar, memberPaidThrough } from '../../shared/carpool.ts';
+import { filesForReceipt, type FileMeta } from '../../shared/files.ts';
 import { meterSource, meterSummary, meterView, spreadUnitPrice, type MeterRow } from '../../shared/meters.ts';
 
 export function money(st: AppState, amount: number, currency: string, date?: string, to = st.settings.baseCurrency) {
@@ -106,17 +107,21 @@ export function personRow(st: AppState, l: PersonLedger, out: string, today: str
   };
 }
 
-export function periodsOut(periods: LedgerPeriod[]) {
-  return periods.map((p) => ({
-    period: p.key,
-    from: p.from,
-    until: p.until,
-    due: p.due,
-    currency: p.currency,
-    status: p.status,
-    receipt_id: p.receipt?.id ?? null,
-    waiver_id: p.waiver?.id ?? null,
-  }));
+export function periodsOut(periods: LedgerPeriod[], subId?: string, files?: readonly FileMeta[]) {
+  return periods.map((p) => {
+    const attached = subId && files && p.receipt ? filesForReceipt(files, subId, p.receipt.id) : [];
+    return {
+      period: p.key,
+      from: p.from,
+      until: p.until,
+      due: p.due,
+      currency: p.currency,
+      status: p.status,
+      receipt_id: p.receipt?.id ?? null,
+      waiver_id: p.waiver?.id ?? null,
+      ...(attached.length ? { file_ids: attached.map((f) => f.id) } : {}),
+    };
+  });
 }
 
 export function collectionSummary(st: AppState, s: Subscription, m: ShareMember, due: MemberDue | undefined, today: string) {

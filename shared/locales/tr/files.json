@@ -44,7 +44,11 @@
     "name": "Orijinal ad",
     "type": "Tür",
     "size": "Boyut",
-    "uploaded": "Yüklenme"
+    "uploaded": "Yüklenme",
+    "member": "Üye",
+    "payer": "Ödeyen",
+    "amount": "Tutar",
+    "receiptDate": "Tahsilat tarihi"
   },
   "link": {
     "title": "Dosyayı bağla",
@@ -57,10 +61,18 @@
   "kind": {
     "contract": "Sözleşme",
     "charge": "Ödeme",
-    "sub": "Belgeler"
+    "sub": "Belgeler",
+    "receipt": "Tahsilat makbuzu"
   },
   "keep": "{count} dosya Dosyalar sayfasında kalacak",
   "card": "Dosyalar",
   "add": "Dosya ekle",
-  "backup": "Dosyalarla tam yedeği dışa aktar"
+  "backup": "Dosyalarla tam yedeği dışa aktar",
+  "badge": {
+    "carpool": "Paylaşım tahsilatı",
+    "proxy": "Vekâlet tahsilatı",
+    "dup": "Yinelenen"
+  },
+  "addReceipt": "Tahsilat belgesi ekle",
+  "dupHint": "Aynı dosya birden fazla tahsilat kaydına bağlı. Aynı ekran görüntüsünün yanlışlıkla tekrar kullanılmadığını kontrol edin."
 }

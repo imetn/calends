@@ -1,7 +1,18 @@
 // 文件页：按订阅或按月份分组，订阅组里按期列出凭证，没传的那一期留一张虚线占位、点开或拖进去就挂到那一笔；
 // 筛选沿用订阅页（状态、分类、支付方式、搜索）另加订阅与年份；拖文件进窗口即上传，勾选后打包下载或删除。
 import { useEffect, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react';
-import { FILE_EXT, fileCoverage, fileMethod, fileTitle, fileYear, slotLabel, type FileCoverage, type FileMeta, type FileSlot } from '../../../shared/files.ts';
+import {
+  FILE_EXT,
+  fileBadgeKind,
+  fileCoverage,
+  fileMethod,
+  fileTitle,
+  fileYear,
+  slotLabel,
+  type FileCoverage,
+  type FileMeta,
+  type FileSlot,
+} from '../../../shared/files.ts';
 import { monthLabel } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import { listHaystack, listStatus, listWords } from '../../../shared/list-scope.ts';
@@ -11,7 +22,7 @@ import { EmptyState } from '../components/EmptyGraphic.tsx';
 import { FacetRow } from '../components/FacetRow.tsx';
 import { FileDrop } from '../components/FileDrop.tsx';
 import { useFilePicker, useUpload } from '../components/FileUpload.tsx';
-import { fileLabel, FileSheet, FileThumb } from '../components/FileSheet.tsx';
+import { FileBadges, fileLabel, FileSheet, FileThumb, ReceiptScopeTag } from '../components/FileSheet.tsx';
 import { Icon } from '../components/icons.tsx';
 import { Seg } from '../components/inputs.tsx';
 import { CatIcon, MethodMark, SubIcon } from '../components/marks.tsx';
@@ -33,8 +44,17 @@ const isView = (v: string): v is View => v === 'loose' || v === 'grid' || v === 
 /** 按订阅：一个订阅一组，按期列出凭证与缺的那几期；按月份：按文件日期分组 */
 type Group = 'none' | 'sub' | 'month' | 'year' | 'cat';
 const isGroup = (v: string): v is Group => v === 'none' || v === 'sub' || v === 'month' || v === 'year' || v === 'cat';
-type Facet = 'sub' | 'status' | 'cat' | 'pay' | 'year';
-const ALL: Record<Facet, string> = { sub: 'all', status: 'all', cat: 'all', pay: 'all', year: 'all' };
+type Facet = 'sub' | 'type' | 'status' | 'cat' | 'pay' | 'year';
+const ALL: Record<Facet, string> = { sub: 'all', type: 'all', status: 'all', cat: 'all', pay: 'all', year: 'all' };
+
+const FILE_TYPE_OPTS = (): Array<[string, string]> => [
+  ['all', t('list.all')],
+  ['charge', t('files.kind.charge')],
+  ['carpool', t('files.badge.carpool')],
+  ['proxy', t('files.badge.proxy')],
+  ['contract', t('files.kind.contract')],
+  ['sub', t('files.kind.sub')],
+];
 
 const STATUSES = (): Array<[string, string]> => [
   ['all', t('list.all')],
@@ -105,7 +125,8 @@ const box = (p: Placed | undefined): CSSProperties | undefined => p && { positio
 
 /** 一组里的一项：文件、缺凭证的那一期、正在上传的占位 */
 type Item = { type: 'file'; f: FileMeta } | { type: 'slot'; sub: Subscription; slot: FileSlot } | { type: 'pending'; key: string; name: string };
-const itemKey = (x: Item) => (x.type === 'file' ? x.f.id : x.type === 'slot' ? `slot:${x.sub.id}:${x.slot.kind}:${x.slot.date}` : x.key);
+const itemKey = (x: Item) =>
+  x.type === 'file' ? x.f.id : x.type === 'slot' ? `slot:${x.sub.id}:${x.slot.kind}:${x.slot.date}:${x.slot.receiptId ?? ''}` : x.key;
 const itemDate = (x: Item) => (x.type === 'file' ? when(x.f) : x.type === 'slot' ? x.slot.date : '9999');
 
 interface Section {
@@ -164,10 +185,17 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   });
   const matches = useTextSearch(hay);
   const words = listWords(q);
+  /** 类型筛选口径：收款凭证按业务来源拆成合租收款（carpool）与代付收款（proxy），一眼区分 */
+  const typeKeyOf = (f: Pick<FileMeta, 'subId' | 'kind' | 'receiptId' | 'orphan'>): string | undefined => {
+    const badge = fileBadgeKind(f, subs);
+    if (badge === 'carpool' || badge === 'proxy') return badge;
+    return f.kind ?? f.orphan?.kind;
+  };
+  const slotTypeKey = (slot: FileSlot): string => (slot.kind === 'receipt' ? (slot.scope ?? 'receipt') : slot.kind);
   const subFacet = sel.sub !== 'all' || sel.status !== 'all' || sel.cat !== 'all' || sel.pay !== 'all';
   /** 订阅类筛选：选了任何一项时，未关联与已删除订阅的文件不出现 */
   const subOk = (s: Subscription | undefined, anchor: Pick<FileMeta, 'kind' | 'date'>, skip?: Facet) => {
-    // 选定了订阅时只剩订阅与年份两行，藏起来的状态、分类、付款方式不参与筛选（数「全部」时照算，与点回全部后一致）
+    // 选定了订阅时只剩订阅、类型与年份，藏起来的状态、分类、付款方式不参与筛选（数「全部」时照算，与点回全部后一致）
     const keys = sel.sub !== 'all' && skip !== 'sub' ? (['sub'] as const) : (['sub', 'status', 'cat', 'pay'] as const);
     const facets = keys.filter((k) => k !== skip && sel[k] !== 'all');
     if (!facets.length) return true;
@@ -183,6 +211,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
     if (tab === 'pending' && f.subId) return false;
     if (tab === 'missing') return false;
     if (words.length && !words.every((w) => matches(w, hay[i]))) return false;
+    if (skip !== 'type' && sel.type !== 'all' && typeKeyOf(f) !== sel.type) return false;
     if (skip !== 'year' && sel.year !== 'all' && fileYear(f) !== sel.year) return false;
     return subOk(f.subId ? subOf.get(f.subId) : undefined, f, skip);
   };
@@ -194,27 +223,34 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   const holeOk = (h: { sub: Subscription; slot: FileSlot }, skip?: Facet) => {
     if (tab === 'pending') return false;
     if (words.length && !words.every((w) => hayOf(h.sub).includes(w.toLowerCase()))) return false;
+    if (skip !== 'type' && sel.type !== 'all' && slotTypeKey(h.slot) !== sel.type) return false;
     if (skip !== 'year' && sel.year !== 'all' && h.slot.date.slice(0, 4) !== sel.year) return false;
     return subOk(h.sub, { kind: h.slot.kind, date: h.slot.date }, skip);
   };
 
-  const count = (skip: Facet, key: (s: Subscription | undefined, anchor: Pick<FileMeta, 'kind' | 'date'>) => string | undefined) => {
+  const count = (
+    skip: Facet,
+    key: (s: Subscription | undefined, anchor: Pick<FileMeta, 'kind' | 'date'>, extra?: { file?: FileMeta; slot?: FileSlot }) => string | undefined,
+  ) => {
     const n = new Map<string, number>();
     let total = 0;
     const add = (k: string | undefined) => {
       total++;
       if (k != null) n.set(k, (n.get(k) ?? 0) + 1);
     };
-    all.forEach((f, i) => hit(f, i, skip) && add(key(f.subId ? subOf.get(f.subId) : undefined, f)));
-    if (tab === 'missing') for (const h of holes) if (holeOk(h, skip)) add(key(h.sub, h.slot));
+    all.forEach((f, i) => hit(f, i, skip) && add(key(f.subId ? subOf.get(f.subId) : undefined, f, { file: f })));
+    if (tab === 'missing') for (const h of holes) if (holeOk(h, skip)) add(key(h.sub, h.slot, { slot: h.slot }));
     n.set('all', total);
     return n;
   };
   const subN = count('sub', (s) => s?.id);
+  const typeN = count('type', (_s, _a, ex) => (ex?.file ? typeKeyOf(ex.file) : ex?.slot ? slotTypeKey(ex.slot) : undefined));
   const statusN = count('status', (s) => s && listStatus(viewOf(s), today));
   const catN = count('cat', (s) => s?.category);
   const payN = count('pay', (s, a) => s && fileMethod(a, s, today));
   const yearN = count('year', (_, a) => (a.date ?? '').slice(0, 4) || undefined);
+  const typeOpts = FILE_TYPE_OPTS().filter(([k]) => k === 'all' || sel.type === k || (typeN.get(k) ?? 0) > 0);
+  const showTypeFacet = typeOpts.length > 2 || typeOpts.some(([k]) => k === 'carpool' || k === 'proxy');
   // 年份选项：文件按 fileYear，缺凭证按那一期的年份
   const years = [...new Set([...all.map(fileYear), ...(tab === 'missing' ? holes.map((h) => h.slot.date.slice(0, 4)) : [])])].sort().reverse();
   const yearCount = (y: string) => (tab === 'missing' ? (yearN.get(y) ?? 0) : all.filter((f, i) => fileYear(f) === y && hit(f, i, 'year')).length);
@@ -236,7 +272,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   // 凭证不是必传项：缺的期只在「缺凭证」里出现，默认视图不催
   const shownHoles = tab === 'missing' ? holes.filter((h) => holeOk(h)) : [];
   const pendingN = all.filter((f) => !f.subId).length;
-  const dirty = subFacet || sel.year !== 'all' || !!q;
+  const dirty = subFacet || sel.type !== 'all' || sel.year !== 'all' || !!q;
   const totalSize = all.reduce((a, f) => a + f.size, 0);
   // 只对当前看得到的生效：筛掉的已选文件不会被一起删掉或打包
   const pickedRows = picked.filter((id) => rows.some((f) => f.id === id));
@@ -374,12 +410,17 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
       toast(e instanceof Error ? e.message : String(e), 'error');
     }
   };
-  /** 传到缺的那一期：直接挂到那一笔扣款或那一期合同 */
+  /** 传到缺的那一期：直接挂到那一笔扣款、那一期合同或那一笔收款 */
   const fillSlot = async (sub: Subscription, slot: FileSlot, files: File[]) => {
-    const key = `slot:${sub.id}:${slot.kind}:${slot.date}`;
+    const key = `slot:${sub.id}:${slot.kind}:${slot.date}:${slot.receiptId ?? ''}`;
     setBusy((b) => [...b, key]);
     try {
-      const { done, failed } = await uploadFiles(files, { subId: sub.id, kind: slot.kind, date: slot.date });
+      const { done, failed } = await uploadFiles(files, {
+        subId: sub.id,
+        kind: slot.kind,
+        date: slot.date,
+        ...(slot.receiptId ? { receiptId: slot.receiptId } : {}),
+      });
       if (failed.length)
         toast(t('files.failed', { count: failed.length }), { kind: 'error', description: failed.map((x) => `${x.name}: ${x.error}`).join('\n') });
       else if (done.length) toast(t('files.uploaded', { count: done.length }));
@@ -492,6 +533,14 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
                   { key: 'all', label: t('list.all'), n: subN.get('all') ?? 0 },
                   { key: rowSub.id, label: rowSub.name, icon: <SubIcon sub={rowSub} size={16} />, n: subN.get(rowSub.id) ?? 0 },
                 ]}
+              />
+            )}
+            {showTypeFacet && (
+              <FacetRow
+                label={t('files.props.type')}
+                value={sel.type}
+                onChange={setFacet('type')}
+                options={typeOpts.map(([k, l]) => ({ key: k, label: l, n: typeN.get(k) ?? 0 }))}
               />
             )}
             {!pickedSub && (
@@ -628,6 +677,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
         <button type="button" className="file-hit" onClick={() => (pickedRows.length ? toggle(f.id) : setOpen(f.id))} aria-label={title(f)} />
         <div className="file-thumb">
           <FileThumb f={f} onRatio={onRatio(f.id)} />
+          <FileBadges f={f} subs={subs} className="file-card-tags" />
         </div>
         <div className="file-body">
           <b title={label.head}>
@@ -688,6 +738,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
           <b title={label.head}>
             {label.icon}
             <span>{label.head}</span>
+            <FileBadges f={f} subs={subs} compact />
           </b>
           {label.item && (
             <span className="file-meta">
@@ -797,10 +848,12 @@ function SlotCard({
         },
       }
     : {};
+  const scopeTag = x.slot.kind === 'receipt' && x.slot.scope ? <ReceiptScopeTag scope={x.slot.scope} compact /> : null;
   const text = (
     <>
       {!sec.sub && <SubIcon sub={x.sub} size={14} />}
       <span>{sec.sub ? name : x.sub.name}</span>
+      {row && scopeTag}
     </>
   );
   const cls = `file-slot ${row ? 'file-row' : 'file-card'} ${over ? 'over' : ''} ${loading ? 'loading' : ''}`;
@@ -825,6 +878,7 @@ function SlotCard({
         <>
           <div className="file-thumb file-slot-ico">
             <Icon name="upload" size={28} />
+            {scopeTag && <span className="file-tags file-card-tags">{scopeTag}</span>}
           </div>
           <div className="file-body">
             <b>{text}</b>

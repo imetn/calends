@@ -59,7 +59,11 @@
     "name": "Original name",
     "type": "Type",
     "size": "Size",
-    "uploaded": "Uploaded"
+    "uploaded": "Uploaded",
+    "member": "Member",
+    "payer": "Paid by",
+    "amount": "Amount",
+    "receiptDate": "Receipt date"
   },
   "link": {
     "title": "Link file",
@@ -72,7 +76,8 @@
   "kind": {
     "contract": "Contract",
     "charge": "Charge",
-    "sub": "Documents"
+    "sub": "Documents",
+    "receipt": "Collection receipt"
   },
   "keep": {
     "one": "{count} file will stay in Files",
@@ -80,5 +85,12 @@
   },
   "card": "Files",
   "add": "Add files",
-  "backup": "Export full backup with files"
+  "backup": "Export full backup with files",
+  "badge": {
+    "carpool": "Shared collection",
+    "proxy": "Proxy collection",
+    "dup": "Duplicate"
+  },
+  "addReceipt": "Add receipt proof",
+  "dupHint": "This exact file is attached to more than one collection receipt. Check that the same screenshot was not reused by mistake."
 }

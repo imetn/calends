@@ -263,6 +263,12 @@
     "notFound": "檔案不存在。",
     "missing": "檔案遺失",
     "noStorage": "未啟用檔案儲存。",
-    "linkExpired": "上傳連結已失效。"
+    "linkExpired": "上傳連結已失效。",
+    "carpoolReceipt": "合租收款",
+    "proxyReceipt": "代付收款",
+    "receipt": "收款憑證",
+    "memberFallback": "成員",
+    "proxyFallback": "代付對象",
+    "noReceipt": "找不到要關聯的收款紀錄。"
   }
 }

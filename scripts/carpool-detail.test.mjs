@@ -12,6 +12,7 @@ import * as bundle from '../shared/bundle.ts';
 import * as carpool from '../shared/carpool.ts';
 import * as fx from '../shared/fx.ts';
 import * as format from '../shared/format.ts';
+import * as files from '../shared/files.ts';
 import { carpoolRoster, carpoolTimeline } from '../shared/carpool-timeline.ts';
 import { DEFAULT_SETTINGS } from '../shared/types.ts';
 import { flatten, setLocale, t } from '../shared/i18n.ts';
@@ -59,6 +60,7 @@ function compile(names, extra = {}) {
     ...bundle,
     ...carpool,
     ...format,
+    ...files,
     ...fx,
     ...fxTotals,
     carpoolRoster,

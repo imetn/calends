@@ -283,6 +283,12 @@
     "notFound": "Không tìm thấy tệp.",
     "missing": "Thiếu tệp",
     "noStorage": "Chưa bật lưu trữ tệp.",
-    "linkExpired": "Liên kết tệp này đã hết hạn."
+    "linkExpired": "Liên kết tệp này đã hết hạn.",
+    "carpoolReceipt": "Thu tiền dùng chung",
+    "proxyReceipt": "Thu tiền trả hộ",
+    "receipt": "Chứng từ thu tiền",
+    "memberFallback": "Thành viên",
+    "proxyFallback": "Người nhờ trả",
+    "noReceipt": "Không tìm thấy khoản thu để liên kết."
   }
 }

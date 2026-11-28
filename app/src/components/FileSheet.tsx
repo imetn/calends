@@ -1,9 +1,19 @@
 // 文件详情：预览（图片可缩放平移，PDF 在应用内逐页阅读，读不出时退回首页缩略图并在新标签页打开）、来源、属性，以及下载、改关联、删除。文件页与订阅详情共用。
 import '../files.css';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { anchorChoices, FILE_EXT, fileTitle, fileTitleParts, type FileKind, type FileMeta } from '../../../shared/files.ts';
+import {
+  anchorChoices,
+  FILE_EXT,
+  fileBadgeKind,
+  fileTitle,
+  fileTitleParts,
+  findReceiptOwner,
+  type FileKind,
+  type FileMeta,
+  type FileReceiptScope,
+} from '../../../shared/files.ts';
 import type { Subscription } from '../../../shared/types.ts';
-import { cnDateFull } from '../../../shared/format.ts';
+import { cnDateFull, flow, money } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState } from '../../../shared/types.ts';
 import { deleteFiles, downloadHref, ensurePdfPages, ensureThumb, fileUrl, isImage, relinkFile, savePdfPages, sizeLabel, thumbUrl } from '../files.ts';
@@ -13,6 +23,7 @@ import { Icon } from './icons.tsx';
 import { ImageZoom } from './ImageZoom.tsx';
 import { SubIcon } from './marks.tsx';
 import { Sheet } from './overlays.tsx';
+import { PersonAvatar, personFor } from './PersonAvatar.tsx';
 import { Picker } from './Picker.tsx';
 import { Cell, Group, IconButton } from './ui.tsx';
 
@@ -28,6 +39,44 @@ export function fileLabel(f: FileMeta, files: readonly FileMeta[], subs: readonl
   if (f.subId) return { head: parts[0], item: parts[1], gone: false };
   if (f.orphan) return { head: parts[1], item: parts[2], gone: true };
   return { head: parts[0], gone: false };
+}
+
+/** 醒目的收款类型标签（合租收款 / 代付收款）与重复凭证提示标签；文件中心卡片、列表、详情与助手共用 */
+export function ReceiptScopeTag({ scope, compact }: { scope: FileReceiptScope | 'receipt'; compact?: boolean }) {
+  const icon = scope === 'carpool' ? 'users' : scope === 'proxy' ? 'coins' : 'receipt';
+  const label = scope === 'carpool' ? t('files.badge.carpool') : scope === 'proxy' ? t('files.badge.proxy') : t('files.kind.receipt');
+  return (
+    <span className={`file-tag ${scope}${compact ? ' compact' : ''}`}>
+      <Icon name={icon} size={11} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+export function FileBadges({
+  f,
+  subs,
+  compact,
+  className,
+}: {
+  f: Pick<FileMeta, 'subId' | 'kind' | 'receiptId' | 'orphan' | 'dupReceipt'>;
+  subs: readonly Pick<Subscription, 'id' | 'share' | 'proxy'>[];
+  compact?: boolean;
+  className?: string;
+}) {
+  const scope = fileBadgeKind(f, subs);
+  if (!scope && !f.dupReceipt) return null;
+  return (
+    <span className={`file-tags${className ? ` ${className}` : ''}`}>
+      {scope && <ReceiptScopeTag scope={scope} compact={compact} />}
+      {f.dupReceipt && (
+        <span className={`file-tag dup${compact ? ' compact' : ''}`} title={t('files.dupHint')}>
+          <Icon name="info" size={11} />
+          <span>{t('files.badge.dup')}</span>
+        </span>
+      )}
+    </span>
+  );
 }
 
 /** 卡片与预览里的文件图：有缩略图用缩略图，没有时补生成并先显示类型图标 */
@@ -98,6 +147,7 @@ export function FileSheet({
   if (!f) return null;
   const ro = !!state.readonly;
   const sub = f.subId ? state.subscriptions.find((s) => s.id === f.subId) : undefined;
+  const owner = f.kind === 'receipt' ? findReceiptOwner(sub, f.receiptId) : undefined;
   const label = fileLabel(f, files, state.subscriptions);
   // 来源一行已写订阅名，标题只写挂的那一项；未关联时是原始文件名
   const title = label.item ?? label.head;
@@ -177,6 +227,13 @@ export function FileSheet({
                   <span>{f.orphan!.name}</span>
                 </span>
               )}
+              <FileBadges f={f} subs={state.subscriptions} />
+            </div>
+          )}
+          {f.dupReceipt && (
+            <div className="file-dup-warn" role="status">
+              <Icon name="info" size={15} />
+              <span>{t('files.dupHint')}</span>
             </div>
           )}
           {isImage(f) ? (
@@ -192,6 +249,21 @@ export function FileSheet({
             </Suspense>
           )}
           <Group>
+            {owner && (
+              <>
+                <Cell label={t(owner.scope === 'carpool' ? 'files.props.member' : 'files.props.payer')}>
+                  <span className="row">
+                    <PersonAvatar p={personFor(state, owner.scope === 'carpool' ? owner.member.personId : owner.proxy.personId, owner.person)} size={20} />
+                    <span>{owner.person}</span>
+                  </span>
+                </Cell>
+                <Cell label={t('files.props.amount')}>
+                  <span className="num green">{flow(owner.receipt.amount, owner.receipt.currency)}</span>
+                </Cell>
+                <Cell label={t('files.props.receiptDate')}>{cnDateFull(owner.receipt.date)}</Cell>
+              </>
+            )}
+            {!owner && f.orphan?.kind === 'receipt' && f.orphan.person && <Cell label={t('files.props.payer')}>{f.orphan.person}</Cell>}
             {linked && <Cell label={t('files.props.name')}>{f.name}</Cell>}
             <Cell label={t('files.props.type')}>{FILE_EXT[f.mime].toUpperCase()}</Cell>
             <Cell label={t('files.props.size')}>{sizeLabel(f.size)}</Cell>
@@ -211,38 +283,70 @@ export function RelinkSheet({ f, state, today, onClose }: { f: FileMeta; state: 
   const subs = state.subscriptions;
   const [subId, setSubId] = useState(f.subId && subs.some((s) => s.id === f.subId) ? f.subId : NONE);
   const sub = subs.find((s) => s.id === subId);
-  const base = sub ? anchorChoices(sub, today) : { charges: [], contracts: [] };
+  const base = sub ? anchorChoices(sub, today) : { charges: [], contracts: [], receipts: [] };
   // 原来挂的那一项不在可选项里（如付款弹窗里传到了未来日期）时也列出来：只打开再保存不会挪走文件
   const own = sub && f.subId === sub.id && f.date ? f.date : undefined;
   const choices = {
     charges: own && f.kind === 'charge' && !base.charges.some((c) => c.date === own) ? [{ date: own, label: '' }, ...base.charges] : base.charges,
     contracts: base.contracts,
+    receipts: base.receipts,
   };
-  const kinds: FileKind[] = ['charge', 'contract', 'sub'];
-  const pick = (k: FileKind | undefined, d: string | undefined): [FileKind, string] => {
-    const items = k === 'charge' ? choices.charges.map((c) => c.date) : k === 'contract' ? choices.contracts.map((c) => c.from) : [];
+  const kinds: FileKind[] = ['charge', 'receipt', 'contract', 'sub'];
+  const pick = (k: FileKind | undefined, val: string | undefined): [FileKind, string] => {
+    const items =
+      k === 'charge'
+        ? choices.charges.map((c) => c.date)
+        : k === 'contract'
+          ? choices.contracts.map((c) => c.from)
+          : k === 'receipt'
+            ? choices.receipts.map((c) => c.id)
+            : [];
     if (k === 'sub') return ['sub', NONE];
-    if (k && items.length) return [k, d && items.includes(d) ? d : items[0]];
+    if (k && items.length) return [k, val && items.includes(val) ? val : items[0]];
+    if (choices.receipts.length && (sub?.proxy || sub?.share)) return ['receipt', choices.receipts[0].id];
     return choices.charges.length ? ['charge', choices.charges[0].date] : ['sub', NONE];
   };
-  const [[kind, date], setAnchor] = useState<[FileKind, string]>(() => pick(f.subId === subId ? f.kind : undefined, f.date));
+  const [[kind, value], setAnchor] = useState<[FileKind, string]>(() =>
+    pick(f.subId === subId ? f.kind : undefined, f.kind === 'receipt' ? f.receiptId : f.date),
+  );
   const [busy, setBusy] = useState(false);
   const chooseSub = (id: string) => {
     setSubId(id);
     const next = subs.find((s) => s.id === id);
-    const c = next ? anchorChoices(next, today) : { charges: [], contracts: [] };
-    setAnchor(c.charges.length ? ['charge', c.charges[0].date] : ['sub', NONE]);
+    const c = next ? anchorChoices(next, today) : { charges: [], contracts: [], receipts: [] };
+    if (c.receipts.length && (next?.proxy || next?.share)) setAnchor(['receipt', c.receipts[0].id]);
+    else setAnchor(c.charges.length ? ['charge', c.charges[0].date] : ['sub', NONE]);
   };
   const items =
     kind === 'charge'
       ? choices.charges.map((c) => ({ value: c.date, label: c.date, hint: c.label || undefined }))
       : kind === 'contract'
         ? choices.contracts.map((c) => ({ value: c.from, label: t('core.file.contractTerm', { from: c.from, until: c.until }) }))
-        : [];
+        : kind === 'receipt'
+          ? choices.receipts.map((c) => ({
+              value: c.id,
+              label: `${c.date} ${c.person}`,
+              hint: `${t(c.scope === 'carpool' ? 'files.badge.carpool' : 'files.badge.proxy')} ${money(c.amount, c.currency)}`,
+            }))
+          : [];
+  const kindLabel = (k: FileKind) => {
+    if (k !== 'receipt') return t(`files.kind.${k}`);
+    if (sub?.proxy) return t('files.badge.proxy');
+    if (sub?.share) return t('files.badge.carpool');
+    return t('files.kind.receipt');
+  };
   const save = async () => {
     setBusy(true);
     try {
-      await relinkFile(f, sub ? { subId: sub.id, kind, date: kind === 'sub' ? null : date } : { subId: null, kind: null, date: null });
+      if (!sub) {
+        await relinkFile(f, { subId: null, kind: null, date: null, receiptId: null });
+      } else if (kind === 'receipt') {
+        const pickedReceipt = choices.receipts.find((c) => c.id === value);
+        if (!pickedReceipt) return;
+        await relinkFile(f, { subId: sub.id, kind: 'receipt', date: pickedReceipt.date, receiptId: pickedReceipt.id });
+      } else {
+        await relinkFile(f, { subId: sub.id, kind, date: kind === 'sub' ? null : value, receiptId: null });
+      }
       onClose();
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e), 'error');
@@ -260,7 +364,7 @@ export function RelinkSheet({ f, state, today, onClose }: { f: FileMeta; state: 
           <button className="btn" onClick={onClose}>
             {t('common.cancel')}
           </button>
-          <button className="btn primary" disabled={busy || (kind !== 'sub' && !!sub && !date)} onClick={save}>
+          <button className="btn primary" disabled={busy || (kind !== 'sub' && !!sub && !value)} onClick={save}>
             {t('common.save')}
           </button>
         </>
@@ -279,18 +383,26 @@ export function RelinkSheet({ f, state, today, onClose }: { f: FileMeta; state: 
           <Cell label={t('files.link.kind')}>
             <Picker
               value={kind}
-              onChange={(k) => setAnchor(pick(k, date))}
+              onChange={(k) => setAnchor(pick(k, value))}
               ariaLabel={t('files.link.kind')}
               options={kinds
-                .filter((k) => k === 'sub' || (k === 'charge' ? choices.charges.length : choices.contracts.length))
-                .map((k) => ({ value: k, label: t(`files.kind.${k}`) }))}
+                .filter((k) =>
+                  k === 'sub'
+                    ? true
+                    : k === 'charge'
+                      ? choices.charges.length > 0
+                      : k === 'contract'
+                        ? choices.contracts.length > 0
+                        : choices.receipts.length > 0,
+                )
+                .map((k) => ({ value: k, label: kindLabel(k) }))}
             />
           </Cell>
         )}
         {sub && kind !== 'sub' && (
           <Cell label={t('files.link.item')}>
             {items.length ? (
-              <Picker value={date} onChange={(d) => setAnchor([kind, d])} ariaLabel={t('files.link.item')} options={items} />
+              <Picker value={value} onChange={(v) => setAnchor([kind, v])} ariaLabel={t('files.link.item')} options={items} />
             ) : (
               t('files.link.noItems')
             )}

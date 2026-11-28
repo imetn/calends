@@ -1,10 +1,16 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ConfirmButton } from '../../components/ConfirmButton.tsx';
+import { FileSheet } from '../../components/FileSheet.tsx';
+import { useFilePicker, useUpload } from '../../components/FileUpload.tsx';
+import { Icon } from '../../components/icons.tsx';
 import { NumInput } from '../../components/inputs.tsx';
 import { cnDate } from '../../../../shared/format.ts';
+import { filesForReceipt } from '../../../../shared/files.ts';
 
 import { isSettled, paidThrough, type LedgerPeriod } from '../../../../shared/receivables.ts';
 import { isReceipt, periodRange, PeriodTip, usePeriodEdit } from '../Receivable.tsx';
+import { canAttach } from '../detail/FilesCard.tsx';
 import { Pop } from '../../components/Pop.tsx';
 
 import { t } from '../../../../shared/i18n.ts';
@@ -29,8 +35,14 @@ export function PeriodPop({
   anchor: HTMLElement;
   onClose: () => void;
 }) {
-  const { setReceipt, others, copying, setCopying, startCopy, removeRecordPeriodOf, editRecordPeriodOf, setPeriodDue } = context;
+  const { state, s, today, setReceipt, others, copying, setCopying, startCopy, removeRecordPeriodOf, editRecordPeriodOf, setPeriodDue } = context;
   const r = p.receipt ?? p.waiver;
+  const realReceipt = r && isReceipt(r) && !r.opening ? r : undefined;
+  const attached = realReceipt ? filesForReceipt(state.files ?? [], s.id, realReceipt.id) : [];
+  const [openFile, setOpenFile] = useState<string>();
+  const up = useUpload(realReceipt ? { subId: s.id, kind: 'receipt', date: realReceipt.date, receiptId: realReceipt.id } : {});
+  const [picker, pick] = useFilePicker((files) => void up.uploadAsync(files));
+  const can = !!realReceipt && canAttach(state);
   const edit = usePeriodEdit(p);
   // 改应收：null 是没在改；留空（undefined）保存即恢复按收费标准算
   const [due, setDue] = useState<number | undefined | null>(null);
@@ -53,6 +65,30 @@ export function PeriodPop({
       />
       {edit.editing && edit.splits && <small className="period-pop-foot">{t('receivable.splitEdit')}</small>}
       {due !== null && <small className="period-pop-foot">{t('receivable.dueOverrideFoot')}</small>}
+      {realReceipt && (attached.length > 0 || can) && !editing && copying !== realReceipt.id && (
+        <div className="period-pop-files">
+          {attached.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className={`period-pop-file${f.dupReceipt ? ' dup' : ''}`}
+              title={f.dupReceipt ? `${f.name}\n${t('files.dupHint')}` : f.name}
+              onClick={() => setOpenFile(f.id)}
+            >
+              <Icon name="clip" size={12} />
+              <span>{f.name}</span>
+            </button>
+          ))}
+          {can && (
+            <button type="button" className="period-pop-file" onClick={pick} disabled={up.pending.length > 0}>
+              <Icon name="upload" size={12} />
+              <span>{t('files.addReceipt')}</span>
+            </button>
+          )}
+          {picker}
+        </div>
+      )}
+      {openFile && createPortal(<FileSheet id={openFile} list={attached} state={state} today={today} onClose={() => setOpenFile(undefined)} />, document.body)}
       {r && copying === r.id && isReceipt(r) ? (
         <CopyReceiptFields context={context} record={r} />
       ) : (

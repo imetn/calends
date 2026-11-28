@@ -156,3 +156,65 @@ test('权限与边界：未启用存储时报错、列表返回 storage=false；
   assert.equal(TOOLS.find((x) => x.name === 'upload_file').write, true);
   assert.equal(TOOLS.find((x) => x.name === 'get_file').write, undefined, '读令牌可读取文件');
 });
+
+test('MCP 收款凭证：合租与代付收款自动推断类型与日期、按 scope 筛选、重复截图预警与 get_subscription 关联', async () => {
+  await upsert(env, 'subscriptions', 'car1', {
+    ...sub('car1', 'Fictional Family'),
+    share: {
+      role: 'owner',
+      seats: 4,
+      members: [
+        { id: 'm1', name: 'Alice', share: 5, receipts: [{ id: 'rc-1', date: '2026-04-03', amount: 35, currency: 'CNY', periods: ['2026-04-01'] }] },
+        { id: 'm2', name: 'Bob', share: 5, receipts: [{ id: 'rc-2', date: '2026-04-04', amount: 35, currency: 'CNY', periods: ['2026-04-01'] }] },
+      ],
+    },
+  });
+  await upsert(env, 'subscriptions', 'px1', {
+    ...sub('px1', 'Fictional Proxy'),
+    proxy: {
+      forName: 'Lin',
+      receipts: [{ id: 'rc-p1', date: '2026-04-10', amount: 145, currency: 'CNY', periods: ['2026-04-10'] }],
+    },
+  });
+
+  // 传 receipt 自动推断 kind=receipt 与收款日期
+  const dry = await run('upload_file', { content_base64: b64(PNG), name: 'alice.png', subscription: 'car1', receipt: 'rc-1', dry_run: true });
+  assert.equal(dry.kind, 'receipt');
+  assert.equal(dry.date, '2026-04-03');
+  assert.equal(dry.receipt_id, 'rc-1');
+
+  const { created: c1 } = await run('upload_file', { content_base64: b64(PNG), name: 'alice.png', subscription: 'car1', receipt: 'rc-1' });
+  assert.equal(c1.kind, 'receipt');
+  assert.equal(c1.receipt_scope, 'carpool');
+  assert.equal(c1.person, 'Alice');
+  assert.equal(c1.duplicate_receipt, false);
+
+  // 同一张 PNG 再挂到 Bob 收款 -> 标出 duplicate_receipt=true
+  const { created: c2 } = await run('upload_file', { content_base64: b64(PNG), name: 'bob-dup.png', subscription: 'car1', receipt: 'rc-2' });
+  assert.equal(c2.duplicate_receipt, true);
+
+  // 不同文件挂到代付收款
+  const { created: cp } = await run('upload_file', { content_base64: b64(pdf('proxy-receipt')), name: 'lin.pdf', subscription: 'px1', receipt: 'rc-p1' });
+  assert.equal(cp.receipt_scope, 'proxy');
+  assert.equal(cp.person, 'Lin');
+  assert.equal(cp.duplicate_receipt, false);
+
+  // 按 receipt_scope 筛选
+  const carList = await run('list_files', { receipt_scope: 'carpool' });
+  assert.equal(carList.total, 2);
+  assert.ok(carList.files.every((f) => f.duplicate_receipt === true));
+  const pxList = await run('list_files', { receipt_scope: 'proxy' });
+  assert.equal(pxList.total, 1);
+  assert.equal(pxList.files[0].id, cp.id);
+
+  // get_subscription 在 files 和 periods 上暴露收款凭证关联
+  const detail = await run('get_subscription', { subscription: 'car1' });
+  assert.ok(detail.files.some((f) => f.id === c1.id && f.receipt_scope === 'carpool' && f.duplicate_receipt === true));
+  const alicePeriod = detail.share.members[0].periods.find((p) => p.receipt_id === 'rc-1');
+  assert.deepEqual(alicePeriod.file_ids, [c1.id]);
+
+  // update_file 可改挂到代付收款
+  const moved = await run('update_file', { file: c2.id, set: { subscription: 'px1', receipt: 'rc-p1' } });
+  assert.equal(moved.after.receipt_scope, 'proxy');
+  assert.equal(moved.after.person, 'Lin');
+});

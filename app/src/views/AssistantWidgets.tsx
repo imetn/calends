@@ -7,7 +7,7 @@ import { money } from '../../../shared/format.ts';
 import { t } from '../../../shared/i18n.ts';
 import type { AppState } from '../../../shared/types.ts';
 import { copyParts } from '../components/copy.tsx';
-import { FileThumb, fileLabel } from '../components/FileSheet.tsx';
+import { FileBadges, FileThumb, fileLabel } from '../components/FileSheet.tsx';
 import { ImageZoom } from '../components/ImageZoom.tsx';
 import { SubIcon } from '../components/marks.tsx';
 import { Sheet } from '../components/overlays.tsx';
@@ -152,6 +152,7 @@ function FilesResultWidget({
               </span>
               <span className="as-file-info">
                 <b className="text-ellipsis">{lbl.head}</b>
+                {meta && <FileBadges f={meta} subs={state.subscriptions} compact />}
                 <small className="text-ellipsis">{copyParts(subParts || r.name || '')}</small>
               </span>
               {meta && <Eye size={14} className="as-file-open" />}

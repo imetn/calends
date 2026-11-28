@@ -294,6 +294,12 @@
     "notFound": "Arquivo não encontrado.",
     "missing": "Arquivo ausente",
     "noStorage": "O armazenamento de arquivos não está ativado.",
-    "linkExpired": "Este link de arquivo expirou."
+    "linkExpired": "Este link de arquivo expirou.",
+    "carpoolReceipt": "Cobrança compartilhada",
+    "proxyReceipt": "Reembolso por terceiros",
+    "receipt": "Comprovante de recebimento",
+    "memberFallback": "Membro",
+    "proxyFallback": "Pessoa",
+    "noReceipt": "O recebimento para vincular não foi encontrado."
   }
 }

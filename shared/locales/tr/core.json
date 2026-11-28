@@ -294,6 +294,12 @@
     "notFound": "Dosya bulunamadı.",
     "missing": "Dosya eksik",
     "noStorage": "Dosya depolama etkin değil.",
-    "linkExpired": "Bu dosya bağlantısının süresi doldu."
+    "linkExpired": "Bu dosya bağlantısının süresi doldu.",
+    "carpoolReceipt": "Paylaşım tahsilatı",
+    "proxyReceipt": "Vekâlet tahsilatı",
+    "receipt": "Tahsilat makbuzu",
+    "memberFallback": "Üye",
+    "proxyFallback": "Kişi",
+    "noReceipt": "Bağlanacak tahsilat kaydı bulunamadı."
   }
 }

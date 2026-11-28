@@ -294,6 +294,12 @@
     "notFound": "File not found.",
     "missing": "File missing",
     "noStorage": "File storage is not enabled.",
-    "linkExpired": "This file link has expired."
+    "linkExpired": "This file link has expired.",
+    "carpoolReceipt": "Shared collection",
+    "proxyReceipt": "Proxy collection",
+    "receipt": "Collection receipt",
+    "memberFallback": "Member",
+    "proxyFallback": "Recipient",
+    "noReceipt": "The collection receipt to link was not found."
   }
 }

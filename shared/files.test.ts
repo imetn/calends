@@ -1,6 +1,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { anchorError, cleanFileName, downloadName, fileCoverage, fileTitle, fileYear, filesOf, orphanFiles, sniffMime, type FileMeta } from './files.ts';
+import {
+  anchorChoices,
+  anchorError,
+  cleanFileName,
+  downloadName,
+  fileBadgeKind,
+  fileCoverage,
+  fileReceiptPerson,
+  fileTitle,
+  fileYear,
+  filesForReceipt,
+  filesOf,
+  orphanFiles,
+  sniffMime,
+  type FileMeta,
+} from './files.ts';
 import { flatten, setLocale } from './i18n.ts';
 import { maskForPublic } from './mask.ts';
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
@@ -180,4 +195,105 @@ test('凭证覆盖：没传过扣款凭证的订阅不追踪；退款与免费�
     c.slots.map((x) => x.date),
     ['2026-10-17'],
   );
+});
+
+test('合租与代付收款凭证：挂法校验、标签区分、同日不串号、覆盖追踪与删除来源快照', () => {
+  const carpool = sub({
+    id: 'car1',
+    name: 'Family Cloud',
+    share: {
+      role: 'owner',
+      seats: 4,
+      members: [
+        {
+          id: 'm1',
+          name: 'Alice',
+          share: 5,
+          receipts: [
+            { id: 'r-alice-1', date: '2026-10-03', amount: 35, currency: 'CNY', periods: ['2026-10-01'] },
+            { id: 'r-alice-open', date: '2026-09-01', amount: 0, currency: 'CNY', periods: ['2026-09-01'], opening: true },
+          ],
+        },
+        {
+          id: 'm2',
+          name: 'Bob',
+          share: 5,
+          receipts: [
+            { id: 'r-bob-1', date: '2026-10-03', amount: 35, currency: 'CNY', periods: ['2026-10-01'] },
+            { id: 'r-bob-2', date: '2026-11-03', amount: 35, currency: 'CNY', periods: ['2026-11-01'] },
+          ],
+        },
+      ],
+    },
+  });
+  const proxy = sub({
+    id: 'px1',
+    name: 'AI Pro Proxy',
+    proxy: {
+      forName: 'Lin',
+      receipts: [{ id: 'r-px-1', date: '2026-10-15', amount: 145, currency: 'CNY', periods: ['2026-10-15'] }],
+    },
+  });
+  const subs = [carpool, proxy];
+
+  // 挂法校验
+  assert.equal(anchorError({ subId: 'car1', kind: 'receipt', date: '2026-10-03', receiptId: 'r-alice-1' }, subs), undefined);
+  assert.equal(anchorError({ subId: 'px1', kind: 'receipt', date: '2026-10-15', receiptId: 'r-px-1' }, subs), undefined);
+  assert.ok(anchorError({ subId: 'car1', kind: 'receipt', date: '2026-10-03', receiptId: null }, subs));
+  assert.ok(anchorError({ subId: 'car1', kind: 'receipt', date: '2026-10-03', receiptId: 'missing' }, subs));
+  assert.equal(anchorError({ subId: 'car1', kind: 'receipt', date: '2026-10-03', receiptId: 'missing' }, subs, { requireReceipt: false }), undefined);
+  assert.ok(anchorError({ subId: 'car1', kind: 'charge', date: '2026-10-03', receiptId: 'r-alice-1' }, subs));
+
+  // 同日不同成员收款各自从 1 起不串号；同一笔收款两份文件才编号
+  const fAlice1 = file({ id: 'fa1', subId: 'car1', kind: 'receipt', date: '2026-10-03', receiptId: 'r-alice-1', mime: 'image/png' });
+  const fAlice2 = file({
+    id: 'fa2',
+    subId: 'car1',
+    kind: 'receipt',
+    date: '2026-10-03',
+    receiptId: 'r-alice-1',
+    mime: 'image/png',
+    createdAt: '2026-11-21T08:00:00.000Z',
+  });
+  const fBob1 = file({ id: 'fb1', subId: 'car1', kind: 'receipt', date: '2026-10-03', receiptId: 'r-bob-1', mime: 'image/jpeg' });
+  const fPx1 = file({ id: 'fp1', subId: 'px1', kind: 'receipt', date: '2026-10-15', receiptId: 'r-px-1', mime: 'image/png' });
+  const all = [fAlice1, fAlice2, fBob1, fPx1];
+
+  assert.equal(fileBadgeKind(fAlice1, subs), 'carpool');
+  assert.equal(fileBadgeKind(fPx1, subs), 'proxy');
+  assert.equal(fileReceiptPerson(fAlice1, subs), 'Alice');
+  assert.equal(fileReceiptPerson(fPx1, subs), 'Lin');
+  assert.equal(fileTitle(fAlice1, all, subs), 'Family Cloud · 2026-10-03 Alice 合租收款');
+  assert.equal(fileTitle(fAlice2, all, subs), 'Family Cloud · 2026-10-03 Alice 合租收款 2');
+  assert.equal(fileTitle(fBob1, all, subs), 'Family Cloud · 2026-10-03 Bob 合租收款');
+  assert.equal(fileTitle(fPx1, all, subs), 'AI Pro Proxy · 2026-10-15 Lin 代付收款');
+  assert.equal(downloadName(fPx1, all, subs), 'AIProProxy_2026-10-15_Lin_代付收款.png');
+  assert.deepEqual(
+    filesForReceipt(all, 'car1', 'r-alice-1').map((f) => f.id),
+    ['fa1', 'fa2'],
+  );
+
+  // 可选项排除期初结清
+  assert.deepEqual(
+    anchorChoices(carpool, '2026-11-20').receipts.map((r) => r.id),
+    ['r-bob-2', 'r-alice-1', 'r-bob-1'],
+  );
+
+  // 覆盖追踪：从首份收款凭证起，Bob 11 月未补凭证会出现在缺凭证槽位
+  const cov = fileCoverage(carpool, all, '2026-11-20');
+  assert.deepEqual(
+    cov.slots.map((x) => [x.kind, x.receiptId, x.files.map((f) => f.id)]),
+    [
+      ['receipt', 'r-bob-2', []],
+      ['receipt', 'r-alice-1', ['fa1', 'fa2']],
+      ['receipt', 'r-bob-1', ['fb1']],
+    ],
+  );
+  assert.equal(cov.covered, 2);
+
+  // 删除订阅保留合租/代付标签与付款人快照
+  const orphaned = orphanFiles([fAlice1, fPx1], carpool);
+  assert.equal(fileBadgeKind(orphaned[0], [proxy]), 'carpool');
+  assert.equal(fileReceiptPerson(orphaned[0], [proxy]), 'Alice');
+  assert.equal(fileTitle(orphaned[0], orphaned, [proxy]), '已删除 · Family Cloud · 2026-10-03 Alice 合租收款');
 });

@@ -44,7 +44,11 @@
     "name": "원본 파일명",
     "type": "유형",
     "size": "크기",
-    "uploaded": "업로드 날짜"
+    "uploaded": "업로드 날짜",
+    "member": "공유 멤버",
+    "payer": "입금자",
+    "amount": "수금 금액",
+    "receiptDate": "수금일"
   },
   "link": {
     "title": "연결 변경",
@@ -57,10 +61,18 @@
   "kind": {
     "contract": "계약 기간",
     "charge": "결제",
-    "sub": "자료"
+    "sub": "자료",
+    "receipt": "수금 증빙"
   },
   "keep": "파일 {count}개는 파일 페이지에 남습니다",
   "card": "파일",
   "add": "파일 추가",
-  "backup": "파일 포함 전체 백업 내보내기"
+  "backup": "파일 포함 전체 백업 내보내기",
+  "badge": {
+    "carpool": "공유 수금",
+    "proxy": "대리결제 회수",
+    "dup": "중복 증빙"
+  },
+  "addReceipt": "수금 증빙 추가",
+  "dupHint": "같은 파일이 여러 수금 내역에 연결되어 있습니다. 동일한 캡처를 잘못 올리지 않았는지 확인해 주세요."
 }

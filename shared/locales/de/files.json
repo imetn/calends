@@ -59,7 +59,11 @@
     "name": "Ursprünglicher Name",
     "type": "Typ",
     "size": "Größe",
-    "uploaded": "Hochgeladen"
+    "uploaded": "Hochgeladen",
+    "member": "Mitglied",
+    "payer": "Bezahlt von",
+    "amount": "Betrag",
+    "receiptDate": "Eingangsdatum"
   },
   "link": {
     "title": "Datei verknüpfen",
@@ -72,7 +76,8 @@
   "kind": {
     "contract": "Vertrag",
     "charge": "Abbuchung",
-    "sub": "Unterlagen"
+    "sub": "Unterlagen",
+    "receipt": "Zahlungsbeleg"
   },
   "keep": {
     "one": "{count} Datei bleibt unter Dateien erhalten",
@@ -80,5 +85,12 @@
   },
   "card": "Dateien",
   "add": "Dateien hinzufügen",
-  "backup": "Vollständiges Backup mit Dateien exportieren"
+  "backup": "Vollständiges Backup mit Dateien exportieren",
+  "badge": {
+    "carpool": "Geteilter Einzug",
+    "proxy": "Erstattung",
+    "dup": "Duplikat"
+  },
+  "addReceipt": "Beleg hinzufügen",
+  "dupHint": "Diese identische Datei ist mit mehreren Einzahlungen verknüpft. Prüfe, ob derselbe Screenshot versehentlich mehrfach verwendet wurde."
 }

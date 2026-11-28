@@ -44,7 +44,11 @@
     "name": "原始檔名",
     "type": "類型",
     "size": "大小",
-    "uploaded": "上載時間"
+    "uploaded": "上載時間",
+    "member": "夾單成員",
+    "payer": "付款人",
+    "amount": "收款金額",
+    "receiptDate": "收款日期"
   },
   "link": {
     "title": "改關聯",
@@ -57,10 +61,18 @@
   "kind": {
     "contract": "合約期",
     "charge": "扣款",
-    "sub": "資料"
+    "sub": "資料",
+    "receipt": "收款憑證"
   },
   "keep": "{count} 個檔案會保留在檔案頁",
   "card": "檔案",
   "add": "新增檔案",
-  "backup": "匯出完整備份（含檔案）"
+  "backup": "匯出完整備份（含檔案）",
+  "badge": {
+    "carpool": "夾單收款",
+    "proxy": "代付收款",
+    "dup": "重複憑證"
+  },
+  "addReceipt": "加入收款憑證",
+  "dupHint": "呢個檔案內容已經關聯到其他收款紀錄，請核對有冇用錯同一張截圖。"
 }

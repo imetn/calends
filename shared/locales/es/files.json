@@ -59,7 +59,11 @@
     "name": "Nombre original",
     "type": "Tipo",
     "size": "Tamaño",
-    "uploaded": "Subido"
+    "uploaded": "Subido",
+    "member": "Miembro",
+    "payer": "Pagado por",
+    "amount": "Importe",
+    "receiptDate": "Fecha de cobro"
   },
   "link": {
     "title": "Vincular archivo",
@@ -72,7 +76,8 @@
   "kind": {
     "contract": "Contrato",
     "charge": "Cargo",
-    "sub": "Documentos"
+    "sub": "Documentos",
+    "receipt": "Comprobante de cobro"
   },
   "keep": {
     "one": "{count} archivo se quedará en Archivos",
@@ -80,5 +85,12 @@
   },
   "card": "Archivos",
   "add": "Añadir archivos",
-  "backup": "Exportar copia completa con archivos"
+  "backup": "Exportar copia completa con archivos",
+  "badge": {
+    "carpool": "Cobro compartido",
+    "proxy": "Reembolso delegado",
+    "dup": "Duplicado"
+  },
+  "addReceipt": "Añadir comprobante",
+  "dupHint": "Este mismo archivo está vinculado a más de un cobro. Comprueba que no se haya reutilizado la misma captura por error."
 }

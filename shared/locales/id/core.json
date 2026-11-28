@@ -283,6 +283,12 @@
     "notFound": "File tidak ditemukan.",
     "missing": "File hilang",
     "noStorage": "Penyimpanan file belum diaktifkan.",
-    "linkExpired": "Tautan file ini sudah kedaluwarsa."
+    "linkExpired": "Tautan file ini sudah kedaluwarsa.",
+    "carpoolReceipt": "Penagihan patungan",
+    "proxyReceipt": "Penggantian talangan",
+    "receipt": "Bukti penerimaan",
+    "memberFallback": "Anggota",
+    "proxyFallback": "Penerima",
+    "noReceipt": "Catatan penerimaan untuk ditautkan tidak ditemukan."
   }
 }

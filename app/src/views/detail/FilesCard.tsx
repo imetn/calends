@@ -1,17 +1,18 @@
 // 订阅详情的「文件」卡：有文件时才出现。单份用横条，多份用单排缩略图卡片平铺（超出一排时末尾叠成 +N）；可拖文件进详情上传为资料。
 import { createPortal } from 'react-dom';
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { FILE_EXT, filesOf, type FileMeta } from '../../../../shared/files.ts';
+import { FILE_EXT, fileBadgeKind, fileReceiptPerson, filesForReceipt, filesOf, type FileMeta } from '../../../../shared/files.ts';
 import { t } from '../../../../shared/i18n.ts';
 import type { AppState, Subscription } from '../../../../shared/types.ts';
 import { Panel } from '../../components/DetailKit.tsx';
 import { FileDrop } from '../../components/FileDrop.tsx';
-import { fileLabel, FileSheet, FileThumb } from '../../components/FileSheet.tsx';
-import { relinkFile, sizeLabel } from '../../files.ts';
+import { FileBadges, fileLabel, FileSheet, FileThumb } from '../../components/FileSheet.tsx';
+import { checkFile, relinkFile, sizeLabel, uploadFiles } from '../../files.ts';
 import { useFilePicker, useUpload } from '../../components/FileUpload.tsx';
 import { Icon } from '../../components/icons.tsx';
-import { Cell, Group } from '../../components/ui.tsx';
+import { Cell, Group, IconButton } from '../../components/ui.tsx';
 import { useStore } from '../../store.ts';
+import { toast } from '../../toast.ts';
 
 const TILE_MIN = 96;
 const MIN_COLS = 3;
@@ -76,6 +77,12 @@ function tileCaption(f: FileMeta, files: readonly FileMeta[], subs: readonly Sub
   if (f.kind === 'charge' && f.date) {
     const kind = full.startsWith(`${f.date} `) ? full.slice(f.date.length + 1) : t('files.kind.charge');
     return { title: f.date, sub: kind, tip: full };
+  }
+  if (f.kind === 'receipt' && f.date) {
+    const person = fileReceiptPerson(f, subs);
+    const scope = fileBadgeKind(f, subs);
+    const scopeText = scope === 'carpool' ? t('files.badge.carpool') : scope === 'proxy' ? t('files.badge.proxy') : t('files.kind.receipt');
+    return { title: person ? `${person} ${f.date.slice(5)}` : f.date, sub: scopeText, tip: full };
   }
   if (f.kind === 'contract' && f.date) return { title: f.date, sub: t('files.kind.contract'), tip: full };
   return { title: full, ext: FILE_EXT[f.mime].toUpperCase(), size: sizeLabel(f.size), tip: full };
@@ -198,6 +205,7 @@ export function FilesCard({
                       <span className="dt-file-text">
                         <b>{label.item ?? label.head}</b>
                         <span className="file-meta">
+                          <FileBadges f={f} subs={state.subscriptions} compact />
                           <span>{FILE_EXT[f.mime].toUpperCase()}</span>
                           <span>{sizeLabel(f.size)}</span>
                         </span>
@@ -225,6 +233,7 @@ export function FilesCard({
                   <button key={f.id} type="button" className="dt-file-tile" title={cap.tip} onClick={() => setOpen(f.id)}>
                     <span className="dt-tile-thumb">
                       <FileThumb f={f} />
+                      <FileBadges f={f} subs={state.subscriptions} compact className="dt-tile-tags" />
                     </span>
                     <span className="dt-tile-text">
                       <b>{cap.title}</b>
@@ -332,4 +341,86 @@ export function useChargeFiles(sub: Subscription, today: string, date: string, o
     ) : null;
   // 还在传的文件保存时挪不过去：传完才能保存
   return { group, moveTo, uploading: up.pending.length > 0 };
+}
+
+/**
+ * 合租成员收款 / 代付收款表单里的「收款凭证」分组：
+ * - 修改已有收款（带 receiptId）时，选好文件即直接上传并挂到这笔收款；日期改动时保存后同步挪过去。
+ * - 新记一笔收款（还没有 receiptId）时，先在本地暂存已校验的文件，等收款保存成功拿到 id 后再上传，取消不会留下无主凭证。
+ */
+export function useReceiptFiles(sub: Subscription | undefined, today: string, date: string, receiptId?: string) {
+  const { state } = useStore();
+  const all = state?.files ?? [];
+  const [queued, setQueued] = useState<Array<{ key: string; file: File }>>([]);
+  const [open, setOpen] = useState<string>();
+  const up = useUpload(sub && receiptId ? { subId: sub.id, kind: 'receipt', date, receiptId } : {});
+  const list = sub && receiptId ? filesForReceipt(all, sub.id, receiptId) : [];
+  const can = !!sub && !!state && canAttach(state);
+  const add = (files: File[]) => {
+    if (!sub) return;
+    if (receiptId) {
+      void up.uploadAsync(files);
+      return;
+    }
+    void (async () => {
+      const ok: Array<{ key: string; file: File }> = [];
+      const bad: string[] = [];
+      for (const file of files) {
+        const res = await checkFile(file);
+        if ('error' in res) bad.push(`${file.name}: ${res.error}`);
+        else ok.push({ key: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`, file });
+      }
+      if (ok.length) setQueued((q) => [...q, ...ok]);
+      if (bad.length) toast(t('files.failed', { count: bad.length }), { kind: 'error', description: bad.join('\n') });
+    })();
+  };
+  const [picker, pick] = useFilePicker(add);
+  const syncAfterSave = async (savedReceiptId: string, savedDate: string) => {
+    if (!sub) return;
+    if (receiptId) {
+      for (const f of list) {
+        if (f.date !== savedDate) await relinkFile(f, { subId: sub.id, kind: 'receipt', date: savedDate, receiptId: savedReceiptId });
+      }
+      return;
+    }
+    if (!queued.length) return;
+    const { failed } = await uploadFiles(
+      queued.map((x) => x.file),
+      { subId: sub.id, kind: 'receipt', date: savedDate, receiptId: savedReceiptId },
+    );
+    setQueued([]);
+    if (failed.length)
+      toast(t('files.failed', { count: failed.length }), { kind: 'error', description: failed.map((x) => `${x.name}: ${x.error}`).join('\n') });
+  };
+  const title = sub?.proxy ? t('files.badge.proxy') : sub?.share ? t('files.badge.carpool') : t('files.card');
+  const group =
+    sub && state && (can || list.length > 0 || queued.length > 0) ? (
+      <Group title={title}>
+        {list.map((f) => (
+          <Cell key={f.id} label={f.name} sub={`${FILE_EXT[f.mime].toUpperCase()}\n${sizeLabel(f.size)}`} onClick={() => setOpen(f.id)}>
+            {f.dupReceipt ? <FileBadges f={f} subs={state.subscriptions} compact /> : undefined}
+          </Cell>
+        ))}
+        {queued.map((q) => (
+          <Cell key={q.key} label={q.file.name} sub={sizeLabel(q.file.size)}>
+            <IconButton type="button" onClick={() => setQueued((xs) => xs.filter((x) => x.key !== q.key))} aria-label={t('common.delete')}>
+              <Icon name="x" size={14} />
+            </IconButton>
+          </Cell>
+        ))}
+        {up.pending.map((p) => (
+          <Cell key={p.key} label={p.name} />
+        ))}
+        {can && (
+          <button type="button" className="cell tap pay-split-add" onClick={pick}>
+            <Icon name="upload" />
+            {t('files.addReceipt')}
+          </button>
+        )}
+        {picker}
+        <FileDrop enabled={can && !open} onFiles={add} />
+        {open && createPortal(<FileSheet id={open} list={list} state={state} today={today} onClose={() => setOpen(undefined)} />, document.body)}
+      </Group>
+    ) : null;
+  return { group, syncAfterSave, uploading: up.pending.length > 0 };
 }

@@ -59,7 +59,11 @@
     "name": "Nom d’origine",
     "type": "Type",
     "size": "Taille",
-    "uploaded": "Importé le"
+    "uploaded": "Importé le",
+    "member": "Membre",
+    "payer": "Payé par",
+    "amount": "Montant",
+    "receiptDate": "Date d’encaissement"
   },
   "link": {
     "title": "Lier le fichier",
@@ -72,7 +76,8 @@
   "kind": {
     "contract": "Contrat",
     "charge": "Prélèvement",
-    "sub": "Documents"
+    "sub": "Documents",
+    "receipt": "Justificatif d’encaissement"
   },
   "keep": {
     "one": "{count} fichier restera dans Fichiers",
@@ -80,5 +85,12 @@
   },
   "card": "Fichiers",
   "add": "Ajouter des fichiers",
-  "backup": "Exporter une sauvegarde complète avec fichiers"
+  "backup": "Exporter une sauvegarde complète avec fichiers",
+  "badge": {
+    "carpool": "Encaissement partagé",
+    "proxy": "Remboursement proxy",
+    "dup": "Doublon"
+  },
+  "addReceipt": "Ajouter un justificatif",
+  "dupHint": "Ce même fichier est associé à plusieurs encaissements. Vérifiez que la même capture n’a pas été réutilisée par erreur."
 }

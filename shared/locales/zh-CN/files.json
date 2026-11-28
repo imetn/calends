@@ -44,7 +44,11 @@
     "name": "原始文件名",
     "type": "类型",
     "size": "大小",
-    "uploaded": "上传时间"
+    "uploaded": "上传时间",
+    "member": "合租成员",
+    "payer": "付款人",
+    "amount": "收款金额",
+    "receiptDate": "收款日期"
   },
   "link": {
     "title": "改关联",
@@ -57,10 +61,18 @@
   "kind": {
     "contract": "合同期",
     "charge": "扣款",
-    "sub": "资料"
+    "sub": "资料",
+    "receipt": "收款凭证"
   },
   "keep": "{count} 个文件会保留在文件页",
   "card": "文件",
   "add": "添加文件",
-  "backup": "导出完整备份（含文件）"
+  "backup": "导出完整备份（含文件）",
+  "badge": {
+    "carpool": "合租收款",
+    "proxy": "代付收款",
+    "dup": "重复凭证"
+  },
+  "addReceipt": "添加收款凭证",
+  "dupHint": "该文件内容已关联到其他收款记录，请核对是否误用了同一张截图。"
 }

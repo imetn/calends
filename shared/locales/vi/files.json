@@ -44,7 +44,11 @@
     "name": "Tên gốc",
     "type": "Loại",
     "size": "Kích thước",
-    "uploaded": "Ngày tải lên"
+    "uploaded": "Ngày tải lên",
+    "member": "Thành viên",
+    "payer": "Người thanh toán",
+    "amount": "Số tiền",
+    "receiptDate": "Ngày thu"
   },
   "link": {
     "title": "Liên kết tệp",
@@ -57,10 +61,18 @@
   "kind": {
     "contract": "Hợp đồng",
     "charge": "Lần trừ tiền",
-    "sub": "Tài liệu"
+    "sub": "Tài liệu",
+    "receipt": "Chứng từ thu tiền"
   },
   "keep": "{count} tệp sẽ được giữ lại trong Tệp",
   "card": "Tệp",
   "add": "Thêm tệp",
-  "backup": "Xuất bản sao lưu đầy đủ kèm tệp"
+  "backup": "Xuất bản sao lưu đầy đủ kèm tệp",
+  "badge": {
+    "carpool": "Thu tiền dùng chung",
+    "proxy": "Thu tiền trả hộ",
+    "dup": "Trùng lặp"
+  },
+  "addReceipt": "Thêm chứng từ thu",
+  "dupHint": "Tệp giống hệt này đang gắn với nhiều khoản thu khác nhau. Hãy kiểm tra xem có dùng nhầm cùng một ảnh chụp màn hình không."
 }

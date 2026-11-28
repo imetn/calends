@@ -38,6 +38,7 @@ interface FileRow {
   sub_id: string | null;
   kind: string | null;
   date: string | null;
+  receipt_id: string | null;
   orphan: string | null;
   thumb: number;
   pages: number | null;
@@ -63,7 +64,7 @@ const limitBytes = (env: Env) => {
   return (Number.isFinite(mb) && mb > 0 ? mb : FILES_LIMIT_MB) * 1024 * 1024;
 };
 
-function toMeta(r: FileRow): FileMeta {
+function toMeta(r: FileRow, dupReceipt = false): FileMeta {
   let orphan: FileOrphan | undefined;
   try {
     // 快照由 SQL 写入：订阅没有图标时 icon 为 null，去掉空字段
@@ -79,6 +80,8 @@ function toMeta(r: FileRow): FileMeta {
     ...(r.sub_id ? { subId: r.sub_id } : {}),
     ...(r.kind ? { kind: r.kind as FileKind } : {}),
     ...(r.date ? { date: r.date } : {}),
+    ...(r.receipt_id ? { receiptId: r.receipt_id } : {}),
+    ...(dupReceipt && r.kind === 'receipt' ? { dupReceipt: true } : {}),
     ...(orphan ? { orphan } : {}),
     ...(r.thumb ? { thumb: true } : {}),
     ...(r.pages != null ? { pages: r.pages } : {}),
@@ -86,10 +89,37 @@ function toMeta(r: FileRow): FileMeta {
   };
 }
 
-const SELECT = 'SELECT id, sha256, name, mime, size, sub_id, kind, date, orphan, thumb, pages, created_at FROM files';
+/** 同一份文件内容（sha256）挂到多笔不同的收款记录时标出重复凭证，提醒核对 */
+function dupReceiptShas(rows: readonly FileRow[]): Set<string> {
+  const bySha = new Map<string, Set<string>>();
+  for (const r of rows) {
+    if (r.kind !== 'receipt' || !r.sub_id || !r.receipt_id) continue;
+    const set = bySha.get(r.sha256) ?? new Set<string>();
+    set.add(`${r.sub_id}:${r.receipt_id}`);
+    bySha.set(r.sha256, set);
+  }
+  const dups = new Set<string>();
+  for (const [sha, keys] of bySha) if (keys.size > 1) dups.add(sha);
+  return dups;
+}
+
+async function isDupReceipt(env: Env, r: Pick<FileRow, 'sha256' | 'kind' | 'sub_id' | 'receipt_id'>): Promise<boolean> {
+  if (r.kind !== 'receipt' || !r.sub_id || !r.receipt_id) return false;
+  const hit = await env.DB.prepare(
+    "SELECT 1 AS x FROM files WHERE sha256 = ?1 AND kind = 'receipt' AND sub_id IS NOT NULL AND receipt_id IS NOT NULL AND (sub_id != ?2 OR receipt_id != ?3) LIMIT 1",
+  )
+    .bind(r.sha256, r.sub_id, r.receipt_id)
+    .first();
+  return !!hit;
+}
+
+const SELECT = 'SELECT id, sha256, name, mime, size, sub_id, kind, date, receipt_id, orphan, thumb, pages, created_at FROM files';
 /** 与 loadState 同一个 batch 读取，元数据和账本来自同一个快照 */
 export const listFilesStmt = (env: Env) => env.DB.prepare(`${SELECT} ORDER BY created_at, id`);
-export const rowsToFiles = (rows: FileRow[]) => rows.map(toMeta);
+export const rowsToFiles = (rows: FileRow[]) => {
+  const dups = dupReceiptShas(rows);
+  return rows.map((r) => toMeta(r, dups.has(r.sha256)));
+};
 
 async function getRow(env: Env, id: string): Promise<FileRow> {
   const row = await env.DB.prepare(`${SELECT} WHERE id = ?1`).bind(id).first<FileRow>();
@@ -105,12 +135,13 @@ async function usedBytes(env: Env): Promise<number> {
   return row?.used ?? 0;
 }
 
-/** 查询参数里的挂法：sub 缺省为未关联；kind 缺省时有日期按扣款、没日期按资料 */
+/** 查询参数里的挂法：sub 缺省为未关联；kind 缺省时带 receipt 按收款、带 date 按扣款、其余按资料 */
 function anchorOf(q: URLSearchParams): FileAnchor {
   const subId = q.get('sub') || null;
   const date = q.get('date') || null;
-  const kind = (q.get('kind') || (subId ? (date ? 'charge' : 'sub') : null)) as FileKind | null;
-  return { subId, kind, date };
+  const receiptId = q.get('receipt') || null;
+  const kind = (q.get('kind') || (subId ? (receiptId ? 'receipt' : date ? 'charge' : 'sub') : null)) as FileKind | null;
+  return { subId, kind, date, receiptId };
 }
 
 async function checkAnchor(env: Env, a: FileAnchor): Promise<void> {
@@ -179,6 +210,7 @@ export async function storeFile(env: Env, body: Uint8Array<ArrayBuffer>, rawName
     sub_id: anchor.subId,
     kind: anchor.kind,
     date: anchor.kind === 'sub' ? null : anchor.date,
+    receipt_id: anchor.kind === 'receipt' ? (anchor.receiptId ?? null) : null,
     orphan: null,
     thumb,
     pages,
@@ -186,13 +218,13 @@ export async function storeFile(env: Env, body: Uint8Array<ArrayBuffer>, rawName
   };
   // 上传期间订阅可能被删掉：订阅仍在才写入，否则文件会挂在不存在的订阅上、也没有来源快照
   const r = await env.DB.prepare(
-    `INSERT INTO files (id, sha256, name, mime, size, sub_id, kind, date, orphan, thumb, pages, created_at)
-     SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL, ?9, ?10, ?11 WHERE ?6 IS NULL OR EXISTS (SELECT 1 FROM subscriptions WHERE id = ?6)`,
+    `INSERT INTO files (id, sha256, name, mime, size, sub_id, kind, date, receipt_id, orphan, thumb, pages, created_at)
+     SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, NULL, ?10, ?11, ?12 WHERE ?6 IS NULL OR EXISTS (SELECT 1 FROM subscriptions WHERE id = ?6)`,
   )
-    .bind(row.id, row.sha256, row.name, row.mime, row.size, row.sub_id, row.kind, row.date, row.thumb, row.pages, row.created_at)
+    .bind(row.id, row.sha256, row.name, row.mime, row.size, row.sub_id, row.kind, row.date, row.receipt_id, row.thumb, row.pages, row.created_at)
     .run();
   if (!r.meta.changes) throw new HttpError(400, t('core.file.noSub'));
-  return toMeta(row);
+  return toMeta(row, await isDupReceipt(env, row));
 }
 
 /** POST /api/files/:id/thumb[?pages=N]：浏览器生成的小图，按内容哈希共用；PDF 可顺带写入准确页数 */
@@ -277,12 +309,13 @@ export async function zipFiles(env: Env, ids: string[]): Promise<Response> {
   });
 }
 
-/** PATCH /api/files/:id {subId, kind, date}：改关联或移回未关联；重新关联后不再标记来自已删除的订阅 */
+/** PATCH /api/files/:id {subId, kind, date, receiptId}：改关联或移回未关联；重新关联后不再标记来自已删除的订阅 */
 export async function patchFile(req: Request, env: Env, id: string): Promise<FileMeta> {
-  const b = (await readJson(req)) as { subId?: unknown; kind?: unknown; date?: unknown };
+  const b = (await readJson(req)) as { subId?: unknown; kind?: unknown; date?: unknown; receiptId?: unknown };
   const subId = str(b.subId);
-  const anchor: FileAnchor = { subId, kind: subId ? ((str(b.kind) ?? (str(b.date) ? 'charge' : 'sub')) as FileKind) : null, date: str(b.date) };
-  if (!subId) anchor.date = null;
+  const receiptId = subId ? str(b.receiptId) : null;
+  const kind = subId ? ((str(b.kind) ?? (receiptId ? 'receipt' : str(b.date) ? 'charge' : 'sub')) as FileKind) : null;
+  const anchor: FileAnchor = { subId, kind, date: subId ? str(b.date) : null, receiptId: kind === 'receipt' ? receiptId : null };
   return relinkFile(env, id, anchor);
 }
 
@@ -291,13 +324,15 @@ export async function relinkFile(env: Env, id: string, anchor: FileAnchor): Prom
   const row = await getRow(env, id);
   await checkAnchor(env, anchor);
   const date = anchor.kind === 'sub' ? null : anchor.date;
+  const receiptId = anchor.kind === 'receipt' ? (anchor.receiptId ?? null) : null;
   const r = await env.DB.prepare(
-    'UPDATE files SET sub_id = ?2, kind = ?3, date = ?4, orphan = NULL WHERE id = ?1 AND (?2 IS NULL OR EXISTS (SELECT 1 FROM subscriptions WHERE id = ?2))',
+    'UPDATE files SET sub_id = ?2, kind = ?3, date = ?4, receipt_id = ?5, orphan = NULL WHERE id = ?1 AND (?2 IS NULL OR EXISTS (SELECT 1 FROM subscriptions WHERE id = ?2))',
   )
-    .bind(id, anchor.subId, anchor.kind, date)
+    .bind(id, anchor.subId, anchor.kind, date, receiptId)
     .run();
   if (!r.meta.changes) throw new HttpError(400, t('core.file.noSub'));
-  return toMeta({ ...row, sub_id: anchor.subId, kind: anchor.kind, date, orphan: null });
+  const next: FileRow = { ...row, sub_id: anchor.subId, kind: anchor.kind, date, receipt_id: receiptId, orphan: null };
+  return toMeta(next, await isDupReceipt(env, next));
 }
 
 /** 改原始文件名（MCP 用）：未关联的文件以它为显示名；已关联的显示名仍按订阅与那一项生成 */
@@ -329,8 +364,18 @@ export async function deleteFile(env: Env, id: string): Promise<void> {
  */
 export const orphanFilesStmt = (env: Env, removed: { ids: string[] } | { keep: string[] }) =>
   env.DB.prepare(
-    `UPDATE files SET orphan = json_object('name', json_extract(s.data, '$.name'), 'kind', files.kind, 'date', files.date),
-       sub_id = NULL, kind = NULL, date = NULL
+    `UPDATE files SET orphan = json_object(
+         'name', json_extract(s.data, '$.name'),
+         'kind', files.kind,
+         'date', files.date,
+         'receiptId', files.receipt_id,
+         'scope', CASE
+           WHEN files.kind = 'receipt' AND json_extract(s.data, '$.proxy') IS NOT NULL THEN 'proxy'
+           WHEN files.kind = 'receipt' AND json_extract(s.data, '$.share') IS NOT NULL THEN 'carpool'
+           ELSE NULL
+         END
+       ),
+       sub_id = NULL, kind = NULL, date = NULL, receipt_id = NULL
      FROM subscriptions s
      WHERE files.sub_id = s.id AND s.id ${'ids' in removed ? 'IN' : 'NOT IN'} (SELECT value FROM json_each(?1))`,
   ).bind(JSON.stringify('ids' in removed ? removed.ids : removed.keep));
@@ -343,7 +388,7 @@ export interface BackupFile extends FileMeta {
 export async function exportFiles(env: Env): Promise<BackupFile[]> {
   const rows = (await listFilesStmt(env).all<FileRow>()).results;
   return rows.map((r) => {
-    const { thumb: _thumb, ...meta } = toMeta(r);
+    const { thumb: _thumb, dupReceipt: _dup, ...meta } = toMeta(r);
     return { ...meta, sha256: r.sha256 };
   });
 }
@@ -352,7 +397,7 @@ export async function exportFiles(env: Env): Promise<BackupFile[]> {
  * 备份里的文件元数据整理成要写入的行；备份没有 files（v3 及更早）时返回 undefined，保留现有文件。
  * 坏条目丢弃；关联的订阅不在备份里、或挂法不成立时转为未关联（带来源快照的保留快照）。
  */
-export function backupFileRows(raw: unknown, subs: readonly Pick<Subscription, 'id' | 'name' | 'icon'>[]): FileRow[] | undefined {
+export function backupFileRows(raw: unknown, subs: readonly Pick<Subscription, 'id' | 'name' | 'icon' | 'share' | 'proxy'>[]): FileRow[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const seen = new Set<string>();
   const rows: FileRow[] = [];
@@ -363,8 +408,9 @@ export function backupFileRows(raw: unknown, subs: readonly Pick<Subscription, '
     if (!id || !/^[\w-]{1,64}$/.test(id) || seen.has(id) || !sha || !SHA.test(sha)) continue;
     if (!FILE_MIMES.includes(x.mime as FileMime) || !Number.isSafeInteger(x.size) || x.size! <= 0 || x.size! > FILE_MAX_BYTES) continue;
     seen.add(id);
-    const anchor: FileAnchor = { subId: str(x.subId), kind: (str(x.kind) as FileKind | null) ?? null, date: str(x.date) };
-    const linked = anchor.subId != null && !anchorError(anchor, subs);
+    const kind = (str(x.kind) as FileKind | null) ?? null;
+    const anchor: FileAnchor = { subId: str(x.subId), kind, date: str(x.date), receiptId: kind === 'receipt' ? str(x.receiptId) : null };
+    const linked = anchor.subId != null && !anchorError(anchor, subs, { requireReceipt: false });
     const orphan = linked ? null : (x.orphan ?? null);
     const created = str(x.createdAt);
     rows.push({
@@ -376,6 +422,7 @@ export function backupFileRows(raw: unknown, subs: readonly Pick<Subscription, '
       sub_id: linked ? anchor.subId : null,
       kind: linked ? anchor.kind : null,
       date: linked && anchor.kind !== 'sub' ? anchor.date : null,
+      receipt_id: linked && anchor.kind === 'receipt' ? (anchor.receiptId ?? null) : null,
       orphan: orphan && typeof orphan === 'object' && typeof orphan.name === 'string' ? JSON.stringify(orphan) : null,
       thumb: 0,
       pages: x.mime === 'application/pdf' ? (validPages(x.pages) ?? null) : null,
@@ -390,8 +437,8 @@ export const restoreFilesStmts = (env: Env, rows: FileRow[]) => [
   env.DB.prepare('DELETE FROM files'),
   ...rows.map((r) =>
     env.DB.prepare(
-      'INSERT INTO files (id, sha256, name, mime, size, sub_id, kind, date, orphan, thumb, pages, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, ?10, ?11)',
-    ).bind(r.id, r.sha256, r.name, r.mime, r.size, r.sub_id, r.kind, r.date, r.orphan, r.pages, r.created_at),
+      'INSERT INTO files (id, sha256, name, mime, size, sub_id, kind, date, receipt_id, orphan, thumb, pages, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0, ?11, ?12)',
+    ).bind(r.id, r.sha256, r.name, r.mime, r.size, r.sub_id, r.kind, r.date, r.receipt_id, r.orphan, r.pages, r.created_at),
   ),
 ];
 

@@ -3,11 +3,13 @@
 import { chargeMethodId, chargesBetween, currentPhase, historyStart, isSeparate, nthCharge, phaseSubs, validDay } from './billing.ts';
 import { contractTerm } from './contract.ts';
 import { t } from './i18n.ts';
-import type { Subscription } from './types.ts';
+import type { Proxy, Receipt, ShareMember, Subscription } from './types.ts';
 
-/** contract：那一期合同的开始日；charge：那一笔的日期；sub：订阅资料，不带日期 */
-export type FileKind = 'contract' | 'charge' | 'sub';
-export const FILE_KINDS: readonly FileKind[] = ['contract', 'charge', 'sub'];
+/** contract：那一期合同的开始日；charge：那一笔的日期；receipt：合租/代付的一笔收款（带 receiptId 与收款日）；sub：订阅资料，不带日期 */
+export type FileKind = 'contract' | 'charge' | 'receipt' | 'sub';
+export const FILE_KINDS: readonly FileKind[] = ['contract', 'charge', 'receipt', 'sub'];
+/** 收款凭证的业务来源：合租成员收款 / 代付收款 */
+export type FileReceiptScope = 'carpool' | 'proxy';
 
 export const FILE_MIMES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'] as const;
 export type FileMime = (typeof FILE_MIMES)[number];
@@ -25,6 +27,9 @@ export interface FileOrphan {
   name: string;
   kind?: FileKind;
   date?: string;
+  receiptId?: string;
+  scope?: FileReceiptScope;
+  person?: string;
 }
 
 /** 下发到浏览器的文件元数据（不含内容哈希与分享令牌） */
@@ -38,6 +43,10 @@ export interface FileMeta {
   subId?: string;
   kind?: FileKind;
   date?: string;
+  /** kind 为 receipt 时指向该订阅下的一笔合租成员收款或代付收款 */
+  receiptId?: string;
+  /** 同一文件内容（sha256）同时挂在多笔不同的收款记录上：仅提示核对，不阻止保存 */
+  dupReceipt?: boolean;
   orphan?: FileOrphan;
   /** 有缩略图 */
   thumb?: boolean;
@@ -51,6 +60,52 @@ export interface FileAnchor {
   subId: string | null;
   kind: FileKind | null;
   date: string | null;
+  receiptId?: string | null;
+}
+
+export type ReceiptOwner =
+  { scope: 'carpool'; receipt: Receipt; member: ShareMember; person: string } | { scope: 'proxy'; receipt: Receipt; proxy: Proxy; person: string };
+
+/** 在订阅的合租成员收款与代付收款里按 id 找到这笔收款及其归属 */
+export function findReceiptOwner(s: Pick<Subscription, 'share' | 'proxy'> | undefined, receiptId: string | undefined): ReceiptOwner | undefined {
+  if (!s || !receiptId) return undefined;
+  for (const member of s.share?.members ?? []) {
+    const receipt = (member.receipts ?? []).find((r) => r.id === receiptId);
+    if (receipt) return { scope: 'carpool', receipt, member, person: member.name || t('core.file.memberFallback') };
+  }
+  const proxyReceipt = (s.proxy?.receipts ?? []).find((r) => r.id === receiptId);
+  if (proxyReceipt && s.proxy) return { scope: 'proxy', receipt: proxyReceipt, proxy: s.proxy, person: s.proxy.forName || t('core.file.proxyFallback') };
+  return undefined;
+}
+
+/** 收款凭证的标签类型：区分合租收款与代付收款（供文件中心、详情与助手展示明显标识） */
+export function fileBadgeKind(
+  f: Pick<FileMeta, 'subId' | 'kind' | 'receiptId' | 'orphan'>,
+  subs: readonly Pick<Subscription, 'id' | 'share' | 'proxy'>[],
+): FileReceiptScope | 'receipt' | undefined {
+  if (f.kind === 'receipt') {
+    const s = f.subId ? subs.find((x) => x.id === f.subId) : undefined;
+    const owner = findReceiptOwner(s, f.receiptId);
+    if (owner) return owner.scope;
+    if (s?.proxy) return 'proxy';
+    if (s?.share) return 'carpool';
+    return 'receipt';
+  }
+  if (!f.subId && f.orphan?.kind === 'receipt') return f.orphan.scope ?? 'receipt';
+  return undefined;
+}
+
+/** 收款凭证对应的付款人（合租成员或代付对象）；无则返回 undefined */
+export function fileReceiptPerson(
+  f: Pick<FileMeta, 'subId' | 'kind' | 'receiptId' | 'orphan'>,
+  subs: readonly Pick<Subscription, 'id' | 'share' | 'proxy'>[],
+): string | undefined {
+  if (f.kind === 'receipt') {
+    const s = f.subId ? subs.find((x) => x.id === f.subId) : undefined;
+    return findReceiptOwner(s, f.receiptId)?.person;
+  }
+  if (!f.subId && f.orphan?.kind === 'receipt') return f.orphan.person;
+  return undefined;
 }
 
 /** 按文件头认类型；不认识的一律拒收（不信任浏览器给的 Content-Type 与扩展名） */
@@ -106,12 +161,24 @@ export function cleanFileName(raw: unknown): string {
   return name || 'file';
 }
 
-/** 挂法是否成立；subs 用来确认订阅存在。返回错误文案，成立时返回 undefined */
-export function anchorError(a: FileAnchor, subs: readonly Pick<Subscription, 'id'>[]): string | undefined {
-  if (a.subId == null) return a.kind == null && a.date == null ? undefined : t('core.file.badAnchor');
-  if (!subs.some((s) => s.id === a.subId)) return t('core.file.noSub');
+/** 挂法是否成立；subs 用来确认订阅（及收款记录）存在。返回错误文案，成立时返回 undefined */
+export function anchorError(
+  a: FileAnchor,
+  subs: readonly Pick<Subscription, 'id' | 'share' | 'proxy'>[],
+  opts: { requireReceipt?: boolean } = {},
+): string | undefined {
+  const receiptId = a.receiptId ?? null;
+  if (a.subId == null) return a.kind == null && a.date == null && receiptId == null ? undefined : t('core.file.badAnchor');
+  const sub = subs.find((s) => s.id === a.subId);
+  if (!sub) return t('core.file.noSub');
   if (a.kind == null || !FILE_KINDS.includes(a.kind)) return t('core.file.badAnchor');
-  if (a.kind === 'sub') return a.date == null ? undefined : t('core.file.badAnchor');
+  if (a.kind === 'sub') return a.date == null && receiptId == null ? undefined : t('core.file.badAnchor');
+  if (a.kind === 'receipt') {
+    if (typeof a.date !== 'string' || !validDay(a.date) || typeof receiptId !== 'string' || !receiptId.trim()) return t('core.file.badAnchor');
+    if (opts.requireReceipt !== false && !findReceiptOwner(sub, receiptId)) return t('core.file.noReceipt');
+    return undefined;
+  }
+  if (receiptId != null) return t('core.file.badAnchor');
   return typeof a.date === 'string' && validDay(a.date) ? undefined : t('core.file.badAnchor');
 }
 
@@ -123,24 +190,45 @@ export function filesOf(files: readonly FileMeta[], subId: string): FileMeta[] {
 }
 
 /** 删除订阅后它的文件：留下来源快照、不再挂在订阅上（与服务端 orphanFilesStmt 同一口径，浏览器先行更新用） */
-export function orphanFiles(files: readonly FileMeta[], sub: Pick<Subscription, 'id' | 'name'>): FileMeta[] {
+export function orphanFiles(files: readonly FileMeta[], sub: Pick<Subscription, 'id' | 'name' | 'share' | 'proxy'>): FileMeta[] {
   return files.map((f) => {
     if (f.subId !== sub.id) return f;
-    const { subId: _s, kind, date, ...rest } = f;
-    const orphan: FileOrphan = { name: sub.name, ...(kind ? { kind } : {}), ...(date ? { date } : {}) };
+    const { subId: _s, kind, date, receiptId, dupReceipt: _dup, ...rest } = f;
+    const owner = kind === 'receipt' ? findReceiptOwner(sub, receiptId) : undefined;
+    const scope = kind === 'receipt' ? (owner?.scope ?? (sub.proxy ? 'proxy' : sub.share ? 'carpool' : undefined)) : undefined;
+    const orphan: FileOrphan = {
+      name: sub.name,
+      ...(kind ? { kind } : {}),
+      ...(date ? { date } : {}),
+      ...(receiptId ? { receiptId } : {}),
+      ...(scope ? { scope } : {}),
+      ...(owner?.person ? { person: owner.person } : {}),
+    };
     return { ...rest, orphan };
   });
 }
 
-/** 挂在某一项（合同期开始日 / 扣款日）上的文件 */
-export function filesAt(files: readonly FileMeta[], subId: string, kind: FileKind, date?: string): FileMeta[] {
-  return files.filter((f) => f.subId === subId && f.kind === kind && (kind === 'sub' || f.date === date)).sort(byUpload);
+/** 挂在某一项（合同期开始日 / 扣款日 / 某笔收款）上的文件 */
+export function filesAt(files: readonly FileMeta[], subId: string, kind: FileKind, date?: string, receiptId?: string): FileMeta[] {
+  return files
+    .filter((f) => {
+      if (f.subId !== subId || f.kind !== kind) return false;
+      if (kind === 'sub') return true;
+      if (kind === 'receipt') return receiptId ? f.receiptId === receiptId : f.date === date;
+      return f.date === date;
+    })
+    .sort(byUpload);
+}
+
+/** 挂在某一笔合租成员收款或代付收款上的文件 */
+export function filesForReceipt(files: readonly FileMeta[], subId: string, receiptId: string): FileMeta[] {
+  return filesAt(files, subId, 'receipt', undefined, receiptId);
 }
 
 /** 同一项挂了多份时，这一份是第几份（从 1 起）；只有一份时为 undefined */
 function seqOf(f: FileMeta, files: readonly FileMeta[]): number | undefined {
   if (!f.subId || !f.kind) return undefined;
-  const same = filesAt(files, f.subId, f.kind, f.date ?? undefined);
+  const same = filesAt(files, f.subId, f.kind, f.date ?? undefined, f.receiptId ?? undefined);
   return same.length > 1 ? same.findIndex((x) => x.id === f.id) + 1 || undefined : undefined;
 }
 
@@ -163,12 +251,19 @@ function chargeLabel(s: Subscription | undefined, date: string): string {
   return kinds.size === 1 && only ? t(`core.paymentKind.${only}`) : t('core.file.charge');
 }
 
-/** 挂的那一项：扣款为 [日期, 类型]，合同期、资料各一段 */
-function itemSegs(s: Subscription | undefined, kind: FileKind | undefined, date: string | undefined): string[] {
+/** 挂的那一项：扣款为 [日期, 类型]，收款为 [日期, 付款人, 合租收款/代付收款]，合同期、资料各一段 */
+function itemSegs(s: Subscription | undefined, kind: FileKind | undefined, date: string | undefined, receiptId?: string, orphan?: FileOrphan): string[] {
   if (kind === 'sub' || !date) return [t('core.file.sub')];
   if (kind === 'contract') {
     const term = s && contractTermAt(s, date);
     return [term ? t('core.file.contractTerm', { from: term.from, until: term.until }) : t('core.file.contractOn', { date })];
+  }
+  if (kind === 'receipt') {
+    const owner = findReceiptOwner(s, receiptId);
+    const scope = owner?.scope ?? orphan?.scope ?? (s?.proxy ? 'proxy' : s?.share ? 'carpool' : undefined);
+    const person = owner?.person ?? orphan?.person;
+    const label = scope === 'carpool' ? t('core.file.carpoolReceipt') : scope === 'proxy' ? t('core.file.proxyReceipt') : t('core.file.receipt');
+    return person ? [date, person, label] : [date, label];
   }
   return [date, chargeLabel(s, date)];
 }
@@ -178,10 +273,10 @@ function titleSegs(f: FileMeta, files: readonly FileMeta[], subs: readonly Subsc
   if (f.subId) {
     const s = subs.find((x) => x.id === f.subId);
     const seq = seqOf(f, files);
-    const item = itemSegs(s, f.kind, f.date);
+    const item = itemSegs(s, f.kind, f.date, f.receiptId);
     return [[s?.name ?? '?'], seq && seq > 1 ? [...item, String(seq)] : item];
   }
-  if (f.orphan) return [[t('core.file.deleted')], [f.orphan.name], itemSegs(undefined, f.orphan.kind, f.orphan.date)];
+  if (f.orphan) return [[t('core.file.deleted')], [f.orphan.name], itemSegs(undefined, f.orphan.kind, f.orphan.date, f.orphan.receiptId, f.orphan)];
   return [[f.name]];
 }
 
@@ -217,11 +312,20 @@ export function fileMethod(f: Pick<FileMeta, 'kind' | 'date'>, s: Subscription, 
   return currentPhase(s, day).methodId ?? 'none';
 }
 
-/** 改关联时可选的项：已发生的扣款日（分开记账另含缴费日）、已开始的合同期，都按日期倒序 */
+export interface ReceiptChoice {
+  id: string;
+  date: string;
+  scope: FileReceiptScope;
+  person: string;
+  amount: number;
+  currency: string;
+}
+
+/** 改关联时可选的项：已发生的扣款日（分开记账另含缴费日）、已开始的合同期、合租/代付收款记录，都按日期倒序 */
 export function anchorChoices(
   s: Subscription,
   today: string,
-): { charges: Array<{ date: string; label: string }>; contracts: Array<{ from: string; until: string }> } {
+): { charges: Array<{ date: string; label: string }>; contracts: Array<{ from: string; until: string }>; receipts: ReceiptChoice[] } {
   const charges = new Map<string, string>();
   for (const c of chargesBetween(s, historyStart(s), today, today)) if (!c.projected && !charges.has(c.date)) charges.set(c.date, chargeLabel(s, c.date));
   for (const p of phaseSubs(s)) for (const x of p.payments ?? []) if (x.date <= today && !charges.has(x.date)) charges.set(x.date, chargeLabel(s, x.date));
@@ -236,21 +340,52 @@ export function anchorChoices(
       if (!term.renews) break;
     }
   }
+  const receipts: ReceiptChoice[] = [];
+  for (const m of s.share?.members ?? []) {
+    for (const r of m.receipts ?? []) {
+      if (r.opening) continue;
+      receipts.push({
+        id: r.id,
+        date: r.date,
+        scope: 'carpool',
+        person: m.name || t('core.file.memberFallback'),
+        amount: r.amount,
+        currency: r.currency,
+      });
+    }
+  }
+  for (const r of s.proxy?.receipts ?? []) {
+    if (r.opening) continue;
+    receipts.push({
+      id: r.id,
+      date: r.date,
+      scope: 'proxy',
+      person: s.proxy?.forName || t('core.file.proxyFallback'),
+      amount: r.amount,
+      currency: r.currency,
+    });
+  }
+  receipts.sort((a, b) => b.date.localeCompare(a.date) || a.person.localeCompare(b.person) || a.id.localeCompare(b.id));
   return {
     charges: [...charges].map(([date, label]) => ({ date, label })).sort((a, b) => b.date.localeCompare(a.date)),
     contracts: [...contracts].map(([from, until]) => ({ from, until })).sort((a, b) => b.from.localeCompare(a.from)),
+    receipts,
   };
 }
 
-/** 一期应有凭证的位置：一笔正常扣款（分开记账为一期账单），或一期合同 */
+/** 一期应有凭证的位置：一笔正常扣款（分开记账为一期账单）、一期合同，或一笔合租/代付收款 */
 export interface FileSlot {
-  kind: 'charge' | 'contract';
-  /** 扣款日 / 账单日 / 合同开始日：上传到这一格的文件挂在这个日期 */
+  kind: 'charge' | 'contract' | 'receipt';
+  /** 扣款日 / 账单日 / 合同开始日 / 收款日：上传到这一格的文件挂在这个日期 */
   date: string;
   /** 合同期的结束日 */
   until?: string;
   /** 分开记账：结清这期账单的缴费日，挂在缴费日的凭证也算这一期 */
   paidOn?: string;
+  /** kind 为 receipt 时对应的收款 id、业务来源与付款人 */
+  receiptId?: string;
+  scope?: FileReceiptScope;
+  person?: string;
   files: FileMeta[];
 }
 
@@ -259,13 +394,13 @@ export interface FileCoverage {
   slots: FileSlot[];
   /** 有凭证的期数 */
   covered: number;
-  /** 不在任何一格里的文件：资料、退款补差等非正常扣款、对不上日期的，按日期倒序，资料最后 */
+  /** 不在任何一格里的文件：资料、退款补差等非正常扣款、对不上日期或已删除收款的，按日期倒序，资料最后 */
   rest: FileMeta[];
 }
 
 /**
- * 一个订阅的凭证覆盖：从这个订阅第一份扣款凭证那一期起，之后每一笔已发生的正常扣款都应有凭证；合同同理，从第一份合同文件那一期起。
- * 一份都没传过的那一类不追踪，免得没打算归档的订阅被成串的「缺凭证」淹没。退款、补差、失败、免费期不要求凭证。
+ * 一个订阅的凭证覆盖：从这个订阅第一份扣款凭证那一期起，之后每一笔已发生的正常扣款都应有凭证；合同与收款凭证同理。
+ * 一份都没传过的那一类不追踪，免得没打算归档的订阅被成串的「缺凭证」淹没。退款、补差、失败、免费期、期初结清不要求凭证。
  */
 export function fileCoverage(s: Subscription, files: readonly FileMeta[], today: string): FileCoverage {
   const own = filesOf(files, s.id);
@@ -278,6 +413,12 @@ export function fileCoverage(s: Subscription, files: readonly FileMeta[], today:
     hit.forEach((f) => used.add(f.id));
     return hit.sort(byUpload);
   };
+  const takeReceipt = (receiptId: string) => {
+    const hit = own.filter((f) => f.kind === 'receipt' && f.receiptId === receiptId && !used.has(f.id));
+    hit.forEach((f) => used.add(f.id));
+    return hit.sort(byUpload);
+  };
+  const choices = anchorChoices(s, today);
   const chargeFrom = first('charge');
   if (chargeFrom) {
     const seen = new Set<string>();
@@ -289,16 +430,23 @@ export function fileCoverage(s: Subscription, files: readonly FileMeta[], today:
   }
   const contractFrom = first('contract');
   if (contractFrom) {
-    for (const { from, until } of anchorChoices(s, today).contracts) {
+    for (const { from, until } of choices.contracts) {
       if (until < contractFrom) continue;
       slots.push({ kind: 'contract', date: from, until, files: take('contract', from) });
     }
   }
-  slots.sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind));
+  const receiptFrom = first('receipt');
+  if (receiptFrom) {
+    for (const r of choices.receipts) {
+      if (r.date < receiptFrom || r.date > today) continue;
+      slots.push({ kind: 'receipt', date: r.date, receiptId: r.id, scope: r.scope, person: r.person, files: takeReceipt(r.id) });
+    }
+  }
+  slots.sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind) || (a.receiptId ?? '').localeCompare(b.receiptId ?? ''));
   const rest = own.filter((f) => !used.has(f.id));
   rest.sort((a, b) => (a.kind === 'sub' ? 1 : 0) - (b.kind === 'sub' ? 1 : 0) || (b.date ?? '').localeCompare(a.date ?? '') || byUpload(a, b));
   return { slots, covered: slots.filter((x) => x.files.length).length, rest };
 }
 
-/** 一格的名称：扣款为「2026-11-03 扣款」（分开记账写「账单」），合同期为起止 */
-export const slotLabel = (s: Subscription, slot: Pick<FileSlot, 'kind' | 'date'>) => itemSegs(s, slot.kind, slot.date).join(' ');
+/** 一格的名称：扣款为「2026-11-03 扣款」（分开记账写「账单」），合同期为起止，收款为「2026-11-03 Alice 合租收款」 */
+export const slotLabel = (s: Subscription, slot: Pick<FileSlot, 'kind' | 'date' | 'receiptId'>) => itemSegs(s, slot.kind, slot.date, slot.receiptId).join(' ');

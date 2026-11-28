@@ -15,7 +15,7 @@ import {
   type LedgerPeriod,
   type Receivable,
 } from '../../../shared/receivables.ts';
-import type { AppState, Person, Receipt, Waiver } from '../../../shared/types.ts';
+import type { AppState, Person, Receipt, Subscription, Waiver } from '../../../shared/types.ts';
 import { PersonAvatar } from '../components/PersonAvatar.tsx';
 import { DatePicker } from '../components/DatePicker.tsx';
 import { CurrencySelect } from '../components/Picker.tsx';
@@ -24,6 +24,7 @@ import { Cell, Group } from '../components/ui.tsx';
 import { ConfirmButton } from '../components/ConfirmButton.tsx';
 import { NumInput, useSubmit } from '../components/inputs.tsx';
 import { run } from '../toast.ts';
+import { useReceiptFiles } from './detail/FilesCard.tsx';
 
 /** 一期的起止：起始日带年份，同一年内的结束日不重复年份 */
 export const periodRange = (p: Pick<LedgerPeriod, 'from' | 'until'>) =>
@@ -46,6 +47,7 @@ export const isReceipt = (r: Receipt | Waiver | undefined): r is Receipt => !!r 
  */
 export function ReceivableSheet({
   state,
+  sub,
   person,
   head,
   ledger,
@@ -59,6 +61,8 @@ export function ReceivableSheet({
   dueEditable,
 }: {
   state: AppState;
+  /** 所属订阅：用于将合租/代付收款凭证直接关联到这笔收款 */
+  sub?: Subscription;
   /** 向谁收：表单最上面单独一块 */
   person: Pick<Person, 'name' | 'color' | 'id' | 'avatar'>;
   /** 人下面：哪辆车、收费标准 */
@@ -138,7 +142,8 @@ export function ReceivableSheet({
   // 指向已不存在的期（改过加入日、收费周期）的旧记录：列出来，取消勾选后才能保存
   const lost = keys.filter((k) => !periods.some((p) => p.key === k));
   const [saving, guard] = useSubmit();
-  const blocked = saving || !keys.length || lost.length > 0 || !date;
+  const receiptFiles = useReceiptFiles(mode === 'receipt' ? sub : undefined, today, date, isReceipt(edit) ? edit.id : undefined);
+  const blocked = saving || receiptFiles.uploading || !keys.length || lost.length > 0 || !date;
   const invalid = blocked || (mode === 'receipt' && (!Number.isFinite(amount) || amount < 0));
   // 勾选只能连成一段（togglePeriodRange）；改了勾选就按新勾的期重新给出金额，再手改
   const toggle = (k: string) => {
@@ -153,10 +158,11 @@ export function ReceivableSheet({
   };
 
   // 失败时 run 提示错误，表单保留，可直接重试
-  const write = (next: () => Receivable, msg: string, withDues = false) =>
+  const write = (next: () => Receivable, msg: string, withDues = false, afterSave?: () => Promise<void>) =>
     guard(() =>
       run(async () => {
         await save(next(), withDues ? changedDues : undefined);
+        if (afterSave) await afterSave();
         onDone();
       }, msg),
     );
@@ -168,6 +174,7 @@ export function ReceivableSheet({
       () => (kind === 'receipt' ? putRecord(record, 'receipt', { ...base, amount, currency }, periods) : putRecord(record, 'waiver', base, periods)),
       kind === 'receipt' ? t('receivable.toastReceived', { amount: flow(amount, currency) }) : t('receivable.toastWaived', { count: keys.length }),
       true,
+      kind === 'receipt' ? () => receiptFiles.syncAfterSave(id, date) : undefined,
     );
   };
 
@@ -232,6 +239,7 @@ export function ReceivableSheet({
             <input value={note} placeholder={t('receivable.notePh')} onChange={(e) => setNote(e.target.value)} />
           </Cell>
         </Group>
+        {receiptFiles.group}
         <Group
           title={t('receivable.periods')}
           foot={

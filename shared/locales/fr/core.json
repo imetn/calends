@@ -294,6 +294,12 @@
     "notFound": "Fichier introuvable.",
     "missing": "Fichier manquant",
     "noStorage": "Le stockage de fichiers n’est pas activé.",
-    "linkExpired": "Ce lien de fichier a expiré."
+    "linkExpired": "Ce lien de fichier a expiré.",
+    "carpoolReceipt": "Encaissement partagé",
+    "proxyReceipt": "Remboursement proxy",
+    "receipt": "Justificatif d’encaissement",
+    "memberFallback": "Membre",
+    "proxyFallback": "Bénéficiaire",
+    "noReceipt": "L’encaissement à associer est introuvable."
   }
 }

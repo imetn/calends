@@ -55,6 +55,7 @@ export function ReceiptForm({
   return (
     <ReceivableSheet
       state={state}
+      sub={s}
       today={today}
       person={{ ...personFor(state, m.personId, m.name), name }}
       head={

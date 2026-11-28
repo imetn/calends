@@ -131,6 +131,7 @@ function query(a: Partial<FileAnchor>): string {
   if (a.subId) q.set('sub', a.subId);
   if (a.kind) q.set('kind', a.kind);
   if (a.date) q.set('date', a.date);
+  if (a.receiptId) q.set('receipt', a.receiptId);
   const s = q.toString();
   return s ? `?${s}` : '';
 }

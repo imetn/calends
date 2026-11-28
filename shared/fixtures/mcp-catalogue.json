@@ -301,8 +301,8 @@
       null,
       null,
       null,
-      "Files in the file center (receipts, invoices, contracts; PDF/PNG/JPEG/WebP). Each row: id, title (display name: linked files are named after the subscription and the charge/contract they document; unlinked files use their original name), name (original file name), subscription, kind, date, deleted_source (name of a deleted subscription the file came from), type, size in bytes, uploaded_at. storage=false means file storage is not configured on this server.",
-      "{\"type\":\"object\",\"properties\":{\"subscription\":{\"type\":\"string\",\"description\":\"Optional: only files linked to this subscription.\"},\"status\":{\"type\":\"string\",\"enum\":[\"all\",\"linked\",\"unlinked\"],\"description\":\"Default all.\"},\"query\":{\"type\":\"string\",\"description\":\"Optional: case-insensitive match on title or original name.\"},\"limit\":{\"type\":\"integer\",\"minimum\":1,\"maximum\":200,\"description\":\"Default 50, newest first.\"}},\"required\":[],\"additionalProperties\":false}"
+      "Files in the file center (receipts, invoices, contracts, shared-plan and proxy collection receipts; PDF/PNG/JPEG/WebP). Each row: id, title (display name: linked files are named after the subscription and the charge/contract/collection receipt they document; unlinked files use their original name), name (original file name), subscription, kind, date, receipt_id, receipt_scope (carpool or proxy when kind=receipt), person (member or proxy recipient name when kind=receipt), duplicate_receipt (true when the exact same file is attached to more than one collection receipt), deleted_source (name of a deleted subscription the file came from), type, size in bytes, uploaded_at. storage=false means file storage is not configured on this server.",
+      "{\"type\":\"object\",\"properties\":{\"subscription\":{\"type\":\"string\",\"description\":\"Optional: only files linked to this subscription.\"},\"status\":{\"type\":\"string\",\"enum\":[\"all\",\"linked\",\"unlinked\"],\"description\":\"Default all.\"},\"kind\":{\"type\":\"string\",\"enum\":[\"contract\",\"charge\",\"receipt\",\"sub\"],\"description\":\"Optional: filter by file kind (charge, contract, receipt, sub).\"},\"receipt_scope\":{\"type\":\"string\",\"enum\":[\"carpool\",\"proxy\"],\"description\":\"Optional: only shared-plan (carpool) or proxy collection receipts.\"},\"query\":{\"type\":\"string\",\"description\":\"Optional: case-insensitive match on title, original name, or person.\"},\"limit\":{\"type\":\"integer\",\"minimum\":1,\"maximum\":200,\"description\":\"Default 50, newest first.\"}},\"required\":[],\"additionalProperties\":false}"
     ],
     [
       "get_file",
@@ -318,15 +318,15 @@
       null,
       null,
       "Add a file (PDF, PNG, JPEG or WebP, up to 10 MB) to the file center, optionally linked to a subscription. Give exactly one source: content_base64 (the file bytes; a data: URL prefix is fine), url (a public https address to fetch, e.g. an attachment link), or upload_link=true to get a one-time URL the user or a script can PUT the raw bytes to within 15 minutes (use this when the file is too big to pass inline). The same content uploaded twice is stored once.",
-      "{\"type\":\"object\",\"properties\":{\"content_base64\":{\"type\":\"string\",\"description\":\"File content, base64.\"},\"url\":{\"type\":\"string\",\"description\":\"Public https URL of the file.\"},\"upload_link\":{\"type\":\"boolean\",\"description\":\"Return a one-time upload URL instead of uploading now.\"},\"name\":{\"type\":\"string\",\"description\":\"Original file name, e.g. \\\"invoice-2026-11.pdf\\\". Shown for unlinked files and searchable.\"},\"subscription\":{\"type\":\"string\",\"description\":\"Subscription id or name to link the file to. Omit to leave the file unlinked.\"},\"kind\":{\"type\":\"string\",\"enum\":[\"contract\",\"charge\",\"sub\"],\"description\":\"What the file documents: charge = a receipt or invoice for the charge on `date`; contract = a contract whose term starts on `date`; sub = general documents of the subscription, not tied to one charge or contract (no date; the app labels it Documents / 资料), use it when the user asks for that even for an invoice. Default: charge when date is given, otherwise sub.\"},\"date\":{\"format\":\"date\",\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\",\"description\":\"Charge date (kind=charge) or contract start date (kind=contract), YYYY-MM-DD.\"},\"dry_run\":{\"type\":\"boolean\",\"description\":\"Preview before/after and references without saving.\"}},\"required\":[],\"additionalProperties\":false}"
+      "{\"type\":\"object\",\"properties\":{\"content_base64\":{\"type\":\"string\",\"description\":\"File content, base64.\"},\"url\":{\"type\":\"string\",\"description\":\"Public https URL of the file.\"},\"upload_link\":{\"type\":\"boolean\",\"description\":\"Return a one-time upload URL instead of uploading now.\"},\"name\":{\"type\":\"string\",\"description\":\"Original file name, e.g. \\\"invoice-2026-11.pdf\\\". Shown for unlinked files and searchable.\"},\"subscription\":{\"type\":\"string\",\"description\":\"Subscription id or name to link the file to. Omit to leave the file unlinked.\"},\"kind\":{\"type\":\"string\",\"enum\":[\"contract\",\"charge\",\"receipt\",\"sub\"],\"description\":\"What the file documents: charge = a receipt or invoice for the charge on `date`; contract = a contract whose term starts on `date`; receipt = a collection screenshot/receipt for a shared-plan member receipt or proxy receipt (set `receipt` to its receipt_id from get_subscription; `date` defaults to that receipt date); sub = general documents of the subscription, not tied to one charge, contract or receipt (no date; the app labels it Documents / 资料), use it when the user asks for that even for an invoice. Default: receipt when receipt is given, charge when date is given, otherwise sub.\"},\"date\":{\"format\":\"date\",\"type\":\"string\",\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\",\"description\":\"Charge date (kind=charge), contract start date (kind=contract), or receipt date (kind=receipt, optional when receipt is given), YYYY-MM-DD.\"},\"receipt\":{\"type\":\"string\",\"description\":\"Receipt id from get_subscription (when kind=receipt, linking to a specific shared-plan member receipt or proxy receipt).\"},\"dry_run\":{\"type\":\"boolean\",\"description\":\"Preview before/after and references without saving.\"}},\"required\":[],\"additionalProperties\":false}"
     ],
     [
       "update_file",
       true,
       null,
       true,
-      "Rename a file, link it to a subscription, change what it documents, or unlink it. set.subscription: id/name to link (or relink), null to unlink; omit to keep. When the subscription stays the same, omitted kind/date keep their current values; when it changes, kind defaults to charge if date is given, otherwise sub. set.name changes the original file name (linked files keep their generated display title). Use dry_run to preview.",
-      "{\"type\":\"object\",\"properties\":{\"file\":{\"type\":\"string\",\"description\":\"File id from list_files.\"},\"set\":{\"type\":\"object\",\"properties\":{\"subscription\":{\"type\":[\"string\",\"null\"],\"description\":\"Subscription to link to; null = unlink.\"},\"kind\":{\"type\":\"string\",\"enum\":[\"contract\",\"charge\",\"sub\"],\"description\":\"What the file documents: charge = a receipt or invoice for the charge on `date`; contract = a contract whose term starts on `date`; sub = general documents of the subscription, not tied to one charge or contract (no date; the app labels it Documents / 资料), use it when the user asks for that even for an invoice. Default: charge when date is given, otherwise sub.\"},\"date\":{\"format\":\"date\",\"type\":[\"string\",\"null\"],\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\",\"description\":\"Charge date (kind=charge) or contract start date (kind=contract), YYYY-MM-DD.\"},\"name\":{\"type\":\"string\",\"description\":\"New original file name.\"}},\"required\":[],\"additionalProperties\":false},\"dry_run\":{\"type\":\"boolean\",\"description\":\"Preview before/after and references without saving.\"}},\"required\":[\"file\",\"set\"],\"additionalProperties\":false}"
+      "Rename a file, link it to a subscription, change what it documents, or unlink it. set.subscription: id/name to link (or relink), null to unlink; omit to keep. When the subscription stays the same, omitted kind/date/receipt keep their current values; when it changes, kind defaults to receipt if receipt is given, charge if date is given, otherwise sub. For kind=receipt, pass set.receipt (receipt_id from get_subscription); date defaults to that receipt date. set.name changes the original file name (linked files keep their generated display title). Use dry_run to preview.",
+      "{\"type\":\"object\",\"properties\":{\"file\":{\"type\":\"string\",\"description\":\"File id from list_files.\"},\"set\":{\"type\":\"object\",\"properties\":{\"subscription\":{\"type\":[\"string\",\"null\"],\"description\":\"Subscription to link to; null = unlink.\"},\"kind\":{\"type\":\"string\",\"enum\":[\"contract\",\"charge\",\"receipt\",\"sub\"],\"description\":\"What the file documents: charge = a receipt or invoice for the charge on `date`; contract = a contract whose term starts on `date`; receipt = a collection screenshot/receipt for a shared-plan member receipt or proxy receipt (set `receipt` to its receipt_id from get_subscription; `date` defaults to that receipt date); sub = general documents of the subscription, not tied to one charge, contract or receipt (no date; the app labels it Documents / 资料), use it when the user asks for that even for an invoice. Default: receipt when receipt is given, charge when date is given, otherwise sub.\"},\"date\":{\"format\":\"date\",\"type\":[\"string\",\"null\"],\"pattern\":\"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\",\"description\":\"Charge date (kind=charge), contract start date (kind=contract), or receipt date (kind=receipt, optional when receipt is given), YYYY-MM-DD.\"},\"receipt\":{\"type\":[\"string\",\"null\"],\"description\":\"Receipt id from get_subscription (when kind=receipt, linking to a specific shared-plan member receipt or proxy receipt).\"},\"name\":{\"type\":\"string\",\"description\":\"New original file name.\"}},\"required\":[],\"additionalProperties\":false},\"dry_run\":{\"type\":\"boolean\",\"description\":\"Preview before/after and references without saving.\"}},\"required\":[\"file\",\"set\"],\"additionalProperties\":false}"
     ]
   ],
   "list": [
@@ -4535,7 +4535,7 @@
     {
       "name": "list_files",
       "title": "List files",
-      "description": "Files in the file center (receipts, invoices, contracts; PDF/PNG/JPEG/WebP). Each row: id, title (display name: linked files are named after the subscription and the charge/contract they document; unlinked files use their original name), name (original file name), subscription, kind, date, deleted_source (name of a deleted subscription the file came from), type, size in bytes, uploaded_at. storage=false means file storage is not configured on this server.",
+      "description": "Files in the file center (receipts, invoices, contracts, shared-plan and proxy collection receipts; PDF/PNG/JPEG/WebP). Each row: id, title (display name: linked files are named after the subscription and the charge/contract/collection receipt they document; unlinked files use their original name), name (original file name), subscription, kind, date, receipt_id, receipt_scope (carpool or proxy when kind=receipt), person (member or proxy recipient name when kind=receipt), duplicate_receipt (true when the exact same file is attached to more than one collection receipt), deleted_source (name of a deleted subscription the file came from), type, size in bytes, uploaded_at. storage=false means file storage is not configured on this server.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4548,9 +4548,19 @@
             "enum": ["all", "linked", "unlinked"],
             "description": "Default all."
           },
+          "kind": {
+            "type": "string",
+            "enum": ["contract", "charge", "receipt", "sub"],
+            "description": "Optional: filter by file kind (charge, contract, receipt, sub)."
+          },
+          "receipt_scope": {
+            "type": "string",
+            "enum": ["carpool", "proxy"],
+            "description": "Optional: only shared-plan (carpool) or proxy collection receipts."
+          },
           "query": {
             "type": "string",
-            "description": "Optional: case-insensitive match on title or original name."
+            "description": "Optional: case-insensitive match on title, original name, or person."
           },
           "limit": {
             "type": "integer",
@@ -4635,14 +4645,18 @@
           },
           "kind": {
             "type": "string",
-            "enum": ["contract", "charge", "sub"],
-            "description": "What the file documents: charge = a receipt or invoice for the charge on `date`; contract = a contract whose term starts on `date`; sub = general documents of the subscription, not tied to one charge or contract (no date; the app labels it Documents / 资料), use it when the user asks for that even for an invoice. Default: charge when date is given, otherwise sub."
+            "enum": ["contract", "charge", "receipt", "sub"],
+            "description": "What the file documents: charge = a receipt or invoice for the charge on `date`; contract = a contract whose term starts on `date`; receipt = a collection screenshot/receipt for a shared-plan member receipt or proxy receipt (set `receipt` to its receipt_id from get_subscription; `date` defaults to that receipt date); sub = general documents of the subscription, not tied to one charge, contract or receipt (no date; the app labels it Documents / 资料), use it when the user asks for that even for an invoice. Default: receipt when receipt is given, charge when date is given, otherwise sub."
           },
           "date": {
             "format": "date",
             "type": "string",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-            "description": "Charge date (kind=charge) or contract start date (kind=contract), YYYY-MM-DD."
+            "description": "Charge date (kind=charge), contract start date (kind=contract), or receipt date (kind=receipt, optional when receipt is given), YYYY-MM-DD."
+          },
+          "receipt": {
+            "type": "string",
+            "description": "Receipt id from get_subscription (when kind=receipt, linking to a specific shared-plan member receipt or proxy receipt)."
           },
           "dry_run": {
             "type": "boolean",
@@ -4662,7 +4676,7 @@
     {
       "name": "update_file",
       "title": "Update file",
-      "description": "Rename a file, link it to a subscription, change what it documents, or unlink it. set.subscription: id/name to link (or relink), null to unlink; omit to keep. When the subscription stays the same, omitted kind/date keep their current values; when it changes, kind defaults to charge if date is given, otherwise sub. set.name changes the original file name (linked files keep their generated display title). Use dry_run to preview.",
+      "description": "Rename a file, link it to a subscription, change what it documents, or unlink it. set.subscription: id/name to link (or relink), null to unlink; omit to keep. When the subscription stays the same, omitted kind/date/receipt keep their current values; when it changes, kind defaults to receipt if receipt is given, charge if date is given, otherwise sub. For kind=receipt, pass set.receipt (receipt_id from get_subscription); date defaults to that receipt date. set.name changes the original file name (linked files keep their generated display title). Use dry_run to preview.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4679,14 +4693,18 @@
               },
               "kind": {
                 "type": "string",
-                "enum": ["contract", "charge", "sub"],
-                "description": "What the file documents: charge = a receipt or invoice for the charge on `date`; contract = a contract whose term starts on `date`; sub = general documents of the subscription, not tied to one charge or contract (no date; the app labels it Documents / 资料), use it when the user asks for that even for an invoice. Default: charge when date is given, otherwise sub."
+                "enum": ["contract", "charge", "receipt", "sub"],
+                "description": "What the file documents: charge = a receipt or invoice for the charge on `date`; contract = a contract whose term starts on `date`; receipt = a collection screenshot/receipt for a shared-plan member receipt or proxy receipt (set `receipt` to its receipt_id from get_subscription; `date` defaults to that receipt date); sub = general documents of the subscription, not tied to one charge, contract or receipt (no date; the app labels it Documents / 资料), use it when the user asks for that even for an invoice. Default: receipt when receipt is given, charge when date is given, otherwise sub."
               },
               "date": {
                 "format": "date",
                 "type": ["string", "null"],
                 "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-                "description": "Charge date (kind=charge) or contract start date (kind=contract), YYYY-MM-DD."
+                "description": "Charge date (kind=charge), contract start date (kind=contract), or receipt date (kind=receipt, optional when receipt is given), YYYY-MM-DD."
+              },
+              "receipt": {
+                "type": ["string", "null"],
+                "description": "Receipt id from get_subscription (when kind=receipt, linking to a specific shared-plan member receipt or proxy receipt)."
               },
               "name": {
                 "type": "string",

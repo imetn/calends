@@ -205,7 +205,8 @@ export function summaryRows(
       const after = preview?.after as Row | undefined;
       const set = (a.set ?? {}) as Record<string, unknown>;
       add(t('files.card'), before?.title);
-      if ('subscription' in set || 'kind' in set || 'date' in set) add(t('files.relink'), after?.subscription ? after.title : t('files.link.none'));
+      if ('subscription' in set || 'kind' in set || 'date' in set || 'receipt' in set)
+        add(t('files.relink'), after?.subscription ? after.title : t('files.link.none'));
       if (set.name != null) add(t('files.props.name'), after?.name);
       break;
     }

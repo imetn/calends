@@ -1,5 +1,5 @@
 import { amountTotal, chargesTotal, dueTotal, emptyTotal, sumTotals, type FxTotal } from '../../shared/fx-total.ts';
-import { FILE_EXT, fileTitle, filesOf } from '../../shared/files.ts';
+import { FILE_EXT, fileBadgeKind, fileReceiptPerson, fileTitle, filesOf } from '../../shared/files.ts';
 import { partialOut } from './tool-views.ts';
 import { searchServices, serviceDisplayName } from '../../shared/service-catalog.ts';
 import { SERVICES, serviceCategory } from './tool-kit.ts';
@@ -217,15 +217,22 @@ export const get_subscription: Tool = {
       ...row(st, s, today, out),
       record: s, // Complete editable history, stable receipt indices and original currencies.
       notes: s.notes ?? null,
-      // 文件中心里挂在这个订阅上的文件（只读元数据，不含内容）：kind 为 contract 时 date 是合同期开始日，charge 为扣款日，sub 为订阅资料
-      files: filesOf(st.files ?? [], s.id).map((f) => ({
-        id: f.id,
-        title: fileTitle(f, st.files ?? [], st.subscriptions),
-        kind: f.kind ?? null,
-        date: f.date ?? null,
-        type: FILE_EXT[f.mime],
-        size: f.size,
-      })),
+      // 文件中心里挂在这个订阅上的文件（只读元数据，不含内容）：kind 为 contract 时 date 是合同期开始日，charge 为扣款日，receipt 为合租/代付收款凭证，sub 为订阅资料
+      files: filesOf(st.files ?? [], s.id).map((f) => {
+        const badge = fileBadgeKind(f, st.subscriptions);
+        return {
+          id: f.id,
+          title: fileTitle(f, st.files ?? [], st.subscriptions),
+          kind: f.kind ?? null,
+          date: f.date ?? null,
+          ...(f.receiptId ? { receipt_id: f.receiptId } : {}),
+          ...(badge === 'carpool' || badge === 'proxy' ? { receipt_scope: badge } : {}),
+          ...(f.kind === 'receipt' ? { person: fileReceiptPerson(f, st.subscriptions) ?? null } : {}),
+          ...(f.dupReceipt ? { duplicate_receipt: true } : {}),
+          type: FILE_EXT[f.mime],
+          size: f.size,
+        };
+      }),
       account: s.account ?? null,
       url: s.url ?? null,
       intro: s.intro ?? null,
@@ -305,7 +312,7 @@ export const get_subscription: Tool = {
               name: m.name,
               ...(() => {
                 const l = memberLedger(s, m, today, collect);
-                return { paid_until: paidThrough(l.periods) ?? null, periods: periodsOut(l.periods), unmatched_records: l.unmatched };
+                return { paid_until: paidThrough(l.periods) ?? null, periods: periodsOut(l.periods, s.id, st.files), unmatched_records: l.unmatched };
               })(),
               joined: m.joined ?? null,
               first_period: m.firstPeriod ?? 'prorate',
@@ -329,7 +336,7 @@ export const get_subscription: Tool = {
             // 各期（含已预收、还没到扣款日的期）；period 即扣款日
             ...(() => {
               const l = proxyLedger(s, today);
-              return { periods: periodsOut(l.periods), unmatched_records: l.unmatched };
+              return { periods: periodsOut(l.periods, s.id, st.files), unmatched_records: l.unmatched };
             })(),
           }
         : null,

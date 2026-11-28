@@ -148,6 +148,7 @@ Load this reference when managing family/group sharing, recording member payment
 - **Linking rules (\`upload_file\` / \`update_file\`)**:
   - \`kind: "charge"\` + \`date: "YYYY-MM-DD"\` — invoice/receipt for a specific charge date.
   - \`kind: "contract"\` + \`date: "YYYY-MM-DD"\` — contract document anchored to a contract term's start date.
+  - \`kind: "receipt"\` + \`receipt: "<receipt_id>"\` (from \`get_subscription\`; \`date\` defaults to that receipt's date) — transfer screenshot/proof for a specific shared-plan member collection or proxy collection receipt. Files reused across multiple collection receipts are flagged with \`duplicate_receipt: true\`.
   - \`kind: "sub"\` (no \`date\`) — general plan documents, welcome guides, or policies.
   - Omit \`subscription\` to store an unlinked file in the Pending tab.
 - **Uploading local or large files**:

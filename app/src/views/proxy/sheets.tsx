@@ -3,6 +3,7 @@ import { copyParts } from '../../components/copy.tsx';
 import { PersonAvatar, personFor } from '../../components/PersonAvatar.tsx';
 import { useRef, useState } from 'react';
 import { cycleLabel, effectiveStatus, nextCharge, todayIn, isStopped, uid } from '../../../../shared/billing.ts';
+import { filesForReceipt } from '../../../../shared/files.ts';
 import { flow, cnDate, cnDateFull, currencyDecimals, money } from '../../../../shared/format.ts';
 import { toBaseOrNaN } from '../../../../shared/fx.ts';
 import type { AppState, Receipt, Subscription, Waiver } from '../../../../shared/types.ts';
@@ -16,10 +17,12 @@ import { MoneyInput, useSubmit } from '../../components/inputs.tsx';
 import { NameLink, PayBadge, StatusPill, SubIcon } from '../../components/marks.tsx';
 import { Sheet } from '../../components/overlays.tsx';
 import { ConfirmButton } from '../../components/ConfirmButton.tsx';
+import { Icon } from '../../components/icons.tsx';
 import { CircleStop, Eye, EyeOff, Plus } from '../../components/ui-icons.tsx';
 import { createPortal } from 'react-dom';
 import { StopPanel } from '../../components/StopPanel.tsx';
 import { Act } from '../Detail.tsx';
+import { useReceiptFiles } from '../detail/FilesCard.tsx';
 import { contactText } from '../../components/Contact.tsx';
 import { getState, saveSub } from '../../store.ts';
 import { run } from '../../toast.ts';
@@ -225,10 +228,22 @@ export function LedgerSheet({ state, s, onClose, onOpen }: { state: AppState; s:
                 row={(r) => {
                   const ahead = r.date > today;
                   const d = ahead || r.receivedBase == null ? undefined : r.receivedBase - r.chargedBase;
+                  const attached = r.receipt ? filesForReceipt(state.files ?? [], live.id, r.receipt.id) : [];
+                  const dup = attached.some((f) => f.dupReceipt);
                   return {
                     date: (
                       <>
                         {cnDate(r.date)}
+                        {attached.length > 0 && (
+                          <span
+                            className={`dt-clip icon-text${dup ? ' dup' : ''}`}
+                            aria-label={t('files.count', { count: attached.length })}
+                            title={dup ? t('files.dupHint') : t('files.count', { count: attached.length })}
+                          >
+                            <Icon name="clip" size={13} />
+                            {attached.length > 1 && <span className="dt-clip-n">{attached.length}</span>}
+                          </span>
+                        )}
                         {ahead && <small>{t('proxy.table.notCharged')}</small>}
                       </>
                     ),
@@ -328,6 +343,7 @@ export function ReceiptSheet({
   return (
     <ReceivableSheet
       state={state}
+      sub={s}
       today={today}
       person={{ ...personFor(state, px.personId, px.forName), name: px.forName || t('proxy.unset') }}
       ledger={(through) => proxyLedger(s, today, through).periods}
@@ -354,8 +370,15 @@ export function EntrySheet({ state, s, row, onClose }: { state: AppState; s: Sub
   const live = state.subscriptions.find((x) => x.id === s.id) ?? s;
   const future = row.date > today;
   const rec = row.receipt ?? row.waiver;
+  const realReceipt = row.receipt && !row.receipt.opening ? row.receipt : undefined;
   // 收款这一组与成员表点开的一格是同一组字段（periodFields）；卡上实扣是代付独有的
   const edit = usePeriodEdit(row);
+  const receiptFiles = useReceiptFiles(
+    realReceipt ? live : undefined,
+    today,
+    edit.editing ? edit.patch.date : (realReceipt?.date ?? row.date),
+    realReceipt?.id,
+  );
   const editing = edit.editing;
   const [recording, setRecording] = useState<'new' | 'batch' | null>(null);
   const charged0 = row.charge?.amount != null ? String(row.charge.amount) : '';
@@ -403,6 +426,9 @@ export function EntrySheet({ state, s, row, onClose }: { state: AppState; s: Sub
         next = { ...next, proxy: { ...next.proxy!, ...editRecordPeriod(next.proxy!, rec.id, row, edit.patch, periods, uid()) } };
       }
       await saveSub(next);
+      if (realReceipt && edit.dirty && !edit.splits && edit.patch.date !== realReceipt.date) {
+        await receiptFiles.syncAfterSave(realReceipt.id, edit.patch.date);
+      }
       onClose();
     }, t('proxy.entry.saved'));
   // 只把这一期从记录里去掉：一笔分几期时其余期照旧，金额扣掉这一期分到的
@@ -540,6 +566,7 @@ export function EntrySheet({ state, s, row, onClose }: { state: AppState; s: Sub
             <div className="cell muted">{t('proxy.entry.notReceived')}</div>
           )}
         </Group>
+        {receiptFiles.group}
       </div>
       {recording && (
         <ReceiptSheet

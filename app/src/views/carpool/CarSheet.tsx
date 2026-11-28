@@ -11,6 +11,7 @@ import { Eye, EyeOff } from '../../components/ui-icons.tsx';
 import { carpoolSnapshot } from '../carpool-snapshot.ts';
 import { createPortal } from 'react-dom';
 import { flow, cnDate, cnDateFull, money } from '../../../../shared/format.ts';
+import { filesForReceipt } from '../../../../shared/files.ts';
 import { t } from '../../../../shared/i18n.ts';
 import { tx } from '../../i18n.ts';
 import { chargeBaseOrNaN } from '../../../../shared/fx.ts';
@@ -318,25 +319,43 @@ export function CarSheet({
                     orig: copyParts(currencyTotals(ys, (r) => r.p, flow)),
                     base: formatTotal(sumTotals(ys.map((r) => convertedTotal(state, r.p.amount, r.p.currency, r.p.date))), base, { direction: 1 }),
                   })}
-                  row={({ m, p, base: v }) => ({
-                    date: <time dateTime={p.date}>{cnDateFull(p.date)}</time>,
-                    // 人员一律用胶囊
-                    second: (
-                      <span className="who-chip">
-                        <MemberAvatar state={state} m={m} size={16} masked={masked} />
-                        <span className={masked ? 'car-private' : undefined} aria-hidden={masked || undefined}>
-                          {m.name || t('family.pool.unnamed')}
+                  row={({ m, p, base: v }) => {
+                    const attached = p.kind === 'receipt' ? filesForReceipt(state.files ?? [], s.id, p.id) : [];
+                    const dup = attached.some((f) => f.dupReceipt);
+                    return {
+                      date: (
+                        <>
+                          <time dateTime={p.date}>{cnDateFull(p.date)}</time>
+                          {attached.length > 0 && (
+                            <span
+                              className={`dt-clip icon-text${dup ? ' dup' : ''}`}
+                              aria-label={t('files.count', { count: attached.length })}
+                              title={dup ? t('files.dupHint') : t('files.count', { count: attached.length })}
+                            >
+                              <Icon name="clip" size={13} />
+                              {attached.length > 1 && <span className="dt-clip-n">{attached.length}</span>}
+                            </span>
+                          )}
+                        </>
+                      ),
+                      // 人员一律用胶囊
+                      second: (
+                        <span className="who-chip">
+                          <MemberAvatar state={state} m={m} size={16} masked={masked} />
+                          <span className={masked ? 'car-private' : undefined} aria-hidden={masked || undefined}>
+                            {m.name || t('family.pool.unnamed')}
+                          </span>
                         </span>
-                      </span>
-                    ),
-                    orig: (
-                      <>
-                        {p.kind === 'refund' && <em className="dt-kind">{t('family.sheet.refund')}</em>}
-                        {flow(p.amount, p.currency)}
-                      </>
-                    ),
-                    base: flow(v, base),
-                  })}
+                      ),
+                      orig: (
+                        <>
+                          {p.kind === 'refund' && <em className="dt-kind">{t('family.sheet.refund')}</em>}
+                          {flow(p.amount, p.currency)}
+                        </>
+                      ),
+                      base: flow(v, base),
+                    };
+                  }}
                   rowKey={({ m, p }, i) => `${m.id}-${p.date}-${i}`}
                   rowTitle={({ p }) => (masked ? undefined : p.note)}
                   onRow={({ m, p }) => (onPayment && p.kind === 'receipt' ? onPayment(m, p.id) : onMember(m))}

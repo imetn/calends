@@ -294,6 +294,12 @@
     "notFound": "Archivo no encontrado.",
     "missing": "Falta el archivo",
     "noStorage": "El almacenamiento de archivos no está activado.",
-    "linkExpired": "Este enlace de archivo ha caducado."
+    "linkExpired": "Este enlace de archivo ha caducado.",
+    "carpoolReceipt": "Cobro compartido",
+    "proxyReceipt": "Reembolso delegado",
+    "receipt": "Comprobante de cobro",
+    "memberFallback": "Miembro",
+    "proxyFallback": "Destinatario",
+    "noReceipt": "No se encontró el cobro para vincular."
   }
 }

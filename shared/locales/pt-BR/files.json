@@ -59,7 +59,11 @@
     "name": "Nome original",
     "type": "Tipo",
     "size": "Tamanho",
-    "uploaded": "Enviado em"
+    "uploaded": "Enviado em",
+    "member": "Membro",
+    "payer": "Pago por",
+    "amount": "Valor",
+    "receiptDate": "Data do recebimento"
   },
   "link": {
     "title": "Vincular arquivo",
@@ -72,7 +76,8 @@
   "kind": {
     "contract": "Contrato",
     "charge": "Cobrança",
-    "sub": "Documentos"
+    "sub": "Documentos",
+    "receipt": "Comprovante de recebimento"
   },
   "keep": {
     "one": "{count} arquivo continuará em Arquivos",
@@ -80,5 +85,12 @@
   },
   "card": "Arquivos",
   "add": "Adicionar arquivos",
-  "backup": "Exportar backup completo com arquivos"
+  "backup": "Exportar backup completo com arquivos",
+  "badge": {
+    "carpool": "Cobrança compartilhada",
+    "proxy": "Reembolso",
+    "dup": "Duplicado"
+  },
+  "addReceipt": "Adicionar comprovante",
+  "dupHint": "Este mesmo arquivo está anexado a mais de um recebimento. Verifique se o mesmo comprovante não foi reutilizado por engano."
 }

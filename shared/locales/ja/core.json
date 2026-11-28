@@ -283,6 +283,12 @@
     "notFound": "ファイルが見つかりません。",
     "missing": "ファイルがありません",
     "noStorage": "ファイル保存が有効になっていません。",
-    "linkExpired": "このファイルリンクは期限切れです。"
+    "linkExpired": "このファイルリンクは期限切れです。",
+    "carpoolReceipt": "割り勘集金",
+    "proxyReceipt": "立て替え回収",
+    "receipt": "集金領収書",
+    "memberFallback": "メンバー",
+    "proxyFallback": "立て替え先",
+    "noReceipt": "関連付ける集金記録が見つかりません。"
   }
 }

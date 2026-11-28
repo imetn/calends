@@ -263,3 +263,74 @@ test('PDF 页数：未压缩 PDF 上传时识别、/thumb 与 /pages 按 sha256 
     rmSync(fresh, { recursive: true, force: true });
   }
 });
+
+test('合租与代付收款凭证：上传、重复截图预警、改关联、删除保留来源与备份恢复', async () => {
+  const carSub = {
+    ...sub('car-sub', 'Fictional Family'),
+    share: {
+      role: 'owner',
+      seats: 4,
+      members: [
+        { id: 'm1', name: 'Alice', share: 5, receipts: [{ id: 'rc-a1', date: '2026-10-03', amount: 35, currency: 'CNY', periods: ['2026-10-01'] }] },
+        { id: 'm2', name: 'Bob', share: 5, receipts: [{ id: 'rc-b1', date: '2026-10-04', amount: 35, currency: 'CNY', periods: ['2026-10-01'] }] },
+      ],
+    },
+  };
+  const pxSub = {
+    ...sub('px-sub', 'Fictional Proxy'),
+    proxy: {
+      forName: 'Lin',
+      receipts: [{ id: 'rc-p1', date: '2026-10-10', amount: 145, currency: 'CNY', periods: ['2026-10-10'] }],
+    },
+  };
+  await upsert(env, 'subscriptions', carSub.id, carSub);
+  await upsert(env, 'subscriptions', pxSub.id, pxSub);
+
+  const shotA = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
+  const shotP = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 9, 8, 7, 6]);
+
+  // 1. 挂到不存在的收款记录被拒绝
+  await assert.rejects(up(shotA, '?sub=car-sub&kind=receipt&date=2026-10-03&receipt=nope', 'a.png'), (e) => e.status === 400);
+
+  // 2. 上传 Alice 与代理 Lin 的收款凭证：正常不重复
+  const fA = await up(shotA, '?sub=car-sub&date=2026-10-03&receipt=rc-a1', 'alice.png');
+  assert.equal(fA.kind, 'receipt');
+  assert.equal(fA.receiptId, 'rc-a1');
+  assert.equal(fA.dupReceipt, undefined);
+  const fP = await up(shotP, '?sub=px-sub&date=2026-10-10&receipt=rc-p1', 'lin.png');
+  assert.equal(fP.kind, 'receipt');
+  assert.equal(fP.receiptId, 'rc-p1');
+  assert.equal(fP.dupReceipt, undefined);
+
+  // 3. 把完全相同的截图再挂到 Bob 的收款上：两者都被标为 dupReceipt=true
+  const fB = await up(shotA, '?sub=car-sub&date=2026-10-04&receipt=rc-b1', 'bob-reuse.png');
+  assert.equal(fB.dupReceipt, true);
+  const loaded = await loadState(env);
+  assert.equal(loaded.files.find((x) => x.id === fA.id)?.dupReceipt, true);
+  assert.equal(loaded.files.find((x) => x.id === fB.id)?.dupReceipt, true);
+  assert.equal(loaded.files.find((x) => x.id === fP.id)?.dupReceipt, undefined);
+
+  // 4. 备份与恢复完整保留 receiptId（且自动重算 dupReceipt，不把派生标记写入备份 JSON）
+  const exported = await exportAll(env);
+  const expA = exported.files.find((x) => x.id === fA.id);
+  assert.equal(expA.receiptId, 'rc-a1');
+  assert.equal(expA.dupReceipt, undefined);
+  const fresh = mkdtempSync(join(tmpdir(), 'calends-files-receipts-restore-'));
+  const freshEnv = { DB: openD1(join(fresh, 'test.sqlite')), FILES: openR2(join(fresh, 'files')) };
+  try {
+    await ensureMigratedFresh(freshEnv);
+    await restoreAll(freshEnv, parseBackup(exported));
+    const st = await loadState(freshEnv);
+    assert.equal(st.files.find((x) => x.id === fA.id)?.receiptId, 'rc-a1');
+    assert.equal(st.files.find((x) => x.id === fA.id)?.dupReceipt, true);
+    assert.equal(st.files.find((x) => x.id === fP.id)?.receiptId, 'rc-p1');
+  } finally {
+    rmSync(fresh, { recursive: true, force: true });
+  }
+
+  // 5. 删除合租订阅后保留收款来源快照（含 kind=receipt、receiptId、scope=carpool）
+  await saveLedgerEdit(env, {}, [], [carSub.id]);
+  const afterDel = (await loadState(env)).files.find((x) => x.id === fA.id);
+  assert.equal(afterDel.subId, undefined);
+  assert.deepEqual(afterDel.orphan, { name: 'Fictional Family', kind: 'receipt', date: '2026-10-03', receiptId: 'rc-a1', scope: 'carpool' });
+});

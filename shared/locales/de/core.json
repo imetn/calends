@@ -294,6 +294,12 @@
     "notFound": "Datei nicht gefunden.",
     "missing": "Datei fehlt",
     "noStorage": "Dateispeicher ist nicht aktiviert.",
-    "linkExpired": "Dieser Dateilink ist abgelaufen."
+    "linkExpired": "Dieser Dateilink ist abgelaufen.",
+    "carpoolReceipt": "Geteilter Einzug",
+    "proxyReceipt": "Erstattung",
+    "receipt": "Zahlungsbeleg",
+    "memberFallback": "Mitglied",
+    "proxyFallback": "Empfänger",
+    "noReceipt": "Die zu verknüpfende Einzahlung wurde nicht gefunden."
   }
 }
