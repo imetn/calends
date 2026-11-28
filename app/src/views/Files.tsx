@@ -1,6 +1,6 @@
 // 文件页：按订阅或按月份分组，订阅组里按期列出凭证，没传的那一期留一张虚线占位、点开或拖进去就挂到那一笔；
 // 筛选沿用订阅页（状态、分类、支付方式、搜索）另加订阅与年份；拖文件进窗口即上传，勾选后打包下载或删除。
-import { useEffect, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import {
   FILE_EXT,
   fileBadgeKind,
@@ -32,6 +32,7 @@ import { IconButton, Toolbar } from '../components/ui.tsx';
 import { categories } from '../derive.ts';
 import { knownRatio, layoutMasonry, rememberRatio, type Placed } from '../file-masonry.ts';
 import { deleteFiles, sizeLabel, SUB_PARAM, uploadFiles, zipUrl } from '../files.ts';
+import { hasOverlay } from '../keyboard.ts';
 import { onRoute } from '../router.ts';
 import { toast } from '../toast.ts';
 import { usePref } from '../prefs.ts';
@@ -147,6 +148,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<Record<Facet, string>>(ALL);
   const [picked, setPicked] = useState<string[]>([]);
+  const [modSelect, setModSelect] = useState(false);
   const [open, setOpen] = useState<string>();
   const { pending, upload } = useUpload();
   const [uploadInput, pickUpload] = useFilePicker(upload);
@@ -277,6 +279,45 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
   const totalSize = all.reduce((a, f) => a + f.size, 0);
   // 只对当前看得到的生效：筛掉的已选文件不会被一起删掉或打包；移动端不提供多选
   const pickedRows = mobile ? [] : picked.filter((id) => rows.some((f) => f.id === id));
+  // PC 端多选框不常驻也不随悬停露出：按住 Command / Ctrl 或已有选中项时才显示，按 Esc 退出
+  const picking = !mobile && (modSelect || pickedRows.length > 0);
+  useEffect(() => {
+    if (mobile || open) {
+      setModSelect(false);
+      return;
+    }
+    const inField = (target: EventTarget | null) => target instanceof HTMLElement && !!target.closest('input, textarea, select, [contenteditable="true"]');
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || hasOverlay(document)) {
+        setModSelect(false);
+        return;
+      }
+      if (e.key === 'Escape' && pickedRows.length > 0 && !inField(e.target)) {
+        setPicked([]);
+        return;
+      }
+      if ((e.key === 'Meta' || e.key === 'Control') && !e.altKey && !inField(e.target)) {
+        setModSelect(true);
+      } else if (e.metaKey || e.ctrlKey) {
+        // 组合快捷键（如 ⌘K 搜索、⌘C 复制）不露出多选框
+        setModSelect(false);
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (!e.metaKey && !e.ctrlKey) setModSelect(false);
+    };
+    const reset = () => setModSelect(false);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', reset);
+    document.addEventListener('visibilitychange', reset);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', reset);
+      document.removeEventListener('visibilitychange', reset);
+    };
+  }, [mobile, open, pickedRows.length]);
 
   // 待关联的文件没有订阅可分：只给不分组、按月、按年，其余分法在这里按月显示，不改动保存的偏好
   const g: Group = tab === 'pending' && (group === 'sub' || group === 'cat') ? 'month' : group;
@@ -402,6 +443,12 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
 
   const setFacet = (k: Facet) => (v: string) => setSel((x) => ({ ...x, [k]: v }));
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const openOrToggle = (e: ReactMouseEvent, id: string) => {
+    if (!mobile && (e.metaKey || e.ctrlKey || pickedRows.length > 0)) {
+      e.preventDefault();
+      toggle(id);
+    } else setOpen(id);
+  };
   const removePicked = async () => {
     if (!(await ask(t('files.deleteN', { count: pickedRows.length }), { ok: t('common.delete') }))) return;
     try {
@@ -588,7 +635,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
         ) : nothing ? (
           <EmptyState kind="search" size="md" body={t('files.noMatch')} />
         ) : (
-          <div ref={wrapRef} className={`file-sections ${pickedRows.length ? 'picking' : ''}`}>
+          <div ref={wrapRef} className={`file-sections ${picking ? 'picking' : ''}`}>
             {sections.map((sec) =>
               sec.items.length ? (
                 <section key={sec.key} className="file-sec">
@@ -597,7 +644,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
                     sec={sec}
                     view={view}
                     width={width}
-                    selectable={!mobile}
+                    selectable={picking}
                     render={(x, style) => renderItem(x, sec, style)}
                     renderRow={(x) => renderRow(x, sec)}
                   />
@@ -684,7 +731,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
     const label = labelOf(f, sec);
     return (
       <div key={f.id} className={`file-card ${on ? 'on' : ''}`} style={{ ...lay(f.id), ...style }}>
-        <button type="button" className="file-hit" onClick={() => (pickedRows.length ? toggle(f.id) : setOpen(f.id))} aria-label={title(f)} />
+        <button type="button" className="file-hit" onClick={(e) => openOrToggle(e, f.id)} aria-label={title(f)} />
         <div className="file-thumb">
           <FileThumb f={f} onRatio={onRatio(f.id)} />
         </div>
@@ -702,7 +749,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
             <span>{sizeLabel(f.size)}</span>
           </span>
         </div>
-        {!mobile && (
+        {picking && (
           <button type="button" role="checkbox" aria-checked={on} className="file-check" onClick={() => toggle(f.id)} aria-label={t('files.select')}>
             <Icon name="check" size={12} />
           </button>
@@ -740,7 +787,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
     const stack = fileStackCount(f);
     return (
       <div key={f.id} className={`file-row ${on ? 'on' : ''}`}>
-        <button type="button" className="file-hit" onClick={() => (pickedRows.length ? toggle(f.id) : setOpen(f.id))} aria-label={title(f)} />
+        <button type="button" className="file-hit" onClick={(e) => openOrToggle(e, f.id)} aria-label={title(f)} />
         <span className="file-row-thumb" style={rowLay(f.id)}>
           {stack >= 3 && <span className="file-row-sheet s2" aria-hidden="true" />}
           {stack >= 2 && <span className="file-row-sheet s1" aria-hidden="true" />}
@@ -767,7 +814,7 @@ export function Files({ state, today, onOpen }: { state: AppState; today: string
         <span className="file-row-up">{f.createdAt.slice(0, 10)}</span>
         <span className="file-row-type">{FILE_EXT[f.mime].toUpperCase()}</span>
         <span className="file-row-size">{sizeLabel(f.size)}</span>
-        {!mobile && (
+        {picking && (
           <button type="button" role="checkbox" aria-checked={on} className="file-check" onClick={() => toggle(f.id)} aria-label={t('files.select')}>
             <Icon name="check" size={12} />
           </button>

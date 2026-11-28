@@ -230,7 +230,7 @@
   cursor: pointer;
   transition: opacity var(--duration) var(--ease);
 }
-.file-card:hover .file-check,
+/* 多选勾选框仅在按住 Command / Ctrl 或已选中进入 picking 态时出现，日常浏览与悬停不常驻 */
 .file-check:focus-visible,
 .file-sections.picking .file-check {
   opacity: 1;
@@ -357,11 +357,14 @@
 .file-row {
   position: relative;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) 84px 40px 64px 20px;
+  grid-template-columns: 44px minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) 84px 40px 64px;
   align-items: center;
   gap: 14px;
   min-height: 60px;
   padding: 8px 14px;
+}
+.file-sections.picking .file-row {
+  grid-template-columns: 44px minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) 84px 40px 64px 20px;
 }
 .file-row + .file-row {
   box-shadow: inset 0 var(--hairline) 0 var(--line);
@@ -517,7 +520,6 @@
   top: auto;
   left: auto;
 }
-.file-row:hover .file-check,
 .file-sections.picking .file-rows .file-check {
   opacity: 1;
 }
@@ -532,13 +534,9 @@
 .file-row.loading .file-row-text b {
   color: var(--label-2);
 }
-@media (hover: none) {
-  .file-row {
-    grid-template-columns: 44px minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) 84px 40px 64px;
-  }
-}
 @media (max-width: 860px) {
-  .file-row {
+  .file-row,
+  .file-sections.picking .file-row {
     grid-template-columns: 44px minmax(0, 1fr) auto;
     gap: 12px;
   }

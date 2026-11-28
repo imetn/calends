@@ -24,6 +24,10 @@ export function popupOpen(doc: Document): boolean {
   return !!doc.querySelector('.pop-shell, [role="listbox"], [role="menu"], [aria-haspopup][aria-expanded="true"]');
 }
 
+export function hasOverlay(doc: Document): boolean {
+  return !!doc.querySelector(overlays);
+}
+
 /** The optional scope admits only its own sheet, never a nested or sibling overlay. */
 export function canUseSingleKey(e: KeyboardEvent, scope?: HTMLElement | null): boolean {
   const target = element(e.target);
