@@ -13,7 +13,7 @@ import { ASSISTANT_TOOLS, appMatches, apply, chat, enrichDraft } from '../worker
 import { DEFAULT_SETTINGS, type AppState, type Subscription } from './types.ts';
 import { addDays, addMonths, memberRate, runwayFor, todayIn } from './billing.ts';
 import { SUBSCRIPTION_SCHEMA } from './subscription-schema.ts';
-import { validateToolInput } from './tool-schema.ts';
+import { clearable, nullable, validateToolInput } from './tool-schema.ts';
 const hook = registerHooks({
   load(url, ctx, next) {
     if (url.endsWith('.json')) return { format: 'module', source: `export default ${readFileSync(new URL(url), 'utf8')}`, shortCircuit: true };
@@ -2452,6 +2452,59 @@ test('startup route accepts real navigation paths, rejects labels, and preserves
   const unchanged = await f.call('update_settings', { set: { remindDays: 8 } });
   assert.equal(unchanged.isError, undefined, JSON.stringify(unchanged));
   assert.equal((await f.snapshot()).settings.startPage, 'legacy-unknown');
+});
+
+test('tool schemas keep empty strings and null out of enum values for Gemini clients', () => {
+  // Gemini rejects the whole tools list when any enum contains "" (enum[i]: cannot be empty); nullability belongs in type
+  const empty: string[] = [];
+  const walk = (schema: unknown, path: string): void => {
+    if (Array.isArray(schema)) return schema.forEach((x, i) => walk(x, `${path}[${i}]`));
+    if (!schema || typeof schema !== 'object') return;
+    for (const [key, value] of Object.entries(schema)) {
+      if (key === 'enum' && Array.isArray(value)) value.forEach((x, i) => (x === '' || x === null) && empty.push(`${path}.enum[${i}]`));
+      else walk(value, `${path}.${key}`);
+    }
+  };
+  for (const tool of TOOLS) walk(JSON.parse(JSON.stringify(tool.inputSchema)), tool.name);
+  assert.deepEqual(empty, []);
+});
+
+test('startup route resets with an empty string or null by removing the stored key', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  const reset = async (run: () => Promise<unknown>) => {
+    const set = await f.call('update_settings', { set: { startPage: 'list' } });
+    assert.equal(set.isError, undefined, JSON.stringify(set));
+    assert.equal((await f.snapshot()).settings.startPage, 'list');
+    await run();
+    const { settings } = await f.snapshot();
+    assert.equal(settings.startPage, undefined);
+    assert.equal('startPage' in settings, false);
+  };
+  for (const value of ['', null])
+    await reset(async () => {
+      const cleared = await f.call('update_settings', { set: { startPage: value } });
+      assert.equal(cleared.isError, undefined, JSON.stringify(cleared));
+    });
+  await reset(async () => {
+    const saved = await apply(f.env, { tool: 'update_settings', args: { set: { startPage: '' } } });
+    assert.equal(saved.verification.status, 'verified', JSON.stringify(saved.verification));
+  });
+  const other = await f.call('update_settings', { set: { gainColor: '' } });
+  assert.equal(other.isError, true);
+});
+
+test('clearable schemas keep their empty-string reset through spreads and nullable without serializing it', () => {
+  const base = clearable({ type: 'string', enum: ['a'] });
+  for (const schema of [base, { ...base, description: 'copy' }, nullable(base)]) {
+    assert.doesNotThrow(() => validateToolInput(schema, ''));
+    assert.doesNotThrow(() => validateToolInput(schema, null));
+    assert.doesNotThrow(() => validateToolInput(schema, 'a'));
+    assert.throws(() => validateToolInput(schema, 'b'));
+    assert.deepEqual(Object.keys(schema).sort(), Object.keys(JSON.parse(JSON.stringify(schema))).sort());
+    assert.doesNotMatch(JSON.stringify(schema), /""|null\]/);
+  }
+  assert.throws(() => validateToolInput(nullable({ type: 'string', enum: ['a'] }), ''));
 });
 
 test('assistant clears malformed-argument failure after the same tool successfully retries', async (t) => {

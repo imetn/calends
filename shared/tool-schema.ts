@@ -2,6 +2,9 @@
 import { t } from './i18n.ts';
 import { validDay } from './billing.ts';
 
+// 校验时把空串当作 null（清空）的标记。Symbol 键随展开拷贝和 nullable() 保留，但 JSON.stringify/Object.keys 看不到：Gemini 拒绝 enum 中的空串
+const EMPTY_AS_NULL: unique symbol = Symbol('emptyAsNull');
+
 export type Schema = {
   type?: string | string[];
   properties?: Record<string, Schema>;
@@ -16,6 +19,7 @@ export type Schema = {
   minItems?: number;
   maxItems?: number;
   [key: string]: unknown;
+  [EMPTY_AS_NULL]?: true;
 };
 export const objectSchema = (properties: Record<string, Schema>, required: string[] = []): Schema => ({
   type: 'object',
@@ -30,6 +34,8 @@ export const nullable = (s: Schema): Schema => {
   const types = s.type === undefined ? [] : Array.isArray(s.type) ? s.type : [s.type];
   return { ...s, type: [...new Set([...types, 'null'])] };
 };
+/** 可清空的字段：null 或空串都表示重置，enum 里只列真实取值 */
+export const clearable = (s: Schema): Schema => ({ ...nullable(s), [EMPTY_AS_NULL]: true });
 export const billingSchema: Schema = {
   type: 'string',
   enum: ['postpaid'],
@@ -59,7 +65,7 @@ export function validateToolInput(schema: Schema, value: unknown, path = 'argume
     )
   )
     fail();
-  if (value === null) return;
+  if (value === null || (value === '' && schema[EMPTY_AS_NULL])) return;
   if (schema.enum && !schema.enum.includes(value)) fail();
   if (
     typeof value === 'number' &&

@@ -6,7 +6,7 @@ import { mergePeople, refsFor, syncPerson } from './people.ts';
 import { channelsOf, DEFAULT_SETTINGS, type AppState, type Payment, type PaymentMethod, type Person, type Settings, type Subscription } from './types.ts';
 import { PREF_KEYS, mergePrefs } from './prefs.ts';
 import { isLocale, t } from './i18n.ts';
-import { objectSchema, textSchema, daySchema, nullable } from './tool-schema.ts';
+import { clearable, objectSchema, textSchema, daySchema, nullable } from './tool-schema.ts';
 import { PUBLIC_TITLE_MAX, validPublicAvatar, validPublicPage } from './public-layout.ts';
 
 const START_PAGE_PATHS = ['overview', 'list', 'calendar', 'report', 'wallet', 'family', 'behalf', 'assistant', 'connect'];
@@ -59,12 +59,12 @@ export const SETTINGS_FIELDS = objectSchema({
   upcomingDays: { type: 'integer', minimum: 0 },
   hiddenNav: nullable({ type: 'array', items: textSchema }),
   navOrder: nullable({ type: 'array', items: textSchema }),
-  startPage: {
-    type: ['string', 'null'],
-    enum: [...START_PAGE_PATHS, '', null],
+  startPage: clearable({
+    type: 'string',
+    enum: START_PAGE_PATHS,
     description:
       'Startup route: use list for Subscriptions, report for Reports, family for Shared plans, behalf for Paid for others. Empty/null resets to Overview.',
-  },
+  }),
   weekStart: { type: 'integer', enum: [0, 1] },
   language: nullable(textSchema),
 });
@@ -266,7 +266,9 @@ export function settingsEdit(
   prefs: Record<string, string | null> = {},
 ) {
   const prev = { ...DEFAULT_SETTINGS, ...st.settings };
-  const patched = { ...DEFAULT_SETTINGS, ...applyFields(st.settings, patch) };
+  // startPage 的空串与 null 一样删除该键（回到概览），不把 "" 存进设置
+  const normalized = patch.startPage === '' ? { ...patch, startPage: null } : patch;
+  const patched = { ...DEFAULT_SETTINGS, ...applyFields(st.settings, normalized) };
   // 先校验本次改动（新加的非法值报错），再剔除早已失效的旧引用
   checkSettings(st, prev, patched);
   const settings = pruneSettingsRefs(patched, st.subscriptions, st.methods);

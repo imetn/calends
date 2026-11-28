@@ -1,6 +1,6 @@
 // Editable full records use the same domain validation as the web editor. This schema
 // describes the wire shape to models without rejecting preserved legacy extension fields.
-import { billingSchema, daySchema as day, type Schema } from './tool-schema.ts';
+import { billingSchema, daySchema as day, nullable, type Schema } from './tool-schema.ts';
 import { MAX_BILL_MONTHS, type Phase, type Subscription } from './types.ts';
 
 const text: Schema = { type: 'string' };
@@ -11,12 +11,7 @@ const list = (items: Schema): Schema => ({ type: 'array', items });
 function record(properties: Record<string, Schema>, required: string[] = []): Schema {
   return {
     type: 'object',
-    properties: Object.fromEntries(
-      Object.entries(properties).map(([key, schema]) => [
-        key,
-        required.includes(key) ? schema : { ...schema, type: [String(schema.type), 'null'], ...(schema.enum ? { enum: [...schema.enum, null] } : {}) },
-      ]),
-    ),
+    properties: Object.fromEntries(Object.entries(properties).map(([key, schema]) => [key, required.includes(key) ? schema : nullable(schema)])),
     required,
     additionalProperties: true,
   };
