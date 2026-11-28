@@ -6,7 +6,7 @@ import { mergePeople, refsFor, syncPerson } from './people.ts';
 import { channelsOf, DEFAULT_SETTINGS, type AppState, type Payment, type PaymentMethod, type Person, type Settings, type Subscription } from './types.ts';
 import { PREF_KEYS, mergePrefs } from './prefs.ts';
 import { isLocale, t } from './i18n.ts';
-import { objectSchema, textSchema, daySchema, nullable } from './tool-schema.ts';
+import { clearable, objectSchema, textSchema, daySchema, nullable } from './tool-schema.ts';
 import { PUBLIC_TITLE_MAX, validPublicAvatar, validPublicPage } from './public-layout.ts';
 
 const START_PAGE_PATHS = ['overview', 'list', 'calendar', 'report', 'wallet', 'family', 'behalf', 'assistant', 'connect'];
@@ -59,12 +59,12 @@ export const SETTINGS_FIELDS = objectSchema({
   upcomingDays: { type: 'integer', minimum: 0 },
   hiddenNav: nullable({ type: 'array', items: textSchema }),
   navOrder: nullable({ type: 'array', items: textSchema }),
-  startPage: {
-    type: ['string', 'null'],
-    enum: [...START_PAGE_PATHS, '', null],
+  startPage: clearable({
+    type: 'string',
+    enum: START_PAGE_PATHS,
     description:
       'Startup route: use list for Subscriptions, report for Reports, family for Shared plans, behalf for Paid for others. Empty/null resets to Overview.',
-  },
+  }),
   weekStart: { type: 'integer', enum: [0, 1] },
   language: nullable(textSchema),
 });

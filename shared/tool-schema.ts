@@ -30,6 +30,14 @@ export const nullable = (s: Schema): Schema => {
   const types = s.type === undefined ? [] : Array.isArray(s.type) ? s.type : [s.type];
   return { ...s, type: [...new Set([...types, 'null'])] };
 };
+// 校验时把空串当作 null（清空）的字段。只记在这里、不写进 schema：Gemini 拒绝 enum 中的空串
+const emptyAsNull = new WeakSet<Schema>();
+/** 可清空的字段：null 或空串都表示重置，enum 里只列真实取值 */
+export const clearable = (s: Schema): Schema => {
+  const schema = nullable(s);
+  emptyAsNull.add(schema);
+  return schema;
+};
 export const billingSchema: Schema = {
   type: 'string',
   enum: ['postpaid'],
@@ -59,7 +67,7 @@ export function validateToolInput(schema: Schema, value: unknown, path = 'argume
     )
   )
     fail();
-  if (value === null) return;
+  if (value === null || (value === '' && emptyAsNull.has(schema))) return;
   if (schema.enum && !schema.enum.includes(value)) fail();
   if (
     typeof value === 'number' &&

@@ -2454,6 +2454,38 @@ test('startup route accepts real navigation paths, rejects labels, and preserves
   assert.equal((await f.snapshot()).settings.startPage, 'legacy-unknown');
 });
 
+test('tool schemas keep empty strings out of enum values for Gemini clients', () => {
+  // Gemini rejects the whole tools list when any enum contains "" (enum[i]: cannot be empty)
+  const empty: string[] = [];
+  const walk = (schema: unknown, path: string): void => {
+    if (Array.isArray(schema)) return schema.forEach((x, i) => walk(x, `${path}[${i}]`));
+    if (!schema || typeof schema !== 'object') return;
+    for (const [key, value] of Object.entries(schema)) {
+      if (key === 'enum' && Array.isArray(value)) value.forEach((x, i) => x === '' && empty.push(`${path}.enum[${i}]`));
+      else walk(value, `${path}.${key}`);
+    }
+  };
+  for (const tool of TOOLS) walk(JSON.parse(JSON.stringify(tool.inputSchema)), tool.name);
+  assert.deepEqual(empty, []);
+});
+
+test('startup route still resets with an empty string or null', async (t) => {
+  const f = await setup();
+  t.after(() => f.db.close());
+  for (const reset of ['', null]) {
+    const set = await f.call('update_settings', { set: { startPage: 'list' } });
+    assert.equal(set.isError, undefined, JSON.stringify(set));
+    assert.equal((await f.snapshot()).settings.startPage, 'list');
+    const cleared = await f.call('update_settings', { set: { startPage: reset } });
+    assert.equal(cleared.isError, undefined, JSON.stringify(cleared));
+    assert.ok(!(await f.snapshot()).settings.startPage);
+  }
+  const saved = await apply(f.env, { tool: 'update_settings', args: { set: { startPage: '' } } });
+  assert.equal(saved.verification.status, 'verified', JSON.stringify(saved.verification));
+  const other = await f.call('update_settings', { set: { gainColor: '' } });
+  assert.equal(other.isError, true);
+});
+
 test('assistant clears malformed-argument failure after the same tool successfully retries', async (t) => {
   const f = await setup();
   t.after(() => f.db.close());
