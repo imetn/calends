@@ -29,17 +29,17 @@
 
 Ne ödediğinizi, ne zaman yenileneceğini ve kimin size borçlu olduğunu takip edin. Calends; abonelikleri, ortak planları ve ön ödemeli bakiyeleri tek bir özel, tek sahipli defterde toplar; isteğe bağlı salt okunur herkese açık bir sayfa ve MCP üzerinden yapay zeka erişimi sunar.
 
-- **Esnek faturalandırma** — aylık, yıllık, özel döngüler ve ömür boyu satın alımlar; faturalandırmadan bağımsız isteğe bağlı sözleşme koşulları ve yenileme bildirimleri, deneme süreleri, giriş fiyatları, bonus dönemler, duraklatmalar, faturalı ödemeler, ayrı fatura/ödeme takibi, peşin tahsilat ve iptal son tarihleri.
+- **Esnek faturalandırma** — aylık, yıllık, özel döngüler ve ömür boyu satın alımlar; faturalandırmadan bağımsız isteğe bağlı sözleşme süreleri ve yenileme bildirimleri, deneme süreleri, giriş fiyatları, bonus dönemler, duraklatmalar, faturalı ödemeler, ayrı fatura/ödeme takibi, peşin tahsilat ve iptal son tarihleri.
 - **Kullanım sayaçları** — dönem bazlı kullanımı veya kümülatif okumaları herhangi bir birimde takip edin; abonelikler arası paylaşılan sayaçlar, kullanım metrikleri, hizalanmış grafikler ve ödeme kayıtlarında kullanım bilgisi.
 - **Faturalandırma geçmişi** — fiyat, plan ve bölge değişikliklerini, boşlukları ve çakışan abonelikleri saklayın; yükseltmeler eski planın kullanılmayan kısmını kredi olarak düşebilir. Toplam harcamayı, gerçek aylık maliyeti ve her bir ödemeyi görün.
 - **Devirler ve bölünmüş ödemeler** — ikinci el devralmaları ve yeniden satışları net maliyete dahil edin, bir ödemeyi birden fazla ödeme yöntemine bölün.
 - **Çoklu para birimi** — geçmiş ödemeler için tarihsel döviz kurları, tahminler için güncel kurlar ve seçtiğiniz görüntüleme para birimi.
 - **Bakiyeler ve ortak planlar** — ön ödemeli kredileri ve hediye kartlarını takip edin, bakiyelerin ne zaman tükeneceğini tahmin edin ve arkadaşlarınız için ödemeleri yönetin. Ortak planlarda tarihli tahsilat kuralları, üye geçersiz kılmaları, atlanan dönem tahsilatıyla dönem bazlı makbuzlar, ön ödemeler ve feragatler, gecikme takibi ve çıkış iadeleri bulunur; üye sayfası tıklamayla makbuz ayrıntılarını gösteren aylık dönem ızgarası, ön ödemeler ve feragatler sunar; kişiler ise özel avatarlara, özel renklere ve her plan için ayrı bir hesaba sahiptir.
-- **Raporlar ve takvim** — harcama eğilimleri, isteğe bağlı 3B çubuklu günlük ısı haritası, nakit vs. tahakkuk, fon akışları, bölge ve kategori profilleri, ön ödemeli değer, iptal tasarrufları, abonelik kontrolleri ve paylaşılabilir yıl özeti. Aylık/yıllık takvimler ve özel bir ICS akışı içerir.
+- **Raporlar ve takvim** — harcama eğilimleri, isteğe bağlı 3B çubuklu günlük ısı haritası, nakit ve tahakkuk, fon akışları, bölge ve kategori profilleri, ön ödemeli değer, iptal tasarrufları, abonelik kontrolleri ve paylaşılabilir yıl özeti. Aylık/yıllık takvimler ve özel bir ICS akışı içerir.
 - **Arama** — abonelik listesinde, komut paletinde ve seçicilerde Çince adları tam pinyin, baş harfler veya karma hecelerle bulun.
 - **Yenileme hatırlatıcıları** — e-posta, Telegram, Lark/Feishu, DingTalk, WeCom, Slack, Discord, Bark, ntfy, ServerChan ve özel webhook'lar.
-- **Yapay zeka erişimi** — yazma işlemleri için kapsamlı belirteçler (token) ve önizlemelerle, MCP uyumlu bir asistandan defterinizi sorgulayın ve güncelleyin.
-- **Dosyalar** — faturaları, makbuzları ve sözleşmeleri aboneliklerle birlikte saklayın, ödemelere veya sözleşme koşullarına bağlayın, görselleri ve PDF'leri önizleyin ve dosya içerikleriyle tam yedek dışa aktarın.
+- **Yapay zeka erişimi** — izin kapsamı sınırlandırılmış token'lar ve yazma işlemleri için önizlemelerle, MCP uyumlu bir asistandan defterinizi sorgulayın ve güncelleyin.
+- **Dosyalar** — faturaları, makbuzları ve sözleşmeleri aboneliklerle birlikte saklayın, ödemelere veya sözleşme sürelerine bağlayın, görselleri ve PDF'leri önizleyin ve dosya içerikleriyle tam yedek dışa aktarın.
 - **Harici defterleri içe aktarma** — tarayıcınızda Wallos ve diğer hizmetlerden CSV dosyalarını, ZIP yedeklerini ve veritabanlarını önizleyin ve içe aktarın.
 - **Herkese açık sayfa düzenleyicisi** — salt okunur herkese açık sayfanızın başlığını özelleştirin ve ızgara tuval üzerinde bileşenleri (widget) düzenleyin.
 - **Otomatik şifreli yedeklemeler** — parola tabanlı şifreleme, dönen saklama süresi ve bir defteri geri yüklemeden veya değiştirmeden önce güvenlik yedeği ile S3 uyumlu depolamaya veya WebDAV'a yedekleyin.
@@ -79,7 +79,7 @@ Yükseltmeler, HTTPS, yapılandırma ve diğer seçenekler için [kendi sunucunu
 
 “Haftaya ne yenileniyor?”, “Bu yıl ne kadar harcadım?” veya “Netflix bugünden itibaren $17.99 oldu.” diye sorun. Calends, Streamable HTTP kullanarak `/mcp` uç noktasında durumsuz (stateless) bir [MCP](https://modelcontextprotocol.io) üzerinden 41 araç sunar.
 
-**AI access** sayfasında (`/connect`) salt okunur veya okuma/yazma belirteci oluşturun, ardından istemcinizi bağlayın. Tarayıcıda `/mcp` açmak sizi bu sayfaya yönlendirir; MCP istemcileri `/mcp` uç noktasını kullanır:
+**Yapay zekâ erişimi** sayfasında (`/connect`) salt okunur veya okuma/yazma belirteci oluşturun, ardından istemcinizi bağlayın. Tarayıcıda `/mcp` açmak sizi bu sayfaya yönlendirir; MCP istemcileri `/mcp` uç noktasını kullanır:
 
 **Claude Code**
 
@@ -102,7 +102,7 @@ Yerleşik asistan DeepSeek, OpenAI, Anthropic, Gemini ve Ollama dahil sağlayıc
 
 Calends günde bir kez [telemetry.calends.date](https://telemetry.calends.date) adresine anonim kullanım istatistikleri gönderir: rastgele bir kurulum kimliği, uygulama sürümü, nasıl çalıştığı (Cloudflare, Docker/Node veya yükleyici), arayüz dili ve günlük uygulama açılışı, sayfa görüntüleme, asistan mesajı ve MCP araç çağrısı sayıları. Abonelik adlarını, fiyatları, ödemeleri, notları, hesap ayrıntılarını veya yazdığınız hiçbir şeyi asla göndermez. Sayımlar kendi sunucunuz tarafından gönderilir; tarayıcı yalnızca sayfa görüntülemelerini sunucuya bildirir.
 
-Bunu Settings → Anonymous usage stats altından kapatın veya dağıtırken `CALENDS_TELEMETRY=0` (ya da `DO_NOT_TRACK=1`) ayarlayın; bu ayar da seçeneği kilitli olarak kapalı tutar. Geliştirme derlemeleri asla veri göndermez.
+Bunu Ayarlar → Anonim kullanım istatistikleri altından kapatın veya dağıtırken `CALENDS_TELEMETRY=0` (ya da `DO_NOT_TRACK=1`) ayarlayın; bu ayar da seçeneği kilitli olarak kapalı tutar. Geliştirme derlemeleri asla veri göndermez.
 
 ## Katkıda bulunma
 
