@@ -266,7 +266,9 @@ export function settingsEdit(
   prefs: Record<string, string | null> = {},
 ) {
   const prev = { ...DEFAULT_SETTINGS, ...st.settings };
-  const patched = { ...DEFAULT_SETTINGS, ...applyFields(st.settings, patch) };
+  // startPage 的空串与 null 一样删除该键（回到概览），不把 "" 存进设置
+  const normalized = patch.startPage === '' ? { ...patch, startPage: null } : patch;
+  const patched = { ...DEFAULT_SETTINGS, ...applyFields(st.settings, normalized) };
   // 先校验本次改动（新加的非法值报错），再剔除早已失效的旧引用
   checkSettings(st, prev, patched);
   const settings = pruneSettingsRefs(patched, st.subscriptions, st.methods);

@@ -378,8 +378,7 @@ export const update_subscription: Tool = {
         contract: { ...nullable(CONTRACT), description: `${CONTRACT.description} Applies to the current phase; null removes it.` },
         bundle: { ...nullable(BUNDLE), description: `${BUNDLE.description} Applies to the current phase; null unlinks it.` },
         settlement: {
-          type: ['string', 'null'],
-          enum: ['separate', null],
+          ...nullable({ type: 'string', enum: ['separate'] }),
           description: `${SETTLEMENT.description} Switching on keeps existing payments and treats bills before settledBefore as paid; then record_payment with periods. null switches back and clears every payment's periods.`,
         },
         settledBefore: { ...DATE, description: `${SETTLED_BEFORE.description} Requires settlement separate.` },
